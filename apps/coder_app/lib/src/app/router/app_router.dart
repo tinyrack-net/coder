@@ -42,7 +42,7 @@ void closeTask(BuildContext context, VoidCallback fallback) {
 /// stacking a second copy would make the first Back press look like it did
 /// nothing, so an open settings task is replaced instead of pushed.
 void openSettingsTask(GoRouter router) {
-  const target = GeneralSettingsRoute();
+  const target = SettingsHomeRoute();
   // `state` is the top-most match; the route information provider only reports
   // the base configuration, which a pushed task never moves.
   if (_isSettingsLocation(router.state.uri)) {
@@ -50,6 +50,34 @@ void openSettingsTask(GoRouter router) {
     return;
   }
   unawaited(router.push<void>(target.location));
+}
+
+@TypedGoRoute<SettingsHomeRoute>(path: '/settings')
+/// Responsive settings entry: navigation home on compact widths, General on
+/// wider layouts.
+class SettingsHomeRoute extends GoRouteData with $SettingsHomeRoute {
+  /// Creates the settings entry route.
+  const SettingsHomeRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const UnifiedSettingsPage();
+}
+
+@TypedGoRoute<DaemonCategoriesRoute>(
+  path: '/settings/daemons/:hostId/categories',
+)
+/// Compact daemon category pane, with Provider selected on wider layouts.
+class DaemonCategoriesRoute extends GoRouteData with $DaemonCategoriesRoute {
+  /// Creates a daemon category route.
+  const DaemonCategoriesRoute({required this.hostId});
+
+  /// App-local daemon profile identifier.
+  final String hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(hostId: hostId);
 }
 
 @TypedGoRoute<WorkspaceHomeRoute>(path: '/')

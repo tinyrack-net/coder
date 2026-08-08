@@ -62,8 +62,24 @@ void main() {
           lastWorktree: selection,
           sessionTabs: <String, SessionTabPreference>{
             selection.storageKey: const SessionTabPreference(
-              openAgentIds: <String>['agent-1', 'agent-2'],
-              selectedAgentId: 'agent-2',
+              tabs: <WorkspaceTabPreference>[
+                WorkspaceTabPreference(
+                  id: 'session:agent-1',
+                  kind: WorkspaceTabTargetKind.session,
+                  targetId: 'agent-1',
+                ),
+                WorkspaceTabPreference(
+                  id: 'session:agent-2',
+                  kind: WorkspaceTabTargetKind.session,
+                  targetId: 'agent-2',
+                ),
+              ],
+              root: WorkspacePanePreference(
+                id: 'pane:one',
+                tabIds: <String>['session:agent-1', 'session:agent-2'],
+                activeTabId: 'session:agent-2',
+              ),
+              focusedPaneId: 'pane:one',
             ),
           },
           sidebarCollapsed: true,
@@ -89,8 +105,8 @@ void main() {
       expect(restored.startMinimizedAtBoot, isFalse);
       expect(restored.themeMode, AppThemeMode.dark);
       expect(
-        restored.sessionTabs[selection.storageKey]?.openAgentIds,
-        <String>['agent-1', 'agent-2'],
+        restored.sessionTabs[selection.storageKey]?.tabs.map((tab) => tab.id),
+        <String>['session:agent-1', 'session:agent-2'],
       );
       expect(
         (await store.listProfiles()).single.websocketUri,
@@ -186,6 +202,39 @@ void main() {
     );
     expect((await store.loadSettings()).embeddedDaemonPort, 7337);
   });
+
+  test(
+    'flat development tab entries reset without dropping other settings',
+    () async {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(
+        SharedPreferencesAppStore.documentKey,
+        jsonEncode(<String, dynamic>{
+          'version': 4,
+          'settings': <String, dynamic>{
+            'embeddedDaemonEnabled': false,
+            'lastActiveHostId': 'server',
+            'sessionTabs': <Object>[
+              <String, dynamic>{
+                'key': 'server\u0000workspace\u0000worktree',
+                'openAgentIds': <String>['agent'],
+                'selectedAgentId': 'agent',
+              },
+            ],
+            'sidebarCollapsed': true,
+          },
+          'profiles': <Object>[],
+        }),
+      );
+
+      final restored = await SharedPreferencesAppStore(
+        preferences,
+      ).loadSettings();
+      expect(restored.lastActiveHostId, 'server');
+      expect(restored.sidebarCollapsed, isTrue);
+      expect(restored.sessionTabs, isEmpty);
+    },
+  );
 
   test('updates and removes profiles and their secure credentials', () async {
     final preferences = await SharedPreferences.getInstance();

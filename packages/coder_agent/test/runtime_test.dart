@@ -332,6 +332,33 @@ void main() {
     );
   });
 
+  test(
+    'internal turns inject instructions without a user conversation item',
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('done')]);
+      final harness = _RunnerHarness(provider);
+
+      await harness.runner.startTurn(
+        _request(
+          internal: true,
+          internalInstructions: () async => 'Continue durable goal goal-1.',
+        ),
+        CancellationToken(),
+      );
+
+      expect(harness.events, isNot(contains('user.message')));
+      expect(
+        provider.requests.single.history.whereType<UserConversationItem>(),
+        hasLength(1),
+      );
+      expect(
+        provider.requests.single.instructions,
+        contains('Continue durable goal goal-1.'),
+      );
+    },
+    tags: const <String>['feature_test__session_goal__unit'],
+  );
+
   test('a capability prompt sits above the agent custom prompt', () async {
     final provider = _FakeProvider(<List<ModelEvent>>[_textResponse('ok')]);
     await _RunnerHarness(provider).runner.startTurn(
@@ -1001,7 +1028,11 @@ void main() {
     );
     const request = ModelRequest(
       model: 'model',
-      reasoningEffort: 'high',
+      modelControls: <String, AgentModelControlValue>{
+        AgentModelControlIds.reasoningEffort: AgentModelControlStringValue(
+          value: 'high',
+        ),
+      },
       instructions: 'instructions',
       history: <ConversationItem>[],
       tools: <ModelToolDefinition>[definition],
@@ -1020,7 +1051,10 @@ void main() {
     final tool = _EchoTool();
 
     expect(request.model, 'model');
-    expect(request.reasoningEffort, 'high');
+    expect(
+      request.modelControls[AgentModelControlIds.reasoningEffort],
+      const AgentModelControlStringValue(value: 'high'),
+    );
     expect(request.instructions, 'instructions');
     expect(request.history, isEmpty);
     expect(request.tools.single.description, 'Echo');
@@ -1058,6 +1092,8 @@ AgentRunRequest _request({
   ],
   int? contextWindowTokens,
   ModelUsage priorUsage = const ModelUsage(),
+  bool internal = false,
+  InternalInstructionSource? internalInstructions,
 }) => AgentRunRequest(
   contextWindowTokens: contextWindowTokens,
   priorUsage: priorUsage,
@@ -1072,6 +1108,8 @@ AgentRunRequest _request({
   sessionMode: sessionMode,
   customSystemPrompt: customSystemPrompt,
   toolPrompts: toolPrompts,
+  internal: internal,
+  internalInstructions: internalInstructions,
 );
 
 List<ModelEvent> _toolResponse(

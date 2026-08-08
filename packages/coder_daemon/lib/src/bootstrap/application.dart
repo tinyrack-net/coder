@@ -18,7 +18,11 @@ import 'package:coder_daemon/src/features/mcp/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:coder_daemon/src/features/prompts/transport/rpc_bindings.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/wire.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/credential_store.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/wire.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_adapters.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_auth.dart';
@@ -27,6 +31,7 @@ import 'package:coder_daemon/src/features/providers/infrastructure/provider_serv
 import 'package:coder_daemon/src/features/providers/transport/rpc_bindings.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/exec_session_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_settings.dart';
@@ -233,11 +238,19 @@ abstract final class DaemonApplication {
       // The whole vendor surface of this daemon: adding a vendor package
       // means adding its plugins and wire protocols to these two lists.
       final providerRegistry = ProviderRegistry(
-        plugins: openAIFamilyPlugins(
-          clock: effectiveClock,
-          openAIOAuth: effectiveOAuthGateway,
-        ),
-        wireProtocols: openAIWireProtocols(),
+        plugins: <ProviderPlugin>[
+          ...openAIFamilyPlugins(
+            clock: effectiveClock,
+            openAIOAuth: effectiveOAuthGateway,
+          ),
+          const AnthropicPlugin(),
+          const GoogleGeminiPlugin(),
+        ],
+        wireProtocols: <ProviderWireProtocol>[
+          ...openAIWireProtocols(),
+          const AnthropicMessagesWire(),
+          const GeminiInteractionsWire(),
+        ],
       );
       final providers = ProviderConnectionService(
         repository: database.providerDao,
@@ -302,11 +315,13 @@ abstract final class DaemonApplication {
       // Assigned once the session service it drives exists; the registry reads
       // it per turn rather than capturing null here.
       MultiAgentService? multiAgent;
+      SessionGoalService? goalService;
       final toolRegistry = builtInAgentToolRegistry(
         gitignoreEnvironment: gitignore,
         mcpResourceHostFor: (workspaceRoot) =>
             SessionMcpResourceHost(mcp, workspaceRoot),
         multiAgent: () => multiAgent,
+        goals: () => goalService,
       );
       final builtInCatalog = StaticAgentToolCatalog(
         toolRegistry.catalog.map(protocolToolDefinition).toList(),
@@ -377,6 +392,14 @@ abstract final class DaemonApplication {
         ids: effectiveIds,
         clock: effectiveClock,
       );
+      goalService = SessionGoalService(
+        goals: database.goalDao,
+        sessions: database.sessionDao,
+        ids: effectiveIds,
+        clock: effectiveClock,
+        events: events.add,
+        hasPendingInput: sessionInteractions.hasPendingInput,
+      );
       final service = SessionTurnCoordinator(
         sessions: database.sessionDao,
         definitions: agentDefinitions,
@@ -405,7 +428,11 @@ abstract final class DaemonApplication {
         clock: effectiveClock,
         ids: effectiveIds,
       )..runtime = service;
-      service.multiAgent = multiAgent;
+      service
+        ..multiAgent = multiAgent
+        ..goals = goalService;
+      goalService.runtime = service;
+      unawaited(goalService.resumeEligibleGoals());
       final sessionSettings = SessionSettingsService(
         sessions: database.sessionDao,
         models: models,
@@ -500,6 +527,11 @@ abstract final class DaemonApplication {
         },
       );
       final notificationSubscriptions = <StreamSubscription<Object?>>[
+        providers.catalogUpdates.listen((catalog) {
+          events.add(
+            OutboundNotification(providersCatalogUpdatedNotification, catalog),
+          );
+        }),
         providerAuth.events.listen((attempt) {
           events.add(
             OutboundNotification(providersAuthUpdatedNotification, attempt),
@@ -591,6 +623,7 @@ abstract final class DaemonApplication {
             agentDefinitions: agentDefinitions,
             models: models,
             clock: effectiveClock,
+            goals: goalService,
           ),
           ...terminalRpcBindings(
             terminals: terminals,
@@ -636,6 +669,7 @@ abstract final class DaemonApplication {
         execSweep: execSweep,
         execSessions: execSessions,
         providerAuth: providerAuth,
+        providers: providers,
         terminals: terminals,
         notificationSubscriptions: notificationSubscriptions,
       );
@@ -665,6 +699,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._execSweep,
     required this._execSessions,
     required this._providerAuth,
+    required this._providers,
     required this._terminals,
     required this._notificationSubscriptions,
   }) : _serverId = serverIdValue;
@@ -684,6 +719,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final Timer _execSweep;
   final ExecSessionService _execSessions;
   final ProviderAuthCoordinator _providerAuth;
+  final ProviderConnectionService _providers;
   final TerminalService _terminals;
   final List<StreamSubscription<Object?>> _notificationSubscriptions;
   bool _stopped = false;
@@ -711,6 +747,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _rpc.close();
     await _terminals.close();
     await _providerAuth.close();
+    await _providers.close();
     await _mcp.close();
     await _agentDefinitions.close();
     await _skills.close();

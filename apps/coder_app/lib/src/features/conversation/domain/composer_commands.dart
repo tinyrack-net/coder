@@ -34,6 +34,9 @@ enum ClientCommandAction {
   /// Summarizes the conversation and starts a fresh context window.
   compact,
 
+  /// Creates or manages the persistent session goal.
+  goal,
+
   /// Lists the available commands.
   help,
 }
@@ -156,6 +159,14 @@ const List<ComposerCommand> clientComposerCommands = <ComposerCommand>[
     description: 'Lists the available commands.',
     kind: ComposerCommandKind.client,
     action: ClientCommandAction.help,
+  ),
+  ComposerCommand(
+    id: 'client:goal',
+    name: 'goal',
+    description: 'Creates or manages a persistent session goal.',
+    kind: ComposerCommandKind.client,
+    argumentHint: '<objective | edit | pause | resume | clear>',
+    action: ClientCommandAction.goal,
   ),
 ];
 

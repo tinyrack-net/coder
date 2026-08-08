@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_ja.dart';
 import 'app_localizations_ko.dart';
 
 // ignore_for_file: type=lint
@@ -95,6 +96,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('ja'),
     Locale('ko'),
   ];
 
@@ -211,6 +213,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsTitle;
+
+  /// Accessible status for a settings skeleton while data is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading settings'**
+  String get settingsLoading;
+
+  /// Non-blocking error shown when refreshing already visible settings fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh settings: {error}'**
+  String settingsRefreshFailed(String error);
 
   /// Settings sidebar heading over the app-wide categories.
   ///
@@ -679,6 +693,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All sessions'**
   String get workspaceAllSessions;
+
+  /// Splits a workspace pane with a new pane on the right.
+  ///
+  /// In en, this message translates to:
+  /// **'Split right'**
+  String get workspaceSplitRight;
+
+  /// Splits a workspace pane with a new pane below.
+  ///
+  /// In en, this message translates to:
+  /// **'Split down'**
+  String get workspaceSplitDown;
+
+  /// Accessible label for a draggable pane separator.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize panes'**
+  String get workspaceResizePanes;
+
+  /// Title of the mobile sheet listing every open tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch tab'**
+  String get workspaceSwitchTab;
+
+  /// Moves the active tab to another pane without dragging.
+  ///
+  /// In en, this message translates to:
+  /// **'Move active tab to pane'**
+  String get workspaceMoveTabToPane;
 
   /// Tooltip that closes one session tab.
   ///
@@ -1363,6 +1407,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh catalog'**
   String get providerSettingsRefreshCatalog;
+
+  /// No description provided for @providerSettingsCatalogStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog metadata'**
+  String get providerSettingsCatalogStatus;
+
+  /// No description provided for @providerSettingsCatalogBundled.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundled snapshot'**
+  String get providerSettingsCatalogBundled;
+
+  /// No description provided for @providerSettingsCatalogCached.
+  ///
+  /// In en, this message translates to:
+  /// **'Last-known-good cache'**
+  String get providerSettingsCatalogCached;
+
+  /// No description provided for @providerSettingsCatalogFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently refreshed'**
+  String get providerSettingsCatalogFresh;
+
+  /// No description provided for @providerSettingsCatalogStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh due; local metadata remains available'**
+  String get providerSettingsCatalogStale;
 
   /// Section title of the daemon-wide default model.
   ///
@@ -3014,6 +3088,150 @@ abstract class AppLocalizations {
   /// **'List the available commands.'**
   String get composerCommandHelpDescription;
 
+  /// No description provided for @composerCommandGoalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'goal'**
+  String get composerCommandGoalLabel;
+
+  /// No description provided for @composerCommandGoalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create or manage persistent session work.'**
+  String get composerCommandGoalDescription;
+
+  /// No description provided for @goalStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get goalStatusActive;
+
+  /// No description provided for @goalStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get goalStatusPaused;
+
+  /// No description provided for @goalStatusBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get goalStatusBlocked;
+
+  /// No description provided for @goalStatusUsageLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage limited'**
+  String get goalStatusUsageLimited;
+
+  /// No description provided for @goalStatusBudgetLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget reached'**
+  String get goalStatusBudgetLimited;
+
+  /// No description provided for @goalStatusComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get goalStatusComplete;
+
+  /// No description provided for @goalPlanHold.
+  ///
+  /// In en, this message translates to:
+  /// **'Resumes in Run mode'**
+  String get goalPlanHold;
+
+  /// No description provided for @goalElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s elapsed'**
+  String goalElapsed(int seconds);
+
+  /// No description provided for @goalTokenUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} / {budget} tokens'**
+  String goalTokenUsage(int used, int budget);
+
+  /// No description provided for @goalPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause goal'**
+  String get goalPause;
+
+  /// No description provided for @goalResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume goal'**
+  String get goalResume;
+
+  /// No description provided for @goalEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit goal'**
+  String get goalEdit;
+
+  /// No description provided for @goalClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear goal'**
+  String get goalClear;
+
+  /// No description provided for @goalDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session goal'**
+  String get goalDialogTitle;
+
+  /// No description provided for @goalObjectiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Objective'**
+  String get goalObjectiveLabel;
+
+  /// No description provided for @goalObjectiveRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 1–4,000 characters.'**
+  String get goalObjectiveRequired;
+
+  /// No description provided for @goalBudgetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Token budget (optional)'**
+  String get goalBudgetLabel;
+
+  /// No description provided for @goalBudgetInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive token budget.'**
+  String get goalBudgetInvalid;
+
+  /// No description provided for @goalStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start goal'**
+  String get goalStart;
+
+  /// No description provided for @goalReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace current goal?'**
+  String get goalReplaceTitle;
+
+  /// No description provided for @goalReplaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This starts a new goal and resets recorded usage.'**
+  String get goalReplaceDescription;
+
+  /// No description provided for @goalReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace goal'**
+  String get goalReplaceAction;
+
   /// Accessible name of the composer suggestion list.
   ///
   /// In en, this message translates to:
@@ -3038,7 +3256,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'ko'].contains(locale.languageCode);
+      <String>['en', 'ja', 'ko'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -3049,6 +3267,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return AppLocalizationsEn();
+    case 'ja':
+      return AppLocalizationsJa();
     case 'ko':
       return AppLocalizationsKo();
   }

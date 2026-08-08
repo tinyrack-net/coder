@@ -155,7 +155,9 @@ void main() {
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
           wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
-          manualModelIds: const <String>['test-model'],
+          models: const <ManualProviderModelDto>[
+            ManualProviderModelDto(id: 'test-model', label: 'test-model'),
+          ],
         ),
       );
       expect(custom.status, ProviderConnectionStatus.connected);
@@ -177,7 +179,9 @@ void main() {
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
           wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
-          manualModelIds: const <String>['test-model'],
+          models: const <ManualProviderModelDto>[
+            ManualProviderModelDto(id: 'test-model', label: 'test-model'),
+          ],
         ),
       );
       expect(updatedCustom.displayName, 'Updated local test');
@@ -188,7 +192,9 @@ void main() {
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
           wireFormatId: openAIResponsesWireId,
           authenticationRequired: false,
-          manualModelIds: const <String>['test-model'],
+          models: const <ManualProviderModelDto>[
+            ManualProviderModelDto(id: 'test-model', label: 'test-model'),
+          ],
         ),
       );
       expect(temporary.id, 'temporary');
@@ -334,10 +340,17 @@ void main() {
       );
       final coder = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
-        coder.copyWith(reasoningEffort: 'high'),
+        coder.copyWith(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
+            providerConnectionId: 'local-test',
+            modelId: 'test-model',
+          ),
+          modelControls: const <String, ModelControlValueDto>{},
+        ),
         expectedContentHash: coder.contentHash,
       );
-      expect(configuredDefinition.reasoningEffort, 'high');
+      expect(configuredDefinition.model.source, AgentModelSource.fixed);
       expect(
         await client.sessions.listSessions(worktreeId: checkout.id),
         hasLength(2),
@@ -362,10 +375,12 @@ void main() {
       await completedFuture;
       await _waitForIdleSession(client, checkout.id, agent.id);
       final afterTurn = await client.updateAgentDefinition(
-        configuredDefinition.copyWith(reasoningEffort: 'medium'),
+        configuredDefinition.copyWith(
+          modelControls: const <String, ModelControlValueDto>{},
+        ),
         expectedContentHash: configuredDefinition.contentHash,
       );
-      expect(afterTurn.reasoningEffort, 'medium');
+      expect(afterTurn.modelControls, isEmpty);
 
       expect(
         (await client.sessions.updateSettings(
@@ -419,18 +434,7 @@ void main() {
         throwsA(isA<CoderClientException>()),
       );
 
-      // The three composer overrides persist independently and each returns to
-      // inheriting from the agent definition when cleared.
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(
-            hasReasoningEffort: true,
-            reasoningEffort: 'high',
-          ),
-        )).reasoningEffort,
-        'high',
-      );
+      // Model controls are persisted atomically with other session settings.
       expect(
         (await client.sessions.updateSettings(
           agent.id,
@@ -441,42 +445,23 @@ void main() {
         )).permissionMode,
         PermissionMode.workspaceWrite,
       );
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(
-            hasServiceTier: true,
-            serviceTier: 'priority',
-          ),
-        )).serviceTier,
-        'priority',
+      final withControls = await client.sessions.updateSettings(
+        agent.id,
+        const SessionSettingsPatchDto(
+          hasModelControls: true,
+        ),
       );
+      expect(withControls.modelControls, isEmpty);
       final overridden = (await client.sessions.listSessions(
         worktreeId: checkout.id,
       )).singleWhere((session) => session.id == agent.id);
-      expect(overridden.reasoningEffort, 'high');
+      expect(overridden.modelControls, isEmpty);
       expect(overridden.permissionMode, PermissionMode.workspaceWrite);
-      expect(overridden.serviceTier, 'priority');
-
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(hasReasoningEffort: true),
-        )).reasoningEffort,
-        isNull,
-      );
       expect(
         (await client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(hasPermissionMode: true),
         )).permissionMode,
-        isNull,
-      );
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(hasServiceTier: true),
-        )).serviceTier,
         isNull,
       );
 
@@ -2246,7 +2231,9 @@ void main() {
           baseUrl: 'http://127.0.0.1:${modelServer.port}/v1',
           wireFormatId: openAIChatCompletionsWireId,
           authenticationRequired: false,
-          manualModelIds: const <String>['test-model'],
+          models: const <ManualProviderModelDto>[
+            ManualProviderModelDto(id: 'test-model', label: 'test-model'),
+          ],
         ),
       );
       final session = await client.createSession(
@@ -2566,6 +2553,11 @@ void main() {
         name: 'Attachments',
       );
       final models = await client.listProviderModels('openai');
+      final runnableModel = models.firstWhere(
+        (model) =>
+            model.capabilities.streaming == CapabilitySupport.supported &&
+            model.capabilities.toolCalling == CapabilitySupport.supported,
+      );
       final session = await client.createSession(
         id: 'attachment-session',
         worktreeId: catalog.worktrees.single.id,
@@ -2573,7 +2565,7 @@ void main() {
         agentDefinitionId: 'coder',
         model: SessionModelSelectionDto(
           providerConnectionId: 'openai',
-          modelId: models.first.id,
+          modelId: runnableModel.id,
         ),
       );
       await client.subscribeTimeline(session.id);

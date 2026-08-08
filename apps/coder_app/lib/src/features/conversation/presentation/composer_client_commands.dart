@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 const Set<ClientCommandAction> sessionlessClientActions = <ClientCommandAction>{
   ClientCommandAction.newSession,
   ClientCommandAction.compact,
+  ClientCommandAction.goal,
 };
 
 /// Runs an app-owned command for a composer that has no session yet.
@@ -32,6 +33,7 @@ Future<bool> runSessionlessClientCommand(
     case ClientCommandAction.help:
     case ClientCommandAction.newSession:
     case ClientCommandAction.compact:
+    case ClientCommandAction.goal:
       break;
     case ClientCommandAction.toggleMode:
       onToggleMode();

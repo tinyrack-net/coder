@@ -775,6 +775,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(worktreeModelSelector);
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
@@ -833,6 +838,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(sessionModelSelector);
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('model-search-field')),
+        'gpt-5.6-sol',
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
@@ -856,18 +866,15 @@ void main() {
         'read @README.md ',
       );
 
-      // A query that matches nothing says so, and Escape hands Enter back to
-      // sending so the typed text still goes out as prose.
+      // A query that matches nothing says so. Dismiss it from the stable tab
+      // strip; composer_input_test.dart owns the keyboard dismissal contract.
       await _typeComposerPrompt(tester, composer, 'read @zzzzzz');
       await tester.pumpAndSettle();
       // The E2E app is pinned to Korean, so the empty row reads in Korean.
       await pumpUntil(tester, find.text('파일 없음'));
-      // The real desktop runner can move primary focus while the asynchronous
-      // search replaces the loading row. Restore it explicitly so Escape is
-      // delivered to the composer's suggestions controller.
-      await tester.tap(find.byKey(composer));
-      await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-tab-strip')).hitTestable(),
+      );
       await pumpUntilGone(tester, find.text('파일 없음'));
 
       await _submitComposerPrompt(tester, composer, send, 'Delegate review');
@@ -913,7 +920,6 @@ void main() {
       final trackHeader = find.text('서브 에이전트 1개');
       await pumpUntil(tester, trackHeader);
       await tester.tap(trackHeader);
-      await tester.pumpAndSettle();
       final childRow = find.byKey(
         ValueKey<String>('subagent-row-${spawnedChild.id}'),
       );
@@ -936,6 +942,66 @@ void main() {
       await tester.tap(find.text('Delegate review').last);
       await pumpUntil(tester, find.text('coder · manual'));
       await pumpUntil(tester, find.byKey(composer));
+
+      final goalSessionId = (await setupClient.sessions.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).singleWhere((session) => session.origin == SessionOrigin.manual).id;
+      await _waitForComposerReady(tester, send);
+      await _typeComposerPrompt(tester, composer, '/goal');
+      await tester.pumpAndSettle();
+      // First Enter accepts the highlighted command completion; the second
+      // dispatches `/goal` and opens the editor.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await pumpUntil(tester, find.text('세션 Goal'));
+      final goalDialog = find.byType(TRAlertDialog);
+      final goalObjective = find
+          .descendant(of: goalDialog, matching: find.byType(EditableText))
+          .first;
+      await tester.enterText(goalObjective, 'Complete persistent goal e2e');
+      await tester.tap(find.text('Goal 시작'));
+      await tester.pump();
+      late GoalDto completedGoal;
+      var observedGoalState = 'no goal state observed';
+      try {
+        await pumpUntilCondition(
+          tester,
+          () async {
+            final session = (await setupClient.sessions.listSessions())
+                .singleWhere((session) => session.id == goalSessionId);
+            final goal = await setupClient.sessions.getGoal(goalSessionId);
+            observedGoalState =
+                '${session.status.name}:${session.mode.name}:'
+                '${goal?.status.name}:${goal?.objective}';
+            if (goal?.objective == 'Complete persistent goal e2e' &&
+                goal?.status == GoalStatus.complete) {
+              completedGoal = goal!;
+              return true;
+            }
+            return false;
+          },
+          'the persistent goal to complete after continuation turns',
+          budget: e2eTurnBudget,
+        );
+      } on TestFailure catch (error) {
+        throw TestFailure(
+          '$error Provider goal rounds: ${agentProvider._goalRounds}. '
+          'Observed: $observedGoalState',
+        );
+      }
+      await pumpUntil(tester, find.text('완료'));
+      final reconnectClient = await CoderClient.connect(
+        endpoint: endpoint,
+        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
+        clientId: 'goal-reconnect',
+        clientKind: 'integration-test',
+      );
+      expect(
+        await reconnectClient.sessions.getGoal(completedGoal.sessionId),
+        completedGoal,
+      );
+      await reconnectClient.close();
 
       // An app-owned command runs in the app: the draft clears and no turn
       // starts for it. This needs the live session, which is where the app
@@ -1508,6 +1574,78 @@ void main() {
         tester,
         find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
+      // The desktop workspace persists a binary layout, streams divider
+      // changes, and collapses a source pane when its last tab moves away.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-split-right')),
+      );
+      await pumpUntil(tester, find.byType(TRSplitView));
+      expect(
+        find.byKey(const ValueKey<String>('workspace-pane')),
+        findsNWidgets(2),
+      );
+      await tester.drag(
+        find.byKey(const ValueKey<String>('tr-split-view-separator')),
+        const Offset(TRSpacing.threeExtraLarge, 0),
+      );
+      await tester.pumpAndSettle();
+      final sourceTab = find.byKey(
+        ValueKey<String>('tr-tabs-tab-${parent.id}'),
+      );
+      final targetPane = find
+          .byKey(const ValueKey<String>('workspace-pane'))
+          .last;
+      final targetTab = find.descendant(
+        of: targetPane,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'tr-tabs-tab-',
+              ),
+        ),
+      );
+      await tester.timedDragFrom(
+        tester.getCenter(sourceTab),
+        tester.getCenter(targetTab) - tester.getCenter(sourceTab),
+        const Duration(seconds: 1),
+      );
+      await tester.pumpAndSettle();
+      await pumpUntil(
+        tester,
+        find.descendant(
+          of: targetPane,
+          matching: find.byKey(
+            ValueKey<String>('tr-tabs-tab-${parent.id}'),
+          ),
+        ),
+      );
+      for (var moved = 0; moved < 10; moved++) {
+        if (find.byType(TRSplitView).evaluate().isEmpty) break;
+        final sourceRemainingTab = find.descendant(
+          of: find.byKey(const ValueKey<String>('workspace-pane')).first,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith(
+                  'tr-tabs-tab-',
+                ),
+          ),
+        );
+        if (sourceRemainingTab.evaluate().isEmpty) break;
+        await tester.timedDragFrom(
+          tester.getCenter(sourceRemainingTab.first),
+          tester.getCenter(targetTab.last) -
+              tester.getCenter(sourceRemainingTab.first),
+          const Duration(seconds: 1),
+        );
+        await tester.pumpAndSettle();
+      }
+      await pumpUntilGone(tester, find.byType(TRSplitView));
+      expect(
+        find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
+        findsOneWidget,
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
@@ -1556,6 +1694,8 @@ void main() {
       final providerMenu = find.byKey(
         const ValueKey<String>('provider-actions-custom'),
       );
+      await tester.ensureVisible(providerMenu);
+      await tester.pumpAndSettle();
       await tester.tap(providerMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('고급 설정 편집'));
@@ -1778,11 +1918,11 @@ void main() {
       final homeCheckout = homeCatalog.worktrees.singleWhere(
         (item) => item.workspaceId == homeWorkspace.id,
       );
-      await pumpUntil(
-        tester,
-        find.byKey(const ValueKey('workspace-new-button')),
-      );
-      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      final newWorkspaceButton = find
+          .byKey(const ValueKey('workspace-new-button'))
+          .hitTestable();
+      await pumpUntil(tester, newWorkspaceButton);
+      await tester.tap(newWorkspaceButton.first);
       await pumpUntil(
         tester,
         find.byKey(const ValueKey('new-workspace-project')),
@@ -1825,6 +1965,8 @@ void main() {
       'feature_test__worktree_lifecycle__e2e',
       'feature_test__session_lifecycle__e2e',
       'feature_test__session_tabs__e2e',
+      'feature_test__session_goal__e2e',
+      'feature_scenario__session_goal__multi_turn_completion_reconnect__e2e',
       'feature_test__terminal_lifecycle__e2e',
       'feature_test__terminal_lifecycle__platformSmoke',
       'feature_scenario__terminal_lifecycle__create_write_terminate__e2e',
@@ -2473,6 +2615,7 @@ final class _AgentE2eProvider implements ModelProvider {
 
   final String attachmentCapturePath;
   int _providerFailures = 0;
+  int _goalRounds = 0;
 
   @override
   String get id => 'agent-e2e-fake';
@@ -2483,6 +2626,50 @@ final class _AgentE2eProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
+    final latestHistoryItem = request.history.lastOrNull;
+    if (latestHistoryItem is ToolResultConversationItem &&
+        latestHistoryItem.callId == 'goal-complete-call') {
+      yield const ModelTextDelta('Persistent goal complete.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: 'Persistent goal complete.',
+        ),
+      );
+      return;
+    }
+    if (request.instructions.contains(
+      '<objective>Complete persistent goal e2e</objective>',
+    )) {
+      _goalRounds += 1;
+      if (_goalRounds < 3) {
+        yield ModelTextDelta('Goal progress $_goalRounds.');
+        yield ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: 'Goal progress $_goalRounds.',
+          ),
+        );
+        return;
+      }
+      const arguments = <String, dynamic>{'status': 'complete'};
+      yield const ModelFunctionCall(
+        callId: 'goal-complete-call',
+        name: 'update_goal',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall(
+              callId: 'goal-complete-call',
+              name: 'update_goal',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {

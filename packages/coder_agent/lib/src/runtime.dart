@@ -20,6 +20,12 @@ typedef SessionStatusCallback =
 typedef ProviderItemsCallback =
     FutureOr<void> Function(List<ConversationItem> items);
 
+/// Supplies ephemeral daemon-owned instructions for the next model request.
+///
+/// These instructions are never persisted as conversation items or rendered
+/// as user messages.
+typedef InternalInstructionSource = Future<String?> Function();
+
 /// Supplies externally queued conversation input at message boundaries.
 ///
 /// The runner drains this source immediately before every model request, so
@@ -49,14 +55,15 @@ class AgentRunRequest {
     required this.history,
     required this.safetyIdentifier,
     this.attachments = const <ConversationAttachment>[],
-    this.reasoningEffort = 'medium',
-    this.serviceTier,
+    this.modelControls = const <String, AgentModelControlValue>{},
     this.maxToolRounds = 64,
     this.sessionMode = AgentSessionMode.normal,
     this.customSystemPrompt,
     this.toolPrompts = const <String>[],
     this.contextWindowTokens,
     this.priorUsage = const ModelUsage(),
+    this.internal = false,
+    this.internalInstructions,
   });
 
   /// Tokens this model's context window holds, when the catalog knows one.
@@ -71,6 +78,12 @@ class AgentRunRequest {
   /// request has to be checked against the carried-over usage rather than
   /// waiting for a response this turn may never get.
   final ModelUsage priorUsage;
+
+  /// Whether this turn was started by a daemon workflow rather than a user.
+  final bool internal;
+
+  /// Ephemeral instructions refreshed before every model request.
+  final InternalInstructionSource? internalInstructions;
 
   /// The sessionId public API member.
   final String sessionId;
@@ -87,11 +100,8 @@ class AgentRunRequest {
   /// The model public API member.
   final String model;
 
-  /// The reasoningEffort public API member.
-  final String reasoningEffort;
-
-  /// Provider service tier for this turn; null uses the provider default.
-  final String? serviceTier;
+  /// Model-specific values already validated by the provider boundary.
+  final Map<String, AgentModelControlValue> modelControls;
 
   /// The history public API member.
   final List<ConversationItem> history;
@@ -239,12 +249,14 @@ class AgentRunner {
     AgentRunRequest request,
     CancellationToken cancellation,
   ) async {
-    final userItem = UserConversationItem(
-      request.prompt,
-      attachments: request.attachments,
-    );
-    final input = <ConversationItem>[...request.history, userItem];
-    final persisted = <ConversationItem>[userItem];
+    final userItem = request.internal
+        ? null
+        : UserConversationItem(
+            request.prompt,
+            attachments: request.attachments,
+          );
+    final input = <ConversationItem>[...request.history, ?userItem];
+    final persisted = <ConversationItem>[?userItem];
     var toolRounds = 0;
     var turnUsage = const ModelUsage();
     var resetRequested = false;
@@ -259,13 +271,15 @@ class AgentRunner {
         'surfaced': _surfaced.length,
       });
     }
-    await _onEvent('user.message', <String, dynamic>{
-      'text': request.prompt,
-      'attachments': request.attachments
-          .map(_attachmentSnapshot)
-          .toList(growable: false),
-    });
-    await _onProviderItems(<ConversationItem>[userItem]);
+    if (userItem != null) {
+      await _onEvent('user.message', <String, dynamic>{
+        'text': request.prompt,
+        'attachments': request.attachments
+            .map(_attachmentSnapshot)
+            .toList(growable: false),
+      });
+      await _onProviderItems(<ConversationItem>[userItem]);
+    }
 
     try {
       // An earlier turn can have left the window full, in which case this turn
@@ -298,9 +312,11 @@ class AgentRunner {
           var recovered = false;
           final modelRequest = ModelRequest(
             model: request.model,
-            reasoningEffort: request.reasoningEffort,
-            serviceTier: request.serviceTier,
-            instructions: _instructions(request),
+            modelControls: request.modelControls,
+            instructions: _instructions(
+              request,
+              await request.internalInstructions?.call(),
+            ),
             history: List<ConversationItem>.unmodifiable(input),
             safetyIdentifier: request.safetyIdentifier,
             tools: _advertisedTools(),
@@ -539,8 +555,7 @@ class AgentRunner {
       history: List<ConversationItem>.unmodifiable(input),
       target: CompactionTarget(
         model: request.model,
-        reasoningEffort: request.reasoningEffort,
-        serviceTier: request.serviceTier,
+        modelControls: request.modelControls,
         safetyIdentifier: request.safetyIdentifier,
       ),
       cancellation: cancellation,
@@ -589,17 +604,18 @@ class AgentRunner {
     });
   }
 
-  String _instructions(AgentRunRequest request) {
+  String _instructions(AgentRunRequest request, String? internal) {
     final customPrompt = request.customSystemPrompt?.trim();
     final planning = request.sessionMode == AgentSessionMode.plan
         ? '\n${planModeInstructions()}'
         : '';
+    final internalPrompt = internal?.trim();
     return '''
 You are a coding agent operating in ${request.workspaceRoot}.
 Use only the supplied tools. Read before editing, keep changes scoped to the request,
 and validate relevant behavior before finishing. Never attempt to access paths outside
 the workspace. Approval decisions are enforced by the host; do not work around them.
-${request.toolPrompts.map((prompt) => '\n$prompt\n').join()}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}
+${request.toolPrompts.map((prompt) => '\n$prompt\n').join()}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}${internalPrompt == null || internalPrompt.isEmpty ? '' : '\n$internalPrompt'}
 ''';
   }
 }

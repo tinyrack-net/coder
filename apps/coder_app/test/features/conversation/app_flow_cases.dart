@@ -46,10 +46,11 @@ void _registerConversationAppFlows() {
       final router = await _pumpRoute(
         tester,
         api,
-        WorktreeRoute(
+        SessionRoute(
           hostId: 'server',
           workspaceId: workspace.id,
           worktreeId: checkout.id,
+          sessionId: running.id,
         ).location,
       );
       addTearDown(router.dispose);
@@ -153,11 +154,14 @@ void _registerConversationAppFlows() {
       );
       expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
 
+      final timelineBefore = tester.getRect(find.byType(ChatTimelineView));
+
       await tester.tap(find.widgetWithText(TRButton, '계획대로 실행'));
       await tester.pumpAndSettle();
       expect(api.updatedSessionModes.single.mode, SessionMode.normal);
       expect(api.startedPrompts.last, '계획을 실행해줘.');
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
+      expect(tester.getRect(find.byType(ChatTimelineView)), timelineBefore);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );
@@ -434,5 +438,91 @@ void _registerConversationAppFlows() {
       ]);
     },
     tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  testWidgets(
+    'session goal controls edit and dispatch every slash command lifecycle',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final agent = session('goal-session');
+      final activeGoal = GoalDto(
+        sessionId: agent.id,
+        goalId: 'goal-1',
+        objective: 'Ship the persistent goal flow',
+        status: GoalStatus.active,
+        tokenBudget: 12000,
+        tokensUsed: 4200,
+        timeUsedSeconds: 30,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[agent],
+        goals: <String, GoalDto>{agent.id: activeGoal},
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: agent.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ship the persistent goal flow'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel(testL10n.goalEdit));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(TRAlertDialog);
+      final objective = find
+          .descendant(
+            of: dialog,
+            matching: find.byType(TextField),
+          )
+          .first;
+      await tester.enterText(objective, 'Ship the edited goal flow');
+      await tester.tap(find.widgetWithText(TRButton, testL10n.commonSave));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.getGoal(agent.id))?.objective,
+        'Ship the edited goal flow',
+      );
+
+      Future<void> submitGoalCommand(String command) async {
+        await tester.enterText(
+          find.byKey(const ValueKey('session-composer-input')),
+          command,
+        );
+        await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+        await tester.pumpAndSettle();
+      }
+
+      await submitGoalCommand('/goal pause');
+      expect((await api.getGoal(agent.id))?.status, GoalStatus.paused);
+      await submitGoalCommand('/goal resume');
+      expect((await api.getGoal(agent.id))?.status, GoalStatus.active);
+      await submitGoalCommand('/goal clear');
+      expect(await api.getGoal(agent.id), isNull);
+
+      await submitGoalCommand('/goal Ship a replacement');
+      expect(
+        (await api.getGoal(agent.id))?.objective,
+        'Ship a replacement',
+      );
+      await submitGoalCommand('/goal Replace it again');
+      expect(find.text(testL10n.goalReplaceTitle), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(TRButton, testL10n.goalReplaceAction),
+      );
+      await tester.pumpAndSettle();
+      expect((await api.getGoal(agent.id))?.objective, 'Replace it again');
+    },
+    tags: const <String>['feature_test__session_goal__widget'],
   );
 }

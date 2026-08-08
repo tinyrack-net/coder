@@ -19,6 +19,8 @@
   "commonDetails": "자세히",
   "commonSaved": "저장했습니다.",
   "settingsTitle": "설정",
+  "settingsLoading": "설정 불러오는 중",
+  "settingsRefreshFailed": "설정을 새로 불러오지 못했습니다: {error}",
   "settingsSectionApp": "App",
   "settingsSectionDaemon": "Daemon",
   "settingsDaemonSelectLabel": "Daemon",
@@ -97,6 +99,11 @@
   "projectSettingsHostShellHeading": "데몬 호스트 기본 셸",
   "projectSettingsHostShellHelp": "프로젝트에서 별도로 지정하지 않으면 이 데몬 호스트의 모든 프로젝트에 사용해요. 실행 파일을 비워 두면 운영체제 기본값을 사용해요.",
   "workspaceAllSessions": "모든 session",
+  "workspaceSplitRight": "오른쪽으로 분할",
+  "workspaceSplitDown": "아래로 분할",
+  "workspaceResizePanes": "Pane 크기 조절",
+  "workspaceSwitchTab": "탭 전환",
+  "workspaceMoveTabToPane": "활성 탭을 다른 pane으로 이동",
   "workspaceCloseTab": "탭 닫기",
   "workspaceNewWorkspace": "New workspace",
   "workspaceWorktreeMenu": "Worktree 메뉴",
@@ -211,6 +218,11 @@
   "providerSettingsTitle": "Provider 설정",
   "providerSettingsRequiresDaemon": "Daemon 연결이 필요합니다.",
   "providerSettingsRefreshCatalog": "Catalog 갱신",
+  "providerSettingsCatalogStatus": "Catalog 메타데이터",
+  "providerSettingsCatalogBundled": "번들된 스냅샷",
+  "providerSettingsCatalogCached": "마지막 정상 캐시",
+  "providerSettingsCatalogFresh": "최근 갱신됨",
+  "providerSettingsCatalogStale": "갱신 필요 · 로컬 메타데이터 사용 가능",
   "providerSettingsDefaultModelTitle": "기본 모델",
   "providerSettingsDefaultModelDescription": "세션과 Agent 모두 모델을 지정하지 않았을 때 사용합니다.",
   "providerSettingsDefaultModelAutomatic": "자동",
@@ -556,6 +568,39 @@
   "@composerCommandHelpDescription": {
     "description": "Description of the help command."
   },
+  "composerCommandGoalLabel": "goal",
+  "composerCommandGoalDescription": "세션의 영속 작업 목표를 만들거나 관리합니다.",
+  "goalStatusActive": "실행 중",
+  "goalStatusPaused": "일시 정지",
+  "goalStatusBlocked": "막힘",
+  "goalStatusUsageLimited": "사용량 제한",
+  "goalStatusBudgetLimited": "예산 도달",
+  "goalStatusComplete": "완료",
+  "goalPlanHold": "Run 모드에서 재개",
+  "goalElapsed": "{seconds}초 경과",
+  "@goalElapsed": {
+    "placeholders": {"seconds": {"type": "int"}}
+  },
+  "goalTokenUsage": "{used} / {budget} 토큰",
+  "@goalTokenUsage": {
+    "placeholders": {
+      "used": {"type": "int"},
+      "budget": {"type": "int"}
+    }
+  },
+  "goalPause": "Goal 일시 정지",
+  "goalResume": "Goal 재개",
+  "goalEdit": "Goal 편집",
+  "goalClear": "Goal 지우기",
+  "goalDialogTitle": "세션 Goal",
+  "goalObjectiveLabel": "목표",
+  "goalObjectiveRequired": "1–4,000자로 입력하세요.",
+  "goalBudgetLabel": "토큰 예산(선택)",
+  "goalBudgetInvalid": "양수 토큰 예산을 입력하세요.",
+  "goalStart": "Goal 시작",
+  "goalReplaceTitle": "현재 Goal을 교체할까요?",
+  "goalReplaceDescription": "새 Goal을 시작하고 기록된 사용량을 초기화합니다.",
+  "goalReplaceAction": "Goal 교체",
   "composerSuggestionsLabel": "제안",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."

@@ -225,27 +225,114 @@ final class WorkspaceSelection {
   int get hashCode => Object.hash(hostId, workspaceId, worktreeId);
 }
 
-/// Device-local visible session tabs for one checkout.
-final class SessionTabPreference {
-  /// Creates session-tab preferences.
-  const SessionTabPreference({
-    this.openAgentIds = const <String>[],
-    this.selectedAgentId,
-    this.openTerminalIds = const <String>[],
-    this.selectedTerminalId,
+/// Axis used by a persisted workspace split.
+enum WorkspaceSplitAxis {
+  /// Places children beside each other.
+  horizontal,
+
+  /// Places children above and below each other.
+  vertical,
+}
+
+/// Kind of content addressed by a persisted workspace tab.
+enum WorkspaceTabTargetKind {
+  /// A daemon session.
+  session,
+
+  /// A daemon terminal.
+  terminal,
+
+  /// An app-local agent composer.
+  draft,
+}
+
+/// One stable tab entry in device-local workspace state.
+final class WorkspaceTabPreference {
+  /// Creates a persisted tab entry.
+  const WorkspaceTabPreference({
+    required this.id,
+    required this.kind,
+    this.targetId,
   });
 
-  /// Session IDs visible as tabs, in display order.
-  final List<String> openAgentIds;
+  /// Stable app-local tab identity.
+  final String id;
 
-  /// Active session tab.
-  final String? selectedAgentId;
+  /// Content kind rendered by this tab.
+  final WorkspaceTabTargetKind kind;
 
-  /// Terminal IDs visible as tabs, in display order.
-  final List<String> openTerminalIds;
+  /// Daemon identity for session and terminal tabs.
+  final String? targetId;
+}
 
-  /// Active terminal tab, mutually exclusive with [selectedAgentId].
-  final String? selectedTerminalId;
+/// Base class for a persisted binary pane tree.
+sealed class WorkspacePanePreferenceNode {
+  const WorkspacePanePreferenceNode();
+}
+
+/// One leaf pane and its ordered tabs.
+final class WorkspacePanePreference extends WorkspacePanePreferenceNode {
+  /// Creates a persisted leaf pane.
+  const WorkspacePanePreference({
+    required this.id,
+    required this.tabIds,
+    required this.activeTabId,
+  });
+
+  /// Stable pane identity.
+  final String id;
+
+  /// Ordered stable tab identities.
+  final List<String> tabIds;
+
+  /// Active tab in this pane.
+  final String activeTabId;
+}
+
+/// One branch in a persisted binary pane tree.
+final class WorkspaceSplitPreference extends WorkspacePanePreferenceNode {
+  /// Creates a persisted split branch.
+  const WorkspaceSplitPreference({
+    required this.id,
+    required this.axis,
+    required this.ratio,
+    required this.first,
+    required this.second,
+  });
+
+  /// Stable split identity.
+  final String id;
+
+  /// Layout axis.
+  final WorkspaceSplitAxis axis;
+
+  /// Fraction of available extent assigned to [first].
+  final double ratio;
+
+  /// First child in visual order.
+  final WorkspacePanePreferenceNode first;
+
+  /// Second child in visual order.
+  final WorkspacePanePreferenceNode second;
+}
+
+/// Device-local workspace tabs and pane tree for one checkout.
+final class SessionTabPreference {
+  /// Creates workspace-tab preferences.
+  const SessionTabPreference({
+    required this.tabs,
+    required this.root,
+    required this.focusedPaneId,
+  });
+
+  /// Stable entries addressed by the pane tree.
+  final List<WorkspaceTabPreference> tabs;
+
+  /// Root of the binary pane tree.
+  final WorkspacePanePreferenceNode root;
+
+  /// Pane whose active tab owns routing and mobile presentation.
+  final String focusedPaneId;
 }
 
 /// Persisted, non-secret configuration for one remote daemon.

@@ -5,6 +5,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coder_agent/coder_agent.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/anthropic/wire.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/plugin.dart';
+import 'package:coder_daemon/src/features/providers/infrastructure/gemini/wire.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/openai/openai.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
@@ -24,6 +28,22 @@ void main() {
   for (final wire in openAIWireProtocols()) {
     providerWireProtocolConformanceTests(wire.id, () => wire);
   }
+  providerPluginConformanceTests(
+    'anthropic',
+    () => const AnthropicPlugin(),
+  );
+  providerWireProtocolConformanceTests(
+    anthropicMessagesWireId,
+    () => const AnthropicMessagesWire(),
+  );
+  providerPluginConformanceTests(
+    'google',
+    () => const GoogleGeminiPlugin(),
+  );
+  providerWireProtocolConformanceTests(
+    geminiInteractionsWireId,
+    () => const GeminiInteractionsWire(),
+  );
 
   test('the family registers each vendor and both wire protocols once', () {
     final registry = ProviderRegistry(
@@ -111,8 +131,13 @@ void main() {
           .stream(
             const ModelRequest(
               model: 'gpt-5.6-sol',
-              reasoningEffort: 'medium',
-              serviceTier: 'priority',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.reasoningEffort:
+                    AgentModelControlStringValue(value: 'medium'),
+                AgentModelControlIds.fastMode: AgentModelControlBoolValue(
+                  value: true,
+                ),
+              },
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],

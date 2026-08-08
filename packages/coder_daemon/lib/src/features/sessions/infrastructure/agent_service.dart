@@ -6,6 +6,7 @@ import 'package:coder_daemon/src/features/attachments/infrastructure/attachment_
 import 'package:coder_daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:coder_daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/agent_clock.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:coder_daemon/src/shared/infrastructure/persistence/repositories.dart';
@@ -69,9 +70,13 @@ class SessionTurnCoordinator implements SessionTurnPort {
       <String, CancellationToken>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
+  final Set<String> _startingTurns = <String>{};
 
   /// The collaboration layer, bound once from the composition root.
   MultiAgentService? multiAgent;
+
+  /// Goal lifecycle bound once from the composition root.
+  SessionGoalService? goals;
 
   @override
   bool hasActiveTurn(String sessionId) => _activeTurns.containsKey(sessionId);
@@ -84,45 +89,65 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required String prompt,
     List<String> attachmentIds = const <String>[],
     bool trackCompletion = false,
+    bool internal = false,
   }) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    final definition = await _definitions.resolve(session.agentDefinitionId);
-    final sessionModel = session.model;
-    // A session override wins over the model of its agent definition.
-    final resolvedModel = sessionModel == null
-        ? await _models.resolveAgentModel(definition.model)
-        : await _models.resolveExplicitModel(
-            sessionModel.providerConnectionId,
-            sessionModel.modelId,
-          );
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError('Agent already has a running turn.');
+    if (!_startingTurns.add(sessionId)) {
+      throw StateError('Agent already has a turn starting.');
     }
-    final worktree = await _worktrees.getById(session.worktreeId);
-    if (worktree == null || worktree.archivedAt != null) {
-      throw StateError('Worktree not found: ${session.worktreeId}');
-    }
-    // Subagent turns hold a per-tree concurrency slot from here on; the slot
-    // is released by `onTurnFinished` once the launched run terminates, or in
-    // the `finally` below when the turn never launches.
-    multiAgent?.acquireTurnSlot(session);
-    var launched = false;
     try {
-      return await _startAcquiredTurn(
-        session: session,
-        definition: definition,
-        resolvedModel: resolvedModel,
-        worktree: worktree,
-        sessionId: sessionId,
-        turnId: turnId,
-        prompt: prompt,
-        attachmentIds: attachmentIds,
-        trackCompletion: trackCompletion,
-        onLaunched: () => launched = true,
+      final session = await _sessions.getById(sessionId);
+      if (session == null) throw StateError('Session not found: $sessionId');
+      final definition = await _definitions.resolve(session.agentDefinitionId);
+      final sessionModel = session.model;
+      // A session override wins over the model of its agent definition.
+      final resolvedModel = sessionModel == null
+          ? await _models.resolveAgentModel(definition.model)
+          : await _models.resolveExplicitModel(
+              sessionModel.providerConnectionId,
+              sessionModel.modelId,
+            );
+      final controls = sessionModel != null
+          ? session.modelControls
+          : definition.model.source == AgentModelSource.fixed
+          ? definition.modelControls
+          : const <String, ModelControlValueDto>{};
+      await _models.validateModelControls(
+        resolvedModel.connectionId,
+        resolvedModel.modelId,
+        controls,
       );
+      if (_activeTurns.containsKey(sessionId)) {
+        throw StateError('Agent already has a running turn.');
+      }
+      final worktree = await _worktrees.getById(session.worktreeId);
+      if (worktree == null || worktree.archivedAt != null) {
+        throw StateError('Worktree not found: ${session.worktreeId}');
+      }
+      // Subagent turns hold a per-tree concurrency slot from here on; the slot
+      // is released by `onTurnFinished` once the launched run terminates, or in
+      // the `finally` below when the turn never launches.
+      multiAgent?.acquireTurnSlot(session);
+      var launched = false;
+      try {
+        return await _startAcquiredTurn(
+          session: session,
+          definition: definition,
+          resolvedModel: resolvedModel,
+          modelControls: controls,
+          worktree: worktree,
+          sessionId: sessionId,
+          turnId: turnId,
+          prompt: prompt,
+          attachmentIds: attachmentIds,
+          trackCompletion: trackCompletion,
+          internal: internal,
+          onLaunched: () => launched = true,
+        );
+      } finally {
+        if (!launched) multiAgent?.releaseTurnSlot(session);
+      }
     } finally {
-      if (!launched) multiAgent?.releaseTurnSlot(session);
+      _startingTurns.remove(sessionId);
     }
   }
 
@@ -130,12 +155,14 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required SessionDto session,
     required AgentDefinitionDto definition,
     required ResolvedAgentModel resolvedModel,
+    required Map<String, ModelControlValueDto> modelControls,
     required WorktreeDto worktree,
     required String sessionId,
     required String turnId,
     required String prompt,
     required List<String> attachmentIds,
     required bool trackCompletion,
+    required bool internal,
     required void Function() onLaunched,
   }) async {
     final created = await _sessions.createTurn(
@@ -160,6 +187,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
       activeTurnId: turnId,
     );
     await multiAgent?.onTurnStarted(session);
+    await goals?.onTurnStarted(session, internal: internal);
     // Cached on the row so the context meter reads the same window the turn
     // runs against, without a catalog lookup on every session read.
     _emitSession(
@@ -249,12 +277,14 @@ class SessionTurnCoordinator implements SessionTurnPort {
         // The context meter rides the session stream, so every reported usage
         // updates the row the clients already watch.
         if (type == 'model.usage') {
+          final usage = ModelUsage.fromJson(data);
           _emitSession(
             await _sessions.recordContextTokens(
               sessionId,
-              ModelUsage.fromJson(data).contextTokens,
+              usage.contextTokens,
             ),
           );
+          await goals?.accountUsage(sessionId, usage);
         }
       },
       onStatus: (status, {error}) =>
@@ -295,9 +325,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
           workspaceRoot: worktree.path,
           prompt: prompt,
           model: resolvedModel.modelId,
-          reasoningEffort:
-              session.reasoningEffort ?? definition.reasoningEffort,
-          serviceTier: session.serviceTier,
+          modelControls: agentModelControls(modelControls),
           history: history,
           attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
@@ -311,6 +339,8 @@ class SessionTurnCoordinator implements SessionTurnPort {
           // What the live window already holds, so a turn that starts on a
           // full window compacts before it samples rather than failing.
           priorUsage: ModelUsage(totalTokens: session.contextTokens),
+          internal: internal,
+          internalInstructions: () async => goals?.instructionsFor(sessionId),
         ),
         cancellation,
       ),
@@ -399,6 +429,22 @@ class SessionTurnCoordinator implements SessionTurnPort {
     on StateError {
       // Nothing to salvage; see above.
     }
+    try {
+      await goals?.onTurnFinished(
+        request.sessionId,
+        outcome,
+        error: failure,
+      );
+    } on Exception {
+      // Restart recovery reconsiders durable active goals.
+    }
+    // A detached turn may finish after daemon shutdown has closed drift.
+    // Durable active goals are reconsidered during restart recovery, so this
+    // shutdown-only database StateError must not escape the runner.
+    // ignore: avoid_catching_errors
+    on StateError {
+      // Nothing to salvage; see above.
+    }
   }
 
   Future<void> _markTurnFailed(String turnId, Object error) =>
@@ -406,8 +452,10 @@ class SessionTurnCoordinator implements SessionTurnPort {
 
   /// The cancelTurn public API member.
   @override
-  Future<void> cancelTurn(String sessionId) async =>
-      _activeTurns[sessionId]?.cancel();
+  Future<void> cancelTurn(String sessionId) async {
+    await goals?.pauseForCancellation(sessionId);
+    _activeTurns[sessionId]?.cancel();
+  }
 
   /// Summarizes a session's context window on request and retires it.
   ///
@@ -435,14 +483,22 @@ class SessionTurnCoordinator implements SessionTurnPort {
             sessionModel.providerConnectionId,
             sessionModel.modelId,
           );
+    final modelControls = sessionModel != null
+        ? session.modelControls
+        : definition.model.source == AgentModelSource.fixed
+        ? definition.modelControls
+        : const <String, ModelControlValueDto>{};
+    await _models.validateModelControls(
+      resolvedModel.connectionId,
+      resolvedModel.modelId,
+      modelControls,
+    );
     final compacted = await ConversationCompactor(resolvedModel.provider)
         .compact(
           history: history,
           target: CompactionTarget(
             model: resolvedModel.modelId,
-            reasoningEffort:
-                session.reasoningEffort ?? definition.reasoningEffort,
-            serviceTier: session.serviceTier,
+            modelControls: agentModelControls(modelControls),
             safetyIdentifier: _safetyIdentifier,
           ),
           cancellation: CancellationToken(),

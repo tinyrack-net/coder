@@ -935,7 +935,7 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.home);
       await tester.pumpAndSettle();
-      expect(isVisible('agents'), isTrue);
+      expect(isVisible('new'), isTrue);
     },
   );
 }
@@ -964,7 +964,7 @@ SessionComposerBar _bar() => SessionComposerBar(
   agentDefinitionId: null,
   selection: null,
   onAgentChanged: (_) {},
-  onModelChanged: (_) {},
+  onModelChanged: (_, _) {},
   mode: SessionMode.normal,
   onModeChanged: (_) {},
 );

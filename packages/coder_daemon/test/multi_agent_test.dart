@@ -43,6 +43,7 @@ final class _FakeRuntime implements SessionTurnPort {
     required String sessionId,
     required String turnId,
     required String prompt,
+    bool internal = false,
   }) async {
     if (throwOnStart) throw StateError('Agent already has a running turn.');
     started.add((sessionId: sessionId, turnId: turnId, prompt: prompt));
@@ -68,7 +69,9 @@ const AgentDefinitionDto _coderDefinition = AgentDefinitionDto(
   promptEnabled: false,
   systemPrompt: '',
   model: AgentModelSelectionDto(source: AgentModelSource.session),
-  reasoningEffort: 'medium',
+  modelControls: <String, ModelControlValueDto>{
+    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+  },
   permissionMode: PermissionMode.workspaceWrite,
   toolIds: <String>[collaborationCapabilityId],
   callableAgentIds: <String>['reviewer'],
@@ -84,7 +87,9 @@ const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
   promptEnabled: false,
   systemPrompt: '',
   model: AgentModelSelectionDto(source: AgentModelSource.session),
-  reasoningEffort: 'medium',
+  modelControls: <String, ModelControlValueDto>{
+    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+  },
   permissionMode: PermissionMode.readOnly,
   toolIds: <String>[],
   callableAgentIds: <String>[],

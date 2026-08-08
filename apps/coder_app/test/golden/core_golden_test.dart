@@ -25,6 +25,7 @@ import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
@@ -146,6 +147,21 @@ void main() {
       data: const <String, dynamic>{'toolRounds': 2},
       createdAt: now,
     ),
+  ];
+  final longChatEvents = <TimelineEventDto>[
+    for (var index = 0; index < 80; index += 1)
+      TimelineEventDto(
+        sessionId: 'agent-1',
+        sequence: index + 1,
+        turnId: 'turn-$index',
+        type: 'user.message',
+        data: <String, dynamic>{
+          'text': index < 65
+              ? 'Long message $index\nSecond line\nThird line\nFourth line'
+              : 'Short message $index',
+        },
+        createdAt: now,
+      ),
   ];
   final question = UserQuestionRequestDto(
     id: 'question',
@@ -388,6 +404,50 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'resolved approval light',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.light,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'resolved approval dark',
+            child: SizedBox(
+              width: 460,
+              height: 300,
+              child: _material(
+                ThemeMode.dark,
+                ProviderScope(
+                  child: ApprovalCard(
+                    interaction: ChatApprovalInteraction(
+                      key: 'approval-${approval.id}',
+                      turnId: approval.turnId,
+                      createdAt: approval.createdAt,
+                      approval: approval,
+                      status: ChatInteractionStatus.resolved,
+                      approved: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'plan light',
             child: SizedBox(
               width: 460,
@@ -459,6 +519,44 @@ void main() {
               width: 460,
               height: 220,
               child: _chat(ThemeMode.dark, const <TimelineEventDto>[]),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'long mixed-height chat keeps its scrollbar stable',
+      fileName: 'chat_scrollbar',
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 620),
+      whilePerforming: (tester) async {
+        for (final element in find.byType(Scrollable).evaluate()) {
+          final state = (element as StatefulElement).state as ScrollableState;
+          state.position.jumpTo(420);
+        }
+        await tester.pump();
+        await tester.pump(TRMotion.fast);
+        return null;
+      },
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'long timeline light',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.light, longChatEvents),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'long timeline dark',
+            child: SizedBox(
+              width: 460,
+              height: 420,
+              child: _chat(ThemeMode.dark, longChatEvents),
             ),
           ),
         ],
@@ -718,6 +816,39 @@ void main() {
 
   unawaited(
     goldenTest(
+      'desktop workspace renders a nested pane tree',
+      fileName: 'workspace_multi_pane',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      builder: () => SizedBox(
+        width: 1100,
+        height: 760,
+        child: _sessionComposer(ThemeMode.dark, split: true),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile workspace presents all pane tabs in a sheet',
+      fileName: 'workspace_mobile_tab_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      builder: () => SizedBox(
+        width: 390,
+        height: 760,
+        child: _sessionComposer(ThemeMode.dark, split: true),
+      ),
+      whilePerforming: (tester) async {
+        await tester.tap(
+          find.byKey(const ValueKey<String>('workspace-mobile-tab-trigger')),
+        );
+        await tester.pumpAndSettle();
+        return null;
+      },
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'directory new workspace hides Git targets',
       fileName: 'new_workspace_directory',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
@@ -922,7 +1053,7 @@ SessionComposerBar _goldenComposerBar() => SessionComposerBar(
   agentDefinitionId: null,
   selection: null,
   onAgentChanged: (_) {},
-  onModelChanged: (_) {},
+  onModelChanged: (_, _) {},
   mode: SessionMode.normal,
   onModeChanged: (_) {},
 );
@@ -988,7 +1119,11 @@ Widget _composerState(
               model: AgentModelSelectionDto(
                 source: AgentModelSource.session,
               ),
-              reasoningEffort: 'medium',
+              modelControls: <String, ModelControlValueDto>{
+                'reasoning_effort': ModelControlValueDto.stringValue(
+                  value: 'medium',
+                ),
+              },
               permissionMode: PermissionMode.ask,
               toolIds: <String>[],
               callableAgentIds: <String>[],
@@ -1003,7 +1138,7 @@ Widget _composerState(
             modelId: 'gpt-5.6-sol',
           ),
           onAgentChanged: (_) {},
-          onModelChanged: (_) {},
+          onModelChanged: (_, _) {},
           mode: SessionMode.normal,
           onModeChanged: (_) {},
           enabled: enabled,
@@ -1013,7 +1148,7 @@ Widget _composerState(
   ),
 );
 
-Widget _sessionComposer(ThemeMode mode) {
+Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -1037,20 +1172,55 @@ Widget _sessionComposer(ThemeMode mode) {
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[checkout],
   );
+  const selection = WorkspaceSelection(
+    hostId: 'server',
+    workspaceId: 'workspace',
+    worktreeId: 'checkout',
+  );
+  final store = MemoryAppStore(
+    settings: AppSettings(
+      sessionTabs: split
+          ? <String, SessionTabPreference>{
+              selection.storageKey: const SessionTabPreference(
+                tabs: <WorkspaceTabPreference>[
+                  WorkspaceTabPreference(
+                    id: 'draft:left',
+                    kind: WorkspaceTabTargetKind.draft,
+                  ),
+                  WorkspaceTabPreference(
+                    id: 'draft:right',
+                    kind: WorkspaceTabTargetKind.draft,
+                  ),
+                ],
+                root: WorkspaceSplitPreference(
+                  id: 'split:root',
+                  axis: WorkspaceSplitAxis.horizontal,
+                  ratio: 0.5,
+                  first: WorkspacePanePreference(
+                    id: 'pane:left',
+                    tabIds: <String>['draft:left'],
+                    activeTabId: 'draft:left',
+                  ),
+                  second: WorkspacePanePreference(
+                    id: 'pane:right',
+                    tabIds: <String>['draft:right'],
+                    activeTabId: 'draft:right',
+                  ),
+                ),
+                focusedPaneId: 'pane:right',
+              ),
+            }
+          : const <String, SessionTabPreference>{},
+    ),
+  );
   return ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+      appServicesProvider.overrideWithValue(fakeAppServices(api, store: store)),
       attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(
       mode,
-      const WorkspacePage(
-        selection: WorkspaceSelection(
-          hostId: 'server',
-          workspaceId: 'workspace',
-          worktreeId: 'checkout',
-        ),
-      ),
+      const WorkspacePage(selection: selection),
     ),
   );
 }
@@ -1126,7 +1296,14 @@ Widget _settings(ThemeMode mode) {
           capabilities: ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
             toolCalling: CapabilitySupport.supported,
-            reasoningEffort: CapabilitySupport.supported,
+            controls: <ModelControlDescriptorDto>[
+              ModelControlDescriptorDto(
+                id: 'reasoning_effort',
+                label: 'Reasoning effort',
+                kind: ModelControlKind.choice,
+                presentation: ModelControlPresentation.menuChip,
+              ),
+            ],
             source: CapabilitySource.bundled,
           ),
         ),

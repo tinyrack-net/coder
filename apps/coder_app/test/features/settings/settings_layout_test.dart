@@ -1,9 +1,14 @@
-import 'package:coder_app/src/shared/presentation/coder_layout.dart';
+import 'dart:async';
+
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+import '../../support/localization.dart';
 
 /// Hosts one composite at a fixed width, so a geometry expectation reads the
 /// composite rather than whatever the surrounding page happened to impose.
@@ -15,6 +20,137 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
 );
 
 void main() {
+  testWidgets(
+    'SettingsAsyncContent preserves stale data across refresh',
+    (
+      tester,
+    ) async {
+      final loads = <Completer<String>>[];
+      final provider = FutureProvider<String>((ref) {
+        final load = Completer<String>();
+        loads.add(load);
+        return load.future;
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            theme: testLightTheme,
+            home: Consumer(
+              builder: (context, ref, _) => SettingsAsyncContent<String>(
+                state: ref.watch(provider),
+                loading: const SettingsSkeletonLayout.form(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+                error: (error, _) => TRText.inherit('$error'),
+                data: (value) => Center(
+                  child: TRButton(
+                    onPressed: () => ref.invalidate(provider),
+                    child: TRText.inherit(value),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(TRSkeleton), findsWidgets);
+
+      loads.single.complete('Ready');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+
+      await tester.tap(find.text('Ready'));
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+      expect(find.byType(SettingsSkeletonLayout), findsNothing);
+
+      loads.last.completeError(Exception('refresh failed'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Ready'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-refresh-error')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
+
+  group('SettingsSkeletonLayout', () {
+    testWidgets(
+      'renders an inert labelled form skeleton',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.form(
+              semanticLabel: 'Loading settings',
+            ),
+          ),
+        );
+
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-form')),
+          findsOneWidget,
+        );
+        expect(find.byType(TRSkeleton), findsWidgets);
+        expect(find.bySemanticsLabel('Loading settings'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(SettingsSkeletonLayout),
+            matching: find.byType(Focus),
+          ),
+          findsNothing,
+        );
+      },
+      tags: const <String>['feature_test__settings_async_loading__widget'],
+    );
+
+    testWidgets(
+      'adapts list-detail loading to the available width',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.listDetail(
+              semanticLabel: 'Loading settings',
+            ),
+          ),
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-list-pane')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(
+          _host(
+            const SettingsSkeletonLayout.listDetail(
+              semanticLabel: 'Loading settings',
+            ),
+            width: 390,
+          ),
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-list-pane')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
+          findsNothing,
+        );
+      },
+      tags: const <String>['feature_test__settings_async_loading__widget'],
+    );
+  });
+
   group('SettingsScaffold', () {
     testWidgets('caps its content and centres it in a wide pane', (
       tester,
@@ -49,15 +185,15 @@ void main() {
       // An unbounded column strands a label and its control at opposite edges
       // of a wide window, which is the defect this cap exists to prevent.
       final card = tester.getRect(find.byType(TRCard));
-      expect(card.width, lessThanOrEqualTo(CoderLayout.settingsReadingWidth));
+      expect(
+        card.width,
+        lessThanOrEqualTo(CoderLayoutMetrics.settingsContentMaxWidth),
+      );
 
       // Centred, so a wide window does not strand the column against one
       // edge with a growing void beside it.
-      expect(card.width, CoderLayout.settingsReadingWidth);
-      expect(
-        card.left,
-        moreOrLessEquals(1400 - card.right, epsilon: 0.5),
-      );
+      expect(card.width, CoderLayoutMetrics.settingsContentMaxWidth);
+      expect(card.left, moreOrLessEquals(1400 - card.right, epsilon: 0.5));
     });
 
     testWidgets('fills a pane narrower than the cap', (tester) async {
@@ -67,9 +203,7 @@ void main() {
             children: <Widget>[
               SettingsSection(
                 title: 'Section',
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Row')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Row'))],
               ),
             ],
           ),
@@ -132,9 +266,7 @@ void main() {
             children: <Widget>[
               SettingsSection(
                 title: 'Boxed',
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Row')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Row'))],
               ),
             ],
           ),
@@ -180,10 +312,7 @@ void main() {
       final heading = tester.getRect(find.text('Remotes'));
       final action = tester.getRect(find.byType(TRButton));
       expect(action.left, greaterThan(heading.right));
-      expect(
-        action.center.dy,
-        moreOrLessEquals(heading.center.dy, epsilon: 2),
-      );
+      expect(action.center.dy, moreOrLessEquals(heading.center.dy, epsilon: 2));
     });
   });
 
@@ -230,9 +359,7 @@ void main() {
               SettingsSection(
                 title: 'Reset',
                 banner: TRAlert(title: TRText.inherit('Failed')),
-                children: <Widget>[
-                  SettingsRow(title: TRText.inherit('Erase')),
-                ],
+                children: <Widget>[SettingsRow(title: TRText.inherit('Erase'))],
               ),
             ],
           ),
@@ -330,9 +457,7 @@ void main() {
       );
     });
 
-    testWidgets('activates from the row when it carries a tap', (
-      tester,
-    ) async {
+    testWidgets('activates from the row when it carries a tap', (tester) async {
       var taps = 0;
       await tester.pumpWidget(
         _host(
@@ -403,7 +528,7 @@ void main() {
               SettingsRow(title: TRText.inherit('Coder')),
             ],
           ),
-          width: CoderLayout.settingsListWidth,
+          width: CoderLayoutMetrics.settingsCollectionWidth,
         ),
       );
 
