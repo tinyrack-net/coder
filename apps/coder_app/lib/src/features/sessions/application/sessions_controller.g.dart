@@ -54,7 +54,7 @@ final class SessionsControllerProvider
 }
 
 String _$sessionsControllerHash() =>
-    r'56bb57a18de9154a9040a43bfc4902f23f23f655';
+    r'2441ac567c548fc89afa7880528a10ae350f065f';
 
 /// SessionsController defines a public contract.
 

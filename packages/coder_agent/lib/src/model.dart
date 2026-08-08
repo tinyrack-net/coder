@@ -328,23 +328,19 @@ class ModelRequest {
   /// Creates a [ModelRequest].
   const ModelRequest({
     required this.model,
-    required this.reasoningEffort,
     required this.instructions,
     required this.history,
     required this.tools,
     required this.safetyIdentifier,
+    this.modelControls = const <String, AgentModelControlValue>{},
     this.forceToolName,
-    this.serviceTier,
   });
 
   /// The model public API member.
   final String model;
 
-  /// The reasoningEffort public API member.
-  final String reasoningEffort;
-
-  /// Provider service tier for this request; null uses the provider default.
-  final String? serviceTier;
+  /// Model-specific values validated against the resolved provider catalog.
+  final Map<String, AgentModelControlValue> modelControls;
 
   /// The instructions public API member.
   final String instructions;

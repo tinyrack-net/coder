@@ -7,6 +7,8 @@ part of 'app_router.dart';
 // **************************************************************************
 
 List<RouteBase> get $appRoutes => [
+  $settingsHomeRoute,
+  $daemonCategoriesRoute,
   $workspaceHomeRoute,
   $worktreeRoute,
   $sessionRoute,
@@ -23,6 +25,64 @@ List<RouteBase> get $appRoutes => [
   $newHostRoute,
   $editHostRoute,
 ];
+
+RouteBase get $settingsHomeRoute => GoRouteData.$route(
+  path: '/settings',
+  hasOverriddenOnExit: false,
+  factory: $SettingsHomeRoute._fromState,
+);
+
+mixin $SettingsHomeRoute on GoRouteData {
+  static SettingsHomeRoute _fromState(GoRouterState state) =>
+      const SettingsHomeRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $daemonCategoriesRoute => GoRouteData.$route(
+  path: '/settings/daemons/:hostId/categories',
+  hasOverriddenOnExit: false,
+  factory: $DaemonCategoriesRoute._fromState,
+);
+
+mixin $DaemonCategoriesRoute on GoRouteData {
+  static DaemonCategoriesRoute _fromState(GoRouterState state) =>
+      DaemonCategoriesRoute(hostId: state.pathParameters['hostId']!);
+
+  DaemonCategoriesRoute get _self => this as DaemonCategoriesRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/categories',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
 
 RouteBase get $workspaceHomeRoute => GoRouteData.$route(
   path: '/',

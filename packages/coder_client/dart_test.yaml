@@ -1,4 +1,5 @@
 tags:
+  feature_test__session_goal__contract:
   feature_test__context_compaction__contract:
   feature_test__conversation_attachments__contract:
   feature_test__daemon_management__contract:

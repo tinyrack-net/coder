@@ -1,6 +1,7 @@
 import 'package:coder_app/l10n/gen/app_localizations.dart';
 import 'package:coder_app/src/features/mcp/application/mcp_servers_controller.dart';
 import 'package:coder_app/src/shared/presentation/coder_icons.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
 import 'package:coder_app/src/shared/presentation/coder_selection_row.dart';
 import 'package:coder_app/src/shared/presentation/settings_layout.dart';
@@ -32,6 +33,13 @@ class McpSettingsPage extends ConsumerStatefulWidget {
 class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
   String? _selectedId;
   bool _creating = false;
+  SettingsPaneNavigationController? _paneNavigation;
+
+  @override
+  void dispose() {
+    _paneNavigation?.clearBackHandler(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,18 +48,17 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       widget.hostId,
       widget.worktreeId,
     );
-    return ref
-        .watch(provider)
-        .when(
-          loading: () => const Center(
-            child: TRSpinner(label: 'Loading MCP servers'),
-          ),
-          error: (error, _) => Center(
-            key: const ValueKey<String>('mcp-settings-error'),
-            child: TRText.inherit('$error'),
-          ),
-          data: (state) => _build(context, l10n, state),
-        );
+    return SettingsAsyncContent<McpServersState>(
+      state: ref.watch(provider),
+      loading: SettingsSkeletonLayout.listDetail(
+        semanticLabel: l10n.settingsLoading,
+      ),
+      error: (error, _) => Center(
+        key: const ValueKey<String>('mcp-settings-error'),
+        child: TRText.inherit('$error'),
+      ),
+      data: (state) => _build(context, l10n, state),
+    );
   }
 
   Widget _build(
@@ -91,7 +98,10 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
             }),
           )
         : selected == null
-        ? Center(child: TRText.inherit(l10n.mcpSettingsSelectServer))
+        ? SettingsEmptyState(
+            title: l10n.mcpSettingsSelectServer,
+            icon: const Icon(CoderIcons.extension),
+          )
         : _ServerEditor(
             key: ValueKey<String>('mcp-server-editor-${selected.config.id}'),
             hostId: widget.hostId,
@@ -104,37 +114,29 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
     return LayoutBuilder(
       key: const ValueKey<String>('mcp-settings-page'),
       builder: (context, constraints) {
-        if (constraints.maxWidth < TRBreakpoints.medium) {
-          return selected == null && !_creating
-              ? list
-              : Column(
-                  children: <Widget>[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TRButton(
-                        appearance: TRAppearance.ghost,
-                        onPressed: () => setState(() {
-                          _creating = false;
-                          _selectedId = null;
-                        }),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            const Icon(CoderIcons.back),
-                            const SizedBox(width: TRSpacing.extraSmall),
-                            TRText(l10n.mcpSettingsHeading),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(child: detail),
-                  ],
-                );
+        if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
+          _paneNavigation = SettingsPaneNavigationScope.maybeOf(context);
+          syncSettingsPaneBackHandler(
+            context,
+            owner: this,
+            active: selected != null || _creating,
+            onBack: _showServerList,
+          );
+          return selected == null && !_creating ? list : detail;
         }
+        syncSettingsPaneBackHandler(
+          context,
+          owner: this,
+          active: false,
+          onBack: _showServerList,
+        );
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SizedBox(width: TRMeasurements.paneMd, child: list),
+            SizedBox(
+              width: CoderLayoutMetrics.settingsCollectionWidth,
+              child: list,
+            ),
             const TRSeparator(
               orientation: TRSeparatorOrientation.vertical,
               variant: TRSeparatorVariant.muted,
@@ -145,6 +147,11 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
       },
     );
   }
+
+  void _showServerList() => setState(() {
+    _creating = false;
+    _selectedId = null;
+  });
 }
 
 class _ServerList extends StatelessWidget {
@@ -593,9 +600,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                     else
                       for (final tool in server.tools)
                         CoderListRow(
-                          key: ValueKey<String>(
-                            'mcp-tool-tile-${tool.toolId}',
-                          ),
+                          key: ValueKey<String>('mcp-tool-tile-${tool.toolId}'),
                           contentPadding: SettingsRow.flushPadding,
                           dense: true,
                           title: TRText.inherit(tool.toolId),
@@ -867,24 +872,21 @@ class _SecretDialogState extends State<_SecretDialog> {
     return TRAlertDialog(
       key: const ValueKey<String>('mcp-secret-dialog'),
       title: TRText.inherit(l10n.mcpSettingsSecretSet),
-      content: SizedBox(
+      content: SettingsDialogForm(
         width: TRMeasurements.overlayWidthSm,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            TRTextField(
-              key: const ValueKey<String>('mcp-secret-key'),
-              controller: _key,
-              label: l10n.mcpSettingsSecretKey,
-            ),
-            TRTextField(
-              key: const ValueKey<String>('mcp-secret-value'),
-              controller: _value,
-              obscureText: true,
-              label: l10n.mcpSettingsSecretValue,
-            ),
-          ],
-        ),
+        children: <Widget>[
+          TRTextField(
+            key: const ValueKey<String>('mcp-secret-key'),
+            controller: _key,
+            label: l10n.mcpSettingsSecretKey,
+          ),
+          TRTextField(
+            key: const ValueKey<String>('mcp-secret-value'),
+            controller: _value,
+            obscureText: true,
+            label: l10n.mcpSettingsSecretValue,
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(
@@ -900,9 +902,7 @@ class _SecretDialogState extends State<_SecretDialog> {
           onPressed: () {
             final key = _key.text.trim();
             if (key.isEmpty) return;
-            Navigator.of(
-              context,
-            ).pop((key: key, value: _value.text));
+            Navigator.of(context).pop((key: key, value: _value.text));
           },
           child: TRText.inherit(
             MaterialLocalizations.of(context).saveButtonLabel,

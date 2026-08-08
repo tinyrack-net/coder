@@ -334,13 +334,20 @@ _AgentDefinitionDto _$AgentDefinitionDtoFromJson(
   promptEnabled: json['promptEnabled'] as bool,
   systemPrompt: json['systemPrompt'] as String,
   model: AgentModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
-  reasoningEffort: json['reasoningEffort'] as String,
   toolIds: (json['toolIds'] as List<dynamic>).map((e) => e as String).toList(),
   callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
   contentHash: json['contentHash'] as String,
   sourcePath: json['sourcePath'] as String,
+  modelControls:
+      (json['modelControls'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(
+          k,
+          ModelControlValueDto.fromJson(e as Map<String, dynamic>),
+        ),
+      ) ??
+      const <String, ModelControlValueDto>{},
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
@@ -368,11 +375,11 @@ Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
       'promptEnabled': instance.promptEnabled,
       'systemPrompt': instance.systemPrompt,
       'model': instance.model,
-      'reasoningEffort': instance.reasoningEffort,
       'toolIds': instance.toolIds,
       'callableAgentIds': instance.callableAgentIds,
       'contentHash': instance.contentHash,
       'sourcePath': instance.sourcePath,
+      'modelControls': instance.modelControls,
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'isBuiltIn': instance.isBuiltIn,
       'isArchived': instance.isArchived,
@@ -725,12 +732,18 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
       : SessionModelSelectionDto.fromJson(
           json['model'] as Map<String, dynamic>,
         ),
-  reasoningEffort: json['reasoningEffort'] as String?,
+  modelControls:
+      (json['modelControls'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(
+          k,
+          ModelControlValueDto.fromJson(e as Map<String, dynamic>),
+        ),
+      ) ??
+      const <String, ModelControlValueDto>{},
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
   ),
-  serviceTier: json['serviceTier'] as String?,
   parentSessionId: json['parentSessionId'] as String?,
   taskName: json['taskName'] as String?,
   agentPath: json['agentPath'] as String?,
@@ -754,9 +767,8 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'mode': _$SessionModeEnumMap[instance.mode]!,
       'model': instance.model,
-      'reasoningEffort': instance.reasoningEffort,
+      'modelControls': instance.modelControls,
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
-      'serviceTier': instance.serviceTier,
       'parentSessionId': instance.parentSessionId,
       'taskName': instance.taskName,
       'agentPath': instance.agentPath,
@@ -796,6 +808,39 @@ const _$AgentLifecycleEnumMap = {
   AgentLifecycle.errored: 'errored',
 };
 
+_GoalDto _$GoalDtoFromJson(Map<String, dynamic> json) => _GoalDto(
+  sessionId: json['sessionId'] as String,
+  goalId: json['goalId'] as String,
+  objective: json['objective'] as String,
+  status: $enumDecode(_$GoalStatusEnumMap, json['status']),
+  tokensUsed: (json['tokensUsed'] as num).toInt(),
+  timeUsedSeconds: (json['timeUsedSeconds'] as num).toInt(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$GoalDtoToJson(_GoalDto instance) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'goalId': instance.goalId,
+  'objective': instance.objective,
+  'status': _$GoalStatusEnumMap[instance.status]!,
+  'tokensUsed': instance.tokensUsed,
+  'timeUsedSeconds': instance.timeUsedSeconds,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'tokenBudget': instance.tokenBudget,
+};
+
+const _$GoalStatusEnumMap = {
+  GoalStatus.active: 'active',
+  GoalStatus.paused: 'paused',
+  GoalStatus.blocked: 'blocked',
+  GoalStatus.usageLimited: 'usageLimited',
+  GoalStatus.budgetLimited: 'budgetLimited',
+  GoalStatus.complete: 'complete',
+};
+
 _AgentMailboxMessageDto _$AgentMailboxMessageDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentMailboxMessageDto(
@@ -832,6 +877,110 @@ const _$InterAgentMessageTypeEnumMap = {
   InterAgentMessageType.finalAnswer: 'finalAnswer',
 };
 
+_ModelControlChoiceDto _$ModelControlChoiceDtoFromJson(
+  Map<String, dynamic> json,
+) => _ModelControlChoiceDto(
+  id: json['id'] as String,
+  label: json['label'] as String,
+  description: json['description'] as String?,
+);
+
+Map<String, dynamic> _$ModelControlChoiceDtoToJson(
+  _ModelControlChoiceDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'description': instance.description,
+};
+
+_ModelControlDescriptorDto _$ModelControlDescriptorDtoFromJson(
+  Map<String, dynamic> json,
+) => _ModelControlDescriptorDto(
+  id: json['id'] as String,
+  label: json['label'] as String,
+  kind: $enumDecode(_$ModelControlKindEnumMap, json['kind']),
+  presentation: $enumDecode(
+    _$ModelControlPresentationEnumMap,
+    json['presentation'],
+  ),
+  description: json['description'] as String?,
+  choices:
+      (json['choices'] as List<dynamic>?)
+          ?.map(
+            (e) => ModelControlChoiceDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <ModelControlChoiceDto>[],
+  minimum: (json['minimum'] as num?)?.toInt(),
+  maximum: (json['maximum'] as num?)?.toInt(),
+  step: (json['step'] as num?)?.toInt(),
+  conflictsWith:
+      (json['conflictsWith'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+);
+
+Map<String, dynamic> _$ModelControlDescriptorDtoToJson(
+  _ModelControlDescriptorDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'kind': _$ModelControlKindEnumMap[instance.kind]!,
+  'presentation': _$ModelControlPresentationEnumMap[instance.presentation]!,
+  'description': instance.description,
+  'choices': instance.choices,
+  'minimum': instance.minimum,
+  'maximum': instance.maximum,
+  'step': instance.step,
+  'conflictsWith': instance.conflictsWith,
+};
+
+const _$ModelControlKindEnumMap = {
+  ModelControlKind.choice: 'choice',
+  ModelControlKind.toggle: 'toggle',
+  ModelControlKind.integer: 'integer',
+};
+
+const _$ModelControlPresentationEnumMap = {
+  ModelControlPresentation.menuChip: 'menuChip',
+  ModelControlPresentation.selectableChip: 'selectableChip',
+  ModelControlPresentation.numberDialog: 'numberDialog',
+};
+
+ModelControlStringValueDto _$ModelControlStringValueDtoFromJson(
+  Map<String, dynamic> json,
+) => ModelControlStringValueDto(
+  value: json['value'] as String,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ModelControlStringValueDtoToJson(
+  ModelControlStringValueDto instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+ModelControlBoolValueDto _$ModelControlBoolValueDtoFromJson(
+  Map<String, dynamic> json,
+) => ModelControlBoolValueDto(
+  value: json['value'] as bool,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ModelControlBoolValueDtoToJson(
+  ModelControlBoolValueDto instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
+ModelControlIntValueDto _$ModelControlIntValueDtoFromJson(
+  Map<String, dynamic> json,
+) => ModelControlIntValueDto(
+  value: (json['value'] as num).toInt(),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ModelControlIntValueDtoToJson(
+  ModelControlIntValueDto instance,
+) => <String, dynamic>{'value': instance.value, 'type': instance.$type};
+
 _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   Map<String, dynamic> json,
 ) => _ModelCapabilitiesDto(
@@ -841,31 +990,20 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   toolCalling:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['toolCalling']) ??
       CapabilitySupport.unknown,
-  reasoningEffort:
-      $enumDecodeNullable(
-        _$CapabilitySupportEnumMap,
-        json['reasoningEffort'],
-      ) ??
-      CapabilitySupport.unknown,
   imageInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['imageInput']) ??
       CapabilitySupport.unknown,
   fileInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
       CapabilitySupport.unknown,
-  serviceTier:
-      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['serviceTier']) ??
-      CapabilitySupport.unknown,
-  supportedReasoningEfforts:
-      (json['supportedReasoningEfforts'] as List<dynamic>?)
-          ?.map((e) => e as String)
+  controls:
+      (json['controls'] as List<dynamic>?)
+          ?.map(
+            (e) =>
+                ModelControlDescriptorDto.fromJson(e as Map<String, dynamic>),
+          )
           .toList() ??
-      const <String>[],
-  supportedServiceTiers:
-      (json['supportedServiceTiers'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const <String>[],
+      const <ModelControlDescriptorDto>[],
   source:
       $enumDecodeNullable(_$CapabilitySourceEnumMap, json['source']) ??
       CapabilitySource.unknown,
@@ -876,12 +1014,9 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
 ) => <String, dynamic>{
   'streaming': _$CapabilitySupportEnumMap[instance.streaming]!,
   'toolCalling': _$CapabilitySupportEnumMap[instance.toolCalling]!,
-  'reasoningEffort': _$CapabilitySupportEnumMap[instance.reasoningEffort]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
-  'serviceTier': _$CapabilitySupportEnumMap[instance.serviceTier]!,
-  'supportedReasoningEfforts': instance.supportedReasoningEfforts,
-  'supportedServiceTiers': instance.supportedServiceTiers,
+  'controls': instance.controls,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };
 
@@ -999,11 +1134,23 @@ _ProviderWireFormatDto _$ProviderWireFormatDtoFromJson(
 ) => _ProviderWireFormatDto(
   id: json['id'] as String,
   label: json['label'] as String,
+  controls:
+      (json['controls'] as List<dynamic>?)
+          ?.map(
+            (e) =>
+                ModelControlDescriptorDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <ModelControlDescriptorDto>[],
 );
 
 Map<String, dynamic> _$ProviderWireFormatDtoToJson(
   _ProviderWireFormatDto instance,
-) => <String, dynamic>{'id': instance.id, 'label': instance.label};
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'controls': instance.controls,
+};
 
 _CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
   Map<String, dynamic> json,
@@ -1013,11 +1160,13 @@ _CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
   wireFormatId: json['wireFormatId'] as String,
   authenticationRequired: json['authenticationRequired'] as bool,
   strictToolSchema: json['strictToolSchema'] as bool? ?? false,
-  manualModelIds:
-      (json['manualModelIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
+  models:
+      (json['models'] as List<dynamic>?)
+          ?.map(
+            (e) => ManualProviderModelDto.fromJson(e as Map<String, dynamic>),
+          )
           .toList() ??
-      const <String>[],
+      const <ManualProviderModelDto>[],
 );
 
 Map<String, dynamic> _$CustomProviderConfigDtoToJson(
@@ -1028,7 +1177,30 @@ Map<String, dynamic> _$CustomProviderConfigDtoToJson(
   'wireFormatId': instance.wireFormatId,
   'authenticationRequired': instance.authenticationRequired,
   'strictToolSchema': instance.strictToolSchema,
-  'manualModelIds': instance.manualModelIds,
+  'models': instance.models,
+};
+
+_ManualProviderModelDto _$ManualProviderModelDtoFromJson(
+  Map<String, dynamic> json,
+) => _ManualProviderModelDto(
+  id: json['id'] as String,
+  label: json['label'] as String,
+  controls:
+      (json['controls'] as List<dynamic>?)
+          ?.map(
+            (e) =>
+                ModelControlDescriptorDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <ModelControlDescriptorDto>[],
+);
+
+Map<String, dynamic> _$ManualProviderModelDtoToJson(
+  _ManualProviderModelDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'label': instance.label,
+  'controls': instance.controls,
 };
 
 _ProviderConnectionDto _$ProviderConnectionDtoFromJson(
@@ -1186,6 +1358,19 @@ _ProviderCatalogDto _$ProviderCatalogDtoFromJson(Map<String, dynamic> json) =>
           .toList(),
       source: $enumDecode(_$ProviderCatalogSourceEnumMap, json['source']),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      freshness:
+          $enumDecodeNullable(
+            _$ProviderCatalogFreshnessEnumMap,
+            json['freshness'],
+          ) ??
+          ProviderCatalogFreshness.bundled,
+      lastSuccessAt: json['lastSuccessAt'] == null
+          ? null
+          : DateTime.parse(json['lastSuccessAt'] as String),
+      lastAttemptAt: json['lastAttemptAt'] == null
+          ? null
+          : DateTime.parse(json['lastAttemptAt'] as String),
+      refreshError: json['refreshError'] as String?,
       wireFormats:
           (json['wireFormats'] as List<dynamic>?)
               ?.map(
@@ -1201,12 +1386,23 @@ Map<String, dynamic> _$ProviderCatalogDtoToJson(_ProviderCatalogDto instance) =>
       'definitions': instance.definitions,
       'source': _$ProviderCatalogSourceEnumMap[instance.source]!,
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'freshness': _$ProviderCatalogFreshnessEnumMap[instance.freshness]!,
+      'lastSuccessAt': instance.lastSuccessAt?.toIso8601String(),
+      'lastAttemptAt': instance.lastAttemptAt?.toIso8601String(),
+      'refreshError': instance.refreshError,
       'wireFormats': instance.wireFormats,
     };
 
 const _$ProviderCatalogSourceEnumMap = {
   ProviderCatalogSource.bundled: 'bundled',
   ProviderCatalogSource.refreshed: 'refreshed',
+};
+
+const _$ProviderCatalogFreshnessEnumMap = {
+  ProviderCatalogFreshness.bundled: 'bundled',
+  ProviderCatalogFreshness.cached: 'cached',
+  ProviderCatalogFreshness.fresh: 'fresh',
+  ProviderCatalogFreshness.stale: 'stale',
 };
 
 _ProviderDiagnosticDto _$ProviderDiagnosticDtoFromJson(

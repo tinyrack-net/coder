@@ -27,6 +27,27 @@ enum SessionStatus {
   closed,
 }
 
+/// Persistent lifecycle of a session goal.
+enum GoalStatus {
+  /// The daemon continues the goal whenever the session is eligible.
+  active,
+
+  /// The user explicitly suspended the goal.
+  paused,
+
+  /// The agent or daemon reached a non-usage blocker.
+  blocked,
+
+  /// The model provider reported an exhausted usage allowance.
+  usageLimited,
+
+  /// The configured token budget has been consumed.
+  budgetLimited,
+
+  /// The agent verified that the objective is complete.
+  complete,
+}
+
 /// Runtime lifecycle of a daemon-owned interactive terminal.
 enum TerminalStatus {
   /// The shell process is accepting input.
@@ -394,6 +415,21 @@ enum ProviderCatalogSource {
   refreshed,
 }
 
+/// Freshness of the provider metadata available to the daemon.
+enum ProviderCatalogFreshness {
+  /// Only the compiled snapshot is available.
+  bundled,
+
+  /// A last-known-good cache is being used.
+  cached,
+
+  /// A refresh completed within the configured TTL.
+  fresh,
+
+  /// Usable metadata exists, but its TTL has elapsed.
+  stale,
+}
+
 /// Values supported by ProviderModelSource.
 enum ProviderModelSource {
   /// The model came from the catalog bundled with the application.
@@ -419,6 +455,30 @@ enum CapabilitySupport {
 
   /// The capability is not supported.
   unsupported,
+}
+
+/// Value shape accepted by a model control.
+enum ModelControlKind {
+  /// One value from a provider-declared closed set.
+  choice,
+
+  /// An on/off value.
+  toggle,
+
+  /// A bounded whole number.
+  integer,
+}
+
+/// Presentation hint for clients rendering a model control.
+enum ModelControlPresentation {
+  /// A compact menu chip.
+  menuChip,
+
+  /// A selectable chip.
+  selectableChip,
+
+  /// A validated numeric dialog.
+  numberDialog,
 }
 
 /// Values supported by CapabilitySource.
@@ -648,11 +708,12 @@ abstract class AgentDefinitionDto with _$AgentDefinitionDto {
     required bool promptEnabled,
     required String systemPrompt,
     required AgentModelSelectionDto model,
-    required String reasoningEffort,
     required List<String> toolIds,
     required List<String> callableAgentIds,
     required String contentHash,
     required String sourcePath,
+    @Default(<String, ModelControlValueDto>{})
+    Map<String, ModelControlValueDto> modelControls,
     PermissionMode? permissionMode,
     @Default(false) bool isBuiltIn,
     @Default(false) bool isArchived,
@@ -965,14 +1026,13 @@ abstract class SessionDto with _$SessionDto {
     @Default(SessionMode.normal) SessionMode mode,
     SessionModelSelectionDto? model,
 
-    /// Overrides the reasoning effort of the agent definition; null inherits.
-    String? reasoningEffort,
+    /// Values explicitly selected for the resolved provider model.
+    @Default(<String, ModelControlValueDto>{})
+    Map<String, ModelControlValueDto> modelControls,
 
     /// Overrides the permission mode of the agent definition; null inherits.
     PermissionMode? permissionMode,
 
-    /// Provider service tier for this session; null uses the provider default.
-    String? serviceTier,
     String? parentSessionId,
 
     /// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
@@ -1003,6 +1063,27 @@ abstract class SessionDto with _$SessionDto {
 }
 
 @freezed
+/// One persistent objective owned by a manually-created root session.
+abstract class GoalDto with _$GoalDto {
+  /// Creates a goal snapshot.
+  const factory GoalDto({
+    required String sessionId,
+    required String goalId,
+    required String objective,
+    required GoalStatus status,
+    required int tokensUsed,
+    required int timeUsedSeconds,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    int? tokenBudget,
+  }) = _GoalDto;
+
+  /// Decodes a goal snapshot.
+  factory GoalDto.fromJson(Map<String, dynamic> json) =>
+      _$GoalDtoFromJson(json);
+}
+
+@freezed
 /// One queued inter-agent mailbox message.
 abstract class AgentMailboxMessageDto with _$AgentMailboxMessageDto {
   /// Creates a mailbox message descriptor.
@@ -1030,18 +1111,73 @@ abstract class AgentMailboxMessageDto with _$AgentMailboxMessageDto {
 }
 
 @freezed
+/// One permitted value for a choice control.
+abstract class ModelControlChoiceDto with _$ModelControlChoiceDto {
+  /// Creates a model-control choice.
+  const factory ModelControlChoiceDto({
+    required String id,
+    required String label,
+    String? description,
+  }) = _ModelControlChoiceDto;
+
+  /// Decodes a model-control choice.
+  factory ModelControlChoiceDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelControlChoiceDtoFromJson(json);
+}
+
+@freezed
+/// Describes one provider-owned, model-specific request control.
+abstract class ModelControlDescriptorDto with _$ModelControlDescriptorDto {
+  /// Creates a model-control descriptor.
+  const factory ModelControlDescriptorDto({
+    required String id,
+    required String label,
+    required ModelControlKind kind,
+    required ModelControlPresentation presentation,
+    String? description,
+    @Default(<ModelControlChoiceDto>[]) List<ModelControlChoiceDto> choices,
+    int? minimum,
+    int? maximum,
+    int? step,
+    @Default(<String>[]) List<String> conflictsWith,
+  }) = _ModelControlDescriptorDto;
+
+  /// Decodes a model-control descriptor.
+  factory ModelControlDescriptorDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelControlDescriptorDtoFromJson(json);
+}
+
+@Freezed(unionKey: 'type')
+/// A typed value submitted for a model control.
+sealed class ModelControlValueDto with _$ModelControlValueDto {
+  /// Creates a choice value.
+  const factory ModelControlValueDto.stringValue({required String value}) =
+      ModelControlStringValueDto;
+
+  /// Creates a toggle value.
+  const factory ModelControlValueDto.boolValue({required bool value}) =
+      ModelControlBoolValueDto;
+
+  /// Creates an integer value.
+  const factory ModelControlValueDto.intValue({required int value}) =
+      ModelControlIntValueDto;
+
+  /// Decodes a typed model-control value.
+  factory ModelControlValueDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelControlValueDtoFromJson(json);
+}
+
+@freezed
 /// ModelCapabilitiesDto defines a public contract.
 abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
   /// The ModelCapabilitiesDto public API member.
   const factory ModelCapabilitiesDto({
     @Default(CapabilitySupport.unknown) CapabilitySupport streaming,
     @Default(CapabilitySupport.unknown) CapabilitySupport toolCalling,
-    @Default(CapabilitySupport.unknown) CapabilitySupport reasoningEffort,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
-    @Default(CapabilitySupport.unknown) CapabilitySupport serviceTier,
-    @Default(<String>[]) List<String> supportedReasoningEfforts,
-    @Default(<String>[]) List<String> supportedServiceTiers,
+    @Default(<ModelControlDescriptorDto>[])
+    List<ModelControlDescriptorDto> controls,
     @Default(CapabilitySource.unknown) CapabilitySource source,
   }) = _ModelCapabilitiesDto;
 
@@ -1125,6 +1261,8 @@ abstract class ProviderWireFormatDto with _$ProviderWireFormatDto {
   const factory ProviderWireFormatDto({
     required String id,
     required String label,
+    @Default(<ModelControlDescriptorDto>[])
+    List<ModelControlDescriptorDto> controls,
   }) = _ProviderWireFormatDto;
 
   /// Decodes one selectable wire protocol.
@@ -1142,12 +1280,28 @@ abstract class CustomProviderConfigDto with _$CustomProviderConfigDto {
     required String wireFormatId,
     required bool authenticationRequired,
     @Default(false) bool strictToolSchema,
-    @Default(<String>[]) List<String> manualModelIds,
+    @Default(<ManualProviderModelDto>[]) List<ManualProviderModelDto> models,
   }) = _CustomProviderConfigDto;
 
   /// Decodes custom endpoint configuration.
   factory CustomProviderConfigDto.fromJson(Map<String, dynamic> json) =>
       _$CustomProviderConfigDtoFromJson(json);
+}
+
+@freezed
+/// A user-declared model for a custom provider connection.
+abstract class ManualProviderModelDto with _$ManualProviderModelDto {
+  /// Creates a manual model definition.
+  const factory ManualProviderModelDto({
+    required String id,
+    required String label,
+    @Default(<ModelControlDescriptorDto>[])
+    List<ModelControlDescriptorDto> controls,
+  }) = _ManualProviderModelDto;
+
+  /// Decodes a manual model definition.
+  factory ManualProviderModelDto.fromJson(Map<String, dynamic> json) =>
+      _$ManualProviderModelDtoFromJson(json);
 }
 
 @freezed
@@ -1223,6 +1377,11 @@ abstract class ProviderCatalogDto with _$ProviderCatalogDto {
     required List<ProviderDefinitionDto> definitions,
     required ProviderCatalogSource source,
     required DateTime updatedAt,
+    @Default(ProviderCatalogFreshness.bundled)
+    ProviderCatalogFreshness freshness,
+    DateTime? lastSuccessAt,
+    DateTime? lastAttemptAt,
+    String? refreshError,
     // The first entry is what a new custom connection defaults to.
     @Default(<ProviderWireFormatDto>[]) List<ProviderWireFormatDto> wireFormats,
   }) = _ProviderCatalogDto;

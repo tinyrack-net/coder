@@ -31,7 +31,11 @@ melos:
     format:check:
       run: dart run tool/format_sources.dart --check
     generate:
-      run: dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
+      run: dart run tool/generate_provider_catalog.dart && dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
+    provider-catalog:generate:
+      run: dart run tool/generate_provider_catalog.dart
+    provider-catalog:update:
+      run: dart run tool/generate_provider_catalog.dart --update
     generate:check:
       run: dart run tool/generate_check.dart
     dependencies:check:

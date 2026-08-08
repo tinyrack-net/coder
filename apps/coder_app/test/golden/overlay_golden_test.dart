@@ -12,6 +12,7 @@ import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/hosts/domain/host_ports.dart';
 import 'package:coder_app/src/shared/presentation/model_picker.dart';
 import 'package:coder_app/src/shared/presentation/permission_picker.dart';
+import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,45 @@ import '../support/fake_desktop_ports.dart';
 import '../support/localization.dart';
 
 void main() {
+  unawaited(
+    goldenTest(
+      'settings loading skeletons preserve responsive surface shapes',
+      fileName: 'settings_loading_skeletons',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'desktop list detail light',
+            child: SizedBox(
+              width: 1000,
+              height: 760,
+              child: _settingsSkeleton(
+                ThemeMode.light,
+                const SettingsSkeletonLayout.listDetail(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'mobile form dark',
+            child: SizedBox(
+              width: 390,
+              height: 760,
+              child: _settingsSkeleton(
+                ThemeMode.dark,
+                const SettingsSkeletonLayout.form(
+                  semanticLabel: '설정 불러오는 중',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
   unawaited(
     goldenTest(
       'desktop title bar file menu is open',
@@ -61,8 +101,11 @@ void main() {
       fileName: 'composer_chip_menu_without_tooltip',
       constraints: const BoxConstraints.tightFor(width: 720, height: 480),
       whilePerforming: (tester) async {
-        final chip = find.byKey(const ValueKey('golden-project-chip'));
-        await tester.tap(chip);
+        await tester.tap(find.byKey(const ValueKey('golden-project-chip')));
+        await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
         await tester.pumpAndSettle();
         expect(find.text('프로젝트 선택'), findsNothing);
         expect(find.text('추가'), findsOneWidget);
@@ -72,14 +115,35 @@ void main() {
     ),
   );
 
-  unawaited(
-    goldenTest(
-      'permission picker fits its content in a tall window',
-      fileName: 'permission_picker_content_sized',
-      constraints: const BoxConstraints.tightFor(width: 1000, height: 800),
-      builder: _PermissionPickerGoldenHost.new,
+  for (final variant in <({String name, Size size, ThemeMode mode})>[
+    (
+      name: 'desktop_light',
+      size: const Size(1000, 800),
+      mode: ThemeMode.light,
     ),
-  );
+    (
+      name: 'mobile_dark',
+      size: const Size(390, 760),
+      mode: ThemeMode.dark,
+    ),
+  ]) {
+    unawaited(
+      goldenTest(
+        'permission picker ${variant.name} layer',
+        fileName: 'permission_picker_${variant.name}',
+        constraints: BoxConstraints.tight(variant.size),
+        builder: () => _PermissionPickerGoldenHost(mode: variant.mode),
+      ),
+    );
+    unawaited(
+      goldenTest(
+        'settings dialog form ${variant.name} layer',
+        fileName: 'settings_dialog_form_${variant.name}',
+        constraints: BoxConstraints.tight(variant.size),
+        builder: () => _SettingsDialogGoldenHost(mode: variant.mode),
+      ),
+    );
+  }
 
   unawaited(
     goldenTest(
@@ -161,6 +225,17 @@ void main() {
     );
   }
 }
+
+Widget _settingsSkeleton(ThemeMode mode, Widget child) => MaterialApp(
+  theme: testLightTheme,
+  darkTheme: testDarkTheme,
+  themeMode: mode,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(disableAnimations: true),
+    child: child!,
+  ),
+  home: Scaffold(body: child),
+);
 
 Widget _desktopApp() => CoderApp(
   services: fakeAppServices(
@@ -302,7 +377,9 @@ Widget _composerChipApp() => MaterialApp(
 );
 
 class _PermissionPickerGoldenHost extends StatelessWidget {
-  const _PermissionPickerGoldenHost();
+  const _PermissionPickerGoldenHost({required this.mode});
+
+  final ThemeMode mode;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -311,11 +388,72 @@ class _PermissionPickerGoldenHost extends StatelessWidget {
     localizationsDelegates: testLocalizationsDelegates,
     supportedLocales: testSupportedLocales,
     theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    themeMode: mode,
     home: const Scaffold(
       body: Align(
         alignment: Alignment.bottomCenter,
         child: PermissionPickerDrawer(
           currentMode: PermissionMode.workspaceWrite,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Captures the shared field rhythm used by every settings form dialog.
+class _SettingsDialogGoldenHost extends StatelessWidget {
+  const _SettingsDialogGoldenHost({required this.mode});
+
+  final ThemeMode mode;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    themeMode: mode,
+    home: Scaffold(
+      body: Center(
+        child: TRAlertDialog(
+          title: const TRText.inherit('커스텀 Provider'),
+          content: SettingsDialogForm(
+            children: <Widget>[
+              const TRTextField(label: '이름', initialValue: 'Local model'),
+              const TRTextField(
+                label: 'Base URL',
+                initialValue: 'http://127.0.0.1:8080/v1',
+              ),
+              TRSelectFormField<String>(
+                initialValue: 'responses',
+                label: 'API 형식',
+                width: TRMeasurements.overlayWidthMd,
+                items: const <TRSelectItem<String>>[
+                  TRSelectItem<String>(
+                    value: 'responses',
+                    label: 'Responses API',
+                  ),
+                ],
+                onValueChange: (_) {},
+              ),
+              const TRTextField(label: 'API key', obscureText: true),
+            ],
+          ),
+          actions: <TRButton>[
+            TRButton(
+              appearance: TRAppearance.ghost,
+              onPressed: () {},
+              child: const TRText.inherit('취소'),
+            ),
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: () {},
+              child: const TRText.inherit('저장'),
+            ),
+          ],
         ),
       ),
     ),
@@ -437,7 +575,7 @@ class _ComposerSuggestionsGoldenHost extends StatelessWidget {
               agentDefinitionId: null,
               selection: null,
               onAgentChanged: (_) {},
-              onModelChanged: (_) {},
+              onModelChanged: (_, _) {},
               mode: SessionMode.normal,
               onModeChanged: (_) {},
             ),

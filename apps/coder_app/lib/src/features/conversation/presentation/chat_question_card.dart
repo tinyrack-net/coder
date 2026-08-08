@@ -26,7 +26,7 @@ class ChatQuestionCard extends ConsumerStatefulWidget {
   });
 
   /// Stable host profile containing the question's session.
-  final String hostId;
+  final String? hostId;
 
   /// The pending question rendered by this card.
   final UserQuestionRequestDto request;
@@ -44,6 +44,7 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
       <String, TextEditingController>{};
 
   bool _submitting = false;
+  Object? _error;
 
   @override
   void dispose() {
@@ -86,16 +87,21 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
   }
 
   Future<void> _submit(List<UserQuestionAnswerDto> answers) async {
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       await ref
           .read(
             conversationControllerProvider(
-              widget.hostId,
+              widget.hostId!,
               widget.request.sessionId,
             ).notifier,
           )
           .answerUserQuestion(widget.request.id, answers);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -132,12 +138,17 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
                   onFreeFormChanged: (_) => setState(() {}),
                 ),
               const SizedBox(height: TRSpacing.small),
+              if (_error case final error?) ...<Widget>[
+                TRText('$error', color: TRTextColor.danger),
+                const SizedBox(height: TRSpacing.small),
+              ],
               Align(
                 alignment: Alignment.centerRight,
                 child: TRButton(
                   key: const ValueKey<String>('chat-question-submit'),
                   intent: TRIntent.primary,
-                  onPressed: answers == null || _submitting
+                  onPressed:
+                      answers == null || _submitting || widget.hostId == null
                       ? null
                       : () => unawaited(_submit(answers)),
                   child: Text(l10n.chatQuestionSubmit),

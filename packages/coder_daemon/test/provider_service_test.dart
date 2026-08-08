@@ -42,6 +42,13 @@ void main() {
             .flow,
         ProviderAuthFlow.apiKey,
       );
+      expect(
+        catalog.wireFormats
+            .singleWhere((wire) => wire.id == openAIResponsesWireId)
+            .controls
+            .map((control) => control.id),
+        containsAll(<String>['reasoning_effort', 'fast_mode']),
+      );
     },
     tags: const <String>['feature_test__provider_catalog__unit'],
   );
@@ -65,12 +72,67 @@ void main() {
   });
 
   test(
+    'model controls reject unknown IDs, types, values, and conflicts',
+    () async {
+      final fixture = _ServiceFixture(now);
+      fixture.discovery.ids = <String>[];
+      await fixture.service.connectApiKey('openai', 'secret');
+
+      for (final controls in <Map<String, ModelControlValueDto>>[
+        const <String, ModelControlValueDto>{
+          'request_body': ModelControlValueDto.stringValue(value: 'unsafe'),
+        },
+        const <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.boolValue(value: true),
+        },
+        const <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(
+            value: 'invalid',
+          ),
+        },
+        const <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'high'),
+          'reasoning_mode': ModelControlValueDto.stringValue(value: 'none'),
+        },
+      ]) {
+        await expectLater(
+          fixture.service.validateModelControls(
+            'openai',
+            'gpt-5.6-sol',
+            controls,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      }
+
+      final retained = await fixture.service.retainValidModelControls(
+        'openai',
+        'gpt-5.6-sol',
+        const <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'high'),
+          'request_body': ModelControlValueDto.stringValue(value: 'unsafe'),
+        },
+      );
+      expect(retained.keys, <String>['reasoning_effort']);
+    },
+  );
+
+  test(
     'fixed test provider creates a deterministic in-memory connection',
     () async {
       final fixed = _EventProvider();
-      final fixture = _ServiceFixture(now, fixedProvider: fixed);
+      final fixture = _ServiceFixture(
+        now,
+        fixedProvider: fixed,
+        metadataSource: const _OfflineMetadataSource(),
+      );
+      fixture.discovery.failure = const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.invalidCredential,
+        'fixed providers must not discover remote models',
+      );
 
       await fixture.service.initialize();
+      await fixture.service.refreshCatalog();
 
       final connection = (await fixture.service.connections()).single;
       expect(connection.id, 'openai');
@@ -82,6 +144,7 @@ void main() {
         same(fixed),
       );
       expect(fixture.discovery.lastSecret, isNull);
+      expect(fixture.discovery.calls, 0);
     },
   );
 
@@ -216,8 +279,8 @@ void main() {
         'runtime-secret',
       );
       expect(
-        request.capabilities.reasoningEffort,
-        AgentCapabilitySupport.supported,
+        request.capabilities.controls.map((control) => control.id),
+        contains(AgentModelControlIds.reasoningEffort),
       );
       await fixture.service.validateAgentModel('deepseek', 'deepseek-v4-pro');
       await expectLater(
@@ -317,8 +380,9 @@ void main() {
         openAIBundledModels
             .singleWhere((model) => model.id == 'gpt-5.6-sol')
             .capabilities
-            .serviceTier,
-        AgentCapabilitySupport.supported,
+            .controls
+            .map((control) => control.id),
+        contains(AgentModelControlIds.fastMode),
       );
     },
   );
@@ -404,13 +468,20 @@ void main() {
         baseUrl: 'http://127.0.0.1:9000/v1///',
         wireFormatId: openAIResponsesWireId,
         authenticationRequired: false,
-        manualModelIds: <String>[' manual ', '', 'manual'],
+        models: <ManualProviderModelDto>[
+          ManualProviderModelDto(id: ' manual ', label: ' Manual '),
+          ManualProviderModelDto(id: '', label: ''),
+          ManualProviderModelDto(id: 'manual', label: 'manual'),
+        ],
       );
 
       final created = await fixture.service.createCustom('lab', noAuth);
       expect(created.displayName, 'Local Lab');
       expect(created.customConfig!.baseUrl, 'http://127.0.0.1:9000/v1');
-      expect(created.customConfig!.manualModelIds, <String>['manual']);
+      expect(
+        created.customConfig!.models.map((model) => model.id).toList(),
+        <String>['manual'],
+      );
       expect(created.authKind, ProviderAuthKind.none);
       expect(await fixture.service.listModels('lab'), hasLength(2));
 
@@ -421,6 +492,28 @@ void main() {
       await expectLater(
         fixture.service.createCustom('lab', noAuth),
         throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        fixture.service.createCustom(
+          'unsafe',
+          noAuth.copyWith(
+            models: const <ManualProviderModelDto>[
+              ManualProviderModelDto(
+                id: 'model',
+                label: 'Model',
+                controls: <ModelControlDescriptorDto>[
+                  ModelControlDescriptorDto(
+                    id: 'reasoning_effort',
+                    label: 'Injected',
+                    kind: ModelControlKind.toggle,
+                    presentation: ModelControlPresentation.selectableChip,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        throwsA(isA<FormatException>()),
       );
       await expectLater(
         fixture.service.createCustom(
@@ -721,6 +814,7 @@ final class _ServiceFixture {
     DateTime now, {
     Map<String, String> environment = const <String, String>{},
     ModelProvider? fixedProvider,
+    ProviderCatalogMetadataSource? metadataSource,
   }) : clock = _Clock(now),
        registry = ProviderRegistry(
          plugins: openAIFamilyPlugins(clock: _Clock(now)),
@@ -733,7 +827,11 @@ final class _ServiceFixture {
       environment: environment,
       clock: clock,
       registry: registry,
-      catalog: BuiltInProviderCatalog(clock: clock, registry: registry),
+      catalog: BuiltInProviderCatalog(
+        clock: clock,
+        registry: registry,
+        metadataSource: metadataSource,
+      ),
       modelDiscovery: discovery,
       providerFactory: factory,
       fixedProvider: fixedProvider,
@@ -750,6 +848,20 @@ final class _ServiceFixture {
   final _Clock clock;
   final ProviderRegistry registry;
   late final ProviderConnectionService service;
+}
+
+final class _OfflineMetadataSource implements ProviderCatalogMetadataSource {
+  const _OfflineMetadataSource();
+
+  @override
+  Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
+    Set<String> providerIds,
+  ) => Future<Map<String, List<ProviderCatalogMetadata>>>.error(
+    StateError('offline'),
+  );
+
+  @override
+  Future<void> close() async {}
 }
 
 final class _Refresher implements ProviderCredentialRefresher {

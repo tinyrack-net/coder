@@ -161,7 +161,10 @@ void _registerAgentsAppFlows() {
     await tester.tap(find.text('Coder').first);
     await tester.pumpAndSettle();
     expect(_textField('시스템 프롬프트 (Markdown)'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('agent-list-button')));
+    expect(find.byKey(const ValueKey('agent-list-button')), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('settings-back-button')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Agents'), findsOneWidget);
   });
@@ -181,7 +184,9 @@ void _registerAgentsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.ask,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -205,7 +210,9 @@ void _registerAgentsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],

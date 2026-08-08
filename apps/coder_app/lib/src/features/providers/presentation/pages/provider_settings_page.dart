@@ -48,8 +48,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final asyncState = ref.watch(_provider);
-    final body = asyncState.when(
-      loading: () => const Center(child: TRSpinner()),
+    final body = SettingsAsyncContent<ProviderSettingsState?>(
+      state: asyncState,
+      loading: SettingsSkeletonLayout.form(
+        semanticLabel: l10n.settingsLoading,
+      ),
       error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
       data: (state) => state == null
           ? Center(child: TRText.inherit(l10n.providerSettingsRequiresDaemon))
@@ -95,6 +98,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 onDeleteCustom: _deleteCustom,
               ),
               _ProviderCatalog(
+                catalog: state.catalog,
                 definitions: state.catalog.definitions
                     .where(
                       (definition) => !activeConnections.any(
@@ -142,11 +146,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _chooseDefaultModel() async {
     final l10n = AppLocalizations.of(context);
-    final options = await loadModelPickerOptions(ref, widget.hostId);
-    if (!mounted) return;
     final chosen = await showModelPicker(
       context,
-      options: options,
+      loadOptions: () => loadModelPickerOptions(ref, widget.hostId),
       currentSelection: ref.read(_provider).value?.defaultModel,
       title: l10n.providerSettingsDefaultModelTitle,
       inheritLabel: l10n.providerSettingsDefaultModelAutomatic,
@@ -288,7 +290,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .read(_provider.notifier)
         .updateCustom(
           connection.id,
-          draft.config.copyWith(manualModelIds: manualModels),
+          draft.config.copyWith(
+            models: <ManualProviderModelDto>[
+              for (final id in manualModels)
+                ManualProviderModelDto(id: id, label: id),
+            ],
+          ),
         );
   }
 
@@ -542,6 +549,7 @@ class _ProviderConnectionRow extends StatelessWidget {
 
 class _ProviderCatalog extends StatelessWidget {
   const _ProviderCatalog({
+    required this.catalog,
     required this.definitions,
     required this.onAdd,
     required this.onAddCustom,
@@ -549,6 +557,7 @@ class _ProviderCatalog extends StatelessWidget {
     required this.refreshError,
   });
 
+  final ProviderCatalogDto catalog;
   final List<ProviderDefinitionDto> definitions;
   final ValueChanged<ProviderDefinitionDto> onAdd;
   final VoidCallback onAddCustom;
@@ -558,6 +567,7 @@ class _ProviderCatalog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final catalogError = catalog.refreshError ?? refreshError?.toString();
     return SettingsSection(
       key: const ValueKey('provider-settings-add'),
       title: l10n.providerSettingsAdd,
@@ -574,16 +584,32 @@ class _ProviderCatalog extends StatelessWidget {
           ],
         ),
       ),
-      banner: refreshError == null
+      banner: catalogError == null
           ? null
           : TRAlert(
               key: const ValueKey<String>('provider-catalog-refresh-error'),
               title: TRText.inherit(l10n.providerSettingsRefreshFailed),
-              description: TRText.inherit('$refreshError'),
+              description: TRText.inherit(catalogError),
               icon: const Icon(CoderIcons.error),
               variant: TRStatusVariant.danger,
             ),
       children: <Widget>[
+        SettingsRow(
+          key: const ValueKey('provider-catalog-status'),
+          title: TRText.inherit(l10n.providerSettingsCatalogStatus),
+          description: TRText.inherit(
+            switch (catalog.freshness) {
+              ProviderCatalogFreshness.bundled =>
+                l10n.providerSettingsCatalogBundled,
+              ProviderCatalogFreshness.cached =>
+                l10n.providerSettingsCatalogCached,
+              ProviderCatalogFreshness.fresh =>
+                l10n.providerSettingsCatalogFresh,
+              ProviderCatalogFreshness.stale =>
+                l10n.providerSettingsCatalogStale,
+            },
+          ),
+        ),
         if (definitions.isEmpty)
           SettingsRow(title: TRText.inherit(l10n.providerSettingsNoPresets)),
         for (final definition in definitions)
@@ -672,12 +698,16 @@ class _ApiKeyDialogState extends State<_ApiKeyDialog> {
       title: TRText.inherit(
         l10n.providerSettingsConnectTitle(widget.providerName),
       ),
-      content: TRTextField(
-        key: const ValueKey('provider-api-key'),
-        controller: _controller,
-        obscureText: true,
-        autofocus: true,
-        label: 'API key',
+      content: SettingsDialogForm(
+        children: <Widget>[
+          TRTextField(
+            key: const ValueKey('provider-api-key'),
+            controller: _controller,
+            obscureText: true,
+            autofocus: true,
+            label: 'API key',
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(
@@ -724,6 +754,7 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
   late final TextEditingController _models;
   late String _wireFormatId;
   late bool _authenticationRequired;
+  late Set<String> _controlIds;
 
   @override
   void initState() {
@@ -735,11 +766,15 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     );
     _apiKey = TextEditingController();
     _models = TextEditingController(
-      text: initial?.manualModelIds.join(', ') ?? '',
+      text: initial?.models.map((model) => model.id).join(', ') ?? '',
     );
     _wireFormatId =
         initial?.wireFormatId ?? widget.wireFormats.firstOrNull?.id ?? '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
+    _controlIds = <String>{
+      for (final model in initial?.models ?? const <ManualProviderModelDto>[])
+        for (final control in model.controls) control.id,
+    };
   }
 
   @override
@@ -756,59 +791,73 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsCustomTitle),
-      content: SizedBox(
-        width: TRMeasurements.overlayWidthMd,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
+      content: SingleChildScrollView(
+        child: SettingsDialogForm(
+          children: <Widget>[
+            TRTextField(
+              controller: _name,
+              label: l10n.commonName,
+            ),
+            TRTextField(
+              controller: _baseUrl,
+              label: 'Base URL',
+            ),
+            TRSelectFormField<String>(
+              initialValue: _wireFormatId,
+              label: l10n.providerSettingsApiFormat,
+              width: TRMeasurements.overlayWidthMd,
+              items: widget.wireFormats
+                  .map(
+                    (format) => TRSelectItem<String>(
+                      value: format.id,
+                      label: format.label,
+                    ),
+                  )
+                  .toList(growable: false),
+              onValueChange: (value) {
+                if (value != null) {
+                  setState(() {
+                    _wireFormatId = value;
+                    _controlIds.retainAll(
+                      _selectedWire.controls.map((control) => control.id),
+                    );
+                  });
+                }
+              },
+            ),
+            CoderSwitchRow(
+              flush: true,
+              title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
+              value: _authenticationRequired,
+              onChanged: (value) =>
+                  setState(() => _authenticationRequired = value),
+            ),
+            if (_authenticationRequired)
               TRTextField(
-                controller: _name,
-                label: l10n.commonName,
+                controller: _apiKey,
+                obscureText: true,
+                label: 'API key',
               ),
-              const SizedBox(height: TRSpacing.medium),
-              TRTextField(
-                controller: _baseUrl,
-                label: 'Base URL',
+            TRTextField(
+              controller: _models,
+              label: l10n.providerSettingsManualModels,
+              placeholder: 'model-a, model-b',
+            ),
+            for (final control in _selectedWire.controls)
+              CoderCheckboxRow(
+                key: ValueKey('custom-control-${control.id}'),
+                value: _controlIds.contains(control.id),
+                onChanged: (selected) => setState(() {
+                  selected == true
+                      ? _controlIds.add(control.id)
+                      : _controlIds.remove(control.id);
+                }),
+                title: TRText.inherit(control.label),
+                subtitle: control.description == null
+                    ? null
+                    : TRText.inherit(control.description!),
               ),
-              const SizedBox(height: TRSpacing.medium),
-              TRSelectFormField<String>(
-                initialValue: _wireFormatId,
-                label: l10n.providerSettingsApiFormat,
-                items: widget.wireFormats
-                    .map(
-                      (format) => TRSelectItem<String>(
-                        value: format.id,
-                        label: format.label,
-                      ),
-                    )
-                    .toList(growable: false),
-                onValueChange: (value) {
-                  if (value != null) setState(() => _wireFormatId = value);
-                },
-              ),
-              CoderSwitchRow(
-                flush: true,
-                title: TRText.inherit(l10n.providerSettingsRequiresApiKey),
-                value: _authenticationRequired,
-                onChanged: (value) =>
-                    setState(() => _authenticationRequired = value),
-              ),
-              if (_authenticationRequired)
-                TRTextField(
-                  controller: _apiKey,
-                  obscureText: true,
-                  label: 'API key',
-                ),
-              const SizedBox(height: TRSpacing.medium),
-              if (widget.initial?.manualModelIds.isNotEmpty ?? false)
-                TRTextField(
-                  controller: _models,
-                  label: l10n.providerSettingsManualModels,
-                  placeholder: 'model-a, model-b',
-                ),
-            ],
-          ),
+          ],
         ),
       ),
       actions: <TRButton>[
@@ -842,17 +891,32 @@ class _CustomProviderDialogState extends State<_CustomProviderDialog> {
           baseUrl: baseUrl,
           wireFormatId: _wireFormatId,
           authenticationRequired: _authenticationRequired,
-          manualModelIds: _models.text
-              .split(',')
-              .map((value) => value.trim())
-              .where((value) => value.isNotEmpty)
-              .toSet()
-              .toList(growable: false),
+          models: <ManualProviderModelDto>[
+            for (final id
+                in _models.text
+                    .split(',')
+                    .map((value) => value.trim())
+                    .where((value) => value.isNotEmpty)
+                    .toSet())
+              ManualProviderModelDto(
+                id: id,
+                label: id,
+                controls: <ModelControlDescriptorDto>[
+                  for (final control in _selectedWire.controls)
+                    if (_controlIds.contains(control.id)) control,
+                ],
+              ),
+          ],
         ),
         apiKey: apiKey.isEmpty ? null : apiKey,
       ),
     );
   }
+
+  ProviderWireFormatDto get _selectedWire => widget.wireFormats.firstWhere(
+    (format) => format.id == _wireFormatId,
+    orElse: () => const ProviderWireFormatDto(id: '', label: ''),
+  );
 }
 
 class _ManualModelsDialog extends StatefulWidget {
@@ -876,21 +940,15 @@ class _ManualModelsDialogState extends State<_ManualModelsDialog> {
     final l10n = AppLocalizations.of(context);
     return TRAlertDialog(
       title: TRText.inherit(l10n.providerSettingsModelLookupFailedTitle),
-      content: SizedBox(
-        width: TRMeasurements.overlayWidthMd,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            TRText(l10n.providerSettingsModelLookupFailedBody),
-            const SizedBox(height: TRSpacing.medium),
-            TRTextField(
-              controller: _models,
-              label: l10n.providerSettingsManualModels,
-              placeholder: 'model-a, model-b',
-            ),
-          ],
-        ),
+      content: SettingsDialogForm(
+        children: <Widget>[
+          TRText(l10n.providerSettingsModelLookupFailedBody),
+          TRTextField(
+            controller: _models,
+            label: l10n.providerSettingsManualModels,
+            placeholder: 'model-a, model-b',
+          ),
+        ],
       ),
       actions: <TRButton>[
         TRButton(

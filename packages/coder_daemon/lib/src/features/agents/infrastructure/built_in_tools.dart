@@ -1,5 +1,7 @@
 import 'package:coder_agent/coder_agent.dart';
 import 'package:coder_daemon/src/features/mcp/infrastructure/mcp_resource_tools.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/goal_service.dart';
+import 'package:coder_daemon/src/features/sessions/infrastructure/goal_tools.dart';
 import 'package:coder_daemon/src/features/sessions/infrastructure/multi_agent.dart';
 
 /// The capabilities compiled into this daemon, in the order clients see them.
@@ -12,6 +14,7 @@ AgentToolRegistry builtInAgentToolRegistry({
   required GitignoreEnvironment gitignoreEnvironment,
   required McpResourceHost Function(String workspaceRoot) mcpResourceHostFor,
   required MultiAgentService? Function() multiAgent,
+  SessionGoalService? Function()? goals,
 }) => AgentToolRegistry(<AgentToolProvider>[
   const ListDirectoryToolProvider(),
   const ReadFileToolProvider(),
@@ -50,6 +53,7 @@ AgentToolRegistry builtInAgentToolRegistry({
   // The supervisor is wired after the session service it drives, so the
   // provider reads it at turn time rather than capturing a null at boot.
   CollaborationToolProvider(multiAgent),
+  GoalToolProvider(goals ?? () => null),
   // Hidden capabilities: always built, never offered in settings.
   const ContextWindowToolProvider(),
   const SkillToolProvider(),

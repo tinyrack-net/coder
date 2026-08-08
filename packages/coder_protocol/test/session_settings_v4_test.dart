@@ -7,7 +7,7 @@ void main() {
   test('session settings patch preserves omitted and explicit-null fields', () {
     const patch = SessionSettingsPatchDto(
       hasModel: true,
-      hasReasoningEffort: true,
+      hasModelControls: true,
       mode: SessionMode.plan,
     );
 
@@ -17,8 +17,8 @@ void main() {
 
     expect(decoded.hasModel, isTrue);
     expect(decoded.model, isNull);
-    expect(decoded.hasReasoningEffort, isTrue);
-    expect(decoded.reasoningEffort, isNull);
+    expect(decoded.hasModelControls, isTrue);
+    expect(decoded.modelControls, isEmpty);
     expect(decoded.hasPermissionMode, isFalse);
     expect(decoded.mode, SessionMode.plan);
     expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');

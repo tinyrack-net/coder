@@ -3225,7 +3225,7 @@ as String,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; String? get reasoningEffort; PermissionMode? get permissionMode; String? get serviceTier;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3238,16 +3238,16 @@ $SessionCreateParamsDtoCopyWith<SessionCreateParamsDto> get copyWith => _$Sessio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3258,7 +3258,7 @@ abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
   factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3275,7 +3275,7 @@ class _$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -3283,10 +3283,9 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as SessionModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
   ));
 }
 /// Create a copy of SessionCreateParamsDto
@@ -3383,10 +3382,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3404,10 +3403,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3424,10 +3423,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  String? reasoningEffort,  PermissionMode? permissionMode,  String? serviceTier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.reasoningEffort,_that.permissionMode,_that.serviceTier);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
   return null;
 
 }
@@ -3439,7 +3438,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionCreateParamsDto implements SessionCreateParamsDto {
-  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, this.reasoningEffort, this.permissionMode, this.serviceTier});
+  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode}): _modelControls = modelControls;
   factory _SessionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SessionCreateParamsDtoFromJson(json);
 
 @override final  String id;
@@ -3448,9 +3447,14 @@ class _SessionCreateParamsDto implements SessionCreateParamsDto {
 @override final  String agentDefinitionId;
 @override@JsonKey() final  SessionMode mode;
 @override final  SessionModelSelectionDto? model;
-@override final  String? reasoningEffort;
+ final  Map<String, ModelControlValueDto> _modelControls;
+@override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
+  if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_modelControls);
+}
+
 @override final  PermissionMode? permissionMode;
-@override final  String? serviceTier;
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -3465,16 +3469,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,reasoningEffort,permissionMode,serviceTier);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, reasoningEffort: $reasoningEffort, permissionMode: $permissionMode, serviceTier: $serviceTier)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3485,7 +3489,7 @@ abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionC
   factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, String? reasoningEffort, PermissionMode? permissionMode, String? serviceTier
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3502,7 +3506,7 @@ class __$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? reasoningEffort = freezed,Object? permissionMode = freezed,Object? serviceTier = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_SessionCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -3510,10 +3514,9 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as SessionModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode?,
   ));
 }
 
@@ -3536,7 +3539,7 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$SessionSettingsPatchDto {
 
- SessionMode? get mode; bool get hasModel; SessionModelSelectionDto? get model; bool get hasReasoningEffort; String? get reasoningEffort; bool get hasPermissionMode; PermissionMode? get permissionMode; bool get hasServiceTier; String? get serviceTier;
+ SessionMode? get mode; bool get hasModel; SessionModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3549,16 +3552,16 @@ $SessionSettingsPatchDtoCopyWith<SessionSettingsPatchDto> get copyWith => _$Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasReasoningEffort, hasReasoningEffort) || other.hasReasoningEffort == hasReasoningEffort)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.hasServiceTier, hasServiceTier) || other.hasServiceTier == hasServiceTier)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasReasoningEffort,reasoningEffort,hasPermissionMode,permissionMode,hasServiceTier,serviceTier);
+int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasReasoningEffort: $hasReasoningEffort, reasoningEffort: $reasoningEffort, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode, hasServiceTier: $hasServiceTier, serviceTier: $serviceTier)';
+  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3569,7 +3572,7 @@ abstract mixin class $SessionSettingsPatchDtoCopyWith<$Res>  {
   factory $SessionSettingsPatchDtoCopyWith(SessionSettingsPatchDto value, $Res Function(SessionSettingsPatchDto) _then) = _$SessionSettingsPatchDtoCopyWithImpl;
 @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasReasoningEffort, String? reasoningEffort, bool hasPermissionMode, PermissionMode? permissionMode, bool hasServiceTier, String? serviceTier
+ SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3586,18 +3589,16 @@ class _$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasReasoningEffort = null,Object? reasoningEffort = freezed,Object? hasPermissionMode = null,Object? permissionMode = freezed,Object? hasServiceTier = null,Object? serviceTier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasReasoningEffort: null == hasReasoningEffort ? _self.hasReasoningEffort : hasReasoningEffort // ignore: cast_nullable_to_non_nullable
-as bool,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as bool,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,hasServiceTier: null == hasServiceTier ? _self.hasServiceTier : hasServiceTier // ignore: cast_nullable_to_non_nullable
-as bool,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as PermissionMode?,
   ));
 }
 /// Create a copy of SessionSettingsPatchDto
@@ -3694,10 +3695,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3715,10 +3716,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto():
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3735,10 +3736,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasReasoningEffort,  String? reasoningEffort,  bool hasPermissionMode,  PermissionMode? permissionMode,  bool hasServiceTier,  String? serviceTier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_that.reasoningEffort,_that.hasPermissionMode,_that.permissionMode,_that.hasServiceTier,_that.serviceTier);case _:
+return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return null;
 
 }
@@ -3750,18 +3751,22 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasReasoningEffort,_
 @JsonSerializable()
 
 class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
-  const _SessionSettingsPatchDto({this.mode, this.hasModel = false, this.model, this.hasReasoningEffort = false, this.reasoningEffort, this.hasPermissionMode = false, this.permissionMode, this.hasServiceTier = false, this.serviceTier});
+  const _SessionSettingsPatchDto({this.mode, this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
   factory _SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) => _$SessionSettingsPatchDtoFromJson(json);
 
 @override final  SessionMode? mode;
 @override@JsonKey() final  bool hasModel;
 @override final  SessionModelSelectionDto? model;
-@override@JsonKey() final  bool hasReasoningEffort;
-@override final  String? reasoningEffort;
+@override@JsonKey() final  bool hasModelControls;
+ final  Map<String, ModelControlValueDto> _modelControls;
+@override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
+  if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_modelControls);
+}
+
 @override@JsonKey() final  bool hasPermissionMode;
 @override final  PermissionMode? permissionMode;
-@override@JsonKey() final  bool hasServiceTier;
-@override final  String? serviceTier;
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
@@ -3776,16 +3781,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasReasoningEffort, hasReasoningEffort) || other.hasReasoningEffort == hasReasoningEffort)&&(identical(other.reasoningEffort, reasoningEffort) || other.reasoningEffort == reasoningEffort)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.hasServiceTier, hasServiceTier) || other.hasServiceTier == hasServiceTier)&&(identical(other.serviceTier, serviceTier) || other.serviceTier == serviceTier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasReasoningEffort,reasoningEffort,hasPermissionMode,permissionMode,hasServiceTier,serviceTier);
+int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasReasoningEffort: $hasReasoningEffort, reasoningEffort: $reasoningEffort, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode, hasServiceTier: $hasServiceTier, serviceTier: $serviceTier)';
+  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3796,7 +3801,7 @@ abstract mixin class _$SessionSettingsPatchDtoCopyWith<$Res> implements $Session
   factory _$SessionSettingsPatchDtoCopyWith(_SessionSettingsPatchDto value, $Res Function(_SessionSettingsPatchDto) _then) = __$SessionSettingsPatchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasReasoningEffort, String? reasoningEffort, bool hasPermissionMode, PermissionMode? permissionMode, bool hasServiceTier, String? serviceTier
+ SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3813,18 +3818,16 @@ class __$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasReasoningEffort = null,Object? reasoningEffort = freezed,Object? hasPermissionMode = null,Object? permissionMode = freezed,Object? hasServiceTier = null,Object? serviceTier = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_SessionSettingsPatchDto(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasReasoningEffort: null == hasReasoningEffort ? _self.hasReasoningEffort : hasReasoningEffort // ignore: cast_nullable_to_non_nullable
-as bool,reasoningEffort: freezed == reasoningEffort ? _self.reasoningEffort : reasoningEffort // ignore: cast_nullable_to_non_nullable
-as String?,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
+as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as bool,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,hasServiceTier: null == hasServiceTier ? _self.hasServiceTier : hasServiceTier // ignore: cast_nullable_to_non_nullable
-as bool,serviceTier: freezed == serviceTier ? _self.serviceTier : serviceTier // ignore: cast_nullable_to_non_nullable
-as String?,
+as PermissionMode?,
   ));
 }
 
@@ -4125,6 +4128,1931 @@ $SessionSettingsPatchDtoCopyWith<$Res> get patch {
     return _then(_self.copyWith(patch: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$GoalReplaceParamsDto {
+
+ String get sessionId; String get objective; int? get tokenBudget;
+/// Create a copy of GoalReplaceParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalReplaceParamsDtoCopyWith<GoalReplaceParamsDto> get copyWith => _$GoalReplaceParamsDtoCopyWithImpl<GoalReplaceParamsDto>(this as GoalReplaceParamsDto, _$identity);
+
+  /// Serializes this GoalReplaceParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalReplaceParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,objective,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalReplaceParamsDto(sessionId: $sessionId, objective: $objective, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalReplaceParamsDtoCopyWith<$Res>  {
+  factory $GoalReplaceParamsDtoCopyWith(GoalReplaceParamsDto value, $Res Function(GoalReplaceParamsDto) _then) = _$GoalReplaceParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String objective, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalReplaceParamsDtoCopyWithImpl<$Res>
+    implements $GoalReplaceParamsDtoCopyWith<$Res> {
+  _$GoalReplaceParamsDtoCopyWithImpl(this._self, this._then);
+
+  final GoalReplaceParamsDto _self;
+  final $Res Function(GoalReplaceParamsDto) _then;
+
+/// Create a copy of GoalReplaceParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? objective = null,Object? tokenBudget = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalReplaceParamsDto].
+extension GoalReplaceParamsDtoPatterns on GoalReplaceParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalReplaceParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalReplaceParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalReplaceParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String objective,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto() when $default != null:
+return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String objective,  int? tokenBudget)  $default,) {final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto():
+return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String objective,  int? tokenBudget)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalReplaceParamsDto() when $default != null:
+return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalReplaceParamsDto implements GoalReplaceParamsDto {
+  const _GoalReplaceParamsDto({required this.sessionId, required this.objective, this.tokenBudget});
+  factory _GoalReplaceParamsDto.fromJson(Map<String, dynamic> json) => _$GoalReplaceParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String objective;
+@override final  int? tokenBudget;
+
+/// Create a copy of GoalReplaceParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalReplaceParamsDtoCopyWith<_GoalReplaceParamsDto> get copyWith => __$GoalReplaceParamsDtoCopyWithImpl<_GoalReplaceParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalReplaceParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalReplaceParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,objective,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalReplaceParamsDto(sessionId: $sessionId, objective: $objective, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalReplaceParamsDtoCopyWith<$Res> implements $GoalReplaceParamsDtoCopyWith<$Res> {
+  factory _$GoalReplaceParamsDtoCopyWith(_GoalReplaceParamsDto value, $Res Function(_GoalReplaceParamsDto) _then) = __$GoalReplaceParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String objective, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalReplaceParamsDtoCopyWithImpl<$Res>
+    implements _$GoalReplaceParamsDtoCopyWith<$Res> {
+  __$GoalReplaceParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalReplaceParamsDto _self;
+  final $Res Function(_GoalReplaceParamsDto) _then;
+
+/// Create a copy of GoalReplaceParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? objective = null,Object? tokenBudget = freezed,}) {
+  return _then(_GoalReplaceParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$GoalUpdateDto {
+
+ String get expectedGoalId; String? get objective; GoalStatus? get status; bool get hasTokenBudget; int? get tokenBudget;
+/// Create a copy of GoalUpdateDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalUpdateDtoCopyWith<GoalUpdateDto> get copyWith => _$GoalUpdateDtoCopyWithImpl<GoalUpdateDto>(this as GoalUpdateDto, _$identity);
+
+  /// Serializes this GoalUpdateDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalUpdateDto&&(identical(other.expectedGoalId, expectedGoalId) || other.expectedGoalId == expectedGoalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.hasTokenBudget, hasTokenBudget) || other.hasTokenBudget == hasTokenBudget)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,expectedGoalId,objective,status,hasTokenBudget,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalUpdateDto(expectedGoalId: $expectedGoalId, objective: $objective, status: $status, hasTokenBudget: $hasTokenBudget, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalUpdateDtoCopyWith<$Res>  {
+  factory $GoalUpdateDtoCopyWith(GoalUpdateDto value, $Res Function(GoalUpdateDto) _then) = _$GoalUpdateDtoCopyWithImpl;
+@useResult
+$Res call({
+ String expectedGoalId, String? objective, GoalStatus? status, bool hasTokenBudget, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalUpdateDtoCopyWithImpl<$Res>
+    implements $GoalUpdateDtoCopyWith<$Res> {
+  _$GoalUpdateDtoCopyWithImpl(this._self, this._then);
+
+  final GoalUpdateDto _self;
+  final $Res Function(GoalUpdateDto) _then;
+
+/// Create a copy of GoalUpdateDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? expectedGoalId = null,Object? objective = freezed,Object? status = freezed,Object? hasTokenBudget = null,Object? tokenBudget = freezed,}) {
+  return _then(_self.copyWith(
+expectedGoalId: null == expectedGoalId ? _self.expectedGoalId : expectedGoalId // ignore: cast_nullable_to_non_nullable
+as String,objective: freezed == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as GoalStatus?,hasTokenBudget: null == hasTokenBudget ? _self.hasTokenBudget : hasTokenBudget // ignore: cast_nullable_to_non_nullable
+as bool,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalUpdateDto].
+extension GoalUpdateDtoPatterns on GoalUpdateDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalUpdateDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalUpdateDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalUpdateDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalUpdateDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalUpdateDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalUpdateDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalUpdateDto() when $default != null:
+return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)  $default,) {final _that = this;
+switch (_that) {
+case _GoalUpdateDto():
+return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalUpdateDto() when $default != null:
+return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalUpdateDto implements GoalUpdateDto {
+  const _GoalUpdateDto({required this.expectedGoalId, this.objective, this.status, this.hasTokenBudget = false, this.tokenBudget});
+  factory _GoalUpdateDto.fromJson(Map<String, dynamic> json) => _$GoalUpdateDtoFromJson(json);
+
+@override final  String expectedGoalId;
+@override final  String? objective;
+@override final  GoalStatus? status;
+@override@JsonKey() final  bool hasTokenBudget;
+@override final  int? tokenBudget;
+
+/// Create a copy of GoalUpdateDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalUpdateDtoCopyWith<_GoalUpdateDto> get copyWith => __$GoalUpdateDtoCopyWithImpl<_GoalUpdateDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalUpdateDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalUpdateDto&&(identical(other.expectedGoalId, expectedGoalId) || other.expectedGoalId == expectedGoalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.hasTokenBudget, hasTokenBudget) || other.hasTokenBudget == hasTokenBudget)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,expectedGoalId,objective,status,hasTokenBudget,tokenBudget);
+
+@override
+String toString() {
+  return 'GoalUpdateDto(expectedGoalId: $expectedGoalId, objective: $objective, status: $status, hasTokenBudget: $hasTokenBudget, tokenBudget: $tokenBudget)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalUpdateDtoCopyWith<$Res> implements $GoalUpdateDtoCopyWith<$Res> {
+  factory _$GoalUpdateDtoCopyWith(_GoalUpdateDto value, $Res Function(_GoalUpdateDto) _then) = __$GoalUpdateDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String expectedGoalId, String? objective, GoalStatus? status, bool hasTokenBudget, int? tokenBudget
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalUpdateDtoCopyWithImpl<$Res>
+    implements _$GoalUpdateDtoCopyWith<$Res> {
+  __$GoalUpdateDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalUpdateDto _self;
+  final $Res Function(_GoalUpdateDto) _then;
+
+/// Create a copy of GoalUpdateDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? expectedGoalId = null,Object? objective = freezed,Object? status = freezed,Object? hasTokenBudget = null,Object? tokenBudget = freezed,}) {
+  return _then(_GoalUpdateDto(
+expectedGoalId: null == expectedGoalId ? _self.expectedGoalId : expectedGoalId // ignore: cast_nullable_to_non_nullable
+as String,objective: freezed == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
+as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as GoalStatus?,hasTokenBudget: null == hasTokenBudget ? _self.hasTokenBudget : hasTokenBudget // ignore: cast_nullable_to_non_nullable
+as bool,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$GoalUpdateParamsDto {
+
+ String get sessionId; GoalUpdateDto get update;
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalUpdateParamsDtoCopyWith<GoalUpdateParamsDto> get copyWith => _$GoalUpdateParamsDtoCopyWithImpl<GoalUpdateParamsDto>(this as GoalUpdateParamsDto, _$identity);
+
+  /// Serializes this GoalUpdateParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalUpdateParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.update, update) || other.update == update));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,update);
+
+@override
+String toString() {
+  return 'GoalUpdateParamsDto(sessionId: $sessionId, update: $update)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalUpdateParamsDtoCopyWith<$Res>  {
+  factory $GoalUpdateParamsDtoCopyWith(GoalUpdateParamsDto value, $Res Function(GoalUpdateParamsDto) _then) = _$GoalUpdateParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, GoalUpdateDto update
+});
+
+
+$GoalUpdateDtoCopyWith<$Res> get update;
+
+}
+/// @nodoc
+class _$GoalUpdateParamsDtoCopyWithImpl<$Res>
+    implements $GoalUpdateParamsDtoCopyWith<$Res> {
+  _$GoalUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final GoalUpdateParamsDto _self;
+  final $Res Function(GoalUpdateParamsDto) _then;
+
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? update = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,update: null == update ? _self.update : update // ignore: cast_nullable_to_non_nullable
+as GoalUpdateDto,
+  ));
+}
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalUpdateDtoCopyWith<$Res> get update {
+  
+  return $GoalUpdateDtoCopyWith<$Res>(_self.update, (value) {
+    return _then(_self.copyWith(update: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [GoalUpdateParamsDto].
+extension GoalUpdateParamsDtoPatterns on GoalUpdateParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalUpdateParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalUpdateParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalUpdateParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  GoalUpdateDto update)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto() when $default != null:
+return $default(_that.sessionId,_that.update);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  GoalUpdateDto update)  $default,) {final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto():
+return $default(_that.sessionId,_that.update);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  GoalUpdateDto update)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalUpdateParamsDto() when $default != null:
+return $default(_that.sessionId,_that.update);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalUpdateParamsDto implements GoalUpdateParamsDto {
+  const _GoalUpdateParamsDto({required this.sessionId, required this.update});
+  factory _GoalUpdateParamsDto.fromJson(Map<String, dynamic> json) => _$GoalUpdateParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  GoalUpdateDto update;
+
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalUpdateParamsDtoCopyWith<_GoalUpdateParamsDto> get copyWith => __$GoalUpdateParamsDtoCopyWithImpl<_GoalUpdateParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalUpdateParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalUpdateParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.update, update) || other.update == update));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,update);
+
+@override
+String toString() {
+  return 'GoalUpdateParamsDto(sessionId: $sessionId, update: $update)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalUpdateParamsDtoCopyWith<$Res> implements $GoalUpdateParamsDtoCopyWith<$Res> {
+  factory _$GoalUpdateParamsDtoCopyWith(_GoalUpdateParamsDto value, $Res Function(_GoalUpdateParamsDto) _then) = __$GoalUpdateParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, GoalUpdateDto update
+});
+
+
+@override $GoalUpdateDtoCopyWith<$Res> get update;
+
+}
+/// @nodoc
+class __$GoalUpdateParamsDtoCopyWithImpl<$Res>
+    implements _$GoalUpdateParamsDtoCopyWith<$Res> {
+  __$GoalUpdateParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalUpdateParamsDto _self;
+  final $Res Function(_GoalUpdateParamsDto) _then;
+
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? update = null,}) {
+  return _then(_GoalUpdateParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,update: null == update ? _self.update : update // ignore: cast_nullable_to_non_nullable
+as GoalUpdateDto,
+  ));
+}
+
+/// Create a copy of GoalUpdateParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalUpdateDtoCopyWith<$Res> get update {
+  
+  return $GoalUpdateDtoCopyWith<$Res>(_self.update, (value) {
+    return _then(_self.copyWith(update: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$GoalGetResultDto {
+
+ GoalDto? get goal;
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalGetResultDtoCopyWith<GoalGetResultDto> get copyWith => _$GoalGetResultDtoCopyWithImpl<GoalGetResultDto>(this as GoalGetResultDto, _$identity);
+
+  /// Serializes this GoalGetResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalGetResultDto&&(identical(other.goal, goal) || other.goal == goal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,goal);
+
+@override
+String toString() {
+  return 'GoalGetResultDto(goal: $goal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalGetResultDtoCopyWith<$Res>  {
+  factory $GoalGetResultDtoCopyWith(GoalGetResultDto value, $Res Function(GoalGetResultDto) _then) = _$GoalGetResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ GoalDto? goal
+});
+
+
+$GoalDtoCopyWith<$Res>? get goal;
+
+}
+/// @nodoc
+class _$GoalGetResultDtoCopyWithImpl<$Res>
+    implements $GoalGetResultDtoCopyWith<$Res> {
+  _$GoalGetResultDtoCopyWithImpl(this._self, this._then);
+
+  final GoalGetResultDto _self;
+  final $Res Function(GoalGetResultDto) _then;
+
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? goal = freezed,}) {
+  return _then(_self.copyWith(
+goal: freezed == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
+as GoalDto?,
+  ));
+}
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalDtoCopyWith<$Res>? get goal {
+    if (_self.goal == null) {
+    return null;
+  }
+
+  return $GoalDtoCopyWith<$Res>(_self.goal!, (value) {
+    return _then(_self.copyWith(goal: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [GoalGetResultDto].
+extension GoalGetResultDtoPatterns on GoalGetResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalGetResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalGetResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalGetResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalGetResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalGetResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalGetResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GoalDto? goal)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalGetResultDto() when $default != null:
+return $default(_that.goal);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GoalDto? goal)  $default,) {final _that = this;
+switch (_that) {
+case _GoalGetResultDto():
+return $default(_that.goal);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GoalDto? goal)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalGetResultDto() when $default != null:
+return $default(_that.goal);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalGetResultDto implements GoalGetResultDto {
+  const _GoalGetResultDto({this.goal});
+  factory _GoalGetResultDto.fromJson(Map<String, dynamic> json) => _$GoalGetResultDtoFromJson(json);
+
+@override final  GoalDto? goal;
+
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalGetResultDtoCopyWith<_GoalGetResultDto> get copyWith => __$GoalGetResultDtoCopyWithImpl<_GoalGetResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalGetResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalGetResultDto&&(identical(other.goal, goal) || other.goal == goal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,goal);
+
+@override
+String toString() {
+  return 'GoalGetResultDto(goal: $goal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalGetResultDtoCopyWith<$Res> implements $GoalGetResultDtoCopyWith<$Res> {
+  factory _$GoalGetResultDtoCopyWith(_GoalGetResultDto value, $Res Function(_GoalGetResultDto) _then) = __$GoalGetResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ GoalDto? goal
+});
+
+
+@override $GoalDtoCopyWith<$Res>? get goal;
+
+}
+/// @nodoc
+class __$GoalGetResultDtoCopyWithImpl<$Res>
+    implements _$GoalGetResultDtoCopyWith<$Res> {
+  __$GoalGetResultDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalGetResultDto _self;
+  final $Res Function(_GoalGetResultDto) _then;
+
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? goal = freezed,}) {
+  return _then(_GoalGetResultDto(
+goal: freezed == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
+as GoalDto?,
+  ));
+}
+
+/// Create a copy of GoalGetResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalDtoCopyWith<$Res>? get goal {
+    if (_self.goal == null) {
+    return null;
+  }
+
+  return $GoalDtoCopyWith<$Res>(_self.goal!, (value) {
+    return _then(_self.copyWith(goal: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$GoalResultDto {
+
+ GoalDto get goal;
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalResultDtoCopyWith<GoalResultDto> get copyWith => _$GoalResultDtoCopyWithImpl<GoalResultDto>(this as GoalResultDto, _$identity);
+
+  /// Serializes this GoalResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalResultDto&&(identical(other.goal, goal) || other.goal == goal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,goal);
+
+@override
+String toString() {
+  return 'GoalResultDto(goal: $goal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalResultDtoCopyWith<$Res>  {
+  factory $GoalResultDtoCopyWith(GoalResultDto value, $Res Function(GoalResultDto) _then) = _$GoalResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ GoalDto goal
+});
+
+
+$GoalDtoCopyWith<$Res> get goal;
+
+}
+/// @nodoc
+class _$GoalResultDtoCopyWithImpl<$Res>
+    implements $GoalResultDtoCopyWith<$Res> {
+  _$GoalResultDtoCopyWithImpl(this._self, this._then);
+
+  final GoalResultDto _self;
+  final $Res Function(GoalResultDto) _then;
+
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? goal = null,}) {
+  return _then(_self.copyWith(
+goal: null == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
+as GoalDto,
+  ));
+}
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalDtoCopyWith<$Res> get goal {
+  
+  return $GoalDtoCopyWith<$Res>(_self.goal, (value) {
+    return _then(_self.copyWith(goal: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [GoalResultDto].
+extension GoalResultDtoPatterns on GoalResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GoalDto goal)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalResultDto() when $default != null:
+return $default(_that.goal);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GoalDto goal)  $default,) {final _that = this;
+switch (_that) {
+case _GoalResultDto():
+return $default(_that.goal);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GoalDto goal)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalResultDto() when $default != null:
+return $default(_that.goal);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalResultDto implements GoalResultDto {
+  const _GoalResultDto({required this.goal});
+  factory _GoalResultDto.fromJson(Map<String, dynamic> json) => _$GoalResultDtoFromJson(json);
+
+@override final  GoalDto goal;
+
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalResultDtoCopyWith<_GoalResultDto> get copyWith => __$GoalResultDtoCopyWithImpl<_GoalResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalResultDto&&(identical(other.goal, goal) || other.goal == goal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,goal);
+
+@override
+String toString() {
+  return 'GoalResultDto(goal: $goal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalResultDtoCopyWith<$Res> implements $GoalResultDtoCopyWith<$Res> {
+  factory _$GoalResultDtoCopyWith(_GoalResultDto value, $Res Function(_GoalResultDto) _then) = __$GoalResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ GoalDto goal
+});
+
+
+@override $GoalDtoCopyWith<$Res> get goal;
+
+}
+/// @nodoc
+class __$GoalResultDtoCopyWithImpl<$Res>
+    implements _$GoalResultDtoCopyWith<$Res> {
+  __$GoalResultDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalResultDto _self;
+  final $Res Function(_GoalResultDto) _then;
+
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? goal = null,}) {
+  return _then(_GoalResultDto(
+goal: null == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
+as GoalDto,
+  ));
+}
+
+/// Create a copy of GoalResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalDtoCopyWith<$Res> get goal {
+  
+  return $GoalDtoCopyWith<$Res>(_self.goal, (value) {
+    return _then(_self.copyWith(goal: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$GoalClearResultDto {
+
+ bool get cleared;
+/// Create a copy of GoalClearResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalClearResultDtoCopyWith<GoalClearResultDto> get copyWith => _$GoalClearResultDtoCopyWithImpl<GoalClearResultDto>(this as GoalClearResultDto, _$identity);
+
+  /// Serializes this GoalClearResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalClearResultDto&&(identical(other.cleared, cleared) || other.cleared == cleared));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,cleared);
+
+@override
+String toString() {
+  return 'GoalClearResultDto(cleared: $cleared)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalClearResultDtoCopyWith<$Res>  {
+  factory $GoalClearResultDtoCopyWith(GoalClearResultDto value, $Res Function(GoalClearResultDto) _then) = _$GoalClearResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ bool cleared
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalClearResultDtoCopyWithImpl<$Res>
+    implements $GoalClearResultDtoCopyWith<$Res> {
+  _$GoalClearResultDtoCopyWithImpl(this._self, this._then);
+
+  final GoalClearResultDto _self;
+  final $Res Function(GoalClearResultDto) _then;
+
+/// Create a copy of GoalClearResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? cleared = null,}) {
+  return _then(_self.copyWith(
+cleared: null == cleared ? _self.cleared : cleared // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalClearResultDto].
+extension GoalClearResultDtoPatterns on GoalClearResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalClearResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalClearResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalClearResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalClearResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalClearResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalClearResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool cleared)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalClearResultDto() when $default != null:
+return $default(_that.cleared);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool cleared)  $default,) {final _that = this;
+switch (_that) {
+case _GoalClearResultDto():
+return $default(_that.cleared);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool cleared)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalClearResultDto() when $default != null:
+return $default(_that.cleared);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalClearResultDto implements GoalClearResultDto {
+  const _GoalClearResultDto({required this.cleared});
+  factory _GoalClearResultDto.fromJson(Map<String, dynamic> json) => _$GoalClearResultDtoFromJson(json);
+
+@override final  bool cleared;
+
+/// Create a copy of GoalClearResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalClearResultDtoCopyWith<_GoalClearResultDto> get copyWith => __$GoalClearResultDtoCopyWithImpl<_GoalClearResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalClearResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalClearResultDto&&(identical(other.cleared, cleared) || other.cleared == cleared));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,cleared);
+
+@override
+String toString() {
+  return 'GoalClearResultDto(cleared: $cleared)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalClearResultDtoCopyWith<$Res> implements $GoalClearResultDtoCopyWith<$Res> {
+  factory _$GoalClearResultDtoCopyWith(_GoalClearResultDto value, $Res Function(_GoalClearResultDto) _then) = __$GoalClearResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ bool cleared
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalClearResultDtoCopyWithImpl<$Res>
+    implements _$GoalClearResultDtoCopyWith<$Res> {
+  __$GoalClearResultDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalClearResultDto _self;
+  final $Res Function(_GoalClearResultDto) _then;
+
+/// Create a copy of GoalClearResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? cleared = null,}) {
+  return _then(_GoalClearResultDto(
+cleared: null == cleared ? _self.cleared : cleared // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$GoalClearedDto {
+
+ String get sessionId; String get goalId;
+/// Create a copy of GoalClearedDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalClearedDtoCopyWith<GoalClearedDto> get copyWith => _$GoalClearedDtoCopyWithImpl<GoalClearedDto>(this as GoalClearedDto, _$identity);
+
+  /// Serializes this GoalClearedDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalClearedDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,goalId);
+
+@override
+String toString() {
+  return 'GoalClearedDto(sessionId: $sessionId, goalId: $goalId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalClearedDtoCopyWith<$Res>  {
+  factory $GoalClearedDtoCopyWith(GoalClearedDto value, $Res Function(GoalClearedDto) _then) = _$GoalClearedDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String goalId
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalClearedDtoCopyWithImpl<$Res>
+    implements $GoalClearedDtoCopyWith<$Res> {
+  _$GoalClearedDtoCopyWithImpl(this._self, this._then);
+
+  final GoalClearedDto _self;
+  final $Res Function(GoalClearedDto) _then;
+
+/// Create a copy of GoalClearedDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? goalId = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalClearedDto].
+extension GoalClearedDtoPatterns on GoalClearedDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalClearedDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalClearedDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalClearedDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalClearedDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalClearedDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalClearedDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String goalId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalClearedDto() when $default != null:
+return $default(_that.sessionId,_that.goalId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String goalId)  $default,) {final _that = this;
+switch (_that) {
+case _GoalClearedDto():
+return $default(_that.sessionId,_that.goalId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String goalId)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalClearedDto() when $default != null:
+return $default(_that.sessionId,_that.goalId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalClearedDto implements GoalClearedDto {
+  const _GoalClearedDto({required this.sessionId, required this.goalId});
+  factory _GoalClearedDto.fromJson(Map<String, dynamic> json) => _$GoalClearedDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String goalId;
+
+/// Create a copy of GoalClearedDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalClearedDtoCopyWith<_GoalClearedDto> get copyWith => __$GoalClearedDtoCopyWithImpl<_GoalClearedDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalClearedDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalClearedDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,goalId);
+
+@override
+String toString() {
+  return 'GoalClearedDto(sessionId: $sessionId, goalId: $goalId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalClearedDtoCopyWith<$Res> implements $GoalClearedDtoCopyWith<$Res> {
+  factory _$GoalClearedDtoCopyWith(_GoalClearedDto value, $Res Function(_GoalClearedDto) _then) = __$GoalClearedDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String goalId
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalClearedDtoCopyWithImpl<$Res>
+    implements _$GoalClearedDtoCopyWith<$Res> {
+  __$GoalClearedDtoCopyWithImpl(this._self, this._then);
+
+  final _GoalClearedDto _self;
+  final $Res Function(_GoalClearedDto) _then;
+
+/// Create a copy of GoalClearedDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? goalId = null,}) {
+  return _then(_GoalClearedDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 

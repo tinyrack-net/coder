@@ -65,7 +65,7 @@ void main() {
         workspaceId: workspace.id,
         worktreeId: worktree.id,
       ).location,
-      find.text('Route session'),
+      find.text('새 탭'),
     ),
     tags: const <String>['route_test__worktree_route__widget'],
   );
@@ -84,6 +84,28 @@ void main() {
       find.text('Route session'),
     ),
     tags: const <String>['route_test__session_route__widget'],
+  );
+
+  testWidgets(
+    'SettingsHomeRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const SettingsHomeRoute().location,
+      find.text('설정'),
+    ),
+    tags: const <String>['route_test__settings_home_route__widget'],
+  );
+
+  testWidgets(
+    'DaemonCategoriesRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const DaemonCategoriesRoute(hostId: 'server').location,
+      find.text('Provider'),
+    ),
+    tags: const <String>['route_test__daemon_categories_route__widget'],
   );
 
   testWidgets(

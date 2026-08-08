@@ -122,6 +122,125 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'desktop workspace splits panes and mobile presents every tab in a sheet',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      final draftClose = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'tr-tabs-close-draft:',
+            ),
+      );
+      expect(draftClose, findsOneWidget);
+      await tester.tap(draftClose);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('workspace-split-right')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(2));
+      expect(find.byType(TRSplitView), findsOneWidget);
+      await tester.drag(
+        find.byKey(const ValueKey<String>('tr-split-view-separator')),
+        const Offset(TRSpacing.threeExtraLarge, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TRSplitView>(find.byType(TRSplitView)).ratio,
+        greaterThan(0.5),
+      );
+
+      final sourceTab = find.byKey(
+        const ValueKey<String>('tr-tabs-tab-one'),
+      );
+      final targetStrip = find.byType(TRTabs).last;
+      await tester.dragFrom(
+        tester.getCenter(sourceTab),
+        tester.getCenter(targetStrip) - tester.getCenter(sourceTab),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRSplitView), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TRSplitView), findsOneWidget);
+
+      await tester.binding.setSurfaceSize(const Size(390, 760));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-split-right')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('workspace-tab-row-session:one')),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'workspace-tab-row-draft:',
+              ),
+        ),
+        findsWidgets,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-tab-row-session:one')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('conversation-pane-session:one')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+      );
+      await tester.pumpAndSettle();
+      final sessionRow = find.byKey(
+        const ValueKey('workspace-tab-row-session:one'),
+      );
+      await tester.tap(
+        find.descendant(of: sessionRow, matching: find.byType(TRIconButton)),
+      );
+      await tester.pumpAndSettle();
+      expect(sessionRow, findsNothing);
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
+
+  testWidgets(
     'session tabs close locally and reopen from the picker',
     (
       tester,
@@ -635,7 +754,9 @@ void _registerSessionsAppFlows() {
         model: AgentModelSelectionDto(
           source: AgentModelSource.session,
         ),
-        reasoningEffort: 'medium',
+        modelControls: <String, ModelControlValueDto>{
+          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -792,7 +913,11 @@ void _registerSessionsAppFlows() {
               providerConnectionId: 'openai',
               modelId: 'gpt-5.6-sol',
             ),
-            reasoningEffort: 'medium',
+            modelControls: <String, ModelControlValueDto>{
+              'reasoning_effort': ModelControlValueDto.stringValue(
+                value: 'medium',
+              ),
+            },
             permissionMode: PermissionMode.ask,
             toolIds: <String>['read_file'],
             callableAgentIds: <String>[],
@@ -917,10 +1042,24 @@ void _registerSessionsAppFlows() {
               capabilities: ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
                 toolCalling: CapabilitySupport.supported,
-                reasoningEffort: CapabilitySupport.supported,
-                serviceTier: CapabilitySupport.supported,
-                supportedReasoningEfforts: <String>['low', 'high'],
-                supportedServiceTiers: <String>['default', 'priority'],
+                controls: <ModelControlDescriptorDto>[
+                  ModelControlDescriptorDto(
+                    id: 'reasoning_effort',
+                    label: 'Reasoning effort',
+                    kind: ModelControlKind.choice,
+                    presentation: ModelControlPresentation.menuChip,
+                    choices: <ModelControlChoiceDto>[
+                      ModelControlChoiceDto(id: 'low', label: 'Low'),
+                      ModelControlChoiceDto(id: 'high', label: 'High'),
+                    ],
+                  ),
+                  ModelControlDescriptorDto(
+                    id: 'fast_mode',
+                    label: 'Fast',
+                    kind: ModelControlKind.toggle,
+                    presentation: ModelControlPresentation.selectableChip,
+                  ),
+                ],
               ),
             ),
             // A model the catalog says cannot honour either setting.
@@ -932,8 +1071,6 @@ void _registerSessionsAppFlows() {
               capabilities: ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
                 toolCalling: CapabilitySupport.supported,
-                reasoningEffort: CapabilitySupport.unsupported,
-                serviceTier: CapabilitySupport.unsupported,
               ),
             ),
           ],
@@ -963,16 +1100,26 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('session-composer-effort')), findsOne);
-      expect(find.byKey(const ValueKey('session-composer-fast')), findsOne);
+      expect(
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
+        findsOne,
+      );
+      expect(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+        findsOne,
+      );
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
-      await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-effort-high')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('high'), findsOneWidget);
+      await tester.tap(
+        find.byKey(
+          const ValueKey('session-composer-control-reasoning_effort-high'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('High'), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('session-composer-permission')),
@@ -983,7 +1130,9 @@ void _registerSessionsAppFlows() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+      );
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -994,22 +1143,34 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
 
       final created = api.createdSessions.single;
-      expect(created.reasoningEffort, 'high');
+      expect(
+        created.modelControls['reasoning_effort'],
+        const ModelControlValueDto.stringValue(value: 'high'),
+      );
       expect(created.permissionMode, PermissionMode.readOnly);
-      expect(created.serviceTier, 'priority');
+      expect(
+        created.modelControls['fast_mode'],
+        const ModelControlValueDto.boolValue(value: true),
+      );
 
       // Toggling fast mode off restores the provider default tier.
-      await tester.tap(find.byKey(const ValueKey('session-composer-fast')));
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+      );
       await tester.pumpAndSettle();
       expect(api.updatedSessionServiceTiers.single.serviceTier, isNull);
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-effort')));
-      await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('session-composer-effort-inherit')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
       );
       await tester.pumpAndSettle();
-      expect(api.updatedSessionReasoningEfforts.single.reasoningEffort, isNull);
+      await tester.tap(
+        find.byKey(
+          const ValueKey('session-composer-control-reasoning_effort-default'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(api.updatedSessionReasoningEfforts.last.reasoningEffort, isNull);
 
       await tester.tap(
         find.byKey(const ValueKey('session-composer-permission')),
@@ -1029,10 +1190,13 @@ void _registerSessionsAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('session-composer-effort')),
+        find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
         findsNothing,
       );
-      expect(find.byKey(const ValueKey('session-composer-fast')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('session-composer-control-fast_mode')),
+        findsNothing,
+      );
       expect(
         find.byKey(const ValueKey('session-composer-permission')),
         findsOne,

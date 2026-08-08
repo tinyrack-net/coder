@@ -74,20 +74,19 @@ abstract interface class SessionRepository {
   /// Switches one session between planning and normal collaboration.
   Future<SessionDto> updateMode(String id, SessionMode mode);
 
-  /// Sets or clears the provider and model override of one session.
-  Future<SessionDto> updateModel(String id, SessionModelSelectionDto? model);
-
-  /// Sets or clears the reasoning effort override of one session.
-  Future<SessionDto> updateReasoningEffort(String id, String? reasoningEffort);
+  /// Atomically updates model selection and model-specific controls.
+  Future<SessionDto> updateModelSettings(
+    String id, {
+    required bool hasModel,
+    required Map<String, ModelControlValueDto> modelControls,
+    SessionModelSelectionDto? model,
+  });
 
   /// Sets or clears the permission mode override of one session.
   Future<SessionDto> updatePermissionMode(
     String id,
     PermissionMode? permissionMode,
   );
-
-  /// Sets or clears the provider service tier of one session.
-  Future<SessionDto> updateServiceTier(String id, String? serviceTier);
 
   /// Records what the last response reported for the live context window.
   Future<SessionDto> recordContextTokens(String id, int tokens);
@@ -125,6 +124,29 @@ abstract interface class SessionRepository {
 
   /// Sets the collaboration lifecycle of one session.
   Future<SessionDto> updateLifecycle(String id, AgentLifecycle lifecycle);
+}
+
+/// Persistence boundary for one goal per manually-created root session.
+abstract interface class GoalRepository {
+  /// Reads the current goal, if any.
+  Future<GoalDto?> get(String sessionId);
+
+  /// Replaces any current goal with a new generation.
+  Future<GoalDto> replace(GoalDto goal);
+
+  /// Applies an optimistic patch, returning null for a stale or missing goal.
+  Future<GoalDto?> updateGoal(String sessionId, GoalUpdateDto update);
+
+  /// Adds non-negative usage and applies the budget boundary atomically.
+  Future<GoalDto?> account({
+    required String sessionId,
+    required String expectedGoalId,
+    required int tokenDelta,
+    required int timeDeltaSeconds,
+  });
+
+  /// Removes and returns the current goal.
+  Future<GoalDto?> clear(String sessionId);
 }
 
 /// One queued mailbox message with its delivery trigger flag.

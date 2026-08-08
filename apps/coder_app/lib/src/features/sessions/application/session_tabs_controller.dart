@@ -1,45 +1,179 @@
+import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/features/hosts/application/host_controller.dart';
 import 'package:coder_app/src/features/hosts/domain/host_models.dart';
 import 'package:coder_app/src/features/sessions/application/sessions_controller.dart';
 import 'package:coder_app/src/features/terminals/application/terminals_controller.dart';
 import 'package:coder_protocol/coder_protocol.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_tabs_controller.g.dart';
 
-/// Visible and selected session and terminal tabs for one worktree.
+/// Content addressed by one workspace tab.
+sealed class WorkspaceTabTarget {
+  const WorkspaceTabTarget();
+}
+
+/// A daemon session tab.
+@immutable
+final class SessionTabTarget extends WorkspaceTabTarget {
+  /// Creates a session target.
+  const SessionTabTarget(this.sessionId);
+
+  /// Daemon session identity.
+  final String sessionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SessionTabTarget && other.sessionId == sessionId;
+
+  @override
+  int get hashCode => sessionId.hashCode;
+}
+
+/// A daemon terminal tab.
+final class TerminalTabTarget extends WorkspaceTabTarget {
+  /// Creates a terminal target.
+  const TerminalTabTarget(this.terminalId);
+
+  /// Daemon terminal identity.
+  final String terminalId;
+}
+
+/// An app-local composer draft.
+final class DraftTabTarget extends WorkspaceTabTarget {
+  /// Creates a draft target.
+  const DraftTabTarget();
+}
+
+/// Stable tab identity and its current content target.
+final class WorkspaceTabEntry {
+  /// Creates a workspace tab entry.
+  const WorkspaceTabEntry({required this.id, required this.target});
+
+  /// Stable identity used by pane ordering and widget keys.
+  final String id;
+
+  /// Content rendered by the tab.
+  final WorkspaceTabTarget target;
+}
+
+/// Base class for the immutable workspace pane tree.
+sealed class WorkspacePaneNode {
+  const WorkspacePaneNode();
+}
+
+/// A leaf pane with its own active, ordered tab collection.
+final class PaneNode extends WorkspacePaneNode {
+  /// Creates a leaf pane.
+  const PaneNode({
+    required this.id,
+    required this.tabIds,
+    required this.activeTabId,
+  });
+
+  /// Stable pane identity.
+  final String id;
+
+  /// Ordered stable tab identities.
+  final List<String> tabIds;
+
+  /// Active tab identity.
+  final String activeTabId;
+
+  /// Returns a copy with selected fields replaced.
+  PaneNode copyWith({List<String>? tabIds, String? activeTabId}) => PaneNode(
+    id: id,
+    tabIds: List<String>.unmodifiable(tabIds ?? this.tabIds),
+    activeTabId: activeTabId ?? this.activeTabId,
+  );
+}
+
+/// A binary branch in the workspace pane tree.
+final class WorkspaceSplitNode extends WorkspacePaneNode {
+  /// Creates a split branch.
+  const WorkspaceSplitNode({
+    required this.id,
+    required this.axis,
+    required this.ratio,
+    required this.first,
+    required this.second,
+  });
+
+  /// Stable split identity.
+  final String id;
+
+  /// Horizontal or vertical layout direction.
+  final WorkspaceSplitAxis axis;
+
+  /// Fraction assigned to [first].
+  final double ratio;
+
+  /// First child in visual order.
+  final WorkspacePaneNode first;
+
+  /// Second child in visual order.
+  final WorkspacePaneNode second;
+}
+
+/// Visible tabs and immutable pane layout for one worktree.
 final class SessionTabsState {
-  /// Creates immutable tab state.
+  /// Creates immutable workspace tab state.
   const SessionTabsState({
     required this.sessions,
-    required this.openAgentIds,
     required this.terminals,
-    required this.openTerminalIds,
-    this.selectedAgentId,
-    this.selectedTerminalId,
+    required this.tabs,
+    required this.root,
+    required this.focusedPaneId,
   });
 
   /// All daemon sessions available to the overflow picker.
   final List<SessionDto> sessions;
 
-  /// Session IDs visible in the tab strip.
-  final List<String> openAgentIds;
-
-  /// Currently active tab.
-  final String? selectedAgentId;
-
-  /// Daemon-owned terminals available to the tab strip.
+  /// All daemon terminals known to the workspace.
   final List<TerminalDto> terminals;
 
-  /// Terminal IDs visible in the tab strip.
-  final List<String> openTerminalIds;
+  /// Stable tab entries keyed by ID.
+  final Map<String, WorkspaceTabEntry> tabs;
 
-  /// Currently active terminal tab.
-  final String? selectedTerminalId;
+  /// Root of the binary pane tree.
+  final WorkspacePaneNode root;
+
+  /// Pane whose active tab owns routing and mobile presentation.
+  final String focusedPaneId;
+
+  /// Leaf panes in depth-first visual order.
+  List<PaneNode> get panes => _panes(root);
+
+  /// Focused leaf, falling back to the first valid leaf.
+  PaneNode get focusedPane =>
+      panes.where((pane) => pane.id == focusedPaneId).firstOrNull ??
+      panes.first;
+
+  /// Active tab identity in the focused pane.
+  String get focusedTabId => focusedPane.activeTabId;
+
+  /// Active tab in the focused pane.
+  WorkspaceTabEntry? get focusedTab => tabs[focusedTabId];
+
+  /// Returns a copy with selected fields replaced.
+  SessionTabsState copyWith({
+    List<SessionDto>? sessions,
+    List<TerminalDto>? terminals,
+    Map<String, WorkspaceTabEntry>? tabs,
+    WorkspacePaneNode? root,
+    String? focusedPaneId,
+  }) => SessionTabsState(
+    sessions: sessions ?? this.sessions,
+    terminals: terminals ?? this.terminals,
+    tabs: Map<String, WorkspaceTabEntry>.unmodifiable(tabs ?? this.tabs),
+    root: root ?? this.root,
+    focusedPaneId: focusedPaneId ?? this.focusedPaneId,
+  );
 }
 
 @riverpod
-/// Owns local tab visibility independently for each host worktree.
+/// Owns local workspace tabs and pane layout independently per worktree.
 class SessionTabsController extends _$SessionTabsController {
   late WorkspaceSelection _selection;
 
@@ -66,182 +200,576 @@ class SessionTabsController extends _$SessionTabsController {
       hostRegistryControllerProvider.future,
     )).settings;
     final saved = settings.sessionTabs[selection.storageKey];
-    final existingIds = sessions.map((item) => item.id).toSet();
-    final existingTerminalIds = terminals.map((item) => item.id).toSet();
-    // Subagent sessions never open by default; they are reached through the
-    // subagent track of their root conversation.
-    final firstRoot = sessions
-        .where((session) => session.parentSessionId == null)
-        .firstOrNull;
-    final open =
-        saved?.openAgentIds
-            .where(existingIds.contains)
-            .toList(growable: false) ??
-        <String>[if (firstRoot != null) firstRoot.id];
-    // A saved null selection means the composer draft is showing, so it must
-    // not snap back to the first open tab on the next rebuild.
-    final selected = saved == null
-        ? open.firstOrNull
-        : (open.contains(saved.selectedAgentId) ? saved.selectedAgentId : null);
-    final openTerminals =
-        saved?.openTerminalIds
-            .where(existingTerminalIds.contains)
-            .toList(growable: false) ??
-        const <String>[];
-    final selectedTerminal =
-        selected == null && openTerminals.contains(saved?.selectedTerminalId)
-        ? saved?.selectedTerminalId
-        : null;
-    return SessionTabsState(
-      sessions: sessions,
-      openAgentIds: open,
-      selectedAgentId: selected,
-      terminals: terminals,
-      openTerminalIds: openTerminals,
-      selectedTerminalId: selectedTerminal,
+    return _restore(sessions, terminals, saved);
+  }
+
+  /// Opens and selects a session in its existing pane or the focused pane.
+  Future<void> open(String sessionId) => _openTarget(
+    SessionTabTarget(sessionId),
+    preferredId: 'session:$sessionId',
+  );
+
+  /// Selects an already-open session and focuses its pane.
+  Future<void> select(String sessionId) => _selectTarget(
+    (target) => target is SessionTabTarget && target.sessionId == sessionId,
+  );
+
+  /// Opens a new independent draft in the focused pane.
+  Future<void> startDraft() async {
+    final current = state.requireValue;
+    final id = 'draft:${ref.read(appIdGeneratorProvider).generate()}';
+    final pane = current.focusedPane;
+    await _apply(
+      current.copyWith(
+        tabs: <String, WorkspaceTabEntry>{
+          ...current.tabs,
+          id: WorkspaceTabEntry(id: id, target: const DraftTabTarget()),
+        },
+        root: _replacePane(
+          current.root,
+          pane.id,
+          pane.copyWith(tabIds: <String>[...pane.tabIds, id], activeTabId: id),
+        ),
+      ),
     );
   }
 
-  /// Opens and selects a session from the overflow picker.
-  Future<void> open(String sessionId) async {
-    final current = state.requireValue;
-    final open = <String>[
-      ...current.openAgentIds.where((id) => id != sessionId),
-      sessionId,
-    ];
-    await _set(current, open, sessionId, current.openTerminalIds, null);
-  }
-
-  /// Selects an already-open session.
-  Future<void> select(String sessionId) => _set(
-    state.requireValue,
-    state.requireValue.openAgentIds,
-    sessionId,
-    state.requireValue.openTerminalIds,
-    null,
+  /// Hides a session tab without deleting daemon history.
+  Future<void> close(String sessionId) => _closeWhere(
+    (target) => target is SessionTabTarget && target.sessionId == sessionId,
   );
 
-  /// Clears the selection so the composer starts a new session draft.
-  Future<void> startDraft() => _set(
-    state.requireValue,
-    state.requireValue.openAgentIds,
-    null,
-    state.requireValue.openTerminalIds,
-    null,
-  );
-
-  /// Hides a tab without deleting its daemon session or history.
-  Future<void> close(String sessionId) async {
+  /// Retargets the focused draft after the daemon creates its session.
+  Future<void> add(SessionDto agent, {String? draftTabId}) async {
     final current = state.requireValue;
-    final open = current.openAgentIds
-        .where((id) => id != sessionId)
-        .toList(growable: false);
-    final selected = current.selectedAgentId == sessionId
-        ? open.lastOrNull
-        : current.selectedAgentId;
-    await _set(current, open, selected, current.openTerminalIds, null);
-  }
-
-  /// Adds a newly-created daemon session to the tab strip.
-  Future<void> add(SessionDto agent) async {
-    final current = state.requireValue;
-    await _set(
-      SessionTabsState(
-        sessions: <SessionDto>[agent, ...current.sessions],
-        openAgentIds: current.openAgentIds,
-        selectedAgentId: current.selectedAgentId,
-        terminals: current.terminals,
-        openTerminalIds: current.openTerminalIds,
-        selectedTerminalId: current.selectedTerminalId,
-      ),
-      <String>[...current.openAgentIds, agent.id],
-      agent.id,
-      current.openTerminalIds,
-      null,
+    final active = draftTabId == null
+        ? current.focusedTab
+        : current.tabs[draftTabId];
+    if (active?.target is DraftTabTarget) {
+      await _apply(
+        current.copyWith(
+          sessions: <SessionDto>[agent, ...current.sessions],
+          tabs: <String, WorkspaceTabEntry>{
+            ...current.tabs,
+            active!.id: WorkspaceTabEntry(
+              id: active.id,
+              target: SessionTabTarget(agent.id),
+            ),
+          },
+        ),
+      );
+      return;
+    }
+    await _openTarget(
+      SessionTabTarget(agent.id),
+      preferredId: 'session:${agent.id}',
+      sessions: <SessionDto>[agent, ...current.sessions],
     );
   }
 
   /// Adds and selects a newly-created terminal tab.
-  Future<void> addTerminal(TerminalDto terminal) async {
-    final current = state.requireValue;
-    await _set(
-      SessionTabsState(
-        sessions: current.sessions,
-        openAgentIds: current.openAgentIds,
-        selectedAgentId: current.selectedAgentId,
-        terminals: <TerminalDto>[terminal, ...current.terminals],
-        openTerminalIds: current.openTerminalIds,
-        selectedTerminalId: current.selectedTerminalId,
-      ),
-      current.openAgentIds,
-      null,
-      <String>[...current.openTerminalIds, terminal.id],
-      terminal.id,
-    );
-  }
+  Future<void> addTerminal(TerminalDto terminal) => _openTarget(
+    TerminalTabTarget(terminal.id),
+    preferredId: 'terminal:${terminal.id}',
+    terminals: <TerminalDto>[terminal, ...state.requireValue.terminals],
+  );
 
-  /// Selects a visible terminal tab.
-  Future<void> selectTerminal(String id) => _set(
-    state.requireValue,
-    state.requireValue.openAgentIds,
-    null,
-    state.requireValue.openTerminalIds,
-    id,
+  /// Selects a visible terminal and focuses its pane.
+  Future<void> selectTerminal(String id) => _selectTarget(
+    (target) => target is TerminalTabTarget && target.terminalId == id,
   );
 
   /// Opens and selects a terminal from the overflow picker.
-  Future<void> openTerminal(String id) {
+  Future<void> openTerminal(String id) => _openTarget(
+    TerminalTabTarget(id),
+    preferredId: 'terminal:$id',
+  );
+
+  /// Removes a terminated terminal from the visible layout.
+  Future<void> closeTerminal(String id) => _closeWhere(
+    (target) => target is TerminalTabTarget && target.terminalId == id,
+  );
+
+  /// Closes an app-local tab by its stable identity.
+  Future<void> closeTab(String tabId) async {
     final current = state.requireValue;
-    return _set(
-      current,
-      current.openAgentIds,
-      null,
-      <String>[...current.openTerminalIds.where((item) => item != id), id],
-      id,
+    final pane = current.panes
+        .where((item) => item.tabIds.contains(tabId))
+        .firstOrNull;
+    if (pane != null) await _closeTab(current, pane, tabId);
+  }
+
+  /// Selects a tab and focuses its owning pane.
+  Future<void> selectTab(String paneId, String tabId) async {
+    final current = state.requireValue;
+    final pane = _findPane(current.root, paneId);
+    if (pane == null || !pane.tabIds.contains(tabId)) return;
+    await _apply(
+      current.copyWith(
+        root: _replacePane(
+          current.root,
+          paneId,
+          pane.copyWith(activeTabId: tabId),
+        ),
+        focusedPaneId: paneId,
+      ),
     );
   }
 
-  /// Removes a terminated terminal from the visible strip.
-  Future<void> closeTerminal(String id) async {
+  /// Focuses a pane without changing its active tab.
+  Future<void> focusPane(String paneId) async {
     final current = state.requireValue;
-    final open = current.openTerminalIds.where((item) => item != id).toList();
-    await _set(
-      current,
-      current.openAgentIds,
-      current.selectedAgentId,
-      open,
-      current.selectedTerminalId == id
-          ? open.lastOrNull
-          : current.selectedTerminalId,
-    );
+    if (_findPane(current.root, paneId) == null) return;
+    await _apply(current.copyWith(focusedPaneId: paneId));
   }
 
-  Future<void> _set(
-    SessionTabsState current,
-    List<String> open,
-    String? selected,
-    List<String> openTerminals,
-    String? selectedTerminal,
-  ) async {
-    final next = SessionTabsState(
-      sessions: current.sessions,
-      openAgentIds: List<String>.unmodifiable(open),
-      selectedAgentId: selected,
-      terminals: current.terminals,
-      openTerminalIds: List<String>.unmodifiable(openTerminals),
-      selectedTerminalId: selectedTerminal,
+  /// Splits one leaf and creates a fresh draft in the new pane.
+  Future<void> split(String paneId, WorkspaceSplitAxis axis) async {
+    final current = state.requireValue;
+    final pane = _findPane(current.root, paneId);
+    if (pane == null) return;
+    final ids = ref.read(appIdGeneratorProvider);
+    final draftId = 'draft:${ids.generate()}';
+    final newPaneId = 'pane:${ids.generate()}';
+    final splitId = 'split:${ids.generate()}';
+    final replacement = WorkspaceSplitNode(
+      id: splitId,
+      axis: axis,
+      ratio: 0.5,
+      first: pane,
+      second: PaneNode(
+        id: newPaneId,
+        tabIds: <String>[draftId],
+        activeTabId: draftId,
+      ),
     );
-    state = AsyncData<SessionTabsState>(next);
-    await ref
-        .read(hostRegistryControllerProvider.notifier)
-        .saveWorkspaceUi(
-          selection: _selection,
-          tabs: SessionTabPreference(
-            openAgentIds: next.openAgentIds,
-            selectedAgentId: next.selectedAgentId,
-            openTerminalIds: next.openTerminalIds,
-            selectedTerminalId: next.selectedTerminalId,
+    await _apply(
+      current.copyWith(
+        tabs: <String, WorkspaceTabEntry>{
+          ...current.tabs,
+          draftId: WorkspaceTabEntry(
+            id: draftId,
+            target: const DraftTabTarget(),
           ),
-        );
+        },
+        root: _replaceNode(current.root, paneId, replacement),
+        focusedPaneId: newPaneId,
+      ),
+    );
   }
+
+  /// Reorders a tab or moves it atomically between panes.
+  Future<void> moveTab({
+    required String tabId,
+    required String sourcePaneId,
+    required String targetPaneId,
+    required int targetIndex,
+  }) async {
+    final current = state.requireValue;
+    final source = _findPane(current.root, sourcePaneId);
+    final target = _findPane(current.root, targetPaneId);
+    if (source == null || target == null || !source.tabIds.contains(tabId)) {
+      return;
+    }
+    if (sourcePaneId == targetPaneId) {
+      final reordered = source.tabIds.where((id) => id != tabId).toList();
+      final index = targetIndex.clamp(0, reordered.length);
+      reordered.insert(index, tabId);
+      await _apply(
+        current.copyWith(
+          root: _replacePane(
+            current.root,
+            sourcePaneId,
+            source.copyWith(tabIds: reordered, activeTabId: tabId),
+          ),
+          focusedPaneId: sourcePaneId,
+        ),
+      );
+      return;
+    }
+    final sourceIds = source.tabIds.where((id) => id != tabId).toList();
+    final targetIds = target.tabIds.where((id) => id != tabId).toList();
+    targetIds.insert(targetIndex.clamp(0, targetIds.length), tabId);
+    var root = _replacePane(
+      current.root,
+      targetPaneId,
+      target.copyWith(tabIds: targetIds, activeTabId: tabId),
+    );
+    if (sourceIds.isEmpty) {
+      root = _removePane(root, sourcePaneId)!;
+    } else {
+      root = _replacePane(
+        root,
+        sourcePaneId,
+        source.copyWith(
+          tabIds: sourceIds,
+          activeTabId: source.activeTabId == tabId
+              ? sourceIds.last
+              : source.activeTabId,
+        ),
+      );
+    }
+    await _apply(current.copyWith(root: root, focusedPaneId: targetPaneId));
+  }
+
+  /// Updates a split ratio in memory without writing device settings.
+  Future<void> resize(String splitId, double ratio) async {
+    final current = state.requireValue;
+    state = AsyncData<SessionTabsState>(
+      current.copyWith(
+        root: _replaceSplitRatio(current.root, splitId, ratio.clamp(0, 1)),
+      ),
+    );
+  }
+
+  /// Persists the final ratio after an interactive resize ends.
+  Future<void> commitResize() => _persist(state.requireValue);
+
+  Future<void> _selectTarget(bool Function(WorkspaceTabTarget) matches) async {
+    final current = state.requireValue;
+    for (final pane in current.panes) {
+      for (final tabId in pane.tabIds) {
+        if (matches(current.tabs[tabId]!.target)) {
+          await selectTab(pane.id, tabId);
+          return;
+        }
+      }
+    }
+  }
+
+  Future<void> _openTarget(
+    WorkspaceTabTarget target, {
+    required String preferredId,
+    List<SessionDto>? sessions,
+    List<TerminalDto>? terminals,
+  }) async {
+    final current = state.requireValue;
+    for (final pane in current.panes) {
+      for (final tabId in pane.tabIds) {
+        if (_sameTarget(current.tabs[tabId]!.target, target)) {
+          await _apply(
+            current.copyWith(
+              sessions: sessions,
+              terminals: terminals,
+              root: _replacePane(
+                current.root,
+                pane.id,
+                pane.copyWith(activeTabId: tabId),
+              ),
+              focusedPaneId: pane.id,
+            ),
+          );
+          return;
+        }
+      }
+    }
+    final pane = current.focusedPane;
+    await _apply(
+      current.copyWith(
+        sessions: sessions,
+        terminals: terminals,
+        tabs: <String, WorkspaceTabEntry>{
+          ...current.tabs,
+          preferredId: WorkspaceTabEntry(id: preferredId, target: target),
+        },
+        root: _replacePane(
+          current.root,
+          pane.id,
+          pane.copyWith(
+            tabIds: <String>[...pane.tabIds, preferredId],
+            activeTabId: preferredId,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _closeWhere(bool Function(WorkspaceTabTarget) matches) async {
+    final current = state.requireValue;
+    for (final pane in current.panes) {
+      for (final tabId in pane.tabIds) {
+        if (matches(current.tabs[tabId]!.target)) {
+          await _closeTab(current, pane, tabId);
+          return;
+        }
+      }
+    }
+  }
+
+  Future<void> _closeTab(
+    SessionTabsState current,
+    PaneNode pane,
+    String tabId,
+  ) async {
+    final nextTabs = Map<String, WorkspaceTabEntry>.of(current.tabs)
+      ..remove(tabId);
+    final remaining = pane.tabIds.where((id) => id != tabId).toList();
+    WorkspacePaneNode root;
+    var focusedPaneId = current.focusedPaneId;
+    if (remaining.isNotEmpty) {
+      root = _replacePane(
+        current.root,
+        pane.id,
+        pane.copyWith(
+          tabIds: remaining,
+          activeTabId: pane.activeTabId == tabId
+              ? remaining.last
+              : pane.activeTabId,
+        ),
+      );
+    } else if (current.panes.length > 1) {
+      root = _removePane(current.root, pane.id)!;
+      if (focusedPaneId == pane.id) focusedPaneId = _panes(root).first.id;
+    } else {
+      final draftId = 'draft:${ref.read(appIdGeneratorProvider).generate()}';
+      nextTabs[draftId] = WorkspaceTabEntry(
+        id: draftId,
+        target: const DraftTabTarget(),
+      );
+      root = PaneNode(
+        id: pane.id,
+        tabIds: <String>[draftId],
+        activeTabId: draftId,
+      );
+    }
+    await _apply(
+      current.copyWith(
+        tabs: nextTabs,
+        root: root,
+        focusedPaneId: focusedPaneId,
+      ),
+    );
+  }
+
+  SessionTabsState _restore(
+    List<SessionDto> sessions,
+    List<TerminalDto> terminals,
+    SessionTabPreference? saved,
+  ) {
+    final sessionIds = sessions.map((item) => item.id).toSet();
+    final terminalIds = terminals.map((item) => item.id).toSet();
+    if (saved != null) {
+      try {
+        final entries = <String, WorkspaceTabEntry>{};
+        for (final tab in saved.tabs) {
+          final target = switch (tab.kind) {
+            WorkspaceTabTargetKind.session
+                when tab.targetId != null &&
+                    sessionIds.contains(tab.targetId) =>
+              SessionTabTarget(tab.targetId!),
+            WorkspaceTabTargetKind.terminal
+                when tab.targetId != null &&
+                    terminalIds.contains(tab.targetId) =>
+              TerminalTabTarget(tab.targetId!),
+            WorkspaceTabTargetKind.draft when tab.targetId == null =>
+              const DraftTabTarget(),
+            _ => null,
+          };
+          if (target != null && !entries.containsKey(tab.id)) {
+            entries[tab.id] = WorkspaceTabEntry(id: tab.id, target: target);
+          }
+        }
+        final seen = <String>{};
+        final root = _restoreNode(saved.root, entries.keys.toSet(), seen);
+        if (root != null && entries.isNotEmpty) {
+          entries.removeWhere((id, _) => !seen.contains(id));
+          final panes = _panes(root);
+          final focused = panes.any((pane) => pane.id == saved.focusedPaneId)
+              ? saved.focusedPaneId
+              : panes.first.id;
+          return SessionTabsState(
+            sessions: sessions,
+            terminals: terminals,
+            tabs: Map<String, WorkspaceTabEntry>.unmodifiable(entries),
+            root: root,
+            focusedPaneId: focused,
+          );
+        }
+      } on FormatException {
+        // The entire entry is replaced below; daemon-owned content is intact.
+      }
+    }
+    final paneId = 'pane:${ref.read(appIdGeneratorProvider).generate()}';
+    final tabId = 'draft:${ref.read(appIdGeneratorProvider).generate()}';
+    return SessionTabsState(
+      sessions: sessions,
+      terminals: terminals,
+      tabs: <String, WorkspaceTabEntry>{
+        tabId: WorkspaceTabEntry(id: tabId, target: const DraftTabTarget()),
+      },
+      root: PaneNode(
+        id: paneId,
+        tabIds: <String>[tabId],
+        activeTabId: tabId,
+      ),
+      focusedPaneId: paneId,
+    );
+  }
+
+  Future<void> _apply(SessionTabsState next) async {
+    state = AsyncData<SessionTabsState>(next);
+    await _persist(next);
+  }
+
+  Future<void> _persist(SessionTabsState value) => ref
+      .read(hostRegistryControllerProvider.notifier)
+      .saveWorkspaceUi(
+        selection: _selection,
+        tabs: SessionTabPreference(
+          tabs: value.tabs.values.map(_entryPreference).toList(growable: false),
+          root: _nodePreference(value.root),
+          focusedPaneId: value.focusedPaneId,
+        ),
+      );
+}
+
+WorkspaceTabPreference _entryPreference(WorkspaceTabEntry entry) =>
+    switch (entry.target) {
+      SessionTabTarget(:final sessionId) => WorkspaceTabPreference(
+        id: entry.id,
+        kind: WorkspaceTabTargetKind.session,
+        targetId: sessionId,
+      ),
+      TerminalTabTarget(:final terminalId) => WorkspaceTabPreference(
+        id: entry.id,
+        kind: WorkspaceTabTargetKind.terminal,
+        targetId: terminalId,
+      ),
+      DraftTabTarget() => WorkspaceTabPreference(
+        id: entry.id,
+        kind: WorkspaceTabTargetKind.draft,
+      ),
+    };
+
+WorkspacePanePreferenceNode _nodePreference(WorkspacePaneNode node) =>
+    switch (node) {
+      PaneNode() => WorkspacePanePreference(
+        id: node.id,
+        tabIds: node.tabIds,
+        activeTabId: node.activeTabId,
+      ),
+      WorkspaceSplitNode() => WorkspaceSplitPreference(
+        id: node.id,
+        axis: node.axis,
+        ratio: node.ratio,
+        first: _nodePreference(node.first),
+        second: _nodePreference(node.second),
+      ),
+    };
+
+WorkspacePaneNode? _restoreNode(
+  WorkspacePanePreferenceNode node,
+  Set<String> validTabs,
+  Set<String> seen,
+) => switch (node) {
+  WorkspacePanePreference() => () {
+    final ids = node.tabIds
+        .where((id) => validTabs.contains(id) && seen.add(id))
+        .toList(growable: false);
+    if (ids.isEmpty) return null;
+    return PaneNode(
+      id: node.id,
+      tabIds: ids,
+      activeTabId: ids.contains(node.activeTabId) ? node.activeTabId : ids.last,
+    );
+  }(),
+  WorkspaceSplitPreference() => () {
+    final first = _restoreNode(node.first, validTabs, seen);
+    final second = _restoreNode(node.second, validTabs, seen);
+    if (first == null) return second;
+    if (second == null) return first;
+    return WorkspaceSplitNode(
+      id: node.id,
+      axis: node.axis,
+      ratio: node.ratio,
+      first: first,
+      second: second,
+    );
+  }(),
+};
+
+bool _sameTarget(WorkspaceTabTarget first, WorkspaceTabTarget second) =>
+    switch ((first, second)) {
+      (
+        SessionTabTarget(sessionId: final firstId),
+        SessionTabTarget(sessionId: final secondId),
+      ) =>
+        firstId == secondId,
+      (
+        TerminalTabTarget(terminalId: final firstId),
+        TerminalTabTarget(terminalId: final secondId),
+      ) =>
+        firstId == secondId,
+      (DraftTabTarget(), DraftTabTarget()) => false,
+      _ => false,
+    };
+
+List<PaneNode> _panes(WorkspacePaneNode node) => switch (node) {
+  PaneNode() => <PaneNode>[node],
+  WorkspaceSplitNode() => <PaneNode>[
+    ..._panes(node.first),
+    ..._panes(node.second),
+  ],
+};
+
+PaneNode? _findPane(WorkspacePaneNode node, String id) => switch (node) {
+  PaneNode() => node.id == id ? node : null,
+  WorkspaceSplitNode() =>
+    _findPane(node.first, id) ?? _findPane(node.second, id),
+};
+
+WorkspacePaneNode _replacePane(
+  WorkspacePaneNode node,
+  String id,
+  PaneNode replacement,
+) => _replaceNode(node, id, replacement);
+
+WorkspacePaneNode _replaceNode(
+  WorkspacePaneNode node,
+  String targetId,
+  WorkspacePaneNode replacement,
+) {
+  if (node case PaneNode(:final id) when id == targetId) return replacement;
+  if (node is PaneNode) return node;
+  final split = node as WorkspaceSplitNode;
+  if (split.id == targetId) return replacement;
+  return WorkspaceSplitNode(
+    id: split.id,
+    axis: split.axis,
+    ratio: split.ratio,
+    first: _replaceNode(split.first, targetId, replacement),
+    second: _replaceNode(split.second, targetId, replacement),
+  );
+}
+
+WorkspacePaneNode? _removePane(WorkspacePaneNode node, String paneId) {
+  if (node is PaneNode) return node.id == paneId ? null : node;
+  final split = node as WorkspaceSplitNode;
+  final first = _removePane(split.first, paneId);
+  final second = _removePane(split.second, paneId);
+  if (first == null) return second;
+  if (second == null) return first;
+  return WorkspaceSplitNode(
+    id: split.id,
+    axis: split.axis,
+    ratio: split.ratio,
+    first: first,
+    second: second,
+  );
+}
+
+WorkspacePaneNode _replaceSplitRatio(
+  WorkspacePaneNode node,
+  String splitId,
+  double ratio,
+) {
+  if (node is PaneNode) return node;
+  final split = node as WorkspaceSplitNode;
+  return WorkspaceSplitNode(
+    id: split.id,
+    axis: split.axis,
+    ratio: split.id == splitId ? ratio : split.ratio,
+    first: _replaceSplitRatio(split.first, splitId, ratio),
+    second: _replaceSplitRatio(split.second, splitId, ratio),
+  );
 }

@@ -98,20 +98,12 @@ class NewWorkspacePane extends ConsumerStatefulWidget {
   /// Creates the new-workspace composer.
   const NewWorkspacePane({
     required this.onStarted,
-    this.showBack = false,
-    this.onBack,
     super.key,
   });
 
   /// Called with the selection and session created by the first prompt.
   final void Function(WorkspaceSelection selection, SessionDto session)
   onStarted;
-
-  /// Whether the mobile back affordance is shown.
-  final bool showBack;
-
-  /// Invoked by the mobile back affordance.
-  final VoidCallback? onBack;
 
   @override
   ConsumerState<NewWorkspacePane> createState() => _NewWorkspacePaneState();
@@ -243,17 +235,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         enabled: hostId != null && !_submitting,
         mode: draft?.mode ?? SessionMode.normal,
         onAgentChanged: (id) => _notifier(hostId)?.selectAgent(id),
-        onModelChanged: (model) => _notifier(hostId)?.selectModel(model),
+        onModelChanged: (model, controls) {
+          _notifier(hostId)?.selectModel(model);
+          _notifier(hostId)?.selectModelControls(controls);
+        },
         onModeChanged: (mode) => _notifier(hostId)?.selectMode(mode),
-        reasoningEffort: draft?.reasoningEffort,
-        onReasoningEffortChanged: (effort) =>
-            _notifier(hostId)?.selectReasoningEffort(effort),
+        modelControls:
+            draft?.modelControls ?? const <String, ModelControlValueDto>{},
+        onModelControlsChanged: (controls) =>
+            _notifier(hostId)?.selectModelControls(controls),
         permissionMode: draft?.permissionMode,
         onPermissionModeChanged: (mode) =>
             _notifier(hostId)?.selectPermissionMode(mode),
-        serviceTier: draft?.serviceTier,
-        onServiceTierChanged: (tier) =>
-            _notifier(hostId)?.selectServiceTier(tier),
       ),
       onModeToggled: hostId == null ? null : toggleMode,
       attachmentInput: ref.read(attachmentInputProvider),
@@ -273,16 +266,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     );
     return Column(
       children: <Widget>[
-        if (widget.showBack)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TRIconButton(
-              appearance: TRAppearance.ghost,
-              label: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: widget.onBack,
-              icon: const Icon(CoderIcons.back),
-            ),
-          ),
         Expanded(
           child: Center(
             child: ConstrainedBox(
@@ -324,12 +307,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
 
   SessionComposerDraft? _draft(String? hostId) => hostId == null
       ? null
-      : ref.watch(sessionComposerDraftControllerProvider(hostId, null));
+      : ref.watch(
+          sessionComposerDraftControllerProvider(hostId, null, 'new-workspace'),
+        );
 
   SessionComposerDraftController? _notifier(String? hostId) => hostId == null
       ? null
       : ref.read(
-          sessionComposerDraftControllerProvider(hostId, null).notifier,
+          sessionComposerDraftControllerProvider(
+            hostId,
+            null,
+            'new-workspace',
+          ).notifier,
         );
 
   String? _hint(

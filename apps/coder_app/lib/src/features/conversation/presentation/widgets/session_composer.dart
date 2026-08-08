@@ -30,13 +30,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Service tier the fast-mode toggle selects.
-///
-/// A capability-listed value, not an assumption: the toggle only appears when
-/// the resolved model itself advertises this tier, so a vendor that names its
-/// tiers differently simply never shows it.
-const String _priorityServiceTier = 'priority';
-
 /// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
   /// Creates a [SessionComposerBar].
@@ -49,12 +42,10 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     required this.onModelChanged,
     required this.mode,
     required this.onModeChanged,
-    this.reasoningEffort,
-    this.onReasoningEffortChanged,
+    this.modelControls = const <String, ModelControlValueDto>{},
+    this.onModelControlsChanged,
     this.permissionMode,
     this.onPermissionModeChanged,
-    this.serviceTier,
-    this.onServiceTierChanged,
     this.agentEnabled = true,
     this.enabled = true,
     this.leading,
@@ -77,12 +68,10 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     onModelChanged: onModelChanged,
     mode: mode,
     onModeChanged: onModeChanged,
-    reasoningEffort: reasoningEffort,
-    onReasoningEffortChanged: onReasoningEffortChanged,
+    modelControls: modelControls,
+    onModelControlsChanged: onModelControlsChanged,
     permissionMode: permissionMode,
     onPermissionModeChanged: onPermissionModeChanged,
-    serviceTier: serviceTier,
-    onServiceTierChanged: onServiceTierChanged,
     agentEnabled: agentEnabled,
     enabled: enabled,
     leading: leading,
@@ -105,7 +94,11 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   final ValueChanged<String> onAgentChanged;
 
   /// Called with the chosen override, or null to inherit the agent definition.
-  final ValueChanged<SessionModelSelectionDto?> onModelChanged;
+  final FutureOr<void> Function(
+    SessionModelSelectionDto? selection,
+    Map<String, ModelControlValueDto> controls,
+  )
+  onModelChanged;
 
   /// Collaboration mode currently in effect.
   final SessionMode mode;
@@ -113,23 +106,18 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   /// Called with the mode to switch to.
   final ValueChanged<SessionMode> onModeChanged;
 
-  /// Reasoning effort in effect, or null to inherit the agent definition.
-  final String? reasoningEffort;
+  /// Explicit values for the selected provider model.
+  final Map<String, ModelControlValueDto> modelControls;
 
-  /// Called with the chosen effort, or null to inherit the agent definition.
-  final ValueChanged<String?>? onReasoningEffortChanged;
+  /// Called whenever a model-specific value changes.
+  final FutureOr<void> Function(Map<String, ModelControlValueDto>)?
+  onModelControlsChanged;
 
   /// Permission mode in effect, or null to inherit the agent definition.
   final PermissionMode? permissionMode;
 
   /// Called with the chosen mode, or null to inherit the agent definition.
   final FutureOr<void> Function(PermissionMode?)? onPermissionModeChanged;
-
-  /// Provider service tier in effect, or null for the provider default.
-  final String? serviceTier;
-
-  /// Called with the chosen tier, or null to restore the provider default.
-  final ValueChanged<String?>? onServiceTierChanged;
 
   /// Whether the agent can still be changed; false once a session exists.
   final bool agentEnabled;
@@ -204,10 +192,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     // Labels come from the model catalog, so load it once per connection
     // instead of showing a raw model id.
     if (connection != null) _scheduleModelLoad(connection.id);
-    final efforts = capabilities.reasoningEffort == CapabilitySupport.supported
-        ? capabilities.supportedReasoningEfforts
-        : const <String>[];
-    final fastEnabled = widget.serviceTier == _priorityServiceTier;
     final bar = ComposerChipBar(
       overflowLabel: l10n.composerMoreSettings,
       leading: widget.leading,
@@ -240,31 +224,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           tooltip: l10n.composerSelectModel,
           onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
         ),
-        if (efforts.isNotEmpty)
-          ComposerChipSpec(
-            valueKey: const ValueKey('session-composer-effort'),
-            icon: CoderIcons.reasoning,
-            label: widget.reasoningEffort ?? l10n.composerReasoningEffort,
-            tooltip: l10n.composerSelectReasoningEffort,
-            menuChildren: enabled && widget.onReasoningEffortChanged != null
-                ? <Widget>[
-                    TRMenuItem(
-                      key: const ValueKey('session-composer-effort-inherit'),
-                      onPressed: () => widget.onReasoningEffortChanged!(null),
-                      child: TRText.inherit(
-                        l10n.composerInheritReasoningEffort,
-                      ),
-                    ),
-                    for (final effort in efforts)
-                      TRMenuItem(
-                        key: ValueKey('session-composer-effort-$effort'),
-                        onPressed: () =>
-                            widget.onReasoningEffortChanged!(effort),
-                        child: TRText.inherit(effort),
-                      ),
-                  ]
-                : null,
-          ),
+        for (final control in capabilities.controls)
+          _controlChip(control, enabled),
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-permission'),
           icon: CoderIcons.permission,
@@ -279,22 +240,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                 )
               : null,
         ),
-        if (capabilities.serviceTier == CapabilitySupport.supported &&
-            capabilities.supportedServiceTiers.contains(_priorityServiceTier))
-          ComposerChipSpec(
-            valueKey: const ValueKey('session-composer-fast'),
-            icon: CoderIcons.fast,
-            label: l10n.composerFastMode,
-            tooltip: fastEnabled
-                ? l10n.composerFastModeOnTooltip
-                : l10n.composerFastModeTooltip,
-            selected: fastEnabled,
-            onPressed: enabled && widget.onServiceTierChanged != null
-                ? (_) => widget.onServiceTierChanged!(
-                    fastEnabled ? null : _priorityServiceTier,
-                  )
-                : null,
-          ),
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-mode'),
           icon: CoderIcons.checklist,
@@ -327,6 +272,124 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         bar,
       ],
     );
+  }
+
+  ComposerChipSpec _controlChip(
+    ModelControlDescriptorDto descriptor,
+    bool enabled,
+  ) {
+    final value = widget.modelControls[descriptor.id];
+    final canChange = enabled && widget.onModelControlsChanged != null;
+    return switch (descriptor.kind) {
+      ModelControlKind.choice => ComposerChipSpec(
+        valueKey: ValueKey('session-composer-control-${descriptor.id}'),
+        icon: _controlIcon(descriptor.id),
+        label: switch (value) {
+          ModelControlStringValueDto(:final value) =>
+            descriptor.choices
+                    .where((choice) => choice.id == value)
+                    .firstOrNull
+                    ?.label ??
+                value,
+          _ => descriptor.label,
+        },
+        tooltip: descriptor.description ?? descriptor.label,
+        menuChildren: canChange
+            ? <Widget>[
+                TRMenuItem(
+                  key: ValueKey(
+                    'session-composer-control-${descriptor.id}-default',
+                  ),
+                  onPressed: () => _setControl(descriptor, null),
+                  child: TRText.inherit(
+                    AppLocalizations.of(
+                      context,
+                    ).providerSettingsDefaultModelAutomatic,
+                  ),
+                ),
+                for (final choice in descriptor.choices)
+                  TRMenuItem(
+                    key: ValueKey(
+                      'session-composer-control-${descriptor.id}-${choice.id}',
+                    ),
+                    onPressed: () => _setControl(
+                      descriptor,
+                      ModelControlValueDto.stringValue(value: choice.id),
+                    ),
+                    child: TRText.inherit(choice.label),
+                  ),
+              ]
+            : null,
+      ),
+      ModelControlKind.toggle => ComposerChipSpec(
+        valueKey: ValueKey('session-composer-control-${descriptor.id}'),
+        icon: _controlIcon(descriptor.id),
+        label: descriptor.label,
+        tooltip: descriptor.description ?? descriptor.label,
+        selected: value is ModelControlBoolValueDto && value.value,
+        onPressed: canChange
+            ? (_) => _setControl(
+                descriptor,
+                value is ModelControlBoolValueDto && value.value
+                    ? null
+                    : const ModelControlValueDto.boolValue(value: true),
+              )
+            : null,
+      ),
+      ModelControlKind.integer => ComposerChipSpec(
+        valueKey: ValueKey('session-composer-control-${descriptor.id}'),
+        icon: _controlIcon(descriptor.id),
+        label: switch (value) {
+          ModelControlIntValueDto(:final value) =>
+            '${descriptor.label}: $value',
+          _ => descriptor.label,
+        },
+        tooltip: descriptor.description ?? descriptor.label,
+        onPressed: canChange
+            ? (chipContext) => unawaited(
+                _chooseInteger(chipContext, descriptor, value),
+              )
+            : null,
+      ),
+    };
+  }
+
+  IconData _controlIcon(String id) => switch (id) {
+    'fast_mode' => CoderIcons.fast,
+    'reasoning_effort' ||
+    'reasoning_mode' ||
+    'thinking_budget' => CoderIcons.reasoning,
+    _ => CoderIcons.settings,
+  };
+
+  void _setControl(
+    ModelControlDescriptorDto descriptor,
+    ModelControlValueDto? value,
+  ) {
+    final updated = <String, ModelControlValueDto>{...widget.modelControls}
+      ..remove(descriptor.id);
+    descriptor.conflictsWith.forEach(updated.remove);
+    if (value != null) updated[descriptor.id] = value;
+    final callback = widget.onModelControlsChanged;
+    if (callback != null) {
+      unawaited(Future<void>.sync(() async => callback(updated)));
+    }
+  }
+
+  Future<void> _chooseInteger(
+    BuildContext context,
+    ModelControlDescriptorDto descriptor,
+    ModelControlValueDto? current,
+  ) async {
+    final value = await showTRDialog<int>(
+      context: context,
+      builder: (context) => _IntegerControlDialog(
+        descriptor: descriptor,
+        initialValue: current is ModelControlIntValueDto ? current.value : null,
+      ),
+    );
+    if (value == null || !mounted) return;
+    _setControl(descriptor, ModelControlValueDto.intValue(value: value));
   }
 
   Future<void> _choosePermission(
@@ -362,13 +425,16 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
 
   Future<void> _chooseModel(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final options = await loadModelPickerOptions(ref, widget.hostId);
-    if (!context.mounted) return;
+    var options = const <ModelPickerOption>[];
     // Clearing the override always means "follow the fallback chain"; only the
     // first step of that chain differs per agent.
     final chosen = await showModelPicker(
       context,
-      options: options,
+      loadOptions: () async {
+        final loaded = await loadModelPickerOptions(ref, widget.hostId);
+        options = loaded;
+        return loaded;
+      },
       currentSelection: widget.selection,
       title: l10n.composerSelectModel,
       inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
@@ -378,15 +444,99 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     if (chosen == null) return;
     switch (chosen) {
       case SelectedModelPickerChoice(:final selection):
-        widget.onModelChanged(selection);
+        final target = options
+            .where((option) => option.selection == selection)
+            .firstOrNull;
+        final allowed =
+            target?.model.capabilities.controls
+                .map((control) => control.id)
+                .toSet() ??
+            const <String>{};
+        final retained = <String, ModelControlValueDto>{
+          for (final entry in widget.modelControls.entries)
+            if (allowed.contains(entry.key)) entry.key: entry.value,
+        };
+        await widget.onModelChanged(selection, retained);
       case InheritModelPickerChoice():
-        widget.onModelChanged(null);
+        await widget.onModelChanged(
+          null,
+          const <String, ModelControlValueDto>{},
+        );
     }
   }
 
   AgentDefinitionDto? get _selectedAgent => widget.definitions
       .where((definition) => definition.id == widget.agentDefinitionId)
       .firstOrNull;
+}
+
+class _IntegerControlDialog extends StatefulWidget {
+  const _IntegerControlDialog({
+    required this.descriptor,
+    required this.initialValue,
+  });
+
+  final ModelControlDescriptorDto descriptor;
+  final int? initialValue;
+
+  @override
+  State<_IntegerControlDialog> createState() => _IntegerControlDialogState();
+}
+
+class _IntegerControlDialogState extends State<_IntegerControlDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue?.toString() ?? '',
+  );
+
+  int? get _value => int.tryParse(_controller.text.trim());
+
+  bool get _valid {
+    final value = _value;
+    if (value == null) return false;
+    final descriptor = widget.descriptor;
+    return (descriptor.minimum == null || value >= descriptor.minimum!) &&
+        (descriptor.maximum == null || value <= descriptor.maximum!) &&
+        (descriptor.step == null ||
+            descriptor.minimum == null ||
+            (value - descriptor.minimum!) % descriptor.step! == 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TRAlertDialog(
+    title: TRText.inherit(widget.descriptor.label),
+    description: widget.descriptor.description == null
+        ? null
+        : TRText.inherit(widget.descriptor.description!),
+    content: TRTextField(
+      controller: _controller,
+      autofocus: true,
+      keyboardType: TextInputType.number,
+      onChanged: (_) => setState(() {}),
+      label: widget.descriptor.label,
+      errorText: _controller.text.isEmpty || _valid
+          ? null
+          : '${widget.descriptor.minimum ?? ''}'
+                '–${widget.descriptor.maximum ?? ''}',
+    ),
+    actions: <TRButton>[
+      TRButton(
+        appearance: TRAppearance.ghost,
+        onPressed: () => Navigator.pop(context),
+        child: TRText.inherit(AppLocalizations.of(context).commonCancel),
+      ),
+      TRButton(
+        intent: TRIntent.primary,
+        onPressed: _valid ? () => Navigator.pop(context, _value) : null,
+        child: TRText.inherit(AppLocalizations.of(context).commonSave),
+      ),
+    ],
+  );
 }
 
 /// One turn setting the composer toolbar offers.
@@ -757,12 +907,16 @@ class DraftSessionPane extends ConsumerWidget {
   /// Creates a [DraftSessionPane].
   const DraftSessionPane({
     required this.selection,
+    required this.draftId,
     required this.onCreated,
     super.key,
   });
 
   /// Worktree the new session belongs to.
   final WorkspaceSelection selection;
+
+  /// Stable identity that isolates this draft from drafts in other panes.
+  final String draftId;
 
   /// Called after the session exists and its first turn has started.
   final ValueChanged<SessionDto> onCreated;
@@ -784,6 +938,7 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
+        draftId,
       ),
     );
     final definitions = selectableAgentDefinitions(
@@ -809,6 +964,7 @@ class DraftSessionPane extends ConsumerWidget {
       sessionComposerDraftControllerProvider(
         selection.hostId,
         selection.worktreeId,
+        draftId,
       ).notifier,
     );
     return Column(
@@ -847,15 +1003,17 @@ class DraftSessionPane extends ConsumerWidget {
               agentDefinitionId: agent?.id,
               selection: effective,
               onAgentChanged: notifier.selectAgent,
-              onModelChanged: notifier.selectModel,
+              onModelChanged: (selection, controls) {
+                notifier
+                  ..selectModel(selection)
+                  ..selectModelControls(controls);
+              },
               mode: draft.mode,
               onModeChanged: notifier.selectMode,
-              reasoningEffort: draft.reasoningEffort,
-              onReasoningEffortChanged: notifier.selectReasoningEffort,
+              modelControls: draft.modelControls,
+              onModelControlsChanged: notifier.selectModelControls,
               permissionMode: draft.permissionMode,
               onPermissionModeChanged: notifier.selectPermissionMode,
-              serviceTier: draft.serviceTier,
-              onServiceTierChanged: notifier.selectServiceTier,
             ),
             onModeToggled: () => notifier.selectMode(
               draft.mode == SessionMode.plan
@@ -890,9 +1048,8 @@ class DraftSessionPane extends ConsumerWidget {
         attachments: submission.attachments,
         mode: draft.mode,
         model: draft.model,
-        reasoningEffort: draft.reasoningEffort,
+        modelControls: draft.modelControls,
         permissionMode: draft.permissionMode,
-        serviceTier: draft.serviceTier,
       ),
     );
   }

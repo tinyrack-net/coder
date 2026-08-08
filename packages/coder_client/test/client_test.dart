@@ -58,7 +58,9 @@ void main() {
     model: AgentModelSelectionDto(
       source: AgentModelSource.session,
     ),
-    reasoningEffort: 'medium',
+    modelControls: <String, ModelControlValueDto>{
+      'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+    },
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
@@ -162,6 +164,17 @@ void main() {
     type: 'assistant.delta',
     data: const <String, dynamic>{'text': 'hello'},
     createdAt: now,
+  );
+  final goal = GoalDto(
+    sessionId: agent.id,
+    goalId: 'goal',
+    objective: 'Finish the client contract',
+    status: GoalStatus.active,
+    tokenBudget: 2000,
+    tokensUsed: 100,
+    timeUsedSeconds: 1,
+    createdAt: now,
+    updatedAt: now,
   );
 
   test(
@@ -344,6 +357,7 @@ void main() {
             approval: approval,
             userQuestion: userQuestion,
             timeline: timeline,
+            goal: goal,
           );
         },
       );
@@ -495,6 +509,26 @@ void main() {
         ),
         agent,
       );
+      expect(await client.sessions.getGoal(agent.id), goal);
+      expect(
+        await client.sessions.replaceGoal(
+          sessionId: agent.id,
+          objective: goal.objective,
+          tokenBudget: goal.tokenBudget,
+        ),
+        goal,
+      );
+      expect(
+        await client.sessions.updateGoal(
+          agent.id,
+          GoalUpdateDto(
+            expectedGoalId: goal.goalId,
+            status: GoalStatus.paused,
+          ),
+        ),
+        goal,
+      );
+      expect(await client.sessions.clearGoal(agent.id), isTrue);
       expect(
         await client.updateSettings(
           agent.id,
@@ -513,8 +547,12 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasReasoningEffort: true,
-            reasoningEffort: 'high',
+            hasModelControls: true,
+            modelControls: <String, ModelControlValueDto>{
+              'reasoning_effort': ModelControlValueDto.stringValue(
+                value: 'high',
+              ),
+            },
           ),
         ),
         agent,
@@ -522,7 +560,7 @@ void main() {
       expect(
         await client.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasReasoningEffort: true),
+          const SessionSettingsPatchDto(hasModelControls: true),
         ),
         agent,
       );
@@ -547,8 +585,10 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasServiceTier: true,
-            serviceTier: 'priority',
+            hasModelControls: true,
+            modelControls: <String, ModelControlValueDto>{
+              'fast_mode': ModelControlValueDto.boolValue(value: true),
+            },
           ),
         ),
         agent,
@@ -556,7 +596,7 @@ void main() {
       expect(
         await client.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasServiceTier: true),
+          const SessionSettingsPatchDto(hasModelControls: true),
         ),
         agent,
       );
@@ -751,6 +791,8 @@ void main() {
 
       final timelines = <TimelineEventDto>[];
       final sessions = <SessionDto>[];
+      final goals = <GoalDto>[];
+      final clearedGoals = <GoalClearedDto>[];
       final approvals = <ApprovalRequestDto>[];
       final questions = <UserQuestionRequestDto>[];
       final authUpdates = <ProviderAuthAttemptDto>[];
@@ -762,6 +804,8 @@ void main() {
       final eventSubscriptions = <StreamSubscription<Object?>>[
         client.sessions.timelineEvents.listen(timelines.add),
         client.sessions.sessionUpdates.listen(sessions.add),
+        client.sessions.goalUpdates.listen(goals.add),
+        client.sessions.goalClears.listen(clearedGoals.add),
         client.sessions.approvalRequests.listen(approvals.add),
         client.sessions.questionRequests.listen(questions.add),
         client.agents.definitionChanges.listen((_) => agentChanges += 1),
@@ -786,6 +830,11 @@ void main() {
           timeline.copyWith(sequence: 3).toJson(),
         )
         ..sendNotification(sessionsUpdatedNotification.name, agent.toJson())
+        ..sendNotification(sessionsGoalUpdatedNotification.name, goal.toJson())
+        ..sendNotification(
+          sessionsGoalClearedNotification.name,
+          GoalClearedDto(sessionId: agent.id, goalId: goal.goalId).toJson(),
+        )
         ..sendNotification(
           agentsChangedNotification.name,
           const <String, dynamic>{},
@@ -826,6 +875,13 @@ void main() {
 
       expect(timelines, <TimelineEventDto>[timeline.copyWith(sequence: 3)]);
       expect(sessions, <SessionDto>[agent]);
+      expect(goals, <GoalDto>[goal]);
+      expect(
+        clearedGoals,
+        <GoalClearedDto>[
+          GoalClearedDto(sessionId: agent.id, goalId: goal.goalId),
+        ],
+      );
       expect(agentChanges, 1);
       expect(skillChanges, 1);
       expect(commandChanges, 1);
@@ -854,6 +910,10 @@ void main() {
           sessionsListSubagentsProcedure.name,
           sessionsCreateProcedure.name,
           sessionsUpdateSettingsProcedure.name,
+          sessionsGetGoalProcedure.name,
+          sessionsReplaceGoalProcedure.name,
+          sessionsUpdateGoalProcedure.name,
+          sessionsClearGoalProcedure.name,
           agentsListProcedure.name,
           agentsGetProcedure.name,
           agentsCreateProcedure.name,
@@ -908,6 +968,7 @@ void main() {
       'feature_test__worktree_lifecycle__contract',
       'feature_test__project_settings__contract',
       'feature_test__session_lifecycle__contract',
+      'feature_test__session_goal__contract',
       'feature_test__turn_execution__contract',
       'feature_test__turn_question__contract',
       'feature_test__conversation_turn_queue__contract',
@@ -1167,6 +1228,7 @@ void _registerFixtureMethods(
   required ApprovalRequestDto approval,
   required UserQuestionRequestDto userQuestion,
   required TimelineEventDto timeline,
+  required GoalDto goal,
 }) {
   _registerHello(peer, requests);
   final attempt = ProviderAuthAttemptDto(
@@ -1282,6 +1344,12 @@ void _registerFixtureMethods(
     sessionsCreateProcedure.name: SessionResultDto(session: agent).toJson(),
     sessionsUpdateSettingsProcedure.name: SessionResultDto(
       session: agent,
+    ).toJson(),
+    sessionsGetGoalProcedure.name: GoalGetResultDto(goal: goal).toJson(),
+    sessionsReplaceGoalProcedure.name: GoalResultDto(goal: goal).toJson(),
+    sessionsUpdateGoalProcedure.name: GoalResultDto(goal: goal).toJson(),
+    sessionsClearGoalProcedure.name: const GoalClearResultDto(
+      cleared: true,
     ).toJson(),
 
     terminalsListProcedure.name: const TerminalListResultDto(

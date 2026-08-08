@@ -95,6 +95,10 @@ class CoderClient
   final Duration Function(int attempt) _reconnectDelay;
   final StreamController<SessionDto> _sessionUpdates =
       StreamController<SessionDto>.broadcast();
+  final StreamController<GoalDto> _goalUpdates =
+      StreamController<GoalDto>.broadcast();
+  final StreamController<GoalClearedDto> _goalClears =
+      StreamController<GoalClearedDto>.broadcast();
   final StreamController<TimelineEventDto> _timelineEvents =
       StreamController<TimelineEventDto>.broadcast();
   final StreamController<ApprovalRequestDto> _approvalRequests =
@@ -109,6 +113,8 @@ class CoderClient
       StreamController<void>.broadcast();
   final StreamController<ProviderAuthAttemptDto> _providerAuthUpdates =
       StreamController<ProviderAuthAttemptDto>.broadcast();
+  final StreamController<ProviderCatalogDto> _providerCatalogUpdates =
+      StreamController<ProviderCatalogDto>.broadcast();
   final StreamController<void> _mcpChanges = StreamController<void>.broadcast();
   final StreamController<TerminalOutputDto> _terminalOutput =
       StreamController<TerminalOutputDto>.broadcast();
@@ -155,6 +161,12 @@ class CoderClient
   Stream<SessionDto> get sessionUpdates => _sessionUpdates.stream;
 
   @override
+  Stream<GoalDto> get goalUpdates => _goalUpdates.stream;
+
+  @override
+  Stream<GoalClearedDto> get goalClears => _goalClears.stream;
+
+  @override
   Stream<TimelineEventDto> get timelineEvents => _timelineEvents.stream;
 
   @override
@@ -175,6 +187,10 @@ class CoderClient
 
   @override
   Stream<ProviderAuthAttemptDto> get authUpdates => _providerAuthUpdates.stream;
+
+  @override
+  Stream<ProviderCatalogDto> get catalogUpdates =>
+      _providerCatalogUpdates.stream;
 
   @override
   Stream<void> get serverChanges => _mcpChanges.stream;
@@ -275,6 +291,10 @@ class CoderClient
           _timelineEvents.add(event);
         case final name when name == sessionsUpdatedNotification.name:
           _sessionUpdates.add(sessionsUpdatedNotification.decode(parameters));
+        case final name when name == sessionsGoalUpdatedNotification.name:
+          _goalUpdates.add(sessionsGoalUpdatedNotification.decode(parameters));
+        case final name when name == sessionsGoalClearedNotification.name:
+          _goalClears.add(sessionsGoalClearedNotification.decode(parameters));
         case final name when name == agentsChangedNotification.name:
           agentsChangedNotification.decode(parameters);
           _agentChanges.add(null);
@@ -298,6 +318,10 @@ class CoderClient
         case final name when name == providersAuthUpdatedNotification.name:
           _providerAuthUpdates.add(
             providersAuthUpdatedNotification.decode(parameters),
+          );
+        case final name when name == providersCatalogUpdatedNotification.name:
+          _providerCatalogUpdates.add(
+            providersCatalogUpdatedNotification.decode(parameters),
           );
         case final name when name == terminalsOutputNotification.name:
           final output = terminalsOutputNotification.decode(parameters);
@@ -560,9 +584,9 @@ class CoderClient
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final response = await _call(
       sessionsCreateProcedure,
@@ -573,9 +597,8 @@ class CoderClient
         agentDefinitionId: agentDefinitionId,
         mode: mode,
         model: model,
-        reasoningEffort: reasoningEffort,
+        modelControls: modelControls,
         permissionMode: permissionMode,
-        serviceTier: serviceTier,
       ),
     );
     return response.session;
@@ -594,6 +617,50 @@ class CoderClient
       ),
     );
     return response.session;
+  }
+
+  @override
+  Future<GoalDto?> getGoal(String sessionId) async {
+    final response = await _call(
+      sessionsGetGoalProcedure,
+      SessionIdParamsDto(sessionId: sessionId),
+    );
+    return response.goal;
+  }
+
+  @override
+  Future<GoalDto> replaceGoal({
+    required String sessionId,
+    required String objective,
+    int? tokenBudget,
+  }) async {
+    final response = await _call(
+      sessionsReplaceGoalProcedure,
+      GoalReplaceParamsDto(
+        sessionId: sessionId,
+        objective: objective,
+        tokenBudget: tokenBudget,
+      ),
+    );
+    return response.goal;
+  }
+
+  @override
+  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update) async {
+    final response = await _call(
+      sessionsUpdateGoalProcedure,
+      GoalUpdateParamsDto(sessionId: sessionId, update: update),
+    );
+    return response.goal;
+  }
+
+  @override
+  Future<bool> clearGoal(String sessionId) async {
+    final response = await _call(
+      sessionsClearGoalProcedure,
+      SessionIdParamsDto(sessionId: sessionId),
+    );
+    return response.cleared;
   }
 
   @override
@@ -1294,6 +1361,8 @@ class CoderClient
     await _peer?.close();
     await Future.wait(<Future<void>>[
       _sessionUpdates.close(),
+      _goalUpdates.close(),
+      _goalClears.close(),
       _timelineEvents.close(),
       _approvalRequests.close(),
       _questionRequests.close(),
@@ -1301,6 +1370,7 @@ class CoderClient
       _skillChanges.close(),
       _commandChanges.close(),
       _providerAuthUpdates.close(),
+      _providerCatalogUpdates.close(),
       _mcpChanges.close(),
       _terminalOutput.close(),
       _terminalUpdates.close(),

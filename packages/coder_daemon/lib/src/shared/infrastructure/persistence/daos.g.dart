@@ -75,6 +75,27 @@ class SessionDaoManager {
       );
 }
 
+mixin _$GoalDaoMixin on DatabaseAccessor<CoderDatabase> {
+  $WorkspacesTable get workspaces => attachedDatabase.workspaces;
+  $WorktreesTable get worktrees => attachedDatabase.worktrees;
+  $SessionsTable get sessions => attachedDatabase.sessions;
+  $GoalsTable get goals => attachedDatabase.goals;
+  GoalDaoManager get managers => GoalDaoManager(this);
+}
+
+class GoalDaoManager {
+  final _$GoalDaoMixin _db;
+  GoalDaoManager(this._db);
+  $$WorkspacesTableTableManager get workspaces =>
+      $$WorkspacesTableTableManager(_db.attachedDatabase, _db.workspaces);
+  $$WorktreesTableTableManager get worktrees =>
+      $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
+  $$SessionsTableTableManager get sessions =>
+      $$SessionsTableTableManager(_db.attachedDatabase, _db.sessions);
+  $$GoalsTableTableManager get goals =>
+      $$GoalsTableTableManager(_db.attachedDatabase, _db.goals);
+}
+
 mixin _$AgentMailboxDaoMixin on DatabaseAccessor<CoderDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;

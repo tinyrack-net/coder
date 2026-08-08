@@ -66,6 +66,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
+  String get settingsLoading => 'Loading settings';
+
+  @override
+  String settingsRefreshFailed(String error) {
+    return 'Could not refresh settings: $error';
+  }
+
+  @override
   String get settingsSectionApp => 'App';
 
   @override
@@ -315,6 +323,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceAllSessions => 'All sessions';
+
+  @override
+  String get workspaceSplitRight => 'Split right';
+
+  @override
+  String get workspaceSplitDown => 'Split down';
+
+  @override
+  String get workspaceResizePanes => 'Resize panes';
+
+  @override
+  String get workspaceSwitchTab => 'Switch tab';
+
+  @override
+  String get workspaceMoveTabToPane => 'Move active tab to pane';
 
   @override
   String get workspaceCloseTab => 'Close tab';
@@ -689,6 +712,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsRefreshCatalog => 'Refresh catalog';
+
+  @override
+  String get providerSettingsCatalogStatus => 'Catalog metadata';
+
+  @override
+  String get providerSettingsCatalogBundled => 'Bundled snapshot';
+
+  @override
+  String get providerSettingsCatalogCached => 'Last-known-good cache';
+
+  @override
+  String get providerSettingsCatalogFresh => 'Recently refreshed';
+
+  @override
+  String get providerSettingsCatalogStale =>
+      'Refresh due; local metadata remains available';
 
   @override
   String get providerSettingsDefaultModelTitle => 'Default model';
@@ -1664,6 +1703,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerCommandHelpDescription => 'List the available commands.';
+
+  @override
+  String get composerCommandGoalLabel => 'goal';
+
+  @override
+  String get composerCommandGoalDescription =>
+      'Create or manage persistent session work.';
+
+  @override
+  String get goalStatusActive => 'Active';
+
+  @override
+  String get goalStatusPaused => 'Paused';
+
+  @override
+  String get goalStatusBlocked => 'Blocked';
+
+  @override
+  String get goalStatusUsageLimited => 'Usage limited';
+
+  @override
+  String get goalStatusBudgetLimited => 'Budget reached';
+
+  @override
+  String get goalStatusComplete => 'Complete';
+
+  @override
+  String get goalPlanHold => 'Resumes in Run mode';
+
+  @override
+  String goalElapsed(int seconds) {
+    return '${seconds}s elapsed';
+  }
+
+  @override
+  String goalTokenUsage(int used, int budget) {
+    return '$used / $budget tokens';
+  }
+
+  @override
+  String get goalPause => 'Pause goal';
+
+  @override
+  String get goalResume => 'Resume goal';
+
+  @override
+  String get goalEdit => 'Edit goal';
+
+  @override
+  String get goalClear => 'Clear goal';
+
+  @override
+  String get goalDialogTitle => 'Session goal';
+
+  @override
+  String get goalObjectiveLabel => 'Objective';
+
+  @override
+  String get goalObjectiveRequired => 'Enter 1–4,000 characters.';
+
+  @override
+  String get goalBudgetLabel => 'Token budget (optional)';
+
+  @override
+  String get goalBudgetInvalid => 'Enter a positive token budget.';
+
+  @override
+  String get goalStart => 'Start goal';
+
+  @override
+  String get goalReplaceTitle => 'Replace current goal?';
+
+  @override
+  String get goalReplaceDescription =>
+      'This starts a new goal and resets recorded usage.';
+
+  @override
+  String get goalReplaceAction => 'Replace goal';
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';

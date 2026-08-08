@@ -40,9 +40,44 @@ void main() {
       rpcNotifications.map((notification) => notification.name),
       containsAll(<String>[
         'sessions.updated',
+        'sessions.goalUpdated',
+        'sessions.goalCleared',
         'terminals.output',
         'providers.authUpdated',
       ]),
     );
   });
+
+  test(
+    'session goal contract preserves nullable budgets and lifecycle values',
+    () {
+      final goal = GoalDto(
+        sessionId: 'session-1',
+        goalId: 'goal-1',
+        objective: 'Ship the feature',
+        status: GoalStatus.active,
+        tokenBudget: 12000,
+        tokensUsed: 345,
+        timeUsedSeconds: 67,
+        createdAt: DateTime.utc(2026),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      );
+
+      expect(GoalDto.fromJson(goal.toJson()), goal);
+      expect(
+        GoalUpdateDto.fromJson(
+          const GoalUpdateDto(
+            expectedGoalId: 'goal-1',
+            hasTokenBudget: true,
+          ).toJson(),
+        ).hasTokenBudget,
+        isTrue,
+      );
+      expect(sessionsGetGoalProcedure.name, 'sessions.getGoal');
+      expect(sessionsReplaceGoalProcedure.name, 'sessions.replaceGoal');
+      expect(sessionsUpdateGoalProcedure.name, 'sessions.updateGoal');
+      expect(sessionsClearGoalProcedure.name, 'sessions.clearGoal');
+    },
+    tags: const <String>['feature_test__session_goal__contract'],
+  );
 }

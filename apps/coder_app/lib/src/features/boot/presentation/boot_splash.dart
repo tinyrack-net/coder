@@ -1,3 +1,4 @@
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -20,8 +21,8 @@ class BootSplash extends StatelessWidget {
         child: Center(
           child: Image.asset(
             'assets/brand/coder-256.png',
-            width: TRMeasurements.brandMarkSm,
-            height: TRMeasurements.brandMarkSm,
+            width: CoderLayoutMetrics.bootBrandMarkSize,
+            height: CoderLayoutMetrics.bootBrandMarkSize,
           ),
         ),
       ),

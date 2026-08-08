@@ -187,6 +187,71 @@ void main() {
     );
   });
 
+  test('model controls preserve typed values and per-model descriptors', () {
+    const controls = <ModelControlDescriptorDto>[
+      ModelControlDescriptorDto(
+        id: 'reasoning_effort',
+        label: 'Reasoning effort',
+        kind: ModelControlKind.choice,
+        presentation: ModelControlPresentation.menuChip,
+        choices: <ModelControlChoiceDto>[
+          ModelControlChoiceDto(id: 'low', label: 'Low'),
+          ModelControlChoiceDto(id: 'high', label: 'High'),
+        ],
+        conflictsWith: <String>['thinking_budget'],
+      ),
+      ModelControlDescriptorDto(
+        id: 'fast_mode',
+        label: 'Fast mode',
+        kind: ModelControlKind.toggle,
+        presentation: ModelControlPresentation.selectableChip,
+      ),
+      ModelControlDescriptorDto(
+        id: 'thinking_budget',
+        label: 'Thinking budget',
+        kind: ModelControlKind.integer,
+        presentation: ModelControlPresentation.numberDialog,
+        minimum: 1024,
+        maximum: 32768,
+        step: 1024,
+      ),
+    ];
+    const values = <String, ModelControlValueDto>{
+      'reasoning_effort': ModelControlValueDto.stringValue(value: 'high'),
+      'fast_mode': ModelControlValueDto.boolValue(value: true),
+      'thinking_budget': ModelControlValueDto.intValue(value: 8192),
+    };
+    const model = ProviderModelDto(
+      connectionId: 'provider',
+      id: 'model',
+      label: 'Model',
+      source: ProviderModelSource.bundled,
+      capabilities: ModelCapabilitiesDto(controls: controls),
+    );
+    final session = SessionDto(
+      id: 'session',
+      worktreeId: 'worktree',
+      title: 'Typed controls',
+      agentDefinitionId: 'coder',
+      origin: SessionOrigin.manual,
+      status: SessionStatus.idle,
+      createdAt: now,
+      updatedAt: now,
+      modelControls: values,
+    );
+
+    _roundTrip(model, (value) => value.toJson(), ProviderModelDto.fromJson);
+    _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
+    _roundTrip(
+      const SessionSettingsPatchDto(
+        hasModelControls: true,
+        modelControls: values,
+      ),
+      (value) => value.toJson(),
+      SessionSettingsPatchDto.fromJson,
+    );
+  });
+
   test(
     'multi-agent collaboration contracts round-trip',
     () {
@@ -293,7 +358,9 @@ void main() {
       promptEnabled: true,
       systemPrompt: 'Review the requested code.',
       model: AgentModelSelectionDto(source: AgentModelSource.session),
-      reasoningEffort: 'medium',
+      modelControls: <String, ModelControlValueDto>{
+        'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
+      },
       permissionMode: PermissionMode.readOnly,
       toolIds: <String>['read_file', 'search_text'],
       callableAgentIds: <String>[],
@@ -540,8 +607,18 @@ void main() {
   const capabilities = ModelCapabilitiesDto(
     streaming: CapabilitySupport.supported,
     toolCalling: CapabilitySupport.supported,
-    reasoningEffort: CapabilitySupport.unsupported,
-    supportedReasoningEfforts: <String>['low', 'medium'],
+    controls: <ModelControlDescriptorDto>[
+      ModelControlDescriptorDto(
+        id: 'reasoning_effort',
+        label: 'Reasoning effort',
+        kind: ModelControlKind.choice,
+        presentation: ModelControlPresentation.menuChip,
+        choices: <ModelControlChoiceDto>[
+          ModelControlChoiceDto(id: 'low', label: 'Low'),
+          ModelControlChoiceDto(id: 'medium', label: 'Medium'),
+        ],
+      ),
+    ],
     source: CapabilitySource.manual,
   );
   const authMethod = ProviderAuthMethodDto(
@@ -562,7 +639,9 @@ void main() {
     baseUrl: 'http://localhost:11434/v1',
     wireFormatId: 'openai-chat-completions',
     authenticationRequired: true,
-    manualModelIds: <String>['model'],
+    models: <ManualProviderModelDto>[
+      ManualProviderModelDto(id: 'model', label: 'Model'),
+    ],
   );
   final connection = ProviderConnectionDto(
     id: 'provider',
@@ -1024,7 +1103,11 @@ void main() {
           model: AgentModelSelectionDto(
             source: AgentModelSource.session,
           ),
-          reasoningEffort: 'medium',
+          modelControls: <String, ModelControlValueDto>{
+            'reasoning_effort': ModelControlValueDto.stringValue(
+              value: 'medium',
+            ),
+          },
           permissionMode: PermissionMode.readOnly,
           toolIds: <String>['read_file'],
           callableAgentIds: <String>[],

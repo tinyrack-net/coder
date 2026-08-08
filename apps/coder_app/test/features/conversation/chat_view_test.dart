@@ -208,6 +208,26 @@ void main() {
   );
 
   testWidgets(
+    'running state does not move existing timeline rows',
+    (tester) async {
+      final events = <TimelineEventDto>[
+        event('user.message', <String, dynamic>{'text': 'Keep me still'}),
+      ];
+      await pump(tester, events);
+      await tester.pumpAndSettle();
+      final message = find.text('Keep me still', findRichText: true);
+      final before = tester.getRect(message);
+
+      await pump(tester, events, busy: true);
+      await tester.pump();
+
+      expect(tester.getRect(message), before);
+      expect(find.text('실행 중'), findsWidgets);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
     'assistant links open only browser-safe schemes',
     (tester) async {
       final opener = _RecordingUrlOpener();
@@ -562,6 +582,45 @@ void main() {
       );
     },
     tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a mixed-height timeline premeasures nearby rows without losing laziness',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final events = <TimelineEventDto>[
+        for (var index = 0; index < 80; index += 1)
+          event('user.message', <String, dynamic>{
+            'text': index < 65
+                ? 'long $index\nline 2\nline 3\nline 4\nline 5\nline 6'
+                : 'short $index',
+          }),
+      ];
+
+      await pump(tester, events);
+      await tester.pumpAndSettle();
+
+      final list = tester.widget<ListView>(find.byType(ListView));
+      final viewportHeight = tester.getSize(find.byType(ListView)).height;
+      expect(list.scrollCacheExtent?.value, 4);
+      expect(find.text('short 79'), findsOneWidget);
+      expect(find.textContaining('long 0'), findsNothing);
+
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      final initialMaxExtent = position.maxScrollExtent;
+      position.jumpTo(viewportHeight);
+      await tester.pumpAndSettle();
+      final extentChange =
+          (position.maxScrollExtent - initialMaxExtent).abs() /
+          initialMaxExtent;
+
+      expect(extentChange, lessThanOrEqualTo(0.1));
+      expect(find.textContaining('long 0'), findsNothing);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
   );
 }
 

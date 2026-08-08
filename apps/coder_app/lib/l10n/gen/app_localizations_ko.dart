@@ -66,6 +66,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsTitle => '설정';
 
   @override
+  String get settingsLoading => '설정 불러오는 중';
+
+  @override
+  String settingsRefreshFailed(String error) {
+    return '설정을 새로 불러오지 못했습니다: $error';
+  }
+
+  @override
   String get settingsSectionApp => 'App';
 
   @override
@@ -312,6 +320,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get workspaceAllSessions => '모든 session';
+
+  @override
+  String get workspaceSplitRight => '오른쪽으로 분할';
+
+  @override
+  String get workspaceSplitDown => '아래로 분할';
+
+  @override
+  String get workspaceResizePanes => 'Pane 크기 조절';
+
+  @override
+  String get workspaceSwitchTab => '탭 전환';
+
+  @override
+  String get workspaceMoveTabToPane => '활성 탭을 다른 pane으로 이동';
 
   @override
   String get workspaceCloseTab => '탭 닫기';
@@ -679,6 +702,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsRefreshCatalog => 'Catalog 갱신';
+
+  @override
+  String get providerSettingsCatalogStatus => 'Catalog 메타데이터';
+
+  @override
+  String get providerSettingsCatalogBundled => '번들된 스냅샷';
+
+  @override
+  String get providerSettingsCatalogCached => '마지막 정상 캐시';
+
+  @override
+  String get providerSettingsCatalogFresh => '최근 갱신됨';
+
+  @override
+  String get providerSettingsCatalogStale => '갱신 필요 · 로컬 메타데이터 사용 가능';
 
   @override
   String get providerSettingsDefaultModelTitle => '기본 모델';
@@ -1633,6 +1671,82 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerCommandHelpDescription => '사용할 수 있는 명령을 보여줍니다.';
+
+  @override
+  String get composerCommandGoalLabel => 'goal';
+
+  @override
+  String get composerCommandGoalDescription => '세션의 영속 작업 목표를 만들거나 관리합니다.';
+
+  @override
+  String get goalStatusActive => '실행 중';
+
+  @override
+  String get goalStatusPaused => '일시 정지';
+
+  @override
+  String get goalStatusBlocked => '막힘';
+
+  @override
+  String get goalStatusUsageLimited => '사용량 제한';
+
+  @override
+  String get goalStatusBudgetLimited => '예산 도달';
+
+  @override
+  String get goalStatusComplete => '완료';
+
+  @override
+  String get goalPlanHold => 'Run 모드에서 재개';
+
+  @override
+  String goalElapsed(int seconds) {
+    return '$seconds초 경과';
+  }
+
+  @override
+  String goalTokenUsage(int used, int budget) {
+    return '$used / $budget 토큰';
+  }
+
+  @override
+  String get goalPause => 'Goal 일시 정지';
+
+  @override
+  String get goalResume => 'Goal 재개';
+
+  @override
+  String get goalEdit => 'Goal 편집';
+
+  @override
+  String get goalClear => 'Goal 지우기';
+
+  @override
+  String get goalDialogTitle => '세션 Goal';
+
+  @override
+  String get goalObjectiveLabel => '목표';
+
+  @override
+  String get goalObjectiveRequired => '1–4,000자로 입력하세요.';
+
+  @override
+  String get goalBudgetLabel => '토큰 예산(선택)';
+
+  @override
+  String get goalBudgetInvalid => '양수 토큰 예산을 입력하세요.';
+
+  @override
+  String get goalStart => 'Goal 시작';
+
+  @override
+  String get goalReplaceTitle => '현재 Goal을 교체할까요?';
+
+  @override
+  String get goalReplaceDescription => '새 Goal을 시작하고 기록된 사용량을 초기화합니다.';
+
+  @override
+  String get goalReplaceAction => 'Goal 교체';
 
   @override
   String get composerSuggestionsLabel => '제안';

@@ -26,6 +26,16 @@ final class SessionUpdatedClientEvent extends ClientEvent {
   final SessionDto session;
 }
 
+final class GoalUpdatedClientEvent extends ClientEvent {
+  const GoalUpdatedClientEvent(this.goal);
+  final GoalDto goal;
+}
+
+final class GoalClearedClientEvent extends ClientEvent {
+  const GoalClearedClientEvent(this.cleared);
+  final GoalClearedDto cleared;
+}
+
 final class TerminalOutputClientEvent extends ClientEvent {
   const TerminalOutputClientEvent(this.output);
   final TerminalOutputDto output;
@@ -92,6 +102,7 @@ final class FakeCoderApi
     List<SkillDto>? skills,
     List<SkillDto>? projectSkills,
     Map<String, List<TimelineEventDto>>? timelines,
+    Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
     this.eventStream,
     this.agentListError,
@@ -104,6 +115,11 @@ final class FakeCoderApi
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
     this.agentDefinitionsGate,
+    this.terminalShellGate,
+    this.skillListGate,
+    this.permissionSettingsGate,
+    this.providerConnectionsGate,
+    this.mcpListGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
     this.projectSettingsError,
@@ -144,6 +160,7 @@ final class FakeCoderApi
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
            entry.key: List<TimelineEventDto>.of(entry.value),
        },
+       _goals = Map<String, GoalDto>.of(goals ?? const <String, GoalDto>{}),
        _models = <String, List<ProviderModelDto>>{
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
@@ -219,7 +236,17 @@ final class FakeCoderApi
     capabilities: ModelCapabilitiesDto(
       streaming: CapabilitySupport.supported,
       toolCalling: CapabilitySupport.supported,
-      reasoningEffort: CapabilitySupport.supported,
+      controls: <ModelControlDescriptorDto>[
+        ModelControlDescriptorDto(
+          id: 'reasoning_effort',
+          label: 'Reasoning effort',
+          kind: ModelControlKind.choice,
+          presentation: ModelControlPresentation.menuChip,
+          choices: <ModelControlChoiceDto>[
+            ModelControlChoiceDto(id: 'medium', label: 'Medium'),
+          ],
+        ),
+      ],
       source: CapabilitySource.bundled,
     ),
   );
@@ -233,7 +260,6 @@ final class FakeCoderApi
     model: AgentModelSelectionDto(
       source: AgentModelSource.session,
     ),
-    reasoningEffort: 'medium',
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
@@ -296,6 +322,7 @@ final class FakeCoderApi
   final List<SkillDto> _skills;
   final List<SkillDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
+  final Map<String, GoalDto> _goals;
   final Map<String, List<ProviderModelDto>> _models;
 
   /// Optional event stream that can model transport lifecycle races.
@@ -331,6 +358,21 @@ final class FakeCoderApi
   /// Optional gate used to keep agent definition discovery in its loading
   /// state.
   final Future<void>? agentDefinitionsGate;
+
+  /// Optional gate used to keep daemon shell settings in their loading state.
+  final Future<void>? terminalShellGate;
+
+  /// Optional gate used to keep skill discovery in its loading state.
+  final Future<void>? skillListGate;
+
+  /// Optional gate used to keep permission settings in their loading state.
+  final Future<void>? permissionSettingsGate;
+
+  /// Optional gate used to keep provider settings in their loading state.
+  final Future<void>? providerConnectionsGate;
+
+  /// Optional gate used to keep MCP discovery in its loading state.
+  final Future<void>? mcpListGate;
 
   /// Daemon-side directory tree keyed by parent path.
   final Map<String, List<String>> directories;
@@ -373,10 +415,15 @@ final class FakeCoderApi
       StreamController<ClientEvent>.broadcast(sync: true);
   final StreamController<ClientConnectionState> _states =
       StreamController<ClientConnectionState>.broadcast(sync: true);
+  final StreamController<ProviderCatalogDto> _catalogUpdates =
+      StreamController<ProviderCatalogDto>.broadcast(sync: true);
   bool _closed = false;
 
   /// Whether [close] released this fake client.
   bool get isClosed => _closed;
+
+  @override
+  Stream<ProviderCatalogDto> get catalogUpdates => _catalogUpdates.stream;
 
   /// Paths registered through the fake, in call order.
   final List<String> registeredPaths = <String>[];
@@ -549,6 +596,14 @@ final class FakeCoderApi
   Stream<SessionDto> get sessionUpdates => events
       .whereType<SessionUpdatedClientEvent>()
       .map((event) => event.session);
+
+  @override
+  Stream<GoalDto> get goalUpdates =>
+      events.whereType<GoalUpdatedClientEvent>().map((event) => event.goal);
+
+  @override
+  Stream<GoalClearedDto> get goalClears =>
+      events.whereType<GoalClearedClientEvent>().map((event) => event.cleared);
 
   @override
   Stream<TimelineEventDto> get timelineEvents =>
@@ -842,9 +897,9 @@ final class FakeCoderApi
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
     SessionModelSelectionDto? model,
-    String? reasoningEffort,
+    Map<String, ModelControlValueDto> modelControls =
+        const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
-    String? serviceTier,
   }) async {
     final agent = SessionDto(
       id: id,
@@ -855,9 +910,8 @@ final class FakeCoderApi
       status: SessionStatus.idle,
       mode: mode,
       model: model,
-      reasoningEffort: reasoningEffort,
+      modelControls: modelControls,
       permissionMode: permissionMode,
-      serviceTier: serviceTier,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -883,12 +937,27 @@ final class FakeCoderApi
       updatedSessionModels.add((sessionId: sessionId, model: patch.model));
       updated = updated.copyWith(model: patch.model);
     }
-    if (patch.hasReasoningEffort) {
+    if (patch.hasModelControls) {
+      final controls = patch.modelControls;
+      final effort = controls['reasoning_effort']?.map(
+        stringValue: (value) => value.value,
+        boolValue: (_) => null,
+        intValue: (_) => null,
+      );
       updatedSessionReasoningEfforts.add((
         sessionId: sessionId,
-        reasoningEffort: patch.reasoningEffort,
+        reasoningEffort: effort,
       ));
-      updated = updated.copyWith(reasoningEffort: patch.reasoningEffort);
+      final fast = controls['fast_mode']?.map(
+        stringValue: (_) => false,
+        boolValue: (value) => value.value,
+        intValue: (_) => false,
+      );
+      updatedSessionServiceTiers.add((
+        sessionId: sessionId,
+        serviceTier: fast == true ? 'priority' : null,
+      ));
+      updated = updated.copyWith(modelControls: controls);
     }
     if (patch.hasPermissionMode) {
       if (sessionPermissionSetError case final error?) throw error;
@@ -898,21 +967,72 @@ final class FakeCoderApi
       ));
       updated = updated.copyWith(permissionMode: patch.permissionMode);
     }
-    if (patch.hasServiceTier) {
-      updatedSessionServiceTiers.add((
-        sessionId: sessionId,
-        serviceTier: patch.serviceTier,
-      ));
-      updated = updated.copyWith(serviceTier: patch.serviceTier);
-    }
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;
   }
 
   @override
-  Future<PermissionSettingsDto> getDefaultPermissionMode() async =>
-      PermissionSettingsDto(defaultMode: _defaultPermissionMode);
+  Future<GoalDto?> getGoal(String sessionId) async => _goals[sessionId];
+
+  @override
+  Future<GoalDto> replaceGoal({
+    required String sessionId,
+    required String objective,
+    int? tokenBudget,
+  }) async {
+    final goal = GoalDto(
+      sessionId: sessionId,
+      goalId: 'goal-${_goals.length + 1}',
+      objective: objective.trim(),
+      status: GoalStatus.active,
+      tokenBudget: tokenBudget,
+      tokensUsed: 0,
+      timeUsedSeconds: 0,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    _goals[sessionId] = goal;
+    emit(GoalUpdatedClientEvent(goal));
+    return goal;
+  }
+
+  @override
+  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update) async {
+    final current = _goals[sessionId];
+    if (current == null || current.goalId != update.expectedGoalId) {
+      throw StateError('Goal not found: $sessionId');
+    }
+    final goal = current.copyWith(
+      objective: update.objective ?? current.objective,
+      status: update.status ?? current.status,
+      tokenBudget: update.hasTokenBudget
+          ? update.tokenBudget
+          : current.tokenBudget,
+      updatedAt: _now,
+    );
+    _goals[sessionId] = goal;
+    emit(GoalUpdatedClientEvent(goal));
+    return goal;
+  }
+
+  @override
+  Future<bool> clearGoal(String sessionId) async {
+    final goal = _goals.remove(sessionId);
+    if (goal == null) return false;
+    emit(
+      GoalClearedClientEvent(
+        GoalClearedDto(sessionId: sessionId, goalId: goal.goalId),
+      ),
+    );
+    return true;
+  }
+
+  @override
+  Future<PermissionSettingsDto> getDefaultPermissionMode() async {
+    await permissionSettingsGate;
+    return PermissionSettingsDto(defaultMode: _defaultPermissionMode);
+  }
 
   @override
   Future<PermissionSettingsDto> setDefaultPermissionMode(
@@ -1000,7 +1120,10 @@ final class FakeCoderApi
   }
 
   @override
-  Future<ShellSpecDto?> getTerminalShell() async => _terminalShell;
+  Future<ShellSpecDto?> getTerminalShell() async {
+    await terminalShellGate;
+    return _terminalShell;
+  }
 
   @override
   Future<void> setTerminalShell(ShellSpecDto? shell) async {
@@ -1115,6 +1238,7 @@ final class FakeCoderApi
 
   @override
   Future<List<McpServerStateDto>> listMcpServers({String? worktreeId}) async {
+    await mcpListGate;
     if (mcpListResponses.isNotEmpty) {
       return mcpListResponses.removeAt(0);
     }
@@ -1209,6 +1333,7 @@ final class FakeCoderApi
 
   @override
   Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+    await skillListGate;
     final error = skillListError;
     if (error != null) throw error;
     return List<SkillDto>.unmodifiable(_skillsFor(workspaceId));
@@ -1295,8 +1420,10 @@ final class FakeCoderApi
   Future<ProviderCatalogDto> listProviderCatalog() async => _catalog;
 
   @override
-  Future<List<ProviderConnectionDto>> listProviderConnections() async =>
-      List<ProviderConnectionDto>.unmodifiable(_connections);
+  Future<List<ProviderConnectionDto>> listProviderConnections() async {
+    await providerConnectionsGate;
+    return List<ProviderConnectionDto>.unmodifiable(_connections);
+  }
 
   @override
   Future<ProviderConnectionDto> connectProviderApiKey(
@@ -1415,14 +1542,14 @@ final class FakeCoderApi
     String? apiKey,
   }) async {
     if (apiKey != null) credentials[id] = apiKey;
-    for (final modelId in config.manualModelIds) {
+    for (final manualModel in config.models) {
       _models
           .putIfAbsent(id, () => <ProviderModelDto>[])
           .add(
             ProviderModelDto(
               connectionId: id,
-              id: modelId,
-              label: modelId,
+              id: manualModel.id,
+              label: manualModel.label,
               source: ProviderModelSource.manual,
               capabilities: const ModelCapabilitiesDto(
                 streaming: CapabilitySupport.supported,
@@ -1458,17 +1585,17 @@ final class FakeCoderApi
     String? apiKey,
   }) async {
     if (apiKey != null) credentials[connectionId] = apiKey;
-    for (final modelId in config.manualModelIds) {
+    for (final manualModel in config.models) {
       final models = _models.putIfAbsent(
         connectionId,
         () => <ProviderModelDto>[],
       );
-      if (models.any((model) => model.id == modelId)) continue;
+      if (models.any((model) => model.id == manualModel.id)) continue;
       models.add(
         ProviderModelDto(
           connectionId: connectionId,
-          id: modelId,
-          label: modelId,
+          id: manualModel.id,
+          label: manualModel.label,
           source: ProviderModelSource.manual,
           capabilities: const ModelCapabilitiesDto(
             streaming: CapabilitySupport.supported,
@@ -1625,6 +1752,7 @@ final class FakeCoderApi
     _closed = true;
     await _events.close();
     await _states.close();
+    await _catalogUpdates.close();
   }
 }
 

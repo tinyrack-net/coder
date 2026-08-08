@@ -1,6 +1,8 @@
 import 'package:coder_app/src/app/composition/app_providers.dart';
 import 'package:coder_app/src/app/router/app_router.dart';
+import 'package:coder_app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:coder_app/src/shared/presentation/coder_list_row.dart';
+import 'package:coder_app/src/shared/presentation/settings_layout.dart';
 import 'package:coder_protocol/coder_protocol.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +71,33 @@ void main() {
   );
 
   testWidgets(
+    'the desktop project selector stays inset inside the collection pane',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      final selector = find.descendant(
+        of: find.byType(TRSelectFormField<String?>),
+        matching: find.byType(TextButton),
+      );
+      expect(selector, findsOneWidget);
+      expect(
+        tester.getSize(selector).width,
+        CoderLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.large,
+      );
+      expect(
+        tester.getTopLeft(selector).dx,
+        tester.getTopLeft(find.byType(SettingsPaneHeader).first).dx +
+            TRSpacing.large,
+      );
+    },
+    tags: const <String>['feature_test__skill_management__widget'],
+  );
+
+  testWidgets(
     'built-in skills are read-only while config skills can be edited',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
@@ -114,10 +143,7 @@ void main() {
 
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('지시문 (Markdown)'),
-        'Forced body.',
-      );
+      await tester.enterText(_textInput('지시문 (Markdown)'), 'Forced body.');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
@@ -158,18 +184,9 @@ void main() {
 
       await tester.tap(findAccessibleAction('스킬 추가'));
       await tester.pumpAndSettle();
-      await tester.enterText(
-        _textInput('ID (디렉터리 이름)'),
-        'release-notes',
-      );
-      await tester.enterText(
-        _textInput('이름').last,
-        'release-notes',
-      );
-      await tester.enterText(
-        _textInput('설명').last,
-        'Writes release notes.',
-      );
+      await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
+      await tester.enterText(_textInput('이름').last, 'release-notes');
+      await tester.enterText(_textInput('설명').last, 'Writes release notes.');
       tester.testTextInput.hide();
       await tester.pumpAndSettle();
       final create = find.widgetWithText(TRButton, '생성');
@@ -250,9 +267,11 @@ void main() {
       expect(findAccessibleAction('스킬 목록'), findsNothing);
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      expect(findAccessibleAction('스킬 목록'), findsOneWidget);
+      expect(findAccessibleAction('스킬 목록'), findsNothing);
 
-      await tester.tap(findAccessibleAction('스킬 목록'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
       await tester.pumpAndSettle();
       expect(findAccessibleAction('스킬 추가'), findsOneWidget);
     },
@@ -274,9 +293,7 @@ Future<GoRouter> _pumpSkills(WidgetTester tester, FakeCoderApi api) async {
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        appServicesProvider.overrideWithValue(fakeAppServices(api)),
-      ],
+      overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
       child: MaterialApp.router(
         theme: testLightTheme,
         darkTheme: testDarkTheme,
