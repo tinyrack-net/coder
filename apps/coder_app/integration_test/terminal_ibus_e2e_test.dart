@@ -159,8 +159,11 @@ void main() {
         'the shell to disable echo before the wrapped-row probe',
       );
       await tester.pumpAndSettle();
-      const wrappedProbe =
-          '\r\n\u001b[2K\u001b[999C\u001b[5DWRAPQWxy\b \b\b \b\b \b\r\n';
+      // xterm crosses a soft-wrap boundary on Backspace only when the
+      // terminal application enables DEC reverse-wrap mode.
+      const reverseWrapPrefix = '\r\n\u001b[2K\u001b[?45h\u001b[999C\u001b[5D';
+      const eraseAcrossWrap = 'WRAPQWxy\b \b\b \b\b \b\r\n';
+      const wrappedProbe = '$reverseWrapPrefix$eraseAcrossWrap';
       final encodedWrappedProbe = base64Encode(utf8.encode(wrappedProbe));
       await setupClient.terminals.writeTerminal(
         terminal.id,
