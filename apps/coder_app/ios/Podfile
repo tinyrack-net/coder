@@ -45,22 +45,28 @@ end
 
 post_integrate do |installer|
   # Xcode 26.6 does not schedule CocoaPods' empty aggregate target when every
-  # actual Pod is already linked directly. CocoaPods writes these xcconfigs
-  # after post_install, so remove only the redundant library after integration.
+  # actual Pod is already linked directly. Remove only CocoaPods' redundant
+  # aggregate library reference; its xcconfig still links every actual Pod.
   aggregate_target = installer.aggregate_targets.find do |target|
     target.name == 'Pods-Runner'
   end
   raise 'Missing Pods-Runner aggregate target' unless aggregate_target
 
-  removed = false
-  aggregate_target.xcconfigs.each_key do |config_name|
-    config_path = aggregate_target.xcconfig_path(config_name)
-    contents = File.read(config_path)
-    updated = contents.gsub(' -l"Pods-Runner"', '')
-    next if updated == contents
-
-    File.write(config_path, updated)
-    removed = true
+  runner_target = aggregate_target.user_targets.find do |target|
+    target.name == 'Runner'
   end
-  raise 'Missing redundant Pods-Runner link flag' unless removed
+  raise 'Missing Runner user target' unless runner_target
+
+  aggregate_link = runner_target.frameworks_build_phase.files.find do |file|
+    file.file_ref&.display_name == 'libPods-Runner.a'
+  end
+  unless aggregate_link
+    raise 'Missing redundant Pods-Runner library reference'
+  end
+
+  runner_target.project.frameworks_group.remove_reference(
+    aggregate_link.file_ref,
+  )
+  runner_target.frameworks_build_phase.remove_build_file(aggregate_link)
+  runner_target.project.save
 end

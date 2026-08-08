@@ -222,10 +222,13 @@ void main() {
       contains("config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'"),
     );
     expect(iosPodfile, contains('post_integrate do |installer|'));
-    expect(iosPodfile, contains("gsub(' -l\"Pods-Runner\"', '')"));
+    expect(iosPodfile, contains('frameworks_build_phase.files.find'));
+    expect(iosPodfile, contains("display_name == 'libPods-Runner.a'"));
+    expect(iosPodfile, contains('frameworks_group.remove_reference'));
+    expect(iosPodfile, contains('frameworks_build_phase.remove_build_file'));
     expect(
       iosPodfile,
-      contains("raise 'Missing redundant Pods-Runner link flag'"),
+      contains("raise 'Missing redundant Pods-Runner library reference'"),
     );
     expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
