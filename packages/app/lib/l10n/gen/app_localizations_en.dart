@@ -279,6 +279,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNewTerminal => 'New terminal';
 
   @override
+  String get workspaceLoading => 'Loading workspace';
+
+  @override
+  String get workspaceCatalogLoading => 'Loading workspaces';
+
+  @override
+  String get workspaceCreatingWorktree => 'Creating worktree…';
+
+  @override
+  String get workspaceStartingSession => 'Starting session…';
+
+  @override
+  String get workspaceTerminalStarting => 'Starting terminal';
+
+  @override
+  String workspaceTerminalStartFailed(String error) {
+    return 'Could not start terminal: $error';
+  }
+
+  @override
   String get terminalCloseTitle => 'Terminate terminal?';
 
   @override
@@ -290,6 +310,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get terminalConnectionFailed => 'Terminal connection failed';
+
+  @override
+  String get terminalConnecting => 'Connecting to terminal';
+
+  @override
+  String get conversationLoading => 'Loading conversation';
+
+  @override
+  String get directoryBrowserLoading => 'Loading directories';
 
   @override
   String get terminalMenuCopy => 'Copy';

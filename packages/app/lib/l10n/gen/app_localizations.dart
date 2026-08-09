@@ -592,6 +592,42 @@ abstract class AppLocalizations {
   /// **'New terminal'**
   String get workspaceNewTerminal;
 
+  /// Announced once for the workspace pane skeleton shown while sessions and terminals load.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading workspace'**
+  String get workspaceLoading;
+
+  /// Announced once for the sidebar tree skeleton shown while daemon catalogs load.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading workspaces'**
+  String get workspaceCatalogLoading;
+
+  /// Progress label while the daemon checks out a new worktree and runs its hooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating worktree…'**
+  String get workspaceCreatingWorktree;
+
+  /// Progress label while the daemon creates the session for a submitted prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting session…'**
+  String get workspaceStartingSession;
+
+  /// Label of a placeholder terminal tab while the daemon creates its shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting terminal'**
+  String get workspaceTerminalStarting;
+
+  /// Error shown after a placeholder terminal tab is rolled back.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start terminal: {error}'**
+  String workspaceTerminalStartFailed(String error);
+
   /// No description provided for @terminalCloseTitle.
   ///
   /// In en, this message translates to:
@@ -615,6 +651,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal connection failed'**
   String get terminalConnectionFailed;
+
+  /// Overlay label shown while a terminal pane attaches to its daemon shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to terminal'**
+  String get terminalConnecting;
+
+  /// Announced once for the chat timeline skeleton shown while session history loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading conversation'**
+  String get conversationLoading;
+
+  /// Announced once for the row skeletons shown while the first directory listing loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading directories'**
+  String get directoryBrowserLoading;
 
   /// No description provided for @terminalMenuCopy.
   ///

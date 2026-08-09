@@ -158,6 +158,16 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'workspace.async.loading',
+    description:
+        'Keeps workspace navigation and interactions responsive while '
+        'asynchronous reads show shape-preserving skeletons and optimistic '
+        'placeholders that transition to loaded content.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'settings.reset',
     description:
         'Erases embedded daemon data and every device-local app setting '

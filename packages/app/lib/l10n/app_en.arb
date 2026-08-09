@@ -340,10 +340,51 @@
   "workspaceNewSession": "New session",
   "workspaceNewTab": "New tab",
   "workspaceNewTerminal": "New terminal",
+  "workspaceLoading": "Loading workspace",
+  "@workspaceLoading": {
+    "description": "Announced once for the workspace pane skeleton shown while sessions and terminals load."
+  },
+  "workspaceCatalogLoading": "Loading workspaces",
+  "@workspaceCatalogLoading": {
+    "description": "Announced once for the sidebar tree skeleton shown while daemon catalogs load."
+  },
+  "workspaceCreatingWorktree": "Creating worktree…",
+  "@workspaceCreatingWorktree": {
+    "description": "Progress label while the daemon checks out a new worktree and runs its hooks."
+  },
+  "workspaceStartingSession": "Starting session…",
+  "@workspaceStartingSession": {
+    "description": "Progress label while the daemon creates the session for a submitted prompt."
+  },
+  "workspaceTerminalStarting": "Starting terminal",
+  "@workspaceTerminalStarting": {
+    "description": "Label of a placeholder terminal tab while the daemon creates its shell."
+  },
+  "workspaceTerminalStartFailed": "Could not start terminal: {error}",
+  "@workspaceTerminalStartFailed": {
+    "description": "Error shown after a placeholder terminal tab is rolled back.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "terminalCloseTitle": "Terminate terminal?",
   "terminalCloseConfirm": "Closing this tab terminates its shell and child processes.",
   "terminalTerminate": "Terminate",
   "terminalConnectionFailed": "Terminal connection failed",
+  "terminalConnecting": "Connecting to terminal",
+  "@terminalConnecting": {
+    "description": "Overlay label shown while a terminal pane attaches to its daemon shell."
+  },
+  "conversationLoading": "Loading conversation",
+  "@conversationLoading": {
+    "description": "Announced once for the chat timeline skeleton shown while session history loads."
+  },
+  "directoryBrowserLoading": "Loading directories",
+  "@directoryBrowserLoading": {
+    "description": "Announced once for the row skeletons shown while the first directory listing loads."
+  },
   "terminalMenuCopy": "Copy",
   "terminalMenuPaste": "Paste",
   "terminalMenuSelectAll": "Select all",
