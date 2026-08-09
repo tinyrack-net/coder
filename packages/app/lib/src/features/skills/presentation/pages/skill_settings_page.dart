@@ -292,7 +292,7 @@ class _SkillList extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.skillSettingsHeading,
           subtitle: l10n.skillSettingsCount(skills.length),
           actions: <Widget>[

@@ -159,7 +159,7 @@ class _SettingsSkeletonListPane extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
       Padding(
-        padding: SettingsRow.contentPadding,
+        padding: SettingsPaneHeader.collectionPadding,
         child: TRSkeleton(width: TRMeasurements.measureSm),
       ),
       TRSeparator(variant: TRSeparatorVariant.muted),
@@ -196,10 +196,10 @@ class _SettingsSkeletonListRow extends StatelessWidget {
 
 /// A scrollable collection pane whose rows share the settings sidebar rhythm.
 ///
-/// The pane boundary supplies the outer inset while collection rows reduce
-/// their own inline padding by the same amount. This keeps selected, hovered,
-/// and focused surfaces away from the pane edge without moving the content
-/// away from the header's leading alignment line.
+/// The pane boundary supplies the outer inset while collection rows add the
+/// same token-sized inline padding used by tree navigation. This keeps
+/// selected, hovered, and focused surfaces away from the pane edge while
+/// aligning their content with the collection header.
 class SettingsCollectionList extends StatelessWidget {
   /// Creates an inset collection with token-based spacing between [children].
   const SettingsCollectionList({required this.children, super.key});
@@ -211,7 +211,7 @@ class SettingsCollectionList extends StatelessWidget {
   Widget build(BuildContext context) => ListView.separated(
     padding: const EdgeInsets.symmetric(
       horizontal: TRSpacing.medium,
-      vertical: TRSpacing.extraSmall,
+      vertical: TRSpacing.medium,
     ),
     itemCount: children.length,
     itemBuilder: (context, index) => children[index],
@@ -620,7 +620,7 @@ class SettingsRow extends StatelessWidget {
   /// Creates a row inside a [SettingsCollectionList].
   ///
   /// Its selected, hover, and focus surface is inset by the surrounding list,
-  /// while its content remains aligned with [SettingsPaneHeader.list].
+  /// while its content remains aligned with [SettingsPaneHeader.collection].
   const SettingsRow.collection({
     required this.title,
     this.control,
@@ -693,7 +693,7 @@ class SettingsRow extends StatelessWidget {
 
   /// Content inset used after the collection supplies its outer pane inset.
   static const collectionContentPadding = EdgeInsets.symmetric(
-    horizontal: TRSpacing.extraSmall,
+    horizontal: TRSpacing.medium,
     vertical: TRSpacing.medium,
   );
 
@@ -712,6 +712,9 @@ class SettingsRow extends StatelessWidget {
     leading: leading,
     onTap: onTap,
     selected: selected,
+    selectionAppearance: _collection
+        ? CoderListRowSelectionAppearance.navigation
+        : CoderListRowSelectionAppearance.standard,
     subtitle: description,
     title: title,
     trailing: control,
@@ -728,6 +731,15 @@ class SettingsPaneHeader extends StatelessWidget {
     this.leading,
     super.key,
   }) : _padding = SettingsRow.contentPadding;
+
+  /// Creates the header of a collection pane, inset to match its rows.
+  const SettingsPaneHeader.collection({
+    required this.title,
+    this.subtitle,
+    this.actions = const <Widget>[],
+    this.leading,
+    super.key,
+  }) : _padding = collectionPadding;
 
   /// Creates the header of the detail pane, inset to match its body.
   ///
@@ -759,6 +771,12 @@ class SettingsPaneHeader extends StatelessWidget {
 
   /// Inset matching the content this header sits above.
   final EdgeInsets _padding;
+
+  /// Header inset for a collection pane.
+  static const collectionPadding = EdgeInsets.symmetric(
+    horizontal: TRSpacing.extraLarge,
+    vertical: TRSpacing.medium,
+  );
 
   @override
   Widget build(BuildContext context) => Column(

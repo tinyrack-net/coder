@@ -132,7 +132,7 @@ class _ProjectList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.projectSettingsHeading,
           subtitle: l10n.projectSettingsCount(projects.length),
         ),
