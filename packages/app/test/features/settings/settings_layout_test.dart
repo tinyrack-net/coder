@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,25 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
     body: SizedBox(width: width, child: child),
   ),
 );
+
+Finder _rowSurface(Finder owner, EdgeInsetsGeometry padding) => find.descendant(
+  of: owner,
+  matching: find.byWidgetPredicate(
+    (widget) => widget is AnimatedContainer && widget.padding == padding,
+  ),
+);
+
+Finder _switchSurface(Finder owner) => find.descendant(
+  of: owner,
+  matching: find.byWidgetPredicate(
+    (widget) => widget is AnimatedContainer && widget.padding != null,
+  ),
+);
+
+Color _containerColor(WidgetTester tester, Finder finder) {
+  final decoration = tester.widget<AnimatedContainer>(finder).decoration;
+  return (decoration! as BoxDecoration).color!;
+}
 
 void main() {
   testWidgets(
@@ -742,6 +762,107 @@ void main() {
       await tester.tap(find.text('Toggle me'));
       await tester.pump();
       expect(taps, 1);
+    });
+
+    testWidgets(
+      'keeps the settings surface stable while the row and switch are hovered',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            SettingsRow(
+              key: const ValueKey<String>('settings-hover-row'),
+              title: const TRText.inherit('Enabled'),
+              onTap: () {},
+              control: TRSwitch(
+                checked: false,
+                onCheckedChange: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        final row = find.byKey(
+          const ValueKey<String>('settings-hover-row'),
+        );
+        final rowSurface = _rowSurface(row, SettingsRow.contentPadding);
+        final switchFinder = find.byType(TRSwitch);
+        final theme = tester.element(row).tinyrackTheme;
+        final mouse = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: Offset.zero);
+
+        await mouse.moveTo(tester.getCenter(find.text('Enabled')));
+        await tester.pumpAndSettle();
+        expect(_containerColor(tester, rowSurface), theme.surface);
+
+        await mouse.moveTo(tester.getCenter(switchFinder));
+        await tester.pumpAndSettle();
+        expect(_containerColor(tester, rowSurface), theme.surface);
+        expect(
+          _containerColor(tester, _switchSurface(switchFinder)),
+          theme.surfaceHover,
+        );
+      },
+    );
+
+    testWidgets('keeps collection rows free of row hover', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsRow.collection(
+            key: const ValueKey<String>('settings-collection-hover-row'),
+            title: const TRText.inherit('Project'),
+            onTap: () {},
+          ),
+        ),
+      );
+
+      final row = find.byKey(
+        const ValueKey<String>('settings-collection-hover-row'),
+      );
+      final theme = tester.element(row).tinyrackTheme;
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Project')));
+      await tester.pumpAndSettle();
+
+      expect(
+        _containerColor(
+          tester,
+          _rowSurface(row, SettingsRow.collectionContentPadding),
+        ),
+        theme.surface,
+      );
+    });
+
+    testWidgets('keeps hover for non-settings list rows', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          CoderListRow(
+            contentPadding: SettingsRow.contentPadding,
+            title: const TRText.inherit('Open'),
+            onTap: () {},
+          ),
+        ),
+      );
+
+      final row = find.byType(CoderListRow);
+      final theme = tester.element(row).tinyrackTheme;
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Open')));
+      await tester.pumpAndSettle();
+
+      expect(
+        _containerColor(
+          tester,
+          _rowSurface(row, SettingsRow.contentPadding),
+        ),
+        theme.surfaceHover,
+      );
     });
   });
 
