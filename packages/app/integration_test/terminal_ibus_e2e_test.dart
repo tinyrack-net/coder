@@ -65,7 +65,9 @@ void main() {
         }
       });
 
-      const expected = '한글 abc 안녕 \u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
+      const expected =
+          '한글 abc 안녕 ㅁㄴㅇㄹㅁㄴㅇㄹ '
+          '\u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
           Platform.environment['TINYRACK_IBUS_ARTIFACT_DIR'];
@@ -233,6 +235,11 @@ void main() {
       await _keys(<String>['a', 'b', 'c', 'space']);
       await _toggleLanguage();
       await _keys(<String>[...'dkssud'.split(''), 'space']);
+      // Bare consonants never join into a syllable, so IBus commits each one
+      // as the next arrives while the last stays in preedit until Space.
+      // Every jamo must reach the PTY as it commits — not all at once on the
+      // Space — and the Space itself must be written exactly once.
+      await _keys(<String>[...'asdfasdf'.split(''), 'space']);
       await _toggleLanguage();
 
       const pasted = '붙여넣기 👩🏽\u200d💻';
@@ -272,17 +279,23 @@ void main() {
       await _keys(<String>['1', 'BackSpace']);
       await _chord(<String>['Alt_L'], 'BackSpace');
 
-      await _waitUntil(
+      // Waited for without failing on the wait itself, so a shortfall still
+      // reaches the byte comparison below and its diagnostic hex dump.
+      await _waitForOptional(
         () =>
             capture.existsSync() &&
             capture.lengthSync() == expectedBytes.length,
-        'the embedded PTY to persist every expected byte',
+        const Duration(seconds: 15),
       );
-      final actualBytes = capture.readAsBytesSync();
+      final actualBytes = capture.existsSync()
+          ? capture.readAsBytesSync()
+          : const <int>[];
       expect(
         actualBytes,
         expectedBytes,
-        reason: 'PTY bytes: ${actualBytes.map(_hex).join(' ')}',
+        reason:
+            'PTY bytes: ${actualBytes.map(_hex).join(' ')} '
+            '(${utf8.decode(actualBytes, allowMalformed: true)})',
       );
     },
     tags: const <String>[

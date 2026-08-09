@@ -318,8 +318,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/dropwell"
-      ref: "8d73916027e90722447381faf77799cebf99fbb2"
-      resolved-ref: "8d73916027e90722447381faf77799cebf99fbb2"
+      ref: e61b54d09c7313f73fc6952693a1c371f0edf0dc
+      resolved-ref: e61b54d09c7313f73fc6952693a1c371f0edf0dc
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
     version: "0.1.0"
@@ -1345,8 +1345,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/termworld"
-      ref: "8d73916027e90722447381faf77799cebf99fbb2"
-      resolved-ref: "8d73916027e90722447381faf77799cebf99fbb2"
+      ref: e61b54d09c7313f73fc6952693a1c371f0edf0dc
+      resolved-ref: e61b54d09c7313f73fc6952693a1c371f0edf0dc
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
     version: "0.4.0"
