@@ -305,11 +305,19 @@ void main() {
     });
 
     test(
-      'the built-in agent only opts into the write and command tools',
+      'the built-in agent enables every selectable built-in tool',
       () async {
         final coder = await service.get('coder');
 
-        expect(coder.toolIds, <String>['apply_patch', 'exec_command']);
+        expect(coder.toolIds, <String>[
+          'apply_patch',
+          'lua_code_mode',
+          'list_mcp_resources',
+          'list_mcp_resource_templates',
+          'read_mcp_resource',
+          'exec_command',
+          'collaboration',
+        ]);
         expect(
           registry.resolveIds(coder.toolIds),
           <String>[
@@ -325,10 +333,16 @@ void main() {
             'ask_user',
             'read_attachment',
             'apply_patch',
+            'lua_code_mode',
+            'list_mcp_resources',
+            'list_mcp_resource_templates',
+            'read_mcp_resource',
             'exec_command',
+            'collaboration',
           ],
         );
       },
+      tags: const <String>['feature_test__agent_definition_management__unit'],
     );
 
     test('service changes fire for source and catalog updates', () async {

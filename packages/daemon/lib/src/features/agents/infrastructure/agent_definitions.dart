@@ -675,8 +675,17 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
   model: const AgentModelSelectionDto(source: AgentModelSource.session),
-  // The read tools are always on, so only the opt-in ones are listed here.
-  toolIds: const <String>['apply_patch', 'exec_command'],
+  // The always-on tools are implicit; every selectable built-in capability is
+  // enabled for the shipped Coder definition.
+  toolIds: const <String>[
+    'apply_patch',
+    'lua_code_mode',
+    'list_mcp_resources',
+    'list_mcp_resource_templates',
+    'read_mcp_resource',
+    'exec_command',
+    'collaboration',
+  ],
   callableAgentIds: const <String>[],
   contentHash: '',
   sourcePath: sourcePath,

@@ -370,6 +370,15 @@ Review the requested code without modifying it.
       await store.initialize();
       await store.initialize();
       final coder = (await store.get('coder'))!;
+      expect(coder.toolIds, <String>[
+        'apply_patch',
+        'lua_code_mode',
+        'list_mcp_resources',
+        'list_mcp_resource_templates',
+        'read_mcp_resource',
+        'exec_command',
+        'collaboration',
+      ]);
 
       await expectLater(
         store.create('other', coder),
@@ -429,7 +438,9 @@ Review the requested code without modifying it.
       expect(await store.listArchived(), isEmpty);
       final reset = await store.resetCoder();
       expect(reset.systemPrompt, contains('Read relevant code'));
+      expect(reset.toolIds, coder.toolIds);
     },
+    tags: const <String>['feature_test__agent_definition_management__unit'],
   );
 
   test(
