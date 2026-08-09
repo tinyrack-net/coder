@@ -8,6 +8,7 @@ import 'package:app/src/features/conversation/application/attachment_ports.dart'
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/application/conversation_timeline_controller.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
@@ -1156,7 +1157,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final items = ref.watch(
       conversationTimelineProvider(widget.selection.hostId, current.id),
     );
-    final visibleItems = readOnly
+    var visibleItems = readOnly
         ? items
               .where(
                 (item) =>
@@ -1165,6 +1166,44 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               )
               .toList(growable: false)
         : items;
+    // A freshly created session navigates before its first turn is accepted.
+    // Until the real timeline echoes the prompt, render it optimistically so
+    // the chat room never opens onto an empty page after Send.
+    final pendingFirstTurn = ref.watch(
+      pendingFirstTurnsProvider.select((value) => value[current.id]),
+    );
+    // A first turn that failed before this pane mounted could not be queued:
+    // the auto-disposed conversation state was not alive to hold it. Now that
+    // this pane keeps the conversation alive, convert the survivor into a
+    // queued turn with its usual error and retry affordances.
+    if (pendingFirstTurn != null &&
+        pendingFirstTurn.failed &&
+        conversation.hasValue) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final entry = ref.read(pendingFirstTurnsProvider)[current.id];
+        if (entry == null || !entry.failed) return;
+        ref.read(pendingFirstTurnsProvider.notifier).clear(current.id);
+        _conversation(
+          ref,
+          current.id,
+        ).enqueueTurn(entry.prompt, attachments: entry.attachments);
+      });
+    }
+    final optimistic =
+        pendingFirstTurn != null &&
+        !visibleItems.any((item) => item is ChatUserMessage);
+    if (optimistic) {
+      visibleItems = <ChatItem>[
+        ...visibleItems,
+        ChatUserMessage(
+          key: 'pending-first-turn-${current.id}',
+          turnId: 'pending-first-turn',
+          createdAt: pendingFirstTurn.createdAt,
+          text: pendingFirstTurn.prompt,
+        ),
+      ];
+    }
     final agentsAsync = ref.watch(
       agentDefinitionsControllerProvider(widget.selection.hostId),
     );
@@ -1240,7 +1279,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             Expanded(
               child: ChatTimelineView(
                 items: visibleItems,
-                busy: busy,
+                busy: busy || optimistic,
+                loading: conversation.isLoading && !conversation.hasValue,
                 hostId: widget.selection.hostId,
                 planActionBuilder: pendingPlan == null
                     ? null

@@ -96,19 +96,30 @@ void _registerSessionsAppFlows() {
           prompt,
         );
         await tester.tap(find.byKey(const ValueKey('session-composer-send')));
-        await tester.pump();
+        for (var frame = 0; frame < 4; frame += 1) {
+          await tester.pump();
+        }
 
-        // The exact draft remains mounted while the daemon accepts the turn;
-        // no workspace loading screen or empty conversation replaces it.
-        expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsOneWidget);
-        expect(find.byType(ChatTimelineView), findsNothing);
+        // The chat room opens on the create round trip alone: the prompt is
+        // already visible as an optimistic bubble while the daemon is still
+        // accepting the first turn.
+        expect(find.text('코딩 요청으로 새 session을 시작하세요.'), findsNothing);
+        final timeline = find.byType(ChatTimelineView).hitTestable();
+        expect(timeline, findsOneWidget);
+        expect(
+          find.descendant(
+            of: timeline,
+            matching: find.text(prompt, findRichText: true),
+          ),
+          findsOneWidget,
+        );
 
         startGate.complete();
         for (var frame = 0; frame < 8; frame += 1) {
           await tester.pump();
         }
-        final timeline = find.byType(ChatTimelineView).hitTestable();
-        expect(timeline, findsOneWidget);
+        // The daemon's echo replaces the optimistic bubble without ever
+        // rendering the prompt twice.
         expect(
           find.descendant(
             of: timeline,
