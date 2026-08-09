@@ -133,7 +133,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         false;
     final catalogAsync = ref.watch(workspaceCatalogControllerProvider);
     final catalog = catalogAsync.value;
-    final catalogLoading = catalogAsync.isLoading && !catalogAsync.hasValue;
+    final catalogLoading =
+        (catalogAsync.isLoading && !catalogAsync.hasValue) ||
+        (catalogAsync.value?.hasPendingHosts ?? false);
     final projects = catalog == null
         ? const <NewWorkspaceProject>[]
         : collectProjects(AppLocalizations.of(context), catalog);

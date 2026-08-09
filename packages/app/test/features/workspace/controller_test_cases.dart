@@ -76,9 +76,12 @@ void _registerWorkspaceControllerTests() {
       );
       api.emitState(ClientConnectionState.connected);
 
-      final catalog = await container.read(
-        workspaceCatalogControllerProvider.future,
-      );
+      await container.read(workspaceCatalogControllerProvider.future);
+      // Host catalogs merge in as each daemon answers.
+      await Future<void>.delayed(Duration.zero);
+      final catalog = container
+          .read(workspaceCatalogControllerProvider)
+          .requireValue;
       expect(catalog.catalogs['server']?.workspaces, <WorkspaceDto>[workspace]);
       final registered = await container
           .read(workspaceCatalogControllerProvider.notifier)
@@ -301,9 +304,12 @@ void _registerWorkspaceControllerTests() {
     await container.read(hostRegistryControllerProvider.future);
     await Future<void>.delayed(Duration.zero);
 
-    final catalogs = await container.read(
-      workspaceCatalogControllerProvider.future,
-    );
+    await container.read(workspaceCatalogControllerProvider.future);
+    // Host catalogs merge in as each daemon answers.
+    await Future<void>.delayed(Duration.zero);
+    final catalogs = container
+        .read(workspaceCatalogControllerProvider)
+        .requireValue;
     expect(
       catalogs.catalogs['first']?.workspaces.single.name,
       'first workspace',
@@ -609,6 +615,69 @@ void _registerWorkspaceControllerTests() {
       );
     },
     tags: const <String>['feature_test__session_tabs__unit'],
+  );
+
+  test(
+    'catalogs merge per host so one slow daemon cannot block others', //
+    () async {
+      final gate = Completer<void>();
+      final fastApi = FakeCoderApi(
+        serverInfo: _serverInfo('first-server'),
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+      );
+      final slowApi = FakeCoderApi(
+        serverInfo: _serverInfo('second-server'),
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        workspaceCatalogGate: gate.future,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[
+          _profile('first', now),
+          _profile('second', now),
+        ],
+        tokens: const <String, String>{'first': 'one', 'second': 'two'},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(
+            AppServices(
+              settings: store,
+              profiles: store,
+              credentials: store,
+              clients: _HostClients(<String, CoderApi>{
+                'first.test': fastApi,
+                'second.test': slowApi,
+              }),
+              clientKind: 'test',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      await container.read(workspaceCatalogControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final partial = container
+          .read(workspaceCatalogControllerProvider)
+          .requireValue;
+      // The fast daemon's projects are usable while the slow one still loads.
+      expect(partial.catalogs.containsKey('first'), isTrue);
+      expect(partial.catalogs.containsKey('second'), isFalse);
+
+      gate.complete();
+      await Future<void>.delayed(Duration.zero);
+      final complete = container
+          .read(workspaceCatalogControllerProvider)
+          .requireValue;
+      expect(complete.catalogs.containsKey('first'), isTrue);
+      expect(complete.catalogs.containsKey('second'), isTrue);
+    },
+    tags: const <String>['feature_test__workspace_catalog__unit'],
   );
 
   test(
