@@ -281,6 +281,7 @@ void main() {
       final theme = terminal.theme!;
       final style = terminal.style!;
 
+      expect(terminal.terminal.options.rightClickSelectsWord, isFalse);
       expect(theme.background, colors.surface);
       expect(theme.foreground, colors.text);
       expect(theme.cursor, colors.focus);
