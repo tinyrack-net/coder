@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
+import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -253,6 +254,20 @@ void main() {
         TRTextColor.danger,
       );
       expect(find.textContaining('offline'), findsOneWidget);
+
+      final queuedCard = find.byKey(const ValueKey('queued-turn-0'));
+      final queueIcon = find.descendant(
+        of: queuedCard,
+        matching: find.byIcon(CoderIcons.queue),
+      );
+      final prompt = find.descendant(
+        of: queuedCard,
+        matching: find.text('follow up'),
+      );
+      expect(
+        tester.getRect(queueIcon).center.dy,
+        closeTo(tester.getRect(prompt).center.dy, 0.5),
+      );
 
       // Both ways out stay open: the prompt is never stranded beyond reach.
       expect(
