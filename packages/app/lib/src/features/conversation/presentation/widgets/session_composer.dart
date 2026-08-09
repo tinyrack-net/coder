@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/application/composer_controller.da
 import 'package:app/src/features/conversation/application/composer_suggestions.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
+import 'package:app/src/features/conversation/presentation/chat_first_line_alignment.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:app/src/features/conversation/presentation/composer_client_commands.dart';
 import 'package:app/src/features/conversation/presentation/composer_trigger.dart';
@@ -2118,13 +2119,23 @@ class _QueuedTurnRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final queueIconSize = TRControlMetrics.iconSizeOf(TRUiSize.md);
     return TRCard(
       padding: TRCardPadding.sm,
       variant: TRCardVariant.elevated,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         spacing: TRSpacing.extraSmall,
         children: <Widget>[
-          const Icon(CoderIcons.queue),
+          Padding(
+            padding: EdgeInsets.only(
+              top: chatFirstLineLeadingInset(
+                context,
+                leadingExtent: queueIconSize,
+              ),
+            ),
+            child: Icon(CoderIcons.queue, size: queueIconSize),
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

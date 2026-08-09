@@ -345,7 +345,7 @@ void main() {
       );
       final coder = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
-        coder.copyWith(
+        _withoutLuaCodeMode(coder).copyWith(
           model: const AgentModelSelectionDto(
             source: AgentModelSource.fixed,
             modelId: 'local-test/test-model',
@@ -564,9 +564,8 @@ void main() {
         ),
       );
       await client.updateAgentDefinition(
-        coder.copyWith(
+        _withoutLuaCodeMode(coder).copyWith(
           permissionMode: PermissionMode.workspaceWrite,
-          toolIds: <String>[...coder.toolIds, 'collaboration'],
           callableAgentIds: <String>[reviewer.id],
         ),
         expectedContentHash: coder.contentHash,
@@ -716,7 +715,7 @@ void main() {
       addTearDown(client.close);
       final coder = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
-        coder.copyWith(toolIds: <String>[...coder.toolIds, 'collaboration']),
+        _withoutLuaCodeMode(coder),
         expectedContentHash: coder.contentHash,
       );
       final registered = await client.registerWorkspace(
@@ -835,10 +834,11 @@ void main() {
       );
 
       final coder = (await client.listAgentDefinitions()).single;
+      final directCoder = _withoutLuaCodeMode(coder);
       await client.updateAgentDefinition(
-        coder.copyWith(
+        directCoder.copyWith(
           permissionMode: PermissionMode.workspaceWrite,
-          toolIds: <String>[...coder.toolIds, 'mcp__fake__echo'],
+          toolIds: <String>[...directCoder.toolIds, 'mcp__fake__echo'],
         ),
         expectedContentHash: coder.contentHash,
       );
@@ -1054,7 +1054,9 @@ void main() {
         );
         final coder = (await client.listAgentDefinitions()).single;
         await client.updateAgentDefinition(
-          coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+          _withoutLuaCodeMode(coder).copyWith(
+            permissionMode: PermissionMode.workspaceWrite,
+          ),
           expectedContentHash: coder.contentHash,
         );
         final session = await client.createSession(
@@ -1148,6 +1150,7 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
+      await _disableLuaCodeMode(client);
       final session = await client.createSession(
         id: 'image-session',
         worktreeId: registered.worktrees.single.id,
@@ -1222,6 +1225,7 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
+      await _disableLuaCodeMode(client);
       final session = await client.createSession(
         id: 'sleep-session',
         worktreeId: registered.worktrees.single.id,
@@ -1292,6 +1296,7 @@ void main() {
         name: 'Workspace',
       );
       final worktreeId = registered.worktrees.single.id;
+      await _disableLuaCodeMode(client);
       final session = await client.createSession(
         id: 'reset-session',
         worktreeId: worktreeId,
@@ -1524,6 +1529,7 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
+      await _disableLuaCodeMode(client);
       final session = await client.createSession(
         id: 'search-session',
         worktreeId: registered.worktrees.single.id,
@@ -1595,6 +1601,7 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
+      await _disableLuaCodeMode(client);
       final session = await client.createSession(
         id: 'ask-session',
         worktreeId: registered.worktrees.single.id,
@@ -1745,7 +1752,9 @@ void main() {
       );
       final coder = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
-        coder.copyWith(permissionMode: PermissionMode.workspaceWrite),
+        _withoutLuaCodeMode(coder).copyWith(
+          permissionMode: PermissionMode.workspaceWrite,
+        ),
         expectedContentHash: coder.contentHash,
       );
       final session = await client.createSession(
@@ -1901,6 +1910,7 @@ void main() {
       // The disabled skill must disappear from the catalog handed to a turn.
       await client.setSkillEnabled('commit', enabled: false);
       expect((await client.getSkill('commit')).isEnabled, isFalse);
+      await _disableLuaCodeMode(client);
 
       final session = await client.createSession(
         id: 'skill-session',
@@ -1966,6 +1976,15 @@ void main() {
         clientKind: 'test',
       );
       final coder = (await firstClient.listAgentDefinitions()).single;
+      expect(coder.toolIds, <String>[
+        'apply_patch',
+        'lua_code_mode',
+        'list_mcp_resources',
+        'list_mcp_resource_templates',
+        'read_mcp_resource',
+        'exec_command',
+        'collaboration',
+      ]);
       await firstClient.createAgentDefinition(
         'reviewer',
         coder.copyWith(
@@ -2001,6 +2020,12 @@ void main() {
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'agent-create-second',
         clientKind: 'test',
+      );
+      expect(
+        (await secondClient.listAgentDefinitions())
+            .singleWhere((item) => item.id == 'coder')
+            .toolIds,
+        coder.toolIds,
       );
       expect(
         (await secondClient.listAgentDefinitions()).map((item) => item.id),
@@ -2588,6 +2613,7 @@ void main() {
         rootPath: workspace.path,
         name: 'Attachments',
       );
+      await _disableLuaCodeMode(client);
       final models = await client.listProviderModels('openai');
       final runnableModel = models.firstWhere(
         (model) =>
@@ -3021,6 +3047,21 @@ void main() {
       );
     },
     tags: const <String>['feature_test__composer_slash_command__verticalSlice'],
+  );
+}
+
+AgentDefinitionDto _withoutLuaCodeMode(AgentDefinitionDto definition) =>
+    definition.copyWith(
+      toolIds: definition.toolIds
+          .where((id) => id != luaCodeModeCapabilityId)
+          .toList(growable: false),
+    );
+
+Future<AgentDefinitionDto> _disableLuaCodeMode(CoderClient client) async {
+  final coder = (await client.listAgentDefinitions()).single;
+  return client.updateAgentDefinition(
+    _withoutLuaCodeMode(coder),
+    expectedContentHash: coder.contentHash,
   );
 }
 

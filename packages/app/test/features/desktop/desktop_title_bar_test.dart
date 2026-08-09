@@ -201,6 +201,63 @@ void main() {
   );
 
   testWidgets(
+    'the View menu toggles the sidebar repeatedly',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      Finder viewItem(String label) => find.descendant(
+        of: find.byType(TRMenuItem),
+        matching: find.text(label),
+      );
+
+      Future<void> openViewMenu() async {
+        await tester.tap(find.text('View'));
+        await tester.pumpAndSettle();
+      }
+
+      await openViewMenu();
+      expect(viewItem('Hide sidebar'), findsOneWidget);
+      expect(
+        tester
+            .widget<TRMenuCheckboxItem>(find.byType(TRMenuCheckboxItem))
+            .value,
+        isTrue,
+      );
+
+      await tester.tap(viewItem('Hide sidebar'));
+      await tester.pumpAndSettle();
+      expect(harness.store.settings.sidebarCollapsed, isTrue);
+      expect(find.byType(TRMenuCheckboxItem), findsNothing);
+
+      await openViewMenu();
+      expect(viewItem('Show sidebar'), findsOneWidget);
+      expect(
+        tester
+            .widget<TRMenuCheckboxItem>(find.byType(TRMenuCheckboxItem))
+            .value,
+        isFalse,
+      );
+
+      await tester.tap(viewItem('Show sidebar'));
+      await tester.pumpAndSettle();
+      expect(harness.store.settings.sidebarCollapsed, isFalse);
+      expect(find.byType(TRMenuCheckboxItem), findsNothing);
+
+      await openViewMenu();
+      expect(viewItem('Hide sidebar'), findsOneWidget);
+      expect(
+        tester
+            .widget<TRMenuCheckboxItem>(find.byType(TRMenuCheckboxItem))
+            .value,
+        isTrue,
+      );
+    },
+    tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
     'the title bar and its controls sit on the compact control size',
     (tester) async {
       final harness = build();

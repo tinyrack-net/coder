@@ -1,5 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:app/src/features/conversation/presentation/chat_first_line_alignment.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:flutter/material.dart';
@@ -75,6 +76,7 @@ class _PlanStepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
     final l10n = AppLocalizations.of(context);
+    final markerSize = TRTypography.bodySm.fontSize!;
     final (IconData icon, Color color, String status) = switch (step.status) {
       ChatPlanStepStatus.completed => (
         CoderIcons.success,
@@ -103,11 +105,15 @@ class _PlanStepRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
-              // Nudge the marker onto the first line's optical centre.
-              padding: const EdgeInsets.only(top: TRSpacing.threeExtraSmall),
+              padding: EdgeInsets.only(
+                top: chatFirstLineLeadingInset(
+                  context,
+                  leadingExtent: markerSize,
+                ),
+              ),
               child: Icon(
                 icon,
-                size: TRTypography.bodySm.fontSize,
+                size: markerSize,
                 color: color,
               ),
             ),

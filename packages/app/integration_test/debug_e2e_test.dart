@@ -243,6 +243,21 @@ void main() {
       await pumpUntil(tester, find.text(remoteWorkspaceName));
       await pumpUntil(tester, find.textContaining('내장 daemon · '));
 
+      // The View menu must keep following the persisted sidebar state after
+      // each selection, rather than reusing the first title-bar snapshot.
+      expect(find.text('보기'), findsOneWidget);
+      await tester.tap(find.text('보기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('사이드바 접기'));
+      await tester.pumpAndSettle();
+      expect(appStore.settings.sidebarCollapsed, isTrue);
+
+      await tester.tap(find.text('보기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('사이드바 열기'));
+      await tester.pumpAndSettle();
+      expect(appStore.settings.sidebarCollapsed, isFalse);
+
       // The global desktop menu reaches the same typed new-workspace route.
       expect(find.text('파일'), findsOneWidget);
       await tester.tap(find.text('파일'));
@@ -464,8 +479,6 @@ void main() {
         scrollable: editorScrollable,
       );
       await tester.ensureVisible(collaborationTool);
-      await tester.pumpAndSettle();
-      await tester.tap(collaborationTool);
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
@@ -744,10 +757,15 @@ void main() {
       final coderDefinition = await setupClient.agents.getAgentDefinition(
         'coder',
       );
+      // The remaining turn fixtures invoke individual tools directly. Keep
+      // the Lua surface out of them so each scenario exercises its named
+      // capability rather than the nested orchestration path.
       await setupClient.agents.updateAgentDefinition(
         coderDefinition.copyWith(
           toolIds: <String>[
-            ...coderDefinition.toolIds,
+            ...coderDefinition.toolIds.where(
+              (id) => id != 'lua_code_mode',
+            ),
             'mcp__e2e__echo',
           ],
         ),

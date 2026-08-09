@@ -1894,7 +1894,7 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
             sidebarCollapsed: collapsed,
             onNewWorkspace: () {},
             onOpenSettings: () {},
-            onToggleSidebar: () {},
+            onSidebarVisibilityChanged: (_) {},
             onShowAbout: () {},
             onClose: () {},
             onQuit: () {},

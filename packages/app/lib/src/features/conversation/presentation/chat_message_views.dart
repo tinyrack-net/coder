@@ -78,6 +78,7 @@ class ChatAttachmentLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TRChatMessageRow(
     icon: message.attachment.isImage ? CoderIcons.image : CoderIcons.file,
+    alignment: TRChatMessageAlignment.center,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
       child: ChatAttachmentTile(

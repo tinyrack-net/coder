@@ -38,7 +38,7 @@ class DesktopTitleBar extends StatelessWidget {
     required this.sidebarCollapsed,
     required this.onNewWorkspace,
     required this.onOpenSettings,
-    required this.onToggleSidebar,
+    required this.onSidebarVisibilityChanged,
     required this.onShowAbout,
     required this.onClose,
     required this.onQuit,
@@ -57,8 +57,8 @@ class DesktopTitleBar extends StatelessWidget {
   /// Opens general application settings.
   final VoidCallback onOpenSettings;
 
-  /// Flips the persisted workspace-sidebar state.
-  final VoidCallback onToggleSidebar;
+  /// Changes whether the workspace sidebar is visible.
+  final ValueChanged<bool> onSidebarVisibilityChanged;
 
   /// Opens application name and version information.
   final VoidCallback onShowAbout;
@@ -89,7 +89,7 @@ class DesktopTitleBar extends StatelessWidget {
                 sidebarCollapsed: sidebarCollapsed,
                 onNewWorkspace: onNewWorkspace,
                 onOpenSettings: onOpenSettings,
-                onToggleSidebar: onToggleSidebar,
+                onSidebarVisibilityChanged: onSidebarVisibilityChanged,
                 onShowAbout: onShowAbout,
                 onQuit: onQuit,
               ),
@@ -144,7 +144,7 @@ class _ApplicationMenu extends StatelessWidget {
     required this.sidebarCollapsed,
     required this.onNewWorkspace,
     required this.onOpenSettings,
-    required this.onToggleSidebar,
+    required this.onSidebarVisibilityChanged,
     required this.onShowAbout,
     required this.onQuit,
   });
@@ -152,7 +152,7 @@ class _ApplicationMenu extends StatelessWidget {
   final bool sidebarCollapsed;
   final VoidCallback onNewWorkspace;
   final VoidCallback onOpenSettings;
-  final VoidCallback onToggleSidebar;
+  final ValueChanged<bool> onSidebarVisibilityChanged;
   final VoidCallback onShowAbout;
   final VoidCallback onQuit;
 
@@ -199,7 +199,11 @@ class _ApplicationMenu extends StatelessWidget {
           menuChildren: <Widget>[
             TRMenuCheckboxItem(
               value: !sidebarCollapsed,
-              onChanged: (_) => onToggleSidebar(),
+              closeOnActivate: true,
+              onChanged: (visible) {
+                if (visible == null) return;
+                onSidebarVisibilityChanged(visible);
+              },
               child: TRText.inherit(
                 sidebarCollapsed
                     ? l10n.workspaceSidebarExpand
