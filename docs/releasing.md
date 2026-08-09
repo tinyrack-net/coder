@@ -1,5 +1,14 @@
 # Releasing
 
+## Renaming the application
+
+`packages/app/lib/src/app/app_identity.dart` is the source of truth for product
+names and identifiers. Change it first, update the platform-local declarations
+reported by `app_identity_test.dart`, then run `dart run melos generate` to
+regenerate localized messages. The identity test also inventories protocol,
+environment, installer, and release names so a rename cannot silently leave an
+old identifier behind.
+
 Coder ships as a desktop application and a standalone command-line client. One
 tag drives every artifact through `.github/workflows/pipeline.yml`.
 
@@ -27,11 +36,11 @@ targets become possible the day Flutter ships those SDKs.
 | Windows x64 | `coder-cli-windows-x64.zip` | GitHub Releases, `winget install tinyrack.coder-cli` |
 
 The CLI's own code is plain Dart, but it shares a pub workspace with
-`coder_app`, so `dart pub get` resolves `flutter`, `flutter_test`, and
+`app`, so `dart pub get` resolves `flutter`, `flutter_test`, and
 `integration_test` from the Flutter SDK. `build-cli` therefore installs Flutter
 and is held to the platforms Flutter publishes an SDK for — which is why there
 is **no Linux arm64 CLI**, and why `shipworld.yaml` names only three platforms
-under `homebrew.platforms`. Taking `apps/coder_app` out of the workspace is
+under `homebrew.platforms`. Taking `packages/app` out of the workspace is
 what would bring that target back.
 
 Since `coder-cli daemon start` hosts the daemon in-process, it carries the
@@ -66,10 +75,10 @@ The Cask (`coder`) and the Formula (`coder-cli`) land in the same
 | --- | --- |
 | `flutter build web` output | `tinyrack-coder` Worker at `https://coder.tinyrack.net` |
 
-`apps/coder_app/wrangler.jsonc` binds the custom domain, so the deploying API
+`packages/app/wrangler.jsonc` binds the custom domain, so the deploying API
 token needs Workers Routes and Zone read on `tinyrack.net` alongside Workers
 Scripts edit. The hostname is also the daemon's default allowed origin
-(`defaultAllowedOrigins` in `packages/coder_daemon/lib/src/config.dart`);
+(`defaultAllowedOrigins` in `packages/daemon/lib/src/config.dart`);
 changing one without the other locks every browser client out.
 
 The web build is a static client with no server of its own; it connects to a
@@ -105,10 +114,10 @@ Release need. Setting them turns the step back on with no workflow change.
 
 ## Cutting a release
 
-Versions come from `apps/coder_app/pubspec.yaml` and are mirrored into
-`apps/coder_app/lib/src/version.g.dart`,
-`packages/coder_daemon/lib/src/version.g.dart`, and
-`packages/coder_cli/lib/src/version.g.dart` by the release tool. Never edit
+Versions come from `packages/app/pubspec.yaml` and are mirrored into
+`packages/app/lib/src/version.g.dart`,
+`packages/daemon/lib/src/version.g.dart`, and
+`packages/cli/lib/src/version.g.dart` by the release tool. Never edit
 those three by hand.
 
 `shipworld.yaml` declares two targets. Only `coder` is ever released: it owns
@@ -181,7 +190,7 @@ sideloaded without developer mode.
 dart run melos build:linux:release
 dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart \
   package linux deb coder \
-  --input apps/coder_app/build/linux/x64/release/bundle \
+  --input packages/app/build/linux/x64/release/bundle \
   --output dist/coder-linux-x64.deb --arch amd64
 sudo dpkg -i dist/coder-linux-x64.deb && coder
 ```

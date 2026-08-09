@@ -119,11 +119,11 @@ jobs:
       - name: Enforce Dart package coverage
         run: >-
           dart run tool/verify_coverage.dart
-          --scope=coder_agent
-          --scope=coder_cli
-          --scope=coder_client
-          --scope=coder_daemon
-          --scope=coder_protocol
+          --scope=agent
+          --scope=cli
+          --scope=client
+          --scope=daemon
+          --scope=protocol
 
   coverage-flutter-linux:
     name: Flutter coverage
@@ -135,7 +135,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: dart run melos test:coverage:flutter
-      - run: dart run tool/verify_coverage.dart --scope=coder_app
+      - run: dart run tool/verify_coverage.dart --scope=app
 
   golden-linux:
     name: Linux goldens
@@ -177,7 +177,7 @@ jobs:
       - run: >-
           xvfb-run -a flutter test
           integration_test/${{ matrix.test }} -d linux
-        working-directory: apps/coder_app
+        working-directory: packages/app
         env:
           TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
 
@@ -243,7 +243,7 @@ jobs:
           cache-provider: enhanced
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
-        working-directory: apps/coder_app
+        working-directory: packages/app
 
   desktop-debug-build:
     name: Desktop Debug Build (${{ matrix.os }})
@@ -263,7 +263,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
-        working-directory: apps/coder_app
+        working-directory: packages/app
 
   web-build:
     name: Web Build
@@ -281,7 +281,7 @@ jobs:
         with:
           name: web-assets
           retention-days: 7
-          path: apps/coder_app/build/web
+          path: packages/app/build/web
           if-no-files-found: error
 
   cli-verify:
@@ -416,7 +416,7 @@ jobs:
       - name: Package Linux artifacts
         if: matrix.platform == 'linux'
         env:
-          BUNDLE: apps/coder_app/build/linux/x64/release/bundle
+          BUNDLE: packages/app/build/linux/x64/release/bundle
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage coder --input "$BUNDLE" \
             --output dist/Coder-linux-x64.AppImage --arch x86_64 \
@@ -447,7 +447,7 @@ jobs:
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
-          APP: apps/coder_app/build/macos/Build/Products/Release/Coder.app
+          APP: packages/app/build/macos/Build/Products/Release/Coder.app
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder --input "$APP" --app-bundle \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
@@ -465,15 +465,15 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          $version = (Select-String -Path apps/coder_app/pubspec.yaml `
+          $version = (Select-String -Path packages/app/pubspec.yaml `
             -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value.Split('+')[0]
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
             "/DAppVersion=$version" `
             "/DAppArch=${{ matrix.arch }}" `
-            "/DSourceDir=$PWD\apps\coder_app\build\windows\${{ matrix.arch }}\runner\Release" `
+            "/DSourceDir=$PWD\apps\app\build\windows\${{ matrix.arch }}\runner\Release" `
             "/DOutputDir=$PWD\dist" `
-            apps\coder_app\windows\installer\coder.iss
+            apps\app\windows\installer\coder.iss
       - name: Build the Windows MSIX
         # Skipped until the identity secrets exist. winget takes the Inno
         # Setup installer, so a release without an MSIX is complete; the MSIX
@@ -487,7 +487,7 @@ jobs:
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package windows msix coder
-          --input apps/coder_app/build/windows/${{ matrix.arch }}/runner/Release
+          --input packages/app/build/windows/${{ matrix.arch }}/runner/Release
           --launcher coder.exe --arch ${{ matrix.arch }}
           --output dist/Coder-win-${{ matrix.arch }}.msix
           --package-root dist/msix/${{ matrix.arch }}
@@ -495,7 +495,7 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: Compress-Archive
-          -Path apps/coder_app/build/windows/${{ matrix.arch }}/runner/Release/*
+          -Path packages/app/build/windows/${{ matrix.arch }}/runner/Release/*
           -DestinationPath dist/Coder-${{ matrix.target }}.zip
 
       - name: Upload artifacts
@@ -529,7 +529,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: web-assets
-          path: apps/coder_app/build/web
+          path: packages/app/build/web
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
@@ -541,7 +541,7 @@ jobs:
             vars.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID ||
             vars.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/coder_app
+          workingDirectory: packages/app
           command: deploy
 
   build-cli:
@@ -553,7 +553,7 @@ jobs:
       matrix:
         include:
           # The CLI is plain Dart, but it shares a pub workspace with
-          # `coder_app`, so resolving it needs the Flutter SDK and the job is
+          # `app`, so resolving it needs the Flutter SDK and the job is
           # held to the platforms Flutter publishes one for. That rules out
           # Linux arm64, which is why `shipworld.yaml` lists the three
           # platforms below under `homebrew.platforms`.
@@ -574,7 +574,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       # Flutter rather than a standalone Dart SDK: `dart pub get` resolves the
-      # whole workspace, and `coder_app` pulls `flutter`, `flutter_test`, and
+      # whole workspace, and `app` pulls `flutter`, `flutter_test`, and
       # `integration_test` from the Flutter SDK. The pinned Flutter bundles the
       # same Dart this job used to install directly.
       - uses: ./.github/actions/setup-flutter
@@ -829,7 +829,7 @@ jobs:
       - run: >-
           flutter test integration_test/${{ matrix.shard }}
           -d ${{ matrix.platform.device }}
-        working-directory: apps/coder_app
+        working-directory: packages/app
         env:
           TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
 
@@ -847,7 +847,7 @@ jobs:
           api-level: 35
           arch: x86_64
           script: >-
-            cd apps/coder_app &&
+            cd packages/app &&
             flutter test integration_test/remote_bootstrap_smoke_test.dart
             -d emulator-5554 &&
             flutter test integration_test/provider_e2e_test.dart
@@ -872,4 +872,4 @@ jobs:
           -d "$IOS_DEVICE_ID" &&
           flutter test integration_test/provider_e2e_test.dart
           -d "$IOS_DEVICE_ID"
-        working-directory: apps/coder_app
+        working-directory: packages/app

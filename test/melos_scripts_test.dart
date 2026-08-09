@@ -23,6 +23,14 @@ void main() {
     );
   });
 
+  test('the canonical generator owns checked-in localizations', () {
+    expect(_script(pubspec, 'generate'), contains('flutter gen-l10n'));
+    expect(
+      _script(pubspec, 'generate:check'),
+      contains('tool/generate_check.dart'),
+    );
+  });
+
   test('Linux E2E always runs on an isolated virtual display', () {
     final command = _script(pubspec, 'test:e2e:linux');
     expect(command, contains('xvfb-run -a'));
@@ -46,13 +54,13 @@ void main() {
   });
 
   test('every static scanner skips Flutter build output', () {
-    // verify:debug leaves apps/coder_app/build populated, and a following
+    // verify:debug leaves packages/app/build populated, and a following
     // verify must not read the plugin sources a Flutter build writes there.
     final options = File('analysis_options.yaml').readAsStringSync();
     expect(options, contains('- "build/**"'));
     expect(options, contains('- "**/build/**"'));
     expect(
-      File('apps/coder_app/dart_dependency_validator.yaml').readAsStringSync(),
+      File('packages/app/dart_dependency_validator.yaml').readAsStringSync(),
       contains('- "build/**"'),
     );
   });

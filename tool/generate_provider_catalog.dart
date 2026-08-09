@@ -16,7 +16,7 @@ final _normalizedFile = File(
   'tool/provider_catalog/models_dev.normalized.json',
 );
 final _generatedFile = File(
-  'packages/coder_daemon/lib/src/features/providers/infrastructure/'
+  'packages/daemon/lib/src/features/providers/infrastructure/'
   'generated/models_dev_snapshot.g.dart',
 );
 

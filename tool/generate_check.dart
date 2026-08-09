@@ -31,8 +31,13 @@ Future<void> main() async {
 
 Map<String, String> _generatedSources(Directory root) => <String, String>{
   for (final entity in root.listSync(recursive: true))
-    if (entity is File &&
-        (entity.path.endsWith('.g.dart') ||
-            entity.path.endsWith('.freezed.dart')))
+    if (entity is File && _isGeneratedSource(entity))
       entity.path: entity.readAsStringSync(),
 };
+
+bool _isGeneratedSource(File file) {
+  final path = file.path.replaceAll(r'\', '/');
+  return path.endsWith('.g.dart') ||
+      path.endsWith('.freezed.dart') ||
+      path.contains('/packages/app/lib/l10n/gen/app_localizations');
+}

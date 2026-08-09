@@ -44,5 +44,5 @@ done
 
 export TINYRACK_IBUS_ARTIFACT_DIR="$artifact_dir"
 flutter pub get --enforce-lockfile
-cd apps/coder_app
+cd packages/app
 flutter test integration_test/terminal_ibus_e2e_test.dart -d linux

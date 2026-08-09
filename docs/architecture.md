@@ -7,10 +7,10 @@ compile `main_mobile.dart`, whose bootstrap can only create a remote
 `CoderClient`.
 
 ```text
-coder_app -> coder_client -> coder_protocol
+app -> client -> protocol
     |                            ^
     +-- desktop only             |
-         coder_daemon -> coder_agent
+         daemon -> agent
               |
               +-- provider infrastructure -> OpenAI-compatible APIs
               +-- MCP infrastructure -> external MCP servers
@@ -19,26 +19,26 @@ coder_app -> coder_client -> coder_protocol
 
 ## Package boundaries
 
-- `coder_protocol`: platform-neutral, feature-scoped generated models,
+- `protocol`: platform-neutral, feature-scoped generated models,
   requests, responses, events, and typed procedure descriptors for protocol
   version 4.
-- `coder_client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
+- `client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
   sequence-based timeline catch-up. Its root `CoderApi` exposes lifecycle and
   feature APIs such as `sessions`, `providers`, and `mcp`; each feature owns
   its typed update streams.
-- `coder_agent`: provider-independent turn loop, approval policy, cancellation,
+- `agent`: provider-independent turn loop, approval policy, cancellation,
   path-confined coding tools, and strict tool schemas. It has no internal
   package dependency and exposes every filesystem, process, network, clock,
   and identity effect as a typed port.
-- `coder_daemon`: feature-first domain/application/infrastructure/transport
+- `daemon`: feature-first domain/application/infrastructure/transport
   modules, provider and MCP adapters, Drift persistence, lifecycle recovery,
   bearer authentication, WebSocket RPC host, and embedded isolate.
-- `coder_cli`: standalone daemon composition and feature-API command surface.
-- `coder_app`: feature-scoped Riverpod `AsyncNotifier` application state,
+- `cli`: standalone daemon composition and feature-API command surface.
+- `app`: feature-scoped Riverpod `AsyncNotifier` application state,
   typed go_router navigation, and adaptive Tinyrack UI. Controllers depend only
   on injected ports such as the transport-neutral `CoderApi`.
 
-Dependencies point inward through DTOs and interfaces. `coder_agent` does not
+Dependencies point inward through DTOs and interfaces. `agent` does not
 read databases or call the network. The daemon is the only package allowed to
 combine a provider, repositories, tools, and transports.
 
@@ -68,7 +68,7 @@ composition is performed by the app shell. These rules are executable in
 Riverpod controllers are the Flutter equivalent of feature stores and actions;
 they retain their `Controller` naming. The central typed router owns URL shape,
 while route targets remain feature pages or app-owned cross-feature shells.
-The app consumes `CoderApi` and `coder_protocol` DTOs directly because they are
+The app consumes `CoderApi` and `protocol` DTOs directly because they are
 already transport-neutral contracts. A repository or use-case is added only
 for an app-owned source of truth or genuinely shared, multi-source logic.
 
