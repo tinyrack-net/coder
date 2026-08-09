@@ -67,14 +67,14 @@ String renderMcpToolOutput(McpCallToolResult result) {
 String _renderBlock(McpContentBlock block) => switch (block) {
   McpTextContent(:final text) => text,
   McpEmbeddedResource(:final uri, :final text?) => '$uri\n$text',
-  McpEmbeddedResource(:final uri, :final mimeType, :final blobByteLength) =>
-    '[resource uri=$uri${_mime(mimeType)}${_bytes(blobByteLength)}]',
+  McpEmbeddedResource(:final uri, :final mimeType, :final blob) =>
+    '[resource uri=$uri${_mime(mimeType)}${_bytes(_base64Bytes(blob))}]',
   McpResourceLink(:final uri, :final name, :final mimeType) =>
     '[resource_link uri=$uri${_named(name)}${_mime(mimeType)}]',
-  McpImageContent(:final mimeType, :final byteLength) =>
-    '[image mimeType=$mimeType${_bytes(byteLength)}]',
-  McpAudioContent(:final mimeType, :final byteLength) =>
-    '[audio mimeType=$mimeType${_bytes(byteLength)}]',
+  McpImageContent(:final mimeType, :final data) =>
+    '[image mimeType=$mimeType${_bytes(_base64Bytes(data))}]',
+  McpAudioContent(:final mimeType, :final data) =>
+    '[audio mimeType=$mimeType${_bytes(_base64Bytes(data))}]',
   McpUnknownContent(:final type) => '[unsupported content type=$type]',
 };
 
@@ -84,6 +84,80 @@ String _named(String? name) => name == null ? '' : ' name=$name';
 
 String _bytes(int? byteLength) =>
     byteLength == null ? '' : ' bytes=$byteLength';
+
+int? _base64Bytes(String? data) {
+  if (data == null) return null;
+  try {
+    return base64Decode(data).length;
+  } on FormatException {
+    return null;
+  }
+}
+
+ToolContent _toolContent(McpContentBlock block) => switch (block) {
+  McpTextContent(:final text, :final annotations, :final meta) =>
+    ToolTextContent(text, annotations: annotations, meta: meta),
+  McpImageContent(
+    :final mimeType,
+    :final data,
+    :final annotations,
+    :final meta,
+  ) =>
+    ToolImageContent(
+      imageUrl: 'data:$mimeType;base64,$data',
+      annotations: annotations,
+      meta: meta,
+    ),
+  McpAudioContent(
+    :final mimeType,
+    :final data,
+    :final annotations,
+    :final meta,
+  ) =>
+    ToolAudioContent(
+      audioUrl: 'data:$mimeType;base64,$data',
+      annotations: annotations,
+      meta: meta,
+    ),
+  McpEmbeddedResource(
+    :final uri,
+    :final mimeType,
+    :final text,
+    :final blob,
+    :final annotations,
+    :final meta,
+  ) =>
+    ToolEmbeddedResourceContent(
+      uri: uri,
+      mimeType: mimeType,
+      text: text,
+      blob: blob,
+      annotations: annotations,
+      meta: meta,
+    ),
+  McpResourceLink(
+    :final uri,
+    :final name,
+    :final title,
+    :final description,
+    :final mimeType,
+    :final size,
+    :final annotations,
+    :final meta,
+  ) =>
+    ToolResourceLinkContent(
+      name: name ?? uri,
+      uri: uri,
+      title: title,
+      description: description,
+      mimeType: mimeType,
+      size: size,
+      annotations: annotations,
+      meta: meta,
+    ),
+  McpUnknownContent(:final raw, :final annotations, :final meta) =>
+    ToolTextContent(jsonEncode(raw), annotations: annotations, meta: meta),
+};
 
 /// Resolves the live client for one MCP server, or null when it is not ready.
 typedef McpClientLookup = McpClient? Function(String serverId);
@@ -126,9 +200,7 @@ final class McpAgentTool extends AgentTool {
   /// server calls it non-destructive: "changes something, but gently" is still
   /// a change the user should see.
   @override
-  AgentToolRisk get risk => descriptor.annotations.readOnlyHint
-      ? AgentToolRisk.read
-      : AgentToolRisk.dangerous;
+  AgentToolRisk get risk => AgentToolRisk.dangerous;
 
   @override
   bool get strict => false;
@@ -159,7 +231,10 @@ final class McpAgentTool extends AgentTool {
     try {
       final result = await client.callTool(descriptor.name, arguments);
       return ToolResult(
-        output: renderMcpToolOutput(result),
+        value: result.structuredContent ?? renderMcpToolOutput(result),
+        content: result.content.map(_toolContent).toList(growable: false),
+        structuredContent: result.structuredContent,
+        meta: result.meta,
         isError: result.isError,
       );
     } on Object catch (error) {
@@ -170,7 +245,7 @@ final class McpAgentTool extends AgentTool {
   }
 
   ToolResult _failure(String message) => ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': message}),
+    value: jsonEncode(<String, dynamic>{'error': message}),
     isError: true,
   );
 }

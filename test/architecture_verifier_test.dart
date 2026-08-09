@@ -194,6 +194,29 @@ void main() {
     );
   });
 
+  test('Windows source paths use the same architecture boundaries', () {
+    expect(
+      verifier.verifySource(
+        package: 'daemon',
+        path:
+            r'packages\daemon\lib\src\features\providers\infrastructure\'
+            r'openai\plugins.dart',
+        source: "const id = 'openai';",
+      ),
+      isEmpty,
+    );
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            r'packages\app\lib\src\features\conversation\presentation\'
+            r'tools\apply_patch.dart',
+        source: "const name = 'apply_patch';",
+      ),
+      isEmpty,
+    );
+  });
+
   test(
     'a tool name literal in the app outside its presenter is a violation',
     () {
@@ -203,6 +226,25 @@ void main() {
         source: "if (approval.toolName == 'apply_patch') showDiff();",
       );
       expect(violations.single.rule, 'tool_name_literal');
+
+      for (final toolName in const <String>[
+        'request_user_input',
+        'clock__curr_time',
+        'clock__sleep',
+        'skills__list',
+        'skills__read',
+      ]) {
+        final modernNameViolations = verifier.verifySource(
+          package: 'app',
+          path: 'packages/app/lib/src/chat/chat_tool_card.dart',
+          source: "const toolName = '$toolName';",
+        );
+        expect(
+          modernNameViolations.map((violation) => violation.rule),
+          contains('tool_name_literal'),
+          reason: toolName,
+        );
+      }
 
       // The presenter tree owns the names, the timeline builds the dedicated
       // cards, and other packages define the tools themselves.

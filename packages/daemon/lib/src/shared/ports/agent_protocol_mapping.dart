@@ -44,6 +44,7 @@ AgentModelCapabilities agentCapabilities(ModelCapabilitiesDto value) =>
       toolCalling: AgentCapabilitySupport.values.byName(value.toolCalling.name),
       imageInput: AgentCapabilitySupport.values.byName(value.imageInput.name),
       fileInput: AgentCapabilitySupport.values.byName(value.fileInput.name),
+      toolSurface: AgentToolSurfaceMode.values.byName(value.toolSurface.name),
       controls: value.controls.map(agentControlDescriptor).toList(),
       source: AgentCapabilitySource.values.byName(value.source.name),
     );
@@ -55,6 +56,7 @@ ModelCapabilitiesDto protocolCapabilities(AgentModelCapabilities value) =>
       toolCalling: CapabilitySupport.values.byName(value.toolCalling.name),
       imageInput: CapabilitySupport.values.byName(value.imageInput.name),
       fileInput: CapabilitySupport.values.byName(value.fileInput.name),
+      toolSurface: ModelToolSurface.values.byName(value.toolSurface.name),
       controls: value.controls.map(protocolControlDescriptor).toList(),
       source: CapabilitySource.values.byName(value.source.name),
     );

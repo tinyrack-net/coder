@@ -179,7 +179,7 @@ class ListSkillsTool extends AgentTool {
       // than failing the turn.
       return ToolResult(
         isError: true,
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'cursor is not one this tool handed out.',
         }),
       );
@@ -188,7 +188,7 @@ class ListSkillsTool extends AgentTool {
         ? start + skillPageSize
         : summaries.length;
     return ToolResult(
-      output: truncateToolOutput(
+      value: truncateToolOutput(
         jsonEncode(<String, dynamic>{
           'skills': summaries
               .sublist(start, end)
@@ -249,7 +249,7 @@ class SkillTool extends AgentTool {
       return resource == null
           ? _describe(await _catalog.read(name))
           : ToolResult(
-              output: jsonEncode(<String, dynamic>{
+              value: jsonEncode(<String, dynamic>{
                 'name': name,
                 'resource': resource,
                 'content': await _catalog.readResource(name, resource),
@@ -268,7 +268,7 @@ class SkillTool extends AgentTool {
     const budget = _maxSkillOutputBytes ~/ 2;
     final truncated = content.instructions.length > budget;
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{
+      value: jsonEncode(<String, dynamic>{
         'name': content.name,
         'description': content.description,
         'directory': content.directory,
@@ -290,7 +290,7 @@ class SkillTool extends AgentTool {
 
   ToolResult _failure(String error) => ToolResult(
     isError: true,
-    output: jsonEncode(<String, dynamic>{
+    value: jsonEncode(<String, dynamic>{
       'error': error,
       'available': _catalog
           .summaries()
@@ -302,6 +302,260 @@ class SkillTool extends AgentTool {
 
 /// Name of the tool that loads one skill's full instructions.
 const String skillToolName = 'skill';
+
+/// Executor authority used by the local workspace skill catalog.
+const String localSkillAuthorityId = 'local';
+
+Map<String, dynamic> _skillAuthority() => <String, dynamic>{
+  'kind': 'executor',
+  'id': localSkillAuthorityId,
+};
+
+ModelNamespaceToolDefinition _skillsNamespace(
+  String name,
+  String description,
+  Map<String, dynamic> parameters,
+  Map<String, dynamic> outputSchema,
+) => ModelNamespaceToolDefinition(
+  name: 'skills',
+  description: 'Tools for listing and reading authority-owned skills.',
+  tools: <ModelFunctionToolDefinition>[
+    ModelFunctionToolDefinition(
+      name: name,
+      description: description,
+      parameters: parameters,
+      outputSchema: outputSchema,
+      strict: false,
+    ),
+  ],
+);
+
+/// Modern `skills.list` adapter over the local executor catalog.
+final class SkillsListTool extends AgentTool {
+  /// Creates a namespaced list tool.
+  SkillsListTool(this._catalog);
+
+  final SkillCatalog _catalog;
+
+  @override
+  String get name => 'skills__list';
+
+  @override
+  String get description =>
+      'List skills owned by the requested authority. Returns the exact '
+      'authority, package, and main_resource values required by skills.read. '
+      'Pass next_cursor back as cursor to continue.';
+
+  @override
+  AgentToolRisk get risk => AgentToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'authority': <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{
+          'kind': <String, dynamic>{
+            'type': 'string',
+            'enum': <String>['executor'],
+          },
+        },
+        'required': <String>['kind'],
+        'additionalProperties': false,
+      },
+      'cursor': <String, dynamic>{'type': 'string'},
+    },
+    'required': <String>['authority'],
+    'additionalProperties': false,
+  };
+
+  @override
+  ModelToolDefinition get modelSpec => _skillsNamespace(
+    'list',
+    description,
+    strictJsonSchema,
+    const <String, dynamic>{
+      'type': 'object',
+      'properties': <String, dynamic>{
+        'skills': <String, dynamic>{'type': 'array'},
+        'warnings': <String, dynamic>{'type': 'array'},
+        'next_cursor': <String, dynamic>{
+          'type': <String>['string', 'null'],
+        },
+      },
+      'required': <String>['skills', 'warnings', 'next_cursor'],
+      'additionalProperties': false,
+    },
+  );
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final authority = arguments['authority'];
+    if (authority is! Map || authority['kind'] != 'executor') {
+      return const ToolResult(
+        value: <String, dynamic>{'error': 'unsupported skill authority'},
+        isError: true,
+      );
+    }
+    final summaries = _catalog.summaries().toList(growable: false)
+      ..sort((left, right) => left.name.compareTo(right.name));
+    final cursor = arguments['cursor'];
+    final start = cursor == null
+        ? 0
+        : cursor is String && cursor.startsWith('local:')
+        ? int.tryParse(cursor.substring(6))
+        : null;
+    if (start == null || start < 0 || start > summaries.length) {
+      return const ToolResult(
+        value: <String, dynamic>{'error': 'skills.list cursor is invalid'},
+        isError: true,
+      );
+    }
+    final end = (start + 20).clamp(0, summaries.length);
+    return ToolResult(
+      value: <String, dynamic>{
+        'skills': <Map<String, dynamic>>[
+          for (final summary in summaries.sublist(start, end))
+            <String, dynamic>{
+              'authority': _skillAuthority(),
+              'package': summary.name,
+              'name': summary.name,
+              'description': summary.description,
+              'main_resource': 'SKILL.md',
+            },
+        ],
+        'warnings': const <String>[],
+        'next_cursor': end < summaries.length ? 'local:$end' : null,
+      },
+    );
+  }
+}
+
+/// Modern `skills.read` adapter over the local executor catalog.
+final class SkillsReadTool extends AgentTool {
+  /// Creates a namespaced read tool.
+  SkillsReadTool(this._catalog);
+
+  final SkillCatalog _catalog;
+
+  @override
+  String get name => 'skills__read';
+
+  @override
+  String get description =>
+      'Read one page from a skill resource. Pass the exact authority and '
+      'package from skills.list, plus its main_resource or a referenced '
+      'resource beneath that package.';
+
+  @override
+  AgentToolRisk get risk => AgentToolRisk.read;
+
+  @override
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'authority': <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{
+          'kind': <String, dynamic>{
+            'type': 'string',
+            'enum': <String>['executor'],
+          },
+          'id': <String, dynamic>{'type': 'string'},
+        },
+        'required': <String>['kind', 'id'],
+        'additionalProperties': false,
+      },
+      'package': <String, dynamic>{'type': 'string'},
+      'resource': <String, dynamic>{'type': 'string'},
+      'cursor': <String, dynamic>{'type': 'string'},
+    },
+    'required': <String>['authority', 'package', 'resource'],
+    'additionalProperties': false,
+  };
+
+  @override
+  ModelToolDefinition get modelSpec => _skillsNamespace(
+    'read',
+    description,
+    strictJsonSchema,
+    const <String, dynamic>{
+      'type': 'object',
+      'properties': <String, dynamic>{
+        'resource': <String, dynamic>{'type': 'string'},
+        'contents': <String, dynamic>{'type': 'string'},
+        'next_cursor': <String, dynamic>{
+          'type': <String>['string', 'null'],
+        },
+      },
+      'required': <String>['resource', 'contents', 'next_cursor'],
+      'additionalProperties': false,
+    },
+  );
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    final authority = arguments['authority'];
+    final package = arguments['package'];
+    final resource = arguments['resource'];
+    if (authority is! Map ||
+        authority['kind'] != 'executor' ||
+        authority['id'] != localSkillAuthorityId ||
+        package is! String ||
+        resource is! String) {
+      return const ToolResult(
+        value: <String, dynamic>{
+          'error':
+              'skill package is not available from the requested authority',
+        },
+        isError: true,
+      );
+    }
+    try {
+      final contents = resource == 'SKILL.md'
+          ? (await _catalog.read(package)).instructions
+          : await _catalog.readResource(package, resource);
+      final cursor = arguments['cursor'];
+      final start = cursor == null
+          ? 0
+          : cursor is String && cursor.startsWith('local:')
+          ? int.tryParse(cursor.substring(6))
+          : null;
+      if (start == null || start < 0 || start > contents.length) {
+        return const ToolResult(
+          value: <String, dynamic>{'error': 'skills.read cursor is invalid'},
+          isError: true,
+        );
+      }
+      const pageCharacters = 256 * 1024;
+      final end = (start + pageCharacters).clamp(0, contents.length);
+      return ToolResult(
+        value: <String, dynamic>{
+          'resource': resource,
+          'contents': contents.substring(start, end),
+          'next_cursor': end < contents.length ? 'local:$end' : null,
+        },
+      );
+    } on SkillLookupException catch (error) {
+      return ToolResult(
+        value: <String, dynamic>{'error': error.message},
+        isError: true,
+      );
+    } on FileSystemException catch (error) {
+      return ToolResult(
+        value: <String, dynamic>{'error': error.message},
+        isError: true,
+      );
+    }
+  }
+}
 
 /// Registers the skill tools, in a worktree that publishes any.
 ///
@@ -322,7 +576,12 @@ final class SkillToolProvider extends AgentToolProvider {
   List<AgentTool> create(AgentToolScope scope) =>
       scope.skills.summaries().isEmpty
       ? const <AgentTool>[]
-      : <AgentTool>[ListSkillsTool(scope.skills), SkillTool(scope.skills)];
+      : <AgentTool>[
+          ListSkillsTool(scope.skills),
+          SkillTool(scope.skills),
+          SkillsListTool(scope.skills),
+          SkillsReadTool(scope.skills),
+        ];
 
   /// Points at the skill tools instead of listing every skill.
   ///

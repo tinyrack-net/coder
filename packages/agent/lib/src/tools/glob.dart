@@ -88,7 +88,7 @@ class GlobTool extends AgentTool {
       ];
     } on FormatException catch (error) {
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'pattern is not a valid glob.',
           'detail': error.message,
         }),
@@ -130,7 +130,7 @@ class GlobTool extends AgentTool {
     }
 
     return ToolResult(
-      output: truncateToolOutput(
+      value: truncateToolOutput(
         jsonEncode(<String, dynamic>{
           'paths': paths,
           'truncated': truncated,

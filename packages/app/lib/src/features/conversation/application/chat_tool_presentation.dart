@@ -1,7 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/tools/apply_patch.dart';
-import 'package:app/src/features/conversation/presentation/tools/ask_user.dart';
 import 'package:app/src/features/conversation/presentation/tools/attach_file.dart';
 import 'package:app/src/features/conversation/presentation/tools/clock.dart';
 import 'package:app/src/features/conversation/presentation/tools/collaboration.dart';
@@ -13,6 +12,7 @@ import 'package:app/src/features/conversation/presentation/tools/mcp_resources.d
 import 'package:app/src/features/conversation/presentation/tools/presenter.dart';
 import 'package:app/src/features/conversation/presentation/tools/read_attachment.dart';
 import 'package:app/src/features/conversation/presentation/tools/read_file.dart';
+import 'package:app/src/features/conversation/presentation/tools/request_user_input.dart';
 import 'package:app/src/features/conversation/presentation/tools/search_text.dart';
 import 'package:app/src/features/conversation/presentation/tools/skills.dart';
 import 'package:app/src/features/conversation/presentation/tools/tool_search.dart';
@@ -61,7 +61,7 @@ String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
 final Map<String, ChatToolPresenter> chatToolPresenters =
     <String, ChatToolPresenter>{
       ...applyPatchPresenters,
-      ...askUserPresenters,
+      ...requestUserInputPresenters,
       ...attachFilePresenters,
       ...clockPresenters,
       ...collaborationPresenters,

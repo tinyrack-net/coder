@@ -20,10 +20,10 @@ void main() {
       lookup: (_) => null,
     );
 
-    test('a tool the server calls read-only is graded as a read', () {
+    test('server annotations never relax the external-call boundary', () {
       expect(
         toolFor(<String, dynamic>{'readOnlyHint': true}).risk,
-        AgentToolRisk.read,
+        AgentToolRisk.dangerous,
       );
     });
 
@@ -41,11 +41,9 @@ void main() {
       );
     });
 
-    test('a read-only tool is still denied under a read-only policy', () {
+    test('every external MCP call is denied under a read-only policy', () {
       const policy = DefaultApprovalPolicy(AgentPermissionMode.readOnly);
 
-      // Grading relaxes the prompt, it does not grant anything: a read is
-      // exactly what readOnly mode is meant to allow, and nothing more.
       expect(
         policy.evaluate(
           ToolInvocation(
@@ -56,7 +54,7 @@ void main() {
             workspaceRoot: '/workspace',
           ),
         ),
-        ApprovalEvaluation.allow,
+        ApprovalEvaluation.deny,
       );
       expect(
         policy.evaluate(
@@ -335,6 +333,68 @@ void main() {
       final call = server.requests.last['params']! as Map<String, dynamic>;
       expect(call['name'], 'create_issue');
       expect(call['arguments'], <String, dynamic>{'title': 'Bug'});
+    });
+
+    test('a call preserves every MCP content block and metadata', () async {
+      final tool = await connect(
+        callResult: <String, dynamic>{
+          'content': <dynamic>[
+            <String, dynamic>{
+              'type': 'text',
+              'text': 'text',
+              'annotations': <String, dynamic>{'priority': 1},
+              '_meta': <String, dynamic>{'source': 'server'},
+            },
+            <String, dynamic>{
+              'type': 'image',
+              'mimeType': 'image/png',
+              'data': 'AA==',
+            },
+            <String, dynamic>{
+              'type': 'audio',
+              'mimeType': 'audio/wav',
+              'data': 'AA==',
+            },
+            <String, dynamic>{
+              'type': 'resource',
+              'resource': <String, dynamic>{
+                'uri': 'file:///schema',
+                'mimeType': 'application/json',
+                'text': '{}',
+                '_meta': <String, dynamic>{'etag': 'one'},
+              },
+            },
+            <String, dynamic>{
+              'type': 'resource_link',
+              'uri': 'file:///schema',
+              'name': 'schema',
+              'title': 'Schema',
+              'description': 'JSON schema.',
+              'mimeType': 'application/json',
+              'size': 2,
+            },
+            <String, dynamic>{
+              'type': 'future',
+              'value': 1,
+              '_meta': <String, dynamic>{'future': true},
+            },
+          ],
+          'structuredContent': <String, dynamic>{'ok': true},
+          '_meta': <String, dynamic>{'trace': 'one'},
+        },
+      );
+
+      final result = await tool.execute(const <String, dynamic>{}, context);
+
+      expect(result.value, <String, dynamic>{'ok': true});
+      expect(result.content, hasLength(6));
+      expect(result.content[0], isA<ToolTextContent>());
+      expect(result.content[1], isA<ToolImageContent>());
+      expect(result.content[2], isA<ToolAudioContent>());
+      expect(result.content[3], isA<ToolEmbeddedResourceContent>());
+      expect(result.content[4], isA<ToolResourceLinkContent>());
+      expect(result.content[5], isA<ToolTextContent>());
+      expect(result.meta, <String, dynamic>{'trace': 'one'});
     });
 
     test('a tool-reported failure keeps its output and error flag', () async {

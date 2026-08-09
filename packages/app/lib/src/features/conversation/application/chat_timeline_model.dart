@@ -293,7 +293,8 @@ final class ChatQuestionAnswer {
   final bool isFreeForm;
 }
 
-/// An answered `ask_user` call, read as conversation rather than tool output.
+/// An answered `request_user_input` call, read as conversation rather than
+/// tool output.
 final class ChatUserAnswer extends ChatItem {
   /// Creates an answered-question item.
   const ChatUserAnswer({
@@ -503,7 +504,7 @@ List<ChatItem> projectChatTimeline(
           }
         }
         if (_timelineOf(event) == ChatToolTimeline.card &&
-            _string(event.data['name']) == 'ask_user' &&
+            _string(event.data['name']) == 'request_user_input' &&
             !openQuestions.containsKey('$turnId/$callId')) {
           // A pending question renders from conversation state, so a tool row
           // beside it would only duplicate it; the answer replaces both.
@@ -519,7 +520,7 @@ List<ChatItem> projectChatTimeline(
           continue;
         }
         if (_timelineOf(event) == ChatToolTimeline.card &&
-            _string(event.data['name']) == 'sleep' &&
+            _string(event.data['name']) == 'clock__sleep' &&
             !openSleeps.containsKey('$turnId/$callId')) {
           final arguments = _map(event.data['arguments']);
           final milliseconds = arguments['duration_ms'];
@@ -1092,7 +1093,7 @@ final class _QuestionBuilder extends _ChatItemBuilder {
           turnId: turnId,
           createdAt: createdAt,
           callId: callId,
-          toolName: 'ask_user',
+          toolName: 'request_user_input',
           arguments: const <String, dynamic>{},
           status: _status,
           output: _output,

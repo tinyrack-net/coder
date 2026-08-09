@@ -998,6 +998,9 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
           )
           .toList() ??
       const <ModelControlDescriptorDto>[],
+  toolSurface:
+      $enumDecodeNullable(_$ModelToolSurfaceEnumMap, json['toolSurface']) ??
+      ModelToolSurface.direct,
   source:
       $enumDecodeNullable(_$CapabilitySourceEnumMap, json['source']) ??
       CapabilitySource.unknown,
@@ -1011,6 +1014,7 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
   'controls': instance.controls,
+  'toolSurface': _$ModelToolSurfaceEnumMap[instance.toolSurface]!,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };
 
@@ -1018,6 +1022,11 @@ const _$CapabilitySupportEnumMap = {
   CapabilitySupport.unknown: 'unknown',
   CapabilitySupport.supported: 'supported',
   CapabilitySupport.unsupported: 'unsupported',
+};
+
+const _$ModelToolSurfaceEnumMap = {
+  ModelToolSurface.direct: 'direct',
+  ModelToolSurface.luaCode: 'luaCode',
 };
 
 const _$CapabilitySourceEnumMap = {

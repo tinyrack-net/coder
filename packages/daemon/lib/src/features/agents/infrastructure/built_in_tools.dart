@@ -48,7 +48,7 @@ AgentToolRegistry builtInAgentToolRegistry({
   ),
   const ExecCommandToolProvider(),
   const ViewImageToolProvider(),
-  const AskUserToolProvider(),
+  const RequestUserInputToolProvider(),
   const ReadAttachmentToolProvider(),
   // The supervisor is wired after the session service it drives, so the
   // provider reads it at turn time rather than capturing a null at boot.

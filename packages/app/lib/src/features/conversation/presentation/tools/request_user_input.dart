@@ -1,9 +1,9 @@
 import 'package:app/src/features/conversation/presentation/tools/presenter.dart';
 
-/// How `ask_user` appears in the chat timeline.
-final Map<String, ChatToolPresenter> askUserPresenters =
+/// How `request_user_input` appears in the chat timeline.
+final Map<String, ChatToolPresenter> requestUserInputPresenters =
     <String, ChatToolPresenter>{
-      'ask_user': ChatToolPresenter(
+      'request_user_input': ChatToolPresenter(
         timeline: ChatToolTimeline.card,
         glyph: ChatToolGlyph.ask,
         title: (l10n, activity) {
@@ -17,13 +17,18 @@ final Map<String, ChatToolPresenter> askUserPresenters =
           return 'Ask(${headers.isEmpty ? '?' : headers.join(', ')})';
         },
         result: (l10n, activity, output) {
-          if (output is! ChatToolJsonArray) {
+          if (output is! ChatToolJsonObject) {
             return genericToolResult(l10n, output);
           }
-          final answers = output.value
+          final rawAnswers = output.value['answers'];
+          if (rawAnswers is! Map) return genericToolResult(l10n, output);
+          final answers = rawAnswers.values
               .whereType<Map<dynamic, dynamic>>()
-              .map((answer) => answer['answer'])
-              .whereType<String>();
+              .expand(
+                (entry) => entry['answers'] is List
+                    ? (entry['answers']! as List).whereType<String>()
+                    : const <String>[],
+              );
           return answers.isEmpty
               ? genericToolResult(l10n, output)
               : answers.join(', ');

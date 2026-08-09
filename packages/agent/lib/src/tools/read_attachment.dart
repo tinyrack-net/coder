@@ -39,7 +39,7 @@ class ReadAttachmentTool extends AgentTool {
   ) async {
     context.cancellation.throwIfCancelled();
     final attachment = await _reader.read(arguments['id'] as String);
-    return ToolResult(output: jsonEncode(attachment.toJson()));
+    return ToolResult(value: jsonEncode(attachment.toJson()));
   }
 }
 

@@ -87,11 +87,12 @@ final class ArchitectureVerifier {
   // exception because they hold per-turn state a presenter cannot.
   static final RegExp _quotedToolName = RegExp(
     "'(list_directory|read_file|search_text|glob|update_plan|apply_patch"
-    '|attach_file|read_attachment|view_image|ask_user|current_time|sleep'
+    '|attach_file|read_attachment|view_image|request_user_input'
+    '|clock__curr_time|clock__sleep'
     '|exec_command|write_stdin|tool_search|list_skills|get_context_remaining'
     '|new_context|list_mcp_resources|list_mcp_resource_templates'
     '|read_mcp_resource|spawn_agent|followup_task|wait_agent|interrupt_agent'
-    "|list_agents)'",
+    "|list_agents|skills__list|skills__read)'",
   );
 
   static bool _mayNameVendors(String package, String path) =>
@@ -251,6 +252,13 @@ final class ArchitectureVerifier {
     required String path,
     required String source,
   }) {
+    if (path.contains(r'\')) {
+      return verifySource(
+        package: package,
+        path: path.replaceAll(r'\', '/'),
+        source: source,
+      );
+    }
     final violations = <ArchitectureViolation>[];
     final lines = source.split('\n');
     final applicationLayer = _isApplicationLayer(package, path);

@@ -247,7 +247,7 @@ data: [DONE]
               instructions: 'test',
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[
-                ModelToolDefinition(
+                ModelFunctionToolDefinition(
                   name: 'read_file',
                   description: 'read',
                   parameters: <String, dynamic>{
@@ -469,7 +469,7 @@ data: [DONE]
               AssistantConversationItem(text: 'earlier'),
             ],
             tools: <ModelToolDefinition>[
-              ModelToolDefinition(
+              ModelFunctionToolDefinition(
                 name: 'read_file',
                 description: 'read',
                 parameters: <String, dynamic>{
@@ -506,7 +506,7 @@ data: [DONE]
 
   test('a tool opting out of strict schemas is never sent as strict', () async {
     const tools = <ModelToolDefinition>[
-      ModelToolDefinition(
+      ModelFunctionToolDefinition(
         name: 'read_file',
         description: 'read',
         parameters: <String, dynamic>{
@@ -516,7 +516,7 @@ data: [DONE]
           'additionalProperties': false,
         },
       ),
-      ModelToolDefinition(
+      ModelFunctionToolDefinition(
         name: 'mcp__github__create_issue',
         description: 'create an issue',
         parameters: <String, dynamic>{
@@ -568,6 +568,227 @@ data: [DONE]
     expect((chatTools.first as Map)['function'], containsPair('strict', true));
     expect((chatTools.last as Map)['function'], isNot(contains('strict')));
   });
+
+  test('Responses preserves modern freeform calls and outputs', () async {
+    final adapter = _RecordingAdapter(r'''
+data: {"type":"response.output_item.done","item":{"type":"custom_tool_call","call_id":"call-patch","name":"apply_patch","input":"*** Begin Patch\n*** End Patch"}}
+
+data: {"type":"response.completed","response":{"output":[{"type":"custom_tool_call","call_id":"call-patch","name":"apply_patch","input":"*** Begin Patch\n*** End Patch"}],"usage":{}}}
+
+data: [DONE]
+
+''');
+    final events =
+        await OpenAIResponsesProvider(
+              const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+              dio: Dio()..httpClientAdapter = adapter,
+            )
+            .stream(
+              _request(
+                history: const <ConversationItem>[
+                  ToolResultConversationItem(
+                    callId: 'earlier-patch',
+                    output: 'Done!',
+                    toolKind: ModelToolKind.freeform,
+                  ),
+                ],
+                tools: const <ModelToolDefinition>[
+                  ModelFreeformToolDefinition(
+                    name: 'apply_patch',
+                    description: 'Patch files.',
+                    format: ModelFreeformToolFormat(
+                      type: 'grammar',
+                      syntax: 'lark',
+                      definition: 'start: patch',
+                    ),
+                    supportsParallelToolCalls: true,
+                  ),
+                ],
+              ),
+              CancellationToken(),
+            )
+            .toList();
+
+    final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+    expect(body['parallel_tool_calls'], isTrue);
+    expect((body['tools'] as List).single, <String, dynamic>{
+      'type': 'custom',
+      'name': 'apply_patch',
+      'description': 'Patch files.',
+      'format': <String, dynamic>{
+        'type': 'grammar',
+        'syntax': 'lark',
+        'definition': 'start: patch',
+      },
+    });
+    expect((body['input'] as List).single, <String, dynamic>{
+      'type': 'custom_tool_call_output',
+      'call_id': 'earlier-patch',
+      'output': 'Done!',
+    });
+    final call = events.whereType<ModelFreeformCall>().single;
+    expect(call.name, 'apply_patch');
+    expect(call.rawInput, '*** Begin Patch\n*** End Patch');
+    final completed = events.whereType<ModelResponseCompleted>().single;
+    expect(
+      completed.assistant.toolCalls.single.input,
+      isA<FreeformToolCallInput>(),
+    );
+  });
+
+  test(
+    'Responses preserves native deferred-search calls and outputs',
+    () async {
+      final adapter = _RecordingAdapter('''
+data: {"type":"response.output_item.done","item":{"type":"tool_search_call","call_id":"search-1","execution":"client","arguments":{"query":"calendar","limit":1}}}
+
+data: {"type":"response.completed","response":{"output":[{"type":"tool_search_call","call_id":"search-1","execution":"client","arguments":{"query":"calendar","limit":1}}],"usage":{}}}
+
+data: [DONE]
+
+''');
+      final events =
+          await OpenAIResponsesProvider(
+                const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+                dio: Dio()..httpClientAdapter = adapter,
+              )
+              .stream(
+                _request(
+                  history: const <ConversationItem>[
+                    ToolResultConversationItem(
+                      callId: 'search-0',
+                      output:
+                          '{"tools":[{"type":"function","name":"calendar"}]}',
+                      toolKind: ModelToolKind.deferredSearch,
+                    ),
+                  ],
+                  tools: const <ModelToolDefinition>[
+                    ModelDeferredSearchToolDefinition(
+                      description: 'Discover deferred tools.',
+                      parameters: <String, dynamic>{'type': 'object'},
+                    ),
+                  ],
+                ),
+                CancellationToken(),
+              )
+              .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect((body['tools'] as List).single, <String, dynamic>{
+        'type': 'tool_search',
+        'execution': 'client',
+        'description': 'Discover deferred tools.',
+        'parameters': <String, dynamic>{'type': 'object'},
+      });
+      expect((body['input'] as List).single, <String, dynamic>{
+        'type': 'tool_search_output',
+        'call_id': 'search-0',
+        'status': 'completed',
+        'execution': 'client',
+        'tools': <Object?>[
+          <String, Object?>{'type': 'function', 'name': 'calendar'},
+        ],
+      });
+      expect(
+        events.whereType<ModelDeferredSearchCall>().single.arguments,
+        <String, dynamic>{'query': 'calendar', 'limit': 1},
+      );
+      final completed = events.whereType<ModelResponseCompleted>().single;
+      expect(
+        completed.assistant.toolCalls.single.kind,
+        ModelToolKind.deferredSearch,
+      );
+    },
+  );
+
+  test(
+    'Responses preserves namespace declarations and qualified calls',
+    () async {
+      final adapter = _RecordingAdapter('''
+data: {"type":"response.output_item.done","item":{"type":"function_call","call_id":"clock-call","namespace":"clock","name":"curr_time","arguments":"{}"}}
+
+data: {"type":"response.completed","response":{"output":[{"type":"function_call","call_id":"clock-call","namespace":"clock","name":"curr_time","arguments":"{}"}],"usage":{}}}
+
+data: [DONE]
+
+''');
+      final events =
+          await OpenAIResponsesProvider(
+                const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+                dio: Dio()..httpClientAdapter = adapter,
+              )
+              .stream(
+                _request(
+                  history: const <ConversationItem>[
+                    AssistantConversationItem(
+                      text: '',
+                      toolCalls: <ConversationToolCall>[
+                        ConversationToolCall.function(
+                          callId: 'old-clock',
+                          name: 'clock__curr_time',
+                          namespace: 'clock',
+                          arguments: <String, dynamic>{},
+                        ),
+                      ],
+                    ),
+                    ToolResultConversationItem(
+                      callId: 'old-clock',
+                      output: 'now',
+                      toolKind: ModelToolKind.function,
+                      content: <ToolContent>[
+                        ToolTextContent('now'),
+                        ToolImageContent(
+                          imageUrl: 'data:image/png;base64,AA==',
+                        ),
+                        ToolAudioContent(
+                          audioUrl: 'data:audio/wav;base64,AA==',
+                        ),
+                      ],
+                    ),
+                  ],
+                  tools: const <ModelToolDefinition>[
+                    ModelNamespaceToolDefinition(
+                      name: 'clock',
+                      description: 'Clock tools.',
+                      tools: <ModelFunctionToolDefinition>[
+                        ModelFunctionToolDefinition(
+                          name: 'curr_time',
+                          description: 'Current time.',
+                          parameters: <String, dynamic>{'type': 'object'},
+                          strict: false,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                CancellationToken(),
+              )
+              .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect((body['tools'] as List).single, containsPair('type', 'namespace'));
+      expect((body['input'] as List).first, containsPair('namespace', 'clock'));
+      expect(
+        ((body['input'] as List)[1] as Map)['output'],
+        <Map<String, dynamic>>[
+          <String, dynamic>{'type': 'input_text', 'text': 'now'},
+          <String, dynamic>{
+            'type': 'input_image',
+            'image_url': 'data:image/png;base64,AA==',
+          },
+          <String, dynamic>{
+            'type': 'input_audio',
+            'audio_url': 'data:audio/wav;base64,AA==',
+          },
+        ],
+      );
+      final call = events.whereType<ModelFunctionCall>().single;
+      expect(call.name, 'clock__curr_time');
+      expect(call.namespace, 'clock');
+      final completed = events.whereType<ModelResponseCompleted>().single;
+      expect(completed.assistant.toolCalls.single.namespace, 'clock');
+    },
+  );
 
   test('Chat Completions rejects a truncated SSE response', () async {
     final adapter = _RecordingAdapter('''
@@ -631,7 +852,7 @@ data: [DONE]
                 AssistantConversationItem(
                   text: 'earlier',
                   toolCalls: <ConversationToolCall>[
-                    ConversationToolCall(
+                    ConversationToolCall.function(
                       callId: 'call-1',
                       name: 'read_file',
                       arguments: <String, dynamic>{'path': 'a.txt'},
@@ -641,7 +862,11 @@ data: [DONE]
                     <String, dynamic>{'type': 'reasoning', 'opaque': true},
                   ],
                 ),
-                ToolResultConversationItem(callId: 'call-1', output: 'content'),
+                ToolResultConversationItem(
+                  callId: 'call-1',
+                  output: 'content',
+                  toolKind: ModelToolKind.function,
+                ),
               ],
             ),
             CancellationToken(),
@@ -861,14 +1086,18 @@ data: [DONE]
                 AssistantConversationItem(
                   text: '',
                   toolCalls: <ConversationToolCall>[
-                    ConversationToolCall(
+                    ConversationToolCall.function(
                       callId: 'call',
                       name: 'read_file',
                       arguments: <String, dynamic>{'path': 'a'},
                     ),
                   ],
                 ),
-                ToolResultConversationItem(callId: 'call', output: 'value'),
+                ToolResultConversationItem(
+                  callId: 'call',
+                  output: 'value',
+                  toolKind: ModelToolKind.function,
+                ),
               ],
             ),
             CancellationToken(),
@@ -988,7 +1217,7 @@ ModelRequest _request({
   List<ConversationItem> history = const <ConversationItem>[],
   String? forceToolName,
   List<ModelToolDefinition> tools = const <ModelToolDefinition>[
-    ModelToolDefinition(
+    ModelFunctionToolDefinition(
       name: 'read_file',
       description: 'Read',
       parameters: <String, dynamic>{

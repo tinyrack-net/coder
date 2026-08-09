@@ -57,8 +57,8 @@ class ReadFileTool extends AgentTool {
       throw const FormatException('Invalid offset or limit.');
     }
     final end = (offset + limit).clamp(0, lines.length);
-    if (offset >= lines.length) return const ToolResult(output: '');
-    return ToolResult(output: lines.sublist(offset, end).join('\n'));
+    if (offset >= lines.length) return const ToolResult(value: '');
+    return ToolResult(value: lines.sublist(offset, end).join('\n'));
   }
 }
 

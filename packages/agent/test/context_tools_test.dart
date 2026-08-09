@@ -55,9 +55,7 @@ void main() {
     );
 
     final decoded = decode(result);
-    expect(decoded['usedTokens'], 32000);
-    expect(decoded['contextWindowTokens'], 200000);
-    expect(decoded['remainingTokens'], 168000);
+    expect(decoded, <String, dynamic>{'tokens_left': 168000});
   });
 
   test('an unknown window reports null rather than a guess', () async {
@@ -67,9 +65,7 @@ void main() {
     );
 
     final decoded = decode(result);
-    expect(decoded['usedTokens'], 100);
-    expect(decoded['contextWindowTokens'], isNull);
-    expect(decoded['remainingTokens'], isNull);
+    expect(decoded, <String, dynamic>{'tokens_left': null});
   });
 
   test('an overflowing window floors at zero', () async {
@@ -83,7 +79,7 @@ void main() {
       ),
     );
 
-    expect(decode(result)['remainingTokens'], 0);
+    expect(decode(result)['tokens_left'], 0);
   });
 
   test('new_context asks the runner rather than resetting itself', () async {
@@ -96,6 +92,10 @@ void main() {
 
     expect(requested, 1);
     expect(result.isError, isFalse);
-    expect(decode(result)['started'], isTrue);
+    expect(
+      result.output,
+      'A new context window will start without summarizing conversation '
+      'history.',
+    );
   });
 }

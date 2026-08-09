@@ -27,6 +27,9 @@ final class AgentToolScope {
     required this.questions,
     required this.execHost,
     required this.skills,
+    this.sessionMode = AgentSessionMode.normal,
+    this.isRootAgent = true,
+    this.toolSurfaceMode = AgentToolSurfaceMode.direct,
     this.luaCodeModeHost,
   });
 
@@ -62,6 +65,15 @@ final class AgentToolScope {
 
   /// Skills resolved against this worktree.
   final SkillCatalog skills;
+
+  /// Collaboration mode used to filter mode-specific tools.
+  final AgentSessionMode sessionMode;
+
+  /// Whether this session is the root of its collaboration tree.
+  final bool isRootAgent;
+
+  /// Tool surface selected by the resolved model profile.
+  final AgentToolSurfaceMode toolSurfaceMode;
 
   /// Session-scoped Lua cell host, absent on unsupported runtimes.
   final LuaCodeModeHost? luaCodeModeHost;
@@ -232,7 +244,11 @@ final class AgentToolRegistry {
     }
     final surfaces = _providers
         .whereType<AgentToolSurfaceProvider>()
-        .where((provider) => scope.selectedToolIds.contains(provider.id))
+        .where(
+          (provider) => provider.id == luaCodeModeCapabilityId
+              ? scope.toolSurfaceMode == AgentToolSurfaceMode.luaCode
+              : scope.selectedToolIds.contains(provider.id),
+        )
         .toList(growable: false);
     if (surfaces.length > 1) {
       throw StateError('Only one agent tool surface may be selected.');

@@ -10,10 +10,16 @@ import 'package:daemon/src/features/mcp/infrastructure/mcp_service.dart';
 /// some other repository declared.
 abstract interface class McpResourceHost {
   /// Resources published by [server], or by every visible server when null.
-  List<McpServerResource> resources({String? server});
+  Future<McpListPage<McpServerResource>> resources({
+    String? server,
+    String? cursor,
+  });
 
   /// Resource templates published by [server], or by every visible server.
-  List<McpServerResourceTemplate> resourceTemplates({String? server});
+  Future<McpListPage<McpServerResourceTemplate>> resourceTemplates({
+    String? server,
+    String? cursor,
+  });
 
   /// Reads one resource, throwing when the server is unknown or offline.
   Future<McpReadResourceResult> readResource({
@@ -31,15 +37,36 @@ final class SessionMcpResourceHost implements McpResourceHost {
   final String _workspaceRoot;
 
   @override
-  List<McpServerResource> resources({String? server}) =>
-      _service.resources(server: server, workspaceRoot: _workspaceRoot);
+  Future<McpListPage<McpServerResource>> resources({
+    String? server,
+    String? cursor,
+  }) => server == null
+      ? Future<McpListPage<McpServerResource>>.value(
+          McpListPage<McpServerResource>(
+            items: _service.resources(workspaceRoot: _workspaceRoot),
+          ),
+        )
+      : _service.resourcePage(
+          server: server,
+          cursor: cursor,
+          workspaceRoot: _workspaceRoot,
+        );
 
   @override
-  List<McpServerResourceTemplate> resourceTemplates({String? server}) =>
-      _service.resourceTemplates(
-        server: server,
-        workspaceRoot: _workspaceRoot,
-      );
+  Future<McpListPage<McpServerResourceTemplate>> resourceTemplates({
+    String? server,
+    String? cursor,
+  }) => server == null
+      ? Future<McpListPage<McpServerResourceTemplate>>.value(
+          McpListPage<McpServerResourceTemplate>(
+            items: _service.resourceTemplates(workspaceRoot: _workspaceRoot),
+          ),
+        )
+      : _service.resourceTemplatePage(
+          server: server,
+          cursor: cursor,
+          workspaceRoot: _workspaceRoot,
+        );
 
   @override
   Future<McpReadResourceResult> readResource({
@@ -51,9 +78,6 @@ final class SessionMcpResourceHost implements McpResourceHost {
     workspaceRoot: _workspaceRoot,
   );
 }
-
-/// How many entries one page of a server-scoped listing returns.
-const int mcpResourcePageSize = 100;
 
 /// Reads [key] as a non-blank string, treating blank and absent alike.
 ///
@@ -67,27 +91,9 @@ String? _optional(Map<String, dynamic> arguments, String key) {
 }
 
 ToolResult _reject(String reason) => ToolResult(
-  output: jsonEncode(<String, dynamic>{'error': reason}),
+  value: jsonEncode(<String, dynamic>{'error': reason}),
   isError: true,
 );
-
-/// Slices [items] for a server-scoped page, or rejects an unusable cursor.
-///
-/// Returns a record of the page and the cursor that follows it. The cursor is
-/// an offset into the client-side cache rather than the server's own cursor,
-/// because the MCP client already drained every page at connect time.
-({List<T> page, String? nextCursor})? _page<T>(
-  List<T> items,
-  String? cursor,
-) {
-  final offset = cursor == null ? 0 : int.tryParse(cursor);
-  if (offset == null || offset < 0 || offset > items.length) return null;
-  final end = (offset + mcpResourcePageSize).clamp(0, items.length);
-  return (
-    page: items.sublist(offset, end),
-    nextCursor: end < items.length ? '$end' : null,
-  );
-}
 
 Map<String, Map<String, dynamic>> _listSchema() =>
     <String, Map<String, dynamic>>{
@@ -141,9 +147,20 @@ class ListMcpResourcesTool extends AgentTool {
     if (server == null && cursor != null) {
       return _reject('cursor is only valid together with a server.');
     }
-    final all = _host.resources(server: server);
+    final McpListPage<McpServerResource> page;
+    try {
+      page = await _host.resources(server: server, cursor: cursor);
+    } on McpServerUnavailable catch (error) {
+      return _reject('$error');
+    } on McpServerException catch (error) {
+      return _reject('$error');
+    } on McpProtocolException catch (error) {
+      return _reject(error.message);
+    } on McpTransportClosed catch (error) {
+      return _reject('$error');
+    }
     final entries = <Map<String, dynamic>>[
-      for (final item in all)
+      for (final item in page.items)
         <String, dynamic>{
           'server': item.server,
           'uri': item.descriptor.uri,
@@ -155,29 +172,17 @@ class ListMcpResourcesTool extends AgentTool {
             'mimeType': item.descriptor.mimeType,
           if (item.descriptor.sizeBytes != null)
             'sizeBytes': item.descriptor.sizeBytes,
+          if (item.descriptor.annotations.isNotEmpty)
+            'annotations': item.descriptor.annotations,
+          if (item.descriptor.meta.isNotEmpty) '_meta': item.descriptor.meta,
         },
     ];
-    if (server == null) {
-      return ToolResult(
-        output: truncateToolOutput(
-          jsonEncode(<String, dynamic>{
-            'resources': entries,
-            'truncated': false,
-          }),
-        ),
-      );
-    }
-    final paged = _page(entries, cursor);
-    if (paged == null) return _reject('Unknown cursor "$cursor".');
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<String, dynamic>{
-          'server': server,
-          'resources': paged.page,
-          if (paged.nextCursor != null) 'nextCursor': paged.nextCursor,
-          'truncated': paged.nextCursor != null,
-        }),
-      ),
+      value: <String, dynamic>{
+        'server': ?server,
+        'resources': entries,
+        if (page.nextCursor != null) 'nextCursor': page.nextCursor,
+      },
     );
   }
 }
@@ -216,8 +221,20 @@ class ListMcpResourceTemplatesTool extends AgentTool {
     if (server == null && cursor != null) {
       return _reject('cursor is only valid together with a server.');
     }
+    final McpListPage<McpServerResourceTemplate> page;
+    try {
+      page = await _host.resourceTemplates(server: server, cursor: cursor);
+    } on McpServerUnavailable catch (error) {
+      return _reject('$error');
+    } on McpServerException catch (error) {
+      return _reject('$error');
+    } on McpProtocolException catch (error) {
+      return _reject(error.message);
+    } on McpTransportClosed catch (error) {
+      return _reject('$error');
+    }
     final entries = <Map<String, dynamic>>[
-      for (final item in _host.resourceTemplates(server: server))
+      for (final item in page.items)
         <String, dynamic>{
           'server': item.server,
           'uriTemplate': item.descriptor.uriTemplate,
@@ -227,29 +244,17 @@ class ListMcpResourceTemplatesTool extends AgentTool {
             'description': item.descriptor.description,
           if (item.descriptor.mimeType != null)
             'mimeType': item.descriptor.mimeType,
+          if (item.descriptor.annotations.isNotEmpty)
+            'annotations': item.descriptor.annotations,
+          if (item.descriptor.meta.isNotEmpty) '_meta': item.descriptor.meta,
         },
     ];
-    if (server == null) {
-      return ToolResult(
-        output: truncateToolOutput(
-          jsonEncode(<String, dynamic>{
-            'resourceTemplates': entries,
-            'truncated': false,
-          }),
-        ),
-      );
-    }
-    final paged = _page(entries, cursor);
-    if (paged == null) return _reject('Unknown cursor "$cursor".');
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<String, dynamic>{
-          'server': server,
-          'resourceTemplates': paged.page,
-          if (paged.nextCursor != null) 'nextCursor': paged.nextCursor,
-          'truncated': paged.nextCursor != null,
-        }),
-      ),
+      value: <String, dynamic>{
+        'server': ?server,
+        'resourceTemplates': entries,
+        if (page.nextCursor != null) 'nextCursor': page.nextCursor,
+      },
     );
   }
 }
@@ -313,29 +318,48 @@ class ReadMcpResourceTool extends AgentTool {
       return _reject('$error');
     }
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<String, dynamic>{
-          'server': server,
-          'uri': uri,
-          'contents': <Map<String, dynamic>>[
-            for (final content in result.contents)
-              switch (content) {
-                McpTextResourceContents(:final mimeType, :final text) =>
-                  <String, dynamic>{
-                    'uri': content.uri,
-                    'mimeType': mimeType,
-                    'text': text,
-                  },
-                McpBlobResourceContents(:final mimeType, :final byteLength) =>
-                  <String, dynamic>{
-                    'uri': content.uri,
-                    'mimeType': mimeType,
-                    'byteLength': ?byteLength,
-                  },
-              },
-          ],
-        }),
-      ),
+      value: <String, dynamic>{
+        'server': server,
+        'uri': uri,
+        'contents': <Map<String, dynamic>>[
+          for (final content in result.contents)
+            switch (content) {
+              McpTextResourceContents(:final mimeType, :final text) =>
+                <String, dynamic>{
+                  'uri': content.uri,
+                  'mimeType': mimeType,
+                  'text': text,
+                  if (content.meta.isNotEmpty) '_meta': content.meta,
+                },
+              McpBlobResourceContents(:final mimeType, :final blob) =>
+                <String, dynamic>{
+                  'uri': content.uri,
+                  'mimeType': mimeType,
+                  'blob': blob,
+                  if (content.meta.isNotEmpty) '_meta': content.meta,
+                },
+            },
+        ],
+      },
+      content: <ToolContent>[
+        for (final content in result.contents)
+          switch (content) {
+            McpTextResourceContents(:final mimeType, :final text) =>
+              ToolEmbeddedResourceContent(
+                uri: content.uri,
+                mimeType: mimeType,
+                text: text,
+                meta: content.meta,
+              ),
+            McpBlobResourceContents(:final mimeType, :final blob) =>
+              ToolEmbeddedResourceContent(
+                uri: content.uri,
+                mimeType: mimeType,
+                blob: blob,
+                meta: content.meta,
+              ),
+          },
+      ],
     );
   }
 }

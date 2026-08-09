@@ -162,6 +162,29 @@ final class McpRuntime implements AgentToolCatalog {
     ];
   }
 
+  /// Reads one live resource page from [server].
+  Future<McpListPage<McpServerResource>> resourcePage({
+    required String server,
+    required String? cursor,
+    String? workspaceRoot,
+  }) async {
+    final connection = _visibleConnections(
+      workspaceRoot: workspaceRoot,
+    )[server];
+    final client = connection?.status == McpServerStatus.ready
+        ? connection?.client
+        : null;
+    if (client == null) throw McpServerUnavailable(server);
+    final page = await client.listResourcesPage(cursor: cursor);
+    return McpListPage<McpServerResource>(
+      items: <McpServerResource>[
+        for (final item in page.items)
+          McpServerResource(server: server, descriptor: item),
+      ],
+      nextCursor: page.nextCursor,
+    );
+  }
+
   /// Resource templates published by [server], or by every visible server.
   List<McpServerResourceTemplate> resourceTemplates({
     String? server,
@@ -176,6 +199,29 @@ final class McpRuntime implements AgentToolCatalog {
         for (final descriptor in visible[name]!.readyResourceTemplates)
           McpServerResourceTemplate(server: name, descriptor: descriptor),
     ];
+  }
+
+  /// Reads one live resource-template page from [server].
+  Future<McpListPage<McpServerResourceTemplate>> resourceTemplatePage({
+    required String server,
+    required String? cursor,
+    String? workspaceRoot,
+  }) async {
+    final connection = _visibleConnections(
+      workspaceRoot: workspaceRoot,
+    )[server];
+    final client = connection?.status == McpServerStatus.ready
+        ? connection?.client
+        : null;
+    if (client == null) throw McpServerUnavailable(server);
+    final page = await client.listResourceTemplatesPage(cursor: cursor);
+    return McpListPage<McpServerResourceTemplate>(
+      items: <McpServerResourceTemplate>[
+        for (final item in page.items)
+          McpServerResourceTemplate(server: server, descriptor: item),
+      ],
+      nextCursor: page.nextCursor,
+    );
   }
 
   /// Whether [server] is visible to [workspaceRoot] and ready to answer.

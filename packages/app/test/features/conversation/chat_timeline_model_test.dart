@@ -361,7 +361,7 @@ void main() {
     (tester) async {
       final tool = event('tool.requested', <String, dynamic>{
         'callId': 'call-ask',
-        'name': 'ask_user',
+        'name': 'request_user_input',
         'arguments': <String, dynamic>{
           'questions': <Map<String, dynamic>>[
             <String, dynamic>{
@@ -407,7 +407,7 @@ void main() {
                 tool,
                 event('tool.completed', <String, dynamic>{
                   'callId': 'call-ask',
-                  'name': 'ask_user',
+                  'name': 'request_user_input',
                   'output':
                       '[{"questionId":"storage","answer":"SQLite",'
                       '"isFreeForm":false}]',

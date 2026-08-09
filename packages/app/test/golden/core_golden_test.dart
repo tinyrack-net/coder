@@ -503,7 +503,7 @@ void main() {
       ],
     ),
     ChatSleep(
-      key: 'sleep',
+      key: 'clock__sleep',
       turnId: 'turn-all',
       createdAt: now,
       duration: const Duration(minutes: 2),

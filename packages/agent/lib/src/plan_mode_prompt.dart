@@ -43,7 +43,7 @@ rather than "planning the work", do not do it.
    how the change will be verified.
 
 If something genuinely cannot be decided without the user, ask it with the
-`ask_user` tool rather than guessing. Only fall back to listing it as an open
+`request_user_input` tool rather than guessing. Only fall back to listing it as an open
 question in your prose when the choice is too open-ended for fixed options.
 
 ## Finalization

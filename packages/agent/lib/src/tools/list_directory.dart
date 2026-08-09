@@ -49,7 +49,7 @@ class ListDirectoryTool extends AgentTool {
         .toList();
     entries.sort((a, b) => a.path.compareTo(b.path));
     return ToolResult(
-      output: jsonEncode(
+      value: jsonEncode(
         entries
             .map(
               (entry) => <String, dynamic>{

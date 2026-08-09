@@ -139,21 +139,21 @@ void main() {
 
     final image = result.content[1] as McpImageContent;
     expect(image.mimeType, 'image/png');
-    expect(image.byteLength, 3);
+    expect(image.data, 'AAAA');
 
     final audio = result.content[2] as McpAudioContent;
     expect(audio.mimeType, 'audio/wav');
-    expect(audio.byteLength, 6);
+    expect(audio.data, 'AAAAAAAA');
 
     final textResource = result.content[3] as McpEmbeddedResource;
     expect(textResource.uri, 'file:///a.txt');
     expect(textResource.mimeType, 'text/plain');
     expect(textResource.text, 'body');
-    expect(textResource.blobByteLength, isNull);
+    expect(textResource.blob, isNull);
 
     final blobResource = result.content[4] as McpEmbeddedResource;
     expect(blobResource.text, isNull);
-    expect(blobResource.blobByteLength, 3);
+    expect(blobResource.blob, 'AAAA');
 
     final link = result.content[5] as McpResourceLink;
     expect(link.uri, 'https://example.test/doc');
@@ -198,7 +198,7 @@ void main() {
     );
   });
 
-  test('undecodable base64 payloads report an unknown byte length', () {
+  test('base64 payloads are preserved verbatim for the caller', () {
     final result = McpCallToolResult.fromJson(<String, dynamic>{
       'content': <dynamic>[
         <String, dynamic>{'type': 'image', 'data': '!!not base64!!'},
@@ -208,7 +208,7 @@ void main() {
 
     final image = result.content.single as McpImageContent;
     expect(image.mimeType, 'application/octet-stream');
-    expect(image.byteLength, isNull);
+    expect(image.data, '!!not base64!!');
   });
 
   test(
@@ -301,7 +301,7 @@ void main() {
       expect(text.text, 'hello');
       final blob = result.contents.last as McpBlobResourceContents;
       expect(blob.mimeType, 'image/png');
-      expect(blob.byteLength, 3);
+      expect(blob.blob, 'AQID');
 
       expect(
         McpReadResourceResult.fromJson(const <String, dynamic>{}).contents,

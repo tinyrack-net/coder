@@ -95,14 +95,18 @@ void main() {
             const AssistantConversationItem(
               text: 'thinking',
               toolCalls: <ConversationToolCall>[
-                ConversationToolCall(
+                ConversationToolCall.function(
                   callId: 'call-1',
                   name: 'echo',
                   arguments: <String, dynamic>{},
                 ),
               ],
             ),
-            const ToolResultConversationItem(callId: 'call-1', output: '{}'),
+            const ToolResultConversationItem(
+              callId: 'call-1',
+              output: '{}',
+              toolKind: ModelToolKind.function,
+            ),
             const UserConversationItem('second ask'),
           ],
           target: _target(),

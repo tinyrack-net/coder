@@ -123,6 +123,9 @@ final class ModelsDevCatalogMetadataSource
             toolCalling: toolCalling
                 ? CapabilitySupport.supported
                 : CapabilitySupport.unsupported,
+            toolSurface: id.startsWith('gpt-5.6')
+                ? ModelToolSurface.luaCode
+                : ModelToolSurface.direct,
             controls: reasoning
                 ? <ModelControlDescriptorDto>[
                     ModelControlDescriptorDto(

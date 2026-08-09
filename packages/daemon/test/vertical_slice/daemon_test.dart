@@ -1689,7 +1689,8 @@ void main() {
       );
       final result = events.firstWhere(
         (event) =>
-            event.type == 'tool.completed' && event.data['name'] == 'ask_user',
+            event.type == 'tool.completed' &&
+            event.data['name'] == 'request_user_input',
       );
       // The chosen answer reaches the model as the tool's output.
       expect(result.data['output'], contains('Postgres'));
@@ -3284,7 +3285,7 @@ class _EchoingMcpProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'echo-call',
               name: 'mcp__fake__echo',
               arguments: arguments,
@@ -3313,22 +3314,24 @@ class _PatchProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     if (_round++ == 0) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -3366,16 +3369,16 @@ class _SleepProvider implements ModelProvider {
       };
       yield const ModelFunctionCall(
         callId: 'sleep-call',
-        name: 'sleep',
+        name: 'clock__sleep',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'sleep-call',
-              name: 'sleep',
+              name: 'clock__sleep',
               arguments: arguments,
             ),
           ],
@@ -3385,13 +3388,13 @@ class _SleepProvider implements ModelProvider {
       return;
     }
     if (!outcome.isCompleted) {
-      final result = jsonDecode(
-        request.history
-            .whereType<ToolResultConversationItem>()
-            .firstWhere((item) => item.callId == 'sleep-call')
-            .output,
+      final result = request.history
+          .whereType<ToolResultConversationItem>()
+          .firstWhere((item) => item.callId == 'sleep-call')
+          .output;
+      outcome.complete(
+        result.contains('interrupted') ? 'interrupted' : 'completed',
       );
-      outcome.complete((result as Map<String, dynamic>)['outcome'] as String);
     }
     yield const ModelTextDelta('Done.');
     yield const ModelResponseCompleted(
@@ -3441,7 +3444,7 @@ class _ContextResetProvider implements ModelProvider {
           assistant: AssistantConversationItem(
             text: 'Starting over.',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'reset-call',
                 name: 'new_context',
                 arguments: arguments,
@@ -3533,16 +3536,16 @@ class _AskingProvider implements ModelProvider {
       };
       yield const ModelFunctionCall(
         callId: 'ask-call',
-        name: 'ask_user',
+        name: 'request_user_input',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'ask-call',
-              name: 'ask_user',
+              name: 'request_user_input',
               arguments: arguments,
             ),
           ],
@@ -3587,7 +3590,7 @@ final class _AttachmentProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'attach-call',
               name: 'attach_file',
               arguments: arguments,
@@ -3652,7 +3655,7 @@ class _ExecProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'exec-call',
               name: 'exec_command',
               arguments: arguments,
@@ -3679,7 +3682,7 @@ class _ExecProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'stdin-call',
               name: 'write_stdin',
               arguments: arguments,
@@ -3728,7 +3731,7 @@ final class _ViewImageProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'view-call',
               name: 'view_image',
               arguments: arguments,
@@ -3796,7 +3799,7 @@ final class _SearchProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'search-call',
               name: 'search_text',
               arguments: arguments,
@@ -3823,7 +3826,7 @@ final class _SearchProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'glob-call',
               name: 'glob',
               arguments: arguments,
@@ -3862,7 +3865,7 @@ final class _CollaboratingProvider implements ModelProvider {
       assistant: AssistantConversationItem(
         text: '',
         toolCalls: <ConversationToolCall>[
-          ConversationToolCall(
+          ConversationToolCall.function(
             callId: callId,
             name: name,
             arguments: arguments,
@@ -3894,12 +3897,27 @@ final class _CollaboratingProvider implements ModelProvider {
     );
     if (isSubagent) {
       if (!hasToolResult) {
-        yield* Stream<ModelEvent>.fromIterable(
-          _toolCall('write-call', 'apply_patch', const <String, dynamic>{
-            'patch':
-                '--- /dev/null\n+++ b/forbidden.txt\n'
-                '@@ -0,0 +1,1 @@\n+forbidden\n',
-          }),
+        const patch =
+            '*** Begin Patch\n'
+            '*** Add File: forbidden.txt\n'
+            '+forbidden\n'
+            '*** End Patch';
+        yield const ModelFreeformCall(
+          callId: 'write-call',
+          name: 'apply_patch',
+          rawInput: patch,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall.freeform(
+                callId: 'write-call',
+                name: 'apply_patch',
+                input: patch,
+              ),
+            ],
+          ),
         );
         return;
       }
@@ -3916,7 +3934,7 @@ final class _CollaboratingProvider implements ModelProvider {
           'task_name': 'review_task',
           'message': 'Review without changing files.',
           'agent_type': agentType,
-          'fork_turns': null,
+          'fork_turns': 'none',
           'model': null,
           'reasoning_effort': null,
         }),
@@ -3978,7 +3996,7 @@ final class _SkillProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: callId,
               name: name,
               arguments: arguments,

@@ -1,8 +1,6 @@
 @Tags(<String>['feature_test__tool_clock__unit'])
 library;
 
-import 'dart:convert';
-
 import 'package:agent/agent.dart';
 import 'package:test/test.dart';
 
@@ -17,9 +15,6 @@ void main() {
       cancellation: CancellationToken(),
     );
   });
-
-  Map<String, dynamic> decode(ToolResult result) =>
-      jsonDecode(result.output) as Map<String, dynamic>;
 
   test('both tools read without asking for approval', () {
     for (final tool in <AgentTool>[
@@ -46,56 +41,67 @@ void main() {
     }
   });
 
-  test('current_time reports UTC in two forms', () async {
+  test('clock__curr_time returns the canonical UTC form', () async {
     clock.now = DateTime.utc(2026, 8, 5, 14, 23, 1);
 
     final result = await CurrentTimeTool(
       clock: clock,
     ).execute(const <String, dynamic>{}, context);
 
-    final decoded = decode(result);
-    expect(decoded['utc'], '2026-08-05T14:23:01.000Z');
-    expect(decoded['unixSeconds'], clock.now.millisecondsSinceEpoch ~/ 1000);
+    expect(result.value, '2026-08-05 14:23:01 UTC');
+    final codeMode = await CurrentTimeTool(clock: clock).execute(
+      const <String, dynamic>{},
+      ToolExecutionContext(
+        workspaceRoot: '/workspace',
+        cancellation: CancellationToken(),
+        toolSurfaceMode: AgentToolSurfaceMode.luaCode,
+      ),
+    );
+    expect(codeMode.value, <String, dynamic>{
+      'current_time': '2026-08-05 14:23:01 UTC',
+    });
   });
 
   test('sleep reports how long it waited and why it stopped', () async {
     clock.outcome = SleepOutcome.elapsed;
 
     final elapsed = await SleepTool(clock: clock).execute(
-      <String, dynamic>{'duration_ms': 2000, 'reason': 'the build'},
+      <String, dynamic>{'duration_ms': 2000},
       context,
     );
 
     expect(clock.slept.single, const Duration(seconds: 2));
-    expect(decode(elapsed)['sleptMs'], 2000);
-    expect(decode(elapsed)['outcome'], 'elapsed');
+    expect(elapsed.output, contains('Sleep completed.'));
+    expect(elapsed.output, startsWith('Wall time: '));
 
     clock.outcome = SleepOutcome.interrupted;
     final interrupted = await SleepTool(clock: clock).execute(
-      <String, dynamic>{'duration_ms': 2000, 'reason': null},
+      <String, dynamic>{'duration_ms': 2000},
       context,
     );
-    expect(decode(interrupted)['outcome'], 'interrupted');
+    expect(interrupted.output, contains('Sleep interrupted by new input.'));
   });
 
-  test('the requested duration is clamped to the supported range', () async {
+  test('out-of-range durations are rejected without sleeping', () async {
     final tool = SleepTool(clock: clock);
 
-    await tool.execute(
-      <String, dynamic>{'duration_ms': 1, 'reason': null},
+    final tooSmall = await tool.execute(
+      <String, dynamic>{'duration_ms': 0},
       context,
     );
-    await tool.execute(
-      <String, dynamic>{'duration_ms': 999999999, 'reason': null},
+    final tooLarge = await tool.execute(
+      <String, dynamic>{'duration_ms': maxSleepDuration.inMilliseconds + 1},
       context,
     );
 
-    expect(clock.slept, <Duration>[minSleepDuration, maxSleepDuration]);
+    expect(tooSmall.isError, isTrue);
+    expect(tooLarge.isError, isTrue);
+    expect(clock.slept, isEmpty);
   });
 
   test('a non-integer duration is corrected, not slept on', () async {
     final result = await SleepTool(clock: clock).execute(
-      <String, dynamic>{'duration_ms': 'soon', 'reason': null},
+      <String, dynamic>{'duration_ms': 'soon'},
       context,
     );
 
@@ -103,22 +109,15 @@ void main() {
     expect(clock.slept, isEmpty);
   });
 
-  test('the reason is what the user sees in the preview', () async {
+  test('the duration is what the user sees in the preview', () async {
     final tool = SleepTool(clock: clock);
 
     expect(
       await tool.preview(
-        <String, dynamic>{'duration_ms': 1000, 'reason': 'waiting for CI'},
+        <String, dynamic>{'duration_ms': 1000},
         context,
       ),
-      'waiting for CI',
-    );
-    expect(
-      await tool.preview(
-        <String, dynamic>{'duration_ms': 1000, 'reason': null},
-        context,
-      ),
-      isNull,
+      '1000 ms',
     );
   });
 
@@ -128,7 +127,7 @@ void main() {
 
     await expectLater(
       SleepTool(clock: clock).execute(
-        <String, dynamic>{'duration_ms': 5000, 'reason': null},
+        <String, dynamic>{'duration_ms': 5000},
         ToolExecutionContext(
           workspaceRoot: '/workspace',
           cancellation: cancellation,
@@ -143,7 +142,7 @@ void main() {
 
     await expectLater(
       SleepTool(clock: clock).execute(
-        <String, dynamic>{'duration_ms': 5000, 'reason': null},
+        <String, dynamic>{'duration_ms': 5000},
         ToolExecutionContext(
           workspaceRoot: '/workspace',
           cancellation: cancellation,

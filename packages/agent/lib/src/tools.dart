@@ -6,14 +6,14 @@
 library;
 
 export 'package:agent/src/tools/apply_patch.dart';
-export 'package:agent/src/tools/ask_user.dart';
 export 'package:agent/src/tools/attach_file.dart';
 export 'package:agent/src/tools/glob.dart';
 export 'package:agent/src/tools/list_directory.dart';
 export 'package:agent/src/tools/lua_code_mode.dart';
-export 'package:agent/src/tools/patch/unified_diff.dart';
+export 'package:agent/src/tools/patch/codex_patch.dart';
 export 'package:agent/src/tools/read_attachment.dart';
 export 'package:agent/src/tools/read_file.dart';
+export 'package:agent/src/tools/request_user_input.dart';
 export 'package:agent/src/tools/search_text.dart';
 export 'package:agent/src/tools/tool_support.dart';
 export 'package:agent/src/tools/update_plan.dart';

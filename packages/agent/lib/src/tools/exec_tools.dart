@@ -20,10 +20,13 @@ const String writeStdinToolName = 'write_stdin';
 const Duration defaultExecYieldTime = Duration(seconds: 10);
 
 /// Bounds on the wait a call may request.
-const Duration minExecYieldTime = Duration(milliseconds: 100);
+const Duration minExecYieldTime = Duration(milliseconds: 250);
 
 /// Longest wait a call may request.
-const Duration maxExecYieldTime = Duration(seconds: 60);
+const Duration maxExecYieldTime = Duration(seconds: 30);
+
+/// Longest wait an output-only poll may request.
+const Duration maxPollYieldTime = Duration(minutes: 5);
 
 /// How long a write waits for the program to answer, unless overridden.
 ///
@@ -73,14 +76,14 @@ Map<String, dynamic> _yieldTimeSchema({
   required Duration fallback,
   required String clamping,
 }) => <String, dynamic>{
-  'type': <String>['integer', 'null'],
+  'type': 'integer',
   'description':
       'How long to wait for output, in milliseconds. Null uses '
       '${fallback.inMilliseconds}. $clamping',
 };
 
 Map<String, dynamic> _outputTokensSchema() => <String, dynamic>{
-  'type': <String>['integer', 'null'],
+  'type': 'integer',
   'description':
       'Approximate output budget in tokens. Null uses '
       '$defaultExecOutputTokens; values are clamped to '
@@ -91,12 +94,13 @@ Duration _yieldTime(
   Object? raw, {
   required Duration fallback,
   required Duration floor,
+  Duration ceiling = maxExecYieldTime,
 }) {
   if (raw is! int) return fallback;
   return Duration(
     milliseconds: raw.clamp(
       floor.inMilliseconds,
-      maxExecYieldTime.inMilliseconds,
+      ceiling.inMilliseconds,
     ),
   );
 }
@@ -109,26 +113,22 @@ int _outputTokens(Object? raw) => raw is int
 int estimateTokenCount(String output) =>
     (utf8.encode(output).length / bytesPerToken).ceil();
 
-String _encodeChunk(
+Map<String, dynamic> _encodeChunk(
   ExecSessionChunk chunk,
   int maxTokens, {
-  String? sessionId,
+  int? sessionId,
 }) {
   final truncated = truncateToTokenBudget(chunk.output, maxTokens);
-  return truncateToolOutput(
-    jsonEncode(<String, dynamic>{
-      // A session id only appears while there is something left to drive.
-      if (sessionId != null && chunk.isRunning) 'sessionId': sessionId,
-      'output': truncated,
-      'isRunning': chunk.isRunning,
-      if (chunk.exitCode != null) 'exitCode': chunk.exitCode,
-      'truncated': truncated.length != chunk.output.length,
-      // Both are what let the model reason about what it did not get: how much
-      // output was dropped, and whether the wait was actually consumed.
-      'originalTokenCount': estimateTokenCount(chunk.output),
-      'wallTimeSeconds': chunk.wallTime.inMilliseconds / 1000,
-    }),
-  );
+  return <String, dynamic>{
+    // A session id only appears while there is something left to drive.
+    if (sessionId != null && chunk.isRunning) 'session_id': sessionId,
+    'output': truncated,
+    if (chunk.exitCode != null) 'exit_code': chunk.exitCode,
+    // Both are what let the model reason about what it did not get: how much
+    // output was dropped, and whether the wait was actually consumed.
+    'original_token_count': estimateTokenCount(chunk.output),
+    'wall_time_seconds': chunk.wallTime.inMilliseconds / 1000,
+  };
 }
 
 /// Runs a command in a session that outlives the call.
@@ -153,7 +153,7 @@ class ExecCommandTool extends AgentTool {
   @override
   String get description =>
       'Run a shell command. If it finishes in time you get its output and exit '
-      'code; if it is still running you get a sessionId to drive with '
+      'code; if it is still running you get a session_id to drive with '
       '$writeStdinToolName. Use it for one-off commands as well as for REPLs '
       'and servers you want to keep alive.';
 
@@ -161,41 +161,65 @@ class ExecCommandTool extends AgentTool {
   AgentToolRisk get risk => AgentToolRisk.command;
 
   @override
-  Map<String, dynamic> get strictJsonSchema =>
-      strictToolObject(<String, Map<String, dynamic>>{
-        'command': <String, dynamic>{
-          'type': 'string',
-          'description': 'The shell command to run.',
-        },
-        'workdir': <String, dynamic>{
-          'type': <String>['string', 'null'],
-          'description':
-              'Directory to run in, relative to the workspace root. Null runs '
-              'at the root. Must stay inside the workspace.',
-        },
-        'tty': <String, dynamic>{
-          'type': <String>['boolean', 'null'],
-          'description':
-              'Whether to allocate a pseudo-terminal. Null and false use plain '
-              'pipes, which is what you want for ordinary commands: no escape '
-              'sequences and no echoed input. Pass true only for programs that '
-              'need a terminal, such as REPLs and full-screen tools.',
-        },
-        'yield_time_ms': _yieldTimeSchema(
-          fallback: defaultExecYieldTime,
-          clamping:
-              'Values are clamped to ${minExecYieldTime.inMilliseconds}…'
-              '${maxExecYieldTime.inMilliseconds}.',
-        ),
-        'max_output_tokens': _outputTokensSchema(),
-      });
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'cmd': <String, dynamic>{
+        'type': 'string',
+        'description': 'The shell command to run.',
+      },
+      'workdir': <String, dynamic>{
+        'type': <String>['string', 'null'],
+        'description':
+            'Directory to run in, relative to the workspace root. Null runs '
+            'at the root. Must stay inside the workspace.',
+      },
+      'tty': <String, dynamic>{
+        'type': 'boolean',
+        'description':
+            'Whether to allocate a pseudo-terminal. Null and false use plain '
+            'pipes, which is what you want for ordinary commands: no escape '
+            'sequences and no echoed input. Pass true only for programs that '
+            'need a terminal, such as REPLs and full-screen tools.',
+      },
+      'shell': <String, dynamic>{
+        'type': 'string',
+        'description': 'Shell binary to launch. Defaults to the user shell.',
+      },
+      'login': <String, dynamic>{
+        'type': 'boolean',
+        'description': 'Whether to use login shell semantics. Defaults true.',
+      },
+      'yield_time_ms': _yieldTimeSchema(
+        fallback: defaultExecYieldTime,
+        clamping:
+            'Values are clamped to ${minExecYieldTime.inMilliseconds}…'
+            '${maxExecYieldTime.inMilliseconds}.',
+      ),
+      'max_output_tokens': _outputTokensSchema(),
+    },
+    'required': <String>['cmd'],
+    'additionalProperties': false,
+  };
+
+  @override
+  bool get strict => false;
+
+  @override
+  ModelToolDefinition get modelSpec => ModelFunctionToolDefinition(
+    name: name,
+    description: description,
+    parameters: strictJsonSchema,
+    strict: false,
+    outputSchema: _execOutputSchema,
+  );
 
   @override
   Future<String?> preview(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    final command = arguments['command'];
+    final command = arguments['cmd'];
     if (command is! String) return null;
     final workdir = arguments['workdir'];
     // The directory is part of what the user is approving, so it belongs in
@@ -210,11 +234,11 @@ class ExecCommandTool extends AgentTool {
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    final command = arguments['command'];
+    final command = arguments['cmd'];
     if (command is! String || command.trim().isEmpty) {
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
-          'error': 'command must be a non-empty string.',
+        value: jsonEncode(<String, dynamic>{
+          'error': 'cmd must be a non-empty string.',
         }),
         isError: true,
       );
@@ -229,7 +253,7 @@ class ExecCommandTool extends AgentTool {
       // A bad directory is something the model can fix on the next call, so it
       // is reported as tool output rather than failing the turn.
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'workdir is not a usable directory inside the workspace.',
           'detail': error.message,
         }),
@@ -241,6 +265,8 @@ class ExecCommandTool extends AgentTool {
       command: command,
       workingDirectory: workingDirectory,
       tty: arguments['tty'] == true,
+      shell: arguments['shell'] as String?,
+      login: arguments['login'] != false,
     );
     // Reaching this line means the approval gate already passed, which is how
     // a session the user allowed becomes writable without re-asking.
@@ -250,12 +276,14 @@ class ExecCommandTool extends AgentTool {
       _yieldTime(
         arguments['yield_time_ms'],
         fallback: defaultExecYieldTime,
-        floor: minExecYieldTime,
+        floor: _platform.isWindows
+            ? const Duration(seconds: 10)
+            : minExecYieldTime,
       ),
       context.cancellation,
     );
     return ToolResult(
-      output: _encodeChunk(
+      value: _encodeChunk(
         chunk,
         _outputTokens(arguments['max_output_tokens']),
         sessionId: session.id,
@@ -301,27 +329,43 @@ class WriteStdinTool extends AgentTool {
   AgentToolRisk get risk => AgentToolRisk.command;
 
   @override
-  Map<String, dynamic> get strictJsonSchema =>
-      strictToolObject(<String, Map<String, dynamic>>{
-        'session_id': <String, dynamic>{
-          'type': 'string',
-          'description': 'A sessionId returned by $execCommandToolName.',
-        },
-        'chars': <String, dynamic>{
-          'type': 'string',
-          'description': 'Characters to write; empty polls for output.',
-        },
-        'yield_time_ms': _yieldTimeSchema(
-          fallback: defaultWriteYieldTime,
-          clamping:
-              'An empty poll waits at least '
-              '${minPollYieldTime.inMilliseconds} and defaults to '
-              '${defaultExecYieldTime.inMilliseconds}; a write waits at least '
-              '${minExecYieldTime.inMilliseconds}. Both cap at '
-              '${maxExecYieldTime.inMilliseconds}.',
-        ),
-        'max_output_tokens': _outputTokensSchema(),
-      });
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'session_id': <String, dynamic>{
+        'type': 'integer',
+        'description': 'A session_id returned by $execCommandToolName.',
+      },
+      'chars': <String, dynamic>{
+        'type': 'string',
+        'description': 'Characters to write; empty polls for output.',
+      },
+      'yield_time_ms': _yieldTimeSchema(
+        fallback: defaultWriteYieldTime,
+        clamping:
+            'An empty poll waits at least '
+            '${minPollYieldTime.inMilliseconds} and defaults to '
+            '${defaultExecYieldTime.inMilliseconds}; a write waits at least '
+            '${minExecYieldTime.inMilliseconds}. Both cap at '
+            '${maxExecYieldTime.inMilliseconds}.',
+      ),
+      'max_output_tokens': _outputTokensSchema(),
+    },
+    'required': <String>['session_id'],
+    'additionalProperties': false,
+  };
+
+  @override
+  bool get strict => false;
+
+  @override
+  ModelToolDefinition get modelSpec => ModelFunctionToolDefinition(
+    name: name,
+    description: description,
+    parameters: strictJsonSchema,
+    strict: false,
+    outputSchema: _execOutputSchema,
+  );
 
   @override
   Future<String?> preview(
@@ -330,7 +374,7 @@ class WriteStdinTool extends AgentTool {
   ) async {
     final sessionId = arguments['session_id'];
     final chars = arguments['chars'];
-    return sessionId is String && chars is String
+    return sessionId is int && chars is String
         ? '$sessionId ← ${chars.trimRight()}'
         : null;
   }
@@ -341,11 +385,11 @@ class WriteStdinTool extends AgentTool {
     ToolExecutionContext context,
   ) async {
     final sessionId = arguments['session_id'];
-    final chars = arguments['chars'];
-    if (sessionId is! String || chars is! String) {
+    final chars = arguments['chars'] ?? '';
+    if (sessionId is! int || chars is! String) {
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
-          'error': 'session_id and chars must both be strings.',
+        value: jsonEncode(<String, dynamic>{
+          'error': 'session_id must be an integer and chars a string.',
         }),
         isError: true,
       );
@@ -355,7 +399,7 @@ class WriteStdinTool extends AgentTool {
       // A daemon restart kills every PTY while the id survives in history, so
       // this has to be recoverable rather than a failed turn.
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'exec session not found',
           'hint': 'Start a new $execCommandToolName.',
         }),
@@ -373,6 +417,7 @@ class WriteStdinTool extends AgentTool {
               arguments['yield_time_ms'],
               fallback: defaultExecYieldTime,
               floor: minPollYieldTime,
+              ceiling: maxPollYieldTime,
             )
           : _yieldTime(
               arguments['yield_time_ms'],
@@ -382,7 +427,7 @@ class WriteStdinTool extends AgentTool {
       context.cancellation,
     );
     return ToolResult(
-      output: _encodeChunk(
+      value: _encodeChunk(
         chunk,
         _outputTokens(arguments['max_output_tokens']),
         sessionId: sessionId,
@@ -391,6 +436,20 @@ class WriteStdinTool extends AgentTool {
     );
   }
 }
+
+const Map<String, dynamic> _execOutputSchema = <String, dynamic>{
+  'type': 'object',
+  'properties': <String, dynamic>{
+    'chunk_id': <String, dynamic>{'type': 'string'},
+    'wall_time_seconds': <String, dynamic>{'type': 'number'},
+    'exit_code': <String, dynamic>{'type': 'number'},
+    'session_id': <String, dynamic>{'type': 'number'},
+    'original_token_count': <String, dynamic>{'type': 'number'},
+    'output': <String, dynamic>{'type': 'string'},
+  },
+  'required': <String>['wall_time_seconds', 'output'],
+  'additionalProperties': false,
+};
 
 /// Reads one chunk, interrupting the command if the turn is cancelled.
 ///

@@ -2665,7 +2665,7 @@ final class _PatchProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'patch-call',
               name: 'apply_patch',
               arguments: arguments,
@@ -2759,7 +2759,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'goal-complete-call',
               name: 'update_goal',
               arguments: arguments,
@@ -2791,7 +2791,7 @@ final class _AgentE2eProvider implements ModelProvider {
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'plan-call',
                 name: 'update_plan',
                 arguments: arguments,
@@ -2863,16 +2863,16 @@ final class _AgentE2eProvider implements ModelProvider {
         };
         yield const ModelFunctionCall(
           callId: 'ask-call',
-          name: 'ask_user',
+          name: 'request_user_input',
           arguments: arguments,
         );
         yield const ModelResponseCompleted(
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'ask-call',
-                name: 'ask_user',
+                name: 'request_user_input',
                 arguments: arguments,
               ),
             ],
@@ -2947,7 +2947,7 @@ final class _AgentE2eProvider implements ModelProvider {
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'attach-call',
                 name: 'attach_file',
                 arguments: arguments,
@@ -3006,7 +3006,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'disallowed-delegate-call',
               name: 'spawn_agent',
               arguments: arguments,
@@ -3043,7 +3043,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'skill-list-call',
               name: 'list_skills',
               arguments: listArguments,
@@ -3073,7 +3073,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'skill-call',
               name: 'skill',
               arguments: arguments,
@@ -3132,7 +3132,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'mcp-call',
               name: 'mcp__e2e__echo',
               arguments: arguments,
@@ -3160,7 +3160,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'reject-mcp-call',
               name: 'mcp__e2e__echo',
               arguments: arguments,
@@ -3215,7 +3215,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'spawn-call',
               name: 'spawn_agent',
               arguments: arguments,
@@ -3245,7 +3245,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'patch-call',
               name: 'apply_patch',
               arguments: arguments,
@@ -3268,7 +3268,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'reject-patch-call',
               name: 'apply_patch',
               arguments: arguments,

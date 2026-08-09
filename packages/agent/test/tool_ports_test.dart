@@ -453,33 +453,24 @@ void main() {
         platform: platform,
         temporarySuffix: () => 'test-${suffix++}',
       );
-      const patch = '''
---- a/update.txt
-+++ b/update.txt
-@@ -1,1 +1,1 @@
--before
-+after
---- /dev/null
-+++ b/new.txt
-@@ -0,0 +1,1 @@
-+created
---- a/delete.txt
-+++ /dev/null
-@@ -1,1 +0,0 @@
--delete me
-''';
+      const patch =
+          '*** Begin Patch\n'
+          '*** Update File: update.txt\n'
+          '@@\n'
+          '-before\n'
+          '+after\n'
+          '*** Add File: new.txt\n'
+          '+created\n'
+          '*** Delete File: delete.txt\n'
+          '*** End Patch';
       expect(
-        await tool.preview(const <String, dynamic>{'patch': patch}, context),
+        await tool.previewFreeform(patch, context),
         patch,
       );
       final output =
-          jsonDecode(
-                (await tool.execute(const <String, dynamic>{
-                  'patch': patch,
-                }, context)).output,
-              )
+          jsonDecode((await tool.executeFreeform(patch, context)).output)
               as Map<String, dynamic>;
-      expect(output['changedFiles'], 3);
+      expect(output['changed_files'], 3);
       expect(
         fileSystem.file('/workspace/update.txt').readAsStringSync(),
         'after\n',
@@ -490,14 +481,17 @@ void main() {
       );
       expect(fileSystem.file('/workspace/delete.txt').existsSync(), isFalse);
       expect(tool.name, 'apply_patch');
-      expect(tool.description, contains('unified diff'));
+      expect(tool.description, contains('*** Begin Patch'));
       expect(tool.risk, AgentToolRisk.write);
-      expect(tool.strictJsonSchema['required'], <String>['patch']);
+      expect(tool.modelSpec, isA<ModelFreeformToolDefinition>());
 
       await expectLater(
-        tool.execute(const <String, dynamic>{
-          'patch': '--- a/missing.txt\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-x\n',
-        }, context),
+        tool.executeFreeform(
+          '*** Begin Patch\n'
+          '*** Delete File: missing.txt\n'
+          '*** End Patch',
+          context,
+        ),
         throwsA(isA<FormatException>()),
       );
     },
@@ -516,25 +510,23 @@ void main() {
     });
 
     Future<Map<String, dynamic>> apply(String patch) async =>
-        jsonDecode(
-              (await tool.execute(<String, dynamic>{
-                'patch': patch,
-              }, context)).output,
-            )
+        jsonDecode((await tool.executeFreeform(patch, context)).output)
             as Map<String, dynamic>;
 
     test('differing headers move the file and edit it in one step', () async {
       fileSystem.file('/workspace/old.txt').writeAsStringSync('before\n');
 
-      final output = await apply('''
---- a/old.txt
-+++ b/lib/new.txt
-@@ -1,1 +1,1 @@
--before
-+after
-''');
+      final output = await apply(
+        '*** Begin Patch\n'
+        '*** Update File: old.txt\n'
+        '*** Move to: lib/new.txt\n'
+        '@@\n'
+        '-before\n'
+        '+after\n'
+        '*** End Patch',
+      );
 
-      expect(output['changedFiles'], 1);
+      expect(output['changed_files'], 1);
       expect(fileSystem.file('/workspace/old.txt').existsSync(), isFalse);
       expect(
         fileSystem.file('/workspace/lib/new.txt').readAsStringSync(),
@@ -545,7 +537,12 @@ void main() {
     test('a move with no hunks still relocates the contents', () async {
       fileSystem.file('/workspace/old.txt').writeAsStringSync('kept\n');
 
-      await apply('--- a/old.txt\n+++ b/renamed.txt\n');
+      await apply(
+        '*** Begin Patch\n'
+        '*** Update File: old.txt\n'
+        '*** Move to: renamed.txt\n'
+        '*** End Patch',
+      );
 
       expect(fileSystem.file('/workspace/old.txt').existsSync(), isFalse);
       expect(
@@ -556,7 +553,12 @@ void main() {
 
     test('moving a missing file is refused', () async {
       await expectLater(
-        apply('--- a/gone.txt\n+++ b/new.txt\n'),
+        apply(
+          '*** Begin Patch\n'
+          '*** Update File: gone.txt\n'
+          '*** Move to: new.txt\n'
+          '*** End Patch',
+        ),
         throwsA(isA<FormatException>()),
       );
       expect(fileSystem.file('/workspace/new.txt').existsSync(), isFalse);
@@ -568,7 +570,12 @@ void main() {
         ..file('/workspace/taken.txt').writeAsStringSync('precious\n');
 
       await expectLater(
-        apply('--- a/old.txt\n+++ b/taken.txt\n'),
+        apply(
+          '*** Begin Patch\n'
+          '*** Update File: old.txt\n'
+          '*** Move to: taken.txt\n'
+          '*** End Patch',
+        ),
         throwsA(isA<FormatException>()),
       );
 
@@ -590,15 +597,16 @@ void main() {
       // The second file's context does not match, so applying it throws after
       // the move has already been written to disk.
       await expectLater(
-        apply('''
---- a/old.txt
-+++ b/new.txt
---- a/second.txt
-+++ b/second.txt
-@@ -1,1 +1,1 @@
--wrong context
-+replacement
-'''),
+        apply(
+          '*** Begin Patch\n'
+          '*** Update File: old.txt\n'
+          '*** Move to: new.txt\n'
+          '*** Update File: second.txt\n'
+          '@@\n'
+          '-wrong context\n'
+          '+replacement\n'
+          '*** End Patch',
+        ),
         throwsA(isA<FormatException>()),
       );
 
@@ -613,55 +621,43 @@ void main() {
       );
     });
 
-    test('a patch from nothing to nothing is rejected', () async {
+    test('an empty patch is rejected', () async {
       await expectLater(
-        apply('--- /dev/null\n+++ /dev/null\n'),
+        apply('*** Begin Patch\n*** End Patch'),
         throwsA(isA<FormatException>()),
       );
     });
   });
 
-  test('unified patch parser rejects malformed and conflicting hunks', () {
+  test('modern patch parser rejects malformed and conflicting chunks', () {
     expect(
-      () => UnifiedPatch.parse('not a patch'),
+      () => CodexPatch.parse('not a patch'),
       throwsA(isA<FormatException>()),
     );
     expect(
-      () => UnifiedPatch.parse('--- a/file\nmissing\n'),
-      throwsA(isA<FormatException>()),
-    );
-    expect(
-      () => UnifiedPatch.parse('--- a/f\n+++ b/f\n@@ invalid\n text\n'),
-      throwsA(isA<FormatException>()),
-    );
-    expect(
-      () => UnifiedPatch.parse('--- a/f\n+++ b/f\n@@ -1 +1 @@\n?bad\n'),
-      throwsA(isA<FormatException>()),
-    );
-    final outside = UnifiedPatch.parse(
-      '--- a/f\n+++ b/f\n@@ -9,1 +9,1 @@\n-old\n+new\n',
-    );
-    expect(
-      () => outside.files.single.apply('old\n'),
-      throwsA(isA<FormatException>()),
-    );
-    final mismatch = UnifiedPatch.parse(
-      '--- a/f\n+++ b/f\n@@ -1,1 +1,1 @@\n-other\n+new\n',
-    );
-    expect(
-      () => mismatch.files.single.apply('old\n'),
-      throwsA(isA<FormatException>()),
-    );
-    const direct = UnifiedPatch(<FilePatch>[
-      FilePatch(
-        oldPath: 'a/f',
-        newPath: 'b/f',
-        hunks: <PatchHunk>[
-          PatchHunk(oldStart: 0, lines: <String>['+first']),
-        ],
+      () => CodexPatch.parse(
+        '*** Begin Patch\n*** Add File: f\nnot-added\n*** End Patch',
       ),
-    ]);
-    expect(direct.files.single.apply(''), 'first\n');
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      () => CodexPatch.parse(
+        '*** Begin Patch\n*** Update File: f\ninvalid\n*** End Patch',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    final mismatch = CodexPatch.parse(
+      '*** Begin Patch\n'
+      '*** Update File: f\n'
+      '@@\n'
+      '-other\n'
+      '+new\n'
+      '*** End Patch',
+    );
+    expect(
+      () => (mismatch.operations.single as CodexUpdateFile).apply('old\n'),
+      throwsA(isA<FormatException>()),
+    );
   });
 
   test('tool output truncation is bounded by one shared limit', () {

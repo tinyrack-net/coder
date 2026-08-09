@@ -114,7 +114,8 @@ final class GeminiInteractionsProvider implements ModelProvider {
       if (level != null)
         'generation_config': <String, dynamic>{'thinking_level': level},
       'tools': <Map<String, dynamic>>[
-        for (final tool in request.tools)
+        for (final tool
+            in request.tools.whereType<ModelFunctionToolDefinition>())
           <String, dynamic>{
             'type': 'function',
             'name': tool.name,
@@ -158,7 +159,12 @@ final class GeminiInteractionsProvider implements ModelProvider {
                       'type': 'function_call',
                       'id': call.callId,
                       'name': call.name,
-                      'arguments': call.arguments,
+                      'arguments': switch (call.input) {
+                        JsonToolCallInput(:final value) => value,
+                        FreeformToolCallInput() => throw StateError(
+                          'Gemini does not support freeform tools.',
+                        ),
+                      },
                     },
                 ],
               },
@@ -233,7 +239,7 @@ final class GeminiInteractionsProvider implements ModelProvider {
             final arguments = step.arguments.isEmpty && initial is Map
                 ? Map<String, dynamic>.from(initial)
                 : _jsonObject(step.arguments.toString());
-            final call = ConversationToolCall(
+            final call = ConversationToolCall.function(
               callId: step.raw['id']! as String,
               name: step.raw['name']! as String,
               arguments: arguments,
@@ -242,7 +248,12 @@ final class GeminiInteractionsProvider implements ModelProvider {
             yield ModelFunctionCall(
               callId: call.callId,
               name: call.name,
-              arguments: call.arguments,
+              arguments: switch (call.input) {
+                JsonToolCallInput(:final value) => value,
+                FreeformToolCallInput() => throw StateError(
+                  'Gemini emitted a freeform call.',
+                ),
+              },
             );
           } else if (step.raw['type'] == 'thought') {
             final raw = <String, dynamic>{...step.raw};

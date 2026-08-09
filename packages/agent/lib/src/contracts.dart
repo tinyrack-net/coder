@@ -37,6 +37,15 @@ enum AgentSessionMode {
   plan,
 }
 
+/// Model-facing tool surface selected for one turn.
+enum AgentToolSurfaceMode {
+  /// Tools are exposed directly.
+  direct,
+
+  /// Only Lua orchestration entrypoints are exposed directly.
+  luaCode,
+}
+
 /// Runtime lifecycle states emitted by the agent engine.
 enum AgentSessionStatus {
   /// Runtime is initializing.
@@ -272,6 +281,7 @@ final class AgentModelCapabilities {
     this.toolCalling = AgentCapabilitySupport.unknown,
     this.imageInput = AgentCapabilitySupport.unknown,
     this.fileInput = AgentCapabilitySupport.unknown,
+    this.toolSurface = AgentToolSurfaceMode.direct,
     this.controls = const <AgentModelControlDescriptor>[],
     this.source = AgentCapabilitySource.unknown,
   });
@@ -288,6 +298,9 @@ final class AgentModelCapabilities {
   /// File-input support.
   final AgentCapabilitySupport fileInput;
 
+  /// Model-selected orchestration surface.
+  final AgentToolSurfaceMode toolSurface;
+
   /// Provider-owned controls accepted by this model and endpoint.
   final List<AgentModelControlDescriptor> controls;
 
@@ -300,6 +313,7 @@ final class AgentModelCapabilities {
     AgentCapabilitySupport? toolCalling,
     AgentCapabilitySupport? imageInput,
     AgentCapabilitySupport? fileInput,
+    AgentToolSurfaceMode? toolSurface,
     List<AgentModelControlDescriptor>? controls,
     AgentCapabilitySource? source,
   }) => AgentModelCapabilities(
@@ -307,6 +321,7 @@ final class AgentModelCapabilities {
     toolCalling: toolCalling ?? this.toolCalling,
     imageInput: imageInput ?? this.imageInput,
     fileInput: fileInput ?? this.fileInput,
+    toolSurface: toolSurface ?? this.toolSurface,
     controls: controls ?? this.controls,
     source: source ?? this.source,
   );

@@ -104,7 +104,11 @@ final class LuaCodeModeService {
             lua.LuaToolDefinition(
               name: tool.name,
               description: tool.description,
+              kind: tool.kind,
+              namespace: tool.namespace,
+              exposure: tool.exposure,
               inputSchema: tool.inputSchema,
+              outputSchema: tool.outputSchema,
             ),
         ],
       ),
@@ -171,6 +175,7 @@ final class LuaCodeModeService {
         for (final resource in delta.resources) resource.value,
       ],
       contextImages: contextImages,
+      notifications: delta.notifications,
     );
   }
 
@@ -240,7 +245,7 @@ final class _CoderLuaToolDispatcher
       ...result.contextImages,
     ];
     return lua.LuaToolResult<ConversationAttachment>(
-      output: result.output,
+      value: result.value,
       isError: result.isError,
       resources: <lua.LuaOpaqueResource<ConversationAttachment>>[
         for (final attachment in attachments)
@@ -251,6 +256,11 @@ final class _CoderLuaToolDispatcher
             byteSize: attachment.byteSize,
           ),
       ],
+      content: <Map<String, Object?>>[
+        for (final block in result.content) block.toJson(),
+      ],
+      structuredContent: result.structuredContent,
+      meta: result.meta,
     );
   }
 }

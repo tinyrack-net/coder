@@ -1186,12 +1186,22 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
     @Default(<ModelControlDescriptorDto>[])
     List<ModelControlDescriptorDto> controls,
+    @Default(ModelToolSurface.direct) ModelToolSurface toolSurface,
     @Default(CapabilitySource.unknown) CapabilitySource source,
   }) = _ModelCapabilitiesDto;
 
   /// Creates a [ModelCapabilitiesDto].
   factory ModelCapabilitiesDto.fromJson(Map<String, dynamic> json) =>
       _$ModelCapabilitiesDtoFromJson(json);
+}
+
+/// Model-selected orchestration surface.
+enum ModelToolSurface {
+  /// Advertise tools directly.
+  direct,
+
+  /// Advertise only Lua `exec` and `wait`; expose other tools as nested calls.
+  luaCode,
 }
 
 @freezed

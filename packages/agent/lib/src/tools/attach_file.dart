@@ -65,7 +65,7 @@ class AttachFileTool extends AgentTool {
     context.cancellation.throwIfCancelled();
     final attachment = await _publisher.publish(resolved);
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{
+      value: jsonEncode(<String, dynamic>{
         'attachmentId': attachment.id,
         'fileName': attachment.fileName,
         'mimeType': attachment.mimeType,

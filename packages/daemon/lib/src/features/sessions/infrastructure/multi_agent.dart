@@ -14,16 +14,13 @@ const String collaborationCapabilityId = 'collaboration';
 const int maxConcurrentSubagentTurnsPerTree = 4;
 
 /// Smallest accepted `wait_agent` timeout.
-///
-/// Codex uses 10 000 ms; this daemon accepts shorter waits so tests can
-/// exercise the timeout path without slowing the suite.
-const int minWaitTimeoutMs = 100;
+const int minWaitTimeoutMs = 10000;
 
 /// `wait_agent` timeout used when the model passes none.
 const int defaultWaitTimeoutMs = 30000;
 
 /// Largest accepted `wait_agent` timeout.
-const int maxWaitTimeoutMs = 600000;
+const int maxWaitTimeoutMs = 3600000;
 
 /// A collaboration request the calling agent can recover from.
 ///
@@ -387,6 +384,8 @@ per tree.''';
     String? agentType,
     String forkTurns = 'none',
     String? model,
+    String? reasoningEffort,
+    String? serviceTier,
   }) async {
     if (!AgentPaths.isValidTaskName(taskName)) {
       throw const CollaborationException(
@@ -411,11 +410,16 @@ per tree.''';
         }
         forkLastN = parsed;
     }
-    if (fullFork && (agentType != null || model != null)) {
+    if (fullFork &&
+        (agentType != null ||
+            model != null ||
+            reasoningEffort != null ||
+            serviceTier != null)) {
       // A full-history fork continues the caller's own conversation, so it
       // cannot run as a different agent type or model.
       throw const CollaborationException(
-        'agent_type and model cannot be overridden for a '
+        'agent_type, model, reasoning_effort, and service_tier cannot be '
+        'overridden for a '
         'full-history fork.',
       );
     }
@@ -482,6 +486,16 @@ per tree.''';
         mode: caller.mode,
         status: SessionStatus.idle,
         model: childModel,
+        modelControls: <String, ModelControlValueDto>{
+          if (reasoningEffort != null)
+            'reasoning_effort': ModelControlValueDto.stringValue(
+              value: reasoningEffort,
+            ),
+          if (serviceTier != null)
+            'service_tier': ModelControlValueDto.stringValue(
+              value: serviceTier,
+            ),
+        },
         createdAt: now,
         updatedAt: now,
       ),

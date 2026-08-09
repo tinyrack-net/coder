@@ -241,6 +241,26 @@ final class McpClient {
         McpResourceDescriptor.fromJson,
       );
 
+  /// Reads one resource page while preserving the server cursor.
+  Future<McpListPage<McpResourceDescriptor>> listResourcesPage({
+    String? cursor,
+  }) => _listPage(
+    McpMethod.resourcesList,
+    'resources',
+    McpResourceDescriptor.fromJson,
+    cursor,
+  );
+
+  /// Reads one resource-template page while preserving the server cursor.
+  Future<McpListPage<McpResourceTemplateDescriptor>> listResourceTemplatesPage({
+    String? cursor,
+  }) => _listPage(
+    McpMethod.resourceTemplatesList,
+    'resourceTemplates',
+    McpResourceTemplateDescriptor.fromJson,
+    cursor,
+  );
+
   Future<List<McpResourceTemplateDescriptor>> _listResourceTemplates() =>
       _listPaged<McpResourceTemplateDescriptor>(
         McpMethod.resourceTemplatesList,
@@ -260,24 +280,39 @@ final class McpClient {
     final collected = <T>[];
     String? cursor;
     do {
-      final result = await _request(method, <String, dynamic>{
-        'cursor': ?cursor,
-      });
-      final entries = result[key];
-      if (entries is List) {
-        for (final entry in entries) {
-          if (entry is! Map<String, dynamic>) continue;
-          try {
-            collected.add(decode(entry));
-          } on McpProtocolException catch (error) {
-            _report(error.message);
-          }
-        }
-      }
-      final next = result['nextCursor'];
-      cursor = next is String && next.isNotEmpty ? next : null;
+      final page = await _listPage(method, key, decode, cursor);
+      collected.addAll(page.items);
+      cursor = page.nextCursor;
     } while (cursor != null);
     return List<T>.unmodifiable(collected);
+  }
+
+  Future<McpListPage<T>> _listPage<T>(
+    String method,
+    String key,
+    T Function(Map<String, dynamic> json) decode,
+    String? cursor,
+  ) async {
+    final result = await _request(method, <String, dynamic>{
+      'cursor': ?cursor,
+    });
+    final decoded = <T>[];
+    final entries = result[key];
+    if (entries is List) {
+      for (final entry in entries) {
+        if (entry is! Map<String, dynamic>) continue;
+        try {
+          decoded.add(decode(entry));
+        } on McpProtocolException catch (error) {
+          _report(error.message);
+        }
+      }
+    }
+    final next = result['nextCursor'];
+    return McpListPage<T>(
+      items: List<T>.unmodifiable(decoded),
+      nextCursor: next is String && next.isNotEmpty ? next : null,
+    );
   }
 
   Future<List<McpToolDescriptor>> _listTools() => _listPaged<McpToolDescriptor>(

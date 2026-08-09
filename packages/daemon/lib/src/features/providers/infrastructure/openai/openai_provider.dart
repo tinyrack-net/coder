@@ -224,18 +224,10 @@ class OpenAIResponsesProvider implements ModelProvider {
     if (_config.supportsServiceTier &&
         modelControlBool(request, AgentModelControlIds.fastMode) == true)
       'service_tier': 'priority',
-    'tools': request.tools
-        .map(
-          (tool) => <String, dynamic>{
-            'type': 'function',
-            'name': tool.name,
-            'description': tool.description,
-            'parameters': tool.parameters,
-            'strict': tool.strict && _config.strictToolSchema,
-          },
-        )
-        .toList(growable: false),
-    'parallel_tool_calls': false,
+    'tools': request.tools.map(_responsesTool).toList(growable: false),
+    'parallel_tool_calls': request.tools.any(
+      (tool) => tool.supportsParallelToolCalls,
+    ),
     if (request.forceToolName != null)
       'tool_choice': <String, dynamic>{
         'type': 'function',
@@ -311,23 +303,120 @@ class OpenAIResponsesProvider implements ModelProvider {
             });
           }
           for (final call in toolCalls) {
-            result.add(<String, dynamic>{
-              'type': 'function_call',
-              'call_id': call.callId,
-              'name': call.name,
-              'arguments': jsonEncode(call.arguments),
-            });
+            result.add(
+              call.kind == ModelToolKind.deferredSearch
+                  ? <String, dynamic>{
+                      'type': 'tool_search_call',
+                      'call_id': call.callId,
+                      'execution': 'client',
+                      'arguments': (call.input as JsonToolCallInput).value,
+                    }
+                  : switch (call.input) {
+                      JsonToolCallInput(:final value) => <String, dynamic>{
+                        'type': 'function_call',
+                        'call_id': call.callId,
+                        if (call.namespace != null) 'namespace': call.namespace,
+                        'name': call.namespace == null
+                            ? call.name
+                            : call.name.substring(call.namespace!.length + 2),
+                        'arguments': jsonEncode(value),
+                      },
+                      FreeformToolCallInput(:final value) => <String, dynamic>{
+                        'type': 'custom_tool_call',
+                        'call_id': call.callId,
+                        'name': call.name,
+                        'input': value,
+                      },
+                    },
+            );
           }
-        case ToolResultConversationItem(:final callId, :final output):
+        case ToolResultConversationItem(
+          :final callId,
+          :final output,
+          :final toolKind,
+          :final content,
+        ):
           result.add(<String, dynamic>{
-            'type': 'function_call_output',
+            'type': switch (toolKind) {
+              ModelToolKind.freeform => 'custom_tool_call_output',
+              ModelToolKind.deferredSearch => 'tool_search_output',
+              ModelToolKind.function ||
+              ModelToolKind.namespace => 'function_call_output',
+            },
             'call_id': callId,
-            'output': output,
+            if (toolKind == ModelToolKind.deferredSearch) ...<String, dynamic>{
+              'status': 'completed',
+              'execution': 'client',
+              'tools': (jsonDecode(output) as Map)['tools'],
+            } else
+              'output': _functionOutput(output, content),
           });
       }
     }
     return result;
   }
+
+  Object _functionOutput(String output, List<ToolContent> content) {
+    if (content.isEmpty) return output;
+    return <Map<String, dynamic>>[
+      for (final item in content)
+        switch (item) {
+          ToolTextContent(:final text) => <String, dynamic>{
+            'type': 'input_text',
+            'text': text,
+          },
+          ToolImageContent(:final imageUrl, :final detail) => <String, dynamic>{
+            'type': 'input_image',
+            'image_url': imageUrl,
+            'detail': ?detail,
+          },
+          ToolAudioContent(:final audioUrl) => <String, dynamic>{
+            'type': 'input_audio',
+            'audio_url': audioUrl,
+          },
+          ToolEmbeddedResourceContent() ||
+          ToolResourceLinkContent() => <String, dynamic>{
+            'type': 'input_text',
+            'text': jsonEncode(item.toJson()),
+          },
+        },
+    ];
+  }
+
+  Map<String, dynamic> _responsesTool(ModelToolDefinition tool) =>
+      switch (tool) {
+        ModelFunctionToolDefinition() => <String, dynamic>{
+          'type': 'function',
+          'name': tool.name,
+          'description': tool.description,
+          'parameters': tool.parameters,
+          'strict': tool.strict && _config.strictToolSchema,
+          if (tool.outputSchema != null) 'output_schema': tool.outputSchema,
+        },
+        ModelFreeformToolDefinition() => <String, dynamic>{
+          'type': 'custom',
+          'name': tool.name,
+          'description': tool.description,
+          if (tool.format case final format?)
+            'format': <String, dynamic>{
+              'type': format.type,
+              'syntax': format.syntax,
+              'definition': format.definition,
+            },
+        },
+        ModelNamespaceToolDefinition() => <String, dynamic>{
+          'type': 'namespace',
+          'name': tool.name,
+          'description': tool.description,
+          'tools': tool.tools.map(_responsesTool).toList(growable: false),
+        },
+        ModelDeferredSearchToolDefinition() => <String, dynamic>{
+          'type': 'tool_search',
+          'execution': tool.execution,
+          'description': tool.description,
+          'parameters': tool.parameters,
+        },
+      };
 
   static const Set<String> _supportedImageTypes = supportedContextImageTypes;
 
@@ -393,7 +482,7 @@ class OpenAIResponsesProvider implements ModelProvider {
         case 'response.output_item.done':
           final item = event['item'];
           if (item is Map) {
-            final call = _functionCall(Map<String, dynamic>.from(item));
+            final call = _toolCall(Map<String, dynamic>.from(item));
             if (call != null && emittedCalls.add(call.callId)) yield call;
           }
         case 'response.completed':
@@ -409,18 +498,33 @@ class OpenAIResponsesProvider implements ModelProvider {
               .map(Map<String, dynamic>.from)
               .toList(growable: false);
           for (final item in output) {
-            final call = _functionCall(item);
+            final call = _toolCall(item);
             if (call != null && emittedCalls.add(call.callId)) yield call;
           }
           final calls = output
-              .map(_functionCall)
-              .whereType<ModelFunctionCall>()
+              .map(_toolCall)
+              .whereType<ModelToolCall>()
               .map(
-                (call) => ConversationToolCall(
-                  callId: call.callId,
-                  name: call.name,
-                  arguments: call.arguments,
-                ),
+                (call) => call is ModelDeferredSearchCall
+                    ? ConversationToolCall.deferredSearch(
+                        callId: call.callId,
+                        arguments: call.arguments,
+                      )
+                    : switch (call.input) {
+                        JsonToolCallInput(:final value) =>
+                          ConversationToolCall.function(
+                            callId: call.callId,
+                            name: call.name,
+                            namespace: call.namespace,
+                            arguments: value,
+                          ),
+                        FreeformToolCallInput(:final value) =>
+                          ConversationToolCall.freeform(
+                            callId: call.callId,
+                            name: call.name,
+                            input: value,
+                          ),
+                      },
               )
               .toList(growable: false);
           yield ModelResponseCompleted(
@@ -431,7 +535,8 @@ class OpenAIResponsesProvider implements ModelProvider {
                   .where(
                     (item) =>
                         item['type'] != 'message' &&
-                        item['type'] != 'function_call',
+                        item['type'] != 'function_call' &&
+                        item['type'] != 'custom_tool_call',
                   )
                   .map(Map<String, dynamic>.from)
                   .toList(growable: false),
@@ -459,25 +564,49 @@ class OpenAIResponsesProvider implements ModelProvider {
     return buffer.toString();
   }
 
-  ModelFunctionCall? _functionCall(Map<String, dynamic> item) {
-    if (item['type'] != 'function_call') return null;
+  ModelToolCall? _toolCall(Map<String, dynamic> item) {
     final callId = item['call_id'];
-    final name = item['name'];
-    final arguments = item['arguments'];
-    if (callId is! String || name is! String || arguments is! String) {
-      return null;
-    }
-    final decoded = jsonDecode(arguments);
-    if (decoded is! Map) {
-      throw OpenAIProviderException(
-        'Function $name returned non-object arguments.',
+    if (callId is! String) return null;
+    if (item['type'] == 'tool_search_call') {
+      final arguments = item['arguments'];
+      if (arguments is! Map) return null;
+      return ModelDeferredSearchCall(
+        callId: callId,
+        arguments: Map<String, dynamic>.from(arguments),
       );
     }
-    return ModelFunctionCall(
-      callId: callId,
-      name: name,
-      arguments: Map<String, dynamic>.from(decoded),
-    );
+    final name = item['name'];
+    if (name is! String) return null;
+    final namespace = item['namespace'] is String
+        ? item['namespace']! as String
+        : null;
+    final canonicalName = namespace == null ? name : '${namespace}__$name';
+    switch (item['type']) {
+      case 'function_call':
+        final arguments = item['arguments'];
+        if (arguments is! String) return null;
+        final decoded = jsonDecode(arguments);
+        if (decoded is! Map) {
+          throw OpenAIProviderException(
+            'Function $name returned non-object arguments.',
+          );
+        }
+        return ModelFunctionCall(
+          callId: callId,
+          name: canonicalName,
+          namespace: namespace,
+          arguments: Map<String, dynamic>.from(decoded),
+        );
+      case 'custom_tool_call':
+        final input = item['input'];
+        if (input is! String) return null;
+        return ModelFreeformCall(
+          callId: callId,
+          name: name,
+          rawInput: input,
+        );
+    }
+    return null;
   }
 
   ModelUsage _usage(Object? value) {

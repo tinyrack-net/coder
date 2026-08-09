@@ -25,7 +25,6 @@ void main() {
     service = ExecSessionService(
       gateway: gateway,
       pipes: pipes,
-      ids: _SequentialIds(),
       clock: clock,
       isWindows: false,
     );
@@ -50,7 +49,6 @@ void main() {
     final windows = ExecSessionService(
       gateway: gateway,
       pipes: pipes,
-      ids: _SequentialIds(),
       clock: clock,
       isWindows: true,
     );
@@ -65,7 +63,6 @@ void main() {
 
     expect(gateway.started.single.shell.executable, 'powershell.exe');
     expect(gateway.started.single.shell.arguments, <String>[
-      '-NoProfile',
       '-NonInteractive',
       '-Command',
       'dir',
@@ -351,13 +348,6 @@ void main() {
     // '가' is three UTF-8 bytes, so a four-byte window cannot include it whole.
     expect(truncateTailToBytes('가나', 4), '나');
   });
-}
-
-final class _SequentialIds implements IdGenerator {
-  int _next = 0;
-
-  @override
-  String generate() => '${++_next}';
 }
 
 final class _StepClock implements Clock {

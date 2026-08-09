@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// Protocol revisions this client speaks, newest first.
 ///
 /// A server that answers `initialize` with anything outside this list fails the
@@ -136,6 +134,8 @@ class McpResourceDescriptor {
     this.description,
     this.mimeType,
     this.sizeBytes,
+    this.annotations = const <String, dynamic>{},
+    this.meta = const <String, dynamic>{},
   });
 
   /// Decodes one entry of a `resources/list` result.
@@ -151,6 +151,8 @@ class McpResourceDescriptor {
       description: _optionalString(json['description']),
       mimeType: _optionalString(json['mimeType']),
       sizeBytes: json['size'] is int ? json['size'] as int : null,
+      annotations: _map(json['annotations']),
+      meta: _map(json['_meta']),
     );
   }
 
@@ -171,6 +173,12 @@ class McpResourceDescriptor {
 
   /// The declared size in bytes, when present.
   final int? sizeBytes;
+
+  /// MCP annotations published with the resource.
+  final Map<String, dynamic> annotations;
+
+  /// Provider metadata published with the resource.
+  final Map<String, dynamic> meta;
 }
 
 /// One parameterized resource template a server publishes.
@@ -182,6 +190,8 @@ class McpResourceTemplateDescriptor {
     this.title,
     this.description,
     this.mimeType,
+    this.annotations = const <String, dynamic>{},
+    this.meta = const <String, dynamic>{},
   });
 
   /// Decodes one entry of a `resources/templates/list` result.
@@ -198,6 +208,8 @@ class McpResourceTemplateDescriptor {
       title: _optionalString(json['title']),
       description: _optionalString(json['description']),
       mimeType: _optionalString(json['mimeType']),
+      annotations: _map(json['annotations']),
+      meta: _map(json['_meta']),
     );
   }
 
@@ -215,11 +227,20 @@ class McpResourceTemplateDescriptor {
 
   /// The declared media type of expansions, when present.
   final String? mimeType;
+
+  /// MCP annotations published with the template.
+  final Map<String, dynamic> annotations;
+
+  /// Provider metadata published with the template.
+  final Map<String, dynamic> meta;
 }
 
 /// One entry of a `resources/read` result.
 sealed class McpResourceContents {
-  const McpResourceContents();
+  const McpResourceContents({this.meta = const <String, dynamic>{}});
+
+  /// Provider metadata returned with this resource body.
+  final Map<String, dynamic> meta;
 
   /// Where the content came from.
   String get uri;
@@ -235,6 +256,7 @@ final class McpTextResourceContents extends McpResourceContents {
     required this.uri,
     required this.mimeType,
     required this.text,
+    super.meta,
   });
 
   @override
@@ -253,7 +275,8 @@ final class McpBlobResourceContents extends McpResourceContents {
   const McpBlobResourceContents({
     required this.uri,
     required this.mimeType,
-    required this.byteLength,
+    required this.blob,
+    super.meta,
   });
 
   @override
@@ -262,8 +285,8 @@ final class McpBlobResourceContents extends McpResourceContents {
   @override
   final String mimeType;
 
-  /// Decoded size in bytes, or null when the payload would not decode.
-  final int? byteLength;
+  /// Original base64 payload.
+  final String blob;
 }
 
 /// The decoded result of one `resources/read` call.
@@ -294,16 +317,18 @@ class McpReadResourceResult {
             uri: uri,
             mimeType: _mimeType(item),
             text: text,
+            meta: _map(item['_meta']),
           ),
         );
         continue;
       }
-      if (item['blob'] != null) {
+      if (item['blob'] is String) {
         contents.add(
           McpBlobResourceContents(
             uri: uri,
             mimeType: _mimeType(item),
-            byteLength: _base64Length(item['blob']),
+            blob: item['blob'] as String,
+            meta: _map(item['_meta']),
           ),
         );
       }
@@ -319,6 +344,18 @@ class McpReadResourceResult {
 
 String? _optionalString(Object? value) =>
     value is String && value.isNotEmpty ? value : null;
+
+/// One opaque MCP cursor page.
+final class McpListPage<T> {
+  /// Creates a page.
+  const McpListPage({required this.items, this.nextCursor});
+
+  /// Decoded entries in server order.
+  final List<T> items;
+
+  /// Opaque server cursor for the following page.
+  final String? nextCursor;
+}
 
 /// One tool a server publishes through `tools/list`.
 class McpToolDescriptor {
@@ -414,40 +451,59 @@ class McpToolAnnotations {
 /// One block of a `tools/call` result.
 sealed class McpContentBlock {
   /// Creates a [McpContentBlock].
-  const McpContentBlock();
+  const McpContentBlock({
+    this.annotations = const <String, dynamic>{},
+    this.meta = const <String, dynamic>{},
+  });
+
+  /// Standard MCP annotations.
+  final Map<String, dynamic> annotations;
+
+  /// Provider metadata.
+  final Map<String, dynamic> meta;
 }
 
 /// Plain text output.
 final class McpTextContent extends McpContentBlock {
   /// Creates a [McpTextContent].
-  const McpTextContent(this.text);
+  const McpTextContent(this.text, {super.annotations, super.meta});
 
   /// The text the server returned.
   final String text;
 }
 
-/// An image, reduced to its media type and size.
+/// An image with its original base64 payload.
 final class McpImageContent extends McpContentBlock {
   /// Creates a [McpImageContent].
-  const McpImageContent({required this.mimeType, required this.byteLength});
+  const McpImageContent({
+    required this.mimeType,
+    required this.data,
+    super.annotations,
+    super.meta,
+  });
 
   /// The declared media type.
   final String mimeType;
 
-  /// Decoded payload size, or null when the payload was not valid base64.
-  final int? byteLength;
+  /// Original base64 payload.
+  final String data;
 }
 
-/// Audio, reduced to its media type and size.
+/// Audio with its original base64 payload.
 final class McpAudioContent extends McpContentBlock {
   /// Creates a [McpAudioContent].
-  const McpAudioContent({required this.mimeType, required this.byteLength});
+  const McpAudioContent({
+    required this.mimeType,
+    required this.data,
+    super.annotations,
+    super.meta,
+  });
 
   /// The declared media type.
   final String mimeType;
 
-  /// Decoded payload size, or null when the payload was not valid base64.
-  final int? byteLength;
+  /// Original base64 payload.
+  final String data;
 }
 
 /// A resource embedded directly in the result.
@@ -457,7 +513,9 @@ final class McpEmbeddedResource extends McpContentBlock {
     required this.uri,
     this.mimeType,
     this.text,
-    this.blobByteLength,
+    this.blob,
+    super.annotations,
+    super.meta,
   });
 
   /// Where the resource lives.
@@ -469,14 +527,23 @@ final class McpEmbeddedResource extends McpContentBlock {
   /// Inline text, for textual resources.
   final String? text;
 
-  /// Decoded blob size, for binary resources.
-  final int? blobByteLength;
+  /// Original base64 blob, for binary resources.
+  final String? blob;
 }
 
 /// A pointer to a resource the client may fetch separately.
 final class McpResourceLink extends McpContentBlock {
   /// Creates a [McpResourceLink].
-  const McpResourceLink({required this.uri, this.name, this.mimeType});
+  const McpResourceLink({
+    required this.uri,
+    this.name,
+    this.title,
+    this.description,
+    this.mimeType,
+    this.size,
+    super.annotations,
+    super.meta,
+  });
 
   /// Where the resource lives.
   final String uri;
@@ -484,17 +551,34 @@ final class McpResourceLink extends McpContentBlock {
   /// A display name, when the server supplies one.
   final String? name;
 
+  /// Optional display title.
+  final String? title;
+
+  /// Optional resource description.
+  final String? description;
+
   /// The declared media type, when present.
   final String? mimeType;
+
+  /// Optional byte size.
+  final int? size;
 }
 
 /// A content block of a type this client does not model.
 final class McpUnknownContent extends McpContentBlock {
   /// Creates a [McpUnknownContent].
-  const McpUnknownContent(this.type);
+  const McpUnknownContent(
+    this.type,
+    this.raw, {
+    super.annotations,
+    super.meta,
+  });
 
   /// The `type` discriminator the server sent.
   final String type;
+
+  /// Original unknown block.
+  final Map<String, dynamic> raw;
 }
 
 /// The result of one `tools/call`.
@@ -504,6 +588,7 @@ class McpCallToolResult {
     required this.content,
     this.structuredContent,
     this.isError = false,
+    this.meta = const <String, dynamic>{},
   });
 
   /// Decodes a `tools/call` result, dropping blocks it cannot parse.
@@ -523,6 +608,7 @@ class McpCallToolResult {
           ? Map<String, dynamic>.from(json['structuredContent'] as Map)
           : null,
       isError: json['isError'] == true,
+      meta: _map(json['_meta']),
     );
   }
 
@@ -534,24 +620,35 @@ class McpCallToolResult {
 
   /// Whether the tool itself reported a failure.
   final bool isError;
+
+  /// Result-level provider metadata.
+  final Map<String, dynamic> meta;
 }
 
 McpContentBlock? _contentFromJson(Map<String, dynamic> json) {
   final type = json['type'];
   if (type is! String) return null;
+  final annotations = _map(json['annotations']);
+  final meta = _map(json['_meta']);
   switch (type) {
     case 'text':
       final text = json['text'];
-      return text is String ? McpTextContent(text) : null;
+      return text is String
+          ? McpTextContent(text, annotations: annotations, meta: meta)
+          : null;
     case 'image':
       return McpImageContent(
         mimeType: _mimeType(json),
-        byteLength: _base64Length(json['data']),
+        data: json['data'] is String ? json['data'] as String : '',
+        annotations: annotations,
+        meta: meta,
       );
     case 'audio':
       return McpAudioContent(
         mimeType: _mimeType(json),
-        byteLength: _base64Length(json['data']),
+        data: json['data'] is String ? json['data'] as String : '',
+        annotations: annotations,
+        meta: meta,
       );
     case 'resource':
       final resource = json['resource'];
@@ -564,7 +661,9 @@ McpContentBlock? _contentFromJson(Map<String, dynamic> json) {
             ? resource['mimeType'] as String
             : null,
         text: resource['text'] is String ? resource['text'] as String : null,
-        blobByteLength: _base64Length(resource['blob']),
+        blob: resource['blob'] is String ? resource['blob'] as String : null,
+        annotations: annotations,
+        meta: <String, dynamic>{...meta, ..._map(resource['_meta'])},
       );
     case 'resource_link':
       final uri = json['uri'];
@@ -572,12 +671,24 @@ McpContentBlock? _contentFromJson(Map<String, dynamic> json) {
       return McpResourceLink(
         uri: uri,
         name: json['name'] is String ? json['name'] as String : null,
+        title: json['title'] is String ? json['title'] as String : null,
+        description: json['description'] is String
+            ? json['description'] as String
+            : null,
         mimeType: json['mimeType'] is String
             ? json['mimeType'] as String
             : null,
+        size: json['size'] is int ? json['size'] as int : null,
+        annotations: annotations,
+        meta: meta,
       );
     default:
-      return McpUnknownContent(type);
+      return McpUnknownContent(
+        type,
+        Map<String, dynamic>.from(json),
+        annotations: annotations,
+        meta: meta,
+      );
   }
 }
 
@@ -586,11 +697,5 @@ String _mimeType(Map<String, dynamic> json) =>
     ? json['mimeType'] as String
     : 'application/octet-stream';
 
-int? _base64Length(Object? data) {
-  if (data is! String) return null;
-  try {
-    return base64.decode(data).length;
-  } on FormatException {
-    return null;
-  }
-}
+Map<String, dynamic> _map(Object? value) =>
+    value is Map ? Map<String, dynamic>.from(value) : const <String, dynamic>{};

@@ -58,24 +58,39 @@ void main() {
       cancellation: CancellationToken(),
     );
     final tool = ApplyPatchTool();
-    await tool.execute(<String, dynamic>{
-      'patch':
-          '--- a/sample.txt\n+++ b/sample.txt\n@@ -1,2 +1,2 @@\n one\n-two\n+three\n',
-    }, context);
+    expect(tool.modelSpec, isA<ModelFreeformToolDefinition>());
+    await tool.executeFreeform(
+      '*** Begin Patch\n'
+      '*** Update File: sample.txt\n'
+      '@@\n'
+      ' one\n'
+      '-two\n'
+      '+three\n'
+      '*** End Patch',
+      context,
+    );
     expect(await target.readAsString(), 'one\nthree\n');
-    await tool.execute(<String, dynamic>{
-      'patch':
-          '--- /dev/null\n+++ b/nested/new.txt\n@@ -0,0 +1,1 @@\n+created\n',
-    }, context);
+    await tool.executeFreeform(
+      '*** Begin Patch\n'
+      '*** Add File: nested/new.txt\n'
+      '+created\n'
+      '*** End Patch',
+      context,
+    );
     expect(
       await File('${workspace.path}/nested/new.txt').readAsString(),
       'created\n',
     );
     expect(
-      () => tool.execute(<String, dynamic>{
-        'patch':
-            '--- a/sample.txt\n+++ b/sample.txt\n@@ -1,1 +1,1 @@\n-missing\n+changed\n',
-      }, context),
+      () => tool.executeFreeform(
+        '*** Begin Patch\n'
+        '*** Update File: sample.txt\n'
+        '@@\n'
+        '-missing\n'
+        '+changed\n'
+        '*** End Patch',
+        context,
+      ),
       throwsA(isA<FormatException>()),
     );
     expect(await target.readAsString(), 'one\nthree\n');
@@ -142,13 +157,17 @@ void main() {
         AttachFileTool(publisher: publisher),
         ReadAttachmentTool(reader: _RecordingAttachmentReader()),
         ViewImageTool(publisher: publisher),
-        AskUserTool(
+        RequestUserInputTool(
           coordinator: _RecordingUserQuestionCoordinator(const <UserAnswer>[]),
         ),
       ];
 
       expect(tools.map((tool) => tool.name).toSet(), hasLength(tools.length));
       for (final tool in tools) {
+        if (tool.modelSpec is ModelFreeformToolDefinition) {
+          expect(tool.name, 'apply_patch');
+          continue;
+        }
         final schema = tool.strictJsonSchema;
         expect(tool.name, isNotEmpty, reason: '${tool.runtimeType}');
         expect(tool.description, isNotEmpty, reason: tool.name);
@@ -326,7 +345,7 @@ void main() {
     );
   });
 
-  group('ask_user', () {
+  group('request_user_input', () {
     late ToolExecutionContext context;
 
     setUp(() {
@@ -369,7 +388,7 @@ void main() {
             ),
           ],
         );
-        final tool = AskUserTool(coordinator: coordinator);
+        final tool = RequestUserInputTool(coordinator: coordinator);
 
         // Asking must never raise an approval dialog and must survive a
         // read-only session, which is where planning happens.
@@ -388,13 +407,13 @@ void main() {
         expect(result.isError, isFalse);
         expect(coordinator.asked.single.single.header, 'Storage');
         expect(coordinator.asked.single.single.options, hasLength(2));
-        expect(jsonDecode(result.output), <Map<String, dynamic>>[
-          <String, dynamic>{
-            'questionId': 'q0',
-            'answer': 'Postgres',
-            'isFreeForm': true,
+        expect(jsonDecode(result.output), <String, dynamic>{
+          'answers': <String, dynamic>{
+            'q0': <String, dynamic>{
+              'answers': <String>['Postgres'],
+            },
           },
-        ]);
+        });
       },
     );
 
@@ -405,7 +424,7 @@ void main() {
         final coordinator = _RecordingUserQuestionCoordinator(
           const <UserAnswer>[],
         );
-        final tool = AskUserTool(coordinator: coordinator);
+        final tool = RequestUserInputTool(coordinator: coordinator);
 
         for (final invalid in <Map<String, dynamic>>[
           <String, dynamic>{'questions': <Map<String, dynamic>>[]},
@@ -431,15 +450,16 @@ void main() {
         final coordinator = _RecordingUserQuestionCoordinator(
           const <UserAnswer>[],
         );
-        final result = await AskUserTool(coordinator: coordinator).execute(
-          <String, dynamic>{
-            'questions': <Map<String, dynamic>>[
-              ...questions(),
-              ...questions(),
-            ],
-          },
-          context,
-        );
+        final result = await RequestUserInputTool(coordinator: coordinator)
+            .execute(
+              <String, dynamic>{
+                'questions': <Map<String, dynamic>>[
+                  ...questions(),
+                  ...questions(),
+                ],
+              },
+              context,
+            );
         expect(result.isError, isTrue);
         expect(coordinator.asked, isEmpty);
       },
@@ -450,7 +470,7 @@ void main() {
       tags: const <String>['feature_test__turn_question__unit'],
       () async {
         final cancellation = CancellationToken();
-        final tool = AskUserTool(
+        final tool = RequestUserInputTool(
           coordinator: _CancellingUserQuestionCoordinator(cancellation),
         );
         await expectLater(
@@ -500,14 +520,22 @@ void main() {
         }, context);
 
         expect(result.isError, isFalse);
-        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
-        expect(decoded['explanation'], 'Parser first.');
-        expect(
-          (decoded['plan']! as List<dynamic>).cast<Map<String, dynamic>>().map(
-            (step) => step['status'],
+        expect(result.output, 'Plan updated');
+
+        final rejected = await tool.execute(
+          <String, dynamic>{
+            'plan': <Map<String, dynamic>>[
+              <String, dynamic>{'step': 'Plan', 'status': 'pending'},
+            ],
+            'explanation': '',
+          },
+          ToolExecutionContext(
+            workspaceRoot: workspace.path,
+            cancellation: CancellationToken(),
+            sessionMode: AgentSessionMode.plan,
           ),
-          <String>['completed', 'in_progress', 'pending'],
         );
+        expect(rejected.isError, isTrue);
       },
     );
 
