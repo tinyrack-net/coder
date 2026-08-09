@@ -880,6 +880,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       options: TerminalOptions(
         cols: widget.terminal.columns,
         rows: widget.terminal.rows,
+        rightClickSelectsWord: false,
       ),
     );
     _terminal.onData.listen(_sendInput);

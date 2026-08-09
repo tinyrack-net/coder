@@ -183,7 +183,7 @@ class _RemoteHostPairPageState extends ConsumerState<RemoteHostPairPage> {
               final value = capture.barcodes.firstOrNull?.rawValue;
               if (value != null) Navigator.pop(context, value);
             },
-            errorBuilder: (context, error, child) => TRAlert(
+            errorBuilder: (context, error) => TRAlert(
               title: TRText.inherit(
                 AppLocalizations.of(context).relayPairScan,
               ),

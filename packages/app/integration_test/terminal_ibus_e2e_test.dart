@@ -209,7 +209,7 @@ void main() {
       await _waitForTerminalParsed(terminalView.terminal);
       final wrappedEraseObserved = await _waitForOptional(
         () => _terminalRows(terminalView).any(
-          (line) => line.endsWith('WRAPQ'),
+          (line) => line.contains('WRAPQ') && !line.contains('WRAPQW'),
         ),
         const Duration(seconds: 15),
       );

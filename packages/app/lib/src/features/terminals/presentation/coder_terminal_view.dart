@@ -51,7 +51,7 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
     widget.terminal.attachCustomKeyEventHandler(_handleTerminalKeyEvent);
   }
 
-  void _openContextMenu(TapDownDetails details, CellOffset _) {
+  void _openContextMenu(TapDownDetails details, TerminalCellOffset _) {
     if (widget.terminal.modes.mouseTrackingMode != 'none') {
       return;
     }
@@ -76,6 +76,25 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
   @override
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
+    final palette = List<Color>.of(TerminalThemes.defaultTheme.palette)
+      ..setAll(0, <Color>[
+        colors.surface,
+        colors.danger,
+        colors.success,
+        colors.warning,
+        colors.info,
+        colors.primary,
+        colors.infoBorder,
+        colors.text,
+        colors.textMuted,
+        colors.dangerBorder,
+        colors.successBorder,
+        colors.warningBorder,
+        colors.infoBorder,
+        colors.primary,
+        colors.info,
+        colors.text,
+      ]);
     final terminal = TerminalView(
       terminal: widget.terminal,
       controller: widget.controller,
@@ -88,28 +107,18 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
         background: colors.surface,
         foreground: colors.text,
         cursor: colors.focus,
+        cursorAccent: colors.surface,
         selection: colors.surfaceSelected,
-        black: colors.surface,
-        red: colors.danger,
-        green: colors.success,
-        yellow: colors.warning,
-        blue: colors.info,
-        magenta: colors.primary,
-        cyan: colors.infoBorder,
-        white: colors.text,
-        brightBlack: colors.textMuted,
-        brightRed: colors.dangerBorder,
-        brightGreen: colors.successBorder,
-        brightYellow: colors.warningBorder,
-        brightBlue: colors.infoBorder,
-        brightMagenta: colors.primary,
-        brightCyan: colors.info,
-        brightWhite: colors.text,
-        searchHitBackground: colors.warningSurface,
-        searchHitBackgroundCurrent: colors.warning,
-        searchHitForeground: colors.surface,
+        selectionInactive: colors.surfaceSelected,
+        palette: palette,
       ),
-      style: TerminalStyle.fromTextStyle(TRTypography.code),
+      style: TerminalStyle(
+        fontFamily: TRTypography.code.fontFamily!,
+        fontSize: TRTypography.code.fontSize!,
+        height: TRTypography.code.height!,
+        fontWeight: TRTypography.code.fontWeight!,
+        letterSpacing: TRTypography.code.letterSpacing!,
+      ),
       padding: const EdgeInsets.all(TRSpacing.small),
     );
     final items = widget.contextMenuItems;

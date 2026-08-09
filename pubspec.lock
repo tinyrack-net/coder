@@ -318,8 +318,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/dropwell"
-      ref: "68ffb79ccc741b7fa073f4954d9048fbd5bc5062"
-      resolved-ref: "68ffb79ccc741b7fa073f4954d9048fbd5bc5062"
+      ref: "8d73916027e90722447381faf77799cebf99fbb2"
+      resolved-ref: "8d73916027e90722447381faf77799cebf99fbb2"
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
     version: "0.1.0"
@@ -811,10 +811,10 @@ packages:
     dependency: transitive
     description:
       name: mobile_scanner
-      sha256: d234581c090526676fd8fab4ada92f35c6746e3fb4f05a399665d75a399fb760
+      sha256: ce3f059ebd6dbfab7292bba0e893e354b46730636820d3c9ef69005ce2d55bce
       url: "https://pub.dev"
     source: hosted
-    version: "5.2.3"
+    version: "7.4.0"
   mockito:
     dependency: transitive
     description:
@@ -1024,14 +1024,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  quiver:
-    dependency: transitive
-    description:
-      name: quiver
-      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.2.2"
   recase:
     dependency: transitive
     description:
@@ -1353,11 +1345,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/termworld"
-      ref: "68ffb79ccc741b7fa073f4954d9048fbd5bc5062"
-      resolved-ref: "68ffb79ccc741b7fa073f4954d9048fbd5bc5062"
+      ref: "8d73916027e90722447381faf77799cebf99fbb2"
+      resolved-ref: "8d73916027e90722447381faf77799cebf99fbb2"
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
-    version: "0.3.0"
+    version: "0.4.0"
   test:
     dependency: "direct dev"
     description:
@@ -1591,14 +1583,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
-  xterm:
-    dependency: transitive
-    description:
-      name: xterm
-      sha256: "168dfedca77cba33fdb6f52e2cd001e9fde216e398e89335c19b524bb22da3a2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.0"
   yaml:
     dependency: "direct main"
     description:
@@ -1615,14 +1599,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.4"
-  zmodem:
-    dependency: transitive
-    description:
-      name: zmodem
-      sha256: "3b7e5b29f3a7d8aee472029b05165a68438eff2f3f7766edf13daba1e297adbf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.6"
 sdks:
   dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.44.0"

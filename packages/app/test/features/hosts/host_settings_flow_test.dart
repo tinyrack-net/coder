@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -18,6 +19,57 @@ import '../../support/fake_coder_api.dart';
 import '../../support/localization.dart';
 
 void main() {
+  testWidgets(
+    'QR pairing reports camera startup failures in the scanner dialog',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final pairer = _Pairer();
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _PairClients(
+              FakeCoderApi(serverInfo: _serverInfo('relay-server')),
+            ),
+            clientKind: 'phone',
+            relayPairer: pairer,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey<String>('relay-scan-qr')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('QR 코드 스캔'), findsWidgets);
+      expect(find.byType(TRAlert), findsWidgets);
+      tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
+        const BarcodeCapture(
+          barcodes: <Barcode>[
+            Barcode(
+              rawValue: 'https://coder.tinyrack.net/pair#offer=scanned',
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(pairer.deviceName, 'phone');
+      expect(store.profiles.single.serverId, 'relay-server');
+      debugDefaultTargetPlatformOverride = null;
+    },
+    tags: const <String>['feature_test__daemon_relay__widget'],
+  );
+
   testWidgets(
     'pairing link registers a daemon-scoped relay device',
     (tester) async {
