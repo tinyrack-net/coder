@@ -6,6 +6,7 @@ import 'package:app/src/features/hosts/domain/remote_path.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
@@ -50,6 +51,9 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
   );
   List<DirectorySuggestionDto> _entries = const <DirectorySuggestionDto>[];
   bool _loading = true;
+  // Whether any listing has ever resolved. The first load renders row-shaped
+  // skeletons; later navigations keep the stale rows under a progress bar.
+  bool _loadedOnce = false;
   String? _error;
   int _requestId = 0;
   Timer? _debounce;
@@ -88,7 +92,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               onChanged: _onPathTyped,
             ),
             const SizedBox(height: TRSpacing.small),
-            if (_loading) const TRProgress(),
+            if (_loading && _loadedOnce) const TRProgress(),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -98,32 +102,43 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
                 ),
               ),
             Expanded(
-              child: ListView(
-                children: <Widget>[
-                  if (parent != null)
-                    CoderListRow(
-                      key: const ValueKey('directory-browser-parent'),
-                      dense: true,
-                      leading: const Icon(CoderIcons.uploadFolder),
-                      title: const TRText.inherit('..'),
-                      onTap: () => unawaited(_open(parent)),
+              child: _loading && !_loadedOnce
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: TRSpacing.small,
+                      ),
+                      child: ListRowsSkeleton(
+                        semanticLabel: l10n.directoryBrowserLoading,
+                      ),
+                    )
+                  : ListView(
+                      children: <Widget>[
+                        if (parent != null)
+                          CoderListRow(
+                            key: const ValueKey('directory-browser-parent'),
+                            dense: true,
+                            leading: const Icon(CoderIcons.uploadFolder),
+                            title: const TRText.inherit('..'),
+                            onTap: () => unawaited(_open(parent)),
+                          ),
+                        for (final entry in _entries)
+                          CoderListRow(
+                            key: ValueKey(
+                              'directory-browser-entry-${entry.path}',
+                            ),
+                            dense: true,
+                            leading: const Icon(CoderIcons.folder),
+                            title: TRText.inherit(entry.name),
+                            subtitle: TRText.inherit(entry.path),
+                            onTap: () => unawaited(_open(entry.path)),
+                          ),
+                        if (!_loading && _entries.isEmpty && _error == null)
+                          CoderListRow(
+                            dense: true,
+                            title: TRText.inherit(l10n.directoryBrowserEmpty),
+                          ),
+                      ],
                     ),
-                  for (final entry in _entries)
-                    CoderListRow(
-                      key: ValueKey('directory-browser-entry-${entry.path}'),
-                      dense: true,
-                      leading: const Icon(CoderIcons.folder),
-                      title: TRText.inherit(entry.name),
-                      subtitle: TRText.inherit(entry.path),
-                      onTap: () => unawaited(_open(entry.path)),
-                    ),
-                  if (!_loading && _entries.isEmpty && _error == null)
-                    CoderListRow(
-                      dense: true,
-                      title: TRText.inherit(l10n.directoryBrowserEmpty),
-                    ),
-                ],
-              ),
             ),
           ],
         ),
@@ -171,12 +186,14 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
       setState(() {
         _entries = entries;
         _loading = false;
+        _loadedOnce = true;
       });
     } on CoderClientException catch (error) {
       if (!mounted || id != _requestId) return;
       setState(() {
         _error = error.message;
         _loading = false;
+        _loadedOnce = true;
       });
     }
   }

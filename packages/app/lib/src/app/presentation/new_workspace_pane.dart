@@ -115,6 +115,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   String? _worktreeId;
   String? _baseBranch;
   bool _submitting = false;
+  // Which submit step is running, so the wait is narrated instead of the
+  // composer merely appearing frozen while a worktree is checked out.
+  _NewWorkspaceStage _stage = _NewWorkspaceStage.creatingWorktree;
   String? _error;
 
   @override
@@ -308,6 +311,29 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                             (project == null ? home?.worktreeId : null),
                         excludedClientActions: sessionlessClientActions,
                         builder: (context, completion) => composer(completion),
+                      ),
+                    if (_submitting)
+                      Padding(
+                        padding: const EdgeInsets.only(top: TRSpacing.medium),
+                        child: Row(
+                          key: const ValueKey<String>('new-workspace-progress'),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            const TRSpinner(uiSize: TRUiSize.sm),
+                            const SizedBox(width: TRSpacing.small),
+                            TRText(
+                              _stage == _NewWorkspaceStage.creatingWorktree
+                                  ? AppLocalizations.of(
+                                      context,
+                                    ).workspaceCreatingWorktree
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).workspaceStartingSession,
+                              variant: TRTextVariant.bodySm,
+                              color: TRTextColor.muted,
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -547,6 +573,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         : submission.text;
     setState(() {
       _submitting = true;
+      _stage = _NewWorkspaceStage.startingSession;
       _error = null;
     });
     try {
@@ -580,6 +607,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           });
           return;
         }
+        setState(() => _stage = _NewWorkspaceStage.creatingWorktree);
         final created = await api.workspaces.createWorktree(
           id: ref.read(appIdGeneratorProvider).generate(),
           workspaceId: project.workspace.id,
@@ -606,6 +634,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           return;
         }
         worktreeId = created.worktree.id;
+      }
+      if (mounted) {
+        setState(() => _stage = _NewWorkspaceStage.startingSession);
       }
       await _start(
         WorkspaceSelection(
@@ -670,3 +701,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     return runtime?.connected == true ? runtime!.api : null;
   }
 }
+
+/// Submit steps the new-workspace composer narrates while it works.
+enum _NewWorkspaceStage { creatingWorktree, startingSession }
