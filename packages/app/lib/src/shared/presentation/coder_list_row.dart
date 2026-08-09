@@ -19,6 +19,7 @@ class CoderListRow extends StatefulWidget {
     this.controlOwnsFocus = false,
     this.dense = false,
     this.enabled = true,
+    this.hoverEnabled = true,
     this.isThreeLine = false,
     this.leading,
     this.onTap,
@@ -50,6 +51,12 @@ class CoderListRow extends StatefulWidget {
 
   /// Whether the row accepts activation.
   final bool enabled;
+
+  /// Whether the row paints a hover surface while the pointer is over it.
+  ///
+  /// A containing settings surface can disable this while preserving the
+  /// row's pointer activation and the trailing control's own hover state.
+  final bool hoverEnabled;
 
   /// Whether compact vertical padding is used.
   final bool dense;
@@ -125,7 +132,7 @@ class _CoderListRowState extends State<CoderListRow> {
     final colors = context.tinyrackTheme;
     final background = widget.selected
         ? colors.surfaceSelected
-        : _hovered
+        : widget.hoverEnabled && _hovered
         ? colors.surfaceHover
         : colors.surface;
     final verticalPadding = widget.dense
@@ -195,10 +202,10 @@ class _CoderListRowState extends State<CoderListRow> {
           skipTraversal: !_focusable,
           child: MouseRegion(
             cursor: _interactive ? SystemMouseCursors.click : MouseCursor.defer,
-            onEnter: _interactive
+            onEnter: _interactive && widget.hoverEnabled
                 ? (_) => setState(() => _hovered = true)
                 : null,
-            onExit: _interactive
+            onExit: _interactive && widget.hoverEnabled
                 ? (_) => setState(() => _hovered = false)
                 : null,
             child: GestureDetector(
