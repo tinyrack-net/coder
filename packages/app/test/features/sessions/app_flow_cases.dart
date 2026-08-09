@@ -165,7 +165,7 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'session tab strip uses the unified full-bleed TRTabs contract',
+    'session tab strip uses fixed-width tabs and covers the hover seam',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -187,11 +187,13 @@ void _registerSessionsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      // The design system owns the full-bleed strip geometry and selection
+      // The design system owns the fixed-width strip geometry and selection
       // indicator. Coder only supplies the selected, closable session tab.
       final strip = find.byKey(const ValueKey('session-tab-strip'));
       expect(strip, findsOneWidget);
-      expect(tester.widget<TRTabs>(strip).value, first.id);
+      final tabs = tester.widget<TRTabs>(strip);
+      expect(tabs.value, first.id);
+      expect(tabs.tabWidth, TRTabsWidth.fixed);
       expect(
         find.descendant(
           of: strip,
@@ -207,6 +209,37 @@ void _registerSessionsAppFlows() {
           matching: find.byKey(const ValueKey<String>('tr-tabs-close-one')),
         ),
         findsOneWidget,
+      );
+
+      final tab = find.byKey(const ValueKey<String>('tr-tabs-tab-one'));
+      expect(tester.getSize(tab).width, TRMeasurements.measureSm);
+      final hoverSurface = find.descendant(
+        of: tab,
+        matching: find.byWidgetPredicate((widget) {
+          if (widget is! AnimatedContainer) return false;
+          final decoration = widget.decoration;
+          return decoration is BoxDecoration && decoration.border != null;
+        }),
+      );
+      expect(hoverSurface, findsOneWidget);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(tab));
+      await tester.pump();
+      final colors = tester.element(tab).tinyrackTheme;
+      expect(
+        tester.widget<AnimatedContainer>(hoverSurface).decoration,
+        isA<BoxDecoration>().having(
+          (decoration) => decoration.color,
+          'color',
+          colors.surfaceHover,
+        ),
+      );
+      expect(
+        tester.getSize(hoverSurface).height,
+        TRControlMetrics.heightOf(TRUiSize.md) + TRControlMetrics.borderWidth,
       );
 
       // The two menu commands sit beside the square close buttons on each tab,

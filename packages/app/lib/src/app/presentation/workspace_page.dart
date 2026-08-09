@@ -387,6 +387,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                     ? 'session-tab-strip'
                     : 'session-tab-strip-${pane.id}',
               ),
+              tabWidth: TRTabsWidth.fixed,
               semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
               value: _controlValue(workspace.tabs[pane.activeTabId]!),
               onValueChange: (value) => unawaited(
@@ -461,6 +462,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           behavior: HitTestBehavior.opaque,
           onTap: () => unawaited(_showTabSheet()),
           child: TRTabs(
+            tabWidth: TRTabsWidth.fixed,
             semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
             value: _controlValue(entry),
             onValueChange: (_) => unawaited(_showTabSheet()),
