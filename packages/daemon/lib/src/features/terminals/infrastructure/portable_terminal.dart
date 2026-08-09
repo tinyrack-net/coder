@@ -16,14 +16,21 @@ final class PtyworldTerminalGateway implements TerminalGateway {
     required int columns,
     required int rows,
   }) async {
-    final process = await PtyProcess.start(
-      shell.executable,
-      arguments: shell.arguments,
-      workingDirectory: workingDirectory,
-      columns: columns,
-      rows: rows,
-    );
-    return _TinyrackTerminalProcess(process);
+    try {
+      final process = await PtyProcess.start(
+        shell.executable,
+        arguments: shell.arguments,
+        workingDirectory: workingDirectory,
+        columns: columns,
+        rows: rows,
+      );
+      return _TinyrackTerminalProcess(process);
+    } on PtyException {
+      throw const TerminalCreationException(
+        TerminalCreationFailureReason.startFailed,
+        'The configured terminal shell could not be started.',
+      );
+    }
   }
 }
 

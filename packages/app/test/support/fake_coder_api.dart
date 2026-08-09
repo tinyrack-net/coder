@@ -130,6 +130,7 @@ final class FakeCoderApi
     this.projectSettingsError,
     List<Future<List<McpServerStateDto>>>? mcpListResponses,
     this.terminalAttachError,
+    this.terminalCreateError,
     this.terminalReplay = const <TerminalOutputDto>[],
     Map<String, List<String>>? directories,
     Map<String, List<String>>? files,

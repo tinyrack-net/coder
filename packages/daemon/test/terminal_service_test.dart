@@ -158,6 +158,35 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
     tags: const <String>['feature_test__terminal_lifecycle__unit'],
   );
+
+  test(
+    'missing worktree paths fail with a typed creation reason',
+    () async {
+      final service = TerminalService(
+        gateway: _FakeTerminalGateway(_FakeTerminalProcess()),
+        worktreePath: (_) async => throw const FormatException('missing'),
+        shellFor: (_) async => const TerminalShell(executable: '/bin/sh'),
+      );
+
+      await expectLater(
+        service.create(
+          id: 'terminal-1',
+          worktreeId: 'missing',
+          title: 'Terminal 1',
+          columns: 80,
+          rows: 24,
+        ),
+        throwsA(
+          isA<TerminalCreationException>().having(
+            (error) => error.reason,
+            'reason',
+            TerminalCreationFailureReason.worktreeUnavailable,
+          ),
+        ),
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__unit'],
+  );
 }
 
 final class _FakeTerminalGateway implements TerminalGateway {

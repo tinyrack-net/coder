@@ -30,6 +30,38 @@ void _registerWorkspaceAppFlows() {
     createdAt: now,
     updatedAt: now,
   );
+  for (final testCase in <({String name, Size size})>[
+    (name: 'desktop', size: const Size(1100, 760)),
+    (name: 'mobile', size: const Size(390, 780)),
+  ]) {
+    testWidgets(
+      '${testCase.name} replaces a route whose worktree left the catalog',
+      (tester) async {
+        await tester.binding.setSurfaceSize(testCase.size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final api = FakeCoderApi(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: const <WorktreeDto>[],
+        );
+        final router = await _pumpRoute(
+          tester,
+          api,
+          WorktreeRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: checkout.id,
+          ).location,
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpAndSettle();
+
+        expect(router.routeInformationProvider.value.uri.path, '/');
+        expect(tester.takeException(), isNull);
+      },
+      tags: const <String>['feature_test__workspace_catalog__widget'],
+    );
+  }
   testWidgets(
     'desktop workspace uses a flat workspace tree and session tabs',
     (tester) async {

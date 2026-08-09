@@ -35,10 +35,20 @@ final class WorkspaceOperations {
   final WorktreeHookRunner _hooks;
 
   /// Returns repositories and active worktrees as one catalog snapshot.
-  Future<WorkspaceCatalogDto> catalog() async => WorkspaceCatalogDto(
-    workspaces: await _workspaces.list(),
-    worktrees: await _worktrees.list(),
-  );
+  Future<WorkspaceCatalogDto> catalog() async {
+    final workspaces = await _workspaces.list();
+    for (final workspace in workspaces) {
+      if (workspace.kind != WorkspaceKind.git) continue;
+      await _syncGitSnapshots(
+        workspace,
+        await _git.listWorktrees(workspace.rootPath),
+      );
+    }
+    return WorkspaceCatalogDto(
+      workspaces: workspaces,
+      worktrees: await _worktrees.list(),
+    );
+  }
 
   /// Identity of the implicit home workspace when this daemon creates it.
   ///
@@ -169,7 +179,7 @@ final class WorkspaceOperations {
   Future<WorkspaceCatalogDto> refresh(String workspaceId) async {
     final workspace = await _requireWorkspace(workspaceId);
     if (workspace.kind == WorkspaceKind.git) {
-      await _upsertGitSnapshots(
+      await _syncGitSnapshots(
         workspace,
         await _git.listWorktrees(workspace.rootPath),
       );
@@ -444,7 +454,9 @@ final class WorkspaceOperations {
     final result = <WorktreeDto>[];
     for (var index = 0; index < snapshots.length; index += 1) {
       final snapshot = snapshots[index];
-      final existing = await _worktrees.getByPath(snapshot.path);
+      final existing = await _worktrees.getByPathIncludingArchived(
+        snapshot.path,
+      );
       final isCheckout = index == 0;
       final worktree = await _worktrees.upsert(
         WorktreeDto(
@@ -468,6 +480,21 @@ final class WorkspaceOperations {
       result.add(worktree);
     }
     return result;
+  }
+
+  Future<List<WorktreeDto>> _syncGitSnapshots(
+    WorkspaceDto workspace,
+    List<GitWorktreeSnapshot> snapshots,
+  ) async {
+    final discovered = await _upsertGitSnapshots(workspace, snapshots);
+    final discoveredPaths = snapshots.map((snapshot) => snapshot.path).toList();
+    for (final worktree in await _worktrees.list(workspaceId: workspace.id)) {
+      if (discoveredPaths.any((path) => p.equals(path, worktree.path))) {
+        continue;
+      }
+      await _worktrees.archive(worktree.id, _clock.nowUtc());
+    }
+    return discovered;
   }
 
   /// Returns the checkout root of one registered workspace.

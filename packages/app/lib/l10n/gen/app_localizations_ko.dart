@@ -318,6 +318,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get directoryBrowserLoading => '디렉터리 불러오는 중';
 
   @override
+  String get terminalCreationFailed => '터미널을 만들 수 없어요';
+
+  @override
+  String get terminalWorktreeUnavailable =>
+      '이 worktree는 더 이상 사용할 수 없습니다. 다른 worktree를 선택하세요.';
+
+  @override
+  String get terminalShellStartFailed =>
+      '설정된 터미널 셸을 시작할 수 없습니다. 터미널 설정을 확인하고 다시 시도하세요.';
+
+  @override
   String get terminalMenuCopy => '복사';
 
   @override

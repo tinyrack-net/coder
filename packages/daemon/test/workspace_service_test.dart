@@ -103,6 +103,89 @@ branch refs/heads/feature/settings
   );
 
   test(
+    'catalog archives Git worktrees that disappeared outside Coder',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = _service(database, git: git);
+
+      final registered = await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      final external = registered.worktrees.singleWhere(
+        (worktree) => worktree.path == '/other',
+      );
+      git.snapshots.removeWhere((snapshot) => snapshot.path == '/other');
+
+      final catalog = await service.catalog();
+
+      expect(
+        catalog.worktrees.map((worktree) => worktree.id),
+        isNot(contains(external.id)),
+      );
+      expect(
+        (await database.worktreeDao.getById(external.id))!.archivedAt?.toUtc(),
+        _FixedClock.now,
+      );
+
+      git.snapshots.add(
+        const GitWorktreeSnapshot(
+          path: '/other',
+          branch: 'other',
+          head: 'restored',
+        ),
+      );
+      final restored = await service.catalog();
+      expect(
+        restored.worktrees
+            .singleWhere((worktree) => worktree.path == '/other')
+            .id,
+        external.id,
+      );
+      expect(
+        (await database.worktreeDao.getById(external.id))!.archivedAt,
+        isNull,
+      );
+    },
+    tags: const <String>['feature_test__workspace_catalog__unit'],
+  );
+
+  test(
+    'catalog does not archive unavailable directory workspaces',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway()..root = null;
+      final service = _service(database, git: git);
+      final registered = await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'directory-1',
+          checkoutId: 'directory-checkout',
+          rootPath: '/plain',
+          name: 'Plain folder',
+        ),
+      );
+
+      final catalog = await service.catalog();
+
+      expect(catalog.worktrees, <WorktreeDto>[registered.worktrees.single]);
+    },
+    tags: const <String>['feature_test__workspace_catalog__unit'],
+  );
+
+  test(
     'archive requires confirmation and only removes managed paths',
     () async {
       final database = CoderDatabase.forTesting(
@@ -1191,5 +1274,6 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
   }) async {
     log.add('git:remove${force ? ':force' : ''}');
     removed.add(path);
+    snapshots.removeWhere((snapshot) => snapshot.path == path);
   }
 }

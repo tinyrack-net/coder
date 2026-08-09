@@ -385,6 +385,9 @@
   "@directoryBrowserLoading": {
     "description": "Announced once for the row skeletons shown while the first directory listing loads."
   },
+  "terminalCreationFailed": "Couldn't create terminal",
+  "terminalWorktreeUnavailable": "This worktree is no longer available. Choose another worktree.",
+  "terminalShellStartFailed": "The configured terminal shell couldn't be started. Check terminal settings and try again.",
   "terminalMenuCopy": "Copy",
   "terminalMenuPaste": "Paste",
   "terminalMenuSelectAll": "Select all",

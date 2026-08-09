@@ -17,6 +17,7 @@ import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -231,6 +232,27 @@ void main() {
 
   unawaited(
     goldenTest(
+      'terminal creation failure uses the workspace alert surface',
+      fileName: 'terminal_creation_failure',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('workspace-new-tab-menu')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('workspace-new-terminal')),
+        );
+        await tester.pumpAndSettle();
+        return null;
+      },
+      builder: _terminalFailureApp,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'terminal IME preedit replaces its cursor with an underline',
       fileName: 'terminal_ime_preedit',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
@@ -405,6 +427,43 @@ Widget _terminalApp() {
       workspaceId: workspace.id,
       worktreeId: worktree.id,
       terminalId: terminal.id,
+    ).location,
+  );
+}
+
+Widget _terminalFailureApp() {
+  final now = DateTime.utc(2026, 8, 3);
+  final workspace = WorkspaceDto(
+    id: 'workspace',
+    name: 'Coder',
+    rootPath: '/repos/coder',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final worktree = WorktreeDto(
+    id: 'checkout',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    head: 'abc',
+    kind: WorktreeKind.checkout,
+    isCoderOwned: false,
+    createdAt: now,
+  );
+  return _TerminalGoldenHost(
+    api: FakeCoderApi(
+      workspaces: <WorkspaceDto>[workspace],
+      worktrees: <WorktreeDto>[worktree],
+      terminalCreateError: const CoderClientException(
+        'The worktree directory is no longer available.',
+        code: 'worktree_unavailable',
+      ),
+    ),
+    location: WorktreeRoute(
+      hostId: 'server',
+      workspaceId: workspace.id,
+      worktreeId: worktree.id,
     ).location,
   );
 }
