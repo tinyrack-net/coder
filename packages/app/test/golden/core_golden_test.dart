@@ -12,6 +12,7 @@ import 'package:app/src/features/conversation/application/composer_controller.da
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
@@ -367,6 +368,214 @@ void main() {
       createdAt: now,
     ),
   ];
+  final allChatItems = <ChatItem>[
+    ChatUserMessage(
+      key: 'user',
+      turnId: 'turn-all',
+      createdAt: now,
+      text: '사용자 메시지는 읽기 방향의 끝에 정렬됩니다.',
+      attachments: const <ChatAttachment>[
+        ChatAttachment(
+          id: 'user-file',
+          fileName: 'requirements.md',
+          mimeType: 'text/markdown',
+          byteSize: 2048,
+        ),
+      ],
+    ),
+    ChatAssistantMessage(
+      key: 'assistant',
+      turnId: 'turn-all',
+      createdAt: now,
+      markdown: 'Assistant prose shares one leading rail with tools.',
+    ),
+    ChatAttachmentMessage(
+      key: 'assistant-attachment',
+      turnId: 'turn-all',
+      createdAt: now,
+      attachment: const ChatAttachment(
+        id: 'assistant-file',
+        fileName: 'report.txt',
+        mimeType: 'text/plain',
+        byteSize: 1280,
+      ),
+    ),
+    ChatToolActivity(
+      key: 'tool-running',
+      turnId: 'turn-all',
+      createdAt: now,
+      callId: 'call-running',
+      toolName: 'read_file',
+      arguments: const <String, dynamic>{'path': '/repo/lib/parser.dart'},
+      status: ChatToolStatus.running,
+    ),
+    ChatToolActivity(
+      key: 'tool-complete',
+      turnId: 'turn-all',
+      createdAt: now,
+      callId: 'call-complete',
+      toolName: 'exec_command',
+      arguments: const <String, dynamic>{'command': 'dart test'},
+      status: ChatToolStatus.succeeded,
+      output: 'All tests passed',
+    ),
+    ChatToolActivity(
+      key: 'tool-failed',
+      turnId: 'turn-all',
+      createdAt: now,
+      callId: 'call-failed',
+      toolName: 'mcp__files__read',
+      arguments: const <String, dynamic>{'uri': 'file:///private/result'},
+      status: ChatToolStatus.failed,
+      error: 'Connection closed',
+    ),
+    ChatToolActivity(
+      key: 'tool-denied',
+      turnId: 'turn-all',
+      createdAt: now,
+      callId: 'call-denied',
+      toolName: 'apply_patch',
+      arguments: const <String, dynamic>{'patch': 'private patch details'},
+      status: ChatToolStatus.denied,
+      error: 'Denied by user',
+    ),
+    ChatPlanProposal(
+      key: 'plan',
+      turnId: 'turn-all',
+      createdAt: now,
+      steps: const <ChatPlanStep>[
+        ChatPlanStep(
+          step: 'Align the timeline',
+          status: ChatPlanStepStatus.completed,
+        ),
+        ChatPlanStep(
+          step: 'Verify every message type',
+          status: ChatPlanStepStatus.inProgress,
+        ),
+      ],
+      explanation: 'All cards use the same content gutter.',
+    ),
+    ChatApprovalInteraction(
+      key: 'approval',
+      turnId: 'turn-all',
+      createdAt: now,
+      approval: approval,
+      status: ChatInteractionStatus.resolved,
+      approved: true,
+    ),
+    ChatQuestionInteraction(
+      key: 'question',
+      turnId: 'turn-all',
+      createdAt: now,
+      request: UserQuestionRequestDto(
+        id: 'fixture-question',
+        sessionId: 'agent-1',
+        turnId: 'turn-all',
+        toolCallId: 'question-call',
+        questions: const <UserQuestionItemDto>[
+          UserQuestionItemDto(
+            id: 'density',
+            header: 'Density',
+            question: 'Which timeline density should be used?',
+            options: <UserQuestionOptionDto>[
+              UserQuestionOptionDto(
+                label: 'Compact',
+                description: 'Keep status rows easy to scan.',
+              ),
+            ],
+          ),
+        ],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      ),
+    ),
+    ChatUserAnswer(
+      key: 'answer',
+      turnId: 'turn-all',
+      createdAt: now,
+      entries: const <ChatQuestionAnswer>[
+        ChatQuestionAnswer(
+          header: 'Density',
+          question: 'Which timeline density should be used?',
+          answer: 'Compact',
+          isFreeForm: false,
+        ),
+      ],
+    ),
+    ChatSleep(
+      key: 'sleep',
+      turnId: 'turn-all',
+      createdAt: now,
+      duration: const Duration(minutes: 2),
+      startedAt: now,
+      isRunning: false,
+      reason: 'Waiting for checks',
+    ),
+    ChatNotice(
+      key: 'notice',
+      turnId: 'turn-all',
+      createdAt: now,
+      kind: ChatNoticeKind.turnCompleted,
+      toolRounds: 4,
+    ),
+    ChatDeferredTools(
+      key: 'deferred',
+      turnId: 'turn-all',
+      createdAt: now,
+      count: 3,
+    ),
+    ChatUsage(
+      key: 'usage',
+      turnId: 'turn-all',
+      createdAt: now,
+      tokens: const <String, num>{'input': 1234, 'output': 456},
+    ),
+    ChatContextReset(
+      key: 'reset',
+      turnId: 'turn-all',
+      createdAt: now,
+    ),
+    ChatContextCompacted(
+      key: 'compacted',
+      turnId: 'turn-all',
+      createdAt: now,
+    ),
+    ChatUnknownEvent(
+      key: 'unknown',
+      turnId: 'turn-all',
+      createdAt: now,
+      type: 'provider.future_event',
+      data: const <String, dynamic>{'uid': 'hidden-until-expanded'},
+    ),
+  ];
+
+  unawaited(
+    goldenTest(
+      'every chat item uses the unified desktop and mobile timeline',
+      fileName: 'chat_message_types',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 5100),
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          for (final scenario
+              in <({String name, ThemeMode mode, double width})>[
+                (name: 'desktop light', mode: ThemeMode.light, width: 640),
+                (name: 'desktop dark', mode: ThemeMode.dark, width: 640),
+                (name: 'mobile light', mode: ThemeMode.light, width: 360),
+                (name: 'mobile dark', mode: ThemeMode.dark, width: 360),
+              ])
+            GoldenTestScenario(
+              name: scenario.name,
+              child: SizedBox(
+                width: scenario.width,
+                height: 2400,
+                child: _chatItems(scenario.mode, allChatItems, busy: true),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   unawaited(
     goldenTest(
@@ -853,7 +1062,11 @@ void main() {
       builder: () => SizedBox(
         width: 1100,
         height: 760,
-        child: _sessionComposer(ThemeMode.dark, split: true),
+        child: _sessionComposer(
+          ThemeMode.dark,
+          split: true,
+          nestedSplit: true,
+        ),
       ),
     ),
   );
@@ -1250,7 +1463,11 @@ Widget _composerState(
   ),
 );
 
-Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
+Widget _sessionComposer(
+  ThemeMode mode, {
+  bool split = false,
+  bool nestedSplit = false,
+}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -1283,33 +1500,54 @@ Widget _sessionComposer(ThemeMode mode, {bool split = false}) {
     settings: AppSettings(
       sessionTabs: split
           ? <String, SessionTabPreference>{
-              selection.storageKey: const SessionTabPreference(
+              selection.storageKey: SessionTabPreference(
                 tabs: <WorkspaceTabPreference>[
-                  WorkspaceTabPreference(
+                  const WorkspaceTabPreference(
                     id: 'draft:left',
                     kind: WorkspaceTabTargetKind.draft,
                   ),
-                  WorkspaceTabPreference(
+                  const WorkspaceTabPreference(
                     id: 'draft:right',
                     kind: WorkspaceTabTargetKind.draft,
                   ),
+                  if (nestedSplit)
+                    const WorkspaceTabPreference(
+                      id: 'draft:bottom',
+                      kind: WorkspaceTabTargetKind.draft,
+                    ),
                 ],
                 root: WorkspaceSplitPreference(
                   id: 'split:root',
                   axis: WorkspaceSplitAxis.horizontal,
                   ratio: 0.5,
-                  first: WorkspacePanePreference(
+                  first: const WorkspacePanePreference(
                     id: 'pane:left',
                     tabIds: <String>['draft:left'],
                     activeTabId: 'draft:left',
                   ),
-                  second: WorkspacePanePreference(
-                    id: 'pane:right',
-                    tabIds: <String>['draft:right'],
-                    activeTabId: 'draft:right',
-                  ),
+                  second: nestedSplit
+                      ? const WorkspaceSplitPreference(
+                          id: 'split:right',
+                          axis: WorkspaceSplitAxis.vertical,
+                          ratio: 0.5,
+                          first: WorkspacePanePreference(
+                            id: 'pane:right',
+                            tabIds: <String>['draft:right'],
+                            activeTabId: 'draft:right',
+                          ),
+                          second: WorkspacePanePreference(
+                            id: 'pane:bottom',
+                            tabIds: <String>['draft:bottom'],
+                            activeTabId: 'draft:bottom',
+                          ),
+                        )
+                      : const WorkspacePanePreference(
+                          id: 'pane:right',
+                          tabIds: <String>['draft:right'],
+                          activeTabId: 'draft:right',
+                        ),
                 ),
-                focusedPaneId: 'pane:right',
+                focusedPaneId: nestedSplit ? 'pane:bottom' : 'pane:right',
               ),
             }
           : const <String, SessionTabPreference>{},
@@ -1575,6 +1813,23 @@ Widget _chat(ThemeMode mode, List<TimelineEventDto> events) => ProviderScope(
   ),
 );
 
+Widget _chatItems(
+  ThemeMode mode,
+  List<ChatItem> items, {
+  required bool busy,
+}) => ProviderScope(
+  overrides: [
+    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+  ],
+  child: _material(
+    mode,
+    TickerMode(
+      enabled: false,
+      child: ChatTimelineView(items: items, busy: busy),
+    ),
+  ),
+);
+
 Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
   overrides: [
     externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
@@ -1699,7 +1954,9 @@ Widget _globalSettings(ThemeMode mode) {
       RemoteDaemonProfile(
         id: 'production',
         label: 'Production daemon',
-        websocketUri: Uri.parse('wss://coder.example.com/ws'),
+        connections: directHostConnections(
+          Uri.parse('wss://coder.example.com/ws'),
+        ),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -1731,8 +1988,8 @@ final class _UnusedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => throw StateError('Golden profiles do not auto-connect.');

@@ -1,4 +1,14 @@
 tags:
+  feature_test__daemon_relay__unit:
+  feature_test__daemon_relay__widget:
+  feature_test__daemon_relay__platformSmoke:
+  feature_scenario__daemon_relay__failover__e2e:
+  feature_scenario__daemon_relay__pairing__e2e:
+  feature_scenario__daemon_relay__revocation__e2e:
+  feature_scenario__daemon_relay__relay_attachment__e2e:
+  feature_test__daemon_relay__e2e:
+  route_test__advanced_new_host_route__widget:
+  route_test__daemon_devices_route__widget:
   feature_test__session_goal__widget:
   feature_test__session_goal__e2e:
   feature_scenario__session_goal__multi_turn_completion_reconnect__e2e:

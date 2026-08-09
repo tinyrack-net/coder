@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:client/client.dart';
 
@@ -44,15 +46,84 @@ abstract interface class RemoteHostCredentialStore {
   Future<void> deleteAllBearerTokens();
 }
 
+/// Stores daemon-scoped relay device identities in platform secure storage.
+abstract interface class RelayHostCredentialStore {
+  /// Reads one relay device credential by its opaque storage key.
+  Future<RelayHostCredential?> readRelayCredential(String credentialKey);
+
+  /// Writes one relay device credential by its opaque storage key.
+  Future<void> writeRelayCredential(
+    String credentialKey,
+    RelayHostCredential credential,
+  );
+
+  /// Deletes one relay device identity.
+  Future<void> deleteRelayCredential(String credentialKey);
+
+  /// Deletes every relay device identity owned by this app.
+  Future<void> deleteAllRelayCredentials();
+}
+
 /// Opens one typed daemon API without owning profile persistence.
 abstract interface class HostClientFactory {
   /// Connects and completes after the daemon handshake succeeds.
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   });
+}
+
+/// Consumes one fragment-protected relay pairing link.
+abstract interface class HostRelayPairer {
+  /// Registers a daemon-scoped device identity and returns persisted material.
+  Future<RelayPairingResult> pair({
+    required Uri pairingUrl,
+    required String deviceId,
+    required String deviceName,
+    required String connectionId,
+    required String credentialKey,
+  });
+}
+
+/// Cancelable periodic path probe owned by one host runtime.
+abstract interface class HostPathProbeTask {
+  /// Stops future callbacks.
+  void cancel();
+}
+
+/// Schedules deterministic host-path maintenance outside business logic.
+abstract interface class HostPathProbeScheduler {
+  /// Invokes [callback] every [interval] until the returned task is canceled.
+  HostPathProbeTask periodic(
+    Duration interval,
+    Future<void> Function() callback,
+  );
+}
+
+/// Production timer-backed probe scheduler.
+final class SystemHostPathProbeScheduler implements HostPathProbeScheduler {
+  /// Creates the system scheduler.
+  const SystemHostPathProbeScheduler();
+
+  @override
+  HostPathProbeTask periodic(
+    Duration interval,
+    Future<void> Function() callback,
+  ) => _TimerHostPathProbeTask(interval, callback);
+}
+
+final class _TimerHostPathProbeTask implements HostPathProbeTask {
+  _TimerHostPathProbeTask(
+    Duration interval,
+    Future<void> Function() callback,
+  ) : _timer = Timer.periodic(interval, (_) => unawaited(callback()));
+
+  final Timer _timer;
+
+  @override
+  void cancel() => _timer.cancel();
 }
 
 /// Running app-owned daemon information passed to the host registry.
@@ -128,7 +199,8 @@ final class MemoryAppStore
     implements
         AppSettingsRepository,
         RemoteHostRepository,
-        RemoteHostCredentialStore {
+        RemoteHostCredentialStore,
+        RelayHostCredentialStore {
   /// Creates an in-memory store.
   MemoryAppStore({
     this.settings = const AppSettings(),
@@ -154,6 +226,10 @@ final class MemoryAppStore
   /// Current bearer tokens keyed by profile ID.
   final Map<String, String> tokens;
 
+  /// Relay identities keyed independently from direct bearer tokens.
+  final Map<String, RelayHostCredential> relayCredentials =
+      <String, RelayHostCredential>{};
+
   @override
   Future<void> clear() async {
     settings = factoryDefaults;
@@ -164,8 +240,16 @@ final class MemoryAppStore
   Future<void> deleteAllBearerTokens() async => tokens.clear();
 
   @override
+  Future<void> deleteAllRelayCredentials() async => relayCredentials.clear();
+
+  @override
   Future<void> deleteBearerToken(String profileId) async {
     tokens.remove(profileId);
+  }
+
+  @override
+  Future<void> deleteRelayCredential(String credentialKey) async {
+    relayCredentials.remove(credentialKey);
   }
 
   @override
@@ -182,6 +266,11 @@ final class MemoryAppStore
 
   @override
   Future<String?> readBearerToken(String profileId) async => tokens[profileId];
+
+  @override
+  Future<RelayHostCredential?> readRelayCredential(
+    String credentialKey,
+  ) async => relayCredentials[credentialKey];
 
   @override
   Future<void> saveSettings(AppSettings settings) async {
@@ -201,5 +290,13 @@ final class MemoryAppStore
   @override
   Future<void> writeBearerToken(String profileId, String token) async {
     tokens[profileId] = token;
+  }
+
+  @override
+  Future<void> writeRelayCredential(
+    String credentialKey,
+    RelayHostCredential credential,
+  ) async {
+    relayCredentials[credentialKey] = credential;
   }
 }

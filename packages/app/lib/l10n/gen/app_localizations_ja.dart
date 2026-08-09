@@ -537,6 +537,79 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appSettingsAddRemote => 'Add remote daemon';
 
   @override
+  String get relayPairTitle => 'デバイスを接続';
+
+  @override
+  String get relayPairDescription =>
+      'daemon に表示されたワンタイムリンクを貼り付けてください。コードとファイルは relay 経由でもエンドツーエンドで暗号化されます。';
+
+  @override
+  String get relayPairLink => '接続リンク';
+
+  @override
+  String get relayPairDeviceName => 'このデバイスの名前';
+
+  @override
+  String get relayPairAction => '接続';
+
+  @override
+  String get relayPairScan => 'QR コードをスキャン';
+
+  @override
+  String get relayPairQrSemantics => 'ワンタイムデバイス接続リンクの QR コード';
+
+  @override
+  String relayPairInvalid(String appDisplayName) {
+    return '有効な $appDisplayName 接続リンクを入力してください。';
+  }
+
+  @override
+  String get relayPairExpired => 'このリンクは期限切れか使用済みです。daemon で新しいリンクを作成してください。';
+
+  @override
+  String get relayAdvancedDirect => '高度な直接接続';
+
+  @override
+  String get relayDevicesTitle => '接続済みデバイス';
+
+  @override
+  String get relayDevicesDescription => '新しいデバイス用の10分間リンクを作成するか、不要なデバイスを解除します。';
+
+  @override
+  String get relayCreateLink => '接続リンクを作成';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return '$expiresAtに期限切れ';
+  }
+
+  @override
+  String get relayNoDevices => '承認済みデバイスはありません。';
+
+  @override
+  String get relayRevoke => '解除';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return '$name を解除しますか？';
+  }
+
+  @override
+  String get relayRevokeBody => 'デバイスの現在の relay 接続は直ちに終了します。再接続には新しいリンクが必要です。';
+
+  @override
+  String get relayPathDirect => '直接';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => '接続の詳細';
+
+  @override
+  String get relayApprovedDevices => 'デバイス';
+
+  @override
   String get appSettingsNoRemotes => 'No remote daemons are saved.';
 
   @override
@@ -1888,4 +1961,61 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerDropFilesHere => 'ここにファイルをドロップ';
+
+  @override
+  String get chatToolActionRead => 'ファイルを読む';
+
+  @override
+  String get chatToolActionList => 'ファイル一覧を見る';
+
+  @override
+  String get chatToolActionSearch => '検索';
+
+  @override
+  String get chatToolActionEdit => 'ファイルを編集';
+
+  @override
+  String get chatToolActionRun => 'コマンドを実行';
+
+  @override
+  String get chatToolActionDelegate => 'エージェントを調整';
+
+  @override
+  String get chatToolActionPlan => '計画を更新';
+
+  @override
+  String get chatToolActionAsk => '質問する';
+
+  @override
+  String get chatToolActionResource => 'リソースを使用';
+
+  @override
+  String get chatToolActionTools => 'ツールを探す';
+
+  @override
+  String get chatToolActionClock => '待機';
+
+  @override
+  String get chatToolActionContext => 'コンテキストを管理';
+
+  @override
+  String get chatToolActionImage => '画像を見る';
+
+  @override
+  String get chatToolActionGeneric => 'ツールを使用';
+
+  @override
+  String get chatToolStatusFailed => '失敗';
+
+  @override
+  String get chatToolStatusDenied => '拒否';
+
+  @override
+  String get chatToolDetailsTool => 'ツール';
+
+  @override
+  String get chatToolDetailsRequest => 'リクエスト';
+
+  @override
+  String get chatToolDetailsResult => '結果';
 }

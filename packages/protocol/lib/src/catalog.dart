@@ -2,6 +2,7 @@ import 'package:protocol/src/features/agents/procedures.dart';
 import 'package:protocol/src/features/mcp/procedures.dart';
 import 'package:protocol/src/features/prompts/procedures.dart';
 import 'package:protocol/src/features/providers/procedures.dart';
+import 'package:protocol/src/features/relay/procedures.dart';
 import 'package:protocol/src/features/sessions/procedures.dart';
 import 'package:protocol/src/features/system/procedures.dart';
 import 'package:protocol/src/features/terminals/procedures.dart';
@@ -16,6 +17,7 @@ final List<RpcProcedureDescriptor> rpcProcedures =
       ...agentsProcedures,
       ...promptsProcedures,
       ...providersProcedures,
+      ...relayProcedures,
       ...mcpProcedures,
       ...sessionsProcedures,
       ...terminalsProcedures,
@@ -27,6 +29,7 @@ final List<RpcNotificationDescriptor> rpcNotifications =
       ...agentsNotifications,
       ...promptsNotifications,
       ...providersNotifications,
+      ...relayNotifications,
       ...mcpNotifications,
       ...sessionsNotifications,
       ...terminalsNotifications,

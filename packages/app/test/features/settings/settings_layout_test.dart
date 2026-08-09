@@ -194,6 +194,143 @@ void main() {
     expect(find.text('Detail'), findsNothing);
   });
 
+  testWidgets('collection rows share the sidebar inset and vertical rhythm', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Column(
+          children: <Widget>[
+            SettingsPaneHeader.list(title: 'Projects'),
+            Expanded(
+              child: SettingsCollectionList(
+                children: <Widget>[
+                  SettingsRow.collection(
+                    title: TRText.inherit('First'),
+                    selected: true,
+                  ),
+                  SettingsRow.collection(
+                    title: TRText.inherit('Second'),
+                    selected: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        width: CoderLayoutMetrics.settingsCollectionWidth,
+      ),
+    );
+
+    final list = tester.widget<ListView>(
+      find.descendant(
+        of: find.byType(SettingsCollectionList),
+        matching: find.byType(ListView),
+      ),
+    );
+    expect(
+      list.padding,
+      const EdgeInsets.symmetric(
+        horizontal: TRSpacing.medium,
+        vertical: TRSpacing.extraSmall,
+      ),
+    );
+
+    final first = tester.getRect(find.widgetWithText(CoderListRow, 'First'));
+    final second = tester.getRect(find.widgetWithText(CoderListRow, 'Second'));
+    expect(first.left, TRSpacing.medium);
+    expect(
+      first.right,
+      CoderLayoutMetrics.settingsCollectionWidth - TRSpacing.medium,
+    );
+    expect(second.top - first.bottom, TRSpacing.extraSmall);
+    expect(
+      tester.getRect(find.text('First')).left,
+      moreOrLessEquals(
+        tester.getRect(find.text('Projects')).left,
+        epsilon: 0.5,
+      ),
+    );
+  });
+
+  testWidgets('compact collections keep the same row inset and alignment', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        SettingsListDetailLayout(
+          collection: const Column(
+            children: <Widget>[
+              SettingsPaneHeader.list(title: 'Projects'),
+              Expanded(
+                child: SettingsCollectionList(
+                  children: <Widget>[
+                    SettingsRow.collection(
+                      title: TRText.inherit('Coder'),
+                      selected: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          detail: const Text('Detail'),
+          detailVisible: false,
+          onBack: () {},
+        ),
+        width: 390,
+      ),
+    );
+
+    final row = tester.getRect(find.widgetWithText(CoderListRow, 'Coder'));
+    expect(row.left, TRSpacing.medium);
+    expect(row.right, 390 - TRSpacing.medium);
+    expect(
+      tester.getRect(find.text('Coder')).left,
+      moreOrLessEquals(
+        tester.getRect(find.text('Projects')).left,
+        epsilon: 0.5,
+      ),
+    );
+  });
+
+  testWidgets('list-detail skeleton uses the collection spacing contract', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const SettingsSkeletonLayout.listDetail(
+          semanticLabel: 'Loading settings',
+        ),
+      ),
+    );
+
+    final list = tester.widget<ListView>(
+      find.descendant(
+        of: find.byType(SettingsCollectionList),
+        matching: find.byType(ListView),
+      ),
+    );
+    expect(
+      list.padding,
+      const EdgeInsets.symmetric(
+        horizontal: TRSpacing.medium,
+        vertical: TRSpacing.extraSmall,
+      ),
+    );
+    expect(
+      find.descendant(
+        of: find.byType(SettingsCollectionList),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Padding &&
+              widget.padding == SettingsRow.collectionContentPadding,
+        ),
+      ),
+      findsNWidgets(4),
+    );
+  });
+
   group('SettingsScaffold', () {
     testWidgets('caps its content and centres it in a wide pane', (
       tester,

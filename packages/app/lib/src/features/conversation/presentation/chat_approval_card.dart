@@ -48,11 +48,8 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        TRSpacing.large,
-        TRSpacing.small,
-        TRSpacing.large,
-        0,
+      padding: const EdgeInsets.symmetric(
+        vertical: TRSpacing.extraSmall,
       ),
       child: TRCard(
         padding: TRCardPadding.none,

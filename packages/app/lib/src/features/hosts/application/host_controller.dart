@@ -55,6 +55,8 @@ class HostRegistryController extends _$HostRegistryController {
       ids: ref.watch(appIdGeneratorProvider),
       clock: ref.watch(appClockProvider),
       delay: services.delay,
+      pathProbeScheduler: services.pathProbeScheduler,
+      relayPairer: services.relayPairer,
       clientKind: services.clientKind,
     );
     ref.onDispose(() => unawaited(_dispose()));
@@ -75,6 +77,19 @@ class HostRegistryController extends _$HostRegistryController {
     label: label,
     address: address,
     bearerToken: bearerToken,
+    autoConnect: autoConnect,
+  );
+
+  /// Registers a daemon from a one-time pairing link.
+  Future<RemoteDaemonProfile> pairRemote({
+    required Uri pairingUrl,
+    required String deviceName,
+    String? label,
+    bool autoConnect = true,
+  }) => _registry.pairRemote(
+    pairingUrl: pairingUrl,
+    deviceName: deviceName,
+    label: label,
     autoConnect: autoConnect,
   );
 

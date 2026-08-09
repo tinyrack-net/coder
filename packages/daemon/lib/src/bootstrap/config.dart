@@ -34,6 +34,38 @@ const Set<String> defaultAllowedOrigins = <String>{
   'https://coder.tinyrack.net',
 };
 
+/// Certificate validation mode for a daemon's outbound relay connection.
+enum RelayTlsPolicy {
+  /// Require the platform's public trust chain.
+  systemTrust,
+
+  /// Allow an invalid certificate for an explicitly configured relay.
+  allowInvalidCertificate,
+}
+
+/// Typed relay settings for one daemon process.
+final class RelayDaemonConfig {
+  /// Creates relay settings, defaulting to the official Tinyrack endpoint.
+  const RelayDaemonConfig({
+    this.enabled = false,
+    Uri? endpoint,
+    this.tlsPolicy = RelayTlsPolicy.systemTrust,
+  }) : endpointOverride = endpoint;
+
+  /// Whether the daemon opens an outbound relay control connection.
+  final bool enabled;
+
+  /// Optional self-hosted endpoint; absent means the official endpoint.
+  final Uri? endpointOverride;
+
+  /// Certificate validation policy for [endpoint].
+  final RelayTlsPolicy tlsPolicy;
+
+  /// Effective outbound WebSocket URI.
+  Uri get endpoint =>
+      endpointOverride ?? Uri.parse('wss://relay.tinyrack.net/v1/ws');
+}
+
 /// DaemonConfig defines a public contract.
 class DaemonConfig {
   /// Creates a [DaemonConfig].
@@ -48,6 +80,7 @@ class DaemonConfig {
     this.version = packageVersion,
     this.useEnvironmentCredentials = true,
     this.allowedOrigins = defaultAllowedOrigins,
+    this.relay = const RelayDaemonConfig(),
   }) : configDirectory = configDirectory ?? homeDirectory;
 
   /// Creates a [DaemonConfig].
@@ -65,6 +98,15 @@ class DaemonConfig {
         allowedOrigins: <String>{
           ...(value['allowedOrigins']! as List<Object?>).cast<String>(),
         },
+        relay: RelayDaemonConfig(
+          enabled: value['relayEnabled']! as bool,
+          endpoint: value['relayEndpoint'] == null
+              ? null
+              : Uri.parse(value['relayEndpoint']! as String),
+          tlsPolicy: RelayTlsPolicy.values.byName(
+            value['relayTlsPolicy']! as String,
+          ),
+        ),
       );
 
   /// Creates a [DaemonConfig].
@@ -87,6 +129,7 @@ class DaemonConfig {
       allowedOrigins: parseAllowedOrigins(
         values['TINYRACK_CODER_ALLOWED_ORIGINS'],
       ),
+      relay: _relayConfigFromEnvironment(values),
     );
   }
 
@@ -126,6 +169,9 @@ class DaemonConfig {
   /// Browser origins permitted to call the daemon.
   final Set<String> allowedOrigins;
 
+  /// Outbound relay connection settings.
+  final RelayDaemonConfig relay;
+
   /// The copyWith public API member.
   DaemonConfig copyWith({
     String? homeDirectory,
@@ -137,6 +183,7 @@ class DaemonConfig {
     String? bearerToken,
     bool? useEnvironmentCredentials,
     Set<String>? allowedOrigins,
+    RelayDaemonConfig? relay,
   }) => DaemonConfig(
     homeDirectory: homeDirectory ?? this.homeDirectory,
     configDirectory: configDirectory ?? this.configDirectory,
@@ -149,6 +196,7 @@ class DaemonConfig {
     useEnvironmentCredentials:
         useEnvironmentCredentials ?? this.useEnvironmentCredentials,
     allowedOrigins: allowedOrigins ?? this.allowedOrigins,
+    relay: relay ?? this.relay,
   );
 
   /// The toIsolateMessage public API member.
@@ -163,7 +211,37 @@ class DaemonConfig {
     'version': version,
     'useEnvironmentCredentials': useEnvironmentCredentials,
     'allowedOrigins': allowedOrigins.toList(growable: false),
+    'relayEnabled': relay.enabled,
+    'relayEndpoint': relay.endpointOverride?.toString(),
+    'relayTlsPolicy': relay.tlsPolicy.name,
   };
+}
+
+RelayDaemonConfig _relayConfigFromEnvironment(Map<String, String> values) {
+  final enabledValue = values['TINYRACK_CODER_RELAY']?.trim().toLowerCase();
+  if (enabledValue != null &&
+      enabledValue != 'true' &&
+      enabledValue != 'false') {
+    throw const FormatException('TINYRACK_CODER_RELAY must be true or false.');
+  }
+  final endpointValue = values['TINYRACK_CODER_RELAY_ENDPOINT']?.trim();
+  final endpoint = endpointValue == null || endpointValue.isEmpty
+      ? null
+      : Uri.parse(endpointValue);
+  if (endpoint != null && endpoint.scheme != 'wss' && endpoint.scheme != 'ws') {
+    throw const FormatException('Relay endpoint must use ws or wss.');
+  }
+  final tlsValue = values['TINYRACK_CODER_RELAY_TLS']?.trim();
+  final tlsPolicy = switch (tlsValue) {
+    null || '' || 'system-trust' => RelayTlsPolicy.systemTrust,
+    'allow-invalid-certificate' => RelayTlsPolicy.allowInvalidCertificate,
+    _ => throw const FormatException('Invalid TINYRACK_CODER_RELAY_TLS value.'),
+  };
+  return RelayDaemonConfig(
+    enabled: enabledValue == 'true',
+    endpoint: endpoint,
+    tlsPolicy: tlsPolicy,
+  );
 }
 
 /// Parses a comma-separated origin allowlist.

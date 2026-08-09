@@ -1054,6 +1054,138 @@ abstract class AppLocalizations {
   /// **'Add remote daemon'**
   String get appSettingsAddRemote;
 
+  /// No description provided for @relayPairTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a device'**
+  String get relayPairTitle;
+
+  /// No description provided for @relayPairDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.'**
+  String get relayPairDescription;
+
+  /// No description provided for @relayPairLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing link'**
+  String get relayPairLink;
+
+  /// No description provided for @relayPairDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device\'s name'**
+  String get relayPairDeviceName;
+
+  /// No description provided for @relayPairAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get relayPairAction;
+
+  /// No description provided for @relayPairScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get relayPairScan;
+
+  /// No description provided for @relayPairQrSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code for the one-time device connection link'**
+  String get relayPairQrSemantics;
+
+  /// No description provided for @relayPairInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid {appDisplayName} pairing link.'**
+  String relayPairInvalid(String appDisplayName);
+
+  /// No description provided for @relayPairExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This pairing link expired or was already used. Create a new link on the daemon.'**
+  String get relayPairExpired;
+
+  /// No description provided for @relayAdvancedDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced direct connection'**
+  String get relayAdvancedDirect;
+
+  /// No description provided for @relayDevicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected devices'**
+  String get relayDevicesTitle;
+
+  /// No description provided for @relayDevicesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a ten-minute link for a new device or remove a device that should no longer connect.'**
+  String get relayDevicesDescription;
+
+  /// No description provided for @relayCreateLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create connection link'**
+  String get relayCreateLink;
+
+  /// No description provided for @relayLinkExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {expiresAt}'**
+  String relayLinkExpires(String expiresAt);
+
+  /// No description provided for @relayNoDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices are approved.'**
+  String get relayNoDevices;
+
+  /// No description provided for @relayRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get relayRevoke;
+
+  /// No description provided for @relayRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke {name}?'**
+  String relayRevokeTitle(String name);
+
+  /// No description provided for @relayRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The device\'s live relay connection ends immediately. A new pairing link is required to reconnect.'**
+  String get relayRevokeBody;
+
+  /// No description provided for @relayPathDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get relayPathDirect;
+
+  /// No description provided for @relayPathRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay'**
+  String get relayPathRelay;
+
+  /// No description provided for @relayConnectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection details'**
+  String get relayConnectionDetails;
+
+  /// No description provided for @relayApprovedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get relayApprovedDevices;
+
   /// Empty state of the remote daemon list.
   ///
   /// In en, this message translates to:
@@ -3393,6 +3525,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop files here'**
   String get composerDropFilesHere;
+
+  /// No description provided for @chatToolActionRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read file'**
+  String get chatToolActionRead;
+
+  /// No description provided for @chatToolActionList.
+  ///
+  /// In en, this message translates to:
+  /// **'List files'**
+  String get chatToolActionList;
+
+  /// No description provided for @chatToolActionSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get chatToolActionSearch;
+
+  /// No description provided for @chatToolActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit files'**
+  String get chatToolActionEdit;
+
+  /// No description provided for @chatToolActionRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run command'**
+  String get chatToolActionRun;
+
+  /// No description provided for @chatToolActionDelegate.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate agents'**
+  String get chatToolActionDelegate;
+
+  /// No description provided for @chatToolActionPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Update plan'**
+  String get chatToolActionPlan;
+
+  /// No description provided for @chatToolActionAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question'**
+  String get chatToolActionAsk;
+
+  /// No description provided for @chatToolActionResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Use resource'**
+  String get chatToolActionResource;
+
+  /// No description provided for @chatToolActionTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Find tools'**
+  String get chatToolActionTools;
+
+  /// No description provided for @chatToolActionClock.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get chatToolActionClock;
+
+  /// No description provided for @chatToolActionContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage context'**
+  String get chatToolActionContext;
+
+  /// No description provided for @chatToolActionImage.
+  ///
+  /// In en, this message translates to:
+  /// **'View image'**
+  String get chatToolActionImage;
+
+  /// No description provided for @chatToolActionGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Use tool'**
+  String get chatToolActionGeneric;
+
+  /// No description provided for @chatToolStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get chatToolStatusFailed;
+
+  /// No description provided for @chatToolStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get chatToolStatusDenied;
+
+  /// No description provided for @chatToolDetailsTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool'**
+  String get chatToolDetailsTool;
+
+  /// No description provided for @chatToolDetailsRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get chatToolDetailsRequest;
+
+  /// No description provided for @chatToolDetailsResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Result'**
+  String get chatToolDetailsResult;
 }
 
 class _AppLocalizationsDelegate

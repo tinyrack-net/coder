@@ -537,6 +537,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSettingsAddRemote => 'Add remote daemon';
 
   @override
+  String get relayPairTitle => 'Connect a device';
+
+  @override
+  String get relayPairDescription =>
+      'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.';
+
+  @override
+  String get relayPairLink => 'Pairing link';
+
+  @override
+  String get relayPairDeviceName => 'This device\'s name';
+
+  @override
+  String get relayPairAction => 'Connect';
+
+  @override
+  String get relayPairScan => 'Scan QR code';
+
+  @override
+  String get relayPairQrSemantics =>
+      'QR code for the one-time device connection link';
+
+  @override
+  String relayPairInvalid(String appDisplayName) {
+    return 'Enter a valid $appDisplayName pairing link.';
+  }
+
+  @override
+  String get relayPairExpired =>
+      'This pairing link expired or was already used. Create a new link on the daemon.';
+
+  @override
+  String get relayAdvancedDirect => 'Advanced direct connection';
+
+  @override
+  String get relayDevicesTitle => 'Connected devices';
+
+  @override
+  String get relayDevicesDescription =>
+      'Create a ten-minute link for a new device or remove a device that should no longer connect.';
+
+  @override
+  String get relayCreateLink => 'Create connection link';
+
+  @override
+  String relayLinkExpires(String expiresAt) {
+    return 'Expires $expiresAt';
+  }
+
+  @override
+  String get relayNoDevices => 'No devices are approved.';
+
+  @override
+  String get relayRevoke => 'Revoke';
+
+  @override
+  String relayRevokeTitle(String name) {
+    return 'Revoke $name?';
+  }
+
+  @override
+  String get relayRevokeBody =>
+      'The device\'s live relay connection ends immediately. A new pairing link is required to reconnect.';
+
+  @override
+  String get relayPathDirect => 'Direct';
+
+  @override
+  String get relayPathRelay => 'Relay';
+
+  @override
+  String get relayConnectionDetails => 'Connection details';
+
+  @override
+  String get relayApprovedDevices => 'Devices';
+
+  @override
   String get appSettingsNoRemotes => 'No remote daemons are saved.';
 
   @override
@@ -1892,4 +1969,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerDropFilesHere => 'Drop files here';
+
+  @override
+  String get chatToolActionRead => 'Read file';
+
+  @override
+  String get chatToolActionList => 'List files';
+
+  @override
+  String get chatToolActionSearch => 'Search';
+
+  @override
+  String get chatToolActionEdit => 'Edit files';
+
+  @override
+  String get chatToolActionRun => 'Run command';
+
+  @override
+  String get chatToolActionDelegate => 'Coordinate agents';
+
+  @override
+  String get chatToolActionPlan => 'Update plan';
+
+  @override
+  String get chatToolActionAsk => 'Ask a question';
+
+  @override
+  String get chatToolActionResource => 'Use resource';
+
+  @override
+  String get chatToolActionTools => 'Find tools';
+
+  @override
+  String get chatToolActionClock => 'Wait';
+
+  @override
+  String get chatToolActionContext => 'Manage context';
+
+  @override
+  String get chatToolActionImage => 'View image';
+
+  @override
+  String get chatToolActionGeneric => 'Use tool';
+
+  @override
+  String get chatToolStatusFailed => 'Failed';
+
+  @override
+  String get chatToolStatusDenied => 'Denied';
+
+  @override
+  String get chatToolDetailsTool => 'Tool';
+
+  @override
+  String get chatToolDetailsRequest => 'Request';
+
+  @override
+  String get chatToolDetailsResult => 'Result';
 }

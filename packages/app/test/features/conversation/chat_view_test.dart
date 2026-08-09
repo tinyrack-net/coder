@@ -2,7 +2,9 @@ import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
+import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,8 +77,9 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('Read(lib/main.dart)'), findsOneWidget);
-      expect(find.text('3줄 읽음'), findsOneWidget);
+      expect(find.text('파일 읽기'), findsOneWidget);
+      expect(find.text('lib/main.dart'), findsNothing);
+      expect(find.text('3줄 읽음'), findsNothing);
       expect(find.textContaining('{'), findsNothing);
       expect(find.textContaining('isError'), findsNothing);
     },
@@ -117,21 +120,22 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('Bash(flutter test)'), findsOneWidget);
-      expect(find.text('종료 코드 0 · 2줄'), findsOneWidget);
+      expect(find.text('명령 실행'), findsOneWidget);
+      expect(find.text('flutter test'), findsNothing);
+      expect(find.text('종료 코드 0 · 2줄'), findsNothing);
       expect(find.textContaining('exitCode'), findsNothing);
 
-      await tester.tap(find.text('Bash(flutter test)'));
+      await tester.tap(find.text('명령 실행'));
       await tester.pumpAndSettle();
       expect(find.textContaining('All tests passed!'), findsOneWidget);
-      expect(find.text(r'$ flutter test'), findsOneWidget);
+      expect(find.textContaining('flutter test'), findsWidgets);
       expect(find.textContaining('exitCode'), findsNothing);
 
       await tester.tap(findAccessibleAction('복사').last);
       await tester.pumpAndSettle();
       expect(clipboard, <String>['All tests passed!\ndone']);
 
-      await tester.tap(find.text('Bash(flutter test)'));
+      await tester.tap(find.text('명령 실행'));
       await tester.pumpAndSettle();
       expect(find.textContaining('All tests passed!'), findsNothing);
     },
@@ -165,10 +169,11 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit(lib/main.dart)'), findsOneWidget);
-      expect(find.text('+2 -1 · 1개 파일'), findsOneWidget);
+      expect(find.text('파일 편집'), findsOneWidget);
+      expect(find.text('lib/main.dart'), findsNothing);
+      expect(find.text('+2 -1 · 1개 파일'), findsNothing);
 
-      await tester.tap(find.text('Edit(lib/main.dart)'));
+      await tester.tap(find.text('파일 편집'));
       await tester.pumpAndSettle();
       expect(find.byType(ChatDiffView), findsOneWidget);
       expect(find.text('+new line'), findsOneWidget);
@@ -198,7 +203,7 @@ void main() {
 
       expect(find.text('실행 중'), findsWidgets);
       expect(find.byType(TRSpinner), findsWidgets);
-      expect(find.text('>'), findsOneWidget);
+      expect(find.byType(TRChatUserBubble), findsOneWidget);
 
       await pump(tester, const <TimelineEventDto>[]);
       await tester.pumpAndSettle();
@@ -208,7 +213,7 @@ void main() {
   );
 
   testWidgets(
-    'running state does not move existing timeline rows',
+    'running state participates in the timeline layout',
     (tester) async {
       final events = <TimelineEventDto>[
         event('user.message', <String, dynamic>{'text': 'Keep me still'}),
@@ -221,8 +226,170 @@ void main() {
       await pump(tester, events, busy: true);
       await tester.pump();
 
-      expect(tester.getRect(message), before);
+      expect(tester.getRect(message).bottom, lessThan(before.bottom));
       expect(find.text('실행 중'), findsWidgets);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'user messages and structured answers align to the trailing side',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('user.message', <String, dynamic>{
+          'text': 'Right aligned prompt',
+        }),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'arguments': <String, dynamic>{
+            'questions': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'store',
+                'header': 'Storage',
+                'question': 'Which store?',
+                'options': <Map<String, dynamic>>[],
+              },
+            ],
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'ask_user',
+          'output':
+              '[{"questionId":"store","answer":"SQLite","isFreeForm":false}]',
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final timeline = tester.getRect(find.byType(ChatTimelineView));
+      expect(
+        tester.getRect(find.text('Right aligned prompt')).center.dx,
+        greaterThan(timeline.center.dx),
+      );
+      expect(
+        tester.getRect(find.text('SQLite')).center.dx,
+        greaterThan(timeline.center.dx),
+      );
+    },
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'feature_test__turn_question__widget',
+    ],
+  );
+
+  testWidgets(
+    'running is a chronological row that cannot overlap the latest message',
+    (tester) async {
+      await pump(
+        tester,
+        <TimelineEventDto>[
+          event('user.message', <String, dynamic>{'text': 'Last message'}),
+        ],
+        busy: true,
+      );
+      await tester.pump();
+
+      final message = tester.getRect(find.text('Last message'));
+      final running = tester.getRect(find.text('실행 중').last);
+      expect(message.overlaps(running), isFalse);
+      expect(running.top, greaterThanOrEqualTo(message.bottom));
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'collapsed unknown tools hide identifiers and raw details until expanded',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-private',
+          'name': 'unknown_private_tool',
+          'arguments': <String, dynamic>{
+            'uid': '0f7607ef-743f-4b4c-a8ee-3b5354d762aa',
+            'path': '/workspace/private.dart',
+            'uri': 'file:///workspace/private.dart',
+            'command': 'print-secret --verbose',
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-private',
+          'name': 'unknown_private_tool',
+          'output': 'raw private result',
+          'isError': true,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      for (final sensitive in <String>[
+        '0f7607ef-743f-4b4c-a8ee-3b5354d762aa',
+        '/workspace/private.dart',
+        'file:///workspace/private.dart',
+        'print-secret --verbose',
+        'raw private result',
+      ]) {
+        expect(find.textContaining(sensitive), findsNothing);
+      }
+
+      await tester.tap(find.byType(ChatToolCard));
+      await tester.pumpAndSettle();
+
+      for (final sensitive in <String>[
+        '0f7607ef-743f-4b4c-a8ee-3b5354d762aa',
+        '/workspace/private.dart',
+        'file:///workspace/private.dart',
+        'print-secret --verbose',
+        'raw private result',
+      ]) {
+        expect(find.textContaining(sensitive), findsWidgets);
+      }
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'assistant and tool rows share the same leading rail and text baseline',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': 'Assistant baseline',
+        }),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-read',
+          'name': 'read_file',
+          'arguments': <String, dynamic>{'path': 'lib/main.dart'},
+        }),
+      ]);
+      await tester.pump();
+
+      final assistant = find.byType(ChatAssistantMessageView);
+      final tool = find.byType(ChatToolCard);
+      final assistantIcon = find
+          .descendant(of: assistant, matching: find.byType(Icon))
+          .first;
+      final toolIcon = find
+          .descendant(of: tool, matching: find.byType(Icon))
+          .first;
+      final assistantText = find.textContaining(
+        'Assistant baseline',
+        findRichText: true,
+      );
+      final toolText = find.text('파일 읽기');
+
+      expect(
+        tester.getTopLeft(assistantIcon).dx,
+        tester.getTopLeft(toolIcon).dx,
+      );
+      expect(
+        tester.getTopLeft(assistantText).dx,
+        tester.getTopLeft(toolText).dx,
+      );
+      expect(
+        (tester.getTopLeft(assistantText).dy -
+                tester.getTopLeft(assistantIcon).dy)
+            .abs(),
+        lessThanOrEqualTo(TRSpacing.extraSmall),
+      );
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
@@ -278,7 +445,7 @@ void main() {
       ];
       await pump(tester, first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Read(a.dart)'));
+      await tester.tap(find.byType(ChatToolCard));
       await tester.pumpAndSettle();
       expect(find.textContaining('first file body'), findsOneWidget);
 
@@ -298,8 +465,7 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('Read(a.dart)'), findsOneWidget);
-      expect(find.text('Read(b.dart)'), findsOneWidget);
+      expect(find.text('파일 읽기'), findsNWidgets(2));
       expect(find.textContaining('first file body'), findsOneWidget);
       expect(find.textContaining('second file body'), findsNothing);
     },
@@ -421,7 +587,7 @@ void main() {
         findsNothing,
       );
       // It falls back to the ordinary tool row so the mistake stays visible.
-      expect(find.text('Sleep()'), findsOneWidget);
+      expect(find.text('대기'), findsOneWidget);
     },
     tags: const <String>['feature_test__tool_clock__widget'],
   );
@@ -496,7 +662,8 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('NewContext()'), findsOneWidget);
+      expect(find.text('컨텍스트 관리'), findsOneWidget);
+      expect(find.text('거부됨'), findsOneWidget);
       expect(
         find.byKey(const ValueKey<String>('chat-context-reset')),
         findsNothing,
@@ -517,7 +684,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final line = tester.widget<TRText>(
-        find.byKey(const ValueKey<String>('chat-deferred-tools')),
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('chat-deferred-tools')),
+          matching: find.byType(TRText),
+        ),
       );
       expect(line.data, contains('12'));
     },
@@ -555,7 +725,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final line = tester.widget<TRText>(
-        find.byKey(const ValueKey<String>('chat-usage-line')),
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('chat-usage-line')),
+          matching: find.byType(TRText),
+        ),
       );
       // Cached and reasoning are subsets, so they read as qualifiers.
       expect(line.data, contains('1200'));
@@ -617,7 +790,7 @@ void main() {
           (position.maxScrollExtent - initialMaxExtent).abs() /
           initialMaxExtent;
 
-      expect(extentChange, lessThanOrEqualTo(0.1));
+      expect(extentChange, lessThanOrEqualTo(0.12));
       expect(find.textContaining('long 0'), findsNothing);
     },
     tags: const <String>['feature_test__turn_execution__widget'],

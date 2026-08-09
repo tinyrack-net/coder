@@ -7,6 +7,7 @@ final Map<String, List<RpcProcedureDescriptor>> daemonRpcProcedureGroups =
       'agents': agentsProcedures,
       'prompts': promptsProcedures,
       'providers': providersProcedures,
+      'relay': relayProcedures,
       'mcp': mcpProcedures,
       'sessions': sessionsProcedures,
       'terminals': terminalsProcedures,

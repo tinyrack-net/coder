@@ -165,7 +165,7 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'session tab strip is a TRTabs bar whose commands stay square',
+    'session tab strip uses the unified full-bleed TRTabs contract',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -187,13 +187,20 @@ void _registerSessionsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      // The strip is the design system's tab bar, so its inset, its height,
-      // and the tone of the rule below it are upstream contracts covered by
-      // upstream tests. What Coder owns is that the open session reaches it as
-      // a closable tab.
+      // The design system owns the full-bleed strip geometry and selection
+      // indicator. Coder only supplies the selected, closable session tab.
       final strip = find.byKey(const ValueKey('session-tab-strip'));
       expect(strip, findsOneWidget);
       expect(tester.widget<TRTabs>(strip).value, first.id);
+      expect(
+        find.descendant(
+          of: strip,
+          matching: find.byKey(
+            const ValueKey<String>('tr-tabs-indicator-one'),
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: strip,
@@ -285,6 +292,31 @@ void _registerSessionsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
       await tester.pumpAndSettle();
       expect(find.byType(TRSplitView), findsOneWidget);
+
+      final splitDown = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'workspace-split-down',
+            ),
+      );
+      await tester.tap(splitDown.last);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(3));
+      expect(find.byType(TRSplitView), findsNWidgets(2));
+      final verticalSplit = find.byWidgetPredicate(
+        (widget) => widget is TRSplitView && widget.axis == Axis.vertical,
+      );
+      final verticalSeparator = find.descendant(
+        of: verticalSplit,
+        matching: find.byKey(const ValueKey<String>('tr-split-view-separator')),
+      );
+      await tester.drag(
+        verticalSeparator,
+        const Offset(0, TRSpacing.threeExtraLarge),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<TRSplitView>(verticalSplit).ratio, greaterThan(0.5));
 
       await tester.binding.setSurfaceSize(const Size(390, 760));
       await tester.pumpAndSettle();

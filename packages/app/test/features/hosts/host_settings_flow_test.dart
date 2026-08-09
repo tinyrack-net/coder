@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:client/client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,60 @@ import '../../support/fake_coder_api.dart';
 import '../../support/localization.dart';
 
 void main() {
+  testWidgets(
+    'pairing link registers a daemon-scoped relay device',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      final pairer = _Pairer();
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _PairClients(
+              FakeCoderApi(serverInfo: _serverInfo('relay-server')),
+            ),
+            clientKind: 'phone',
+            relayPairer: pairer,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('고급 직접 연결'), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('relay-scan-qr')), findsNothing);
+      debugDefaultTargetPlatformOverride = null;
+      await tester.enterText(_field('연결 링크'), 'https://example.test/bad');
+      await tester.tap(find.byKey(const ValueKey<String>('relay-pair-submit')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('올바른 Tinyrack Coder 연결 링크'),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        _field('연결 링크'),
+        'https://coder.tinyrack.net/pair#offer=opaque',
+      );
+      await tester.enterText(_field('이 기기 이름'), 'My phone');
+      await tester.tap(find.byKey(const ValueKey<String>('relay-pair-submit')));
+      await tester.pumpAndSettle();
+
+      expect(pairer.deviceName, 'My phone');
+      expect(store.profiles.single.serverId, 'relay-server');
+      expect(store.profiles.single.relayConnections, hasLength(1));
+      expect(store.relayCredentials, hasLength(1));
+    },
+    tags: const <String>['feature_test__daemon_relay__widget'],
+  );
+
   testWidgets('restores the last selected host even while it is offline', (
     tester,
   ) async {
@@ -29,7 +85,9 @@ void main() {
         RemoteDaemonProfile(
           id: 'offline',
           label: 'Offline daemon',
-          websocketUri: Uri.parse('wss://offline.example/ws'),
+          connections: directHostConnections(
+            Uri.parse('wss://offline.example/ws'),
+          ),
           autoConnect: false,
           createdAt: now,
           updatedAt: now,
@@ -99,9 +157,89 @@ void main() {
       expect(find.text('설정'), findsOneWidget);
       expect(find.text('내장 daemon'), findsNothing);
       expect(find.text('네트워크 접근 허용'), findsNothing);
-      expect(find.text('원격 daemon 추가'), findsOneWidget);
+      expect(find.text('기기 연결'), findsOneWidget);
     },
     tags: const <String>['feature_test__daemon_exposure__widget'],
+  );
+
+  testWidgets(
+    'approved devices can create a pairing offer and revoke a device',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final now = DateTime.utc(2026, 8, 8);
+      final api = FakeCoderApi(
+        serverInfo: _serverInfo('device-server'),
+        relayPairingOffer: RelayPairingOfferDto(
+          url: 'https://coder.tinyrack.net/pair#offer=test-offer',
+          expiresAt: now.add(const Duration(minutes: 10)),
+        ),
+        relayDevices: <RelayDeviceDto>[
+          RelayDeviceDto(
+            id: 'phone',
+            name: 'My phone',
+            registeredAt: now,
+            lastConnectedAt: now,
+          ),
+        ],
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[
+          RemoteDaemonProfile(
+            id: 'remote',
+            label: 'Remote daemon',
+            serverId: 'device-server',
+            connections: directHostConnections(
+              Uri.parse('wss://daemon.example/v4/ws'),
+            ),
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      await tester.pumpWidget(
+        CoderApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _PairClients(api),
+            clientKind: 'desktop',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      const DaemonDevicesRoute(hostId: 'remote').go(
+        tester.element(find.byType(Navigator).first),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('My phone'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-create-offer')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('offer=test-offer'), findsOneWidget);
+      expect(find.byType(TRQrCode), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(TRQrCode)).label,
+        contains('일회용 기기 연결 링크 QR 코드'),
+      );
+      expect(api.relayEnabled, isTrue);
+
+      await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '해제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '해제').last);
+      await tester.pumpAndSettle();
+      expect(api.revokedRelayDeviceIds, <String>['phone']);
+      expect(find.text('My phone'), findsNothing);
+      semantics.dispose();
+    },
+    tags: const <String>['feature_test__daemon_relay__widget'],
   );
 
   testWidgets(
@@ -126,7 +264,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '원격 daemon 추가'));
+      await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '고급 직접 연결'));
       await tester.pumpAndSettle();
 
       await tester.enterText(_field('이름'), 'Production');
@@ -147,7 +287,10 @@ void main() {
 
       expect(store.profiles.single.label, 'Production');
       expect(store.profiles.single.autoConnect, isFalse);
-      expect(store.tokens[store.profiles.single.id], 'secret-token');
+      expect(
+        store.tokens[store.profiles.single.connections.single.credentialKey],
+        'secret-token',
+      );
       await tester.tap(findAccessibleAction('연결 편집'));
       await tester.pumpAndSettle();
       await tester.enterText(_field('이름'), 'Renamed');
@@ -371,7 +514,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Loopback',
-        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+        connections: directHostConnections(Uri.parse('ws://127.0.0.1:7337/ws')),
         // Auto-connect would leave a retry timer pending past teardown.
         autoConnect: false,
         createdAt: DateTime.utc(2024),
@@ -415,7 +558,7 @@ void main() {
         RemoteDaemonProfile(
           id: id,
           label: '$id daemon',
-          websocketUri: Uri.parse('wss://$id.test/ws'),
+          connections: directHostConnections(Uri.parse('wss://$id.test/ws')),
           autoConnect: autoConnect,
           createdAt: now,
           updatedAt: now,
@@ -475,11 +618,8 @@ void main() {
       findsOneWidget,
     );
     // A failed daemon reports its own message in place of the generic status.
-    // The status sits on its own line under the address, and the assertions
-    // anchor to that break: "재연결 중" contains "연결 중", so an unanchored
-    // match reports whichever daemons happen to be built.
-    expect(find.textContaining('\n연결 중'), findsOneWidget);
-    expect(find.textContaining('\n재연결 중'), findsOneWidget);
+    expect(find.text('연결 중'), findsOneWidget);
+    expect(find.text('재연결 중'), findsOneWidget);
     expect(find.textContaining('bad token'), findsOneWidget);
     // The idle daemon sits below the fold of the settings list.
     await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
@@ -504,13 +644,55 @@ final class _OfflineClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(
     const HostConnectionFailure.network('offline'),
   );
+}
+
+final class _Pairer implements HostRelayPairer {
+  String? deviceName;
+
+  @override
+  Future<RelayPairingResult> pair({
+    required Uri pairingUrl,
+    required String deviceId,
+    required String deviceName,
+    required String connectionId,
+    required String credentialKey,
+  }) async {
+    this.deviceName = deviceName;
+    return RelayPairingResult(
+      connection: RelayHostConnection(
+        id: connectionId,
+        credentialKey: credentialKey,
+        serverId: 'relay-server',
+        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        daemonIdentityPublicKey: List<int>.filled(32, 1),
+      ),
+      credential: RelayHostCredential(
+        deviceId: deviceId,
+        privateKey: List<int>.filled(32, 2),
+      ),
+    );
+  }
+}
+
+final class _PairClients implements HostClientFactory {
+  const _PairClients(this.api);
+
+  final CoderApi api;
+
+  @override
+  Future<CoderApi> connect({
+    required HostConnection connection,
+    required HostConnectionCredential credential,
+    required String clientId,
+    required String clientKind,
+  }) async => api;
 }
 
 /// Stands in for a browser that refuses to explain a failed connection to a
@@ -520,8 +702,8 @@ final class _LocalNetworkUnreachableClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(
@@ -560,11 +742,15 @@ final class _ProfileClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => connections[endpoint.websocketUri.host]!();
+  }) =>
+      connections[(connection as DirectHostConnection)
+          .endpoint
+          .websocketUri
+          .host]!();
 }
 
 Finder _field(String label) => find.descendant(

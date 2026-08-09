@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/src/features/hosts/application/host_path_policy.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
@@ -10,6 +11,11 @@ final class _RuntimeResource {
   int generation;
   int retryAttempt = 0;
   CoderApi? api;
+  HostConnection? activeConnection;
+  HostPathPolicy? pathPolicy;
+  HostPathProbeTask? probeTask;
+  int probeTick = 0;
+  bool probing = false;
   // The owning HostRegistry cancels this subscription in _stopRuntime and
   // close.
   // ignore: cancel_subscriptions
@@ -31,6 +37,8 @@ final class HostRegistry {
     EmbeddedDaemonLauncher? embeddedLauncher,
     EmbeddedDaemonDataEraser? embeddedDataEraser,
     RetryDelayPolicy retryPolicy = const ExponentialRetryDelayPolicy(),
+    HostPathProbeScheduler? pathProbeScheduler,
+    HostRelayPairer? relayPairer,
   }) => HostRegistry._(
     settings: store,
     profiles: profiles ?? _requireProfiles(store),
@@ -43,6 +51,8 @@ final class HostRegistry {
     delay: delay,
     clientKind: clientKind,
     retryPolicy: retryPolicy,
+    pathProbeScheduler: pathProbeScheduler,
+    relayPairer: relayPairer,
   );
 
   HostRegistry._({
@@ -57,6 +67,8 @@ final class HostRegistry {
     required this._delay,
     required this._clientKind,
     required this._retryPolicy,
+    required this._pathProbeScheduler,
+    required this._relayPairer,
   });
 
   final AppSettingsRepository _settings;
@@ -70,6 +82,8 @@ final class HostRegistry {
   final AppDelay _delay;
   final String _clientKind;
   final RetryDelayPolicy _retryPolicy;
+  final HostPathProbeScheduler? _pathProbeScheduler;
+  final HostRelayPairer? _relayPairer;
   final Map<String, _RuntimeResource> _resources = <String, _RuntimeResource>{};
   final Map<String, String> _serverOwners = <String, String>{};
   final StreamController<HostRegistryState> _changes =
@@ -108,7 +122,7 @@ final class HostRegistry {
           status: profile.autoConnect
               ? HostRuntimeStatus.connecting
               : HostRuntimeStatus.idle,
-          endpoint: HostEndpoint(websocketUri: profile.websocketUri),
+          endpoint: _directConnection(profile)?.endpoint,
         ),
     };
     _state = HostRegistryState(
@@ -152,21 +166,27 @@ final class HostRegistry {
       );
     }
     final now = _clock.nowUtc();
-    final profile = RemoteDaemonProfile(
+    final profileId = _ids.generate();
+    final connection = DirectHostConnection(
       id: _ids.generate(),
+      credentialKey: 'host:$profileId:direct',
+      endpoint: endpoint,
+    );
+    final profile = RemoteDaemonProfile(
+      id: profileId,
       label: label.trim().isEmpty
           ? endpoint.websocketUri.authority
           : label.trim(),
-      websocketUri: endpoint.websocketUri,
+      connections: <HostConnection>[connection],
       autoConnect: autoConnect,
       createdAt: now,
       updatedAt: now,
     );
-    await _credentials.writeBearerToken(profile.id, token);
+    await _credentials.writeBearerToken(connection.credentialKey, token);
     try {
       await _profiles.upsertProfile(profile);
     } on Exception {
-      await _credentials.deleteBearerToken(profile.id);
+      await _credentials.deleteBearerToken(connection.credentialKey);
       rethrow;
     }
     final nextProfiles = <RemoteDaemonProfile>[...value.profiles, profile];
@@ -190,6 +210,76 @@ final class HostRegistry {
     return profile;
   }
 
+  /// Consumes a one-time link and persists a relay-only daemon profile.
+  Future<RemoteDaemonProfile> pairRemote({
+    required Uri pairingUrl,
+    required String deviceName,
+    String? label,
+    bool autoConnect = true,
+  }) async {
+    _ensureLoaded();
+    final pairer = _relayPairer;
+    final relayCredentials = _relayCredentials;
+    if (pairer == null || relayCredentials == null) {
+      throw const HostConnectionFailure.network(
+        'Relay pairing is unavailable on this platform.',
+      );
+    }
+    final profileId = _ids.generate();
+    final connectionId = _ids.generate();
+    final credentialKey = 'host:$profileId:relay';
+    final result = await pairer.pair(
+      pairingUrl: pairingUrl,
+      deviceId: _ids.generate(),
+      deviceName: deviceName,
+      connectionId: connectionId,
+      credentialKey: credentialKey,
+    );
+    final now = _clock.nowUtc();
+    final profile = RemoteDaemonProfile(
+      id: profileId,
+      label: label?.trim().isNotEmpty == true
+          ? label!.trim()
+          : deviceName.trim(),
+      connections: <HostConnection>[result.connection],
+      autoConnect: autoConnect,
+      serverId: result.connection.serverId,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await relayCredentials.writeRelayCredential(
+      credentialKey,
+      result.credential,
+    );
+    try {
+      await _profiles.upsertProfile(profile);
+    } on Exception {
+      await relayCredentials.deleteRelayCredential(credentialKey);
+      rethrow;
+    }
+    _emit(
+      value.copyWith(
+        profiles: List<RemoteDaemonProfile>.unmodifiable(<RemoteDaemonProfile>[
+          ...value.profiles,
+          profile,
+        ]),
+        runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
+          Map<String, HostRuntimeSnapshot>.of(value.runtimes)
+            ..[profile.id] = HostRuntimeSnapshot(
+              id: profile.id,
+              label: profile.label,
+              kind: HostKind.remote,
+              status: autoConnect
+                  ? HostRuntimeStatus.connecting
+                  : HostRuntimeStatus.idle,
+            ),
+        ),
+      ),
+    );
+    if (autoConnect) unawaited(_connectRemote(profile.id));
+    return profile;
+  }
+
   /// Updates one remote profile and restarts only its runtime.
   Future<void> updateRemote({
     required String profileId,
@@ -201,13 +291,26 @@ final class HostRegistry {
     final previous = _profile(profileId);
     final endpoint = _parseEndpoint(address);
     if (replacementBearerToken case final token? when token.trim().isNotEmpty) {
-      await _credentials.writeBearerToken(profileId, token.trim());
+      await _credentials.writeBearerToken(
+        previous.directConnections.firstOrNull?.credentialKey ??
+            'host:$profileId:direct',
+        token.trim(),
+      );
     }
     final updated = previous.copyWith(
       label: label.trim().isEmpty
           ? endpoint.websocketUri.authority
           : label.trim(),
-      websocketUri: endpoint.websocketUri,
+      connections: <HostConnection>[
+        DirectHostConnection(
+          id: previous.directConnections.firstOrNull?.id ?? _ids.generate(),
+          credentialKey:
+              previous.directConnections.firstOrNull?.credentialKey ??
+              'host:$profileId:direct',
+          endpoint: endpoint,
+        ),
+        ...previous.relayConnections,
+      ],
       autoConnect: autoConnect,
       updatedAt: _clock.nowUtc(),
     );
@@ -234,12 +337,23 @@ final class HostRegistry {
     required bool enabled,
   }) async {
     final profile = _profile(profileId);
-    await updateRemote(
-      profileId: profileId,
-      label: profile.label,
-      address: profile.websocketUri.toString(),
+    final updated = profile.copyWith(
       autoConnect: enabled,
+      updatedAt: _clock.nowUtc(),
     );
+    await _profiles.upsertProfile(updated);
+    await _stopRuntime(profileId);
+    _replaceProfile(updated);
+    _replaceRuntime(
+      HostRuntimeSnapshot(
+        id: profileId,
+        label: updated.label,
+        kind: HostKind.remote,
+        status: enabled ? HostRuntimeStatus.connecting : HostRuntimeStatus.idle,
+        endpoint: _directConnection(updated)?.endpoint,
+      ),
+    );
+    if (enabled) unawaited(_connectRemote(profileId));
   }
 
   /// Retries one host immediately and resets its backoff.
@@ -270,7 +384,7 @@ final class HostRegistry {
         label: profile.label,
         kind: HostKind.remote,
         status: HostRuntimeStatus.connecting,
-        endpoint: HostEndpoint(websocketUri: profile.websocketUri),
+        endpoint: _directConnection(profile)?.endpoint,
       ),
     );
     await _connectRemote(hostId, manual: true);
@@ -280,7 +394,16 @@ final class HostRegistry {
   Future<void> removeRemote(String profileId) async {
     await _stopRuntime(profileId);
     await _profiles.deleteProfile(profileId);
-    await _credentials.deleteBearerToken(profileId);
+    for (final connection in _profile(profileId).connections) {
+      switch (connection) {
+        case DirectHostConnection():
+          await _credentials.deleteBearerToken(connection.credentialKey);
+        case RelayHostConnection():
+          await _relayCredentials?.deleteRelayCredential(
+            connection.credentialKey,
+          );
+      }
+    }
     var settings = value.settings;
     if (settings.lastActiveHostId == profileId) {
       settings = settings.copyWith(clearLastActiveHost: true);
@@ -542,6 +665,7 @@ final class HostRegistry {
 
     try {
       await _credentials.deleteAllBearerTokens();
+      await _relayCredentials?.deleteAllRelayCredentials();
       await _settings.clear();
     } on Exception catch (error) {
       throw FactoryResetFailure(
@@ -607,8 +731,12 @@ final class HostRegistry {
       _embeddedSession = session;
       await _connect(
         hostId: embeddedHostId,
-        endpoint: session.endpoint,
-        credentials: session.credentials,
+        connection: DirectHostConnection(
+          id: embeddedHostId,
+          credentialKey: embeddedHostId,
+          endpoint: session.endpoint,
+        ),
+        credential: DirectHostCredential(session.credentials),
         retry: false,
       );
     } on Exception catch (error) {
@@ -621,8 +749,14 @@ final class HostRegistry {
     if (_closed) return;
     final profile = _profileOrNull(profileId);
     if (profile == null || (!manual && !profile.autoConnect)) return;
-    final token = await _credentials.readBearerToken(profileId);
-    if (token == null || token.isEmpty) {
+    final candidates = <(HostConnection, HostConnectionCredential)>[];
+    for (final connection in profile.connections) {
+      final credential = await _credentialFor(connection);
+      if (credential != null) {
+        candidates.add((connection, credential));
+      }
+    }
+    if (candidates.isEmpty) {
       _setFailure(
         profileId,
         const HostConnectionFailure.authentication(
@@ -633,44 +767,81 @@ final class HostRegistry {
       );
       return;
     }
+    if (candidates.length > 1) {
+      try {
+        final winner = await _raceConnections(profile, candidates);
+        await _connect(
+          hostId: profileId,
+          connection: winner.connection,
+          credential: winner.credential,
+          connectedApi: winner.api,
+          retry: profile.autoConnect,
+        );
+      } on Exception catch (error) {
+        final failure = _failureFrom(error);
+        _setFailure(
+          profileId,
+          failure,
+          retry: profile.autoConnect && failure.retryable,
+        );
+      }
+      return;
+    }
+    final (connection, credential) = candidates.single;
     await _connect(
       hostId: profileId,
-      endpoint: HostEndpoint(websocketUri: profile.websocketUri),
-      credentials: DaemonCredentials(bearerToken: token),
+      connection: connection,
+      credential: credential,
       retry: profile.autoConnect,
     );
   }
 
   Future<void> _connect({
     required String hostId,
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required bool retry,
+    CoderApi? connectedApi,
   }) async {
     final resource = _resources.putIfAbsent(
       hostId,
       () => _RuntimeResource(generation: 0),
     );
     final generation = resource.generation;
+    final fallbackApi = resource.api;
+    final fallbackConnection = resource.activeConnection;
     _updateRuntime(
       hostId,
       (runtime) => runtime.copyWith(
         status: HostRuntimeStatus.connecting,
-        endpoint: endpoint,
+        endpoint: switch (connection) {
+          DirectHostConnection(:final endpoint) => endpoint,
+          RelayHostConnection() => null,
+        },
         clearError: true,
         clearConflict: true,
       ),
     );
     try {
-      final api = await _clientFactory.connect(
-        endpoint: endpoint,
-        credentials: credentials,
-        clientId: _ids.generate(),
-        clientKind: _clientKind,
-      );
+      final api =
+          connectedApi ??
+          await _clientFactory.connect(
+            connection: connection,
+            credential: credential,
+            clientId: _ids.generate(),
+            clientKind: _clientKind,
+          );
       if (_closed || resource.generation != generation) {
         await api.close();
         return;
+      }
+      final expectedServerId = _profileOrNull(hostId)?.serverId;
+      if (expectedServerId != null &&
+          api.serverInfo.serverId != expectedServerId) {
+        await api.close();
+        throw const HostConnectionFailure.authentication(
+          'Connection path resolved to a different daemon.',
+        );
       }
       final conflictingHostId = _serverOwners[api.serverInfo.serverId];
       if (conflictingHostId != null && conflictingHostId != hostId) {
@@ -688,8 +859,10 @@ final class HostRegistry {
         return;
       }
       _serverOwners[api.serverInfo.serverId] = hostId;
+      final previousApi = resource.api;
       resource
         ..api = api
+        ..activeConnection = connection
         ..retryAttempt = 0;
       await resource.states?.cancel();
       resource.states = api.states.listen(
@@ -701,9 +874,13 @@ final class HostRegistry {
           status: HostRuntimeStatus.online,
           api: api,
           serverInfo: api.serverInfo,
+          activeConnectionId: connection.id,
           clearError: true,
         ),
       );
+      if (previousApi != null && previousApi != api) {
+        await previousApi.close();
+      }
       if (hostId != embeddedHostId) {
         final profile = _profile(hostId).copyWith(
           serverId: api.serverInfo.serverId,
@@ -712,9 +889,30 @@ final class HostRegistry {
         );
         await _profiles.upsertProfile(profile);
         _replaceProfile(profile);
+        resource.pathPolicy ??= HostPathPolicy(
+          authoritativeServerId: api.serverInfo.serverId,
+        );
+        resource.pathPolicy!.selectInitial(connection);
+        _startPathMonitoring(hostId, resource);
       }
     } on Exception catch (error) {
       if (_closed || resource.generation != generation) return;
+      if (fallbackApi != null &&
+          fallbackConnection != null &&
+          identical(resource.api, fallbackApi)) {
+        resource.pathPolicy?.selectInitial(fallbackConnection);
+        _updateRuntime(
+          hostId,
+          (runtime) => runtime.copyWith(
+            status: HostRuntimeStatus.online,
+            api: fallbackApi,
+            serverInfo: fallbackApi.serverInfo,
+            activeConnectionId: fallbackConnection.id,
+            clearError: true,
+          ),
+        );
+        return;
+      }
       final failure = _failureFrom(error);
       _setFailure(hostId, failure, retry: retry && failure.retryable);
       if (retry && failure.retryable) {
@@ -724,6 +922,158 @@ final class HostRegistry {
         await _connectRemote(hostId);
       }
     }
+  }
+
+  void _startPathMonitoring(String hostId, _RuntimeResource resource) {
+    final scheduler = _pathProbeScheduler;
+    final profile = _profileOrNull(hostId);
+    if (scheduler == null ||
+        profile == null ||
+        profile.connections.length < 2 ||
+        resource.probeTask != null) {
+      return;
+    }
+    resource.probeTask = scheduler.periodic(
+      activeHostPathProbeInterval,
+      () async {
+        resource.probeTick += 1;
+        await _probePaths(
+          hostId,
+          includeInactive: resource.probeTick % 12 == 0,
+        );
+      },
+    );
+  }
+
+  Future<void> _probePaths(
+    String hostId, {
+    required bool includeInactive,
+  }) async {
+    final resource = _resources[hostId];
+    final profile = _profileOrNull(hostId);
+    final active = resource?.activeConnection;
+    if (resource == null ||
+        profile == null ||
+        active == null ||
+        resource.probing ||
+        _closed) {
+      return;
+    }
+    resource.probing = true;
+    try {
+      var probingInactive = includeInactive;
+      var targets = probingInactive
+          ? profile.connections
+          : profile.connections
+                .where((connection) => connection.id == active.id)
+                .toList(growable: false);
+      var observations = await Future.wait(targets.map(_probeConnection));
+      final activeObservation = observations.firstOrNull;
+      if (!probingInactive && activeObservation?.available != true) {
+        targets = profile.connections;
+        observations = await Future.wait(targets.map(_probeConnection));
+        probingInactive = true;
+      }
+      if (!probingInactive) return;
+      final selected = resource.pathPolicy?.evaluate(observations);
+      if (selected == null || selected.id == active.id) return;
+      final credential = await _credentialFor(selected);
+      if (credential == null) return;
+      await _connect(
+        hostId: hostId,
+        connection: selected,
+        credential: credential,
+        retry: profile.autoConnect,
+      );
+    } finally {
+      resource.probing = false;
+    }
+  }
+
+  Future<HostPathObservation> _probeConnection(
+    HostConnection connection,
+  ) async {
+    final credential = await _credentialFor(connection);
+    if (credential == null) return HostPathObservation.failure(connection);
+    final started = _clock.nowUtc();
+    try {
+      final api = await _clientFactory.connect(
+        connection: connection,
+        credential: credential,
+        clientId: _ids.generate(),
+        clientKind: _clientKind,
+      );
+      final latency = _clock.nowUtc().difference(started);
+      final serverId = api.serverInfo.serverId;
+      await api.close();
+      return HostPathObservation.success(
+        connection,
+        latency: latency,
+        serverId: serverId,
+      );
+    } on Exception {
+      return HostPathObservation.failure(connection);
+    }
+  }
+
+  Future<HostConnectionCredential?> _credentialFor(
+    HostConnection connection,
+  ) async => switch (connection) {
+    DirectHostConnection() => switch (await _credentials.readBearerToken(
+      connection.credentialKey,
+    )) {
+      final String token when token.isNotEmpty => DirectHostCredential(
+        DaemonCredentials(bearerToken: token),
+      ),
+      _ => null,
+    },
+    RelayHostConnection() => await _relayCredentials?.readRelayCredential(
+      connection.credentialKey,
+    ),
+  };
+
+  Future<_ConnectedPath> _raceConnections(
+    RemoteDaemonProfile profile,
+    List<(HostConnection, HostConnectionCredential)> candidates,
+  ) {
+    final completer = Completer<_ConnectedPath>();
+    var remaining = candidates.length;
+    Object? lastError;
+    for (final (connection, credential) in candidates) {
+      unawaited(
+        _clientFactory
+            .connect(
+              connection: connection,
+              credential: credential,
+              clientId: _ids.generate(),
+              clientKind: _clientKind,
+            )
+            .then((api) async {
+              final expected = profile.serverId;
+              if (expected != null && api.serverInfo.serverId != expected) {
+                await api.close();
+                throw const HostConnectionFailure.authentication(
+                  'Connection path resolved to a different daemon.',
+                );
+              }
+              if (completer.isCompleted) {
+                await api.close();
+              } else {
+                completer.complete(
+                  _ConnectedPath(connection, credential, api),
+                );
+              }
+            })
+            .catchError((Object error) {
+              lastError = error;
+              remaining -= 1;
+              if (remaining == 0 && !completer.isCompleted) {
+                completer.completeError(lastError!);
+              }
+            }),
+      );
+    }
+    return completer.future;
   }
 
   void _handleClientState(
@@ -739,6 +1089,13 @@ final class HostRegistry {
       ClientConnectionState.disconnected => HostRuntimeStatus.offline,
     };
     _updateRuntime(hostId, (runtime) => runtime.copyWith(status: status));
+    final hasFailoverPath =
+        (_profileOrNull(hostId)?.connections.length ?? 0) > 1;
+    if (hasFailoverPath &&
+        (state == ClientConnectionState.reconnecting ||
+            state == ClientConnectionState.disconnected)) {
+      unawaited(_probePaths(hostId, includeInactive: true));
+    }
   }
 
   void _setFailure(
@@ -791,6 +1148,7 @@ final class HostRegistry {
     final resource = _resources.remove(hostId);
     if (resource == null) return;
     resource.generation += 1;
+    resource.probeTask?.cancel();
     await resource.states?.cancel();
     await resource.api?.close();
     _serverOwners.removeWhere((serverId, owner) => owner == hostId);
@@ -895,4 +1253,20 @@ final class HostRegistry {
     }
     throw ArgumentError('A RemoteHostCredentialStore must be provided.');
   }
+
+  RelayHostCredentialStore? get _relayCredentials =>
+      _credentials is RelayHostCredentialStore
+      ? _credentials as RelayHostCredentialStore
+      : null;
+}
+
+DirectHostConnection? _directConnection(RemoteDaemonProfile profile) =>
+    profile.directConnections.firstOrNull;
+
+final class _ConnectedPath {
+  const _ConnectedPath(this.connection, this.credential, this.api);
+
+  final HostConnection connection;
+  final HostConnectionCredential credential;
+  final CoderApi api;
 }

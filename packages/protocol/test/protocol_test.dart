@@ -57,6 +57,67 @@ void main() {
   });
 
   test(
+    'relay contracts round-trip status, offers, devices, and parameters',
+    () {
+      const status = RelayStatusDto(
+        enabled: true,
+        connected: false,
+        endpoint: 'wss://relay.example/v1/ws',
+        serverId: 'daemon-1',
+      );
+      final decodedStatus = RelayStatusDto.fromJson(status.toJson());
+      expect(decodedStatus.enabled, isTrue);
+      expect(decodedStatus.connected, isFalse);
+      expect(decodedStatus.endpoint, status.endpoint);
+      expect(decodedStatus.serverId, status.serverId);
+
+      final offer = RelayPairingOfferDto(
+        url: 'https://coder.example/pair#offer=test',
+        expiresAt: now,
+      );
+      final decodedOffer = RelayPairingOfferDto.fromJson(offer.toJson());
+      expect(decodedOffer.url, offer.url);
+      expect(decodedOffer.expiresAt, now);
+
+      final device = RelayDeviceDto(
+        id: 'device-1',
+        name: 'Phone',
+        registeredAt: now,
+        lastConnectedAt: null,
+      );
+      final decodedDevice = RelayDeviceDto.fromJson(device.toJson());
+      expect(decodedDevice.id, device.id);
+      expect(decodedDevice.name, device.name);
+      expect(decodedDevice.registeredAt, now);
+      expect(decodedDevice.lastConnectedAt, isNull);
+      final list = RelayDeviceListDto.fromJson(
+        RelayDeviceListDto(devices: <RelayDeviceDto>[device]).toJson(),
+      );
+      expect(list.devices.single.id, 'device-1');
+
+      expect(
+        RelaySetEnabledParamsDto.fromJson(
+          const RelaySetEnabledParamsDto(enabled: true).toJson(),
+        ).enabled,
+        isTrue,
+      );
+      expect(
+        RelayRevokeDeviceParamsDto.fromJson(
+          const RelayRevokeDeviceParamsDto(
+            deviceId: 'device-1',
+          ).toJson(),
+        ).deviceId,
+        'device-1',
+      );
+      expect(const RelayEmptyParamsDto().toJson(), isEmpty);
+      expect(
+        () => RelayEmptyParamsDto.fromJson(const <String, dynamic>{'x': true}),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test(
     'daemon permission defaults round-trip with full access',
     () {
       const settings = PermissionSettingsDto(

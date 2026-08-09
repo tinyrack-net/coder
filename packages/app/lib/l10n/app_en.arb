@@ -634,6 +634,33 @@
   "@appSettingsAddRemote": {
     "description": "Opens the remote daemon form."
   },
+  "relayPairTitle": "Connect a device",
+  "relayPairDescription": "Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.",
+  "relayPairLink": "Pairing link",
+  "relayPairDeviceName": "This device's name",
+  "relayPairAction": "Connect",
+  "relayPairScan": "Scan QR code",
+  "relayPairQrSemantics": "QR code for the one-time device connection link",
+  "relayPairInvalid": "Enter a valid {appDisplayName} pairing link.",
+  "@relayPairInvalid": {
+    "placeholders": {"appDisplayName": {"type": "String"}}
+  },
+  "relayPairExpired": "This pairing link expired or was already used. Create a new link on the daemon.",
+  "relayAdvancedDirect": "Advanced direct connection",
+  "relayDevicesTitle": "Connected devices",
+  "relayDevicesDescription": "Create a ten-minute link for a new device or remove a device that should no longer connect.",
+  "relayCreateLink": "Create connection link",
+  "relayLinkExpires": "Expires {expiresAt}",
+  "@relayLinkExpires": {"placeholders": {"expiresAt": {"type": "String"}}},
+  "relayNoDevices": "No devices are approved.",
+  "relayRevoke": "Revoke",
+  "relayRevokeTitle": "Revoke {name}?",
+  "@relayRevokeTitle": {"placeholders": {"name": {"type": "String"}}},
+  "relayRevokeBody": "The device's live relay connection ends immediately. A new pairing link is required to reconnect.",
+  "relayPathDirect": "Direct",
+  "relayPathRelay": "Relay",
+  "relayConnectionDetails": "Connection details",
+  "relayApprovedDevices": "Devices",
   "appSettingsNoRemotes": "No remote daemons are saved.",
   "@appSettingsNoRemotes": {
     "description": "Empty state of the remote daemon list."
@@ -2368,5 +2395,24 @@
   "composerDropFilesHere": "Drop files here",
   "@composerDropFilesHere": {
     "description": "Instruction shown over a composer pane while files are dragged over it."
-  }
+  },
+  "chatToolActionRead": "Read file",
+  "chatToolActionList": "List files",
+  "chatToolActionSearch": "Search",
+  "chatToolActionEdit": "Edit files",
+  "chatToolActionRun": "Run command",
+  "chatToolActionDelegate": "Coordinate agents",
+  "chatToolActionPlan": "Update plan",
+  "chatToolActionAsk": "Ask a question",
+  "chatToolActionResource": "Use resource",
+  "chatToolActionTools": "Find tools",
+  "chatToolActionClock": "Wait",
+  "chatToolActionContext": "Manage context",
+  "chatToolActionImage": "View image",
+  "chatToolActionGeneric": "Use tool",
+  "chatToolStatusFailed": "Failed",
+  "chatToolStatusDenied": "Denied",
+  "chatToolDetailsTool": "Tool",
+  "chatToolDetailsRequest": "Request",
+  "chatToolDetailsResult": "Result"
 }

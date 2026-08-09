@@ -83,7 +83,7 @@ Future<void> _settleDrainRetries({int rounds = 2}) async {
 RemoteDaemonProfile _profile(String id, DateTime now) => RemoteDaemonProfile(
   id: id,
   label: id,
-  websocketUri: Uri.parse('ws://$id.test/ws'),
+  connections: directHostConnections(Uri.parse('ws://$id.test/ws')),
   autoConnect: true,
   createdAt: now,
   updatedAt: now,
@@ -103,11 +103,12 @@ final class _HostClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) async => apis[endpoint.websocketUri.host]!;
+  }) async =>
+      apis[(connection as DirectHostConnection).endpoint.websocketUri.host]!;
 }
 
 final class _FixedIdGenerator implements AppIdGenerator {

@@ -178,6 +178,12 @@ void main() {
     final api = FakeCoderApi();
     final endpoint = HostEndpoint.parse('wss://daemon.example/ws');
     const credentials = DaemonCredentials(bearerToken: 'token');
+    final connection = DirectHostConnection(
+      id: 'direct',
+      credentialKey: 'direct',
+      endpoint: endpoint,
+    );
+    const credential = DirectHostCredential(credentials);
     final success = WebSocketHostClientFactory(
       openClient:
           ({
@@ -189,8 +195,8 @@ void main() {
     );
     expect(
       await success.connect(
-        endpoint: endpoint,
-        credentials: credentials,
+        connection: connection,
+        credential: credential,
         clientId: 'client',
         clientKind: 'test',
       ),
@@ -207,8 +213,8 @@ void main() {
                 required clientKind,
               }) => Future<CoderApi>.error(error),
         ).connect(
-          endpoint: endpoint,
-          credentials: credentials,
+          connection: connection,
+          credential: credential,
           clientId: 'client',
           clientKind: 'test',
         );
@@ -256,8 +262,8 @@ final class _UnusedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => throw StateError('No connection is expected in a factory test.');

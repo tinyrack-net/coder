@@ -31,7 +31,7 @@ Future<String?> readLocalDaemonBearerToken(String configDirectory) async {
   final file = File(p.join(configDirectory, 'v4', 'secrets.json'));
   if (!file.existsSync()) return null;
   final decoded = jsonDecode(await file.readAsString());
-  if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 1) {
+  if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 2) {
     throw FormatException(
       'incompatible_credentials: explicitly remove ${file.path} to reset '
       'development credentials.',

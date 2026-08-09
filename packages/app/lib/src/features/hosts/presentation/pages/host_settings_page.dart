@@ -10,6 +10,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -190,7 +191,7 @@ class AppSettingsPage extends ConsumerWidget {
               children: <Widget>[
                 const Icon(CoderIcons.add),
                 const SizedBox(width: TRSpacing.extraSmall),
-                TRText(l10n.appSettingsAddRemote),
+                TRText(l10n.relayPairTitle),
               ],
             ),
           ),
@@ -353,6 +354,14 @@ class _RemoteHostCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final active = profile.connections
+        .where((connection) => connection.id == runtime?.activeConnectionId)
+        .firstOrNull;
+    final pathLabel = switch (active) {
+      DirectHostConnection() => l10n.relayPathDirect,
+      RelayHostConnection() => l10n.relayPathRelay,
+      _ => null,
+    };
     return TRCard(
       padding: TRCardPadding.none,
       child: Column(
@@ -361,17 +370,39 @@ class _RemoteHostCard extends ConsumerWidget {
           SettingsRow(
             leading: Icon(hostStatusIcon(runtime?.status)),
             title: TRText.inherit(profile.label),
-            description: TRText.inherit(
-              '${profile.websocketUri}\n${hostStatusText(l10n, runtime)}',
-            ),
+            description: TRText.inherit(hostStatusText(l10n, runtime)),
             wrapsDescription: true,
-            control: TRIconButton(
-              appearance: TRAppearance.ghost,
-              label: l10n.appSettingsEditConnection,
-              onPressed: () => unawaited(
-                EditHostRoute(hostId: profile.id).push<void>(context),
+            control: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (pathLabel != null)
+                  TRBadge(
+                    variant: TRStatusVariant.info,
+                    child: TRText.inherit(pathLabel),
+                  ),
+                TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  label: l10n.appSettingsEditConnection,
+                  onPressed: () => unawaited(
+                    EditHostRoute(hostId: profile.id).push<void>(context),
+                  ),
+                  icon: const Icon(CoderIcons.edit),
+                ),
+              ],
+            ),
+          ),
+          TRCollapsible(
+            attachedEdge: TRCollapsibleAttachedEdge.top,
+            trigger: TRText.inherit(l10n.relayConnectionDetails),
+            content: Padding(
+              padding: SettingsRow.contentPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final connection in profile.connections)
+                    TRText.inherit(_connectionSummary(connection)),
+                ],
               ),
-              icon: const Icon(CoderIcons.edit),
             ),
           ),
           CoderSwitchRow(
@@ -410,6 +441,23 @@ class _RemoteHostCard extends ConsumerWidget {
                 if (runtime?.connected == true)
                   TRButton(
                     appearance: TRAppearance.ghost,
+                    onPressed: () => unawaited(
+                      DaemonDevicesRoute(
+                        hostId: profile.id,
+                      ).push<void>(context),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(CoderIcons.computer),
+                        const SizedBox(width: TRSpacing.extraSmall),
+                        TRText(l10n.relayApprovedDevices),
+                      ],
+                    ),
+                  ),
+                if (runtime?.connected == true)
+                  TRButton(
+                    appearance: TRAppearance.ghost,
                     onPressed: () => ProviderSettingsRoute(
                       hostId: profile.id,
                     ).replace(context),
@@ -430,6 +478,11 @@ class _RemoteHostCard extends ConsumerWidget {
     );
   }
 }
+
+String _connectionSummary(HostConnection connection) => switch (connection) {
+  DirectHostConnection(:final endpoint) => endpoint.websocketUri.toString(),
+  RelayHostConnection(:final relayUri) => relayUri.toString(),
+};
 
 /// Add/edit form for one remote daemon profile.
 class RemoteHostEditPage extends ConsumerStatefulWidget {
@@ -483,7 +536,10 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
       _initialized = true;
       if (existing != null) {
         _label.text = existing.label;
-        _address.text = existing.websocketUri.toString();
+        _address.text =
+            existing.directConnections.firstOrNull?.endpoint.websocketUri
+                .toString() ??
+            '';
         _autoConnect = existing.autoConnect;
       }
     }

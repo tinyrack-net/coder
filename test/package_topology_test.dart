@@ -12,6 +12,8 @@ void main() {
       'client',
       'daemon',
       'protocol',
+      'relay',
+      'relay_protocol',
     };
     final packagesDirectory = Directory('packages');
     final actualPackages = packagesDirectory

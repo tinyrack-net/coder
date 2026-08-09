@@ -6,6 +6,8 @@ import 'package:app/src/features/desktop/application/desktop_startup.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/workspace/infrastructure/directory_picker_io.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:cryptography_flutter/cryptography_flutter.dart';
 import 'package:flutter/material.dart';
 
 /// Everything the desktop entrypoint resolves before it can build [CoderApp].
@@ -49,6 +51,7 @@ Future<void> runDesktopApp({
   AutostartRegistration? autostart,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  Cryptography.instance = FlutterCryptography.defaultInstance;
   runApp(
     BootstrapGate<DesktopBoot>(
       bootstrap: () async {

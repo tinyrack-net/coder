@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/src/features/hosts/application/host_path_policy.dart';
 import 'package:app/src/features/hosts/application/host_registry.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -19,7 +20,7 @@ void main() {
       final first = RemoteDaemonProfile(
         id: 'first',
         label: 'First',
-        websocketUri: Uri.parse('ws://first.test/ws'),
+        connections: directHostConnections(Uri.parse('ws://first.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -27,7 +28,7 @@ void main() {
       final second = RemoteDaemonProfile(
         id: 'second',
         label: 'Second',
-        websocketUri: Uri.parse('wss://second.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://second.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -111,7 +112,10 @@ void main() {
 
       expect(profile.id, 'generated-id');
       expect(store.profiles.single, profile);
-      expect(store.tokens[profile.id], 'secret');
+      expect(
+        store.tokens[profile.connections.single.credentialKey],
+        'secret',
+      );
       expect(
         registry.value.runtimes[profile.id]!.status,
         HostRuntimeStatus.idle,
@@ -163,7 +167,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('ws://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('ws://remote.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -271,7 +275,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('ws://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('ws://remote.test/ws')),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -383,7 +387,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('ws://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('ws://remote.test/ws')),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -425,7 +429,7 @@ void main() {
         RemoteDaemonProfile(
           id: id,
           label: id,
-          websocketUri: Uri.parse('ws://$id.test/ws'),
+          connections: directHostConnections(Uri.parse('ws://$id.test/ws')),
           autoConnect: true,
           createdAt: now,
           updatedAt: now,
@@ -469,7 +473,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('wss://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://remote.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -524,7 +528,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Before',
-        websocketUri: Uri.parse('wss://before.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://before.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -538,7 +542,7 @@ void main() {
         tokens: const <String, String>{'remote': 'old-token'},
       );
       final beforeApi = FakeCoderApi(serverInfo: _serverInfo('before'));
-      final afterApi = FakeCoderApi(serverInfo: _serverInfo('after'));
+      final afterApi = FakeCoderApi(serverInfo: _serverInfo('before'));
       final registry = HostRegistry(
         store: store,
         clientFactory: _ClientFactory(<String, Future<CoderApi>>{
@@ -663,7 +667,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('wss://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://remote.test/ws')),
         autoConnect: false,
         createdAt: now,
         updatedAt: now,
@@ -671,7 +675,7 @@ void main() {
       final missing = RemoteDaemonProfile(
         id: 'missing',
         label: 'Missing',
-        websocketUri: Uri.parse('wss://missing.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://missing.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -799,7 +803,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('wss://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://remote.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -995,7 +999,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('wss://remote.test/ws'),
+        connections: directHostConnections(Uri.parse('wss://remote.test/ws')),
         autoConnect: true,
         createdAt: now,
         updatedAt: now,
@@ -1052,7 +1056,7 @@ void main() {
       final profile = RemoteDaemonProfile(
         id: 'remote',
         label: 'Remote',
-        websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
+        connections: directHostConnections(Uri.parse('ws://127.0.0.1:7337/ws')),
         // Auto-connect would retry this retryable failure forever.
         autoConnect: false,
         createdAt: now,
@@ -1221,6 +1225,131 @@ void main() {
     },
     tags: const <String>['feature_test__desktop_residency__unit'],
   );
+
+  test('pairing stores a daemon-scoped relay identity and profile', () async {
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+    );
+    final pairer = _Pairer();
+    final registry = HostRegistry(
+      store: store,
+      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      ids: const _Ids(),
+      clock: _Clock(now),
+      delay: const _NoDelay(),
+      clientKind: 'test',
+      relayPairer: pairer,
+    );
+    addTearDown(registry.close);
+    await registry.load();
+
+    final profile = await registry.pairRemote(
+      pairingUrl: Uri.parse('https://coder.tinyrack.net/pair#offer=test'),
+      deviceName: 'My phone',
+      autoConnect: false,
+    );
+
+    expect(profile.serverId, 'relay-daemon');
+    expect(profile.relayConnections, hasLength(1));
+    expect(store.profiles.single, same(profile));
+    expect(store.relayCredentials.values.single.deviceId, 'device-1');
+    expect(pairer.deviceName, 'My phone');
+    expect(
+      registry.value.runtimes[profile.id]!.status,
+      HostRuntimeStatus.idle,
+    );
+  });
+
+  test(
+    'parallel startup selects the first valid path and fails over after loss',
+    () async {
+      final direct = DirectHostConnection(
+        id: 'direct',
+        credentialKey: 'direct-secret',
+        endpoint: HostEndpoint.parse('ws://private.test/v4/ws'),
+      );
+      final relay = RelayHostConnection(
+        id: 'relay',
+        credentialKey: 'relay-secret',
+        serverId: 'daemon-1',
+        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        daemonIdentityPublicKey: List<int>.filled(32, 1),
+      );
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'Multi-path daemon',
+        connections: <HostConnection>[direct, relay],
+        autoConnect: true,
+        serverId: 'daemon-1',
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[profile],
+        tokens: const <String, String>{'direct-secret': 'bearer'},
+      );
+      store.relayCredentials['relay-secret'] = RelayHostCredential(
+        deviceId: 'phone',
+        privateKey: List<int>.filled(32, 2),
+      );
+      final directApi = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
+      final lateRelay = Completer<CoderApi>();
+      final relayProbe = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
+      final relayApi = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
+      final factory = _PathClientFactory(
+        <String, List<Future<CoderApi> Function()>>{
+          'direct': <Future<CoderApi> Function()>[
+            () => Future<CoderApi>.value(directApi),
+            () => Future<CoderApi>.error(
+              const HostConnectionFailure.network('direct path lost'),
+            ),
+          ],
+          'relay': <Future<CoderApi> Function()>[
+            () => lateRelay.future,
+            () => Future<CoderApi>.value(relayProbe),
+            () => Future<CoderApi>.value(relayApi),
+          ],
+        },
+      );
+      final scheduler = _ManualProbeScheduler();
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: factory,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+        pathProbeScheduler: scheduler,
+      );
+      addTearDown(registry.close);
+
+      await registry.load();
+      await _flush();
+      expect(registry.value.runtimes['remote']!.activeConnectionId, 'direct');
+      expect(scheduler.interval, activeHostPathProbeInterval);
+      lateRelay.complete(FakeCoderApi(serverInfo: _serverInfo('daemon-1')));
+      await _flush();
+
+      directApi.emitState(ClientConnectionState.disconnected);
+      await _flush();
+      expect(registry.value.runtimes['remote']!.activeConnectionId, 'relay');
+      expect(registry.value.runtimes['remote']!.api, same(relayApi));
+      expect(directApi.isClosed, isTrue);
+      expect(relayProbe.isClosed, isTrue);
+      expect(factory.connectionIds, <String>[
+        'direct',
+        'relay',
+        'direct',
+        'relay',
+        'relay',
+      ]);
+
+      await registry.close();
+      expect(scheduler.task.cancelled, isTrue);
+    },
+    tags: const <String>['feature_test__daemon_relay__unit'],
+  );
 }
 
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(
@@ -1244,13 +1373,15 @@ final class _ClientFactory implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) {
-    connectedHosts.add(endpoint.websocketUri.host);
-    return clients[endpoint.websocketUri.host] ??
+    connectedHosts.add(
+      (connection as DirectHostConnection).endpoint.websocketUri.host,
+    );
+    return clients[connection.endpoint.websocketUri.host] ??
         Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
   }
 }
@@ -1263,8 +1394,8 @@ final class _SequenceClientFactory implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) {
@@ -1272,6 +1403,60 @@ final class _SequenceClientFactory implements HostClientFactory {
     attempts += 1;
     return result;
   }
+}
+
+final class _PathClientFactory implements HostClientFactory {
+  _PathClientFactory(
+    Map<String, List<Future<CoderApi> Function()>> results,
+  ) : _results = results.map(
+        (key, value) => MapEntry(
+          key,
+          List<Future<CoderApi> Function()>.of(value),
+        ),
+      );
+
+  final Map<String, List<Future<CoderApi> Function()>> _results;
+  final List<String> connectionIds = <String>[];
+
+  @override
+  Future<CoderApi> connect({
+    required HostConnection connection,
+    required HostConnectionCredential credential,
+    required String clientId,
+    required String clientKind,
+  }) {
+    connectionIds.add(connection.id);
+    final results = _results[connection.id];
+    if (results == null || results.isEmpty) {
+      return Future<CoderApi>.error(
+        const HostConnectionFailure.network('unexpected connection'),
+      );
+    }
+    return results.removeAt(0)();
+  }
+}
+
+final class _ManualProbeScheduler implements HostPathProbeScheduler {
+  late Duration interval;
+  late Future<void> Function() callback;
+  final _ManualProbeTask task = _ManualProbeTask();
+
+  @override
+  HostPathProbeTask periodic(
+    Duration interval,
+    Future<void> Function() callback,
+  ) {
+    this.interval = interval;
+    this.callback = callback;
+    return task;
+  }
+}
+
+final class _ManualProbeTask implements HostPathProbeTask {
+  bool cancelled = false;
+
+  @override
+  void cancel() => cancelled = true;
 }
 
 final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
@@ -1377,6 +1562,34 @@ final class _NoDelay implements AppDelay {
 
   @override
   Future<void> wait(Duration duration) async {}
+}
+
+final class _Pairer implements HostRelayPairer {
+  String? deviceName;
+
+  @override
+  Future<RelayPairingResult> pair({
+    required Uri pairingUrl,
+    required String deviceId,
+    required String deviceName,
+    required String connectionId,
+    required String credentialKey,
+  }) async {
+    this.deviceName = deviceName;
+    return RelayPairingResult(
+      connection: RelayHostConnection(
+        id: connectionId,
+        credentialKey: credentialKey,
+        serverId: 'relay-daemon',
+        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        daemonIdentityPublicKey: List<int>.filled(32, 1),
+      ),
+      credential: RelayHostCredential(
+        deviceId: 'device-1',
+        privateKey: List<int>.filled(32, 2),
+      ),
+    );
+  }
 }
 
 final class _RecordingDelay implements AppDelay {

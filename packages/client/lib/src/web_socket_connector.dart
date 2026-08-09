@@ -1,7 +1,7 @@
 import 'package:client/src/web_socket_connector_io.dart'
     if (dart.library.js_interop) 'package:client/src/web_socket_connector_web.dart'
     as platform;
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:stream_channel/stream_channel.dart';
 
 export 'package:protocol/protocol.dart'
     show
@@ -13,7 +13,7 @@ export 'package:protocol/protocol.dart'
 /// Public API exposed by this library.
 abstract interface class WebSocketConnector {
   /// The connect public API member.
-  Future<WebSocketChannel> connect(
+  Future<StreamChannel<dynamic>> connect(
     Uri uri, {
     required Map<String, String> headers,
   });

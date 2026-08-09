@@ -11,7 +11,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// A user prompt rendered as a CLI-style `>` line.
+/// A user prompt rendered in a trailing chat bubble.
 class ChatUserLine extends StatelessWidget {
   /// Creates a user line.
   const ChatUserLine({
@@ -31,52 +31,29 @@ class ChatUserLine extends StatelessWidget {
   final ChatAttachmentExporter? exportAttachment;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const TRText(
-            '>',
-            variant: TRTextVariant.code,
-            color: TRTextColor.primary,
-          ),
-          const SizedBox(width: TRSpacing.small),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (message.text.isNotEmpty)
-                  SelectionArea(
-                    child: TRText(
-                      message.text,
-                      color: TRTextColor.muted,
-                    ),
-                  ),
-                if (message.attachments.isNotEmpty) ...<Widget>[
-                  if (message.text.isNotEmpty)
-                    const SizedBox(height: TRSpacing.small),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: <Widget>[
-                      for (final attachment in message.attachments)
-                        ChatAttachmentTile(
-                          attachment: attachment,
-                          loadAttachment: loadAttachment,
-                          exportAttachment: exportAttachment,
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+  Widget build(BuildContext context) => TRChatUserBubble(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (message.text.isNotEmpty) SelectionArea(child: TRText(message.text)),
+        if (message.attachments.isNotEmpty) ...<Widget>[
+          if (message.text.isNotEmpty) const SizedBox(height: TRSpacing.small),
+          Wrap(
+            spacing: TRSpacing.extraSmall,
+            runSpacing: TRSpacing.extraSmall,
+            children: <Widget>[
+              for (final attachment in message.attachments)
+                ChatAttachmentTile(
+                  attachment: attachment,
+                  loadAttachment: loadAttachment,
+                  exportAttachment: exportAttachment,
+                ),
+            ],
           ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }
 
 /// An assistant-published file row.
@@ -99,10 +76,10 @@ class ChatAttachmentLine extends StatelessWidget {
   final ChatAttachmentExporter? exportAttachment;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 18),
+  Widget build(BuildContext context) => TRChatMessageRow(
+    icon: message.attachment.isImage ? CoderIcons.image : CoderIcons.file,
     child: Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: ChatAttachmentTile(
         attachment: message.attachment,
         loadAttachment: loadAttachment,
@@ -136,7 +113,7 @@ class ChatAttachmentTile extends StatelessWidget {
     final loader = loadAttachment;
     final preview = attachment.isImage && loader != null
         ? SizedBox.square(
-            dimension: 56,
+            dimension: TRControlMetrics.heightOf(TRUiSize.lg),
             child: FutureBuilder<Uint8List>(
               future: loader(attachment),
               builder: (context, snapshot) => snapshot.hasData
@@ -144,8 +121,8 @@ class ChatAttachmentTile extends StatelessWidget {
                       borderRadius: const BorderRadius.all(TRRadii.medium),
                       child: Image.memory(
                         snapshot.data!,
-                        width: 56,
-                        height: 56,
+                        width: TRControlMetrics.heightOf(TRUiSize.lg),
+                        height: TRControlMetrics.heightOf(TRUiSize.lg),
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const Icon(
                           CoderIcons.image,
@@ -170,7 +147,9 @@ class ChatAttachmentTile extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 280),
+          constraints: const BoxConstraints(
+            maxWidth: TRMeasurements.measureSm,
+          ),
           padding: const EdgeInsets.all(TRSpacing.small),
           decoration: BoxDecoration(
             border: Border.all(color: context.tinyrackTheme.border),
@@ -224,7 +203,7 @@ String _attachmentSize(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
-/// Assistant prose rendered as Markdown with a leading accent dot.
+/// Assistant prose rendered as Markdown on the shared leading rail.
 class ChatAssistantMessageView extends ConsumerWidget {
   /// Creates an assistant message view.
   const ChatAssistantMessageView({required this.message, super.key});
@@ -234,46 +213,31 @@ class ChatAssistantMessageView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+    return TRChatMessageRow(
+      icon: CoderIcons.status,
+      tone: TRChatMessageTone.primary,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Icon(
-              CoderIcons.status,
-              size: TRSpacing.small,
-              color: context.tinyrackTheme.primary,
+          MarkdownBody(
+            data: message.markdown,
+            selectable: true,
+            styleSheet: chatMarkdownStyleSheet(context),
+            onTapLink: (text, href, title) => openChatLink(
+              ref.read(externalUrlOpenerProvider),
+              href,
             ),
           ),
-          const SizedBox(width: TRSpacing.small),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                MarkdownBody(
-                  data: message.markdown,
-                  selectable: true,
-                  styleSheet: chatMarkdownStyleSheet(context),
-                  onTapLink: (text, href, title) => openChatLink(
-                    ref.read(externalUrlOpenerProvider),
-                    href,
-                  ),
-                ),
-                if (message.isStreaming)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: TRText(
-                      '▌',
-                      variant: TRTextVariant.code,
-                      color: TRTextColor.primary,
-                    ),
-                  ),
-              ],
+          if (message.isStreaming)
+            const Padding(
+              padding: EdgeInsets.only(top: TRSpacing.extraSmall),
+              child: TRText(
+                '▌',
+                variant: TRTextVariant.code,
+                color: TRTextColor.primary,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -291,21 +255,21 @@ class ChatNoticeLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final (String label, TRTextColor color) = switch (notice.kind) {
-      ChatNoticeKind.turnCompleted => (l10n.commonDone, TRTextColor.muted),
+    final (String label, TRChatToolStatus status) = switch (notice.kind) {
+      ChatNoticeKind.turnCompleted => (
+        l10n.commonDone,
+        TRChatToolStatus.succeeded,
+      ),
       ChatNoticeKind.turnCancelled => (
         l10n.chatNoticeCancelled,
-        TRTextColor.muted,
+        TRChatToolStatus.denied,
       ),
       ChatNoticeKind.turnFailed => (
         l10n.chatNoticeFailed(notice.message ?? ''),
-        TRTextColor.danger,
+        TRChatToolStatus.failed,
       ),
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: TRText(label, variant: TRTextVariant.bodySm, color: color),
-    );
+    return TRChatStatusRow(label: label, status: status);
   }
 }
 
@@ -322,13 +286,12 @@ class ChatUsageLine extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final summary = describeTokenUsage(l10n, usage.tokens);
     if (summary == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: TRText(
-        summary,
-        key: const ValueKey<String>('chat-usage-line'),
-        variant: TRTextVariant.bodySm,
-        color: TRTextColor.muted,
+    return KeyedSubtree(
+      key: const ValueKey<String>('chat-usage-line'),
+      child: TRChatStatusRow(
+        label: summary,
+        status: TRChatToolStatus.succeeded,
+        icon: CoderIcons.gauge,
       ),
     );
   }
@@ -348,50 +311,28 @@ class ChatUserAnswerLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: TRSpacing.extraSmall,
-        horizontal: TRSpacing.extraSmall,
-      ),
+    return TRChatUserBubble(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           for (final entry in answer.entries)
             Padding(
               key: ValueKey<String>('chat-answer-${entry.header}'),
               padding: const EdgeInsets.only(bottom: TRSpacing.threeExtraSmall),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: TRSpacing.threeExtraSmall,
-                    ),
-                    child: Icon(
-                      CoderIcons.chat,
-                      size: TRTypography.bodySm.fontSize,
-                      color: context.tinyrackTheme.primary,
-                    ),
+                  TRText(
+                    entry.question,
+                    variant: TRTextVariant.bodySm,
+                    color: TRTextColor.muted,
                   ),
-                  const SizedBox(width: TRSpacing.small),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        TRText(
-                          entry.question,
-                          variant: TRTextVariant.bodySm,
-                          color: TRTextColor.muted,
-                        ),
-                        TRText(
-                          entry.isFreeForm
-                              ? l10n.chatAnswerTyped(entry.answer)
-                              : entry.answer,
-                        ),
-                      ],
-                    ),
+                  TRText(
+                    entry.isFreeForm
+                        ? l10n.chatAnswerTyped(entry.answer)
+                        : entry.answer,
                   ),
                 ],
               ),
@@ -475,26 +416,12 @@ class ChatDeferredToolsLine extends StatelessWidget {
   final ChatDeferredTools notice;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      vertical: TRSpacing.threeExtraSmall,
-      horizontal: TRSpacing.extraSmall,
-    ),
-    child: Row(
-      children: <Widget>[
-        Icon(
-          CoderIcons.tool,
-          size: TRTypography.bodySm.fontSize,
-          color: context.tinyrackTheme.textMuted,
-        ),
-        const SizedBox(width: TRSpacing.small),
-        TRText(
-          AppLocalizations.of(context).chatDeferredTools(notice.count),
-          key: const ValueKey<String>('chat-deferred-tools'),
-          variant: TRTextVariant.bodySm,
-          color: TRTextColor.muted,
-        ),
-      ],
+  Widget build(BuildContext context) => KeyedSubtree(
+    key: const ValueKey<String>('chat-deferred-tools'),
+    child: TRChatStatusRow(
+      label: AppLocalizations.of(context).chatDeferredTools(notice.count),
+      status: TRChatToolStatus.succeeded,
+      icon: CoderIcons.tool,
     ),
   );
 }
@@ -509,13 +436,9 @@ class ChatUnknownEventLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      child: TRText(
-        event.type,
-        variant: TRTextVariant.bodySm,
-        color: TRTextColor.muted,
-      ),
+    return TRChatStatusRow(
+      label: event.type,
+      status: TRChatToolStatus.denied,
     );
   }
 }
@@ -556,23 +479,8 @@ class ChatRunningIndicator extends StatelessWidget {
   const ChatRunningIndicator({super.key});
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 4),
-    child: Row(
-      children: <Widget>[
-        SizedBox.square(
-          dimension: 12,
-          child: TRSpinner(
-            label: AppLocalizations.of(context).commonRunning,
-          ),
-        ),
-        const SizedBox(width: TRSpacing.small),
-        TRText(
-          AppLocalizations.of(context).commonRunning,
-          variant: TRTextVariant.bodySm,
-          color: TRTextColor.muted,
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => TRChatStatusRow(
+    label: AppLocalizations.of(context).commonRunning,
+    status: TRChatToolStatus.running,
   );
 }

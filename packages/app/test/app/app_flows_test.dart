@@ -124,9 +124,10 @@ final class _MappedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) async => apis[endpoint.websocketUri.host]!;
+  }) async =>
+      apis[(connection as DirectHostConnection).endpoint.websocketUri.host]!;
 }

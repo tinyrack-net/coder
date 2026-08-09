@@ -11,6 +11,15 @@ typedef CoderClientOpener =
       required String clientKind,
     });
 
+/// Injectable relay client opener used by the production composition root.
+typedef RelayCoderClientOpener =
+    Future<CoderApi> Function({
+      required RelayHostConnection connection,
+      required RelayHostCredential credential,
+      required String clientId,
+      required String clientKind,
+    });
+
 /// Composition-root dependencies required by the daemon-independent app shell.
 final class AppServices {
   /// Creates application services.
@@ -23,6 +32,8 @@ final class AppServices {
     this.embeddedLauncher,
     this.embeddedDataEraser,
     this.delay = const SystemAppDelay(),
+    this.pathProbeScheduler = const SystemHostPathProbeScheduler(),
+    this.relayPairer = const CoderHostRelayPairer(),
   });
 
   /// Device-local app settings repository.
@@ -49,6 +60,12 @@ final class AppServices {
   /// Delay adapter used by independent initial reconnect loops.
   final AppDelay delay;
 
+  /// Periodic direct/relay path probe scheduler.
+  final HostPathProbeScheduler pathProbeScheduler;
+
+  /// One-time relay device registration adapter.
+  final HostRelayPairer relayPairer;
+
   /// Whether this platform can own an embedded daemon.
   bool get supportsEmbeddedDaemon => embeddedLauncher != null;
 
@@ -56,28 +73,74 @@ final class AppServices {
   bool get erasesEmbeddedDaemonData => embeddedDataEraser != null;
 }
 
+/// Production pairing adapter backed by the E2E relay client package.
+final class CoderHostRelayPairer implements HostRelayPairer {
+  /// Creates the stateless pairing adapter.
+  const CoderHostRelayPairer();
+
+  @override
+  Future<RelayPairingResult> pair({
+    required Uri pairingUrl,
+    required String deviceId,
+    required String deviceName,
+    required String connectionId,
+    required String credentialKey,
+  }) => RelayDevicePairer().pair(
+    pairingUrl: pairingUrl,
+    deviceId: deviceId,
+    deviceName: deviceName,
+    connectionId: connectionId,
+    credentialKey: credentialKey,
+  );
+}
+
 /// Production WebSocket implementation of [HostClientFactory].
 final class WebSocketHostClientFactory implements HostClientFactory {
   /// Creates the production host client factory.
-  const WebSocketHostClientFactory({this.openClient = _openCoderClient});
+  const WebSocketHostClientFactory({
+    this.openClient = _openCoderClient,
+    this.openRelayClient = _openRelayCoderClient,
+  });
 
   /// Injected typed client opener.
   final CoderClientOpener openClient;
 
+  /// Injected encrypted relay client opener.
+  final RelayCoderClientOpener openRelayClient;
+
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) async {
     try {
-      return await openClient(
-        endpoint: endpoint,
-        credentials: credentials,
-        clientId: clientId,
-        clientKind: clientKind,
-      );
+      return switch ((connection, credential)) {
+        (
+          DirectHostConnection(:final endpoint),
+          DirectHostCredential(:final credentials),
+        ) =>
+          await openClient(
+            endpoint: endpoint,
+            credentials: credentials,
+            clientId: clientId,
+            clientKind: clientKind,
+          ),
+        (
+          final RelayHostConnection relayConnection,
+          final RelayHostCredential relayCredential,
+        ) =>
+          await openRelayClient(
+            connection: relayConnection,
+            credential: relayCredential,
+            clientId: clientId,
+            clientKind: clientKind,
+          ),
+        _ => throw const HostConnectionFailure.authentication(
+          'The stored credential does not match this connection path.',
+        ),
+      };
     } on CoderClientException catch (error) {
       if (error.code == 'protocol_mismatch') {
         throw HostConnectionFailure.protocolMismatch(error.message);
@@ -107,3 +170,30 @@ Future<CoderApi> _openCoderClient({
   clientId: clientId,
   clientKind: clientKind,
 );
+
+Future<CoderApi> _openRelayCoderClient({
+  required RelayHostConnection connection,
+  required RelayHostCredential credential,
+  required String clientId,
+  required String clientKind,
+}) async {
+  final client = await CoderClient.connect(
+    endpoint: HostEndpoint(websocketUri: connection.relayUri),
+    credentials: const DaemonCredentials(
+      bearerToken: 'relay-device-authentication-is-e2e',
+    ),
+    clientId: clientId,
+    clientKind: clientKind,
+    connector: RelayWebSocketConnector(
+      connection: connection,
+      credential: credential,
+    ),
+  );
+  if (client.serverInfo.serverId != connection.serverId) {
+    await client.close();
+    throw const HostConnectionFailure.authentication(
+      'Relay path resolved to a different daemon identity.',
+    );
+  }
+  return client;
+}

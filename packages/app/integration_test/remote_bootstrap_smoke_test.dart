@@ -47,9 +47,12 @@ void main() {
       await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
       expect(find.text('내장 daemon'), findsNothing);
-      expect(find.text('원격 daemon 추가'), findsOneWidget);
+      expect(find.text('기기 연결'), findsOneWidget);
     },
-    tags: const <String>['feature_test__daemon_management__platformSmoke'],
+    tags: const <String>[
+      'feature_test__daemon_management__platformSmoke',
+      'feature_test__daemon_relay__platformSmoke',
+    ],
   );
 }
 
@@ -58,8 +61,8 @@ final class _UnusedClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => throw StateError('No host should connect in a remote-only smoke test.');

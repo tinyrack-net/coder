@@ -31,6 +31,7 @@ void main() {
         ),
       );
       await store.setDaemonToken('daemon-secret');
+      await store.setRelayIdentityPrivateKey(List<int>.generate(32, (i) => i));
 
       final reloaded = CredentialStore(directory.path);
       await reloaded.load();
@@ -62,13 +63,22 @@ void main() {
             ),
       );
       expect(reloaded.bearerToken, 'daemon-secret');
+      expect(
+        reloaded.relayIdentityPrivateKey,
+        List<int>.generate(32, (i) => i),
+      );
 
       final credentialsJson = await File(
         '${directory.path}/secrets.json',
       ).readAsString();
       expect(jsonDecode(credentialsJson), <String, dynamic>{
-        'schemaVersion': 1,
-        'daemon': <String, dynamic>{'bearerToken': 'daemon-secret'},
+        'schemaVersion': 2,
+        'daemon': <String, dynamic>{
+          'bearerToken': 'daemon-secret',
+          'relayIdentityPrivateKey': base64UrlEncode(
+            List<int>.generate(32, (i) => i),
+          ),
+        },
         'providerCredentials': <String, dynamic>{
           'deepseek': <String, dynamic>{
             'type': 'apiKey',
@@ -160,7 +170,7 @@ void main() {
     addTearDown(() => directory.delete(recursive: true));
     await File('${directory.path}/secrets.json').writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'providerCredentials': <String, dynamic>{},
         'mcpSecrets': <String, dynamic>{'github.token': 42},
       }),

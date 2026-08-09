@@ -14,6 +14,8 @@ DaemonConfig resolveDaemonConfig({
   String? listen,
   String? token,
   List<String> allowedOrigins = const <String>[],
+  bool? relayEnabled,
+  String? relayEndpoint,
 }) {
   final (host, port) = parseLocalDaemonListen(
     listen ?? '${defaults.host}:${defaults.port}',
@@ -27,7 +29,22 @@ DaemonConfig resolveDaemonConfig({
     // An empty allowlist means "unset", which keeps the shipped defaults
     // rather than locking every browser out.
     allowedOrigins: allowedOrigins.isEmpty ? null : allowedOrigins.toSet(),
+    relay: RelayDaemonConfig(
+      enabled: relayEnabled ?? defaults.relay.enabled,
+      endpoint: relayEndpoint == null
+          ? defaults.relay.endpointOverride
+          : _parseRelayEndpoint(relayEndpoint),
+      tlsPolicy: defaults.relay.tlsPolicy,
+    ),
   );
+}
+
+Uri _parseRelayEndpoint(String value) {
+  final uri = Uri.parse(value);
+  if (uri.scheme != 'ws' && uri.scheme != 'wss') {
+    throw const FormatException('Relay endpoint must use ws or wss.');
+  }
+  return uri;
 }
 
 /// Runs a daemon until [shutdown] completes, then stops it.

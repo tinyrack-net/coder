@@ -216,15 +216,15 @@ class _ProviderCollection extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               if (connections.isEmpty)
-                SettingsRow(
+                SettingsRow.collection(
                   key: const ValueKey<String>('provider-list-empty'),
                   title: TRText.inherit(l10n.providerSettingsNoConnections),
                 ),
               for (final connection in connections)
-                SettingsRow(
+                SettingsRow.collection(
                   key: ValueKey<String>('provider-connection-${connection.id}'),
                   selected: connection.id == selectedId,
                   leading: Icon(_statusIcon(connection.status)),

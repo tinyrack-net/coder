@@ -184,10 +184,10 @@ class _AgentDefinitionList extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               for (final definition in state.definitions)
-                SettingsRow(
+                SettingsRow.collection(
                   selected: definition.id == selectedId,
                   leading: Icon(
                     definition.mode == AgentMode.primary

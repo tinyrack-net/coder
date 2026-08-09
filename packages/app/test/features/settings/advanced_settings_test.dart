@@ -137,7 +137,7 @@ MemoryAppStore _store(DateTime now) => MemoryAppStore(
     RemoteDaemonProfile(
       id: 'remote',
       label: 'Remote',
-      websocketUri: Uri.parse('ws://remote.test/ws'),
+      connections: directHostConnections(Uri.parse('ws://remote.test/ws')),
       autoConnect: false,
       createdAt: now,
       updatedAt: now,
@@ -181,8 +181,8 @@ final class _OfflineClients implements HostClientFactory {
 
   @override
   Future<CoderApi> connect({
-    required HostEndpoint endpoint,
-    required DaemonCredentials credentials,
+    required HostConnection connection,
+    required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
   }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));

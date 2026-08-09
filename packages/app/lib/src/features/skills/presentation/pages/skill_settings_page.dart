@@ -306,10 +306,10 @@ class _SkillList extends ConsumerWidget {
           ],
         ),
         Expanded(
-          child: ListView(
+          child: SettingsCollectionList(
             children: <Widget>[
               for (final skill in skills)
-                SettingsRow(
+                SettingsRow.collection(
                   selected: skill.id == selectedId && !skill.isShadowed,
                   enabled: !skill.isShadowed,
                   title: TRText.inherit(skill.name),
