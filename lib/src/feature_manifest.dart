@@ -600,8 +600,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
         id: 'keyboard_context_menu_input',
         description:
             'Restores input after native-menu selection and cancellation, '
-            'edits across an automatically wrapped row, and renders real IME '
-            'preedit before continuing committed keyboard input.',
+            'edits across an automatically wrapped row, commits repeated '
+            'Hangul jamo one keystroke at a time, and renders real IME '
+            'preedit before continuing committed keyboard input, including '
+            'the Control+Shift+C/V clipboard chords.',
         surfaces: _desktop,
       ),
     ],

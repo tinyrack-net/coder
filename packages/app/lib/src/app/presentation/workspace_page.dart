@@ -961,6 +961,8 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         controller: _controller,
         autofocus: true,
         contextMenuItems: _buildContextMenu,
+        onCopy: _copySelection,
+        onPaste: _pasteClipboard,
       ),
     );
   }

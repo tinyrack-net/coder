@@ -10,6 +10,8 @@ final class CoderTerminalView extends StatefulWidget {
     required this.terminal,
     required this.controller,
     this.contextMenuItems,
+    this.onCopy,
+    this.onPaste,
     this.autofocus = false,
     this.readOnly = false,
     super.key,
@@ -23,6 +25,16 @@ final class CoderTerminalView extends StatefulWidget {
 
   /// Native or Flutter context-menu description for terminal actions.
   final TRMenuElementsBuilder? contextMenuItems;
+
+  /// Runs on the desktop terminal copy chord, Control+Shift+C.
+  ///
+  /// Plain Control+C is the program's interrupt and always goes to the PTY.
+  final VoidCallback? onCopy;
+
+  /// Runs on the desktop terminal paste chord, Control+Shift+V.
+  ///
+  /// Plain Control+V is literal-next and always goes to the PTY.
+  final VoidCallback? onPaste;
 
   /// Whether the terminal requests focus when mounted.
   final bool autofocus;
@@ -64,8 +76,23 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
       _menuController.close();
       return false;
     }
+    if (event.control && event.shift && !event.alt && !event.meta) {
+      // The key carries the platform's character when there is one — which a
+      // control chord may report as the C0 byte — and the key label otherwise.
+      if (widget.onCopy != null && _isLetter(event.key, 'c', '\u0003')) {
+        widget.onCopy!();
+        return false;
+      }
+      if (widget.onPaste != null && _isLetter(event.key, 'v', '\u0016')) {
+        widget.onPaste!();
+        return false;
+      }
+    }
     return true;
   }
+
+  static bool _isLetter(String key, String letter, String controlByte) =>
+      key.toLowerCase() == letter || key == controlByte;
 
   @override
   void dispose() {
