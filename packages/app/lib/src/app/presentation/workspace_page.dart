@@ -31,6 +31,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -298,7 +299,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final value = ref.watch(provider);
     final workspace = value.asData?.value;
     _openRequestedRoute(provider, workspace);
-    if (workspace == null) return const Center(child: TRSpinner());
+    if (workspace == null) {
+      return WorkspacePaneSkeleton(
+        semanticLabel: AppLocalizations.of(context).workspaceLoading,
+      );
+    }
     return widget.mobile
         ? _buildMobile(context, workspace)
         : _buildNode(context, workspace, workspace.root);
@@ -516,12 +521,19 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
       closeLabel: AppLocalizations.of(context).workspaceCloseTab,
     ),
+    PendingTerminalTabTarget() => TRTabsTab(
+      value: _controlValue(entry),
+      label: AppLocalizations.of(context).workspaceTerminalStarting,
+      leading: const Icon(CoderIcons.terminal),
+      onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
+      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+    ),
   };
 
   String _controlValue(WorkspaceTabEntry entry) => switch (entry.target) {
     SessionTabTarget(:final sessionId) => sessionId,
     TerminalTabTarget(:final terminalId) => terminalId,
-    DraftTabTarget() => entry.id,
+    DraftTabTarget() || PendingTerminalTabTarget() => entry.id,
   };
 
   Widget _content(SessionTabsState workspace, WorkspaceTabEntry entry) =>
@@ -543,6 +555,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           selection: widget.selection,
           draftId: entry.id,
           onCreated: _createdSession,
+        ),
+        PendingTerminalTabTarget() => TerminalConnectingOverlay(
+          key: ValueKey<String>('pending-terminal-pane-${entry.id}'),
+          semanticLabel: AppLocalizations.of(context).workspaceTerminalStarting,
+          message: AppLocalizations.of(context).workspaceTerminalStarting,
         ),
       };
 
@@ -757,18 +774,48 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final tabs = ref.read(
       sessionTabsControllerProvider(widget.selection).notifier,
     );
-    await tabs.focusPane(paneId);
-    final terminal = await ref
-        .read(
-          terminalsControllerProvider(
-            widget.selection.hostId,
-            widget.selection.worktreeId,
-          ).notifier,
-        )
-        .create();
-    await tabs.addTerminal(terminal);
+    // The placeholder tab appears before the daemon answers, so creating a
+    // terminal never leaves the pane frozen while the PTY spawns.
+    final pendingTabId = tabs.openPendingTerminal(paneId);
+    final TerminalDto terminal;
+    try {
+      terminal = await ref
+          .read(
+            terminalsControllerProvider(
+              widget.selection.hostId,
+              widget.selection.worktreeId,
+            ).notifier,
+          )
+          .create();
+    } on Exception catch (error) {
+      await tabs.removePendingTerminal(pendingTabId);
+      if (mounted) await _showTerminalCreateError(error);
+      return;
+    }
+    tabs.promotePendingTerminal(pendingTabId, terminal);
     if (mounted) _goTerminal(context, widget.selection, terminal.id);
   }
+
+  Future<void> _showTerminalCreateError(Object error) => showTRDialog<void>(
+    context: context,
+    builder: (context) => TRAlertDialog(
+      key: const ValueKey<String>('terminal-create-failed'),
+      title: TRText.inherit(
+        AppLocalizations.of(context).terminalConnectionFailed,
+      ),
+      content: TRText.inherit(
+        AppLocalizations.of(context).workspaceTerminalStartFailed('$error'),
+      ),
+      actions: <TRButton>[
+        TRButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: TRText.inherit(
+            MaterialLocalizations.of(context).okButtonLabel,
+          ),
+        ),
+      ],
+    ),
+  );
 
   void _createdSession(SessionDto session) {
     if (mounted) _goSession(context, widget.selection, session.id);
@@ -786,6 +833,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         await ref
             .read(sessionTabsControllerProvider(widget.selection).notifier)
             .closeTab(entry.id);
+      case PendingTerminalTabTarget():
+        await ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .removePendingTerminal(entry.id);
     }
     if (mounted) _routeFocused();
   }
@@ -847,7 +898,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         _goSession(context, widget.selection, sessionId);
       case TerminalTabTarget(:final terminalId):
         _goTerminal(context, widget.selection, terminalId);
-      case DraftTabTarget() || null:
+      case DraftTabTarget() || PendingTerminalTabTarget() || null:
         _goWorktree(context, widget.selection);
     }
   }

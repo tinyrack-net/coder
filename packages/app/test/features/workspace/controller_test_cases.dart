@@ -610,4 +610,152 @@ void _registerWorkspaceControllerTests() {
     },
     tags: const <String>['feature_test__session_tabs__unit'],
   );
+
+  test(
+    'pending terminal tabs appear instantly, persist nothing, and promote '
+    'or roll back',
+    () async {
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[_profile('server', now)],
+        tokens: const <String, String>{'server': 'token'},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(
+            AppServices(
+              settings: store,
+              profiles: store,
+              credentials: store,
+              clients: _HostClients(<String, CoderApi>{'server.test': api}),
+              clientKind: 'test',
+            ),
+          ),
+          appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      const selection = WorkspaceSelection(
+        hostId: 'server',
+        workspaceId: 'workspace',
+        worktreeId: 'worktree',
+      );
+      final provider = sessionTabsControllerProvider(selection);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      final initial = await container.read(provider.future);
+      final notifier = container.read(provider.notifier);
+
+      // The placeholder tab is observable synchronously: creating a terminal
+      // must never leave the pane waiting on the daemon for feedback.
+      final pendingId = notifier.openPendingTerminal(initial.focusedPaneId);
+      final pending = container.read(provider).requireValue;
+      expect(pending.focusedTab?.id, pendingId);
+      expect(pending.focusedTab?.target, isA<PendingTerminalTabTarget>());
+
+      await Future<void>.delayed(Duration.zero);
+      final savedPending = store.settings.sessionTabs[selection.storageKey]!;
+      expect(
+        savedPending.tabs.map((tab) => tab.id),
+        isNot(contains(pendingId)),
+      );
+      expect(
+        (savedPending.root as WorkspacePanePreference).tabIds,
+        isNot(contains(pendingId)),
+      );
+
+      const terminal = TerminalDto(
+        id: 'terminal-1',
+        worktreeId: 'worktree',
+        title: 'Terminal 1',
+        shell: ShellSpecDto(executable: '/bin/sh'),
+        status: TerminalStatus.running,
+        columns: 80,
+        rows: 24,
+        lastSequence: 0,
+      );
+      notifier.promotePendingTerminal(pendingId, terminal);
+      final promoted = container.read(provider).requireValue;
+      expect(
+        (promoted.tabs[pendingId]!.target as TerminalTabTarget).terminalId,
+        terminal.id,
+      );
+      expect(promoted.terminals.map((item) => item.id), contains(terminal.id));
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        store.settings.sessionTabs[selection.storageKey]!.tabs.map(
+          (tab) => tab.targetId,
+        ),
+        contains(terminal.id),
+      );
+
+      final second = notifier.openPendingTerminal(promoted.focusedPaneId);
+      await notifier.removePendingTerminal(second);
+      final rolled = container.read(provider).requireValue;
+      expect(rolled.tabs.containsKey(second), isFalse);
+      expect(rolled.tabs.containsKey(pendingId), isTrue);
+    },
+    tags: const <String>['feature_test__session_tabs__unit'],
+  );
+
+  test(
+    'tab mutations complete without waiting for the settings write',
+    () async {
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        agents: <SessionDto>[agent],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          appIdGeneratorProvider.overrideWithValue(const _FixedIdGenerator()),
+          hostRegistryControllerProvider.overrideWith(_StalledSaveRegistry.new),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      const selection = WorkspaceSelection(
+        hostId: 'server',
+        workspaceId: 'workspace',
+        worktreeId: 'worktree',
+      );
+      final provider = sessionTabsControllerProvider(selection);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      final initial = await container.read(provider.future);
+
+      // The settings write never completes, yet the mutation resolves and the
+      // state is already updated: navigation is not gated on disk I/O.
+      var completed = false;
+      unawaited(
+        container
+            .read(provider.notifier)
+            .add(agent, draftTabId: initial.focusedTabId)
+            .then((_) => completed = true),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(completed, isTrue);
+      expect(
+        container.read(provider).requireValue.focusedTab?.target,
+        const SessionTabTarget('agent'),
+      );
+    },
+    tags: const <String>['feature_test__session_tabs__unit'],
+  );
+}
+
+final class _StalledSaveRegistry extends HostRegistryController {
+  @override
+  Future<void> saveWorkspaceUi({
+    required WorkspaceSelection selection,
+    required SessionTabPreference tabs,
+  }) => Completer<void>().future;
 }
