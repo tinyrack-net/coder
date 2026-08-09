@@ -210,11 +210,11 @@ void main() {
     expect(mobileBuild, contains('cache-provider: enhanced'));
   });
 
-  test('iOS uses CocoaPods while the pinned scanner lacks SwiftPM support', () {
-    expect(appPubspec, contains('mobile_scanner: 5.2.3'));
+  test('the scanner no longer forces SwiftPM off while iOS uses CocoaPods', () {
+    expect(appPubspec, contains('mobile_scanner: ^7.4.0'));
     expect(
       appPubspec,
-      contains('config:\n    enable-swift-package-manager: false'),
+      isNot(contains('enable-swift-package-manager: false')),
     );
     expect(iosDebugConfig, contains('Pods-Runner.debug.xcconfig'));
     expect(iosReleaseConfig, contains('Pods-Runner.release.xcconfig'));

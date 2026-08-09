@@ -183,6 +183,14 @@ void main() {
       fileName: 'terminal_context_menu_open',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
       whilePerforming: (tester) async {
+        final terminalView = tester.widget<CoderTerminalView>(
+          find.byType(CoderTerminalView),
+        );
+        await _waitForTerminalText(
+          tester,
+          terminalView.terminal,
+          'selectable output',
+        );
         final surface = find.byKey(
           const ValueKey<String>('tr-terminal-surface'),
         );
@@ -227,6 +235,10 @@ void main() {
       fileName: 'terminal_ime_preedit',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
       whilePerforming: (tester) async {
+        final terminalView = tester.widget<CoderTerminalView>(
+          find.byType(CoderTerminalView),
+        );
+        await _waitForTerminalText(tester, terminalView.terminal, 'input: ');
         final surface = find.byKey(
           const ValueKey<String>('tr-terminal-surface'),
         );
@@ -262,10 +274,10 @@ void main() {
                     )
                     .decoration
                 as BoxDecoration;
-        expect(decoration.color, terminal.theme.background);
+        expect(decoration.color, terminal.theme!.background);
         expect(
           (decoration.border! as Border).bottom.color,
-          terminal.theme.foreground,
+          terminal.theme!.foreground,
         );
         return null;
       },
@@ -438,6 +450,19 @@ class _TerminalGoldenHostState extends State<_TerminalGoldenHost> {
 }
 
 Widget _terminalImeApp() => const _TerminalImeGoldenApp();
+
+Future<void> _waitForTerminalText(
+  WidgetTester tester,
+  Terminal terminal,
+  String expected,
+) async {
+  while (terminal.buffer.active
+          .getLine(0)
+          ?.translateToString(trimRight: true) !=
+      expected) {
+    await tester.pump();
+  }
+}
 
 class _TerminalImeGoldenApp extends StatefulWidget {
   const _TerminalImeGoldenApp();

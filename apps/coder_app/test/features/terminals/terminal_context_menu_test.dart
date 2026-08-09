@@ -278,33 +278,43 @@ void main() {
       final finder = find.byType(TerminalView);
       final terminal = tester.widget<TerminalView>(finder);
       final colors = tester.element(finder).tinyrackTheme;
+      final theme = terminal.theme!;
+      final style = terminal.style!;
 
-      expect(terminal.theme.background, colors.surface);
-      expect(terminal.theme.foreground, colors.text);
-      expect(terminal.theme.cursor, colors.focus);
-      expect(terminal.theme.selection, colors.surfaceSelected);
-      expect(terminal.theme.black, colors.surface);
-      expect(terminal.theme.red, colors.danger);
-      expect(terminal.theme.green, colors.success);
-      expect(terminal.theme.yellow, colors.warning);
-      expect(terminal.theme.blue, colors.info);
-      expect(terminal.theme.magenta, colors.primary);
-      expect(terminal.theme.cyan, colors.infoBorder);
-      expect(terminal.theme.white, colors.text);
-      expect(terminal.theme.brightBlack, colors.textMuted);
-      expect(terminal.theme.brightRed, colors.dangerBorder);
-      expect(terminal.theme.brightGreen, colors.successBorder);
-      expect(terminal.theme.brightYellow, colors.warningBorder);
-      expect(terminal.theme.brightBlue, colors.infoBorder);
-      expect(terminal.theme.brightMagenta, colors.primary);
-      expect(terminal.theme.brightCyan, colors.info);
-      expect(terminal.theme.brightWhite, colors.text);
-      expect(terminal.theme.searchHitBackground, colors.warningSurface);
-      expect(terminal.theme.searchHitBackgroundCurrent, colors.warning);
-      expect(terminal.theme.searchHitForeground, colors.surface);
-      expect(terminal.style.fontSize, TRTypography.code.fontSize);
-      expect(terminal.style.height, TRTypography.code.height);
-      expect(terminal.style.fontFamily, TRTypography.code.fontFamily);
+      expect(theme.background, colors.surface);
+      expect(theme.foreground, colors.text);
+      expect(theme.cursor, colors.focus);
+      expect(theme.cursorAccent, colors.surface);
+      expect(theme.selection, colors.surfaceSelected);
+      expect(theme.selectionInactive, colors.surfaceSelected);
+      expect(theme.palette, hasLength(256));
+      expect(theme.palette.take(16), <Color>[
+        colors.surface,
+        colors.danger,
+        colors.success,
+        colors.warning,
+        colors.info,
+        colors.primary,
+        colors.infoBorder,
+        colors.text,
+        colors.textMuted,
+        colors.dangerBorder,
+        colors.successBorder,
+        colors.warningBorder,
+        colors.infoBorder,
+        colors.primary,
+        colors.info,
+        colors.text,
+      ]);
+      expect(
+        theme.palette.skip(16),
+        TerminalThemes.defaultTheme.palette.skip(16),
+      );
+      expect(style.fontSize, TRTypography.code.fontSize);
+      expect(style.height, TRTypography.code.height);
+      expect(style.fontFamily, TRTypography.code.fontFamily);
+      expect(style.fontWeight, TRTypography.code.fontWeight);
+      expect(style.letterSpacing, TRTypography.code.letterSpacing);
       expect(terminal.padding, const EdgeInsets.all(TRSpacing.small));
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
