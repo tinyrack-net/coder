@@ -465,8 +465,6 @@ void main() {
       );
       await tester.ensureVisible(collaborationTool);
       await tester.pumpAndSettle();
-      await tester.tap(collaborationTool);
-      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('호출 가능한 Subagent'),
@@ -744,10 +742,15 @@ void main() {
       final coderDefinition = await setupClient.agents.getAgentDefinition(
         'coder',
       );
+      // The remaining turn fixtures invoke individual tools directly. Keep
+      // the Lua surface out of them so each scenario exercises its named
+      // capability rather than the nested orchestration path.
       await setupClient.agents.updateAgentDefinition(
         coderDefinition.copyWith(
           toolIds: <String>[
-            ...coderDefinition.toolIds,
+            ...coderDefinition.toolIds.where(
+              (id) => id != 'lua_code_mode',
+            ),
             'mcp__e2e__echo',
           ],
         ),
