@@ -66,7 +66,7 @@ void main() {
       });
 
       const expected =
-          '한글 abc 안녕 ㅁㄴㅇㄹㅁㄴㅇㄹ '
+          '한글 abc 안녕 ㅁㄴㅇㄻㄴㅇㄹ '
           '\u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
@@ -235,10 +235,11 @@ void main() {
       await _keys(<String>['a', 'b', 'c', 'space']);
       await _toggleLanguage();
       await _keys(<String>[...'dkssud'.split(''), 'space']);
-      // Bare consonants never join into a syllable, so IBus commits each one
-      // as the next arrives while the last stays in preedit until Space.
-      // Every jamo must reach the PTY as it commits — not all at once on the
-      // Space — and the Space itself must be written exactly once.
+      // Bare consonants cannot start a syllable, so IBus commits each one as
+      // the next arrives while the last stays in preedit until Space — except
+      // ㄹ followed by ㅁ, which compose the cluster ㄻ. Every jamo must reach
+      // the PTY as it commits — not all at once on the Space — and the Space
+      // itself must be written exactly once.
       await _keys(<String>[...'asdfasdf'.split(''), 'space']);
       await _toggleLanguage();
 
