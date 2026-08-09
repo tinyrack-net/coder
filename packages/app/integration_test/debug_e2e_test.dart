@@ -243,6 +243,21 @@ void main() {
       await pumpUntil(tester, find.text(remoteWorkspaceName));
       await pumpUntil(tester, find.textContaining('내장 daemon · '));
 
+      // The View menu must keep following the persisted sidebar state after
+      // each selection, rather than reusing the first title-bar snapshot.
+      expect(find.text('보기'), findsOneWidget);
+      await tester.tap(find.text('보기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('사이드바 접기'));
+      await tester.pumpAndSettle();
+      expect(appStore.settings.sidebarCollapsed, isTrue);
+
+      await tester.tap(find.text('보기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('사이드바 열기'));
+      await tester.pumpAndSettle();
+      expect(appStore.settings.sidebarCollapsed, isFalse);
+
       // The global desktop menu reaches the same typed new-workspace route.
       expect(find.text('파일'), findsOneWidget);
       await tester.tap(find.text('파일'));

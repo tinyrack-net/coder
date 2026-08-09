@@ -93,40 +93,6 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     }
     final window = _window;
     if (window == null || !window.supportsCustomTitleBar) return widget.child;
-    final collapsed = registry?.settings.sidebarCollapsed ?? false;
-    void newWorkspace() => widget.router.go(
-      const WorkspaceHomeRoute(compose: true).location,
-    );
-    void openSettings() => openSettingsTask(widget.router);
-    void toggleSidebar() => unawaited(
-      ref
-          .read(hostRegistryControllerProvider.notifier)
-          .setSidebarCollapsed(collapsed: !collapsed),
-    );
-    void showAbout() {
-      final navigatorContext =
-          widget.router.routerDelegate.navigatorKey.currentContext;
-      if (navigatorContext == null) return;
-      unawaited(
-        showTRDialog<void>(
-          context: navigatorContext,
-          useRootNavigator: false,
-          builder: (dialogContext) {
-            final l10n = AppLocalizations.of(dialogContext);
-            return TRDialog(
-              semanticLabel: l10n.desktopMenuAbout(AppIdentity.displayName),
-              title: const TRText.inherit(AppIdentity.displayName),
-              description: const TRText.inherit(packageVersion),
-              actions: TRButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: TRText.inherit(l10n.commonClose),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
     // MaterialApp's builder sits above the router's Navigator, so its Overlay
     // is a descendant rather than an ancestor. Own one here for menus,
     // tooltips, and the about dialog rendered by the application frame.
@@ -140,44 +106,93 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
           // of that translation, so Control with a letter still belongs to the
           // program in the terminal. Control with a comma is not a control
           // byte, so it needs no Shift.
-          builder: (context) => CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(
-                LogicalKeyboardKey.keyN,
-                control: true,
-                shift: true,
-              ): newWorkspace,
-              const SingleActivator(
-                LogicalKeyboardKey.comma,
-                control: true,
-              ): openSettings,
-              const SingleActivator(
-                LogicalKeyboardKey.keyB,
-                control: true,
-                shift: true,
-              ): toggleSidebar,
-              const SingleActivator(
-                LogicalKeyboardKey.keyQ,
-                control: true,
-                shift: true,
-              ): () =>
-                  unawaited(_quit()),
-            },
-            child: Column(
-              children: <Widget>[
-                DesktopTitleBar(
-                  window: window,
-                  sidebarCollapsed: collapsed,
-                  onNewWorkspace: newWorkspace,
-                  onOpenSettings: openSettings,
-                  onToggleSidebar: toggleSidebar,
-                  onShowAbout: showAbout,
-                  onClose: () => unawaited(_hide()),
-                  onQuit: () => unawaited(_quit()),
+          builder: (context) => Consumer(
+            // Overlay.initialEntries installs this builder once. Keep the
+            // title bar under its own provider subscription so settings
+            // changes can update menu labels and callbacks in place.
+            builder: (context, ref, _) {
+              final registry = ref
+                  .watch(hostRegistryControllerProvider)
+                  .asData
+                  ?.value;
+              final collapsed = registry?.settings.sidebarCollapsed ?? false;
+              void newWorkspace() => widget.router.go(
+                const WorkspaceHomeRoute(compose: true).location,
+              );
+              void openSettings() => openSettingsTask(widget.router);
+              void setSidebarVisibility({required bool visible}) => unawaited(
+                ref
+                    .read(hostRegistryControllerProvider.notifier)
+                    .setSidebarCollapsed(collapsed: !visible),
+              );
+              void toggleSidebar() => setSidebarVisibility(visible: collapsed);
+              void showAbout() {
+                final navigatorContext =
+                    widget.router.routerDelegate.navigatorKey.currentContext;
+                if (navigatorContext == null) return;
+                unawaited(
+                  showTRDialog<void>(
+                    context: navigatorContext,
+                    useRootNavigator: false,
+                    builder: (dialogContext) {
+                      final l10n = AppLocalizations.of(dialogContext);
+                      return TRDialog(
+                        semanticLabel: l10n.desktopMenuAbout(
+                          AppIdentity.displayName,
+                        ),
+                        title: const TRText.inherit(AppIdentity.displayName),
+                        description: const TRText.inherit(packageVersion),
+                        actions: TRButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: TRText.inherit(l10n.commonClose),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+
+              return CallbackShortcuts(
+                bindings: <ShortcutActivator, VoidCallback>{
+                  const SingleActivator(
+                    LogicalKeyboardKey.keyN,
+                    control: true,
+                    shift: true,
+                  ): newWorkspace,
+                  const SingleActivator(
+                    LogicalKeyboardKey.comma,
+                    control: true,
+                  ): openSettings,
+                  const SingleActivator(
+                    LogicalKeyboardKey.keyB,
+                    control: true,
+                    shift: true,
+                  ): toggleSidebar,
+                  const SingleActivator(
+                    LogicalKeyboardKey.keyQ,
+                    control: true,
+                    shift: true,
+                  ): () =>
+                      unawaited(_quit()),
+                },
+                child: Column(
+                  children: <Widget>[
+                    DesktopTitleBar(
+                      window: window,
+                      sidebarCollapsed: collapsed,
+                      onNewWorkspace: newWorkspace,
+                      onOpenSettings: openSettings,
+                      onSidebarVisibilityChanged: (visible) =>
+                          setSidebarVisibility(visible: visible),
+                      onShowAbout: showAbout,
+                      onClose: () => unawaited(_hide()),
+                      onQuit: () => unawaited(_quit()),
+                    ),
+                    Expanded(child: widget.child),
+                  ],
                 ),
-                Expanded(child: widget.child),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
