@@ -706,6 +706,7 @@ class SettingsRow extends StatelessWidget {
         : contentPadding,
     controlOwnsFocus: controlOwnsFocus,
     enabled: enabled,
+    hoverEnabled: false,
     isThreeLine: wrapsDescription || unboundedDescription,
     unboundedSubtitle: unboundedDescription,
     leading: leading,
