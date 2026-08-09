@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+/// Selects the semantic surface used when a row is selected.
+enum CoderListRowSelectionAppearance {
+  /// Uses the standard content-list selected surface.
+  standard,
+
+  /// Uses the navigation selected surface shared with [TRTreeNav].
+  navigation,
+}
+
 /// A Coder content row composed exclusively from Tinyrack tokens.
 ///
 /// The row rings itself only while it holds the primary focus. A row reports
@@ -23,6 +32,7 @@ class CoderListRow extends StatefulWidget {
     this.leading,
     this.onTap,
     this.selected = false,
+    this.selectionAppearance = CoderListRowSelectionAppearance.standard,
     this.subtitle,
     this.subtitleMaxLines,
     this.trailing,
@@ -47,6 +57,9 @@ class CoderListRow extends StatefulWidget {
 
   /// Whether the row is selected.
   final bool selected;
+
+  /// Semantic appearance used for the selected surface.
+  final CoderListRowSelectionAppearance selectionAppearance;
 
   /// Whether the row accepts activation.
   final bool enabled;
@@ -124,7 +137,10 @@ class _CoderListRowState extends State<CoderListRow> {
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
     final background = widget.selected
-        ? colors.surfaceSelected
+        ? widget.selectionAppearance ==
+                  CoderListRowSelectionAppearance.navigation
+              ? colors.surfaceHover
+              : colors.surfaceSelected
         : _hovered
         ? colors.surfaceHover
         : colors.surface;

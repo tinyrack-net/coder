@@ -140,7 +140,7 @@ class _ServerList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.mcpSettingsHeading,
           actions: <Widget>[
             TRIconButton(

@@ -170,7 +170,7 @@ class _AgentDefinitionList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.agentSettingsHeading,
           subtitle: l10n.agentSettingsCount(state.definitions.length),
           actions: <Widget>[

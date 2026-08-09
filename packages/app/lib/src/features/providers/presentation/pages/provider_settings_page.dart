@@ -202,7 +202,7 @@ class _ProviderCollection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.providerSettingsConnected,
           subtitle: '${connections.length}',
           actions: <Widget>[
