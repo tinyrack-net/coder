@@ -233,6 +233,37 @@ void main() {
     },
   );
 
+  test('Windows paths preserve architecture boundary exceptions', () {
+    for (final (package, path, source) in const <(String, String, String)>[
+      (
+        'daemon',
+        r'packages\daemon\lib\src\features\providers\infrastructure\openai\wire.dart',
+        "const vendor = 'openai';",
+      ),
+      (
+        'app',
+        r'packages\app\lib\src\features\conversation\presentation\tools\apply_patch.dart',
+        "const tool = 'apply_patch';",
+      ),
+      (
+        'app',
+        r'packages\app\lib\src\features\conversation\application\chat_timeline_model.dart',
+        "const tool = 'apply_patch';",
+      ),
+      (
+        'app',
+        r'packages\app\lib\src\features\terminals\presentation\coder_terminal_view.dart',
+        'cursor: colors.focus,',
+      ),
+    ]) {
+      expect(
+        verifier.verifySource(package: package, path: path, source: source),
+        isEmpty,
+        reason: path,
+      );
+    }
+  });
+
   test('invalid package fixture reports a reversed dependency', () {
     final violations = verifier.verifySource(
       package: 'protocol',

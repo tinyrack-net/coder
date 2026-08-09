@@ -74,10 +74,22 @@ dart run melos test:contract
 dart run melos test:vertical-slice
 dart run melos test:golden
 dart run melos test:coverage
+dart run melos test:e2e:desktop
 dart run melos verify:fast
 dart run melos verify
 dart run melos verify:debug
 ```
+
+Use the same Flutter SDK version as the `FLUTTER_VERSION` value in
+`.github/workflows/pipeline.yml` before running verification. The current pinned
+version is 3.44.8; check the active SDK with `flutter --version`. The repository
+does not install or switch Flutter SDKs automatically.
+
+Windows verification requires Visual Studio with the **C++ CMake tools for
+Windows** component. The verification and desktop E2E entrypoints discover the
+bundled CMake and Ninja tools through Visual Studio Installer, so they do not
+need to be added to the machine-wide `PATH`. If the component is missing, the
+entrypoint stops with an installation-oriented error before starting the suite.
 
 `verify:fast` checks formatting, strict analysis, dependency declarations,
 architecture and feature contracts, generated-code drift, and
@@ -85,13 +97,14 @@ all Dart and Flutter tests. Generated-code drift is checked first; once it is
 clean, independent checks run concurrently with a maximum of four tasks.
 `verify` uses the coverage runs as the canonical test execution instead of
 running the same tests once normally and again with instrumentation. Dart and
-Flutter coverage plus goldens run concurrently, followed by the per-package
-coverage threshold check. `verify:debug` is deliberately separate because it
-compiles and launches the Linux desktop runner. The `test:e2e:linux` entrypoint
-automatically runs under `xvfb-run -a`, so these application windows stay on an
-isolated virtual display. Each E2E shard runs in a fresh Flutter process because
-a stopped desktop runner cannot safely hand its debug log connection to the next
-integration file.
+Flutter coverage run concurrently, followed by the per-package coverage
+threshold check. Linux also runs the canonical goldens in a separate phase;
+Windows and macOS omit that Linux-owned pixel gate. `verify:debug` is deliberately
+separate because it compiles and launches the current host's desktop runner. The
+`test:e2e:desktop` entrypoint selects `linux`, `macos`, or `windows`; Linux runs
+each shard through `xvfb-run -a`, while Windows test windows can be visible. Each
+E2E shard runs in a fresh Flutter process because a stopped desktop runner cannot
+safely hand its debug log connection to the next integration file.
 
 Focused layer commands remain available for development. `test:dart` is the
 single-pass aggregate for the root and every non-Flutter package, including the
@@ -112,25 +125,25 @@ temporary home so no run reaches the real daemon home or its exclusive
 `daemon.lock`. `embedded-ports:check` enforces all three and runs as part of
 `verify:fast` and `verify`.
 
-The Linux runner is a unique `GApplication`, so a launch whose session-bus name
-is already owned hands itself to the running instance and exits before the
-Flutter engine starts; the tester only reports that it could not start the app
-on the device. Any Coder on the machine causes it — a developer's own app, or
-another checkout's E2E run. A test run therefore sets
-`TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES=1`, which keeps the process to itself.
-It is safe precisely because the run already owns an isolated daemon home.
+The Linux runner is a unique `GApplication`, and Windows uses a named mutex, so
+a normal second launch can be redirected to or rejected by the running app.
+Desktop E2E therefore sets `TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES=1`, which
+keeps the test process to itself. It is safe precisely because the run already
+owns an isolated daemon home.
 
-`test:e2e:linux` additionally points `TINYRACK_CODER_HOME` at a per-run
-temporary directory. Together these let two checkouts verify at the same time
-and let `verify:debug` pass while a developer's own `melos run:daemon` holds the
-product port. The Melos entrypoint gives each concurrent run its own display via
-`xvfb-run -a`; invoke that entrypoint instead of running the Flutter integration
-tests directly.
+`test:e2e:desktop` points `TINYRACK_CODER_HOME` at a per-run temporary directory
+on every supported host. Together these let two checkouts verify at the same
+time and let `verify:debug` pass while a developer's own `melos run:daemon` holds
+the product port. On Linux the entrypoint also gives each run its own display via
+`xvfb-run -a`; invoke the Melos entrypoint instead of running the Flutter
+integration tests directly.
 
 Golden tests run in their own canonical Linux process. Coverage excludes the
 `golden` tag so font/rendering configuration from unrelated test isolates cannot
 make pixel comparisons nondeterministic; the same UI behavior remains covered by
-widget tests and `test:golden` is still a required gate.
+widget tests. `test:golden` and the native IBus terminal E2E remain required
+Linux CI gates, but their absence from a Windows or macOS local run is not a
+local verification failure.
 
 ## Continuous integration
 

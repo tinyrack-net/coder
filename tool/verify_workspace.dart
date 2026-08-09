@@ -1,6 +1,10 @@
 import 'dart:io';
 
+import 'package:coder_workspace/src/desktop_host.dart';
 import 'package:coder_workspace/src/verification_runner.dart';
+import 'package:coder_workspace/src/windows_build_environment.dart';
+
+import 'support/windows_build_environment.dart';
 
 Future<void> main(List<String> arguments) async {
   if (arguments.isEmpty || arguments.length > 2) {
@@ -9,6 +13,9 @@ Future<void> main(List<String> arguments) async {
     return;
   }
   final profile = arguments.first;
+  final hostPlatform = DesktopHost.fromOperatingSystem(
+    Platform.operatingSystem,
+  );
   final jobsArgument = arguments.where(
     (argument) => argument.startsWith('--jobs='),
   );
@@ -28,18 +35,34 @@ Future<void> main(List<String> arguments) async {
   }
   final plan = switch (profile) {
     'fast' => WorkspaceVerificationPlans.fast(),
-    'full' => WorkspaceVerificationPlans.full(),
+    'full' when hostPlatform != null => WorkspaceVerificationPlans.full(
+      hostPlatform: hostPlatform,
+    ),
     'coverage' => WorkspaceVerificationPlans.coverage(),
     _ => null,
   };
   if (plan == null) {
+    if (profile == 'full' && hostPlatform == null) {
+      stderr.writeln(
+        'Full verification is supported only on Linux, macOS, and Windows; '
+        'found ${Platform.operatingSystem}.',
+      );
+    }
     _usage();
     exitCode = 64;
     return;
   }
 
+  late final Map<String, String> environment;
+  try {
+    environment = await resolveWindowsBuildEnvironment();
+  } on WindowsBuildToolsException catch (error) {
+    stderr.writeln(error);
+    exitCode = 78;
+    return;
+  }
   final report = await VerificationRunner(
-    executor: const _ProcessTaskExecutor(),
+    executor: _ProcessTaskExecutor(environment: environment),
     maxConcurrency: jobs,
   ).run(plan);
   stdout.writeln('\nVerification summary:');
@@ -61,7 +84,9 @@ void _usage() {
 }
 
 final class _ProcessTaskExecutor implements VerificationTaskExecutor {
-  const _ProcessTaskExecutor();
+  const _ProcessTaskExecutor({required this.environment});
+
+  final Map<String, String> environment;
 
   @override
   Future<VerificationTaskResult> run(VerificationTask task) async {
@@ -71,6 +96,7 @@ final class _ProcessTaskExecutor implements VerificationTaskExecutor {
       final process = await Process.start(
         'dart',
         <String>['run', 'melos', task.script],
+        environment: environment,
         mode: ProcessStartMode.inheritStdio,
       );
       final processExitCode = await process.exitCode;

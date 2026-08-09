@@ -6,6 +6,8 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 
+import 'temporary_directory.dart';
+
 /// Real local daemon and production WebSocket composition for runner E2E.
 final class RealDaemonFixture {
   RealDaemonFixture._({
@@ -100,7 +102,7 @@ final class RealDaemonFixture {
 
   Future<void> dispose() async {
     await daemon.stop();
-    if (home.existsSync()) home.deleteSync(recursive: true);
+    await deleteTemporaryDirectory(home);
   }
 }
 

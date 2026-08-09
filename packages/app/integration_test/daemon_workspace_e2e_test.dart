@@ -18,6 +18,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/temporary_directory.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -129,7 +130,13 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
       await _pumpUntil(tester, find.text('registered-project'));
       final catalog = await setup.workspaces.getWorkspaceCatalog();
-      expect(catalog.workspaces.single.rootPath, workspace.path);
+      expect(
+        FileSystemEntity.identicalSync(
+          catalog.workspaces.single.rootPath,
+          workspace.path,
+        ),
+        isTrue,
+      );
       expect(find.textContaining('Recovered daemon · '), findsOneWidget);
 
       final workspaceId = catalog.workspaces.single.id;
@@ -194,9 +201,7 @@ void main() {
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
       final home = await Directory.systemTemp.createTemp('embedded-e2e-');
-      addTearDown(() {
-        if (home.existsSync()) home.deleteSync(recursive: true);
-      });
+      addTearDown(() => deleteTemporaryDirectory(home));
       const token = 'embedded-e2e-token-0123456789abcdef0123456789';
       final launcher = _ControlledEmbeddedLauncher(
         IsolateEmbeddedDaemonLauncher(

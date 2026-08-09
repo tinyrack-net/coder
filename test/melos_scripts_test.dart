@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coder_workspace/src/desktop_host.dart';
 import 'package:coder_workspace/src/verification_runner.dart';
 import 'package:test/test.dart';
 
@@ -31,13 +32,14 @@ void main() {
     );
   });
 
-  test('Linux E2E always runs on an isolated virtual display', () {
-    final command = _script(pubspec, 'test:e2e:linux');
-    expect(command, contains('xvfb-run -a'));
-    expect(command, contains('tool/run_linux_e2e.dart'));
+  test('Debug E2E delegates to the host desktop runner', () {
+    final command = _script(pubspec, 'test:e2e:desktop');
+    expect(command, contains('tool/run_desktop_e2e.dart'));
+    expect(pubspec, isNot(contains('test:e2e:linux:')));
+    expect(pubspec, isNot(contains('tool/run_linux_e2e.dart')));
     expect(
       _script(pubspec, 'verify:debug'),
-      contains('dart run melos test:e2e:linux'),
+      contains('dart run melos test:e2e:desktop'),
     );
   });
 
@@ -75,7 +77,11 @@ void main() {
       contains('embedded-ports:check'),
     );
     expect(
-      _scripts(WorkspaceVerificationPlans.full()),
+      _scripts(
+        WorkspaceVerificationPlans.full(
+          hostPlatform: DesktopHost.linux,
+        ),
+      ),
       contains('embedded-ports:check'),
     );
   });
