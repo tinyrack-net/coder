@@ -24,6 +24,7 @@ import 'package:app/src/features/providers/application/provider_settings_control
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
+import 'package:app/src/features/terminals/application/terminal_attach_controller.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -925,7 +926,6 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   StreamSubscription<TerminalOutputDto>? _events;
   CoderApi? _api;
   int _sequence = 0;
-  Object? _error;
 
   @override
   void initState() {
@@ -939,7 +939,6 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
     _terminal.onData.listen(_sendInput);
     _terminal.onResize.listen(_resize);
-    unawaited(_attach());
   }
 
   void _sendInput(String data) {
@@ -960,22 +959,16 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
   }
 
-  Future<void> _attach() async {
-    try {
-      final registry = await ref.read(hostRegistryControllerProvider.future);
-      final api = registry.runtimes[widget.selection.hostId]!.api!;
-      _api = api;
-      final attached = await api.terminals.attachTerminal(widget.terminal.id);
-      attached.replay.forEach(_accept);
-      _events = api.terminals.output.listen((output) {
-        if (output.terminalId == widget.terminal.id) {
-          _accept(output);
-        }
-      });
-      if (mounted) setState(() {});
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = error);
-    }
+  /// Applies the replayed scrollback and wires the live output stream once.
+  void _connect(TerminalAttachment attachment) {
+    if (_api != null) return;
+    _api = attachment.api;
+    attachment.replay.forEach(_accept);
+    _events = attachment.api.terminals.output.listen((output) {
+      if (output.terminalId == widget.terminal.id) {
+        _accept(output);
+      }
+    });
   }
 
   void _accept(TerminalOutputDto output) {
@@ -994,15 +987,41 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
 
   @override
   Widget build(BuildContext context) {
-    if (_error case final error?) {
+    final l10n = AppLocalizations.of(context);
+    final provider = terminalAttachControllerProvider(
+      widget.selection.hostId,
+      widget.terminal.id,
+    );
+    final attach = ref.watch(provider);
+    if (attach.asData?.value case final attachment?) _connect(attachment);
+    if (attach.hasError && !attach.hasValue) {
       return Center(
-        child: TRAlert(
-          variant: TRStatusVariant.danger,
-          title: TRText.inherit(
-            AppLocalizations.of(context).terminalConnectionFailed,
-          ),
-          description: TRText.inherit('$error'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TRAlert(
+              variant: TRStatusVariant.danger,
+              title: TRText.inherit(l10n.terminalConnectionFailed),
+              description: TRText.inherit('${attach.error}'),
+            ),
+            const SizedBox(height: TRSpacing.medium),
+            TRButton(
+              key: const ValueKey<String>('terminal-attach-retry'),
+              onPressed: () => ref.invalidate(provider),
+              child: TRText.inherit(l10n.commonRetry),
+            ),
+          ],
         ),
+      );
+    }
+    // The pane never blocks on the attach round trip: while the replay is on
+    // its way, a visible connecting state explains why input is not accepted
+    // yet instead of rendering an empty prompt that swallows keystrokes.
+    if (!attach.hasValue) {
+      return TerminalConnectingOverlay(
+        key: ValueKey<String>('terminal-connecting-${widget.terminal.id}'),
+        semanticLabel: l10n.terminalConnecting,
+        message: l10n.terminalConnecting,
       );
     }
     return ListenableBuilder(
