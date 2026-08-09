@@ -3,8 +3,10 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
+import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,6 +37,7 @@ void main() {
     List<TimelineEventDto> events, {
     bool busy = false,
     _RecordingUrlOpener? opener,
+    TextScaler textScaler = TextScaler.noScaling,
   }) => tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -48,6 +51,10 @@ void main() {
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
         home: Scaffold(
           body: ChatTimelineView(
             items: projectChatTimeline(events),
@@ -351,15 +358,13 @@ void main() {
     'assistant and tool rows share the same leading rail and text baseline',
     (tester) async {
       await pump(tester, <TimelineEventDto>[
-        event('assistant.delta', <String, dynamic>{
-          'text': 'Assistant baseline',
-        }),
+        event('assistant.delta', <String, dynamic>{'text': '이미지를 보냈어요! 🖼️'}),
         event('tool.requested', <String, dynamic>{
           'callId': 'call-read',
           'name': 'read_file',
           'arguments': <String, dynamic>{'path': 'lib/main.dart'},
         }),
-      ]);
+      ], textScaler: const TextScaler.linear(2));
       await tester.pump();
 
       final assistant = find.byType(ChatAssistantMessageView);
@@ -371,7 +376,7 @@ void main() {
           .descendant(of: tool, matching: find.byType(Icon))
           .first;
       final assistantText = find.textContaining(
-        'Assistant baseline',
+        '이미지를 보냈어요! 🖼️',
         findRichText: true,
       );
       final toolText = find.text('파일 읽기');
@@ -385,10 +390,45 @@ void main() {
         tester.getTopLeft(toolText).dx,
       );
       expect(
-        (tester.getTopLeft(assistantText).dy -
-                tester.getTopLeft(assistantIcon).dy)
-            .abs(),
-        lessThanOrEqualTo(TRSpacing.extraSmall),
+        tester.getRect(assistantIcon).center.dy,
+        closeTo(tester.getRect(assistantText).center.dy, 0.5),
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'plan markers align with the first line of every step',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-plan',
+          'name': 'update_plan',
+          'arguments': <String, dynamic>{
+            'plan': <Map<String, dynamic>>[
+              <String, dynamic>{'step': '첫 줄에 맞춰요', 'status': 'completed'},
+            ],
+            'explanation': '',
+          },
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 1}),
+      ]);
+      await tester.pump();
+
+      final plan = find.byType(ChatPlanCard);
+      final marker = find.descendant(
+        of: plan,
+        matching: find.byIcon(CoderIcons.success),
+      );
+      final label = find.descendant(
+        of: plan,
+        matching: find.text('첫 줄에 맞춰요'),
+      );
+      expect(marker, findsOneWidget);
+      expect(label, findsOneWidget);
+      expect(
+        tester.getRect(marker).center.dy,
+        closeTo(tester.getRect(label).center.dy, 0.5),
       );
     },
     tags: const <String>['feature_test__turn_execution__widget'],

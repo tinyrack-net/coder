@@ -629,6 +629,15 @@ void _registerConversationAppFlows() {
       expect(find.text('Which store should the cache use?'), findsOneWidget);
       expect(find.text('Which theme should the editor use?'), findsNothing);
       expect(find.text('How should changes be reviewed?'), findsNothing);
+      expect(
+        tester
+            .widgetList<TRRadio>(find.byType(TRRadio))
+            .every(
+              (radio) =>
+                  radio.labelAlignment == TRRadioLabelAlignment.firstLine,
+            ),
+        isTrue,
+      );
 
       await tester.tap(find.text('SQLite'));
       await tester.pumpAndSettle();
