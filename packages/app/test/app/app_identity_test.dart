@@ -79,7 +79,10 @@ void main() {
   });
 
   test('user-facing Dart strings use app identity constants', () {
-    final identityPath = '${packageRoot.path}/lib/src/app/app_identity.dart';
+    String normalizedPath(String path) => path.replaceAll(r'\', '/');
+    final identityPath = normalizedPath(
+      '${packageRoot.path}/lib/src/app/app_identity.dart',
+    );
     final brandedLiteral = RegExp(
       r'''(['"])(?:Tinyrack Coder|Coder)\1''',
     );
@@ -88,9 +91,12 @@ void main() {
       '${packageRoot.path}/lib/src',
     ).listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
-      if (entity.path == identityPath) continue;
+      final entityPath = normalizedPath(entity.path);
+      if (entityPath == identityPath) continue;
       if (brandedLiteral.hasMatch(entity.readAsStringSync())) {
-        offenders.add(entity.path.substring(packageRoot.path.length + 1));
+        offenders.add(
+          entityPath.substring(normalizedPath(packageRoot.path).length + 1),
+        );
       }
     }
     expect(offenders, isEmpty);
