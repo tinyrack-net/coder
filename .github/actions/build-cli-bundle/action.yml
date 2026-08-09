@@ -25,7 +25,7 @@ runs:
       # network access rather than only a warm pub cache.
       run: |
         set -euo pipefail
-        dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist
+        dart build cli -t packages/cli/bin/coder_cli.dart -o dist
         mkdir -p "dist/coder-cli-$TARGET"
         cp -R dist/bundle/. "dist/coder-cli-$TARGET/"
         # `dart build cli` names the launcher after the entrypoint file; every

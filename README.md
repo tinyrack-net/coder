@@ -56,7 +56,7 @@ From a checkout, `dart run melos run:cli -- provider list` runs the same
 commands without installing anything.
 
 Desktop, mobile, and web use separate targets so that only the desktop
-bootstrap can start a daemon. Run these commands from `apps/coder_app`:
+bootstrap can start a daemon. Run these commands from `packages/app`:
 
 ```sh
 flutter run -d linux -t lib/main_desktop.dart

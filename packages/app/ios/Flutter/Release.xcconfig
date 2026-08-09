@@ -1,0 +1,2 @@
+#include "AppIdentity.xcconfig"
+#include "Generated.xcconfig"

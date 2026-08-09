@@ -38,26 +38,26 @@ final class ArchitectureVerifier {
 
   static const Map<String, Set<String>> _allowedInternalDependencies =
       <String, Set<String>>{
-        'coder_protocol': <String>{},
-        'coder_agent': <String>{},
-        'coder_client': <String>{'coder_protocol'},
+        'protocol': <String>{},
+        'agent': <String>{},
+        'client': <String>{'protocol'},
         // The CLI hosts the daemon through `coder-cli daemon start`, so it
         // reaches the daemon's composition root and everything the daemon
         // itself is allowed to use.
-        'coder_cli': <String>{
-          'coder_agent',
-          'coder_client',
-          'coder_daemon',
-          'coder_protocol',
+        'cli': <String>{
+          'agent',
+          'client',
+          'daemon',
+          'protocol',
         },
-        'coder_daemon': <String>{
-          'coder_agent',
-          'coder_protocol',
+        'daemon': <String>{
+          'agent',
+          'protocol',
         },
-        'coder_app': <String>{
-          'coder_client',
-          'coder_daemon',
-          'coder_protocol',
+        'app': <String>{
+          'client',
+          'daemon',
+          'protocol',
         },
       };
 
@@ -91,12 +91,12 @@ final class ArchitectureVerifier {
   );
 
   static bool _mayNameVendors(String package, String path) =>
-      package == 'coder_daemon' &&
+      package == 'daemon' &&
       (path.contains('/features/providers/infrastructure/') ||
           path.contains('/bootstrap/'));
 
   static bool _mayNameTools(String package, String path) {
-    if (package != 'coder_app') return true;
+    if (package != 'app') return true;
     return path.contains('/features/conversation/presentation/tools/') ||
         path.endsWith(
           '/features/conversation/application/chat_timeline_model.dart',
@@ -111,7 +111,7 @@ final class ArchitectureVerifier {
   // that failure would be silent.
   static const Map<String, Set<String>> _restrictedExternalPackages =
       <String, Set<String>>{
-        'ptyworld': <String>{'coder_daemon'},
+        'ptyworld': <String>{'daemon'},
       };
 
   /// Whether [consumer] is forbidden from depending on [dependency].
@@ -128,9 +128,7 @@ final class ArchitectureVerifier {
   List<ArchitectureViolation> verify() {
     final violations = <ArchitectureViolation>[..._verifyPackageSet()];
     for (final package in _allowedInternalDependencies.keys) {
-      final directory = package == 'coder_app'
-          ? p.join(workspaceRoot, 'apps', package)
-          : p.join(workspaceRoot, 'packages', package);
+      final directory = p.join(workspaceRoot, 'packages', package);
       violations
         ..addAll(_verifyPubspec(package, directory))
         ..addAll(_verifySources(package, directory));
@@ -147,11 +145,12 @@ final class ArchitectureVerifier {
         .map((directory) => p.basename(directory.path))
         .toSet();
     const expected = <String>{
-      'coder_agent',
-      'coder_cli',
-      'coder_client',
-      'coder_daemon',
-      'coder_protocol',
+      'agent',
+      'app',
+      'cli',
+      'client',
+      'daemon',
+      'protocol',
     };
     if (actual.length == expected.length && actual.containsAll(expected)) {
       return const <ArchitectureViolation>[];
@@ -241,7 +240,7 @@ final class ArchitectureVerifier {
       final importedPackage = RegExp(
         "import 'package:([a-zA-Z0-9_]+)/",
       ).firstMatch(line)?.group(1);
-      if (package == 'coder_app') {
+      if (package == 'app') {
         violations.addAll(
           _verifyCoderAppLayerImport(path: path, line: index + 1, source: line),
         );
@@ -278,9 +277,8 @@ final class ArchitectureVerifier {
           ),
         );
       }
-      if (package == 'coder_daemon' &&
-          path.endsWith('/transport/rpc/server.dart')) {
-        if (line.contains('package:coder_daemon/src/features/')) {
+      if (package == 'daemon' && path.endsWith('/transport/rpc/server.dart')) {
+        if (line.contains('package:daemon/src/features/')) {
           violations.add(
             ArchitectureViolation(
               path: path,
@@ -301,7 +299,7 @@ final class ArchitectureVerifier {
           );
         }
       }
-      if (package == 'coder_client' &&
+      if (package == 'client' &&
           path.endsWith('/src/api.dart') &&
           line.contains('ClientEvent')) {
         violations.add(
@@ -313,8 +311,8 @@ final class ArchitectureVerifier {
           ),
         );
       }
-      if (package == 'coder_daemon' &&
-          path.endsWith('/lib/coder_daemon.dart') &&
+      if (package == 'daemon' &&
+          path.endsWith('/lib/daemon.dart') &&
           RegExp(
             'SystemClock|UuidIdGenerator|IoWorkspacePathGateway|'
             'ProcessGitWorkspaceGateway|FileProjectSettingsStore|'
@@ -329,9 +327,9 @@ final class ArchitectureVerifier {
           ),
         );
       }
-      if (package == 'coder_daemon' &&
+      if (package == 'daemon' &&
           (path.contains('/domain/') || path.contains('/application/')) &&
-          importedPackage == 'coder_protocol') {
+          importedPackage == 'protocol') {
         violations.add(
           ArchitectureViolation(
             path: path,
@@ -423,10 +421,10 @@ final class ArchitectureVerifier {
   }
 
   bool _isApplicationLayer(String package, String path) {
-    if (package == 'coder_app') {
+    if (package == 'app') {
       return path.contains('/src/features/') && path.contains('/application/');
     }
-    if (package == 'coder_daemon') {
+    if (package == 'daemon') {
       return path.contains('/application/') ||
           path.endsWith('/agent_service.dart') ||
           path.endsWith('/session_interactions.dart') ||
@@ -436,7 +434,7 @@ final class ArchitectureVerifier {
           path.endsWith('/provider_service.dart') ||
           path.endsWith('/workspace_service.dart');
     }
-    return package == 'coder_agent' && path.endsWith('/runtime.dart');
+    return package == 'agent' && path.endsWith('/runtime.dart');
   }
 
   Iterable<ArchitectureViolation> _verifyCoderAppLayerImport({
@@ -445,7 +443,7 @@ final class ArchitectureVerifier {
     required String source,
   }) sync* {
     final import = RegExp(
-      "import 'package:coder_app/src/([^']+)';",
+      "import 'package:app/src/([^']+)';",
     ).firstMatch(source);
     final importedPath = import?.group(1);
 

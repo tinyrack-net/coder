@@ -10,12 +10,12 @@ void main() {
 
   test('valid application fixture depends only on an injected API', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
+      package: 'app',
       path:
-          'apps/coder_app/lib/src/features/sessions/application/'
+          'packages/app/lib/src/features/sessions/application/'
           'sessions_controller.dart',
       source:
-          "import 'package:coder_client/coder_client.dart';\n"
+          "import 'package:client/client.dart';\n"
           'final CoderApi api = throw UnimplementedError();',
     );
     expect(violations, isEmpty);
@@ -23,9 +23,9 @@ void main() {
 
   test('invalid application fixture reports imports and concrete calls', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
+      package: 'app',
       path:
-          'apps/coder_app/lib/src/features/sessions/application/'
+          'packages/app/lib/src/features/sessions/application/'
           'sessions_controller.dart',
       source:
           "import 'dart:io';\n"
@@ -44,9 +44,9 @@ void main() {
 
   test('feature application directories enforce application rules', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
+      package: 'app',
       path:
-          'apps/coder_app/lib/src/features/sessions/application/'
+          'packages/app/lib/src/features/sessions/application/'
           'sessions_controller.dart',
       source: "import 'dart:io';\nfinal process = Process.start;",
     );
@@ -61,12 +61,12 @@ void main() {
 
   test('feature presentation cannot import another feature presentation', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
+      package: 'app',
       path:
-          'apps/coder_app/lib/src/features/sessions/presentation/'
+          'packages/app/lib/src/features/sessions/presentation/'
           'session_page.dart',
       source: <String>[
-        "import 'package:coder_app/src/features/settings/presentation/pages/",
+        "import 'package:app/src/features/settings/presentation/pages/",
         "settings_page.dart';",
       ].join(),
     );
@@ -78,10 +78,10 @@ void main() {
 
   test('shared code cannot depend on a feature', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
-      path: 'apps/coder_app/lib/src/shared/presentation/list_row.dart',
+      package: 'app',
+      path: 'packages/app/lib/src/shared/presentation/list_row.dart',
       source: <String>[
-        "import 'package:coder_app/src/features/workspace/domain/",
+        "import 'package:app/src/features/workspace/domain/",
         "workspace_selection.dart';",
       ].join(),
     );
@@ -93,9 +93,9 @@ void main() {
 
   test('feature domain stays independent of framework layers', () {
     final violations = verifier.verifySource(
-      package: 'coder_app',
+      package: 'app',
       path:
-          'apps/coder_app/lib/src/features/workspace/domain/'
+          'packages/app/lib/src/features/workspace/domain/'
           'workspace_selection.dart',
       source: "import 'package:flutter/widgets.dart';",
     );
@@ -107,12 +107,12 @@ void main() {
 
   test('a vendor name in shared code is a violation', () {
     for (final package in const <String>[
-      'coder_agent',
-      'coder_daemon',
-      'coder_client',
-      'coder_cli',
-      'coder_app',
-      'coder_protocol',
+      'agent',
+      'daemon',
+      'client',
+      'cli',
+      'app',
+      'protocol',
     ]) {
       final violations = verifier.verifySource(
         package: package,
@@ -134,8 +134,8 @@ void main() {
       'final color = colors.focus;',
     ]) {
       final violations = verifier.verifySource(
-        package: 'coder_app',
-        path: 'apps/coder_app/lib/src/shared/presentation/control.dart',
+        package: 'app',
+        path: 'packages/app/lib/src/shared/presentation/control.dart',
         source: source,
       );
       expect(
@@ -149,9 +149,9 @@ void main() {
   test('terminal adapter may inject the design-system focus caret color', () {
     expect(
       verifier.verifySource(
-        package: 'coder_app',
+        package: 'app',
         path:
-            'apps/coder_app/lib/src/features/terminals/presentation/'
+            'packages/app/lib/src/features/terminals/presentation/'
             'coder_terminal_view.dart',
         source: 'cursor: colors.focus,',
       ),
@@ -162,9 +162,9 @@ void main() {
   test('provider infrastructure and the composition root may name vendors', () {
     expect(
       verifier.verifySource(
-        package: 'coder_daemon',
+        package: 'daemon',
         path:
-            'packages/coder_daemon/lib/src/features/providers/'
+            'packages/daemon/lib/src/features/providers/'
             'infrastructure/openai/plugins.dart',
         source: "const id = 'openai'; // ChatGPT subscription backend",
       ),
@@ -172,8 +172,8 @@ void main() {
     );
     expect(
       verifier.verifySource(
-        package: 'coder_daemon',
-        path: 'packages/coder_daemon/lib/src/bootstrap/application.dart',
+        package: 'daemon',
+        path: 'packages/daemon/lib/src/bootstrap/application.dart',
         source: 'final plugins = openAIFamilyPlugins(clock: clock);',
       ),
       isEmpty,
@@ -184,8 +184,8 @@ void main() {
     'a tool name literal in the app outside its presenter is a violation',
     () {
       final violations = verifier.verifySource(
-        package: 'coder_app',
-        path: 'apps/coder_app/lib/src/chat/chat_approval_card.dart',
+        package: 'app',
+        path: 'packages/app/lib/src/chat/chat_approval_card.dart',
         source: "if (approval.toolName == 'apply_patch') showDiff();",
       );
       expect(violations.single.rule, 'tool_name_literal');
@@ -194,17 +194,17 @@ void main() {
       // cards, and other packages define the tools themselves.
       for (final (package, path) in const <(String, String)>[
         (
-          'coder_app',
-          'apps/coder_app/lib/src/features/conversation/presentation/tools/'
+          'app',
+          'packages/app/lib/src/features/conversation/presentation/tools/'
               'apply_patch.dart',
         ),
         (
-          'coder_app',
-          'apps/coder_app/lib/src/features/conversation/application/'
+          'app',
+          'packages/app/lib/src/features/conversation/application/'
               'chat_timeline_model.dart',
         ),
-        ('coder_agent', 'packages/coder_agent/lib/src/tools/apply_patch.dart'),
-        ('coder_daemon', 'packages/coder_daemon/lib/src/built_in_tools.dart'),
+        ('agent', 'packages/agent/lib/src/tools/apply_patch.dart'),
+        ('daemon', 'packages/daemon/lib/src/built_in_tools.dart'),
       ]) {
         expect(
           verifier.verifySource(
@@ -221,18 +221,18 @@ void main() {
 
   test('invalid package fixture reports a reversed dependency', () {
     final violations = verifier.verifySource(
-      package: 'coder_protocol',
-      path: 'packages/coder_protocol/lib/src/bad.dart',
-      source: "import 'package:coder_daemon/coder_daemon.dart';",
+      package: 'protocol',
+      path: 'packages/protocol/lib/src/bad.dart',
+      source: "import 'package:daemon/daemon.dart';",
     );
     expect(violations.single.rule, 'source_dependency_direction');
   });
 
   test('the daemon cannot depend on the client transport package', () {
     final violations = verifier.verifySource(
-      package: 'coder_daemon',
-      path: 'packages/coder_daemon/lib/src/bootstrap/config.dart',
-      source: "import 'package:coder_client/local_daemon.dart';",
+      package: 'daemon',
+      path: 'packages/daemon/lib/src/bootstrap/config.dart',
+      source: "import 'package:client/local_daemon.dart';",
     );
     expect(
       violations.map((violation) => violation.rule),
@@ -242,10 +242,10 @@ void main() {
 
   test('the daemon server cannot own feature dispatch', () {
     final violations = verifier.verifySource(
-      package: 'coder_daemon',
-      path: 'packages/coder_daemon/lib/src/transport/rpc/server.dart',
+      package: 'daemon',
+      path: 'packages/daemon/lib/src/transport/rpc/server.dart',
       source: <String>[
-        "import 'package:coder_daemon/src/features/sessions/",
+        "import 'package:daemon/src/features/sessions/",
         "infrastructure/service.dart';\n",
         'switch (method) { case "sessions.list": break; }',
       ].join(),
@@ -258,8 +258,8 @@ void main() {
 
   test('the client public API cannot expose a heterogeneous event stream', () {
     final violations = verifier.verifySource(
-      package: 'coder_client',
-      path: 'packages/coder_client/lib/src/api.dart',
+      package: 'client',
+      path: 'packages/client/lib/src/api.dart',
       source: 'sealed class ClientEvent {}',
     );
     expect(
@@ -270,8 +270,8 @@ void main() {
 
   test('the daemon barrel cannot export concrete host adapters', () {
     final violations = verifier.verifySource(
-      package: 'coder_daemon',
-      path: 'packages/coder_daemon/lib/coder_daemon.dart',
+      package: 'daemon',
+      path: 'packages/daemon/lib/daemon.dart',
       source: 'show SystemClock, UuidIdGenerator, FileProjectSettingsStore;',
     );
     expect(
@@ -282,26 +282,26 @@ void main() {
 
   test('the agent package stays independent of every internal package', () {
     for (final forbidden in const <String>[
-      'coder_protocol',
-      'coder_client',
-      'coder_daemon',
-      'coder_cli',
+      'protocol',
+      'client',
+      'daemon',
+      'cli',
     ]) {
       final violations = verifier.verifySource(
-        package: 'coder_agent',
-        path: 'packages/coder_agent/lib/src/runtime.dart',
+        package: 'agent',
+        path: 'packages/agent/lib/src/runtime.dart',
         source: "import 'package:$forbidden/$forbidden.dart';",
       );
       expect(violations.single.rule, 'source_dependency_direction');
     }
     expect(
       verifier.verifySource(
-        package: 'coder_daemon',
+        package: 'daemon',
         path:
-            'packages/coder_daemon/lib/src/features/mcp/'
+            'packages/daemon/lib/src/features/mcp/'
             'infrastructure/mcp_service.dart',
         source:
-            "import 'package:coder_daemon/src/features/mcp/infrastructure/mcp.dart';",
+            "import 'package:daemon/src/features/mcp/infrastructure/mcp.dart';",
       ),
       isEmpty,
     );
@@ -309,11 +309,11 @@ void main() {
 
   test('the PTY package is reachable only from the daemon', () {
     for (final package in const <String>[
-      'coder_agent',
-      'coder_protocol',
-      'coder_app',
-      'coder_cli',
-      'coder_client',
+      'agent',
+      'protocol',
+      'app',
+      'cli',
+      'client',
     ]) {
       final violations = verifier.verifySource(
         package: package,
@@ -324,8 +324,8 @@ void main() {
     }
     expect(
       verifier.verifySource(
-        package: 'coder_daemon',
-        path: 'packages/coder_daemon/lib/src/portable_terminal.dart',
+        package: 'daemon',
+        path: 'packages/daemon/lib/src/portable_terminal.dart',
         source: "import 'package:ptyworld/ptyworld.dart';",
       ),
       isEmpty,
@@ -336,7 +336,7 @@ void main() {
     // The PTY restriction must not accidentally generalise: only packages
     // named in the external map are confined, so ordinary third-party
     // dependencies stay unrestricted.
-    for (final package in const <String>['coder_agent', 'coder_protocol']) {
+    for (final package in const <String>['agent', 'protocol']) {
       expect(
         verifier.verifySource(
           package: package,
@@ -350,8 +350,8 @@ void main() {
 
   test('the MCP service is held to the application-layer rules', () {
     final violations = verifier.verifySource(
-      package: 'coder_daemon',
-      path: 'packages/coder_daemon/lib/src/mcp_service.dart',
+      package: 'daemon',
+      path: 'packages/daemon/lib/src/mcp_service.dart',
       source:
           "import 'dart:io';\n"
           'final started = Process.start;\n'
@@ -374,8 +374,8 @@ void main() {
       'workspace_service.dart',
     ]) {
       final violations = verifier.verifySource(
-        package: 'coder_daemon',
-        path: 'packages/coder_daemon/lib/src/$file',
+        package: 'daemon',
+        path: 'packages/daemon/lib/src/$file',
         source: "import 'dart:io';\nfinal process = Process.start;",
       );
       expect(

@@ -1,6 +1,6 @@
 ---
 name: tinyrack-coder-design-guidelines
-description: Enforce Tinyrack's Flutter design system in Coder using the public tinyrack_ui Git source pinned to an exact commit. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in apps/coder_app, including deciding whether a missing reusable primitive, token, or variant belongs upstream.
+description: Enforce Tinyrack's Flutter design system in Coder using the public tinyrack_ui Git source pinned to an exact commit. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in packages/app, including deciding whether a missing reusable primitive, token, or variant belongs upstream.
 ---
 
 # Tinyrack Coder Design Guidelines

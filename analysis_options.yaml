@@ -3,7 +3,7 @@ include: package:very_good_analysis/analysis_options.yaml
 analyzer:
   exclude:
     # Flutter build output carries third-party sources that fail these rules.
-    # Both globs are needed: apps/coder_app has its own options file, so an
+    # Both globs are needed: packages/app has its own options file, so an
     # exclude may resolve against either that package or the workspace root.
     - "build/**"
     - "**/build/**"

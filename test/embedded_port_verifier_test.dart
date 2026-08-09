@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   const verifier = EmbeddedPortVerifier('/workspace');
-  const path = 'apps/coder_app/integration_test/example_e2e_test.dart';
+  const path = 'packages/app/integration_test/example_e2e_test.dart';
 
   const compliant =
       "import 'support/ephemeral_port.dart';\n"
