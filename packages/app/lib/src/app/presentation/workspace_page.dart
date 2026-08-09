@@ -8,6 +8,7 @@ import 'package:app/src/features/conversation/application/attachment_ports.dart'
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/application/conversation_timeline_controller.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
@@ -23,6 +24,7 @@ import 'package:app/src/features/providers/application/provider_settings_control
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
+import 'package:app/src/features/terminals/application/terminal_attach_controller.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -31,6 +33,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -298,7 +301,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final value = ref.watch(provider);
     final workspace = value.asData?.value;
     _openRequestedRoute(provider, workspace);
-    if (workspace == null) return const Center(child: TRSpinner());
+    if (workspace == null) {
+      return WorkspacePaneSkeleton(
+        semanticLabel: AppLocalizations.of(context).workspaceLoading,
+      );
+    }
     return widget.mobile
         ? _buildMobile(context, workspace)
         : _buildNode(context, workspace, workspace.root);
@@ -516,12 +523,19 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
       closeLabel: AppLocalizations.of(context).workspaceCloseTab,
     ),
+    PendingTerminalTabTarget() => TRTabsTab(
+      value: _controlValue(entry),
+      label: AppLocalizations.of(context).workspaceTerminalStarting,
+      leading: const Icon(CoderIcons.terminal),
+      onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
+      closeLabel: AppLocalizations.of(context).workspaceCloseTab,
+    ),
   };
 
   String _controlValue(WorkspaceTabEntry entry) => switch (entry.target) {
     SessionTabTarget(:final sessionId) => sessionId,
     TerminalTabTarget(:final terminalId) => terminalId,
-    DraftTabTarget() => entry.id,
+    DraftTabTarget() || PendingTerminalTabTarget() => entry.id,
   };
 
   Widget _content(SessionTabsState workspace, WorkspaceTabEntry entry) =>
@@ -543,6 +557,11 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
           selection: widget.selection,
           draftId: entry.id,
           onCreated: _createdSession,
+        ),
+        PendingTerminalTabTarget() => TerminalConnectingOverlay(
+          key: ValueKey<String>('pending-terminal-pane-${entry.id}'),
+          semanticLabel: AppLocalizations.of(context).workspaceTerminalStarting,
+          message: AppLocalizations.of(context).workspaceTerminalStarting,
         ),
       };
 
@@ -757,18 +776,48 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final tabs = ref.read(
       sessionTabsControllerProvider(widget.selection).notifier,
     );
-    await tabs.focusPane(paneId);
-    final terminal = await ref
-        .read(
-          terminalsControllerProvider(
-            widget.selection.hostId,
-            widget.selection.worktreeId,
-          ).notifier,
-        )
-        .create();
-    await tabs.addTerminal(terminal);
+    // The placeholder tab appears before the daemon answers, so creating a
+    // terminal never leaves the pane frozen while the PTY spawns.
+    final pendingTabId = tabs.openPendingTerminal(paneId);
+    final TerminalDto terminal;
+    try {
+      terminal = await ref
+          .read(
+            terminalsControllerProvider(
+              widget.selection.hostId,
+              widget.selection.worktreeId,
+            ).notifier,
+          )
+          .create();
+    } on Exception catch (error) {
+      await tabs.removePendingTerminal(pendingTabId);
+      if (mounted) await _showTerminalCreateError(error);
+      return;
+    }
+    tabs.promotePendingTerminal(pendingTabId, terminal);
     if (mounted) _goTerminal(context, widget.selection, terminal.id);
   }
+
+  Future<void> _showTerminalCreateError(Object error) => showTRDialog<void>(
+    context: context,
+    builder: (context) => TRAlertDialog(
+      key: const ValueKey<String>('terminal-create-failed'),
+      title: TRText.inherit(
+        AppLocalizations.of(context).terminalConnectionFailed,
+      ),
+      content: TRText.inherit(
+        AppLocalizations.of(context).workspaceTerminalStartFailed('$error'),
+      ),
+      actions: <TRButton>[
+        TRButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: TRText.inherit(
+            MaterialLocalizations.of(context).okButtonLabel,
+          ),
+        ),
+      ],
+    ),
+  );
 
   void _createdSession(SessionDto session) {
     if (mounted) _goSession(context, widget.selection, session.id);
@@ -786,6 +835,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         await ref
             .read(sessionTabsControllerProvider(widget.selection).notifier)
             .closeTab(entry.id);
+      case PendingTerminalTabTarget():
+        await ref
+            .read(sessionTabsControllerProvider(widget.selection).notifier)
+            .removePendingTerminal(entry.id);
     }
     if (mounted) _routeFocused();
   }
@@ -847,7 +900,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         _goSession(context, widget.selection, sessionId);
       case TerminalTabTarget(:final terminalId):
         _goTerminal(context, widget.selection, terminalId);
-      case DraftTabTarget() || null:
+      case DraftTabTarget() || PendingTerminalTabTarget() || null:
         _goWorktree(context, widget.selection);
     }
   }
@@ -873,7 +926,6 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
   StreamSubscription<TerminalOutputDto>? _events;
   CoderApi? _api;
   int _sequence = 0;
-  Object? _error;
 
   @override
   void initState() {
@@ -887,7 +939,6 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
     _terminal.onData.listen(_sendInput);
     _terminal.onResize.listen(_resize);
-    unawaited(_attach());
   }
 
   void _sendInput(String data) {
@@ -908,22 +959,16 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     );
   }
 
-  Future<void> _attach() async {
-    try {
-      final registry = await ref.read(hostRegistryControllerProvider.future);
-      final api = registry.runtimes[widget.selection.hostId]!.api!;
-      _api = api;
-      final attached = await api.terminals.attachTerminal(widget.terminal.id);
-      attached.replay.forEach(_accept);
-      _events = api.terminals.output.listen((output) {
-        if (output.terminalId == widget.terminal.id) {
-          _accept(output);
-        }
-      });
-      if (mounted) setState(() {});
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = error);
-    }
+  /// Applies the replayed scrollback and wires the live output stream once.
+  void _connect(TerminalAttachment attachment) {
+    if (_api != null) return;
+    _api = attachment.api;
+    attachment.replay.forEach(_accept);
+    _events = attachment.api.terminals.output.listen((output) {
+      if (output.terminalId == widget.terminal.id) {
+        _accept(output);
+      }
+    });
   }
 
   void _accept(TerminalOutputDto output) {
@@ -942,15 +987,41 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
 
   @override
   Widget build(BuildContext context) {
-    if (_error case final error?) {
+    final l10n = AppLocalizations.of(context);
+    final provider = terminalAttachControllerProvider(
+      widget.selection.hostId,
+      widget.terminal.id,
+    );
+    final attach = ref.watch(provider);
+    if (attach.asData?.value case final attachment?) _connect(attachment);
+    if (attach.hasError && !attach.hasValue) {
       return Center(
-        child: TRAlert(
-          variant: TRStatusVariant.danger,
-          title: TRText.inherit(
-            AppLocalizations.of(context).terminalConnectionFailed,
-          ),
-          description: TRText.inherit('$error'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TRAlert(
+              variant: TRStatusVariant.danger,
+              title: TRText.inherit(l10n.terminalConnectionFailed),
+              description: TRText.inherit('${attach.error}'),
+            ),
+            const SizedBox(height: TRSpacing.medium),
+            TRButton(
+              key: const ValueKey<String>('terminal-attach-retry'),
+              onPressed: () => ref.invalidate(provider),
+              child: TRText.inherit(l10n.commonRetry),
+            ),
+          ],
         ),
+      );
+    }
+    // The pane never blocks on the attach round trip: while the replay is on
+    // its way, a visible connecting state explains why input is not accepted
+    // yet instead of rendering an empty prompt that swallows keystrokes.
+    if (!attach.hasValue) {
+      return TerminalConnectingOverlay(
+        key: ValueKey<String>('terminal-connecting-${widget.terminal.id}'),
+        semanticLabel: l10n.terminalConnecting,
+        message: l10n.terminalConnecting,
       );
     }
     return ListenableBuilder(
@@ -1107,7 +1178,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final items = ref.watch(
       conversationTimelineProvider(widget.selection.hostId, current.id),
     );
-    final visibleItems = readOnly
+    var visibleItems = readOnly
         ? items
               .where(
                 (item) =>
@@ -1116,6 +1187,44 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               )
               .toList(growable: false)
         : items;
+    // A freshly created session navigates before its first turn is accepted.
+    // Until the real timeline echoes the prompt, render it optimistically so
+    // the chat room never opens onto an empty page after Send.
+    final pendingFirstTurn = ref.watch(
+      pendingFirstTurnsProvider.select((value) => value[current.id]),
+    );
+    // A first turn that failed before this pane mounted could not be queued:
+    // the auto-disposed conversation state was not alive to hold it. Now that
+    // this pane keeps the conversation alive, convert the survivor into a
+    // queued turn with its usual error and retry affordances.
+    if (pendingFirstTurn != null &&
+        pendingFirstTurn.failed &&
+        conversation.hasValue) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final entry = ref.read(pendingFirstTurnsProvider)[current.id];
+        if (entry == null || !entry.failed) return;
+        ref.read(pendingFirstTurnsProvider.notifier).clear(current.id);
+        _conversation(
+          ref,
+          current.id,
+        ).enqueueTurn(entry.prompt, attachments: entry.attachments);
+      });
+    }
+    final optimistic =
+        pendingFirstTurn != null &&
+        !visibleItems.any((item) => item is ChatUserMessage);
+    if (optimistic) {
+      visibleItems = <ChatItem>[
+        ...visibleItems,
+        ChatUserMessage(
+          key: 'pending-first-turn-${current.id}',
+          turnId: 'pending-first-turn',
+          createdAt: pendingFirstTurn.createdAt,
+          text: pendingFirstTurn.prompt,
+        ),
+      ];
+    }
     final agentsAsync = ref.watch(
       agentDefinitionsControllerProvider(widget.selection.hostId),
     );
@@ -1191,7 +1300,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             Expanded(
               child: ChatTimelineView(
                 items: visibleItems,
-                busy: busy,
+                busy: busy || optimistic,
+                loading: conversation.isLoading && !conversation.hasValue,
                 hostId: widget.selection.hostId,
                 planActionBuilder: pendingPlan == null
                     ? null

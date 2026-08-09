@@ -7,6 +7,7 @@ import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,6 +122,9 @@ class WorkspaceSidebar extends ConsumerWidget {
         catalog.value?.catalogs ?? const <String, WorkspaceCatalogDto>{};
     final entries = _entries(l10n, runtimes, catalogs);
     final connected = runtimes.any((host) => host.connected);
+    // Connected daemons whose catalog has not arrived yet: their sections are
+    // still loading, which must never read as "no workspaces".
+    final pendingHosts = catalog.value?.hasPendingHosts ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -150,7 +154,15 @@ class WorkspaceSidebar extends ConsumerWidget {
           variant: TRSeparatorVariant.muted,
         ),
         Expanded(
-          child: _body(context, ref, l10n, runtimes, connected, entries),
+          child: _body(
+            context,
+            ref,
+            l10n,
+            runtimes,
+            connected,
+            pendingHosts,
+            entries,
+          ),
         ),
       ],
     );
@@ -162,8 +174,15 @@ class WorkspaceSidebar extends ConsumerWidget {
     AppLocalizations l10n,
     List<HostRuntimeSnapshot> runtimes,
     bool connected,
+    bool pendingHosts,
     List<_WorkspaceEntry> entries,
   ) {
+    // While the registry or the catalog is still resolving, the sidebar's
+    // shape is unknown; a tree-shaped skeleton keeps it from misreporting
+    // "no daemons" or "no workspaces" for a state that has not loaded.
+    if (registry == null || (catalog.isLoading && !catalog.hasValue)) {
+      return SidebarTreeSkeleton(semanticLabel: l10n.workspaceCatalogLoading);
+    }
     if (runtimes.isEmpty) {
       return _SidebarEmptyState(
         message: l10n.workspaceNoDaemons,
@@ -178,6 +197,11 @@ class WorkspaceSidebar extends ConsumerWidget {
     }
     final loose = homeSessions.value ?? const <HomeSessionEntry>[];
     if (entries.isEmpty && loose.isEmpty) {
+      if (pendingHosts) {
+        return SidebarTreeSkeleton(
+          semanticLabel: l10n.workspaceCatalogLoading,
+        );
+      }
       return _SidebarEmptyState(message: l10n.workspaceNoWorkspaces);
     }
     return ListView(

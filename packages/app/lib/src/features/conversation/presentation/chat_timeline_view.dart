@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
@@ -7,6 +8,7 @@ import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -19,6 +21,7 @@ class ChatTimelineView extends StatefulWidget {
   const ChatTimelineView({
     required this.items,
     required this.busy,
+    this.loading = false,
     this.hostId,
     this.planActionBuilder,
     this.loadAttachment,
@@ -31,6 +34,13 @@ class ChatTimelineView extends StatefulWidget {
 
   /// Whether the session is currently running a turn.
   final bool busy;
+
+  /// Whether history is still loading and no snapshot has ever arrived.
+  ///
+  /// A loading timeline renders a conversation-shaped skeleton: showing the
+  /// "no messages" empty state would misreport a session that simply has not
+  /// received its history yet.
+  final bool loading;
 
   /// Host used to resolve approval and question interactions.
   final String? hostId;
@@ -74,6 +84,11 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   Widget build(BuildContext context) {
     final items = widget.items;
     final busy = widget.busy;
+    if (widget.loading && items.isEmpty) {
+      return ChatTimelineSkeleton(
+        semanticLabel: AppLocalizations.of(context).conversationLoading,
+      );
+    }
     if (items.isEmpty && !busy) return const ChatEmptyState();
     // The list is reversed so new items pin to the bottom; every row carries a
     // stable key so expanding a tool card cannot leak into its neighbour when

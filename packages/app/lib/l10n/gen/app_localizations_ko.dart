@@ -277,6 +277,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNewTerminal => '새 터미널';
 
   @override
+  String get workspaceLoading => '워크스페이스 불러오는 중';
+
+  @override
+  String get workspaceCatalogLoading => '워크스페이스 목록 불러오는 중';
+
+  @override
+  String get workspaceCreatingWorktree => '워크트리 생성 중…';
+
+  @override
+  String get workspaceStartingSession => '세션 시작 중…';
+
+  @override
+  String get workspaceTerminalStarting => '터미널 시작 중';
+
+  @override
+  String workspaceTerminalStartFailed(String error) {
+    return '터미널을 시작하지 못했습니다: $error';
+  }
+
+  @override
   String get terminalCloseTitle => '터미널을 종료할까요?';
 
   @override
@@ -287,6 +307,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get terminalConnectionFailed => '터미널 연결에 실패했어요';
+
+  @override
+  String get terminalConnecting => '터미널 연결 중';
+
+  @override
+  String get conversationLoading => '대화 불러오는 중';
+
+  @override
+  String get directoryBrowserLoading => '디렉터리 불러오는 중';
 
   @override
   String get terminalMenuCopy => '복사';

@@ -184,6 +184,45 @@ void main() {
   );
 
   testWidgets(
+    'submitting narrates worktree creation instead of freezing the composer',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      )..createWorktreeGate = Completer<void>();
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pump();
+
+      // The wait is narrated: a progress row names the running step while
+      // the daemon checks out the worktree.
+      expect(
+        find.byKey(const ValueKey<String>('new-workspace-progress')),
+        findsOneWidget,
+      );
+      expect(find.text('워크트리 생성 중…'), findsOneWidget);
+
+      api.createWorktreeGate!.complete();
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        contains('/sessions/'),
+      );
+    },
+    tags: const <String>['feature_test__workspace_async_loading__widget'],
+  );
+
+  testWidgets(
     'a failed worktree keeps the user in the composer',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));

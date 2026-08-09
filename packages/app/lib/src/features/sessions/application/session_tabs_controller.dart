@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
@@ -44,6 +46,15 @@ final class TerminalTabTarget extends WorkspaceTabTarget {
 final class DraftTabTarget extends WorkspaceTabTarget {
   /// Creates a draft target.
   const DraftTabTarget();
+}
+
+/// A terminal tab whose daemon PTY is still being created.
+///
+/// The tab exists so terminal creation gives instant feedback; it is never
+/// persisted, and is either promoted to a [TerminalTabTarget] or removed.
+final class PendingTerminalTabTarget extends WorkspaceTabTarget {
+  /// Creates a pending terminal target.
+  const PendingTerminalTabTarget();
 }
 
 /// Stable tab identity and its current content target.
@@ -223,7 +234,7 @@ class SessionTabsController extends _$SessionTabsController {
     final current = state.requireValue;
     final id = 'draft:${ref.read(appIdGeneratorProvider).generate()}';
     final pane = current.focusedPane;
-    await _apply(
+    _apply(
       current.copyWith(
         tabs: <String, WorkspaceTabEntry>{
           ...current.tabs,
@@ -254,7 +265,7 @@ class SessionTabsController extends _$SessionTabsController {
         ? current.focusedTab
         : current.tabs[draftTabId];
     if (active?.target is DraftTabTarget) {
-      await _apply(
+      _apply(
         current.copyWith(
           sessions: sessions,
           tabs: <String, WorkspaceTabEntry>{
@@ -312,6 +323,68 @@ class SessionTabsController extends _$SessionTabsController {
     (target) => target is TerminalTabTarget && target.terminalId == id,
   );
 
+  /// Inserts and focuses a placeholder tab while the daemon creates a PTY.
+  ///
+  /// Returns the placeholder tab identity so the caller can promote or remove
+  /// it once the daemon answers. The placeholder is never persisted.
+  String openPendingTerminal(String paneId) {
+    final current = state.requireValue;
+    final pane = _findPane(current.root, paneId) ?? current.focusedPane;
+    final id =
+        'pending-terminal:${ref.read(appIdGeneratorProvider).generate()}';
+    _apply(
+      current.copyWith(
+        tabs: <String, WorkspaceTabEntry>{
+          ...current.tabs,
+          id: WorkspaceTabEntry(
+            id: id,
+            target: const PendingTerminalTabTarget(),
+          ),
+        },
+        root: _replacePane(
+          current.root,
+          pane.id,
+          pane.copyWith(tabIds: <String>[...pane.tabIds, id], activeTabId: id),
+        ),
+        focusedPaneId: pane.id,
+      ),
+    );
+    return id;
+  }
+
+  /// Retargets a placeholder tab to its created terminal.
+  void promotePendingTerminal(String pendingTabId, TerminalDto terminal) {
+    final current = state.requireValue;
+    final entry = current.tabs[pendingTabId];
+    if (entry == null || entry.target is! PendingTerminalTabTarget) return;
+    _apply(
+      current.copyWith(
+        terminals: <TerminalDto>[
+          terminal,
+          ...current.terminals.where((item) => item.id != terminal.id),
+        ],
+        tabs: <String, WorkspaceTabEntry>{
+          ...current.tabs,
+          pendingTabId: WorkspaceTabEntry(
+            id: pendingTabId,
+            target: TerminalTabTarget(terminal.id),
+          ),
+        },
+      ),
+    );
+  }
+
+  /// Removes a placeholder tab whose terminal creation failed or was
+  /// cancelled.
+  Future<void> removePendingTerminal(String pendingTabId) async {
+    final current = state.asData?.value;
+    if (current == null) return;
+    if (current.tabs[pendingTabId]?.target is! PendingTerminalTabTarget) {
+      return;
+    }
+    await closeTab(pendingTabId);
+  }
+
   /// Closes an app-local tab by its stable identity.
   Future<void> closeTab(String tabId) async {
     final current = state.requireValue;
@@ -326,7 +399,7 @@ class SessionTabsController extends _$SessionTabsController {
     final current = state.requireValue;
     final pane = _findPane(current.root, paneId);
     if (pane == null || !pane.tabIds.contains(tabId)) return;
-    await _apply(
+    _apply(
       current.copyWith(
         root: _replacePane(
           current.root,
@@ -342,7 +415,7 @@ class SessionTabsController extends _$SessionTabsController {
   Future<void> focusPane(String paneId) async {
     final current = state.requireValue;
     if (_findPane(current.root, paneId) == null) return;
-    await _apply(current.copyWith(focusedPaneId: paneId));
+    _apply(current.copyWith(focusedPaneId: paneId));
   }
 
   /// Splits one leaf and creates a fresh draft in the new pane.
@@ -365,7 +438,7 @@ class SessionTabsController extends _$SessionTabsController {
         activeTabId: draftId,
       ),
     );
-    await _apply(
+    _apply(
       current.copyWith(
         tabs: <String, WorkspaceTabEntry>{
           ...current.tabs,
@@ -397,7 +470,7 @@ class SessionTabsController extends _$SessionTabsController {
       final reordered = source.tabIds.where((id) => id != tabId).toList();
       final index = targetIndex.clamp(0, reordered.length);
       reordered.insert(index, tabId);
-      await _apply(
+      _apply(
         current.copyWith(
           root: _replacePane(
             current.root,
@@ -431,7 +504,7 @@ class SessionTabsController extends _$SessionTabsController {
         ),
       );
     }
-    await _apply(current.copyWith(root: root, focusedPaneId: targetPaneId));
+    _apply(current.copyWith(root: root, focusedPaneId: targetPaneId));
   }
 
   /// Updates a split ratio in memory without writing device settings.
@@ -469,7 +542,7 @@ class SessionTabsController extends _$SessionTabsController {
     for (final pane in current.panes) {
       for (final tabId in pane.tabIds) {
         if (_sameTarget(current.tabs[tabId]!.target, target)) {
-          await _apply(
+          _apply(
             current.copyWith(
               sessions: sessions,
               terminals: terminals,
@@ -486,7 +559,7 @@ class SessionTabsController extends _$SessionTabsController {
       }
     }
     final pane = current.focusedPane;
-    await _apply(
+    _apply(
       current.copyWith(
         sessions: sessions,
         terminals: terminals,
@@ -554,7 +627,7 @@ class SessionTabsController extends _$SessionTabsController {
         activeTabId: draftId,
       );
     }
-    await _apply(
+    _apply(
       current.copyWith(
         tabs: nextTabs,
         root: root,
@@ -628,24 +701,41 @@ class SessionTabsController extends _$SessionTabsController {
     );
   }
 
-  Future<void> _apply(SessionTabsState next) async {
+  void _apply(SessionTabsState next) {
     state = AsyncData<SessionTabsState>(next);
-    await _persist(next);
+    unawaited(_persistBestEffort(next));
   }
 
-  Future<void> _persist(SessionTabsState value) => ref
-      .read(hostRegistryControllerProvider.notifier)
-      .saveWorkspaceUi(
-        selection: _selection,
-        tabs: SessionTabPreference(
-          tabs: value.tabs.values.map(_entryPreference).toList(growable: false),
-          root: _nodePreference(value.root),
-          focusedPaneId: value.focusedPaneId,
-        ),
-      );
+  Future<void> _persistBestEffort(SessionTabsState value) async {
+    try {
+      await _persist(value);
+    } on Exception {
+      // Layout persistence is best-effort: a failed device-settings write
+      // costs at most the saved tab layout on next launch, and must never
+      // block or roll back the live pane tree the user is interacting with.
+    }
+  }
+
+  Future<void> _persist(SessionTabsState value) {
+    final persisted = value.tabs.values
+        .map(_entryPreference)
+        .nonNulls
+        .toList(growable: false);
+    final persistedIds = persisted.map((tab) => tab.id).toSet();
+    return ref
+        .read(hostRegistryControllerProvider.notifier)
+        .saveWorkspaceUi(
+          selection: _selection,
+          tabs: SessionTabPreference(
+            tabs: persisted,
+            root: _nodePreference(value.root, persistedIds),
+            focusedPaneId: value.focusedPaneId,
+          ),
+        );
+  }
 }
 
-WorkspaceTabPreference _entryPreference(WorkspaceTabEntry entry) =>
+WorkspaceTabPreference? _entryPreference(WorkspaceTabEntry entry) =>
     switch (entry.target) {
       SessionTabTarget(:final sessionId) => WorkspaceTabPreference(
         id: entry.id,
@@ -661,23 +751,29 @@ WorkspaceTabPreference _entryPreference(WorkspaceTabEntry entry) =>
         id: entry.id,
         kind: WorkspaceTabTargetKind.draft,
       ),
+      // A PTY that never finished creating has nothing to restore into.
+      PendingTerminalTabTarget() => null,
     };
 
-WorkspacePanePreferenceNode _nodePreference(WorkspacePaneNode node) =>
-    switch (node) {
-      PaneNode() => WorkspacePanePreference(
-        id: node.id,
-        tabIds: node.tabIds,
-        activeTabId: node.activeTabId,
-      ),
-      WorkspaceSplitNode() => WorkspaceSplitPreference(
-        id: node.id,
-        axis: node.axis,
-        ratio: node.ratio,
-        first: _nodePreference(node.first),
-        second: _nodePreference(node.second),
-      ),
-    };
+WorkspacePanePreferenceNode _nodePreference(
+  WorkspacePaneNode node,
+  Set<String> persistedTabIds,
+) => switch (node) {
+  PaneNode() => WorkspacePanePreference(
+    id: node.id,
+    tabIds: node.tabIds.where(persistedTabIds.contains).toList(growable: false),
+    // A pending active tab is absent from the persisted ids; restoring
+    // falls back to the last surviving tab in `_restoreNode`.
+    activeTabId: node.activeTabId,
+  ),
+  WorkspaceSplitNode() => WorkspaceSplitPreference(
+    id: node.id,
+    axis: node.axis,
+    ratio: node.ratio,
+    first: _nodePreference(node.first, persistedTabIds),
+    second: _nodePreference(node.second, persistedTabIds),
+  ),
+};
 
 WorkspacePaneNode? _restoreNode(
   WorkspacePanePreferenceNode node,

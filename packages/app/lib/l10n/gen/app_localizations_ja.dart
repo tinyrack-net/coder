@@ -279,6 +279,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceNewTerminal => 'New terminal';
 
   @override
+  String get workspaceLoading => 'ワークスペースを読み込み中';
+
+  @override
+  String get workspaceCatalogLoading => 'ワークスペース一覧を読み込み中';
+
+  @override
+  String get workspaceCreatingWorktree => 'ワークツリーを作成中…';
+
+  @override
+  String get workspaceStartingSession => 'セッションを開始中…';
+
+  @override
+  String get workspaceTerminalStarting => 'ターミナルを起動中';
+
+  @override
+  String workspaceTerminalStartFailed(String error) {
+    return 'ターミナルを起動できませんでした: $error';
+  }
+
+  @override
   String get terminalCloseTitle => 'Terminate terminal?';
 
   @override
@@ -290,6 +310,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get terminalConnectionFailed => 'Terminal connection failed';
+
+  @override
+  String get terminalConnecting => 'ターミナルに接続中';
+
+  @override
+  String get conversationLoading => '会話を読み込み中';
+
+  @override
+  String get directoryBrowserLoading => 'ディレクトリを読み込み中';
 
   @override
   String get terminalMenuCopy => 'Copy';

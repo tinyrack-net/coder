@@ -5,9 +5,11 @@ import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
+import 'package:app/src/features/hosts/application/relay_devices_controller.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -225,23 +227,13 @@ class DaemonDevicesPage extends ConsumerStatefulWidget {
 
 class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
   RelayPairingOfferDto? _offer;
-  List<RelayDeviceDto>? _devices;
   String? _error;
   bool _busy = false;
-  bool _refreshing = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final connected = ref
-        .watch(hostRegistryControllerProvider)
-        .value
-        ?.runtimes[widget.hostId]
-        ?.connected;
-    if (connected == true && _devices == null && !_refreshing) {
-      _refreshing = true;
-      unawaited(_refresh());
-    }
+    final devicesAsync = ref.watch(relayDevicesProvider(widget.hostId));
     return CoderPageShell(
       appBar: CoderPageHeader(
         leading: TRIconButton(
@@ -311,14 +303,26 @@ class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
           SettingsSection(
             title: l10n.relayApprovedDevices,
             children: <Widget>[
-              if (_devices == null)
+              if (!devicesAsync.hasValue && devicesAsync.hasError)
                 TRCard(
                   padding: TRCardPadding.none,
                   child: SettingsRow(
-                    title: TRText.inherit(l10n.settingsLoading),
+                    title: TRText.inherit(l10n.appSettingsConnectionFailed),
+                    description: TRText.inherit('${devicesAsync.error}'),
                   ),
                 )
-              else if (_devices!.isEmpty)
+              else if (!devicesAsync.hasValue)
+                TRCard(
+                  padding: TRCardPadding.none,
+                  child: Padding(
+                    padding: SettingsRow.contentPadding,
+                    child: ListRowsSkeleton(
+                      semanticLabel: l10n.settingsLoading,
+                      rows: 3,
+                    ),
+                  ),
+                )
+              else if (devicesAsync.requireValue.isEmpty)
                 TRCard(
                   padding: TRCardPadding.none,
                   child: SettingsRow(
@@ -326,7 +330,7 @@ class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
                   ),
                 )
               else
-                for (final device in _devices!)
+                for (final device in devicesAsync.requireValue)
                   TRCard(
                     padding: TRCardPadding.none,
                     child: SettingsRow(
@@ -349,17 +353,6 @@ class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
   Future<RelayApi> _relay() async {
     final registry = await ref.read(hostRegistryControllerProvider.future);
     return connectedHostApi(registry.runtimes[widget.hostId]).relay;
-  }
-
-  Future<void> _refresh() async {
-    try {
-      final devices = await (await _relay()).listRelayDevices();
-      if (mounted) setState(() => _devices = devices);
-    } on Exception catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    } finally {
-      _refreshing = false;
-    }
   }
 
   Future<void> _createOffer() async {
@@ -405,7 +398,7 @@ class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
     setState(() => _busy = true);
     try {
       await (await _relay()).revokeRelayDevice(device.id);
-      await _refresh();
+      ref.invalidate(relayDevicesProvider(widget.hostId));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

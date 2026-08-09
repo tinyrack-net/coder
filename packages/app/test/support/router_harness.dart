@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 
 import 'fake_coder_api.dart';
 import 'localization.dart';
@@ -19,6 +20,7 @@ Future<GoRouter> pumpRoutedApp(
   FakeCoderApi api, {
   required String initialLocation,
   MemoryAppStore? store,
+  List<Override> overrides = const <Override>[],
   // A screen with a perpetual animation (a running subagent spinner, for
   // instance) never settles; such tests pump fixed frames instead.
   bool settle = true,
@@ -30,6 +32,7 @@ Future<GoRouter> pumpRoutedApp(
         appServicesProvider.overrideWithValue(
           fakeAppServices(api, store: store),
         ),
+        ...overrides,
       ],
       child: MaterialApp.router(
         theme: testLightTheme,

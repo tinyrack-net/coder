@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
@@ -33,6 +35,20 @@ final class UnifiedWorkspaceCatalogState {
   /// Online daemon catalogs keyed by host profile ID.
   final Map<String, WorkspaceCatalogDto> catalogs;
 
+  /// Whether any connected host has not delivered its catalog yet.
+  ///
+  /// Catalogs merge per host as daemons answer, so consumers use this to keep
+  /// showing a loading shape instead of misreporting an empty workspace list.
+  bool get hasPendingHosts => hosts.values.any(
+    (host) => host.connected && !catalogs.containsKey(host.id),
+  );
+
+  /// Whether [hostId] is connected but has not delivered its catalog yet.
+  bool isHostPending(String hostId) {
+    final host = hosts[hostId];
+    return host != null && host.connected && !catalogs.containsKey(hostId);
+  }
+
   /// Resolves the implicit home checkout of [hostId], when its daemon has one.
   ///
   /// Sessions the user starts without picking a project live here. A daemon
@@ -62,19 +78,57 @@ final class UnifiedWorkspaceCatalogState {
 class WorkspaceCatalogController extends _$WorkspaceCatalogController {
   @override
   Future<UnifiedWorkspaceCatalogState> build() async {
+    // Registry changes rebuild this provider; keeping the previous catalogs
+    // preserves stale-but-usable sections instead of blanking the sidebar on
+    // every reconnect. Fresh fetches below overwrite them host by host.
+    final previous = state.asData?.value.catalogs;
     final registry = await ref.watch(hostRegistryControllerProvider.future);
-    final entries = await Future.wait(
-      registry.runtimes.values.where((item) => item.connected).map((
-        runtime,
-      ) async {
-        final catalog = await runtime.api!.workspaces.getWorkspaceCatalog();
-        return MapEntry<String, WorkspaceCatalogDto>(runtime.id, catalog);
-      }),
-    );
+    // Hosts resolve independently and merge as they answer: one slow daemon
+    // delays only its own catalog section, never the whole sidebar. Consumers
+    // treat a connected host with no catalog entry yet as still loading.
+    for (final runtime in registry.runtimes.values) {
+      if (runtime.connected) unawaited(_loadHost(runtime));
+    }
     return UnifiedWorkspaceCatalogState(
       hosts: registry.runtimes,
       catalogs: Map<String, WorkspaceCatalogDto>.unmodifiable(
-        Map<String, WorkspaceCatalogDto>.fromEntries(entries),
+        <String, WorkspaceCatalogDto>{
+          if (previous != null)
+            for (final entry in previous.entries)
+              if (registry.runtimes.containsKey(entry.key))
+                entry.key: entry.value,
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadHost(HostRuntimeSnapshot runtime) async {
+    WorkspaceCatalogDto catalog;
+    try {
+      catalog = await runtime.api!.workspaces.getWorkspaceCatalog();
+    } on Exception {
+      // A daemon that fails to answer settles as an empty section instead of
+      // pending forever; the registry's connection state is the surface that
+      // reports the failure itself.
+      catalog = const WorkspaceCatalogDto(
+        workspaces: <WorkspaceDto>[],
+        worktrees: <WorktreeDto>[],
+      );
+    }
+    // The empty snapshot from build installs after this notifier returns, so
+    // a catalog that answers first waits for it before merging.
+    await future;
+    if (!ref.mounted) return;
+    final current = state.requireValue;
+    state = AsyncData<UnifiedWorkspaceCatalogState>(
+      UnifiedWorkspaceCatalogState(
+        hosts: current.hosts,
+        catalogs: Map<String, WorkspaceCatalogDto>.unmodifiable(
+          <String, WorkspaceCatalogDto>{
+            ...current.catalogs,
+            runtime.id: catalog,
+          },
+        ),
       ),
     );
   }

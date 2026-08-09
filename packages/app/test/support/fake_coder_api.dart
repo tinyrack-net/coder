@@ -119,6 +119,8 @@ final class FakeCoderApi
     this.workspaceCatalogGate,
     this.agentDefinitionsGate,
     this.terminalShellGate,
+    this.listSessionsGate,
+    this.listTerminalsGate,
     this.skillListGate,
     this.permissionSettingsGate,
     this.providerConnectionsGate,
@@ -383,7 +385,9 @@ final class FakeCoderApi
   Exception? skillListError;
 
   /// Optional attach failure used by terminal error-state tests.
-  final Exception? terminalAttachError;
+  ///
+  /// Mutable so a retry test can clear the failure between attempts.
+  Exception? terminalAttachError;
 
   /// Scrollback returned by terminal attach.
   final List<TerminalOutputDto> terminalReplay;
@@ -413,6 +417,18 @@ final class FakeCoderApi
   /// Optional gate used to keep skill discovery in its loading state.
   final Future<void>? skillListGate;
 
+  /// Optional gate used to keep the session catalog in its loading state.
+  final Future<void>? listSessionsGate;
+
+  /// Optional gate used to keep the terminal catalog in its loading state.
+  final Future<void>? listTerminalsGate;
+
+  /// Optional gate used to keep a terminal creation pending.
+  Completer<void>? terminalCreateGate;
+
+  /// Optional daemon failure thrown while creating a terminal.
+  Exception? terminalCreateError;
+
   /// Optional gate used to keep permission settings in their loading state.
   final Future<void>? permissionSettingsGate;
 
@@ -430,6 +446,9 @@ final class FakeCoderApi
 
   /// Optional daemon failure returned while creating a worktree.
   final CoderClientException? createWorktreeError;
+
+  /// Optional gate used to keep a worktree creation pending.
+  Completer<void>? createWorktreeGate;
 
   /// Optional daemon failure returned while listing directories.
   final CoderClientException? suggestDirectoriesError;
@@ -687,8 +706,13 @@ final class FakeCoderApi
       (throw StateError('No relay pairing offer configured for this fake.'));
 
   @override
-  Future<List<RelayDeviceDto>> listRelayDevices() async =>
-      List<RelayDeviceDto>.unmodifiable(relayDevices);
+  Future<List<RelayDeviceDto>> listRelayDevices() async {
+    await listRelayDevicesGate;
+    return List<RelayDeviceDto>.unmodifiable(relayDevices);
+  }
+
+  /// Optional gate used to keep the approved-device list loading.
+  Future<void>? listRelayDevicesGate;
 
   @override
   Future<void> revokeRelayDevice(String deviceId) async {
@@ -911,6 +935,7 @@ final class FakeCoderApi
     required String branchName,
     String? baseBranch,
   }) async {
+    if (createWorktreeGate case final gate?) await gate.future;
     final failure = createWorktreeError;
     if (failure != null) throw failure;
     createdWorktrees.add((
@@ -966,6 +991,7 @@ final class FakeCoderApi
 
   @override
   Future<List<SessionDto>> listSessions({String? worktreeId}) async {
+    await listSessionsGate;
     if (listSessionsFailures > 0) {
       listSessionsFailures -= 1;
       throw Exception('transient listSessions failure');
@@ -1152,8 +1178,10 @@ final class FakeCoderApi
   }
 
   @override
-  Future<List<TerminalDto>> listTerminals(String worktreeId) async =>
-      _terminals.where((item) => item.worktreeId == worktreeId).toList();
+  Future<List<TerminalDto>> listTerminals(String worktreeId) async {
+    await listTerminalsGate;
+    return _terminals.where((item) => item.worktreeId == worktreeId).toList();
+  }
 
   @override
   Future<TerminalDto> createTerminal({
@@ -1163,6 +1191,8 @@ final class FakeCoderApi
     required int columns,
     required int rows,
   }) async {
+    if (terminalCreateGate case final gate?) await gate.future;
+    if (terminalCreateError case final error?) throw error;
     final terminal = TerminalDto(
       id: id,
       worktreeId: worktreeId,
@@ -1183,6 +1213,7 @@ final class FakeCoderApi
     String terminalId, {
     int afterSequence = 0,
   }) async {
+    if (terminalAttachGate case final gate?) await gate.future;
     final error = terminalAttachError;
     if (error != null) throw error;
     attachedTerminalIds.add(terminalId);
@@ -1194,6 +1225,9 @@ final class FakeCoderApi
 
   /// Terminals attached to, in order, including repeat attachments.
   final List<String> attachedTerminalIds = <String>[];
+
+  /// Optional gate used to keep a terminal attachment pending.
+  Completer<void>? terminalAttachGate;
 
   /// Terminal input received by the fake.
   final List<({String terminalId, String data})> terminalWrites =
@@ -1931,9 +1965,15 @@ final class FakeCoderApi
   Future<List<TimelineEventDto>> subscribeTimeline(
     String sessionId, {
     int afterSequence = 0,
-  }) async => (_timelines[sessionId] ?? const <TimelineEventDto>[])
-      .where((event) => event.sequence > afterSequence)
-      .toList(growable: false);
+  }) async {
+    if (subscribeTimelineGate case final gate?) await gate.future;
+    return (_timelines[sessionId] ?? const <TimelineEventDto>[])
+        .where((event) => event.sequence > afterSequence)
+        .toList(growable: false);
+  }
+
+  /// Optional gate used to keep a timeline subscription pending.
+  Completer<void>? subscribeTimelineGate;
 
   @override
   Future<void> close() async {
