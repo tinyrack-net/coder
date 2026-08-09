@@ -11,14 +11,14 @@ targets:
     # the app's pubspec, which is the single source of truth.
     root: .
     version:
-      source: apps/coder_app/pubspec.yaml
+      source: packages/app/pubspec.yaml
       synchronized:
         - type: dart-constant
-          path: apps/coder_app/lib/src/version.g.dart
+          path: packages/app/lib/src/version.g.dart
         - type: dart-constant
-          path: packages/coder_daemon/lib/src/version.g.dart
+          path: packages/daemon/lib/src/version.g.dart
         - type: dart-constant
-          path: packages/coder_cli/lib/src/version.g.dart
+          path: packages/cli/lib/src/version.g.dart
     tag: "v{version}"
     commit: "release: v{version}"
     branch: main
@@ -44,13 +44,13 @@ targets:
         publisher-display-name-env: MSIX_PUBLISHER_DISPLAY_NAME
         display-name-env: MSIX_DISPLAY_NAME
     macos:
-      entitlements: apps/coder_app/macos/Runner/Release.entitlements
+      entitlements: packages/app/macos/Runner/Release.entitlements
       bundle-name: Coder
       bundle-id: net.tinyrack.coder
       # SMAppService, used for the login item, needs macOS 13.
       minimum-version: ventura
     linux:
-      icon: apps/coder_app/assets/brand/coder.svg
+      icon: packages/app/assets/brand/coder.svg
       categories:
         - Development
       terminal: false
@@ -59,10 +59,10 @@ targets:
       vendor: Tinyrack
       app-id: net.tinyrack.coder
       icons:
-        - { size: 0, path: apps/coder_app/assets/brand/coder.svg }
-        - { size: 128, path: apps/coder_app/assets/brand/coder-128.png }
-        - { size: 256, path: apps/coder_app/assets/brand/coder-256.png }
-        - { size: 512, path: apps/coder_app/assets/brand/coder-512.png }
+        - { size: 0, path: packages/app/assets/brand/coder.svg }
+        - { size: 128, path: packages/app/assets/brand/coder-128.png }
+        - { size: 256, path: packages/app/assets/brand/coder-256.png }
+        - { size: 512, path: packages/app/assets/brand/coder-512.png }
       deb:
         # GTK is the Flutter shell; the indicator library backs the tray icon.
         # Ubuntu 24.04 renamed libgtk-3-0 during the time_t transition.
@@ -85,7 +85,7 @@ targets:
       # ships a matching daemon, desktop app, and command line. Its version
       # file is written by the `coder` target above, which is why nothing is
       # synchronized here.
-      source: apps/coder_app/pubspec.yaml
+      source: packages/app/pubspec.yaml
     tag: "v{version}"
     commit: "release: v{version}"
     branch: main
@@ -103,7 +103,7 @@ targets:
       homepage: https://github.com/tinyrack-net/coder
       repository: tinyrack-net/coder
     macos:
-      entitlements: packages/coder_cli/macos/Release.entitlements
+      entitlements: packages/cli/macos/Release.entitlements
       bundle-id: net.tinyrack.coder.cli
     homebrew:
       # No Linux arm64: building the CLI needs the Flutter SDK, because it

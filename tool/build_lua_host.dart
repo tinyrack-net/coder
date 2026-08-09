@@ -12,7 +12,7 @@ Future<void> main(List<String> arguments) async {
     return;
   }
   final root = Directory.current.absolute;
-  final daemon = Directory('${root.path}/packages/coder_daemon');
+  final daemon = Directory('${root.path}/packages/daemon');
   if (!File('${daemon.path}/pubspec.yaml').existsSync()) {
     throw StateError('Run this command from the Coder repository root.');
   }

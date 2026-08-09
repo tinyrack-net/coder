@@ -1,9 +1,0 @@
-name: coder_relay_container_workspace
-publish_to: none
-
-environment:
-  sdk: ^3.12.2
-
-workspace:
-  - coder_relay
-  - coder_relay_protocol

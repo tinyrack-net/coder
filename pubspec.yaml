@@ -6,7 +6,6 @@ environment:
   sdk: ^3.12.2
 
 workspace:
-  - apps/*
   - packages/*
 
 dependencies:
@@ -31,7 +30,7 @@ melos:
     format:check:
       run: dart run tool/format_sources.dart --check
     generate:
-      run: dart run tool/generate_provider_catalog.dart && dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
+      run: dart run melos exec --flutter --scope=app -c 1 -- flutter gen-l10n && dart run tool/generate_provider_catalog.dart && dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
     provider-catalog:generate:
       run: dart run tool/generate_provider_catalog.dart
     provider-catalog:update:
@@ -53,27 +52,27 @@ melos:
     test:dart:
       run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
     test:flutter:
-      run: dart run melos exec --flutter --scope=coder_app -- flutter test test --concurrency=4 --exclude-tags=golden --test-randomize-ordering-seed=random
+      run: dart run melos exec --flutter --scope=app -- flutter test test --concurrency=4 --exclude-tags=golden --test-randomize-ordering-seed=random
     test:unit:
       run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
     test:widget:
       run: dart run melos test:flutter
     test:contract:
-      run: dart run melos exec --no-flutter --scope=coder_protocol --scope=coder_client --scope=coder_cli --scope=coder_daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
+      run: dart run melos exec --no-flutter --scope=protocol --scope=client --scope=cli --scope=daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
     test:vertical-slice:
-      run: dart test packages/coder_daemon/test/vertical_slice --test-randomize-ordering-seed=random
+      run: dart test packages/daemon/test/vertical_slice --test-randomize-ordering-seed=random
     test:golden:
-      run: dart run melos exec --flutter --scope=coder_app -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
+      run: dart run melos exec --flutter --scope=app -- flutter test test/golden --tags=golden --test-randomize-ordering-seed=random
     test:coverage:dart:
       run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random
     test:coverage:flutter:
-      run: dart run melos exec --flutter --scope=coder_app -- flutter test --coverage --concurrency=4 --branch-coverage --exclude-tags=golden --test-randomize-ordering-seed=random
+      run: dart run melos exec --flutter --scope=app -- flutter test --coverage --concurrency=4 --branch-coverage --exclude-tags=golden --test-randomize-ordering-seed=random
     coverage:check:
       run: dart run tool/verify_coverage.dart
     test:coverage:
       run: dart run tool/verify_workspace.dart coverage
     test:e2e:linux:
-      run: xvfb-run -a dart run melos exec --flutter --scope=coder_app -c 1 -- dart run ../../tool/run_linux_e2e.dart
+      run: xvfb-run -a dart run melos exec --flutter --scope=app -c 1 -- dart run ../../tool/run_linux_e2e.dart
     verify:fast:
       run: dart run tool/verify_workspace.dart fast
     verify:
@@ -95,30 +94,30 @@ melos:
       # `dart build cli` rather than `dart compile exe`: the CLI now hosts the
       # daemon, so it links sqlite3 and the PTY code assets and ships as
       # `dist/bundle/bin` plus `dist/bundle/lib`.
-      run: dart build cli -t packages/coder_cli/bin/coder_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
+      run: dart build cli -t packages/cli/bin/coder_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.
-      run: cd apps/coder_app && flutter run -d linux -t lib/main_desktop.dart
+      run: cd packages/app && flutter run -d linux -t lib/main_desktop.dart
       stdio: inherit
     run:mobile:
-      run: cd apps/coder_app && flutter run -t lib/main_mobile.dart
+      run: cd packages/app && flutter run -t lib/main_mobile.dart
       stdio: inherit
     build:linux:
-      run: dart run melos exec --scope=coder_app -- flutter build linux --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build linux --debug -t lib/main_desktop.dart
     build:android:
-      run: dart run melos exec --scope=coder_app -- flutter build apk --debug -t lib/main_mobile.dart
+      run: dart run melos exec --scope=app -- flutter build apk --debug -t lib/main_mobile.dart
     build:macos:
-      run: dart run melos exec --scope=coder_app -- flutter build macos --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build macos --debug -t lib/main_desktop.dart
     build:windows:
-      run: dart run melos exec --scope=coder_app -- flutter build windows --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build windows --debug -t lib/main_desktop.dart
     build:web:
-      run: dart run melos exec --scope=coder_app -- flutter build web -t lib/main_web.dart
+      run: dart run melos exec --scope=app -- flutter build web -t lib/main_web.dart
     build:web:release:
-      run: dart run melos exec --scope=coder_app -- flutter build web --release -t lib/main_web.dart
+      run: dart run melos exec --scope=app -- flutter build web --release -t lib/main_web.dart
     build:linux:release:
-      run: dart run melos exec --scope=coder_app -- flutter build linux --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build linux --release -t lib/main_desktop.dart
     build:macos:release:
-      run: dart run melos exec --scope=coder_app -- flutter build macos --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build macos --release -t lib/main_desktop.dart
     build:windows:release:
-      run: dart run melos exec --scope=coder_app -- flutter build windows --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=app -- flutter build windows --release -t lib/main_desktop.dart

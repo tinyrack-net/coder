@@ -103,8 +103,8 @@ final class FeatureVerifier {
   const FeatureVerifier(
     this.workspaceRoot, {
     required this.contracts,
-    this.apiPath = 'packages/coder_client/lib/src/api.dart',
-    this.routePath = 'apps/coder_app/lib/src/app/router/app_router.dart',
+    this.apiPath = 'packages/client/lib/src/api.dart',
+    this.routePath = 'packages/app/lib/src/app/router/app_router.dart',
     this.forbiddenProductionTerms = const <String>[],
   });
 

@@ -1,0 +1,4 @@
+// Product identity shared by every iOS build configuration.
+APP_DISPLAY_NAME = Tinyrack Coder
+PRODUCT_NAME = Coder
+PRODUCT_BUNDLE_IDENTIFIER = net.tinyrack.coder

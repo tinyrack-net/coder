@@ -78,9 +78,9 @@ lockfile. `dropwell` and `termworld` both live in
 the whole pipeline. So four values
 must move together, always to the same SHA:
 
-1. `ref` for `cliweave` in `packages/coder_cli/pubspec.yaml`
-2. `ref` for `lua_tool_runtime` in `packages/coder_daemon/pubspec.yaml`
-3. `ref` for `ptyworld` in `packages/coder_daemon/pubspec.yaml`
+1. `ref` for `cliweave` in `packages/cli/pubspec.yaml`
+2. `ref` for `lua_tool_runtime` in `packages/daemon/pubspec.yaml`
+3. `ref` for `ptyworld` in `packages/daemon/pubspec.yaml`
 4. `TINYRACK_DART_PACKAGES_REF` in `.github/workflows/pipeline.yml`
 
 Updating only some of them fails in a checkout step far from the cause —

@@ -8,27 +8,27 @@ void main() {
     'tool/run_linux_ibus_terminal_e2e.sh',
   ).readAsStringSync();
   final androidBuild = File(
-    'apps/coder_app/android/build.gradle.kts',
+    'packages/app/android/build.gradle.kts',
   ).readAsStringSync();
-  final appPubspec = File('apps/coder_app/pubspec.yaml').readAsStringSync();
+  final appPubspec = File('packages/app/pubspec.yaml').readAsStringSync();
   final iosDebugConfig = File(
-    'apps/coder_app/ios/Flutter/Debug.xcconfig',
+    'packages/app/ios/Flutter/Debug.xcconfig',
   ).readAsStringSync();
   final iosReleaseConfig = File(
-    'apps/coder_app/ios/Flutter/Release.xcconfig',
+    'packages/app/ios/Flutter/Release.xcconfig',
   ).readAsStringSync();
-  final iosPodfileFile = File('apps/coder_app/ios/Podfile');
+  final iosPodfileFile = File('packages/app/ios/Podfile');
   final iosPodfile = iosPodfileFile.existsSync()
       ? iosPodfileFile.readAsStringSync()
       : '';
   final iosProject = File(
-    'apps/coder_app/ios/Runner.xcodeproj/project.pbxproj',
+    'packages/app/ios/Runner.xcodeproj/project.pbxproj',
   ).readAsStringSync();
   final cargoKitCompat = File(
-    'apps/coder_app/android/cargokit-gradle9-compat.gradle',
+    'packages/app/android/cargokit-gradle9-compat.gradle',
   );
   final windowsCmake = File(
-    'apps/coder_app/windows/CMakeLists.txt',
+    'packages/app/windows/CMakeLists.txt',
   ).readAsStringSync();
   final luaHostBuilder = File('tool/build_lua_host.dart').readAsStringSync();
 
@@ -295,7 +295,7 @@ void main() {
     // package the CLI with a shipworld that disagrees with the framework it
     // was built against. Comparing them keeps the SHA in one place.
     final pubspec = File(
-      'packages/coder_cli/pubspec.yaml',
+      'packages/cli/pubspec.yaml',
     ).readAsStringSync();
     final dependencyRef = RegExp(
       'ref: ([0-9a-f]{40})',
