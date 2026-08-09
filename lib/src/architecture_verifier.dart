@@ -237,6 +237,19 @@ final class ArchitectureVerifier {
     required String package,
     required String path,
     required String source,
+  }) => _verifyNormalizedSource(
+    package: package,
+    // The filesystem walk hands in host-native separators; every rule below
+    // matches forward-slash layouts, so one canonical form keeps the checker
+    // platform-independent.
+    path: path.replaceAll(r'\', '/'),
+    source: source,
+  );
+
+  List<ArchitectureViolation> _verifyNormalizedSource({
+    required String package,
+    required String path,
+    required String source,
   }) {
     final violations = <ArchitectureViolation>[];
     final lines = source.split('\n');

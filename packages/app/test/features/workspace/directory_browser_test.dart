@@ -77,6 +77,57 @@ void main() {
   );
 
   testWidgets(
+    'the first listing renders row skeletons and later ones keep stale rows',
+    (tester) async {
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        directories: tree,
+        suggestDirectoriesGate: gate.future,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: testLightTheme,
+          darkTheme: testDarkTheme,
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async => showDirectoryBrowser(
+                  context,
+                  api: api,
+                  initialPath: '/srv',
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump();
+
+      // The first load is shape-preserving rows, not a bare progress bar.
+      expect(
+        find.byKey(const ValueKey<String>('list-rows-skeleton')),
+        findsOneWidget,
+      );
+      expect(find.byType(TRProgress), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('list-rows-skeleton')),
+        findsNothing,
+      );
+      expect(find.text('repositories'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__workspace_async_loading__widget'],
+  );
+
+  testWidgets(
     'typing a path is debounced into a single daemon request',
     (tester) async {
       final api = FakeCoderApi(directories: tree);

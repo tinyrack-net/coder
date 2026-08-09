@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+/// Selects the semantic surface used when a row is selected.
+enum CoderListRowSelectionAppearance {
+  /// Uses the standard content-list selected surface.
+  standard,
+
+  /// Uses the navigation selected surface shared with [TRTreeNav].
+  navigation,
+}
+
 /// A Coder content row composed exclusively from Tinyrack tokens.
 ///
 /// The row rings itself only while it holds the primary focus. A row reports
@@ -19,10 +28,12 @@ class CoderListRow extends StatefulWidget {
     this.controlOwnsFocus = false,
     this.dense = false,
     this.enabled = true,
+    this.hoverEnabled = true,
     this.isThreeLine = false,
     this.leading,
     this.onTap,
     this.selected = false,
+    this.selectionAppearance = CoderListRowSelectionAppearance.standard,
     this.subtitle,
     this.subtitleMaxLines,
     this.trailing,
@@ -48,8 +59,17 @@ class CoderListRow extends StatefulWidget {
   /// Whether the row is selected.
   final bool selected;
 
+  /// Semantic appearance used for the selected surface.
+  final CoderListRowSelectionAppearance selectionAppearance;
+
   /// Whether the row accepts activation.
   final bool enabled;
+
+  /// Whether the row paints a hover surface while the pointer is over it.
+  ///
+  /// A containing settings surface can disable this while preserving the
+  /// row's pointer activation and the trailing control's own hover state.
+  final bool hoverEnabled;
 
   /// Whether compact vertical padding is used.
   final bool dense;
@@ -124,8 +144,11 @@ class _CoderListRowState extends State<CoderListRow> {
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
     final background = widget.selected
-        ? colors.surfaceSelected
-        : _hovered
+        ? widget.selectionAppearance ==
+                  CoderListRowSelectionAppearance.navigation
+              ? colors.surfaceHover
+              : colors.surfaceSelected
+        : widget.hoverEnabled && _hovered
         ? colors.surfaceHover
         : colors.surface;
     final verticalPadding = widget.dense
@@ -195,10 +218,10 @@ class _CoderListRowState extends State<CoderListRow> {
           skipTraversal: !_focusable,
           child: MouseRegion(
             cursor: _interactive ? SystemMouseCursors.click : MouseCursor.defer,
-            onEnter: _interactive
+            onEnter: _interactive && widget.hoverEnabled
                 ? (_) => setState(() => _hovered = true)
                 : null,
-            onExit: _interactive
+            onExit: _interactive && widget.hoverEnabled
                 ? (_) => setState(() => _hovered = false)
                 : null,
             child: GestureDetector(

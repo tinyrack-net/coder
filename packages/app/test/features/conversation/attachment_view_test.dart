@@ -5,6 +5,7 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/localization.dart';
 
@@ -65,6 +66,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TRChatMessageRow>(find.byType(TRChatMessageRow))
+            .alignment,
+        TRChatMessageAlignment.center,
+      );
       await tester.tap(
         find.byKey(const ValueKey('chat-attachment-image-1')),
       );

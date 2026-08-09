@@ -21,6 +21,20 @@ void main() {
     expect(violations, isEmpty);
   });
 
+  test('Windows-style paths resolve the same exemptions as POSIX paths', () {
+    // On Windows the filesystem walk hands in backslash-separated relative
+    // paths; every rule matches forward-slash layouts, so without one
+    // canonical form an exempted vendor file is falsely flagged.
+    final violations = verifier.verifySource(
+      package: 'daemon',
+      path:
+          r'packages\daemon\lib\src\features\providers\infrastructure'
+          r'\anthropic\anthropic_provider.dart',
+      source: "const vendor = 'anthropic';",
+    );
+    expect(violations, isEmpty);
+  });
+
   test('invalid application fixture reports imports and concrete calls', () {
     final violations = verifier.verifySource(
       package: 'app',

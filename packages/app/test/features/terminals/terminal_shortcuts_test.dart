@@ -3,6 +3,7 @@ library;
 
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -144,6 +145,161 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'Ctrl+Shift+V pastes the clipboard while Ctrl+V stays with the program',
+    (tester) async {
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[_workspace],
+        worktrees: <WorktreeDto>[_worktree],
+        terminals: const <TerminalDto>[_terminal],
+      );
+      final router = GoRouter(
+        initialLocation: TerminalRoute(
+          hostId: 'server',
+          workspaceId: _workspace.id,
+          worktreeId: _worktree.id,
+          terminalId: _terminal.id,
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async => call.method == 'Clipboard.getData'
+            ? <String, Object?>{'text': '붙여넣기'}
+            : null,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp.router(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('tr-terminal-surface')),
+      );
+      await tester.pump(kDoubleTapTimeout);
+
+      await _press(tester, LogicalKeyboardKey.keyV, shift: true);
+      await tester.pump();
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        '붙여넣기',
+        reason: 'the desktop terminal convention pastes on Ctrl+Shift+V',
+      );
+
+      await _press(tester, LogicalKeyboardKey.keyV, shift: false);
+      await tester.pump();
+      expect(
+        api.terminalWrites.map((write) => write.data).join().codeUnits.last,
+        0x16,
+        reason: 'plain Ctrl+V is literal-next and belongs to the program',
+      );
+    },
+  );
+
+  testWidgets('Ctrl+Shift+C copies the selection to the clipboard', (
+    tester,
+  ) async {
+    final api = FakeCoderApi(
+      workspaces: <WorkspaceDto>[_workspace],
+      worktrees: <WorktreeDto>[_worktree],
+      terminals: const <TerminalDto>[_terminal],
+      terminalReplay: const <TerminalOutputDto>[
+        TerminalOutputDto(
+          terminalId: 'terminal-shortcuts',
+          sequence: 1,
+          data: 'output',
+        ),
+      ],
+    );
+    final router = GoRouter(
+      initialLocation: TerminalRoute(
+        hostId: 'server',
+        workspaceId: _workspace.id,
+        worktreeId: _worktree.id,
+        terminalId: _terminal.id,
+      ).location,
+      routes: $appRoutes,
+    );
+    addTearDown(router.dispose);
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add(
+            (call.arguments as Map<Object?, Object?>)['text']! as String,
+          );
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appServicesProvider.overrideWithValue(fakeAppServices(api)),
+        ],
+        child: MaterialApp.router(
+          theme: testLightTheme,
+          locale: testLocale,
+          localizationsDelegates: testLocalizationsDelegates,
+          supportedLocales: testSupportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('tr-terminal-surface')),
+    );
+    await tester.pump(kDoubleTapTimeout);
+
+    // Ctrl+Shift+C with nothing selected copies nothing and sends nothing.
+    await _press(tester, LogicalKeyboardKey.keyC, shift: true);
+    await tester.pump();
+    expect(copied, isEmpty);
+    expect(api.terminalWrites, isEmpty);
+
+    final view = tester.widget<CoderTerminalView>(
+      find.byType(CoderTerminalView),
+    );
+    view.controller.selectAll();
+    await tester.pump();
+    await _press(tester, LogicalKeyboardKey.keyC, shift: true);
+    await tester.pump();
+
+    expect(copied.join().trim(), 'output');
+    expect(
+      api.terminalWrites,
+      isEmpty,
+      reason: 'the copy chord never reaches the program',
+    );
+  });
 
   testWidgets('a Hangul composition followed by Space is written once', (
     tester,

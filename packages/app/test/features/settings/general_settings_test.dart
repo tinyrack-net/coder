@@ -8,6 +8,7 @@ import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_desktop_ports.dart';
 
@@ -207,15 +208,22 @@ void main() {
 
       // Starting minimized only describes a login launch, so it cannot be
       // chosen while there is no login launch to describe.
+      final startMinimized = find.byKey(
+        const ValueKey<String>('general-settings-start-minimized'),
+      );
       expect(
-        tester
-            .widget<CoderSwitchRow>(
-              find.byKey(
-                const ValueKey<String>('general-settings-start-minimized'),
-              ),
-            )
-            .onChanged,
-        isNull,
+        tester.widget<CoderSwitchRow>(startMinimized),
+        isA<CoderSwitchRow>()
+            .having((row) => row.onChanged, 'onChanged', isNull)
+            .having((row) => row.value, 'value', isFalse),
+      );
+      expect(
+        tester.widget<TRSwitch>(
+          find.descendant(of: startMinimized, matching: find.byType(TRSwitch)),
+        ),
+        isA<TRSwitch>()
+            .having((control) => control.disabled, 'disabled', isTrue)
+            .having((control) => control.checked, 'checked', isFalse),
       );
 
       // The stored choice is preserved rather than forced off, so turning

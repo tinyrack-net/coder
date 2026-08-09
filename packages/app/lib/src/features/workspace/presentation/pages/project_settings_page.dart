@@ -47,6 +47,14 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceCatalogControllerProvider);
+    // Catalogs merge per host, so this host's section can still be on its way
+    // even though the unified state already has a value. An empty project
+    // list must not render for a catalog that has simply not arrived.
+    if (state.value?.isHostPending(widget.hostId) ?? false) {
+      return SettingsSkeletonLayout.listDetail(
+        semanticLabel: AppLocalizations.of(context).settingsLoading,
+      );
+    }
     return SettingsAsyncContent<UnifiedWorkspaceCatalogState>(
       state: state,
       loading: SettingsSkeletonLayout.listDetail(
@@ -132,7 +140,7 @@ class _ProjectList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
+        SettingsPaneHeader.collection(
           title: l10n.projectSettingsHeading,
           subtitle: l10n.projectSettingsCount(projects.length),
         ),

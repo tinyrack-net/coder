@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
@@ -56,30 +59,51 @@ final class SessionStarter {
             modelControls: modelControls,
             permissionMode: permissionMode,
           );
-      final conversation = conversationControllerProvider(
-        selection.hostId,
-        session.id,
-      );
-      final conversationHandle = _ref.listen(
-        conversation,
-        (previous, next) {},
-      );
-      try {
-        // Install the timeline subscription before starting the turn. The
-        // draft remains on screen until the first turn is accepted, and the
-        // exact draft is then promoted in one tab-state update.
-        await _ref.read(conversation.future);
-        await _ref
-            .read(conversation.notifier)
-            .startTurn(prompt, attachments: attachments);
-        await _ref.read(tabs.notifier).add(session, draftTabId: draftTabId);
-      } finally {
-        conversationHandle.close();
-      }
+      // The chat room opens on the single create round trip: the draft is
+      // promoted and the caller navigates now, while the timeline
+      // subscription, attachment uploads, and the first turn continue in the
+      // background. The pending registry renders the prompt as an optimistic
+      // user bubble until the daemon echoes it.
+      _ref
+          .read(pendingFirstTurnsProvider.notifier)
+          .put(session.id, prompt, attachments: attachments);
+      await _ref.read(tabs.notifier).add(session, draftTabId: draftTabId);
+      unawaited(_startFirstTurn(selection, session, prompt, attachments));
       return session;
     } finally {
       tabsHandle.close();
       sessionsHandle.close();
+    }
+  }
+
+  Future<void> _startFirstTurn(
+    WorkspaceSelection selection,
+    SessionDto session,
+    String prompt,
+    List<PendingAttachment> attachments,
+  ) async {
+    final conversation = conversationControllerProvider(
+      selection.hostId,
+      session.id,
+    );
+    final conversationHandle = _ref.listen(conversation, (previous, next) {});
+    try {
+      // Install the timeline subscription before starting the turn so the
+      // opened chat room streams the turn it just kicked off.
+      await _ref.read(conversation.future);
+      await _ref
+          .read(conversation.notifier)
+          .startTurn(prompt, attachments: attachments);
+      _ref.read(pendingFirstTurnsProvider.notifier).clear(session.id);
+    } on Exception {
+      // The session exists but its first turn did not start. The conversation
+      // state auto-disposes with this temporary listener, so the prompt is
+      // kept in the pending registry; the mounted conversation pane converts
+      // it into a queued turn, whose error and retry affordances become the
+      // visible failure surface instead of a silent drop.
+      _ref.read(pendingFirstTurnsProvider.notifier).markFailed(session.id);
+    } finally {
+      conversationHandle.close();
     }
   }
 }

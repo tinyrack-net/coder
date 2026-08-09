@@ -68,6 +68,9 @@ class _StartupSection extends ConsumerWidget {
     if (autostart == null) return const SizedBox.shrink();
     final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
     final controller = ref.read(hostRegistryControllerProvider.notifier);
+    final startMinimizedValue =
+        settings == null ||
+        (settings.startAtBoot && settings.startMinimizedAtBoot);
     return SettingsSection(
       title: l10n.generalStartupSection,
       description: l10n.generalStartupCloseNotice(AppIdentity.displayName),
@@ -93,7 +96,9 @@ class _StartupSection extends ConsumerWidget {
           key: const ValueKey<String>('general-settings-start-minimized'),
           title: TRText.inherit(l10n.generalStartupMinimizedLabel),
           subtitle: TRText.inherit(l10n.generalStartupMinimizedDescription),
-          value: settings?.startMinimizedAtBoot ?? true,
+          // Keep the stored preference for a future login launch, but do not
+          // present an inapplicable disabled control as currently enabled.
+          value: startMinimizedValue,
           // Only a login launch can start minimized, so the choice is
           // meaningless while the app is not registered to launch.
           onChanged: settings == null || !settings.startAtBoot

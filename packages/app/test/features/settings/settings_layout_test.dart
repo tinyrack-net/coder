@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,12 +20,29 @@ Widget _host(Widget child, {double width = 1200}) => MaterialApp(
   ),
 );
 
+Finder _rowSurface(Finder owner, EdgeInsetsGeometry padding) => find.descendant(
+  of: owner,
+  matching: find.byWidgetPredicate(
+    (widget) => widget is AnimatedContainer && widget.padding == padding,
+  ),
+);
+
+Finder _switchSurface(Finder owner) => find.descendant(
+  of: owner,
+  matching: find.byWidgetPredicate(
+    (widget) => widget is AnimatedContainer && widget.padding != null,
+  ),
+);
+
+Color _containerColor(WidgetTester tester, Finder finder) {
+  final decoration = tester.widget<AnimatedContainer>(finder).decoration;
+  return (decoration! as BoxDecoration).color!;
+}
+
 void main() {
   testWidgets(
     'SettingsAsyncContent preserves stale data across refresh',
-    (
-      tester,
-    ) async {
+    (tester) async {
       final loads = <Completer<String>>[];
       final provider = FutureProvider<String>((ref) {
         final load = Completer<String>();
@@ -111,9 +129,7 @@ void main() {
 
     testWidgets(
       'adapts list-detail loading to the available width',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
           _host(
             const SettingsSkeletonLayout.listDetail(
@@ -194,64 +210,88 @@ void main() {
     expect(find.text('Detail'), findsNothing);
   });
 
-  testWidgets('collection rows share the sidebar inset and vertical rhythm', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        const Column(
-          children: <Widget>[
-            SettingsPaneHeader.list(title: 'Projects'),
-            Expanded(
-              child: SettingsCollectionList(
-                children: <Widget>[
-                  SettingsRow.collection(
-                    title: TRText.inherit('First'),
-                    selected: true,
-                  ),
-                  SettingsRow.collection(
-                    title: TRText.inherit('Second'),
-                    selected: true,
-                  ),
-                ],
+  testWidgets(
+    'collection rows share the sidebar inset, navigation surface, and rhythm',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          const Column(
+            children: <Widget>[
+              SettingsPaneHeader.collection(title: 'Projects'),
+              Expanded(
+                child: SettingsCollectionList(
+                  children: <Widget>[
+                    SettingsRow.collection(
+                      title: TRText.inherit('First'),
+                      selected: true,
+                    ),
+                    SettingsRow.collection(
+                      title: TRText.inherit('Second'),
+                      selected: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          width: CoderLayoutMetrics.settingsCollectionWidth,
         ),
-        width: CoderLayoutMetrics.settingsCollectionWidth,
-      ),
-    );
+      );
 
-    final list = tester.widget<ListView>(
-      find.descendant(
-        of: find.byType(SettingsCollectionList),
-        matching: find.byType(ListView),
-      ),
-    );
-    expect(
-      list.padding,
-      const EdgeInsets.symmetric(
-        horizontal: TRSpacing.medium,
-        vertical: TRSpacing.extraSmall,
-      ),
-    );
+      final list = tester.widget<ListView>(
+        find.descendant(
+          of: find.byType(SettingsCollectionList),
+          matching: find.byType(ListView),
+        ),
+      );
+      expect(
+        list.padding,
+        const EdgeInsets.symmetric(
+          horizontal: TRSpacing.medium,
+          vertical: TRSpacing.medium,
+        ),
+      );
 
-    final first = tester.getRect(find.widgetWithText(CoderListRow, 'First'));
-    final second = tester.getRect(find.widgetWithText(CoderListRow, 'Second'));
-    expect(first.left, TRSpacing.medium);
-    expect(
-      first.right,
-      CoderLayoutMetrics.settingsCollectionWidth - TRSpacing.medium,
-    );
-    expect(second.top - first.bottom, TRSpacing.extraSmall);
-    expect(
-      tester.getRect(find.text('First')).left,
-      moreOrLessEquals(
-        tester.getRect(find.text('Projects')).left,
-        epsilon: 0.5,
-      ),
-    );
-  });
+      final first = tester.getRect(find.widgetWithText(CoderListRow, 'First'));
+      final second = tester.getRect(
+        find.widgetWithText(CoderListRow, 'Second'),
+      );
+      expect(first.left, TRSpacing.medium);
+      expect(
+        first.right,
+        CoderLayoutMetrics.settingsCollectionWidth - TRSpacing.medium,
+      );
+      expect(
+        tester
+            .widget<CoderListRow>(find.widgetWithText(CoderListRow, 'First'))
+            .contentPadding,
+        const EdgeInsets.symmetric(
+          horizontal: TRSpacing.medium,
+          vertical: TRSpacing.medium,
+        ),
+      );
+      expect(second.top - first.bottom, TRSpacing.extraSmall);
+      final separator = tester.getRect(find.byType(TRSeparator));
+      expect(first.top - separator.bottom, TRSpacing.medium);
+      final firstSurface = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.widgetWithText(CoderListRow, 'First'),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      expect(
+        (firstSurface.decoration! as BoxDecoration).color,
+        tester.element(find.text('First')).tinyrackTheme.surfaceHover,
+      );
+      expect(
+        tester.getRect(find.text('First')).left,
+        moreOrLessEquals(
+          tester.getRect(find.text('Projects')).left,
+          epsilon: 0.5,
+        ),
+      );
+    },
+  );
 
   testWidgets('compact collections keep the same row inset and alignment', (
     tester,
@@ -261,7 +301,7 @@ void main() {
         SettingsListDetailLayout(
           collection: const Column(
             children: <Widget>[
-              SettingsPaneHeader.list(title: 'Projects'),
+              SettingsPaneHeader.collection(title: 'Projects'),
               Expanded(
                 child: SettingsCollectionList(
                   children: <Widget>[
@@ -292,6 +332,67 @@ void main() {
         epsilon: 0.5,
       ),
     );
+    expect(
+      tester.widget<CoderListRow>(find.byType(CoderListRow)).contentPadding,
+      const EdgeInsets.symmetric(
+        horizontal: TRSpacing.medium,
+        vertical: TRSpacing.medium,
+      ),
+    );
+  });
+
+  testWidgets('standard rows retain the content selected surface', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const SettingsRow(title: TRText.inherit('Standard'), selected: true),
+      ),
+    );
+
+    final surface = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byType(CoderListRow),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    expect(
+      (surface.decoration! as BoxDecoration).color,
+      tester.element(find.text('Standard')).tinyrackTheme.surfaceSelected,
+    );
+  });
+
+  testWidgets('collection header matches the tree navigation leading inset', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const Column(
+          children: <Widget>[
+            SettingsPaneHeader.collection(title: 'Projects'),
+            Expanded(
+              child: SettingsCollectionList(
+                children: <Widget>[
+                  SettingsRow.collection(
+                    leading: Icon(Icons.folder),
+                    title: TRText.inherit('Coder'),
+                    selected: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        width: CoderLayoutMetrics.settingsCollectionWidth,
+      ),
+    );
+
+    final header = tester.getRect(find.text('Projects'));
+    final row = tester.getRect(find.byType(CoderListRow));
+    expect(
+      header.left,
+      moreOrLessEquals(row.left + TRSpacing.medium, epsilon: 0.5),
+    );
   });
 
   testWidgets('list-detail skeleton uses the collection spacing contract', (
@@ -315,7 +416,7 @@ void main() {
       list.padding,
       const EdgeInsets.symmetric(
         horizontal: TRSpacing.medium,
-        vertical: TRSpacing.extraSmall,
+        vertical: TRSpacing.medium,
       ),
     );
     expect(
@@ -661,6 +762,107 @@ void main() {
       await tester.tap(find.text('Toggle me'));
       await tester.pump();
       expect(taps, 1);
+    });
+
+    testWidgets(
+      'keeps the settings surface stable while the row and switch are hovered',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            SettingsRow(
+              key: const ValueKey<String>('settings-hover-row'),
+              title: const TRText.inherit('Enabled'),
+              onTap: () {},
+              control: TRSwitch(
+                checked: false,
+                onCheckedChange: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        final row = find.byKey(
+          const ValueKey<String>('settings-hover-row'),
+        );
+        final rowSurface = _rowSurface(row, SettingsRow.contentPadding);
+        final switchFinder = find.byType(TRSwitch);
+        final theme = tester.element(row).tinyrackTheme;
+        final mouse = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: Offset.zero);
+
+        await mouse.moveTo(tester.getCenter(find.text('Enabled')));
+        await tester.pumpAndSettle();
+        expect(_containerColor(tester, rowSurface), theme.surface);
+
+        await mouse.moveTo(tester.getCenter(switchFinder));
+        await tester.pumpAndSettle();
+        expect(_containerColor(tester, rowSurface), theme.surface);
+        expect(
+          _containerColor(tester, _switchSurface(switchFinder)),
+          theme.surfaceHover,
+        );
+      },
+    );
+
+    testWidgets('keeps collection rows free of row hover', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsRow.collection(
+            key: const ValueKey<String>('settings-collection-hover-row'),
+            title: const TRText.inherit('Project'),
+            onTap: () {},
+          ),
+        ),
+      );
+
+      final row = find.byKey(
+        const ValueKey<String>('settings-collection-hover-row'),
+      );
+      final theme = tester.element(row).tinyrackTheme;
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Project')));
+      await tester.pumpAndSettle();
+
+      expect(
+        _containerColor(
+          tester,
+          _rowSurface(row, SettingsRow.collectionContentPadding),
+        ),
+        theme.surface,
+      );
+    });
+
+    testWidgets('keeps hover for non-settings list rows', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          CoderListRow(
+            contentPadding: SettingsRow.contentPadding,
+            title: const TRText.inherit('Open'),
+            onTap: () {},
+          ),
+        ),
+      );
+
+      final row = find.byType(CoderListRow);
+      final theme = tester.element(row).tinyrackTheme;
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Open')));
+      await tester.pumpAndSettle();
+
+      expect(
+        _containerColor(
+          tester,
+          _rowSurface(row, SettingsRow.contentPadding),
+        ),
+        theme.surfaceHover,
+      );
     });
   });
 

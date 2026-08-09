@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_coder_api.dart';
@@ -84,6 +85,46 @@ void main() {
       tags: const <String>['feature_test__settings_async_loading__widget'],
     );
   }
+
+  testWidgets(
+    'approved devices show skeleton rows while the relay answers',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        relayDevices: <RelayDeviceDto>[
+          RelayDeviceDto(
+            id: 'phone',
+            name: 'My phone',
+            registeredAt: DateTime.utc(2026, 8, 2),
+            lastConnectedAt: DateTime.utc(2026, 8, 2),
+          ),
+        ],
+      )..listRelayDevicesGate = gate.future;
+      final router = await _pumpPendingRoute(
+        tester,
+        api,
+        const DaemonDevicesRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      expect(
+        find.byKey(const ValueKey<String>('list-rows-skeleton')),
+        findsOneWidget,
+      );
+      expect(find.text('My phone'), findsNothing);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('list-rows-skeleton')),
+        findsNothing,
+      );
+      expect(find.text('My phone'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
 
   for (final testCase in <({String name, String location})>[
     (name: 'general', location: const GeneralSettingsRoute().location),

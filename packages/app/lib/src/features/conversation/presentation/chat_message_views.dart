@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:app/l10n/gen/app_localizations.dart';
@@ -78,6 +79,7 @@ class ChatAttachmentLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TRChatMessageRow(
     icon: message.attachment.isImage ? CoderIcons.image : CoderIcons.file,
+    alignment: TRChatMessageAlignment.center,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
       child: ChatAttachmentTile(
@@ -90,7 +92,7 @@ class ChatAttachmentLine extends StatelessWidget {
 }
 
 /// Thumbnail or file pill shared by inbound and outbound attachments.
-class ChatAttachmentTile extends StatelessWidget {
+class ChatAttachmentTile extends StatefulWidget {
   /// Creates an attachment tile.
   const ChatAttachmentTile({
     required this.attachment,
@@ -109,28 +111,71 @@ class ChatAttachmentTile extends StatelessWidget {
   final ChatAttachmentExporter? exportAttachment;
 
   @override
+  State<ChatAttachmentTile> createState() => _ChatAttachmentTileState();
+}
+
+class _ChatAttachmentTileState extends State<ChatAttachmentTile> {
+  Uint8List? _bytes;
+  bool _failed = false;
+
+  ChatAttachment get attachment => widget.attachment;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadPreview());
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatAttachmentTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The preview is keyed by attachment identity: a rebuild with the same
+    // attachment must not download the bytes again.
+    if (oldWidget.attachment.id != widget.attachment.id ||
+        (oldWidget.loadAttachment == null) != (widget.loadAttachment == null)) {
+      _bytes = null;
+      _failed = false;
+      unawaited(_loadPreview());
+    }
+  }
+
+  Future<void> _loadPreview() async {
+    final loader = widget.loadAttachment;
+    if (loader == null || !widget.attachment.isImage) return;
+    final id = widget.attachment.id;
+    try {
+      final bytes = await loader(widget.attachment);
+      if (!mounted || widget.attachment.id != id) return;
+      setState(() => _bytes = bytes);
+    } on Exception {
+      if (!mounted || widget.attachment.id != id) return;
+      setState(() => _failed = true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final loader = loadAttachment;
+    final loader = widget.loadAttachment;
+    final exportAttachment = widget.exportAttachment;
     final preview = attachment.isImage && loader != null
         ? SizedBox.square(
             dimension: TRControlMetrics.heightOf(TRUiSize.lg),
-            child: FutureBuilder<Uint8List>(
-              future: loader(attachment),
-              builder: (context, snapshot) => snapshot.hasData
-                  ? ClipRRect(
-                      borderRadius: const BorderRadius.all(TRRadii.medium),
-                      child: Image.memory(
-                        snapshot.data!,
-                        width: TRControlMetrics.heightOf(TRUiSize.lg),
-                        height: TRControlMetrics.heightOf(TRUiSize.lg),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Icon(
-                          CoderIcons.image,
-                        ),
+            child: _bytes != null
+                ? ClipRRect(
+                    borderRadius: const BorderRadius.all(TRRadii.medium),
+                    child: Image.memory(
+                      _bytes!,
+                      width: TRControlMetrics.heightOf(TRUiSize.lg),
+                      height: TRControlMetrics.heightOf(TRUiSize.lg),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        CoderIcons.image,
                       ),
-                    )
-                  : const Center(child: TRSpinner()),
-            ),
+                    ),
+                  )
+                : _failed
+                ? const Icon(CoderIcons.image)
+                : const TRSkeleton(shape: TRSkeletonShape.rectangle),
           )
         : Icon(attachment.isImage ? CoderIcons.image : CoderIcons.file);
     final onTap = loader == null
