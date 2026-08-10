@@ -6,6 +6,7 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -399,6 +400,35 @@ void main() {
       final toggle = tester.widget<CoderSwitchRow>(embeddedToggle);
       expect(toggle.value, isTrue);
       expect(tester.widget<CoderSwitchRow>(exposureToggle).value, isFalse);
+
+      // The port is a setting like any other, so it uses the same leading
+      // description / trailing control rail its sibling switches use instead
+      // of stacking its own label above a full-width field.
+      final portRow = find.ancestor(
+        of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
+        matching: find.byType(SettingsRow),
+      );
+      expect(portRow, findsOneWidget);
+      expect(
+        find.descendant(of: portRow, matching: find.text('포트')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: portRow,
+          matching: find.textContaining('1~65535 사이의 포트를 선택하세요.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: portRow,
+          matching: find.byKey(
+            const ValueKey<String>('embedded-daemon-port-apply'),
+          ),
+        ),
+        findsOneWidget,
+      );
 
       await tester.enterText(_embeddedPortField(), '70000');
       await tester.testTextInput.receiveAction(TextInputAction.done);

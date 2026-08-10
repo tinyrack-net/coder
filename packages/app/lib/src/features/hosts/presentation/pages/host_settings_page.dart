@@ -265,62 +265,81 @@ class _EmbeddedPortEditor extends ConsumerStatefulWidget {
 }
 
 class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
-  double? _draftPort;
+  final TextEditingController _draft = TextEditingController();
   bool _applying = false;
 
+  /// The drafted port, or null while the draft is empty or out of range.
   int? get _validPort {
-    final value = _draftPort;
-    if (value == null || value != value.truncateToDouble()) return null;
-    final port = value.toInt();
+    final port = int.tryParse(_draft.text.trim());
+    if (port == null) return null;
     return port >= 1 && port <= 65535 ? port : null;
   }
+
+  /// Whether the draft is filled in but not a port.
+  ///
+  /// An empty draft is someone midway through retyping the number, so it
+  /// disables Apply without accusing them of an error they have not made yet.
+  bool get _invalid => _draft.text.trim().isNotEmpty && _validPort == null;
 
   @override
   void initState() {
     super.initState();
-    _draftPort = widget.port.toDouble();
+    _draft.text = widget.port.toString();
   }
 
   @override
   void didUpdateWidget(_EmbeddedPortEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.port != widget.port) {
-      _draftPort = widget.port.toDouble();
+      _draft.text = widget.port.toString();
     }
+  }
+
+  @override
+  void dispose() {
+    _draft.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final port = _validPort;
+    final enabled = !_applying && !widget.restarting;
     final changed = port != null && port != widget.port;
-    return Padding(
-      padding: SettingsRow.contentPadding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+    return SettingsRow(
+      title: TRText.inherit(l10n.appSettingsEmbeddedPort),
+      description: TRText.inherit(l10n.appSettingsEmbeddedPortHelp),
+      unboundedDescription: true,
+      control: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            child: TRNumberField.controlled(
-              key: const ValueKey<String>('embedded-daemon-port'),
-              value: _draftPort,
-              enabled: !_applying && !widget.restarting,
-              errorText: _draftPort != null && port == null
-                  ? l10n.appSettingsEmbeddedPortInvalid
-                  : null,
-              helperText: l10n.appSettingsEmbeddedPortHelp,
+          SizedBox(
+            width: TRMeasurements.measureSm,
+            child: Semantics(
+              container: true,
               label: l10n.appSettingsEmbeddedPort,
-              smallStep: 1,
-              scrubbable: false,
-              onValueChange: (value) => setState(() => _draftPort = value),
+              child: TRTextField(
+                key: const ValueKey<String>('embedded-daemon-port'),
+                controller: _draft,
+                enabled: enabled,
+                errorText: _invalid
+                    ? l10n.appSettingsEmbeddedPortInvalid
+                    : null,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) {
+                  if (changed && enabled) unawaited(_apply(port));
+                },
+              ),
             ),
           ),
           const SizedBox(width: TRSpacing.small),
           TRButton(
             key: const ValueKey<String>('embedded-daemon-port-apply'),
             intent: TRIntent.primary,
-            onPressed: changed && !_applying && !widget.restarting
-                ? () => _apply(port)
-                : null,
+            onPressed: changed && enabled ? () => _apply(port) : null,
             child: TRText.inherit(l10n.appSettingsEmbeddedPortApply),
           ),
         ],
