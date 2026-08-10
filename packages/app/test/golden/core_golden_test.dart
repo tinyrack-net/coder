@@ -996,6 +996,51 @@ void main() {
     ),
   );
 
+  // A rejected port has to read as an ordinary form error: the control carries
+  // the invalid frame and the message, so the row description stays the
+  // setting's explanation rather than doubling as its error channel.
+  unawaited(
+    goldenTest(
+      'a rejected embedded port marks the control invalid',
+      fileName: 'daemon_port_invalid',
+      constraints: const BoxConstraints.tightFor(width: 1300, height: 800),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        final ports = find.descendant(
+          of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
+          matching: find.byType(EditableText),
+        );
+        for (var index = 0; index < ports.evaluate().length; index++) {
+          await tester.enterText(ports.at(index), '70000');
+        }
+        await tester.pumpAndSettle();
+      },
+      builder: () => GoldenTestGroup(
+        columns: 2,
+        children: <Widget>[
+          GoldenTestScenario(
+            name: 'embedded invalid port desktop',
+            child: SizedBox(
+              width: 800,
+              height: 700,
+              child: _localSettings(ThemeMode.light),
+            ),
+          ),
+          // The narrowest window the row has to hold: its control rail is a
+          // field and a button, so the title has the least room here.
+          GoldenTestScenario(
+            name: 'embedded invalid port mobile',
+            child: SizedBox(
+              width: 390,
+              height: 700,
+              child: _localSettings(ThemeMode.dark),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
   unawaited(
     goldenTest(
       'workspace shell adapts to sidebar state and width',
