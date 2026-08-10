@@ -271,6 +271,67 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'one mouse click switches tabs despite pointer drift and tab padding',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      final strip = find.byKey(const ValueKey('session-tab-strip'));
+      String activeTab() => tester.widget<TRTabs>(strip).value!;
+      expect(activeTab(), first.id);
+
+      // A pane strip is always draggable, so the drag recognizer and the tap
+      // compete for every click. A mouse rarely holds still between press and
+      // release, and the drag used to win a pixel of drift outright.
+      final draftTab = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'tr-tabs-tab-draft:',
+            ),
+      );
+      expect(draftTab, findsOneWidget);
+      final drifting = await tester.startGesture(
+        tester.getCenter(draftTab),
+        kind: PointerDeviceKind.mouse,
+      );
+      await drifting.moveBy(
+        const Offset(TRMeasurements.dragStartDistance / 2, 0),
+      );
+      await drifting.up();
+      await tester.pumpAndSettle();
+
+      expect(activeTab(), isNot(first.id));
+
+      // The hover surface covers the whole tab, so every part of it selects.
+      final sessionTab = find.byKey(const ValueKey<String>('tr-tabs-tab-one'));
+      final bounds = tester.getRect(sessionTab);
+      await tester.tapAt(Offset(bounds.left + 1, bounds.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(activeTab(), first.id);
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
+
+  testWidgets(
     'desktop workspace splits panes and mobile presents every tab in a sheet',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));

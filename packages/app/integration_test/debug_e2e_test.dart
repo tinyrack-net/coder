@@ -1027,11 +1027,16 @@ void main() {
       )).singleWhere((session) => session.origin == SessionOrigin.manual).id;
       await _waitForComposerReady(tester, send);
       await _typeComposerPrompt(tester, composer, '/goal');
-      await tester.pumpAndSettle();
+      // The catalog merges agent commands and skills that the daemon sends over
+      // the wire, so the row arrives a round trip after the keystroke and
+      // `pumpAndSettle` returns long before it. Enter pressed into a closed
+      // overlay sends `/goal` as an ordinary prompt and the editor never opens.
+      await pumpUntil(tester, find.text('goal'));
       // First Enter accepts the highlighted command completion; the second
-      // dispatches `/goal` and opens the editor.
+      // dispatches `/goal` and opens the editor. The overlay closing is the
+      // evidence that the first one landed as an acceptance.
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+      await pumpUntilGone(tester, find.text('goal'));
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await pumpUntil(tester, find.text('세션 Goal'));
       final goalDialog = find.byType(TRAlertDialog);
