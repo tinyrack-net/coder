@@ -139,13 +139,16 @@ void main() {
       addTearDown(fixture.$1.dispose);
       final client = await fixture.$1.connect(clientId: 'archive-cancel');
       addTearDown(client.close);
-      final created = await client.workspaces.createWorktree(
+      await client.workspaces.createWorktree(
         id: 'cancelled-archive',
         workspaceId: fixture.$3,
         mode: WorktreeCreateMode.newBranch,
         branchName: 'archive-cancel',
         baseBranch: 'main',
       );
+      final activeWorktree = (await client.workspaces.getWorkspaceCatalog())
+          .worktrees
+          .singleWhere((worktree) => worktree.branch == 'archive-cancel');
 
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
@@ -154,8 +157,9 @@ void main() {
       await tester.pumpWidget(CoderApp(services: fixture.$1.services));
       await pumpUntil(tester, find.text('archive-cancel'));
       final menu = find.byKey(
-        const ValueKey<String>('worktree-menu-cancelled-archive'),
+        ValueKey<String>('worktree-menu-${activeWorktree.id}'),
       );
+      await pumpUntil(tester, menu);
       await tester.ensureVisible(menu);
       await tester.pumpAndSettle();
       await tester.tap(menu);
@@ -168,12 +172,12 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
 
-      expect(Directory(created.worktree.path).existsSync(), isTrue);
+      expect(Directory(activeWorktree.path).existsSync(), isTrue);
       expect(
         (await client.workspaces.getWorkspaceCatalog()).worktrees.map(
           (item) => item.id,
         ),
-        contains('cancelled-archive'),
+        contains(activeWorktree.id),
       );
       expect(find.text('archive-cancel'), findsWidgets);
     },

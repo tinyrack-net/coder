@@ -833,6 +833,13 @@ void main() {
       final managedMenu = find.byKey(
         ValueKey<String>('worktree-menu-${managedWorktree.id}'),
       );
+      // Three workspace groups are present, so no group auto-expands while
+      // the new-workspace route is still handing off to the session route.
+      if (managedMenu.evaluate().isEmpty) {
+        await tester.tap(find.text('E2E Workspace').last);
+        await tester.pumpAndSettle();
+      }
+      await pumpUntil(tester, managedMenu);
       await tester.ensureVisible(managedMenu);
       await tester.pumpAndSettle();
       await tester.tap(managedMenu);

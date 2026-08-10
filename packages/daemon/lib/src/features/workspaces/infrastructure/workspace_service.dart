@@ -7,6 +7,9 @@ import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 
+bool _sameWorktreePath(String first, String second) =>
+    p.equals(first, second) || p.windows.equals(first, second);
+
 /// Repository and checkout lifecycle application service.
 final class WorkspaceOperations {
   /// Creates a workspace service from typed persistence and host ports.
@@ -474,14 +477,21 @@ final class WorkspaceOperations {
     String? checkoutId,
   }) async {
     final result = <WorktreeDto>[];
+    final activeWorktrees = await _worktrees.list(workspaceId: workspace.id);
     for (var index = 0; index < snapshots.length; index += 1) {
       final snapshot = snapshots[index];
-      final existing = await _worktrees.getByPathIncludingArchived(
+      var existing = await _worktrees.getByPathIncludingArchived(
         snapshot.path,
       );
+      for (final worktree in activeWorktrees) {
+        if (existing != null) break;
+        if (_sameWorktreePath(worktree.path, snapshot.path)) {
+          existing = worktree;
+        }
+      }
       if (existing == null &&
           _pendingManagedWorktreePaths.keys.any(
-            (pending) => p.equals(pending, snapshot.path),
+            (pending) => _sameWorktreePath(pending, snapshot.path),
           )) {
         continue;
       }
@@ -517,7 +527,9 @@ final class WorkspaceOperations {
     final discovered = await _upsertGitSnapshots(workspace, snapshots);
     final discoveredPaths = snapshots.map((snapshot) => snapshot.path).toList();
     for (final worktree in await _worktrees.list(workspaceId: workspace.id)) {
-      if (discoveredPaths.any((path) => p.equals(path, worktree.path))) {
+      if (discoveredPaths.any(
+        (path) => _sameWorktreePath(path, worktree.path),
+      )) {
         continue;
       }
       await _worktrees.archive(worktree.id, _clock.nowUtc());
