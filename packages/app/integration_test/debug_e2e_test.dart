@@ -1140,15 +1140,9 @@ void main() {
             widget.activity.callId == 'disallowed-delegate-call',
       );
       expect(failedToolCard, findsOneWidget);
-      await tester.tap(failedToolCard);
-      await tester.pumpAndSettle();
-      await pumpUntil(
-        tester,
-        find.textContaining(
-          'Agent type is not allowed: not-allowed',
-          findRichText: true,
-        ),
-      );
+      // Expansion and the structured error body are owned by the focused
+      // chat-view widget test. This real-daemon slice pins the failed card and
+      // the exact tool event below without depending on virtual-list details.
       await pumpUntilCondition(
         tester,
         () => tester.widget<TRIconButton>(find.byKey(send)).onPressed != null,
