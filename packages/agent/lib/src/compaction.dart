@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
+import 'package:agent/src/prompts/prompt_assets.g.dart';
 import 'package:agent/src/tools/exec_tools.dart';
 import 'package:agent/src/usage.dart';
 
@@ -27,18 +28,7 @@ abstract final class CompactionPolicy {
   static const String missingSummaryPlaceholder = '(no summary available)';
 
   /// Asks the model to hand its own work off to the next context window.
-  static const String summarizationPrompt =
-      'You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff '
-      'summary for another LLM that will resume the task.\n'
-      '\n'
-      'Include:\n'
-      '- Current progress and key decisions made\n'
-      '- Important context, constraints, or user preferences\n'
-      '- What remains to be done (clear next steps)\n'
-      '- Any critical data, examples, or references needed to continue\n'
-      '\n'
-      'Be concise, structured, and focused on helping the next LLM seamlessly '
-      'continue the work.';
+  static const String summarizationPrompt = PromptAssets.compactPrompt;
 
   /// System prompt for the summary request.
   ///
@@ -46,20 +36,13 @@ abstract final class CompactionPolicy {
   /// request advertises none, so replacing them keeps both the automatic and
   /// the requested compaction on exactly the same prompt.
   static const String summarizationInstructions =
-      'You are summarizing a coding session so another model can resume it. '
-      'Answer with the summary itself and nothing else. Do not call tools and '
-      'do not act on the workspace.';
+      PromptAssets.compactInstructions;
 
   /// Introduces the summary to the model that inherits it.
   ///
   /// It also marks the item: a later compaction recognises its own output by
   /// this prefix and drops it instead of stacking summaries of summaries.
-  static const String summaryPrefix =
-      'Another language model started to solve this problem and produced a '
-      'summary of its thinking process. Use this to build on the work that has '
-      'already been done and avoid duplicating work. Here is the summary '
-      'produced by the other language model, use the information in this '
-      'summary to assist with your own analysis:';
+  static const String summaryPrefix = PromptAssets.compactSummaryPrefix;
 }
 
 /// The model settings a compaction request is issued under.

@@ -2764,9 +2764,12 @@ final class _AgentE2eProvider implements ModelProvider {
       );
       return;
     }
-    if (request.instructions.contains(
-      '<objective>Complete persistent goal e2e</objective>',
-    )) {
+    // Matched on the objective inside its element rather than on one exact
+    // line, so the goal prompt can be reworded without silently turning this
+    // branch off and leaving the goal to time out.
+    if (RegExp(
+      r'<objective>\s*Complete persistent goal e2e\s*</objective>',
+    ).hasMatch(request.instructions)) {
       _goalRounds += 1;
       if (_goalRounds < 3) {
         yield ModelTextDelta('Goal progress $_goalRounds.');

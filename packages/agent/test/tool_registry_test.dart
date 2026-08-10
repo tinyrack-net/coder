@@ -101,8 +101,14 @@ void main() {
     // published at runtime join a turn without being compiled in.
     expect(names, contains('mcp__repo__lint'));
     expect(names.toSet(), hasLength(names.length));
-    // Only the capability that wrote a prompt contributes one.
-    expect(turn.promptFragments.single, contains('## Available skills'));
+    // Only the capabilities that wrote a prompt contribute one.
+    expect(
+      turn.promptFragments,
+      containsAll(<Matcher>[
+        contains('## Available skills'),
+        contains('`apply_patch`'),
+      ]),
+    );
   });
 
   test('a selected surface replaces direct tools and retains nested tools', () {

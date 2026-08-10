@@ -1,0 +1,1 @@
+Filesystem permissions define which files can be read or written. `sandbox_mode` is `full-access`: every tool call this session offers is permitted without a prompt. Paths outside the workspace root are still refused by the tools that guard them.

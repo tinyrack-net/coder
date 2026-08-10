@@ -58,8 +58,10 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required this._luaHostFor,
     required this._settings,
     required this._interactions,
-  });
+    ProjectDocLoader? projectDocs,
+  }) : _projectDocs = projectDocs ?? ProjectDocLoader();
 
+  final ProjectDocLoader _projectDocs;
   final ExecHostFactory _execHostFor;
   final LuaHostFactory _luaHostFor;
   final SessionRepository _sessions;
@@ -331,6 +333,9 @@ class SessionTurnCoordinator implements SessionTurnPort {
     final history = await _hydrateHistory(
       await _timeline.providerHistory(sessionId),
     );
+    // Read per turn rather than per session: the worktree is a live checkout,
+    // so a turn that follows an edit to AGENTS.md must see the edit.
+    final projectDoc = await _projectDocs.load(workspaceRoot: worktree.path);
     unawaited(
       _run(
         runner,
@@ -352,6 +357,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
             definition.promptEnabled ? definition.systemPrompt : null,
             multiAgent?.usageHintFor(session, definition),
           ),
+          projectDoc: projectDoc?.render(),
           toolPrompts: turnTools.promptFragments,
           contextWindowTokens: resolvedModel.limits?.context,
           // What the live window already holds, so a turn that starts on a
