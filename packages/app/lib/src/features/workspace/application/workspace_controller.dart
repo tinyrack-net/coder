@@ -81,7 +81,9 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
     // Registry changes rebuild this provider; keeping the previous catalogs
     // preserves stale-but-usable sections instead of blanking the sidebar on
     // every reconnect. Fresh fetches below overwrite them host by host.
-    final previous = state.asData?.value.catalogs;
+    // `value`, not `asData`: this build runs while the state is a reload that
+    // still carries the previous catalogs, and `asData` would report none.
+    final previous = state.value?.catalogs;
     final registry = await ref.watch(hostRegistryControllerProvider.future);
     // Hosts resolve independently and merge as they answer: one slow daemon
     // delays only its own catalog section, never the whole sidebar. Consumers

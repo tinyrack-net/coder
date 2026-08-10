@@ -31,11 +31,8 @@ class TerminalsController extends _$TerminalsController {
 
   @override
   Future<List<TerminalDto>> build(String hostId, String worktreeId) async {
-    final runtime = (await ref.watch(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    if (runtime?.connected != true) return const <TerminalDto>[];
-    final api = runtime!.api!;
+    final api = await watchConnectedHostApi(ref, hostId);
+    if (api == null) return const <TerminalDto>[];
     _events = api.terminals.terminalUpdates.listen((terminal) {
       if (terminal.worktreeId == worktreeId) {
         final current = state.asData?.value ?? const <TerminalDto>[];
