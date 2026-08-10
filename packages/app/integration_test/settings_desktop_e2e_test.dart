@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/temporary_directory.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -183,9 +184,7 @@ void main() {
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
       final home = await Directory.systemTemp.createTemp('coder-reset-e2e-');
-      addTearDown(() {
-        if (home.existsSync()) home.deleteSync(recursive: true);
-      });
+      addTearDown(() => deleteTemporaryDirectory(home));
       // One shared resolution, exactly as the production composition root
       // wires the launcher and the eraser.
       final config = DaemonConfig(
@@ -289,9 +288,7 @@ void main() {
       final home = await Directory.systemTemp.createTemp(
         'coder-tray-quit-e2e-',
       );
-      addTearDown(() {
-        if (home.existsSync()) home.deleteSync(recursive: true);
-      });
+      addTearDown(() => deleteTemporaryDirectory(home));
       final calls = <String>[];
       final launcher = _RecordingEmbeddedLauncher(
         IsolateEmbeddedDaemonLauncher(

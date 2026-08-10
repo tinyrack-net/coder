@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coder_workspace/src/desktop_host.dart';
 import 'package:coder_workspace/src/verification_runner.dart';
 import 'package:test/test.dart';
 
@@ -90,7 +91,15 @@ void main() {
 
   test('workspace plans keep every canonical test suite single-pass', () {
     final fast = WorkspaceVerificationPlans.fast();
-    final full = WorkspaceVerificationPlans.full();
+    final linux = WorkspaceVerificationPlans.full(
+      hostPlatform: DesktopHost.linux,
+    );
+    final windows = WorkspaceVerificationPlans.full(
+      hostPlatform: DesktopHost.windows,
+    );
+    final macos = WorkspaceVerificationPlans.full(
+      hostPlatform: DesktopHost.macos,
+    );
     final coverage = WorkspaceVerificationPlans.coverage();
 
     expect(_scripts(fast), containsAll(<String>['test:dart', 'test:flutter']));
@@ -108,7 +117,7 @@ void main() {
     );
 
     expect(
-      _scripts(full),
+      _scripts(linux),
       containsAll(<String>[
         'test:coverage:dart',
         'test:coverage:flutter',
@@ -116,22 +125,50 @@ void main() {
         'coverage:check',
       ]),
     );
-    expect(_scripts(full), isNot(contains('test:dart')));
-    expect(_scripts(full), isNot(contains('test:flutter')));
-    final flutterCoveragePhase = full.phases.indexWhere(
+    expect(_scripts(linux), isNot(contains('test:dart')));
+    expect(_scripts(linux), isNot(contains('test:flutter')));
+    final flutterCoveragePhase = linux.phases.indexWhere(
       (phase) => phase.tasks.any(
         (task) => task.script == 'test:coverage:flutter',
       ),
     );
-    final goldenPhase = full.phases.indexWhere(
+    final goldenPhase = linux.phases.indexWhere(
       (phase) => phase.tasks.any((task) => task.script == 'test:golden'),
     );
     expect(goldenPhase, greaterThan(flutterCoveragePhase));
+    expect(_scripts(windows), isNot(contains('test:golden')));
+    expect(_scripts(macos), isNot(contains('test:golden')));
+    for (final plan in <VerificationPlan>[windows, macos]) {
+      expect(
+        _scripts(plan),
+        containsAll(<String>[
+          'test:coverage:dart',
+          'test:coverage:flutter',
+          'coverage:check',
+        ]),
+      );
+    }
     expect(_scripts(coverage), <String>[
       'test:coverage:dart',
       'test:coverage:flutter',
       'coverage:check',
     ]);
+  });
+
+  test('verification host platforms resolve supported desktop systems', () {
+    expect(
+      DesktopHost.fromOperatingSystem('linux'),
+      DesktopHost.linux,
+    );
+    expect(
+      DesktopHost.fromOperatingSystem('macos'),
+      DesktopHost.macos,
+    );
+    expect(
+      DesktopHost.fromOperatingSystem('windows'),
+      DesktopHost.windows,
+    );
+    expect(DesktopHost.fromOperatingSystem('android'), isNull);
   });
 }
 

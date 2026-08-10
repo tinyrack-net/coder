@@ -26,6 +26,7 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
+import 'support/temporary_directory.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -119,16 +120,14 @@ void main() {
       addTearDown(() async {
         await embeddedLauncher.stopCurrent();
         await remoteHandle.stop();
-        if (home.existsSync()) home.deleteSync(recursive: true);
-        if (userHome.existsSync()) userHome.deleteSync(recursive: true);
-        if (remoteHome.existsSync()) remoteHome.deleteSync(recursive: true);
-        if (workspace.existsSync()) workspace.deleteSync(recursive: true);
-        if (directoryWorkspace.existsSync()) {
-          directoryWorkspace.deleteSync(recursive: true);
-        }
-        if (remoteWorkspace.existsSync()) {
-          remoteWorkspace.deleteSync(recursive: true);
-        }
+        await Future.wait(<Future<void>>[
+          deleteTemporaryDirectory(home),
+          deleteTemporaryDirectory(userHome),
+          deleteTemporaryDirectory(remoteHome),
+          deleteTemporaryDirectory(workspace),
+          deleteTemporaryDirectory(directoryWorkspace),
+          deleteTemporaryDirectory(remoteWorkspace),
+        ]);
         await modelServer.close(force: true);
       });
       final endpoint = HostEndpoint(

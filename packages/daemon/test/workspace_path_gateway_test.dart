@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:path/path.dart' as p;
+import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -52,4 +53,20 @@ void main() {
     expect(first, isNot(second));
     expect(first, matches(RegExp(r'^[0-9a-f-]{36}$')));
   });
+
+  test(
+    'pipe gateway streams process diagnostics and reports its exit',
+    () async {
+      final process = await const IoPipeGateway().start(
+        shell: ShellSpecDto(
+          executable: Platform.resolvedExecutable,
+          arguments: const <String>['--version'],
+        ),
+        workingDirectory: Directory.current.path,
+      );
+
+      expect(await process.outputs.join(), contains('Dart SDK version:'));
+      expect(await process.exitCode, 0);
+    },
+  );
 }

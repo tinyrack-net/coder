@@ -54,15 +54,17 @@ dart run melos verify
 dart run melos verify:debug
 ```
 
-`verify` runs generated-source drift first, then static checks, coverage, and
-goldens concurrently. Coverage is the canonical execution of package and app
-tests, so do not run an additional aggregate suite merely to duplicate it.
+`verify` runs generated-source drift first, then static checks and coverage.
+Linux additionally runs the canonical goldens before the coverage threshold
+check. Coverage is the canonical execution of package and app tests, so do not
+run an additional aggregate suite merely to duplicate it.
 
-`verify:debug` delegates to `test:e2e:linux`, whose Melos entrypoint always uses
-`xvfb-run -a` to keep desktop windows off the developer's display and isolate
-concurrent runs. Do not bypass the entrypoint with direct `flutter test`
-commands. If `xvfb-run` is unavailable, report Linux Debug E2E as unverified and
-name the `Linux Debug E2E` CI job.
+`verify:debug` delegates to `test:e2e:desktop`, which selects the current Linux,
+macOS, or Windows Flutter device and runs every shard with an isolated temporary
+home. Linux uses `xvfb-run -a`; Windows can show application windows during the
+run. Do not bypass the entrypoint with direct `flutter test` commands. If the
+current platform cannot run Debug E2E, report it as unverified and name the CI
+job that owns the missing evidence.
 
 Run `actionlint` after changing `.github/workflows/`. Confirm PR/main, tag,
 manual, and schedule conditions with `test/pipeline_test.dart`.
@@ -75,7 +77,9 @@ Include:
 - exact commands run and their result;
 - line and branch coverage for every package;
 - the Debug target that ran;
-- platforms or checks not run locally and the CI jobs responsible for them.
+- platforms or checks not run locally and the CI jobs responsible for them;
+- on non-Linux hosts, the canonical goldens and Linux IBus E2E as CI-owned
+  evidence rather than local failures.
 
 Do not report success when analysis has diagnostics, generated sources drift,
 feature evidence is missing, any package is below 90% line or 80% branch

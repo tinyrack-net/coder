@@ -71,14 +71,14 @@ melos:
       run: dart run tool/verify_coverage.dart
     test:coverage:
       run: dart run tool/verify_workspace.dart coverage
-    test:e2e:linux:
-      run: xvfb-run -a dart run melos exec --flutter --scope=app -c 1 -- dart run ../../tool/run_linux_e2e.dart
+    test:e2e:desktop:
+      run: dart run tool/run_desktop_e2e.dart
     verify:fast:
       run: dart run tool/verify_workspace.dart fast
     verify:
       run: dart run tool/verify_workspace.dart full
     verify:debug:
-      run: dart run melos test:e2e:linux
+      run: dart run melos test:e2e:desktop
     run:daemon:
       # Built, not `dart run`: the CLI hosts the daemon and links the sqlite3
       # and PTY code assets, which only `dart build cli` produces. Under `dart
