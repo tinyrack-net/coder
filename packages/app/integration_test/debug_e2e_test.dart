@@ -36,6 +36,14 @@ void main() {
   testWidgets(
     'app switches hosts, streams, approves a patch, and restores timeline',
     (tester) async {
+      // GitHub's Linux runner can expose platform accessibility even when
+      // testWidgets does not create its own semantics handle. Force it off for
+      // this visual interaction test to avoid flutter/flutter#189902.
+      tester.platformDispatcher.semanticsEnabledTestValue = false;
+      addTearDown(
+        tester.platformDispatcher.clearSemanticsEnabledTestValue,
+      );
+      expect(tester.binding.semanticsEnabled, isFalse);
       await tester.binding.setSurfaceSize(const Size(1400, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       FlutterSecureStorage.setMockInitialValues(<String, String>{});
