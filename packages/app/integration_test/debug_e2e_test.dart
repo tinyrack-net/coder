@@ -815,43 +815,7 @@ void main() {
         'the composer to create a worktree',
       );
       // The session route keeps the sidebar, so the new worktree is listed.
-      try {
-        await pumpUntil(tester, find.text('feature-e2e'));
-      } on TestFailure catch (error) {
-        final catalog = await setupClient.workspaces.getWorkspaceCatalog();
-        final feature = catalog.worktrees
-            .where((worktree) => worktree.branch == 'feature-e2e')
-            .firstOrNull;
-        final sessions = feature == null
-            ? const <SessionDto>[]
-            : await setupClient.sessions.listSessions(
-                worktreeId: feature.id,
-              );
-        final visibleText = find
-            .byType(Text)
-            .evaluate()
-            .map((element) => (element.widget as Text).data)
-            .whereType<String>()
-            .toSet()
-            .toList(growable: false);
-        final composerCount = find
-            .byKey(const ValueKey<String>('session-composer-input'))
-            .evaluate()
-            .length;
-        final menuCount = find
-            .byKey(ValueKey<String>('worktree-menu-${feature?.id}'))
-            .evaluate()
-            .length;
-        throw TestFailure(
-          '${error.message}\n'
-          'feature=$feature\n'
-          'sessions=$sessions\n'
-          'composer=$composerCount\n'
-          'worktreeMenus=$menuCount\n'
-          'visibleText=$visibleText\n'
-          'flutterException=${tester.takeException()}',
-        );
-      }
+      await pumpUntil(tester, find.text('feature-e2e'));
       await tester.pumpAndSettle();
       final managedWorktree =
           (await setupClient.workspaces.getWorkspaceCatalog()).worktrees

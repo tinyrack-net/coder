@@ -73,6 +73,30 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   /// Whether this state already queued the saved-worktree restore.
   bool _restoreScheduled = false;
   bool _missingSelectionScheduled = false;
+  late final TRTreeNavController<WorkspaceNavValue> _workspaceTreeController;
+
+  @override
+  void initState() {
+    super.initState();
+    final selection = widget.selection;
+    _workspaceTreeController = TRTreeNavController<WorkspaceNavValue>(
+      expanded: selection == null
+          ? const <WorkspaceNavValue>[]
+          : <WorkspaceNavValue>[
+              (
+                hostId: selection.hostId,
+                workspaceId: selection.workspaceId,
+                worktreeId: null,
+              ),
+            ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _workspaceTreeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +182,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   catalog: catalog,
                   homeSessions: _homeSessions(catalog.value),
                   selected: widget.selection,
+                  treeController: _workspaceTreeController,
                   onNewWorkspace: () =>
                       const WorkspaceHomeRoute(compose: true).replace(context),
                   onSelect: (selection) => _goWorktree(context, selection),
