@@ -574,6 +574,10 @@ final class HostRegistryState {
   final List<RemoteDaemonProfile> profiles;
 
   /// Runtime state keyed by stable app host ID.
+  ///
+  /// This map must keep its identity across a settings-only [copyWith], because
+  /// callers that need daemons but not settings select it to stay out of the
+  /// rebuild a tab switch triggers by persisting its layout.
   final Map<String, HostRuntimeSnapshot> runtimes;
 
   /// Returns state with selected fields replaced.

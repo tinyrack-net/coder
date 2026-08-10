@@ -35,7 +35,7 @@ typedef WorkspaceNavValue = ({
 class WorkspaceSidebar extends ConsumerWidget {
   /// Creates the workspace sidebar.
   const WorkspaceSidebar({
-    required this.registry,
+    required this.hosts,
     required this.catalog,
     required this.homeSessions,
     required this.selected,
@@ -48,8 +48,11 @@ class WorkspaceSidebar extends ConsumerWidget {
     super.key,
   });
 
-  /// Daemon profiles and their runtimes.
-  final HostRegistryState? registry;
+  /// Daemon runtimes keyed by host ID, or null while the registry still loads.
+  ///
+  /// Narrower than the whole registry on purpose: the device-local settings
+  /// beside it change on every tab switch, and the sidebar must not follow.
+  final Map<String, HostRuntimeSnapshot>? hosts;
 
   /// Catalog of repositories and worktrees per daemon.
   final AsyncValue<UnifiedWorkspaceCatalogState> catalog;
@@ -122,8 +125,7 @@ class WorkspaceSidebar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final runtimes =
-        registry?.runtimes.values.toList(growable: false) ??
-        const <HostRuntimeSnapshot>[];
+        hosts?.values.toList(growable: false) ?? const <HostRuntimeSnapshot>[];
     final catalogs =
         catalog.value?.catalogs ?? const <String, WorkspaceCatalogDto>{};
     final entries = _entries(l10n, runtimes, catalogs);
@@ -211,7 +213,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     // While the registry or the catalog is still resolving, the sidebar's
     // shape is unknown; a tree-shaped skeleton keeps it from misreporting
     // "no daemons" or "no workspaces" for a state that has not loaded.
-    if (registry == null || (catalog.isLoading && !catalog.hasValue)) {
+    if (hosts == null || (catalog.isLoading && !catalog.hasValue)) {
       return SidebarTreeSkeleton(semanticLabel: l10n.workspaceCatalogLoading);
     }
     if (runtimes.isEmpty) {

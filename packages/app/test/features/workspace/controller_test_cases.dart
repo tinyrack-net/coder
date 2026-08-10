@@ -708,6 +708,77 @@ void _registerWorkspaceControllerTests() {
   );
 
   test(
+    'saving the tab layout leaves the sidebar catalog and sessions untouched',
+    () async {
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        agents: <SessionDto>[agent],
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      final registrySubscription = container.listen(
+        hostRegistryControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(registrySubscription.close);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      final catalogSubscription = container.listen(
+        workspaceCatalogControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(catalogSubscription.close);
+      await container.read(workspaceCatalogControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final sessions = sessionsControllerProvider('server', worktree.id);
+      final sessionsSubscription = container.listen(sessions, (_, _) {});
+      addTearDown(sessionsSubscription.close);
+      await container.read(sessions.future);
+      final loaded = container.read(workspaceCatalogControllerProvider);
+      expect(api.workspaceCatalogCount, 1);
+      expect(api.listSessionsCount, 1);
+
+      // Every tab switch persists the pane tree, which re-emits the whole
+      // registry. Nothing that only needs daemon runtimes may notice, or the
+      // sidebar refetches its tree on each click.
+      await container
+          .read(hostRegistryControllerProvider.notifier)
+          .saveWorkspaceUi(
+            selection: WorkspaceSelection(
+              hostId: 'server',
+              workspaceId: workspace.id,
+              worktreeId: worktree.id,
+            ),
+            tabs: const SessionTabPreference(
+              tabs: <WorkspaceTabPreference>[
+                WorkspaceTabPreference(
+                  id: 'tab',
+                  kind: WorkspaceTabTargetKind.draft,
+                ),
+              ],
+              root: WorkspacePanePreference(
+                id: 'pane',
+                tabIds: <String>['tab'],
+                activeTabId: 'tab',
+              ),
+              focusedPaneId: 'pane',
+            ),
+          );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(api.workspaceCatalogCount, 1);
+      expect(api.listSessionsCount, 1);
+      expect(container.read(workspaceCatalogControllerProvider), same(loaded));
+    },
+    tags: const <String>[
+      'feature_test__workspace_catalog__unit',
+      'feature_test__session_tabs__unit',
+    ],
+  );
+
+  test(
     'pending terminal tabs appear instantly, persist nothing, and promote '
     'or roll back',
     () async {

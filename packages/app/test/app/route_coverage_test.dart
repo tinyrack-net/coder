@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:app/src/app/composition/app_providers.dart';
+import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,6 +87,94 @@ void main() {
       find.text('Route session'),
     ),
     tags: const <String>['route_test__session_route__widget'],
+  );
+
+  testWidgets(
+    'every workspace route shares one page at desktop and mobile sizes',
+    (tester) async {
+      const terminal = TerminalDto(
+        id: 'terminal',
+        worktreeId: 'checkout',
+        title: 'Route terminal',
+        shell: ShellSpecDto(executable: '/bin/sh'),
+        status: TerminalStatus.running,
+        columns: 80,
+        rows: 24,
+        lastSequence: 0,
+      );
+      // Home, checkout, session, and terminal are one surface. A separate page
+      // per path pattern would rebuild the sidebar on every lateral move.
+      final locations = <String>[
+        const WorkspaceHomeRoute().location,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: worktree.id,
+        ).location,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: worktree.id,
+          sessionId: session.id,
+        ).location,
+        TerminalRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: worktree.id,
+          terminalId: terminal.id,
+        ).location,
+      ];
+      for (final size in <Size>[const Size(1200, 900), const Size(390, 760)]) {
+        await tester.binding.setSurfaceSize(size);
+        final routed = FakeCoderApi(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[worktree],
+          agents: <SessionDto>[session],
+          terminals: const <TerminalDto>[terminal],
+        );
+        final router = GoRouter(
+          initialLocation: locations.first,
+          routes: $appRoutes,
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appServicesProvider.overrideWithValue(fakeAppServices(routed)),
+            ],
+            child: MaterialApp.router(
+              theme: testLightTheme,
+              darkTheme: testDarkTheme,
+              locale: testLocale,
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final page = tester.state(find.byType(WorkspacePage));
+        for (final location in locations.skip(1)) {
+          unawaited(router.replace<void>(location));
+          await tester.pumpAndSettle();
+          expect(
+            router.routeInformationProvider.value.uri.path,
+            Uri.parse(location).path,
+          );
+          expect(tester.state(find.byType(WorkspacePage)), same(page));
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        router.dispose();
+      }
+      await tester.binding.setSurfaceSize(null);
+    },
+    tags: const <String>[
+      'route_test__workspace_home_route__widget',
+      'route_test__worktree_route__widget',
+      'route_test__session_route__widget',
+      'route_test__terminal_route__widget',
+    ],
   );
 
   testWidgets(

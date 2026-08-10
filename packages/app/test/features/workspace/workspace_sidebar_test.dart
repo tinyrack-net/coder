@@ -91,13 +91,9 @@ void main() {
           supportedLocales: testSupportedLocales,
           home: Scaffold(
             body: WorkspaceSidebar(
-              registry: HostRegistryState(
-                settings: const AppSettings(embeddedDaemonEnabled: false),
-                profiles: const <RemoteDaemonProfile>[],
-                runtimes: <String, HostRuntimeSnapshot>{
-                  for (final item in hosts) item.id: item,
-                },
-              ),
+              hosts: <String, HostRuntimeSnapshot>{
+                for (final item in hosts) item.id: item,
+              },
               catalog: AsyncValue<UnifiedWorkspaceCatalogState>.data(
                 UnifiedWorkspaceCatalogState(
                   hosts: <String, HostRuntimeSnapshot>{

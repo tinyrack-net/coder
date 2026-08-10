@@ -78,27 +78,31 @@ final class UnifiedWorkspaceCatalogState {
 class WorkspaceCatalogController extends _$WorkspaceCatalogController {
   @override
   Future<UnifiedWorkspaceCatalogState> build() async {
-    // Registry changes rebuild this provider; keeping the previous catalogs
-    // preserves stale-but-usable sections instead of blanking the sidebar on
-    // every reconnect. Fresh fetches below overwrite them host by host.
+    // Watching the runtimes rather than the whole registry keeps a device-local
+    // settings write, such as the tab layout saved on every tab switch, from
+    // sending the sidebar back to every daemon. A daemon connecting or leaving
+    // still rebuilds this; keeping the previous catalogs preserves
+    // stale-but-usable sections instead of blanking the sidebar on every
+    // reconnect. Fresh fetches below overwrite them host by host.
     // `value`, not `asData`: this build runs while the state is a reload that
     // still carries the previous catalogs, and `asData` would report none.
     final previous = state.value?.catalogs;
-    final registry = await ref.watch(hostRegistryControllerProvider.future);
+    final runtimes = await ref.watch(
+      hostRegistryControllerProvider.selectAsync((state) => state.runtimes),
+    );
     // Hosts resolve independently and merge as they answer: one slow daemon
     // delays only its own catalog section, never the whole sidebar. Consumers
     // treat a connected host with no catalog entry yet as still loading.
-    for (final runtime in registry.runtimes.values) {
+    for (final runtime in runtimes.values) {
       if (runtime.connected) unawaited(_loadHost(runtime));
     }
     return UnifiedWorkspaceCatalogState(
-      hosts: registry.runtimes,
+      hosts: runtimes,
       catalogs: Map<String, WorkspaceCatalogDto>.unmodifiable(
         <String, WorkspaceCatalogDto>{
           if (previous != null)
             for (final entry in previous.entries)
-              if (registry.runtimes.containsKey(entry.key))
-                entry.key: entry.value,
+              if (runtimes.containsKey(entry.key)) entry.key: entry.value,
         },
       ),
     );
