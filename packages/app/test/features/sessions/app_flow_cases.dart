@@ -466,6 +466,91 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'switching between tab kinds leaves the sidebar exactly as it was',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final docs = WorkspaceDto(
+        id: 'docs',
+        name: 'Docs',
+        rootPath: '/repos/docs',
+        kind: WorkspaceKind.directory,
+        createdAt: now,
+      );
+      final docsCheckout = WorktreeDto(
+        id: 'docs-checkout',
+        workspaceId: docs.id,
+        name: 'main',
+        path: docs.rootPath,
+        kind: WorktreeKind.directory,
+        isCoderOwned: false,
+        createdAt: now,
+      );
+      final first = session('one');
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace, docs],
+        worktrees: <WorktreeDto>[checkout, docsCheckout],
+        agents: <SessionDto>[first],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: first.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      // Expanding the project the user is not in is the state most obviously
+      // lost today: only the selected project is re-expanded after a rebuild.
+      await tester.tap(find.text(docs.name));
+      await tester.pumpAndSettle();
+      final controller = tester
+          .widget<WorkspaceSidebar>(find.byType(WorkspaceSidebar))
+          .treeController;
+      expect(
+        controller.expanded.map((group) => group.workspaceId),
+        containsAll(<String>[workspace.id, docs.id]),
+      );
+      final page = tester.state(find.byType(WorkspacePage));
+      final catalogLoads = api.workspaceCatalogCount;
+
+      // A session tab and a draft tab route through different path patterns,
+      // which is the switch that used to rebuild the page under the sidebar.
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'tr-tabs-tab-draft:',
+              ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.state(find.byType(WorkspacePage)), same(page));
+      expect(
+        tester
+            .widget<WorkspaceSidebar>(find.byType(WorkspaceSidebar))
+            .treeController,
+        same(controller),
+      );
+      expect(
+        controller.expanded.map((group) => group.workspaceId),
+        containsAll(<String>[workspace.id, docs.id]),
+      );
+      expect(api.workspaceCatalogCount, catalogLoads);
+    },
+    tags: const <String>[
+      'feature_test__session_tabs__widget',
+      'feature_test__workspace_catalog__widget',
+    ],
+  );
+
+  testWidgets(
     'new-tab menu creates a terminal and confirms termination on close',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));

@@ -99,12 +99,19 @@ class _CoderAppView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref
-        .watch(hostRegistryControllerProvider)
-        .asData
-        ?.value
-        .settings;
-    final localeTag = settings?.localeTag;
+    // Selecting the two values this build reads, rather than the settings
+    // object, keeps unrelated writes such as the tab layout from rebuilding
+    // the whole app below the router.
+    final themeMode = ref.watch(
+      hostRegistryControllerProvider.select(
+        (value) => value.value?.settings.themeMode,
+      ),
+    );
+    final localeTag = ref.watch(
+      hostRegistryControllerProvider.select(
+        (value) => value.value?.settings.localeTag,
+      ),
+    );
     return MaterialApp.router(
       title: AppIdentity.displayName,
       debugShowCheckedModeBanner: false,
@@ -112,7 +119,7 @@ class _CoderAppView extends ConsumerWidget {
       darkTheme: coderTheme(Brightness.dark),
       // Settings that have not loaded yet follow the platform, which is also
       // the stored default, so the first frame never flips brightness.
-      themeMode: coderThemeMode(settings?.themeMode ?? AppThemeMode.system),
+      themeMode: coderThemeMode(themeMode ?? AppThemeMode.system),
       // A null locale lets Flutter resolve the system locale against
       // [AppLocalizations.supportedLocales], which falls back to English.
       locale: localeTag == null ? null : Locale(localeTag),

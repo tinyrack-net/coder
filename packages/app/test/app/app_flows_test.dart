@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
@@ -11,6 +12,7 @@ import 'package:app/src/features/conversation/presentation/chat_timeline_view.da
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
+import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';

@@ -438,6 +438,9 @@ final class FakeCoderApi
   /// Number of [subscribeTimeline] calls, counted for the same reason.
   int subscribeTimelineCount = 0;
 
+  /// Number of [getWorkspaceCatalog] calls, counted for the same reason.
+  int workspaceCatalogCount = 0;
+
   /// Optional gate used to keep a terminal creation pending.
   Completer<void>? terminalCreateGate;
 
@@ -815,6 +818,7 @@ final class FakeCoderApi
 
   @override
   Future<WorkspaceCatalogDto> getWorkspaceCatalog() async {
+    workspaceCatalogCount += 1;
     await workspaceCatalogGate;
     if (workspaceCatalogResponses.isNotEmpty) {
       return workspaceCatalogResponses.removeAt(0);

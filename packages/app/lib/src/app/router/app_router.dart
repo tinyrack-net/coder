@@ -24,6 +24,21 @@ part 'app_router.g.dart';
 /// Whether [uri] addresses any settings surface.
 bool _isSettingsLocation(Uri uri) => uri.path.startsWith('/settings');
 
+/// Page identity shared by every route that paints the workspace shell.
+///
+/// go_router keys a page by the matched path pattern, so the home, checkout,
+/// session, and terminal routes would each own a separate Navigator page even
+/// though they build one screen. Naming the page keeps a single page across
+/// those lateral moves, so the sidebar's tree expansion, its scroll offset,
+/// and the page state behind them survive switching between tab kinds.
+NoTransitionPage<void> _workspaceShellPage(Widget child) =>
+    NoTransitionPage<void>(
+      key: const ValueKey<String>('workspace-shell'),
+      name: 'workspace-shell',
+      restorationId: 'workspace-shell',
+      child: child,
+    );
+
 /// Closes a pushed task and returns to the screen it was opened from.
 ///
 /// A task can also be entered directly, by deep link or by a tray activation
@@ -91,8 +106,8 @@ class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
   final bool compose;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      WorkspacePage(compose: compose);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _workspaceShellPage(WorkspacePage(compose: compose));
 }
 
 @TypedGoRoute<WorktreeRoute>(
@@ -117,13 +132,16 @@ class WorktreeRoute extends GoRouteData with $WorktreeRoute {
   final String worktreeId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
-    selection: WorkspaceSelection(
-      hostId: hostId,
-      workspaceId: workspaceId,
-      worktreeId: worktreeId,
-    ),
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _workspaceShellPage(
+        WorkspacePage(
+          selection: WorkspaceSelection(
+            hostId: hostId,
+            workspaceId: workspaceId,
+            worktreeId: worktreeId,
+          ),
+        ),
+      );
 }
 
 @TypedGoRoute<SessionRoute>(
@@ -152,14 +170,17 @@ class SessionRoute extends GoRouteData with $SessionRoute {
   final String sessionId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
-    selection: WorkspaceSelection(
-      hostId: hostId,
-      workspaceId: workspaceId,
-      worktreeId: worktreeId,
-    ),
-    requestedAgentId: sessionId,
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _workspaceShellPage(
+        WorkspacePage(
+          selection: WorkspaceSelection(
+            hostId: hostId,
+            workspaceId: workspaceId,
+            worktreeId: worktreeId,
+          ),
+          requestedAgentId: sessionId,
+        ),
+      );
 }
 
 @TypedGoRoute<TerminalRoute>(
@@ -188,14 +209,17 @@ class TerminalRoute extends GoRouteData with $TerminalRoute {
   final String terminalId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => WorkspacePage(
-    selection: WorkspaceSelection(
-      hostId: hostId,
-      workspaceId: workspaceId,
-      worktreeId: worktreeId,
-    ),
-    requestedTerminalId: terminalId,
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _workspaceShellPage(
+        WorkspacePage(
+          selection: WorkspaceSelection(
+            hostId: hostId,
+            workspaceId: workspaceId,
+            worktreeId: worktreeId,
+          ),
+          requestedTerminalId: terminalId,
+        ),
+      );
 }
 
 @TypedGoRoute<GeneralSettingsRoute>(path: '/settings/general')

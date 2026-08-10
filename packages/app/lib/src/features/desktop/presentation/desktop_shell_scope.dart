@@ -76,11 +76,17 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
 
   @override
   Widget build(BuildContext context) {
-    final registry = ref.watch(hostRegistryControllerProvider).asData?.value;
+    // The tray only reflects the app-owned daemon, so selecting it keeps
+    // unrelated settings writes from rebuilding every page below this scope.
+    final embeddedDaemon = ref.watch(
+      hostRegistryControllerProvider.select(
+        (value) => value.asData?.value.runtimes[embeddedHostId],
+      ),
+    );
     final menu = buildTrayMenu(
       l10n: AppLocalizations.of(context),
       windowVisible: _windowVisible,
-      embeddedDaemon: registry?.runtimes[embeddedHostId],
+      embeddedDaemon: embeddedDaemon,
       supportsEmbeddedDaemon: ref
           .watch(appServicesProvider)
           .supportsEmbeddedDaemon,
@@ -111,11 +117,12 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
             // title bar under its own provider subscription so settings
             // changes can update menu labels and callbacks in place.
             builder: (context, ref, _) {
-              final registry = ref
-                  .watch(hostRegistryControllerProvider)
-                  .asData
-                  ?.value;
-              final collapsed = registry?.settings.sidebarCollapsed ?? false;
+              final collapsed = ref.watch(
+                hostRegistryControllerProvider.select(
+                  (value) =>
+                      value.asData?.value.settings.sidebarCollapsed ?? false,
+                ),
+              );
               void newWorkspace() => widget.router.go(
                 const WorkspaceHomeRoute(compose: true).location,
               );

@@ -95,6 +95,16 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   }
 
   @override
+  void didUpdateWidget(WorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // One Navigator page now serves every checkout, so this state outlives a
+    // selection change and each new checkout needs its own archived check.
+    if (widget.selection != oldWidget.selection) {
+      _missingSelectionScheduled = false;
+    }
+  }
+
+  @override
   void dispose() {
     _workspaceTreeController.dispose();
     super.dispose();
@@ -102,10 +112,25 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
 
   @override
   Widget build(BuildContext context) {
-    final registry = ref.watch(hostRegistryControllerProvider);
+    // Every tab switch persists the pane tree, which re-emits the whole
+    // registry. Selecting only what this page renders keeps that write from
+    // rebuilding the sidebar beside the tabs. `value` rather than `asData` so
+    // a reload keeps showing the registry that is already loaded.
+    final hosts = ref.watch(
+      hostRegistryControllerProvider.select((value) => value.value?.runtimes),
+    );
     final catalog = ref.watch(workspaceCatalogControllerProvider);
-    final collapsed = registry.value?.settings.sidebarCollapsed ?? false;
-    _restoreSelection(registry.value, catalog.value);
+    final collapsed = ref.watch(
+      hostRegistryControllerProvider.select(
+        (value) => value.value?.settings.sidebarCollapsed ?? false,
+      ),
+    );
+    final savedWorktree = ref.watch(
+      hostRegistryControllerProvider.select(
+        (value) => value.value?.settings.lastWorktree,
+      ),
+    );
+    _restoreSelection(savedWorktree, catalog.value);
     _replaceMissingSelection(catalog.value);
     return LayoutBuilder(
       builder: (context, pageConstraints) {
@@ -180,7 +205,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             body: LayoutBuilder(
               builder: (context, constraints) {
                 final sidebar = WorkspaceSidebar(
-                  registry: registry.value,
+                  hosts: hosts,
                   catalog: catalog,
                   homeSessions: _homeSessions(catalog.value),
                   selected: widget.selection,
@@ -270,14 +295,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       .setSidebarCollapsed(collapsed: collapsed);
 
   void _restoreSelection(
-    HostRegistryState? registry,
+    WorkspaceSelection? saved,
     UnifiedWorkspaceCatalogState? catalog,
   ) {
     // Opening the composer is an explicit choice; never bounce out of it.
     if (widget.compose || widget.selection != null) return;
     if (_restoreScheduled) return;
     if (ref.read(selectionRestoreControllerProvider)) return;
-    final saved = registry?.settings.lastWorktree;
     if (saved == null || catalog == null) return;
     final exists =
         catalog.catalogs[saved.hostId]?.worktrees.any(
