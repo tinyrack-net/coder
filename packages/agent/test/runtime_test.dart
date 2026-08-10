@@ -875,6 +875,88 @@ void main() {
   );
 
   test(
+    'usage reports the span from the first token to the completion',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          _textResponse('done'),
+        ]),
+        tick: const Duration(milliseconds: 400),
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      final usage = harness.eventData
+          .where((entry) => entry.$1 == 'model.usage')
+          .map((entry) => entry.$2)
+          .single;
+      expect(usage['generationMs'], 400);
+      // The clock is read at the first token and at the completion, never
+      // before the stream, so the wait for the first token is excluded.
+      expect(harness.clock.readings, 2);
+    },
+  );
+
+  test(
+    'a round that streams no token reports no generation span',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      // A provider can complete without ever emitting a delta or a call, and
+      // a rate over a span that was never started would be invented.
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          <ModelEvent>[
+            const ModelResponseCompleted(
+              assistant: AssistantConversationItem(text: ''),
+            ),
+          ],
+        ]),
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      final usage = harness.eventData
+          .where((entry) => entry.$1 == 'model.usage')
+          .map((entry) => entry.$2)
+          .single;
+      expect(usage.containsKey('generationMs'), isFalse);
+      expect(harness.clock.readings, 0);
+    },
+  );
+
+  test(
+    'an attempt the provider refused does not lengthen the measured span',
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+    () async {
+      final provider = _OverflowingProvider(
+        <List<ModelEvent>>[
+          const <ModelEvent>[],
+          _textResponse('a handoff summary'),
+          _textResponse('done'),
+        ],
+        overflowAt: const <int>{0},
+      );
+      final harness = _RunnerHarness(
+        provider,
+        contextResets: (_) {},
+        compacts: true,
+        tick: const Duration(milliseconds: 400),
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      // The refused attempt and the compaction request are not part of the
+      // generation that eventually answered.
+      final usage = harness.eventData
+          .where((entry) => entry.$1 == 'model.usage')
+          .map((entry) => entry.$2)
+          .single;
+      expect(usage['generationMs'], 400);
+    },
+  );
+
+  test(
     'a deferred tool is withheld until a search surfaces it',
     tags: const <String>['feature_test__tool_search_deferred__unit'],
     () async {
@@ -1312,12 +1394,15 @@ final class _RunnerHarness {
     bool compacts = false,
     AgentPermissionMode permissionMode = AgentPermissionMode.workspaceWrite,
     PermissionModeSource? permissions,
+    Duration tick = const Duration(milliseconds: 250),
   }) {
+    clock = _TickClock(tick);
     runner = AgentRunner(
       provider: provider,
       tools: tools,
       nestedTools: nestedTools,
       approvals: approvals,
+      clock: clock,
       // The compactor shares the turn's provider, as it does in the daemon:
       // the summary is written by the model that produced the work.
       compactor: compacts ? ConversationCompactor(provider) : null,
@@ -1339,12 +1424,28 @@ final class _RunnerHarness {
   }
 
   late AgentRunner runner;
+  late _TickClock clock;
   final List<String> events = <String>[];
   final List<(String, Map<String, dynamic>)> eventData =
       <(String, Map<String, dynamic>)>[];
   final List<AgentSessionStatus> statuses = <AgentSessionStatus>[];
   final List<String> statusErrors = <String>[];
   final List<ConversationItem> items = <ConversationItem>[];
+}
+
+/// Advances by a fixed step on every reading.
+///
+/// The runner reads the clock exactly twice per measured response — at the
+/// first token and at the completion — so every measured span is one step, no
+/// matter how many rounds or discarded attempts came before it.
+final class _TickClock implements Clock {
+  _TickClock(this.step);
+
+  final Duration step;
+  int readings = 0;
+
+  @override
+  DateTime nowUtc() => DateTime.utc(2026, 8, 3).add(step * readings++);
 }
 
 final class _FixedPermissionModeSource implements PermissionModeSource {

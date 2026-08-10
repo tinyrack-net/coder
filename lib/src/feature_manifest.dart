@@ -802,7 +802,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'tool.context.budget',
     description:
         'Normalizes provider token counters, reports the tokens left in the '
-        'model context window, and starts a fresh window on request.',
+        'model context window, reports the output rate each response was '
+        'generated at, and starts a fresh window on request.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,

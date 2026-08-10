@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:agent/src/clock.dart';
 import 'package:agent/src/compaction.dart';
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
@@ -168,6 +169,7 @@ class AgentRunner {
     required this._onStatus,
     required this._onProviderItems,
     required this._permissions,
+    required this._clock,
     Iterable<AgentTool> nestedTools = const <AgentTool>[],
     this._contextResets,
     this._pendingTurnInput,
@@ -200,6 +202,9 @@ class AgentRunner {
   final SessionStatusCallback _onStatus;
   final ProviderItemsCallback _onProviderItems;
   final PermissionModeSource _permissions;
+
+  /// Times the generation span each model response is measured over.
+  final Clock _clock;
 
   /// Discards persisted history when a tool asks for a fresh window.
   final ContextResetCoordinator? _contextResets;
@@ -335,12 +340,19 @@ class AgentRunner {
 
         var toolCalls = <ModelToolCall>[];
         ModelResponseCompleted? completed;
+        // How long the model spent producing the response that completed, so
+        // the client can report a generation rate. Null until a stream both
+        // produced a token and completed.
+        int? generationMs;
         // One recovery per round: a second refusal means compacting is not
         // what is oversized, and retrying would only spend another summary.
         var overflowRetried = false;
         while (completed == null) {
           toolCalls = <ModelToolCall>[];
           var recovered = false;
+          // Reset per attempt: a stream the provider refused as too long is
+          // not part of the generation that eventually answered.
+          DateTime? firstTokenAt;
           final modelRequest = ModelRequest(
             model: request.model,
             modelControls: request.modelControls,
@@ -361,10 +373,12 @@ class AgentRunner {
             )) {
               switch (event) {
                 case ModelTextDelta(:final delta):
+                  firstTokenAt ??= _clock.nowUtc();
                   await _onEvent('assistant.delta', <String, dynamic>{
                     'text': delta,
                   });
                 case ModelToolCall():
+                  firstTokenAt ??= _clock.nowUtc();
                   toolCalls.add(event);
                   await _onEvent('tool.requested', <String, dynamic>{
                     'callId': event.callId,
@@ -373,6 +387,12 @@ class AgentRunner {
                   });
                 case ModelResponseCompleted():
                   completed = event;
+                  // Measured from the first token rather than the request, so
+                  // the rate reports generation speed and not the wait for it.
+                  final startedAt = firstTokenAt;
+                  generationMs = startedAt == null
+                      ? null
+                      : _clock.nowUtc().difference(startedAt).inMilliseconds;
               }
             }
           } on ModelContextOverflowException {
@@ -399,7 +419,10 @@ class AgentRunner {
         persisted.add(assistant);
         await _onProviderItems(<ConversationItem>[assistant]);
         turnUsage = completed.usage;
-        await _onEvent('model.usage', completed.usage.toJson());
+        await _onEvent('model.usage', <String, dynamic>{
+          ...completed.usage.toJson(),
+          'generationMs': ?generationMs,
+        });
 
         if (toolCalls.isEmpty) {
           await _onEvent('turn.completed', <String, dynamic>{

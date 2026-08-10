@@ -931,4 +931,50 @@ void main() {
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );
+
+  test(
+    'a measured generation span reads as a rounded output rate',
+    () {
+      final summary = describeTokenUsage(testL10n, const <String, num>{
+        'inputTokens': 1200,
+        'outputTokens': 340,
+        'totalTokens': 1540,
+        'generationMs': 5450,
+      });
+      // 340 tokens over 5.45s, rounded to one decimal so the line stays
+      // readable rather than reporting 62.385321100917435.
+      expect(summary, contains('62.4 tok/s'));
+    },
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+  );
+
+  test(
+    'usage without a measured span reports counters only',
+    () {
+      const counters = <String, num>{
+        'inputTokens': 1200,
+        'outputTokens': 340,
+        'totalTokens': 1540,
+      };
+      expect(describeTokenUsage(testL10n, counters), isNot(contains('tok/s')));
+      // A response that streamed no token, and one that reported no output,
+      // both have nothing to divide.
+      expect(
+        describeTokenUsage(testL10n, <String, num>{
+          ...counters,
+          'generationMs': 0,
+        }),
+        isNot(contains('tok/s')),
+      );
+      expect(
+        describeTokenUsage(testL10n, const <String, num>{
+          'inputTokens': 1200,
+          'totalTokens': 1200,
+          'generationMs': 5450,
+        }),
+        isNot(contains('tok/s')),
+      );
+    },
+    tags: const <String>['feature_test__tool_context_budget__unit'],
+  );
 }
