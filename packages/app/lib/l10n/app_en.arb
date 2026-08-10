@@ -2216,6 +2216,14 @@
   "@skillSettingsProjectHint": {
     "description": "Explains what picking a project adds to the list."
   },
+  "skillSettingsProjectSearch": "Search projects",
+  "@skillSettingsProjectSearch": {
+    "description": "Placeholder for the filter field in the project selector."
+  },
+  "skillSettingsProjectNoMatch": "No matching project",
+  "@skillSettingsProjectNoMatch": {
+    "description": "Shown when the project filter matches nothing."
+  },
   "settingsCategoryMcp": "MCP",
   "@settingsCategoryMcp": {
     "description": "Sidebar label for the MCP server settings category."

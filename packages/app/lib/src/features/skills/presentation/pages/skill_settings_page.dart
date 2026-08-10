@@ -258,6 +258,11 @@ class _ProjectSelector extends ConsumerWidget {
           label: l10n.skillSettingsProject,
           width: width,
           helperText: l10n.skillSettingsProjectHint,
+          // The project list is however many workspaces the user has paired,
+          // which is the only select on this screen that a filter earns.
+          searchable: true,
+          searchPlaceholder: l10n.skillSettingsProjectSearch,
+          noResultsText: l10n.skillSettingsProjectNoMatch,
           items: <TRSelectItem<String?>>[
             TRSelectItem<String?>(
               value: null,

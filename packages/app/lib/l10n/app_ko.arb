@@ -521,6 +521,8 @@
   "skillSettingsProject": "프로젝트",
   "skillSettingsProjectNone": "전역 스킬만",
   "skillSettingsProjectHint": "프로젝트를 고르면 그 프로젝트에 커밋된 스킬이 함께 보입니다.",
+  "skillSettingsProjectSearch": "프로젝트 검색",
+  "skillSettingsProjectNoMatch": "일치하는 프로젝트가 없습니다",
   "settingsCategoryMcp": "MCP",
   "mcpSettingsHeading": "MCP 서버",
   "mcpSettingsAdd": "MCP 서버 추가",
