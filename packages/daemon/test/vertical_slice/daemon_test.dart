@@ -2954,13 +2954,18 @@ void main() {
         name: 'Queue',
       );
       final models = await client.listProviderModels('openai');
+      final runnableModel = models.firstWhere(
+        (model) =>
+            model.capabilities.streaming == CapabilitySupport.supported &&
+            model.capabilities.toolCalling == CapabilitySupport.supported,
+      );
       final session = await client.createSession(
         id: 'queue-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Queue session',
         agentDefinitionId: 'coder',
         model: SessionModelSelectionDto(
-          modelId: models.first.id,
+          modelId: runnableModel.id,
         ),
       );
       await client.subscribeTimeline(session.id);
