@@ -451,6 +451,10 @@ void main() {
       await _waitForAgentDefinition(setupClient, 'temporary');
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-archive-confirm')),
+      );
+      await tester.pumpAndSettle();
       expect(
         (await setupClient.agents.listAgentDefinitions()).map(
           (item) => item.id,
@@ -461,6 +465,10 @@ void main() {
       await tester.tap(find.text('Coder').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-confirm')),
+      );
       await tester.pumpAndSettle();
       final editorList = find.byType(ListView).last;
       final editorScrollable = find
