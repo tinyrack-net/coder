@@ -26,7 +26,9 @@ export 'package:app/src/features/conversation/presentation/tools/presenter.dart'
 /// The counters arrive under the stable names `ModelUsage` writes, so this is a
 /// fixed set rather than a walk over whatever keys a provider happened to send.
 /// Cached input and hidden reasoning are subsets of their parents, so they read
-/// as parenthesised qualifiers. Returns null when there is nothing to report.
+/// as parenthesised qualifiers. The runner also reports how long the response
+/// streamed, which becomes a generation rate rather than a raw duration.
+/// Returns null when there is nothing to report.
 String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
   int count(String key) {
     final value = tokens[key];
@@ -40,6 +42,9 @@ String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
   final total = count('totalTokens');
   if (input == 0 && output == 0 && total == 0) return null;
 
+  // Absent for a response that streamed no token, and for events recorded
+  // before the runner measured the span at all.
+  final generationMs = count('generationMs');
   final parts = <String>[
     if (input > 0)
       cached > 0
@@ -50,6 +55,12 @@ String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
           ? l10n.usageOutputReasoning(output, reasoning)
           : l10n.usageOutput(output),
     if (total > 0) l10n.usageTotal(total),
+    if (output > 0 && generationMs > 0)
+      // Rounded here because `decimalPattern` only localizes the separators;
+      // a raw rate would read as `62.41666666666667 tok/s`.
+      l10n.usageThroughput(
+        (output * 1000 / generationMs * 10).roundToDouble() / 10,
+      ),
   ];
   return parts.join(' · ');
 }

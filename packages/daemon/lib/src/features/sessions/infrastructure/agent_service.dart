@@ -276,6 +276,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
       provider: resolvedModel.provider,
       tools: turnTools.tools,
       nestedTools: turnTools.nestedTools,
+      clock: _clock,
       // The summary is written by the model that produced the work, so the
       // compactor rides the same provider the turn already resolved.
       compactor: ConversationCompactor(resolvedModel.provider),

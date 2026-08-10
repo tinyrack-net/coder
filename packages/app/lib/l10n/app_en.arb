@@ -1588,6 +1588,16 @@
       }
     }
   },
+  "usageThroughput": "{rate} tok/s",
+  "@usageThroughput": {
+    "description": "Output tokens per second, measured over the time the response streamed and excluding tool execution. The caller rounds the rate; decimalPattern only localizes the separators.",
+    "placeholders": {
+      "rate": {
+        "type": "double",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "toolExecRunning": "running · {lines} lines",
   "@toolExecRunning": {
     "description": "Result line while a pseudo-terminal session is still running.",

@@ -413,6 +413,7 @@
   "usageOutput": "출력 {tokens}",
   "usageOutputReasoning": "출력 {tokens}(추론 {reasoning})",
   "usageTotal": "합계 {tokens}",
+  "usageThroughput": "{rate} tok/s",
   "toolExecRunning": "실행 중 · {lines}줄",
   "chatAnswerTyped": "{answer} (직접 입력)",
   "chatSleepWaiting": "대기 중",

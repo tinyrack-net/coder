@@ -2536,6 +2536,12 @@ abstract class AppLocalizations {
   /// **'total {tokens}'**
   String usageTotal(int tokens);
 
+  /// Output tokens per second, measured over the time the response streamed and excluding tool execution. The caller rounds the rate; decimalPattern only localizes the separators.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate} tok/s'**
+  String usageThroughput(double rate);
+
   /// Result line while a pseudo-terminal session is still running.
   ///
   /// In en, this message translates to:

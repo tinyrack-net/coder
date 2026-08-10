@@ -1387,6 +1387,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String usageThroughput(double rate) {
+    final intl.NumberFormat rateNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String rateString = rateNumberFormat.format(rate);
+
+    return '$rateString tok/s';
+  }
+
+  @override
   String toolExecRunning(int lines) {
     return 'running · $lines lines';
   }

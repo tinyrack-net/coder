@@ -828,6 +828,54 @@ void main() {
   );
 
   testWidgets(
+    'a measured response reports its output rate on the usage line',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', <String, dynamic>{
+          'inputTokens': 1200,
+          'outputTokens': 340,
+          'totalTokens': 1540,
+          'generationMs': 5450,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('chat-usage-line')),
+          matching: find.byType(TRText),
+        ),
+      );
+      expect(line.data, contains('62.4 tok/s'));
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
+    'a usage event without a measured span reports counters only',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('model.usage', <String, dynamic>{
+          'inputTokens': 1200,
+          'outputTokens': 340,
+          'totalTokens': 1540,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      final line = tester.widget<TRText>(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('chat-usage-line')),
+          matching: find.byType(TRText),
+        ),
+      );
+      expect(line.data, contains('340'));
+      expect(line.data, isNot(contains('tok/s')));
+    },
+    tags: const <String>['feature_test__tool_context_budget__widget'],
+  );
+
+  testWidgets(
     'a usage event with nothing to report renders nothing',
     (tester) async {
       await pump(tester, <TimelineEventDto>[
