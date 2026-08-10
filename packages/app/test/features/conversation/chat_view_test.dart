@@ -210,6 +210,15 @@ void main() {
 
       expect(find.text('실행 중'), findsWidgets);
       expect(find.byType(TRSpinner), findsWidgets);
+      final runningSpinner = find.descendant(
+        of: find.byKey(const ValueKey<String>('chat-running')),
+        matching: find.byType(TRSpinner),
+      );
+      final runningSpinnerSize = tester.getSize(runningSpinner);
+      expect(
+        runningSpinnerSize.width,
+        closeTo(runningSpinnerSize.height, 0.001),
+      );
       expect(find.byType(TRChatUserBubble), findsOneWidget);
 
       await pump(tester, const <TimelineEventDto>[]);
