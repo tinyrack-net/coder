@@ -17,13 +17,10 @@ class SessionsController extends _$SessionsController {
   @override
   Future<List<SessionDto>> build(String hostId, String? worktreeId) async {
     _worktreeId = worktreeId;
-    final runtime = (await ref.watch(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    if (runtime?.connected != true || worktreeId == null) {
+    final api = await watchConnectedHostApi(ref, hostId);
+    if (api == null || worktreeId == null) {
       return const <SessionDto>[];
     }
-    final api = runtime!.api!;
     _events = api.sessions.sessionUpdates.listen(_handleEvent);
     ref.onDispose(() => unawaited(_events?.cancel()));
     return api.sessions.listSessions(worktreeId: worktreeId);

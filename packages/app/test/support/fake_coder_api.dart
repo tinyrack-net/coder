@@ -428,6 +428,16 @@ final class FakeCoderApi
   /// Optional gate used to keep the terminal catalog in its loading state.
   final Future<void>? listTerminalsGate;
 
+  /// Number of [listSessions] calls, counted so a test can assert that an
+  /// unrelated change never reloads the session catalog.
+  int listSessionsCount = 0;
+
+  /// Number of [listTerminals] calls, counted for the same reason.
+  int listTerminalsCount = 0;
+
+  /// Number of [subscribeTimeline] calls, counted for the same reason.
+  int subscribeTimelineCount = 0;
+
   /// Optional gate used to keep a terminal creation pending.
   Completer<void>? terminalCreateGate;
 
@@ -999,6 +1009,7 @@ final class FakeCoderApi
 
   @override
   Future<List<SessionDto>> listSessions({String? worktreeId}) async {
+    listSessionsCount += 1;
     await listSessionsGate;
     if (listSessionsFailures > 0) {
       listSessionsFailures -= 1;
@@ -1187,6 +1198,7 @@ final class FakeCoderApi
 
   @override
   Future<List<TerminalDto>> listTerminals(String worktreeId) async {
+    listTerminalsCount += 1;
     await listTerminalsGate;
     return _terminals.where((item) => item.worktreeId == worktreeId).toList();
   }
@@ -1974,6 +1986,7 @@ final class FakeCoderApi
     String sessionId, {
     int afterSequence = 0,
   }) async {
+    subscribeTimelineCount += 1;
     if (subscribeTimelineGate case final gate?) await gate.future;
     return (_timelines[sessionId] ?? const <TimelineEventDto>[])
         .where((event) => event.sequence > afterSequence)

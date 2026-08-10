@@ -13,12 +13,11 @@ part 'relay_devices_controller.g.dart';
 /// list that rendered as empty before the daemon answered would misreport
 /// revoked access.
 Future<List<RelayDeviceDto>> relayDevices(Ref ref, String hostId) async {
-  final registry = await ref.watch(hostRegistryControllerProvider.future);
-  final runtime = registry.runtimes[hostId];
-  if (runtime?.connected != true) {
-    // The registry watch re-runs this build on every connection change, so
+  final api = await watchConnectedHostApi(ref, hostId);
+  if (api == null) {
+    // The connection watch re-runs this build on every connection change, so
     // the pending future is discarded as soon as the daemon connects.
     return Completer<List<RelayDeviceDto>>().future;
   }
-  return runtime!.api!.relay.listRelayDevices();
+  return api.relay.listRelayDevices();
 }

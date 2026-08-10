@@ -71,7 +71,7 @@ final class TerminalAttachControllerProvider
 }
 
 String _$terminalAttachControllerHash() =>
-    r'e942b88ec548dd89c69292a35aa2b0a4f27d13ea';
+    r'3e565f071dde82a3eb446dce8f742795aa1b3188';
 
 /// Attaches to one daemon terminal and returns its replayed scrollback.
 ///

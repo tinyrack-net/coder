@@ -59,11 +59,8 @@ class ProviderSettingsController extends _$ProviderSettingsController {
 
   @override
   Future<ProviderSettingsState?> build(String hostId) async {
-    final runtime = (await ref.watch(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    if (runtime?.connected != true) return null;
-    final api = runtime!.api!;
+    final api = await watchConnectedHostApi(ref, hostId);
+    if (api == null) return null;
     _events = api.providers.authUpdates.listen(_handleEvent);
     _catalogEvents = api.providers.catalogUpdates.listen(_handleCatalogEvent);
     ref.onDispose(() {

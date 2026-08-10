@@ -157,7 +157,7 @@ final class TerminalsControllerProvider
 }
 
 String _$terminalsControllerHash() =>
-    r'e3ab7de86b1369ac4615707926327ab7b0f843b1';
+    r'295147caaa42e479d4fd5057d230e5f032442caf';
 
 /// Owns the live terminal catalog for one connected worktree.
 

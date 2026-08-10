@@ -119,13 +119,10 @@ class ConversationController extends _$ConversationController {
   @override
   Future<ConversationState> build(String hostId, String? sessionId) async {
     _sessionId = sessionId;
-    final runtime = (await ref.watch(
-      hostRegistryControllerProvider.future,
-    )).runtimes[hostId];
-    if (runtime?.connected != true || sessionId == null) {
+    final api = await watchConnectedHostApi(ref, hostId);
+    if (api == null || sessionId == null) {
       return const ConversationState();
     }
-    final api = runtime!.api!;
     final timeline = await api.sessions.subscribeTimeline(sessionId);
     _timelineEvents = api.sessions.timelineEvents.listen(_handleTimeline);
     _approvalEvents = api.sessions.approvalRequests.listen(_handleApproval);

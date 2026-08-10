@@ -82,7 +82,7 @@ final class RelayDevicesProvider
   }
 }
 
-String _$relayDevicesHash() => r'9cd8a7e5d6c7b65c5c5c816818ee266dc0fff81d';
+String _$relayDevicesHash() => r'eaf0666493d478c693a48a247f93b5befb52ab07';
 
 /// Approved relay devices of one daemon.
 ///

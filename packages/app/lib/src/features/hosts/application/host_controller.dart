@@ -4,6 +4,8 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/hosts/application/host_registry.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:client/client.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ProviderListenableSelect;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'host_controller.g.dart';
@@ -16,12 +18,73 @@ Future<CoderApi> requireHostApi(Ref ref, String hostId) async {
   return connectedHostApi(runtime);
 }
 
+/// Watches one host's connected API instead of the whole registry.
+///
+/// A device-settings write, such as a pane ratio or the sidebar toggle, emits
+/// a new registry state without touching any daemon connection. Selecting the
+/// API identity keeps those writes from reloading, and re-issuing the RPCs of,
+/// every host-scoped provider.
+///
+/// Its `loaded` field separates "the registry has not finished its first load"
+/// from "the registry is loaded and this host is offline", which callers answer
+/// differently.
+///
+/// The result is a record, rather than a class, so
+/// [ProviderListenableSelect.select] compares it by value and skips every
+/// notification that leaves this host's connection unchanged.
+HostApiConnection watchHostConnection(Ref ref, String hostId) => ref.watch(
+  hostRegistryControllerProvider.select((value) {
+    if (value.hasError) {
+      return (
+        loaded: false,
+        api: null,
+        error: value.error,
+        stackTrace: value.stackTrace,
+      );
+    }
+    // `value`, not `asData`: a dependency-driven reload keeps the previous
+    // registry but reports itself as loading.
+    final registry = value.value;
+    if (registry == null) {
+      return (loaded: false, api: null, error: null, stackTrace: null);
+    }
+    final runtime = registry.runtimes[hostId];
+    return (
+      loaded: true,
+      api: runtime?.connected == true ? runtime!.api : null,
+      error: null,
+      stackTrace: null,
+    );
+  }),
+);
+
+/// One host's connection as observed by [watchHostConnection].
+typedef HostApiConnection = ({
+  bool loaded,
+  CoderApi? api,
+  Object? error,
+  StackTrace? stackTrace,
+});
+
+/// Awaits one host's connected API, or null once the host is known offline.
+///
+/// Stays loading while the registry has yet to answer and rethrows a registry
+/// failure, so a caller only has to decide what an offline host means for it.
+Future<CoderApi?> watchConnectedHostApi(Ref ref, String hostId) {
+  final connection = watchHostConnection(ref, hostId);
+  if (connection.error case final error?) {
+    Error.throwWithStackTrace(error, connection.stackTrace ?? StackTrace.empty);
+  }
+  // The selector re-runs this build as soon as the registry answers.
+  if (!connection.loaded) return Completer<CoderApi?>().future;
+  return Future<CoderApi?>.value(connection.api);
+}
+
 /// Resolves the API inside a build, re-running once the daemon connects.
 Future<CoderApi> watchHostApi(Ref ref, String hostId) async {
-  final runtime = (await ref.watch(
-    hostRegistryControllerProvider.future,
-  )).runtimes[hostId];
-  return connectedHostApi(runtime);
+  final api = await watchConnectedHostApi(ref, hostId);
+  if (api == null) throw StateError('Online daemon connection required.');
+  return api;
 }
 
 /// Returns the connected API or reports that an online daemon is required.

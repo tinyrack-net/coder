@@ -290,14 +290,63 @@ class SessionTabsController extends _$SessionTabsController {
     final current = state.asData?.value;
     final sessions = next.asData?.value;
     if (current == null || sessions == null) return;
-    state = AsyncData<SessionTabsState>(current.copyWith(sessions: sessions));
+    final open = <String>{
+      for (final entry in current.tabs.values)
+        if (entry.target case SessionTabTarget(:final sessionId)) sessionId,
+    };
+    state = AsyncData<SessionTabsState>(
+      current.copyWith(
+        sessions: _retainOpen(
+          next: sessions,
+          known: current.sessions,
+          open: open,
+          idOf: (item) => item.id,
+        ),
+      ),
+    );
   }
 
   void _syncTerminals(AsyncValue<List<TerminalDto>> next) {
     final current = state.asData?.value;
     final terminals = next.asData?.value;
     if (current == null || terminals == null) return;
-    state = AsyncData<SessionTabsState>(current.copyWith(terminals: terminals));
+    final open = <String>{
+      for (final entry in current.tabs.values)
+        if (entry.target case TerminalTabTarget(:final terminalId)) terminalId,
+    };
+    state = AsyncData<SessionTabsState>(
+      current.copyWith(
+        terminals: _retainOpen(
+          next: terminals,
+          known: current.terminals,
+          open: open,
+          idOf: (item) => item.id,
+        ),
+      ),
+    );
+  }
+
+  /// Folds a fresh catalog in without unbinding the tabs that are open.
+  ///
+  /// [_restore] is the only place that reconciles tabs against a catalog, so
+  /// every open tab names an entry that this state holds. A daemon that drops
+  /// answers with an empty catalog, and letting that empty answer through would
+  /// leave those tabs pointing at nothing. The last known entry stands in until
+  /// the daemon lists it again.
+  static List<T> _retainOpen<T>({
+    required List<T> next,
+    required List<T> known,
+    required Set<String> open,
+    required String Function(T) idOf,
+  }) {
+    if (open.isEmpty) return next;
+    final listed = next.map(idOf).toSet();
+    return <T>[
+      ...next,
+      ...known.where(
+        (item) => !listed.contains(idOf(item)) && open.contains(idOf(item)),
+      ),
+    ];
   }
 
   /// Adds and selects a newly-created terminal tab.

@@ -114,7 +114,7 @@ final class WorkspaceCatalogControllerProvider
 }
 
 String _$workspaceCatalogControllerHash() =>
-    r'6bcdbdc1e31c3719a2c3de5c68506ad32f93d385';
+    r'86730adac937996b88bc1ae26333debd50fdf8fc';
 
 /// Loads every online daemon catalog without merging daemon-local IDs.
 
