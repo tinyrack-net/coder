@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:daemon/src/features/workspaces/infrastructure/git_workspace.dart';
 import 'package:daemon/src/features/workspaces/infrastructure/project_settings.dart';
 import 'package:daemon/src/features/workspaces/infrastructure/workspace_service.dart';
@@ -157,6 +159,59 @@ branch refs/heads/feature/settings
       );
     },
     tags: const <String>['feature_test__workspace_catalog__unit'],
+  );
+
+  test(
+    'catalog polling does not steal the identity of a managed worktree '
+    'being created',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = _service(database, git: git);
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      final createdInGit = Completer<void>();
+      final releaseCreation = Completer<void>();
+      git
+        ..createdInGit = createdInGit
+        ..releaseCreation = releaseCreation.future;
+
+      final creating = service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-1',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'feature-race',
+          baseBranch: 'main',
+        ),
+      );
+      await createdInGit.future;
+      await service.catalog();
+      releaseCreation.complete();
+      final created = await creating;
+      final catalog = await service.catalog();
+
+      final matching = catalog.worktrees
+          .where((worktree) => worktree.path == created.worktree.path)
+          .toList(growable: false);
+      expect(matching, hasLength(1));
+      expect(matching.single.id, 'managed-1');
+      expect(matching.single.kind, WorktreeKind.managed);
+    },
+    tags: const <String>[
+      'feature_test__workspace_catalog__unit',
+      'feature_test__worktree_lifecycle__unit',
+    ],
   );
 
   test(
@@ -1210,6 +1265,8 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
     const GitWorktreeSnapshot(path: '/repo', branch: 'main', head: 'abc'),
     const GitWorktreeSnapshot(path: '/other', branch: 'other', head: 'def'),
   ];
+  Completer<void>? createdInGit;
+  Future<void>? releaseCreation;
 
   @override
   Future<String?> repositoryRoot(String path) async => root;
@@ -1261,6 +1318,8 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
         head: 'created-head',
       ),
     );
+    createdInGit?.complete();
+    if (releaseCreation case final release?) await release;
   }
 
   @override

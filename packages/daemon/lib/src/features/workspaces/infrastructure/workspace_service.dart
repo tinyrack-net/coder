@@ -10,7 +10,7 @@ import 'package:protocol/protocol.dart';
 /// Repository and checkout lifecycle application service.
 final class WorkspaceOperations {
   /// Creates a workspace service from typed persistence and host ports.
-  const WorkspaceOperations(
+  WorkspaceOperations(
     this._workspaces,
     this._worktrees,
     this._agents,
@@ -33,6 +33,7 @@ final class WorkspaceOperations {
   final WorkspaceFileIndexGateway _fileIndex;
   final ProjectSettingsStore _projectSettings;
   final WorktreeHookRunner _hooks;
+  final Map<String, int> _pendingManagedWorktreePaths = <String, int>{};
 
   /// Returns repositories and active worktrees as one catalog snapshot.
   Future<WorkspaceCatalogDto> catalog() async {
@@ -289,33 +290,48 @@ final class WorkspaceOperations {
     if (await _worktrees.getByPath(checkoutPath) != null) {
       throw StateError('A worktree already uses the generated path.');
     }
-    await _paths.createDirectory(p.dirname(checkoutPath));
-    await _git.createWorktree(
-      GitWorktreeCreateRequest(
-        repositoryRoot: workspace.rootPath,
-        path: checkoutPath,
-        mode: request.mode,
-        branchName: branch,
-        baseBranch: request.baseBranch,
-      ),
+    late final WorktreeDto worktree;
+    _pendingManagedWorktreePaths.update(
+      checkoutPath,
+      (count) => count + 1,
+      ifAbsent: () => 1,
     );
-    final snapshots = await _git.listWorktrees(workspace.rootPath);
-    final snapshot = snapshots
-        .where((item) => item.path == checkoutPath)
-        .firstOrNull;
-    final worktree = await _worktrees.upsert(
-      WorktreeDto(
-        id: request.id,
-        workspaceId: workspace.id,
-        name: branch,
-        path: checkoutPath,
-        branch: snapshot?.branch ?? branch,
-        head: snapshot?.head,
-        kind: WorktreeKind.managed,
-        isCoderOwned: true,
-        createdAt: _clock.nowUtc(),
-      ),
-    );
+    try {
+      await _paths.createDirectory(p.dirname(checkoutPath));
+      await _git.createWorktree(
+        GitWorktreeCreateRequest(
+          repositoryRoot: workspace.rootPath,
+          path: checkoutPath,
+          mode: request.mode,
+          branchName: branch,
+          baseBranch: request.baseBranch,
+        ),
+      );
+      final snapshots = await _git.listWorktrees(workspace.rootPath);
+      final snapshot = snapshots
+          .where((item) => item.path == checkoutPath)
+          .firstOrNull;
+      worktree = await _worktrees.upsert(
+        WorktreeDto(
+          id: request.id,
+          workspaceId: workspace.id,
+          name: branch,
+          path: checkoutPath,
+          branch: snapshot?.branch ?? branch,
+          head: snapshot?.head,
+          kind: WorktreeKind.managed,
+          isCoderOwned: true,
+          createdAt: _clock.nowUtc(),
+        ),
+      );
+    } finally {
+      final remaining = _pendingManagedWorktreePaths[checkoutPath]! - 1;
+      if (remaining == 0) {
+        _pendingManagedWorktreePaths.remove(checkoutPath);
+      } else {
+        _pendingManagedWorktreePaths[checkoutPath] = remaining;
+      }
+    }
     final hookRuns = await _runHooks(
       WorktreeHookPhase.setup,
       workspace: workspace,
@@ -457,6 +473,12 @@ final class WorkspaceOperations {
       final existing = await _worktrees.getByPathIncludingArchived(
         snapshot.path,
       );
+      if (existing == null &&
+          _pendingManagedWorktreePaths.keys.any(
+            (pending) => p.equals(pending, snapshot.path),
+          )) {
+        continue;
+      }
       final isCheckout = index == 0;
       final worktree = await _worktrees.upsert(
         WorktreeDto(
