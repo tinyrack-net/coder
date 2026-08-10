@@ -2384,6 +2384,56 @@ void main() {
       );
       expect(File(saved.sourcePath).existsSync(), isTrue);
 
+      final externalPath = p.join(home.path, 'external-worktree');
+      await _runGit(repository.path, <String>[
+        'worktree',
+        'add',
+        '-b',
+        'external-race',
+        externalPath,
+      ]);
+      final canonicalExternalPath = await Directory(
+        externalPath,
+      ).resolveSymbolicLinks();
+      final refreshed = await client.refreshWorkspace('git-workspace');
+      expect(
+        refreshed.worktrees.map((worktree) => worktree.path),
+        contains(
+          predicate<String>((item) => p.equals(item, canonicalExternalPath)),
+        ),
+      );
+      final external = refreshed.worktrees.singleWhere(
+        (worktree) => p.equals(worktree.path, canonicalExternalPath),
+      );
+      await _runGit(repository.path, <String>[
+        'worktree',
+        'remove',
+        '--force',
+        externalPath,
+      ]);
+      await expectLater(
+        client.createTerminal(
+          id: 'missing-worktree-terminal',
+          worktreeId: external.id,
+          title: 'Missing worktree',
+          columns: 80,
+          rows: 24,
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            'worktree_unavailable',
+          ),
+        ),
+      );
+      expect(
+        (await client.getWorkspaceCatalog()).worktrees,
+        isNot(
+          contains(predicate<WorktreeDto>((item) => item.id == external.id)),
+        ),
+      );
+
       final managed = await client.createWorktree(
         id: 'managed-worktree',
         workspaceId: 'git-workspace',
@@ -2421,7 +2471,9 @@ void main() {
       expect((await client.getWorkspaceCatalog()).workspaces, isEmpty);
     },
     tags: const <String>[
+      'feature_test__workspace_catalog__verticalSlice',
       'feature_test__worktree_lifecycle__verticalSlice',
+      'feature_test__terminal_lifecycle__verticalSlice',
       'feature_test__project_settings__verticalSlice',
     ],
   );

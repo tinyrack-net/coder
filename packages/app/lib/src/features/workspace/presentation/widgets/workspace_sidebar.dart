@@ -23,7 +23,8 @@ typedef _WorkspaceEntry = ({
   List<WorktreeDto> worktrees,
 });
 
-typedef _WorkspaceNavValue = ({
+/// Selection value used by the workspace navigation tree.
+typedef WorkspaceNavValue = ({
   String hostId,
   String workspaceId,
   String? worktreeId,
@@ -37,6 +38,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     required this.catalog,
     required this.homeSessions,
     required this.selected,
+    required this.treeController,
     required this.onNewWorkspace,
     required this.onSelect,
     required this.onSelectSession,
@@ -56,6 +58,9 @@ class WorkspaceSidebar extends ConsumerWidget {
 
   /// Currently open checkout, when any.
   final WorkspaceSelection? selected;
+
+  /// Owns expansion state across workspace route changes.
+  final TRTreeNavController<WorkspaceNavValue> treeController;
 
   /// Opens the new-workspace composer.
   final VoidCallback onNewWorkspace;
@@ -125,6 +130,31 @@ class WorkspaceSidebar extends ConsumerWidget {
     // Connected daemons whose catalog has not arrived yet: their sections are
     // still loading, which must never read as "no workspaces".
     final pendingHosts = catalog.value?.hasPendingHosts ?? false;
+    final groupsToExpand = <WorkspaceNavValue>{
+      if (entries.length == 1)
+        (
+          hostId: entries.single.hostId,
+          workspaceId: entries.single.workspace.id,
+          worktreeId: null,
+        ),
+      if (selected case final selection?)
+        (
+          hostId: selection.hostId,
+          workspaceId: selection.workspaceId,
+          worktreeId: null,
+        ),
+    };
+    final collapsedTargets = groupsToExpand
+        .where((group) => !treeController.expanded.contains(group))
+        .toList(growable: false);
+    if (collapsedTargets.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        for (final group in collapsedTargets) {
+          treeController.setExpanded(group, true);
+        }
+      });
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -238,10 +268,11 @@ class WorkspaceSidebar extends ConsumerWidget {
           const SizedBox(height: TRSpacing.medium),
         ],
         if (entries.isNotEmpty)
-          TRTreeNav<_WorkspaceNavValue>.controlled(
+          TRTreeNav<WorkspaceNavValue>.controlled(
             key: const ValueKey<String>('workspace-sidebar-tree'),
             pageStorageId: 'workspace-sidebar-tree',
             semanticLabel: l10n.workspacesTitle,
+            controller: treeController,
             value: selected == null
                 ? null
                 : (
@@ -249,7 +280,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                     workspaceId: selected!.workspaceId,
                     worktreeId: selected!.worktreeId,
                   ),
-            items: <TRTreeNavItem<_WorkspaceNavValue>>[
+            items: <TRTreeNavItem<WorkspaceNavValue>>[
               for (final entry in entries)
                 _treeItem(context, ref, l10n, entry, entries.length),
             ],
@@ -269,7 +300,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     );
   }
 
-  TRTreeNavItem<_WorkspaceNavValue> _treeItem(
+  TRTreeNavItem<WorkspaceNavValue> _treeItem(
     BuildContext context,
     WidgetRef ref,
     AppLocalizations l10n,
@@ -277,7 +308,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     int workspaceCount,
   ) {
     final workspace = entry.workspace;
-    return TRTreeNavGroup<_WorkspaceNavValue>(
+    return TRTreeNavGroup<WorkspaceNavValue>(
       value: (
         hostId: entry.hostId,
         workspaceId: workspace.id,
@@ -316,9 +347,9 @@ class WorkspaceSidebar extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      children: <TRTreeNavItem<_WorkspaceNavValue>>[
+      children: <TRTreeNavItem<WorkspaceNavValue>>[
         for (final worktree in entry.worktrees)
-          TRTreeNavLeaf<_WorkspaceNavValue>(
+          TRTreeNavLeaf<WorkspaceNavValue>(
             value: (
               hostId: entry.hostId,
               workspaceId: workspace.id,

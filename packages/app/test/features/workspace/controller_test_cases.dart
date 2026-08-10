@@ -681,6 +681,33 @@ void _registerWorkspaceControllerTests() {
   );
 
   test(
+    'a catalog response is ignored after its provider is disposed',
+    () async {
+      final gate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        workspaceCatalogGate: gate.future,
+      );
+      final errors = <Object>[];
+
+      await runZonedGuarded(() async {
+        final container = _container(api);
+        await container.read(hostRegistryControllerProvider.future);
+        await Future<void>.delayed(Duration.zero);
+        await container.read(workspaceCatalogControllerProvider.future);
+
+        container.dispose();
+        gate.complete();
+        await Future<void>.delayed(Duration.zero);
+      }, (error, _) => errors.add(error));
+
+      expect(errors, isEmpty);
+    },
+    tags: const <String>['feature_test__workspace_catalog__unit'],
+  );
+
+  test(
     'pending terminal tabs appear instantly, persist nothing, and promote '
     'or roll back',
     () async {

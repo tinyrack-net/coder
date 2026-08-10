@@ -549,7 +549,9 @@ abstract final class DaemonApplication {
           if (worktree == null || worktree.archivedAt != null) {
             throw const FormatException('Active worktree not found.');
           }
-          return worktree.path;
+          return effectiveWorkspacePaths.canonicalizeExistingDirectory(
+            worktree.path,
+          );
         },
         shellFor: (worktreeId) async {
           final worktree = await database.worktreeDao.getById(worktreeId);

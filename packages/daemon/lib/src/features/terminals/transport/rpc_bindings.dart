@@ -20,17 +20,28 @@ List<RpcBindingDescriptor> terminalRpcBindings({
     );
   }),
   RpcBinding(terminalsCreateProcedure, (request, _) async {
-    return TerminalResultDto(
-      terminal: terminalToDto(
-        await terminals.create(
-          id: request.id,
-          worktreeId: request.worktreeId,
-          title: request.title,
-          columns: request.columns,
-          rows: request.rows,
+    try {
+      return TerminalResultDto(
+        terminal: terminalToDto(
+          await terminals.create(
+            id: request.id,
+            worktreeId: request.worktreeId,
+            title: request.title,
+            columns: request.columns,
+            rows: request.rows,
+          ),
         ),
-      ),
-    );
+      );
+    } on TerminalCreationException catch (error) {
+      throw RpcFailureException(
+        code: switch (error.reason) {
+          TerminalCreationFailureReason.worktreeUnavailable =>
+            'worktree_unavailable',
+          TerminalCreationFailureReason.startFailed => 'terminal_start_failed',
+        },
+        message: error.message,
+      );
+    }
   }),
   RpcBinding(terminalsAttachProcedure, (request, _) async {
     return terminalAttachmentToDto(

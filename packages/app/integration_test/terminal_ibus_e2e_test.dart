@@ -116,6 +116,8 @@ void main() {
         matching: find.text('main'),
       );
       await _pumpUntilFinder(tester, sidebarCheckout, 'the Git checkout');
+      await tester.ensureVisible(sidebarCheckout);
+      await tester.pumpAndSettle();
       await tester.tap(sidebarCheckout);
       await tester.pumpAndSettle();
       final catalog = await setupClient.workspaces.getWorkspaceCatalog();

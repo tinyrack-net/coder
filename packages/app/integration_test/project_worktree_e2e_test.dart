@@ -156,6 +156,8 @@ void main() {
       final menu = find.byKey(
         const ValueKey<String>('worktree-menu-cancelled-archive'),
       );
+      await tester.ensureVisible(menu);
+      await tester.pumpAndSettle();
       await tester.tap(menu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Archive'));

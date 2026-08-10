@@ -50,6 +50,9 @@ abstract interface class WorktreeRepository {
   /// Finds an active worktree by canonical checkout path.
   Future<WorktreeDto?> getByPath(String path);
 
+  /// Finds a worktree by path even when its catalog entry was archived.
+  Future<WorktreeDto?> getByPathIncludingArchived(String path);
+
   /// Creates or updates a worktree registration.
   Future<WorktreeDto> upsert(WorktreeDto worktree);
 

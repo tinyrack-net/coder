@@ -321,6 +321,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get directoryBrowserLoading => 'Loading directories';
 
   @override
+  String get terminalCreationFailed => 'Couldn\'t create terminal';
+
+  @override
+  String get terminalWorktreeUnavailable =>
+      'This worktree is no longer available. Choose another worktree.';
+
+  @override
+  String get terminalShellStartFailed =>
+      'The configured terminal shell couldn\'t be started. Check terminal settings and try again.';
+
+  @override
   String get terminalMenuCopy => 'Copy';
 
   @override

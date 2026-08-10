@@ -59,6 +59,8 @@ void main() {
     required List<HostRuntimeSnapshot> hosts,
     required Map<String, WorkspaceCatalogDto> catalogs,
     ValueChanged<WorkspaceSelection>? onSelect,
+    WorkspaceSelection? selected,
+    TRTreeNavController<WorkspaceNavValue>? treeController,
     void Function(WorkspaceSelection selection, String sessionId)?
     onSelectSession,
     List<HomeSessionEntry> homeSessions = const <HomeSessionEntry>[],
@@ -93,7 +95,9 @@ void main() {
               homeSessions: AsyncValue<List<HomeSessionEntry>>.data(
                 homeSessions,
               ),
-              selected: null,
+              selected: selected,
+              treeController:
+                  treeController ?? TRTreeNavController<WorkspaceNavValue>(),
               onNewWorkspace: () {},
               onSelect: onSelect ?? (_) {},
               onSelectSession: onSelectSession ?? (_, _) {},
@@ -106,6 +110,53 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('selecting a worktree expands its collapsed workspace', (
+    tester,
+  ) async {
+    final first = workspace('first', 'First');
+    final second = workspace('second', 'Second');
+    final checkout = worktree('first-main', first.id, 'main');
+    final runtime = host('server', 'Server');
+    final controller = TRTreeNavController<WorkspaceNavValue>();
+    addTearDown(controller.dispose);
+
+    await pump(
+      tester,
+      hosts: <HostRuntimeSnapshot>[runtime],
+      catalogs: <String, WorkspaceCatalogDto>{
+        runtime.id: WorkspaceCatalogDto(
+          workspaces: <WorkspaceDto>[first, second],
+          worktrees: <WorktreeDto>[checkout],
+        ),
+      },
+      treeController: controller,
+    );
+    expect(find.text('main'), findsNothing);
+
+    await pump(
+      tester,
+      hosts: <HostRuntimeSnapshot>[runtime],
+      catalogs: <String, WorkspaceCatalogDto>{
+        runtime.id: WorkspaceCatalogDto(
+          workspaces: <WorkspaceDto>[first, second],
+          worktrees: <WorktreeDto>[checkout],
+        ),
+      },
+      selected: WorkspaceSelection(
+        hostId: runtime.id,
+        workspaceId: first.id,
+        worktreeId: checkout.id,
+      ),
+      treeController: controller,
+    );
+
+    expect(find.text('main'), findsOneWidget);
+    expect(
+      controller.expanded,
+      contains((hostId: runtime.id, workspaceId: first.id, worktreeId: null)),
+    );
+  });
 
   testWidgets(
     'New Workspace separator matches the title bar border in light and dark '

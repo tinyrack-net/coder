@@ -72,6 +72,31 @@ class WorkspacePage extends ConsumerStatefulWidget {
 class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   /// Whether this state already queued the saved-worktree restore.
   bool _restoreScheduled = false;
+  bool _missingSelectionScheduled = false;
+  late final TRTreeNavController<WorkspaceNavValue> _workspaceTreeController;
+
+  @override
+  void initState() {
+    super.initState();
+    final selection = widget.selection;
+    _workspaceTreeController = TRTreeNavController<WorkspaceNavValue>(
+      expanded: selection == null
+          ? const <WorkspaceNavValue>[]
+          : <WorkspaceNavValue>[
+              (
+                hostId: selection.hostId,
+                workspaceId: selection.workspaceId,
+                worktreeId: null,
+              ),
+            ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _workspaceTreeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +104,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     final catalog = ref.watch(workspaceCatalogControllerProvider);
     final collapsed = registry.value?.settings.sidebarCollapsed ?? false;
     _restoreSelection(registry.value, catalog.value);
+    _replaceMissingSelection(catalog.value);
     return LayoutBuilder(
       builder: (context, pageConstraints) {
         final compact =
@@ -156,6 +182,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   catalog: catalog,
                   homeSessions: _homeSessions(catalog.value),
                   selected: widget.selection,
+                  treeController: _workspaceTreeController,
                   onNewWorkspace: () =>
                       const WorkspaceHomeRoute(compose: true).replace(context),
                   onSelect: (selection) => _goWorktree(context, selection),
@@ -268,6 +295,53 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       _goWorktree(context, saved);
     });
   }
+
+  void _replaceMissingSelection(UnifiedWorkspaceCatalogState? catalog) {
+    final selection = widget.selection;
+    if (selection == null || catalog == null || _missingSelectionScheduled) {
+      return;
+    }
+    final hostCatalog = catalog.catalogs[selection.hostId];
+    if (hostCatalog == null) return;
+    final exists = hostCatalog.worktrees.any(
+      (worktree) =>
+          worktree.id == selection.worktreeId &&
+          worktree.workspaceId == selection.workspaceId,
+    );
+    if (exists) return;
+    _missingSelectionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_confirmMissingSelection(selection));
+    });
+  }
+
+  Future<void> _confirmMissingSelection(WorkspaceSelection selection) async {
+    try {
+      await ref
+          .read(workspaceCatalogControllerProvider.notifier)
+          .refreshHost(selection.hostId);
+    } on CoderClientException {
+      _missingSelectionScheduled = false;
+      return;
+    }
+    if (!mounted || widget.selection != selection) {
+      _missingSelectionScheduled = false;
+      return;
+    }
+    final refreshed = ref.read(workspaceCatalogControllerProvider).value;
+    final stillMissing =
+        refreshed?.catalogs[selection.hostId]?.worktrees.any(
+          (worktree) =>
+              worktree.id == selection.worktreeId &&
+              worktree.workspaceId == selection.workspaceId,
+        ) !=
+        true;
+    if (stillMissing) {
+      const WorkspaceHomeRoute().replace(context);
+      return;
+    }
+    _missingSelectionScheduled = false;
+  }
 }
 
 class _SessionArea extends ConsumerStatefulWidget {
@@ -294,6 +368,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   // a local tab is not immediately undone while the route is being replaced.
   String? _openedAgentId;
   String? _openedTerminalId;
+  CoderClientException? _terminalCreationError;
 
   @override
   Widget build(BuildContext context) {
@@ -306,9 +381,32 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         semanticLabel: AppLocalizations.of(context).workspaceLoading,
       );
     }
-    return widget.mobile
+    final content = widget.mobile
         ? _buildMobile(context, workspace)
         : _buildNode(context, workspace, workspace.root);
+    final error = _terminalCreationError;
+    if (error == null) return content;
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(TRSpacing.small),
+          child: TRAlert(
+            key: const ValueKey<String>('terminal-creation-error'),
+            variant: TRStatusVariant.danger,
+            title: TRText.inherit(l10n.terminalCreationFailed),
+            description: TRText.inherit(
+              switch (error.code) {
+                'worktree_unavailable' => l10n.terminalWorktreeUnavailable,
+                'terminal_start_failed' => l10n.terminalShellStartFailed,
+                _ => error.message,
+              },
+            ),
+          ),
+        ),
+        Expanded(child: content),
+      ],
+    );
   }
 
   void _openRequestedRoute(
@@ -776,6 +874,9 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     final tabs = ref.read(
       sessionTabsControllerProvider(widget.selection).notifier,
     );
+    if (_terminalCreationError != null) {
+      setState(() => _terminalCreationError = null);
+    }
     // The placeholder tab appears before the daemon answers, so creating a
     // terminal never leaves the pane frozen while the PTY spawns.
     final pendingTabId = tabs.openPendingTerminal(paneId);
@@ -789,6 +890,15 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             ).notifier,
           )
           .create();
+    } on CoderClientException catch (error) {
+      await tabs.removePendingTerminal(pendingTabId);
+      if (mounted) setState(() => _terminalCreationError = error);
+      if (error.code == 'worktree_unavailable') {
+        await ref
+            .read(workspaceCatalogControllerProvider.notifier)
+            .refreshHost(widget.selection.hostId);
+      }
+      return;
     } on Exception catch (error) {
       await tabs.removePendingTerminal(pendingTabId);
       if (mounted) await _showTerminalCreateError(error);

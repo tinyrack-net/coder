@@ -321,6 +321,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get directoryBrowserLoading => 'ディレクトリを読み込み中';
 
   @override
+  String get terminalCreationFailed => 'ターミナルを作成できませんでした';
+
+  @override
+  String get terminalWorktreeUnavailable =>
+      'このワークツリーは利用できなくなりました。別のワークツリーを選択してください。';
+
+  @override
+  String get terminalShellStartFailed =>
+      '設定されたターミナルシェルを起動できませんでした。ターミナル設定を確認して、もう一度お試しください。';
+
+  @override
   String get terminalMenuCopy => 'Copy';
 
   @override

@@ -27,6 +27,30 @@ typedef WorktreePathResolver = Future<String> Function(String worktreeId);
 /// Resolves the effective project, host, or OS shell.
 typedef ShellResolver = Future<TerminalShell> Function(String worktreeId);
 
+/// Expected reason a terminal could not be created.
+enum TerminalCreationFailureReason {
+  /// The selected worktree no longer resolves to a live directory.
+  worktreeUnavailable,
+
+  /// The resolved shell could not be started by the platform PTY.
+  startFailed,
+}
+
+/// Sanitized application failure raised before a terminal becomes live.
+final class TerminalCreationException implements Exception {
+  /// Creates a typed terminal creation failure.
+  const TerminalCreationException(this.reason, this.message);
+
+  /// Stable reason translated by the transport boundary.
+  final TerminalCreationFailureReason reason;
+
+  /// User-safe diagnostic supplied to the client.
+  final String message;
+
+  @override
+  String toString() => 'TerminalCreationException(${reason.name}): $message';
+}
+
 /// Owns live terminals and bounded replay while the daemon is running.
 final class TerminalService {
   /// Creates a terminal service around injected host boundaries.
@@ -80,9 +104,18 @@ final class TerminalService {
     if (shell.executable.trim().isEmpty) {
       throw const FormatException('Shell executable must not be empty.');
     }
+    final String workingDirectory;
+    try {
+      workingDirectory = await worktreePath(worktreeId);
+    } on FormatException {
+      throw const TerminalCreationException(
+        TerminalCreationFailureReason.worktreeUnavailable,
+        'The worktree directory is no longer available.',
+      );
+    }
     final process = await gateway.start(
       shell: shell,
-      workingDirectory: await worktreePath(worktreeId),
+      workingDirectory: workingDirectory,
       columns: columns,
       rows: rows,
     );

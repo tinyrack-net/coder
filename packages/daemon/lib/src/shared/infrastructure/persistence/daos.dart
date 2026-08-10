@@ -147,6 +147,14 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
   }
 
   @override
+  Future<WorktreeDto?> getByPathIncludingArchived(String path) async {
+    final row = await (select(
+      worktrees,
+    )..where((table) => table.path.equals(path))).getSingleOrNull();
+    return row == null ? null : _toDto(row);
+  }
+
+  @override
   Future<WorktreeDto> upsert(WorktreeDto worktree) async {
     await into(worktrees).insertOnConflictUpdate(
       WorktreesCompanion.insert(

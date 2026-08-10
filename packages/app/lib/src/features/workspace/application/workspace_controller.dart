@@ -116,7 +116,10 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
       );
     }
     // The empty snapshot from build installs after this notifier returns, so
-    // a catalog that answers first waits for it before merging.
+    // a catalog that answers first waits for it before merging. Check before
+    // reading the provider future because a late daemon response may arrive
+    // after a registry rebuild has disposed this notifier.
+    if (!ref.mounted) return;
     await future;
     if (!ref.mounted) return;
     final current = state.requireValue;

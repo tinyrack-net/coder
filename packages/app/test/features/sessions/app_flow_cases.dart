@@ -517,6 +517,107 @@ void _registerSessionsAppFlows() {
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
   );
 
+  testWidgets(
+    'new-tab menu reports terminal creation failures without an exception',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        terminalCreateError: const CoderClientException(
+          'The worktree directory is no longer available.',
+          code: 'worktree_unavailable',
+        ),
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        WorktreeRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-new-tab-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-new-terminal')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRAlert), findsOneWidget);
+      expect(find.text('터미널을 만들 수 없어요'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(TRAlert)).flagsCollection.isLiveRegion,
+        isTrue,
+      );
+      expect(find.byType(TerminalView), findsNothing);
+      expect(await api.terminals.listTerminals(checkout.id), isEmpty);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-new-tab-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-new-terminal')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TRAlert), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  for (final failure in <({String code, String message, String expected})>[
+    (
+      code: 'terminal_start_failed',
+      message: 'The configured terminal shell could not be started.',
+      expected: '설정된 터미널 셸을 시작할 수 없습니다. 터미널 설정을 확인하고 다시 시도하세요.',
+    ),
+    (
+      code: 'unexpected_terminal_error',
+      message: 'Safe daemon detail.',
+      expected: 'Safe daemon detail.',
+    ),
+  ]) {
+    testWidgets(
+      'terminal failure ${failure.code} has a safe description',
+      (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(1100, 760));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final router = await _pumpRoute(
+          tester,
+          FakeCoderApi(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[checkout],
+            terminalCreateError: CoderClientException(
+              failure.message,
+              code: failure.code,
+            ),
+          ),
+          WorktreeRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: checkout.id,
+          ).location,
+        );
+        addTearDown(router.dispose);
+
+        await tester.tap(find.byKey(const ValueKey('workspace-new-tab-menu')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('workspace-new-terminal')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(failure.expected), findsOneWidget);
+        expect(find.byType(TerminalView), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+      tags: const <String>['feature_test__terminal_lifecycle__widget'],
+    );
+  }
+
   testWidgets('terminal tab shows attach failures and closes exited shells', (
     tester,
   ) async {

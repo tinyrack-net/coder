@@ -670,6 +670,24 @@ abstract class AppLocalizations {
   /// **'Loading directories'**
   String get directoryBrowserLoading;
 
+  /// No description provided for @terminalCreationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create terminal'**
+  String get terminalCreationFailed;
+
+  /// No description provided for @terminalWorktreeUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This worktree is no longer available. Choose another worktree.'**
+  String get terminalWorktreeUnavailable;
+
+  /// No description provided for @terminalShellStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The configured terminal shell couldn\'t be started. Check terminal settings and try again.'**
+  String get terminalShellStartFailed;
+
   /// No description provided for @terminalMenuCopy.
   ///
   /// In en, this message translates to:
