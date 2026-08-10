@@ -75,10 +75,12 @@ void _registerAgentsAppFlows() {
       await tester.tap(createButton);
       await tester.pumpAndSettle();
       expect(find.text('Reviewer'), findsWidgets);
-      expect(
-        (await api.agents.getAgentDefinition('reviewer')).mode,
-        AgentMode.subagent,
-      );
+      final created = await api.agents.getAgentDefinition('reviewer');
+      expect(created.mode, AgentMode.subagent);
+      // A new agent starts with an empty prompt, so the override stays off
+      // even though the Coder template it is cloned from has it enabled.
+      expect(created.systemPrompt, isEmpty);
+      expect(created.promptEnabled, isFalse);
     },
     tags: const <String>[
       'feature_test__agent_definition_management__widget',

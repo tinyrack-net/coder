@@ -429,7 +429,11 @@ Review the requested code without modifying it.
 
       await File(coder.sourcePath).delete();
       await store.reload();
-      expect((await store.get('coder'))!.name, 'Coder');
+      final reseeded = (await store.get('coder'))!;
+      expect(reseeded.name, 'Coder');
+      // The built-in prompt is the shipped behaviour: a freshly seeded Coder
+      // keeps the custom system prompt switched off.
+      expect(reseeded.promptEnabled, isFalse);
       expect(await store.list(), hasLength(3));
       await store.archive('reviewer');
       expect(await store.listArchived(), hasLength(1));
@@ -437,6 +441,7 @@ Review the requested code without modifying it.
       await store.reload();
       expect(await store.listArchived(), isEmpty);
       final reset = await store.resetCoder();
+      expect(reset.promptEnabled, isFalse);
       expect(reset.systemPrompt, contains('Read relevant code'));
       expect(reset.toolIds, coder.toolIds);
     },
