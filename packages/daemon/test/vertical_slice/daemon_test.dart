@@ -1267,6 +1267,103 @@ void main() {
   );
 
   test(
+    'settings refused during a turn report a code the client can translate',
+    () async {
+      // The mode and the model are read when a turn starts, so the daemon
+      // refuses to move them underneath a running one. That refusal is the
+      // intended behavior, not a defect, and it used to escape as a bare
+      // StateError: the transport turned it into `internal_error`, which the
+      // protocol reserves for defects and the app shows as an unexplained
+      // daemon failure with a trace id.
+      final home = await Directory.systemTemp.createTemp('coder-busy-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-busy-workspace-',
+      );
+      const bearerToken = 'busy-settings-token-0123456789abcdef012';
+      final provider = _SleepProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: bearerToken,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: bearerToken),
+        clientId: 'busy-settings-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final session = await client.createSession(
+        id: 'busy-session',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Busy',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+      );
+      await client.subscribeTimeline(session.id);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'busy-turn',
+        prompt: 'Wait for the build',
+      );
+      await provider.sleeping.future.timeout(_eventTimeout);
+
+      await expectLater(
+        client.sessions.updateSettings(
+          session.id,
+          const SessionSettingsPatchDto(mode: SessionMode.plan),
+        ),
+        throwsA(
+          isA<CoderClientException>()
+              .having(
+                (error) => error.code,
+                'code',
+                RpcErrorCodes.sessionTurnActive,
+              )
+              .having(
+                (error) => error.details['sessionId'],
+                'sessionId',
+                session.id,
+              ),
+        ),
+      );
+
+      // The refusal is transient: the same change lands once the turn ends.
+      await client.notePendingInput(session.id);
+      await provider.outcome.future.timeout(_eventTimeout);
+      await _waitForIdleSession(
+        client,
+        registered.worktrees.single.id,
+        session.id,
+      );
+      expect(
+        (await client.sessions.updateSettings(
+          session.id,
+          const SessionSettingsPatchDto(mode: SessionMode.plan),
+        )).mode,
+        SessionMode.plan,
+      );
+    },
+    tags: const <String>['feature_test__session_lifecycle__verticalSlice'],
+  );
+
+  test(
     'new_context discards the stored history but keeps the timeline',
     () async {
       final home = await Directory.systemTemp.createTemp('coder-reset-home-');

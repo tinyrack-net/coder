@@ -30,6 +30,7 @@ String clientErrorText(
   RpcErrorCodes.worktreeUnavailable => l10n.terminalWorktreeUnavailable,
   RpcErrorCodes.terminalStartFailed => l10n.terminalShellStartFailed,
   RpcErrorCodes.invalidProjectSettings => l10n.errorInvalidProjectSettings,
+  RpcErrorCodes.sessionTurnActive => l10n.errorSessionTurnActive,
   // All four mean the daemon could not make sense of what this app sent,
   // which from the user's side is one problem: the two are out of step.
   RpcErrorCodes.protocolMismatch ||

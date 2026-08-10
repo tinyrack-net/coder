@@ -558,6 +558,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'Daemonで予期しない問題が発生しました。報告する際は以下の内容をコピーしてください。';
 
   @override
+  String get errorSessionTurnActive =>
+      'この sessionは turnを実行中です。完了を待つか停止してから設定を変更してください。';
+
+  @override
+  String get errorSessionSettingFailed => 'Session設定を変更できませんでした。';
+
+  @override
   String get hostStatusOnline => 'Online';
 
   @override

@@ -555,6 +555,13 @@ class AppLocalizationsKo extends AppLocalizations {
       'Daemon에서 예기치 못한 문제가 발생했습니다. 문제를 알릴 때 아래 내용을 복사해 주세요.';
 
   @override
+  String get errorSessionTurnActive =>
+      '이 session은 turn을 실행 중입니다. 끝나기를 기다리거나 중지한 뒤 설정을 바꿔 주세요.';
+
+  @override
+  String get errorSessionSettingFailed => 'Session 설정을 바꾸지 못했습니다.';
+
+  @override
   String get hostStatusOnline => '온라인';
 
   @override

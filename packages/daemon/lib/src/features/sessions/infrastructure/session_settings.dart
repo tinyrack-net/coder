@@ -3,6 +3,33 @@ import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
+/// Reports a settings change refused because the session's turn is running.
+///
+/// Typed rather than a bare [StateError] so the transport can answer with a
+/// code the client can translate. An escaping [StateError] would arrive as
+/// `internal_error`, which the protocol defines as a defect and the app shows
+/// as an unexplained daemon failure, even though refusing the change is the
+/// intended behavior and the user only has to wait for the turn.
+final class SessionTurnActiveFailure implements Exception {
+  /// Reports the [setting] that could not move on [sessionId].
+  const SessionTurnActiveFailure({
+    required this.sessionId,
+    required this.setting,
+  });
+
+  /// Session whose turn is still running.
+  final String sessionId;
+
+  /// Name of the refused setting, used for diagnostics.
+  final String setting;
+
+  /// Diagnostic description; clients translate the protocol code instead.
+  String get message => 'Cannot change the $setting while a turn is running.';
+
+  @override
+  String toString() => 'SessionTurnActiveFailure($sessionId): $message';
+}
+
 /// Session preference mutations exposed to the daemon transport.
 abstract interface class SessionSettingsPort {
   /// Applies an atomic nullable patch to one session.
@@ -158,7 +185,7 @@ final class SessionSettingsService implements SessionSettingsPort {
 
   void _requireIdle(String sessionId, String setting) {
     if (_hasActiveTurn(sessionId)) {
-      throw StateError('Cannot change the $setting while a turn is running.');
+      throw SessionTurnActiveFailure(sessionId: sessionId, setting: setting);
     }
   }
 

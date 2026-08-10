@@ -656,6 +656,14 @@
   "@errorInternalDaemon": {
     "description": "Unexpected daemon-side failure with a trace id in the details."
   },
+  "errorSessionTurnActive": "This session is running a turn. Wait for it to finish or stop it, then change the setting.",
+  "@errorSessionTurnActive": {
+    "description": "A session setting such as the mode or the model was changed while a turn was still streaming."
+  },
+  "errorSessionSettingFailed": "The session setting could not be changed.",
+  "@errorSessionSettingFailed": {
+    "description": "Fallback shown when a session setting change fails for a reason the daemon did not name."
+  },
   "hostStatusOnline": "Online",
   "@hostStatusOnline": {
     "description": "Daemon runtime status."

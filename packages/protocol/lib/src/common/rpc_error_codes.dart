@@ -68,6 +68,14 @@ abstract final class RpcErrorCodes {
   /// A project `coder.json` file could not be parsed.
   static const String invalidProjectSettings = 'invalid_project_settings';
 
+  /// A setting was changed on a session whose turn is still running.
+  ///
+  /// The mode, the model, and its controls are read when a turn starts, so the
+  /// daemon refuses to move them underneath one that is already streaming.
+  /// Waiting for the turn to finish, or cancelling it, makes the same change
+  /// succeed.
+  static const String sessionTurnActive = 'session_turn_active';
+
   /// Every code this protocol revision defines.
   ///
   /// Clients use this to assert their translation table stays exhaustive.
@@ -92,5 +100,6 @@ abstract final class RpcErrorCodes {
     worktreeUnavailable,
     terminalStartFailed,
     invalidProjectSettings,
+    sessionTurnActive,
   };
 }
