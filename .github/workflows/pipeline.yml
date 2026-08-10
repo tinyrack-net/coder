@@ -216,6 +216,43 @@ jobs:
           path: ibus-terminal-artifacts
           if-no-files-found: warn
 
+  linux-ibus-terminal-wayland-e2e:
+    name: Linux IBus Terminal Wayland E2E
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    # Regression gate for the Wayland-only Hangul reorder (안녕하세요. →
+    # 안세녕하요.): red before the termworld arrival-order fix landed, green
+    # since the pin moved past it.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/install-linux-desktop-deps
+        with:
+          extra-packages: >-
+            ibus ibus-gtk3 ibus-hangul sway grim iso-codes
+            libwayland-dev libwayland-bin libxkbcommon-dev
+      - name: Run terminal_ibus_wayland_e2e_test.dart through the embedded PTY
+        env:
+          GDK_BACKEND: wayland
+          GTK_IM_MODULE: ibus
+          IBUS_USE_PORTAL: '0'
+          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+        run: |
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/coder-ibus-wl-config"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/coder-ibus-wl-runtime"
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_RUNTIME_DIR" \
+            "$GITHUB_WORKSPACE/ibus-terminal-wayland-artifacts"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- \
+            bash tool/run_linux_ibus_terminal_wayland_e2e.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-ibus-terminal-wayland-e2e
+          path: ibus-terminal-wayland-artifacts
+          if-no-files-found: warn
+
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
     if: github.event_name != 'schedule'
@@ -339,6 +376,7 @@ jobs:
       - golden-linux
       - debug-e2e-linux
       - linux-ibus-terminal-e2e
+      - linux-ibus-terminal-wayland-e2e
       - mobile-debug-build
       - desktop-debug-build
       - web-build

@@ -1,0 +1,19 @@
+name: ime_delta_probe
+description: Throwaway probe that records the flutter/textinput channel while typing into a termworld TerminalView.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  termworld:
+    git:
+      url: https://github.com/tinyrack-net/flutter-packages.git
+      path: packages/termworld
+      ref: c21627dcd525f899223ac584a931c72ddf6f2b12
+
+flutter:
+  uses-material-design: true
