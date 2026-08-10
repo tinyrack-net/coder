@@ -154,6 +154,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get advancedResetConfirmAccept => '초기화';
 
   @override
+  String get advancedResetDone => '초기 설정으로 되돌렸습니다.';
+
+  @override
   String get advancedResetFailedTitle => '초기화 실패';
 
   @override
@@ -221,6 +224,15 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get generalStartupMinimizedDescription =>
       '로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.';
+
+  @override
+  String get generalAppearanceFailed => '테마를 바꾸지 못했습니다.';
+
+  @override
+  String get generalLanguageFailed => '언어를 바꾸지 못했습니다.';
+
+  @override
+  String get generalStartupFailed => '시작 설정을 바꾸지 못했습니다.';
 
   @override
   String generalStartupCloseNotice(String appDisplayName) {

@@ -194,6 +194,10 @@
   "@advancedResetConfirmAccept": {
     "description": "Confirm action of the full reset dialog."
   },
+  "advancedResetDone": "Reset to factory defaults.",
+  "@advancedResetDone": {
+    "description": "Reported after a factory reset finishes and the app returns to the workspace."
+  },
   "advancedResetFailedTitle": "Reset failed",
   "@advancedResetFailedTitle": {
     "description": "Title of the alert shown when a reset fails."
@@ -281,6 +285,18 @@
   "generalStartupMinimizedDescription": "A login-time launch goes straight to the tray without opening a window.",
   "@generalStartupMinimizedDescription": {
     "description": "Explains that start-minimized applies only to login launches."
+  },
+  "generalAppearanceFailed": "Could not change the appearance.",
+  "@generalAppearanceFailed": {
+    "description": "Reported when the chosen theme could not be stored."
+  },
+  "generalLanguageFailed": "Could not change the language.",
+  "@generalLanguageFailed": {
+    "description": "Reported when the chosen language could not be stored."
+  },
+  "generalStartupFailed": "Could not change the startup setting.",
+  "@generalStartupFailed": {
+    "description": "Reported when a login-item preference could not be applied."
   },
   "generalStartupCloseNotice": "Closing the window keeps {appDisplayName} running in the tray.",
   "@generalStartupCloseNotice": {

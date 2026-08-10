@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
@@ -6,6 +8,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -81,13 +84,21 @@ class _StartupSection extends ConsumerWidget {
           value: settings?.startAtBoot ?? true,
           onChanged: settings == null
               ? null
-              : (enabled) async {
-                  await controller.setStartAtBoot(enabled: enabled);
-                  await autostart.apply(
-                    enabled: enabled,
-                    minimized: settings.startMinimizedAtBoot,
-                  );
-                },
+              : (enabled) => unawaited(
+                  ref.read(toastMessengerProvider).run(
+                    () async {
+                      await controller.setStartAtBoot(enabled: enabled);
+                      await autostart.apply(
+                        enabled: enabled,
+                        minimized: settings.startMinimizedAtBoot,
+                      );
+                    },
+                    failure: l10n.generalStartupFailed,
+                    // The switch snaps back to the stored value on its own, so
+                    // only the failure needs saying.
+                    id: 'general-settings-startup',
+                  ),
+                ),
         ),
         CoderSwitchRow(
           key: const ValueKey<String>('general-settings-start-minimized'),
@@ -102,13 +113,21 @@ class _StartupSection extends ConsumerWidget {
           // meaningless while the app is not registered to launch.
           onChanged: settings == null || !settings.startAtBoot
               ? null
-              : (minimized) async {
-                  await controller.setStartMinimizedAtBoot(enabled: minimized);
-                  await autostart.apply(
-                    enabled: settings.startAtBoot,
-                    minimized: minimized,
-                  );
-                },
+              : (minimized) => unawaited(
+                  ref.read(toastMessengerProvider).run(
+                    () async {
+                      await controller.setStartMinimizedAtBoot(
+                        enabled: minimized,
+                      );
+                      await autostart.apply(
+                        enabled: settings.startAtBoot,
+                        minimized: minimized,
+                      );
+                    },
+                    failure: l10n.generalStartupFailed,
+                    id: 'general-settings-startup',
+                  ),
+                ),
         ),
       ],
     );
@@ -149,9 +168,17 @@ class _AppearanceSection extends ConsumerWidget {
               // the app should go back to following the system.
               onValueChange: settings == null
                   ? null
-                  : (mode) => ref
-                        .read(hostRegistryControllerProvider.notifier)
-                        .setThemeMode(mode ?? AppThemeMode.system),
+                  : (mode) => unawaited(
+                      ref.read(toastMessengerProvider).run(
+                        () => ref
+                            .read(hostRegistryControllerProvider.notifier)
+                            .setThemeMode(mode ?? AppThemeMode.system),
+                        failure: l10n.generalAppearanceFailed,
+                        // A theme that changed is its own confirmation, so a
+                        // success here would only be noise.
+                        id: 'general-settings-theme-mode',
+                      ),
+                    ),
             ),
           ),
         ),
@@ -203,9 +230,15 @@ class _LanguageSection extends ConsumerWidget {
               ],
               onValueChange: settings == null
                   ? null
-                  : (tag) => ref
-                        .read(hostRegistryControllerProvider.notifier)
-                        .setLocaleTag(tag),
+                  : (tag) => unawaited(
+                      ref.read(toastMessengerProvider).run(
+                        () => ref
+                            .read(hostRegistryControllerProvider.notifier)
+                            .setLocaleTag(tag),
+                        failure: l10n.generalLanguageFailed,
+                        id: 'general-settings-language',
+                      ),
+                    ),
             ),
           ),
         ),

@@ -154,6 +154,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get advancedResetConfirmAccept => 'Reset';
 
   @override
+  String get advancedResetDone => 'Reset to factory defaults.';
+
+  @override
   String get advancedResetFailedTitle => 'Reset failed';
 
   @override
@@ -223,6 +226,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get generalStartupMinimizedDescription =>
       'A login-time launch goes straight to the tray without opening a window.';
+
+  @override
+  String get generalAppearanceFailed => 'Could not change the appearance.';
+
+  @override
+  String get generalLanguageFailed => 'Could not change the language.';
+
+  @override
+  String get generalStartupFailed => 'Could not change the startup setting.';
 
   @override
   String generalStartupCloseNotice(String appDisplayName) {

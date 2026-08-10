@@ -376,6 +376,12 @@ abstract class AppLocalizations {
   /// **'Reset'**
   String get advancedResetConfirmAccept;
 
+  /// Reported after a factory reset finishes and the app returns to the workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to factory defaults.'**
+  String get advancedResetDone;
+
   /// Title of the alert shown when a reset fails.
   ///
   /// In en, this message translates to:
@@ -495,6 +501,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A login-time launch goes straight to the tray without opening a window.'**
   String get generalStartupMinimizedDescription;
+
+  /// Reported when the chosen theme could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the appearance.'**
+  String get generalAppearanceFailed;
+
+  /// Reported when the chosen language could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the language.'**
+  String get generalLanguageFailed;
+
+  /// Reported when a login-item preference could not be applied.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the startup setting.'**
+  String get generalStartupFailed;
 
   /// Explains that the window close button no longer quits the app.
   ///
