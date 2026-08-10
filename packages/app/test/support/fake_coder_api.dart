@@ -167,6 +167,7 @@ final class FakeCoderApi
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
        _terminals = List<TerminalDto>.of(terminals ?? const <TerminalDto>[]),
+       _terminalReplays = _groupReplay(terminalReplay),
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_coder],
        ),
@@ -354,7 +355,21 @@ final class FakeCoderApi
   final List<WorkspaceCatalogDto> workspaceCatalogResponses;
   final List<SessionDto> _agents;
   final List<TerminalDto> _terminals;
+  final Map<String, List<TerminalOutputDto>> _terminalReplays;
   ShellSpecDto? _terminalShell;
+
+  /// Groups seeded scrollback by terminal so attach can honour a resume cursor.
+  static Map<String, List<TerminalOutputDto>> _groupReplay(
+    List<TerminalOutputDto> replay,
+  ) {
+    final grouped = <String, List<TerminalOutputDto>>{};
+    for (final output in replay) {
+      grouped
+          .putIfAbsent(output.terminalId, () => <TerminalOutputDto>[])
+          .add(output);
+    }
+    return grouped;
+  }
 
   /// Host shell saved through the settings API.
   ShellSpecDto? get terminalShell => _terminalShell;
@@ -1254,20 +1269,108 @@ final class FakeCoderApi
   @override
   Future<TerminalAttachResultDto> attachTerminal(
     String terminalId, {
+    required TerminalRestoreMode mode,
     int afterSequence = 0,
+    int scrollbackLines = terminalRestoreScrollbackLines,
+    TerminalViewportDto? viewport,
   }) async {
+    attachedTerminalRequests.add((
+      terminalId: terminalId,
+      mode: mode,
+      afterSequence: afterSequence,
+      scrollbackLines: scrollbackLines,
+      viewport: viewport,
+    ));
+    // A viewport claim lands before anything is read, so what the restore
+    // describes is already at the geometry the caller asked for.
+    if (viewport != null) {
+      final index = _terminals.indexWhere((item) => item.id == terminalId);
+      _terminals[index] = _terminals[index].copyWith(
+        columns: viewport.columns,
+        rows: viewport.rows,
+      );
+    }
+    // The daemon decides the restore when the call arrives, not when the caller
+    // finally sees the response, so anything published while the round trip is
+    // in flight reaches subscribers only as a live notification.
+    final retained = _replayFor(terminalId);
+    final floor = terminalDeltaFloors[terminalId] ?? 0;
+    final resumable =
+        mode == TerminalRestoreMode.resume && afterSequence >= floor;
+    final restore = resumable
+        ? TerminalRestoreDto.delta(
+            afterSequence: afterSequence,
+            chunks: retained
+                .where((output) => output.sequence > afterSequence)
+                .toList(growable: false),
+          )
+        : TerminalRestoreDto.snapshot(
+            throughSequence: retained.isEmpty ? 0 : retained.last.sequence,
+            ansi:
+                terminalSnapshotAnsi[terminalId] ??
+                retained.map((output) => output.data).join(),
+          );
     if (terminalAttachGate case final gate?) await gate.future;
     final error = terminalAttachError;
     if (error != null) throw error;
     attachedTerminalIds.add(terminalId);
     return TerminalAttachResultDto(
       terminal: _terminals.firstWhere((item) => item.id == terminalId),
-      replay: terminalReplay,
+      restore: restore,
     );
   }
 
+  /// Sequence below which a terminal can no longer be resumed.
+  ///
+  /// Mirrors the daemon dropping retained output: a cursor at or under the
+  /// floor gets a rebuilt screen instead of a delta.
+  final Map<String, int> terminalDeltaFloors = <String, int>{};
+
+  /// ANSI a rebuilt screen carries, when a test needs to assert on it.
+  final Map<String, String> terminalSnapshotAnsi = <String, String>{};
+
+  /// Appends one output chunk to a terminal's scrollback and broadcasts it.
+  ///
+  /// The sequence is assigned the way the daemon assigns it, so a later attach
+  /// replays exactly what a subscriber that missed the notification needs.
+  TerminalOutputDto emitTerminalOutput(String terminalId, String data) {
+    final replay = _replayFor(terminalId);
+    final output = TerminalOutputDto(
+      terminalId: terminalId,
+      sequence: replay.isEmpty ? 1 : replay.last.sequence + 1,
+      data: data,
+    );
+    replay.add(output);
+    emit(TerminalOutputClientEvent(output));
+    return output;
+  }
+
+  List<TerminalOutputDto> _replayFor(String terminalId) =>
+      _terminalReplays.putIfAbsent(terminalId, () => <TerminalOutputDto>[]);
+
   /// Terminals attached to, in order, including repeat attachments.
   final List<String> attachedTerminalIds = <String>[];
+
+  /// Attach requests received, in order, with everything they claimed.
+  final List<
+    ({
+      String terminalId,
+      TerminalRestoreMode mode,
+      int afterSequence,
+      int scrollbackLines,
+      TerminalViewportDto? viewport,
+    })
+  >
+  attachedTerminalRequests =
+      <
+        ({
+          String terminalId,
+          TerminalRestoreMode mode,
+          int afterSequence,
+          int scrollbackLines,
+          TerminalViewportDto? viewport,
+        })
+      >[];
 
   /// Optional gate used to keep a terminal attachment pending.
   Completer<void>? terminalAttachGate;

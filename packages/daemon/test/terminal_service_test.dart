@@ -31,17 +31,31 @@ void main() {
       process.output.add('12345');
       process.output.add('67890');
       await pumpEventQueue();
-      final attached = service.attach('terminal-1', afterSequence: 0);
-      expect(attached.replay.map((item) => item.data).join(), '34567890');
+      final attached = await service.attach(
+        'terminal-1',
+        const TerminalRestoreRequest(strategy: TerminalRestoreStrategy.resume),
+      );
+      expect(
+        (attached as TerminalDeltaRestore).chunks
+            .map((item) => item.data)
+            .join(),
+        '34567890',
+      );
       expect(attached.terminal.lastSequence, 2);
 
       process.output.add('가나다');
       await pumpEventQueue();
-      final unicodeReplay = service.attach(
+      final unicodeReplay = await service.attach(
         'terminal-1',
-        afterSequence: 2,
+        const TerminalRestoreRequest(
+          strategy: TerminalRestoreStrategy.resume,
+          afterSequence: 2,
+        ),
       );
-      expect(unicodeReplay.replay.single.data, '나다');
+      expect(
+        (unicodeReplay as TerminalDeltaRestore).chunks.single.data,
+        '나다',
+      );
 
       await service.write('terminal-1', 'echo hi\r');
       await service.resize('terminal-1', columns: 120, rows: 40);
@@ -86,11 +100,15 @@ void main() {
         process.output.add(chunk);
         await pumpEventQueue(times: 1);
 
-        final retained = service
-            .attach('terminal-1', afterSequence: 0)
-            .replay
-            .map((item) => item.data)
-            .join();
+        final restore =
+            await service.attach(
+                  'terminal-1',
+                  const TerminalRestoreRequest(
+                    strategy: TerminalRestoreStrategy.resume,
+                  ),
+                )
+                as TerminalDeltaRestore;
+        final retained = restore.chunks.map((item) => item.data).join();
         final retainedBytes = utf8.encode(retained);
         final streamBytes = utf8.encode(written.toString());
 
@@ -183,6 +201,62 @@ void main() {
             TerminalCreationFailureReason.worktreeUnavailable,
           ),
         ),
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__unit'],
+  );
+
+  test(
+    'attaching claims a size only when the client asked it to',
+    () async {
+      final process = _FakeTerminalProcess();
+      final service = TerminalService(
+        gateway: _FakeTerminalGateway(process),
+        worktreePath: (id) async => '/worktrees/$id',
+        shellFor: (id) async => const TerminalShell(executable: '/bin/sh'),
+      );
+      addTearDown(service.close);
+      await service.create(
+        id: 'terminal-1',
+        worktreeId: 'worktree-1',
+        title: 'Terminal',
+        columns: 80,
+        rows: 24,
+      );
+
+      // Attaching, on its own, is passive: a pane that remounted at the same
+      // size or a client that reconnected has claimed nothing, and a size it
+      // did not ask for would fight every other attached client.
+      await service.attach(
+        'terminal-1',
+        const TerminalRestoreRequest(strategy: TerminalRestoreStrategy.resume),
+      );
+      expect(process.sizes, isEmpty);
+
+      final resized = await service.attach(
+        'terminal-1',
+        const TerminalRestoreRequest(
+          strategy: TerminalRestoreStrategy.resume,
+          viewport: TerminalViewport(columns: 100, rows: 30),
+        ),
+      );
+      // The claim lands before the restore is read, so what the caller gets
+      // back already describes the geometry it asked for.
+      expect(process.sizes, <(int, int)>[(100, 30)]);
+      expect(resized.terminal.columns, 100);
+      expect(resized.terminal.rows, 30);
+
+      await service.attach(
+        'terminal-1',
+        const TerminalRestoreRequest(
+          strategy: TerminalRestoreStrategy.resume,
+          viewport: TerminalViewport(columns: 100, rows: 30),
+        ),
+      );
+      expect(
+        process.sizes,
+        hasLength(1),
+        reason: 'an unchanged size is not a claim',
       );
     },
     tags: const <String>['feature_test__terminal_lifecycle__unit'],

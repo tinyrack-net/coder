@@ -116,14 +116,91 @@ final class TerminalOutput {
   );
 }
 
-/// Terminal metadata plus replay output.
-final class TerminalAttachment {
-  /// Creates an attachment snapshot.
-  const TerminalAttachment({required this.terminal, required this.replay});
+/// How the daemon should bring an attaching client up to date.
+///
+/// Named apart from the wire's `TerminalRestoreMode` the way
+/// [TerminalLifecycle] is named apart from `TerminalStatus`: the transport
+/// chooses its own words and the mapper is the one place the two meet.
+enum TerminalRestoreStrategy {
+  /// Continue the byte stream after a cursor, if the daemon still retains it.
+  resume,
+
+  /// Rebuild from the screen model regardless of what output is retained.
+  snapshot,
+}
+
+/// Cell geometry an attaching client is claiming for the pseudo-terminal.
+final class TerminalViewport {
+  /// Creates a viewport claim.
+  const TerminalViewport({required this.columns, required this.rows});
+
+  /// Claimed column count.
+  final int columns;
+
+  /// Claimed row count.
+  final int rows;
+}
+
+/// What an attaching client asks the daemon to rebuild.
+final class TerminalRestoreRequest {
+  /// Creates a restore request.
+  const TerminalRestoreRequest({
+    required this.strategy,
+    this.afterSequence = 0,
+    this.scrollbackLines = 200,
+    this.viewport,
+  });
+
+  /// Whether the client can resume or needs a rebuilt screen.
+  final TerminalRestoreStrategy strategy;
+
+  /// Highest sequence the client has already applied.
+  final int afterSequence;
+
+  /// Retained rows the client wants a rebuilt screen to carry.
+  final int scrollbackLines;
+
+  /// Size to claim before anything is serialized, or null for a passive
+  /// attach.
+  final TerminalViewport? viewport;
+}
+
+/// Terminal metadata plus whatever makes an attaching client current.
+sealed class TerminalRestore {
+  const TerminalRestore({required this.terminal});
 
   /// Current terminal metadata.
   final Terminal terminal;
+}
 
-  /// Output newer than the requested sequence.
-  final List<TerminalOutput> replay;
+/// Retained output continuing a client's cursor.
+final class TerminalDeltaRestore extends TerminalRestore {
+  /// Creates a delta restore.
+  const TerminalDeltaRestore({
+    required super.terminal,
+    required this.afterSequence,
+    required this.chunks,
+  });
+
+  /// Cursor the chunks continue.
+  final int afterSequence;
+
+  /// Output newer than [afterSequence].
+  final List<TerminalOutput> chunks;
+}
+
+/// A screen rebuilt from the daemon's own emulator.
+final class TerminalSnapshotRestore extends TerminalRestore {
+  /// Creates a snapshot restore.
+  const TerminalSnapshotRestore({
+    required super.terminal,
+    required this.throughSequence,
+    required this.ansi,
+  });
+
+  /// Highest sequence [ansi] already includes.
+  final int throughSequence;
+
+  /// ANSI reproducing the screen in a reset terminal.
+  final String ansi;
 }

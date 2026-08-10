@@ -26,10 +26,39 @@ TerminalOutputDto terminalOutputToDto(TerminalOutput output) =>
       data: output.data,
     );
 
-/// Maps an attach result to its v4 wire DTO.
-TerminalAttachResultDto terminalAttachmentToDto(
-  TerminalAttachment attachment,
-) => TerminalAttachResultDto(
-  terminal: terminalToDto(attachment.terminal),
-  replay: attachment.replay.map(terminalOutputToDto).toList(growable: false),
+/// Maps a restore request from its v4 wire DTO.
+TerminalRestoreRequest terminalRestoreRequestFromDto(
+  TerminalAttachParamsDto params,
+) => TerminalRestoreRequest(
+  strategy: switch (params.mode) {
+    TerminalRestoreMode.resume => TerminalRestoreStrategy.resume,
+    TerminalRestoreMode.snapshot => TerminalRestoreStrategy.snapshot,
+  },
+  afterSequence: params.afterSequence,
+  scrollbackLines: params.scrollbackLines,
+  viewport: switch (params.viewport) {
+    null => null,
+    final viewport => TerminalViewport(
+      columns: viewport.columns,
+      rows: viewport.rows,
+    ),
+  },
 );
+
+/// Maps an attach result to its v4 wire DTO.
+TerminalAttachResultDto terminalRestoreToDto(TerminalRestore restore) =>
+    TerminalAttachResultDto(
+      terminal: terminalToDto(restore.terminal),
+      restore: switch (restore) {
+        TerminalDeltaRestore(:final afterSequence, :final chunks) =>
+          TerminalRestoreDto.delta(
+            afterSequence: afterSequence,
+            chunks: chunks.map(terminalOutputToDto).toList(growable: false),
+          ),
+        TerminalSnapshotRestore(:final throughSequence, :final ansi) =>
+          TerminalRestoreDto.snapshot(
+            throughSequence: throughSequence,
+            ansi: ansi,
+          ),
+      },
+    );

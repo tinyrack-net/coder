@@ -24,7 +24,7 @@ import 'package:app/src/features/providers/application/provider_settings_control
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
-import 'package:app/src/features/terminals/application/terminal_attach_controller.dart';
+import 'package:app/src/features/terminals/application/terminal_session_controller.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -101,6 +101,27 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     // selection change and each new checkout needs its own archived check.
     if (widget.selection != oldWidget.selection) {
       _missingSelectionScheduled = false;
+      _releaseTerminals(oldWidget.selection);
+    }
+  }
+
+  /// Ends the terminal sessions of a checkout the page has just left.
+  ///
+  /// Terminal sessions are `keepAlive` so a tab switch cannot reset them, which
+  /// means leaving a checkout is what bounds their number. The departing tab
+  /// state is read here, synchronously, while its own provider is still alive.
+  /// Deliberately not done in [dispose]: a trip to settings tears this page
+  /// down, and coming back must not find every terminal wiped.
+  void _releaseTerminals(WorkspaceSelection? selection) {
+    if (selection == null) return;
+    final tabs = ref.read(sessionTabsControllerProvider(selection)).value;
+    if (tabs == null) return;
+    for (final entry in tabs.tabs.values) {
+      if (entry.target case TerminalTabTarget(:final terminalId)) {
+        ref.invalidate(
+          terminalSessionControllerProvider(selection.hostId, terminalId),
+        );
+      }
     }
   }
 
@@ -399,6 +420,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   @override
   Widget build(BuildContext context) {
     final provider = sessionTabsControllerProvider(widget.selection);
+    ref.listen(provider, _releaseClosedTerminals);
     final value = ref.watch(provider);
     final workspace = value.asData?.value;
     _openRequestedRoute(provider, workspace);
@@ -462,6 +484,36 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       });
     }
   }
+
+  /// Ends the sessions of terminals whose tab has just gone away.
+  ///
+  /// A terminal session is deliberately `keepAlive`, so something has to end
+  /// it. Diffing the tab set covers every way a tab can disappear — the close
+  /// button, the terminate confirmation, a discarded pending tab, the mobile
+  /// sheet — instead of asking each of those call sites to remember.
+  void _releaseClosedTerminals(
+    AsyncValue<SessionTabsState>? previous,
+    AsyncValue<SessionTabsState> next,
+  ) {
+    // A reload frame carries no value and must not read as "everything closed".
+    if (previous == null || !previous.hasValue || !next.hasValue) return;
+    final closed = _terminalIds(previous).difference(_terminalIds(next));
+    for (final terminalId in closed) {
+      ref.invalidate(
+        terminalSessionControllerProvider(
+          widget.selection.hostId,
+          terminalId,
+        ),
+      );
+    }
+  }
+
+  static Set<String> _terminalIds(
+    AsyncValue<SessionTabsState> tabs,
+  ) => <String>{
+    for (final entry in tabs.value?.tabs.values ?? const <WorkspaceTabEntry>[])
+      if (entry.target case TerminalTabTarget(:final terminalId)) terminalId,
+  };
 
   Widget _buildNode(
     BuildContext context,
@@ -1061,81 +1113,32 @@ class _TerminalPane extends ConsumerStatefulWidget {
   ConsumerState<_TerminalPane> createState() => _TerminalPaneState();
 }
 
+/// Renders one terminal session; the emulator itself lives in the provider.
+///
+/// Nothing durable is kept here, so the pane can be unmounted and rebuilt as
+/// often as the tab layout likes without resetting what the user sees.
 class _TerminalPaneState extends ConsumerState<_TerminalPane> {
-  late final Terminal _terminal;
   final TerminalViewController _controller = TerminalViewController();
-  StreamSubscription<TerminalOutputDto>? _events;
-  CoderApi? _api;
-  int _sequence = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _terminal = Terminal(
-      options: TerminalOptions(
-        cols: widget.terminal.columns,
-        rows: widget.terminal.rows,
-        rightClickSelectsWord: false,
-      ),
-    );
-    _terminal.onData.listen(_sendInput);
-    _terminal.onResize.listen(_resize);
-  }
+  TerminalSessionControllerProvider get _provider =>
+      terminalSessionControllerProvider(
+        widget.selection.hostId,
+        widget.terminal.id,
+      );
 
-  void _sendInput(String data) {
-    unawaited(
-      _api?.terminals.writeTerminal(widget.terminal.id, data) ??
-          Future<void>.value(),
-    );
-  }
-
-  void _resize(TerminalResizeEvent size) {
-    unawaited(
-      _api?.terminals.resizeTerminal(
-            widget.terminal.id,
-            columns: size.cols,
-            rows: size.rows,
-          ) ??
-          Future<TerminalDto>.value(widget.terminal),
-    );
-  }
-
-  /// Applies the replayed scrollback and wires the live output stream once.
-  void _connect(TerminalAttachment attachment) {
-    if (_api != null) return;
-    _api = attachment.api;
-    attachment.replay.forEach(_accept);
-    _events = attachment.api.terminals.output.listen((output) {
-      if (output.terminalId == widget.terminal.id) {
-        _accept(output);
-      }
-    });
-  }
-
-  void _accept(TerminalOutputDto output) {
-    if (output.sequence <= _sequence) return;
-    _sequence = output.sequence;
-    _terminal.write(output.data);
-  }
+  Terminal get _terminal => ref.read(_provider).terminal;
 
   @override
   void dispose() {
-    unawaited(_events?.cancel());
     _controller.dispose();
-    _terminal.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final provider = terminalAttachControllerProvider(
-      widget.selection.hostId,
-      widget.terminal.id,
-    );
-    final attach = ref.watch(provider);
-    if (attach.asData?.value case final attachment?) _connect(attachment);
-    if (attach.hasError && !attach.hasValue) {
+    final session = ref.watch(_provider);
+    if (session.status == TerminalSessionStatus.failed) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1143,12 +1146,14 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
             TRAlert(
               variant: TRStatusVariant.danger,
               title: TRText.inherit(l10n.terminalConnectionFailed),
-              description: TRText.inherit('${attach.error}'),
+              description: TRText.inherit('${session.error}'),
             ),
             const SizedBox(height: TRSpacing.medium),
             TRButton(
               key: const ValueKey<String>('terminal-attach-retry'),
-              onPressed: () => ref.invalidate(provider),
+              // Invalidating would destroy the emulator, so the retry goes
+              // through the session, which keeps whatever it already holds.
+              onPressed: () => ref.read(_provider.notifier).retry(),
               child: TRText.inherit(l10n.commonRetry),
             ),
           ],
@@ -1157,8 +1162,10 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     }
     // The pane never blocks on the attach round trip: while the replay is on
     // its way, a visible connecting state explains why input is not accepted
-    // yet instead of rendering an empty prompt that swallows keystrokes.
-    if (!attach.hasValue) {
+    // yet instead of rendering an empty prompt that swallows keystrokes. Once
+    // there is content to show, the terminal stays on screen through a
+    // reconnect rather than being replaced by a spinner.
+    if (session.status != TerminalSessionStatus.live && !session.hasContent) {
       return TerminalConnectingOverlay(
         key: ValueKey<String>('terminal-connecting-${widget.terminal.id}'),
         semanticLabel: l10n.terminalConnecting,
@@ -1169,7 +1176,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       listenable: _controller,
       builder: (context, _) => CoderTerminalView(
         key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
-        terminal: _terminal,
+        terminal: session.terminal,
         controller: _controller,
         autofocus: true,
         contextMenuItems: _buildContextMenu,

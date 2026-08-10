@@ -96,8 +96,16 @@ void main() {
     router.go(_location('terminal-b'));
     await tester.pumpAndSettle();
 
-    // The pane's state owns the attachment, so an unkeyed pane would be reused
-    // here and the second terminal would never be attached to at all.
+    // Each terminal gets its own session, so switching reaches the second one
+    // rather than reusing whatever the first pane had attached.
+    expect(api.attachedTerminalIds, <String>['terminal-a', 'terminal-b']);
+
+    router.go(_location('terminal-a'));
+    await tester.pumpAndSettle();
+
+    // Coming back attaches nothing: the first session is still live, and
+    // re-attaching would mean rebuilding the terminal from the daemon's
+    // bounded replay instead of showing what the user left on screen.
     expect(api.attachedTerminalIds, <String>['terminal-a', 'terminal-b']);
   });
 }
