@@ -1795,6 +1795,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick a project to see and edit the skills committed to it.';
 
   @override
+  String get skillSettingsProjectSearch => 'Search projects';
+
+  @override
+  String get skillSettingsProjectNoMatch => 'No matching project';
+
+  @override
   String get settingsCategoryMcp => 'MCP';
 
   @override

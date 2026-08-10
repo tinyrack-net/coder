@@ -278,7 +278,105 @@ void main() {
     },
     tags: const <String>['feature_test__skill_management__widget'],
   );
+
+  testWidgets(
+    'the desktop project selector filters its projects in a dropdown',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      _sizeViewport(tester, const Size(1200, 900));
+      final api = FakeCoderApi(workspaces: _manyWorkspaces(now));
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      await tester.tap(_projectSelectorTrigger);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsNothing);
+      expect(find.widgetWithText(MenuItemButton, 'Termworld'), findsOneWidget);
+
+      await tester.enterText(_searchInput('프로젝트 검색'), 'drop');
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(MenuItemButton, 'Dropwell'), findsOneWidget);
+      expect(find.widgetWithText(MenuItemButton, 'Termworld'), findsNothing);
+
+      await tester.enterText(_searchInput('프로젝트 검색'), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.text('일치하는 프로젝트가 없습니다'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__skill_management__widget'],
+  );
+
+  testWidgets(
+    'the narrow project selector opens a sheet and commits a project',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      _sizeViewport(tester, const Size(390, 760));
+      final api = FakeCoderApi(workspaces: _manyWorkspaces(now));
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      await tester.tap(_projectSelectorTrigger);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
+
+      await tester.enterText(_searchInput('프로젝트 검색'), 'drop');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Dropwell'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRDrawer), findsNothing);
+      expect(
+        tester.widget<TextButton>(_projectSelectorTrigger).enabled,
+        isTrue,
+      );
+      expect(find.text('Dropwell'), findsWidgets);
+    },
+    tags: const <String>['feature_test__skill_management__widget'],
+  );
 }
+
+Finder get _projectSelectorTrigger => find.descendant(
+  of: find.byType(TRSelectFormField<String?>),
+  matching: find.byType(TextButton),
+);
+
+/// The select's filter field, which carries a placeholder rather than a label.
+Finder _searchInput(String placeholder) => find.descendant(
+  of: find.byWidgetPredicate(
+    (widget) => widget is TRTextField && widget.placeholder == placeholder,
+  ),
+  matching: find.byType(EditableText),
+);
+
+/// Sizes the viewport a select reads to choose between dropdown and sheet.
+///
+/// `setSurfaceSize` lays the render tree out at a size without moving the view
+/// metrics `MediaQuery` is built from, so both have to be set.
+void _sizeViewport(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.reset);
+}
+
+/// Enough projects that the selector is worth filtering.
+List<WorkspaceDto> _manyWorkspaces(DateTime now) => <WorkspaceDto>[
+  for (final name in const <String>[
+    'Coder',
+    'Dropwell',
+    'Termworld',
+    'Shipworld',
+    'Dartage',
+  ])
+    WorkspaceDto(
+      id: name.toLowerCase(),
+      name: name,
+      rootPath: '/repos/${name.toLowerCase()}',
+      kind: WorkspaceKind.git,
+      createdAt: now,
+    ),
+];
 
 Finder _textInput(String label) => find.descendant(
   of: find.byWidgetPredicate(

@@ -1754,6 +1754,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get skillSettingsProjectHint => '프로젝트를 고르면 그 프로젝트에 커밋된 스킬이 함께 보입니다.';
 
   @override
+  String get skillSettingsProjectSearch => '프로젝트 검색';
+
+  @override
+  String get skillSettingsProjectNoMatch => '일치하는 프로젝트가 없습니다';
+
+  @override
   String get settingsCategoryMcp => 'MCP';
 
   @override

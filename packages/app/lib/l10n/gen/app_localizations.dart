@@ -3184,6 +3184,18 @@ abstract class AppLocalizations {
   /// **'Pick a project to see and edit the skills committed to it.'**
   String get skillSettingsProjectHint;
 
+  /// Placeholder for the filter field in the project selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get skillSettingsProjectSearch;
+
+  /// Shown when the project filter matches nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching project'**
+  String get skillSettingsProjectNoMatch;
+
   /// Sidebar label for the MCP server settings category.
   ///
   /// In en, this message translates to:
