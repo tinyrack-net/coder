@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Native-Wayland sibling of run_linux_ibus_terminal_e2e.sh: boots a headless
 # sway session, starts ibus-daemon over D-Bus (no XIM), and drives real
-# ibus-hangul into the embedded PTY through wtype's virtual keyboard.
+# ibus-hangul into the embedded PTY through wlkey's virtual keyboard.
 # Reproduces the syllable-reorder path that the X11 harness cannot reach.
 set -euo pipefail
 

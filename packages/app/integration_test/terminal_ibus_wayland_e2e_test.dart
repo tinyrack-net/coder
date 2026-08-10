@@ -27,7 +27,7 @@ import 'support/pump_until.dart';
 /// ("안녕하세요." reaching the PTY as "안세녕하요."), because GTK's Wayland
 /// input-method context batches preedit and commit differently from the X11
 /// ibus module. This test drives real ibus-hangul on a Wayland compositor
-/// through wtype's virtual keyboard instead of xdotool, and keeps only the
+/// through wlkey's virtual keyboard instead of xdotool, and keeps only the
 /// Hangul-ordering leg: the clipboard and native-menu legs stay X11-only.
 ///
 /// Run through tool/run_linux_ibus_terminal_wayland_e2e.sh, which boots a
@@ -341,16 +341,19 @@ Future<void> _activateHangulEngine() async {
     contains(latinEngine),
     reason: 'The deterministic IBus Latin engine is unavailable',
   );
-  await _run('ibus', <String>['engine', latinEngine]);
-
-  await _waitUntil(() async {
-    final selected = await Process.run('ibus', <String>['engine', 'hangul']);
-    final current = await Process.run('ibus', <String>['engine']);
-    return selected.exitCode == 0 &&
-        current.exitCode == 0 &&
-        current.stdout.toString().trim() == 'hangul';
-  }, 'the focused GTK input context to activate IBus Hangul');
+  // `ibus engine <name>` exits non-zero on pure Wayland — its setxkbmap
+  // helper has no X display — while the switch itself still lands, so both
+  // switches are judged by observed state rather than exit codes, the same
+  // contract as the runner script's readiness loop.
+  await _selectEngineByState(latinEngine);
+  await _selectEngineByState('hangul');
 }
+
+Future<void> _selectEngineByState(String engine) => _waitUntil(() async {
+  await Process.run('ibus', <String>['engine', engine]);
+  final current = await Process.run('ibus', <String>['engine']);
+  return current.exitCode == 0 && current.stdout.toString().trim() == engine;
+}, 'the focused GTK input context to activate the IBus engine "$engine"');
 
 Future<void> _waitUntil(
   FutureOr<bool> Function() predicate,
