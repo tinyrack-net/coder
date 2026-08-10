@@ -591,8 +591,10 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'terminal.lifecycle',
     description:
-        'Creates, attaches, resizes, restores, and terminates daemon-owned '
-        'interactive terminal tabs with standard keyboard and pointer input.',
+        'Creates, attaches, resizes, and terminates daemon-owned interactive '
+        'terminal tabs with standard keyboard and pointer input, and restores '
+        'a reattaching client from the screen the daemon holds, so a running '
+        'full-screen program comes back as it was left.',
     apiMethods: <String>[
       'terminals.listTerminals',
       'terminals.createTerminal',

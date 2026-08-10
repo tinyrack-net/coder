@@ -81,7 +81,7 @@ final class TerminalSessionControllerProvider
 }
 
 String _$terminalSessionControllerHash() =>
-    r'd3919546ac5eb3e37edcd276416300c6e0d3e388';
+    r'1863ebf17d1bac54da92ba86e6e470e604bc76d5';
 
 /// Owns one terminal's emulator, its attachment, and its daemon wiring.
 ///

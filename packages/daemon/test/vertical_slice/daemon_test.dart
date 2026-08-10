@@ -278,11 +278,24 @@ void main() {
       // to a running editor comes back to the shell behind it.
       if (!Platform.isWindows) {
         const altMarker = 'coder-alt-screen';
-        final painted = client.terminals.output
+        // Waiting for the marker alone matches the shell echoing the command
+        // back, which happens before printf runs. The alternate-screen entry
+        // appears as a real escape byte only in the program's own output; the
+        // echo shows it as the literal text that was typed.
+        const altScreenEntry = '\u001b[?1049h';
+        final painted = Completer<void>();
+        final seen = StringBuffer();
+        final painting = client.terminals.output
             .where((output) => output.terminalId == terminal.id)
-            .map((output) => output.data)
-            .firstWhere((data) => data.contains(altMarker))
-            .timeout(_eventTimeout);
+            .listen((output) {
+              seen.write(output.data);
+              final sofar = seen.toString();
+              if (!painted.isCompleted &&
+                  sofar.contains(altScreenEntry) &&
+                  sofar.contains(altMarker)) {
+                painted.complete();
+              }
+            });
         // Backslash escapes here are for printf, not for Dart: the shell
         // is what turns them into control bytes, the way a real program
         // entering its alternate screen would.
@@ -291,7 +304,8 @@ void main() {
           terminal.id,
           "printf '$enterAltScreen$altMarker'\r",
         );
-        await painted;
+        await painted.future.timeout(_eventTimeout);
+        await painting.cancel();
 
         final restored = await client.attachTerminal(
           terminal.id,

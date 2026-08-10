@@ -148,4 +148,37 @@ void main() {
 
     expect('mid-attach'.allMatches(_screen(tester)), hasLength(1));
   });
+
+  // Input being dropped *during* the paint is asserted in the controller's
+  // own tests, where the barrier is observable. What matters here is the
+  // frame the user ends up looking at: the screen is back and the terminal is
+  // live again rather than left read-only.
+  testWidgets('a restored terminal shows the screen and is live again', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _api()..terminalAttachGate = Completer<void>();
+    api.terminalSnapshotAnsi['terminal-a'] = 'restored-screen';
+    api.emitTerminalOutput('terminal-a', 'seed');
+    final router = await pumpRoutedApp(
+      tester,
+      api,
+      initialLocation: _location('terminal-a'),
+      // The connecting overlay animates until the gate opens.
+      settle: false,
+    );
+    addTearDown(router.dispose);
+
+    api.terminalAttachGate!.complete();
+    await _flush(tester);
+
+    expect(_screen(tester), contains('restored-screen'));
+    // The barrier has lifted by the time the paint finished, so the terminal
+    // is live again and the user is not left with a dead prompt.
+    expect(
+      tester.widget<CoderTerminalView>(find.byType(CoderTerminalView)).readOnly,
+      isFalse,
+    );
+  });
 }

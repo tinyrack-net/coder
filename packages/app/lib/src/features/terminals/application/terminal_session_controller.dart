@@ -20,6 +20,9 @@ enum TerminalSessionStatus {
   /// An attach round trip is in flight.
   attaching,
 
+  /// A rebuilt screen is being painted and input is being dropped.
+  restoring,
+
   /// Live output is flowing into the emulator.
   live,
 
@@ -85,6 +88,15 @@ class TerminalSessionController extends _$TerminalSessionController {
   bool _restoring = false;
   ({int columns, int rows})? _daemonSize;
 
+  /// Viewport this session has claimed for the terminal, or null if it never
+  /// has.
+  ///
+  /// Only a genuine resize from the view sets this. Attaching, remounting at
+  /// the same size, and a renderer settling are passive, and a size claimed
+  /// from one of those would fight every other client attached to the same
+  /// terminal.
+  ({int columns, int rows})? _claimedSize;
+
   @override
   TerminalSessionState build(String hostId, String terminalId) {
     // Synchronous by construction. Watching the connection here would rebuild
@@ -92,6 +104,7 @@ class TerminalSessionController extends _$TerminalSessionController {
     // emulator, which is the reset this provider exists to prevent.
     _sequence = 0;
     _daemonSize = null;
+    _claimedSize = null;
     _started = false;
     _restoring = false;
     final terminal = Terminal(
@@ -174,6 +187,13 @@ class TerminalSessionController extends _$TerminalSessionController {
             ? TerminalRestoreMode.snapshot
             : TerminalRestoreMode.resume,
         afterSequence: _sequence,
+        viewport: switch (_claimedSize) {
+          null => null,
+          final size => TerminalViewportDto(
+            columns: size.columns,
+            rows: size.rows,
+          ),
+        },
       );
     } on Object catch (error) {
       unawaited(_output?.cancel());
@@ -205,6 +225,7 @@ class TerminalSessionController extends _$TerminalSessionController {
   void _applySnapshot({required int throughSequence, required String ansi}) {
     final terminal = _terminal!;
     _restoring = true;
+    _publish(TerminalSessionStatus.restoring);
     // A snapshot describes a whole terminal, including the alternate buffer
     // and the private modes. Writing it into one that already holds state
     // stacks the two.
@@ -251,17 +272,13 @@ class TerminalSessionController extends _$TerminalSessionController {
       _daemonSize = (columns: dto.columns, rows: dto.rows);
       return;
     }
-    // Re-attach: the viewport the user is looking at wins, because a restarted
-    // PTY may have come back at its default geometry.
-    _daemonSize = (columns: terminal.cols, rows: terminal.rows);
-    unawaited(
-      _api?.terminals.resizeTerminal(
-            terminalId,
-            columns: terminal.cols,
-            rows: terminal.rows,
-          ) ??
-          Future<void>.value(),
-    );
+    // Adopt what the daemon reports and claim nothing. Either this session
+    // asked for the size in its attach — in which case the daemon applied it
+    // before serializing, and this is that size — or it did not ask, and
+    // claiming now would arrive after the restore was built at the old
+    // geometry and reflow it immediately.
+    _daemonSize = (columns: dto.columns, rows: dto.rows);
+    terminal.resize(dto.columns, dto.rows);
   }
 
   void _sendInput(String data) {
@@ -279,7 +296,12 @@ class TerminalSessionController extends _$TerminalSessionController {
         when known.columns == size.cols && known.rows == size.rows) {
       return;
     }
+    // The one place a size is claimed. It survives a reconnect deliberately:
+    // the user's last real viewport should win over whatever geometry the
+    // daemon comes back with, and it travels with the attach instead of
+    // racing it.
     _daemonSize = (columns: size.cols, rows: size.rows);
+    _claimedSize = _daemonSize;
     unawaited(
       _api?.terminals.resizeTerminal(
             terminalId,
