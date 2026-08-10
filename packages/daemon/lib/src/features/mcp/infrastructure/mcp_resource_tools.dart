@@ -392,6 +392,7 @@ final class McpResourceToolProvider extends SelectableToolProvider {
     name: id,
     description: description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.mcp,
   );
 
   @override

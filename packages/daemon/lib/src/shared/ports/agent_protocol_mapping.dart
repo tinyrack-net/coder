@@ -9,6 +9,10 @@ AgentToolRisk agentRisk(ToolRisk value) =>
 ToolRisk protocolRisk(AgentToolRisk value) =>
     ToolRisk.values.byName(value.name);
 
+/// Converts an agent tool group to the protocol contract.
+ToolGroup protocolToolGroup(AgentToolGroup value) =>
+    ToolGroup.values.byName(value.name);
+
 /// Converts protocol permissions to the agent domain.
 AgentPermissionMode agentPermission(PermissionMode value) =>
     AgentPermissionMode.values.byName(value.name);
@@ -192,6 +196,7 @@ AgentToolDefinitionDto protocolToolDefinition(AgentToolDefinition value) =>
       name: value.name,
       description: value.description,
       risk: protocolRisk(value.risk),
+      group: protocolToolGroup(value.group),
       available: value.available,
       alwaysOn: value.alwaysOn,
     );

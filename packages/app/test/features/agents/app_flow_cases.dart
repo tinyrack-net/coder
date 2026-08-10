@@ -31,8 +31,24 @@ void _registerAgentsAppFlows() {
       );
       expect(find.text('내장 도구'), findsOneWidget);
 
-      // An always-on tool is shown checked and locked, sorted above the
-      // tools the user can actually turn off.
+      // Tools are behind their group, so nothing is listed until one opens.
+      expect(
+        find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
+        findsNothing,
+      );
+      // A group of nothing but always-on tools is checked and locked, and it
+      // still opens: the lock is on the tools, not on the disclosure.
+      final lockedGroup = tester.widget<CoderCheckboxRow>(
+        find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
+      );
+      expect(lockedGroup.value, isTrue);
+      expect(lockedGroup.onChanged, isNull);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
+      );
+      await tester.pumpAndSettle();
+      // An always-on tool is shown checked and locked once its group is open.
       final alwaysOn = tester.widget<CoderCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
       );
@@ -42,11 +58,16 @@ void _registerAgentsAppFlows() {
         find.byKey(const ValueKey<String>('agent-tool-lock-read_file')),
         findsOneWidget,
       );
+
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
+        find.byKey(const ValueKey<String>('agent-tool-group-execution')),
         200,
         scrollable: find.byType(Scrollable).last,
       );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-tool-group-execution')),
+      );
+      await tester.pumpAndSettle();
       final toggleable = tester.widget<CoderCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
       );
@@ -252,7 +273,6 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       await tester.drag(editorList, const Offset(0, -600));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('read_file').last);
       await tester.tap(find.text('Reviewer').last);
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
@@ -381,6 +401,81 @@ void _registerAgentsAppFlows() {
     tags: const <String>[
       'feature_test__agent_definition_management__widget',
       'feature_test__app_toast__widget',
+    ],
+  );
+
+  testWidgets(
+    'a tool group header turns its whole group on and off at once',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      final scrollable = find.byType(Scrollable).last;
+      // scrollUntilVisible stops as soon as the row is built, which a list
+      // builds before it is on screen, so the row still has to be brought
+      // fully into view before it can be tapped.
+      Future<void> reveal(String key) async {
+        final finder = find.byKey(ValueKey<String>(key));
+        await tester.scrollUntilVisible(finder, 200, scrollable: scrollable);
+        await tester.ensureVisible(finder);
+        await tester.pumpAndSettle();
+      }
+
+      CoderCheckboxRow rowFor(String key) =>
+          tester.widget<CoderCheckboxRow>(find.byKey(ValueKey<String>(key)));
+
+      await reveal('agent-tool-group-mcp');
+      final initial = rowFor('agent-tool-group-mcp');
+      expect(initial.value, isFalse);
+      expect(initial.indeterminate, isFalse);
+
+      // Checking the header takes every tool in the group, not just one.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('agent-tool-group-mcp')),
+          matching: find.byType(TRCheckbox),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(rowFor('agent-tool-group-mcp').value, isTrue);
+
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.agents.getAgentDefinition('coder')).toolIds,
+        <String>[
+          'list_mcp_resource_templates',
+          'list_mcp_resources',
+          'read_mcp_resource',
+        ],
+        reason: 'a group is stored as the ids it contains, not as itself',
+      );
+
+      // Turning one member off leaves the header partially checked.
+      await reveal('agent-tool-group-mcp');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-tool-group-mcp')),
+      );
+      await tester.pumpAndSettle();
+      await reveal('agent-tool-tile-read_mcp_resource');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-tool-tile-read_mcp_resource')),
+      );
+      await tester.pumpAndSettle();
+      await reveal('agent-tool-group-mcp');
+      final partial = rowFor('agent-tool-group-mcp');
+      expect(partial.value, isFalse);
+      expect(partial.indeterminate, isTrue);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
     ],
   );
 }

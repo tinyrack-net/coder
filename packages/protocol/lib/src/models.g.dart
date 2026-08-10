@@ -404,6 +404,7 @@ _AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(
   name: json['name'] as String,
   description: json['description'] as String,
   risk: $enumDecode(_$ToolRiskEnumMap, json['risk']),
+  group: $enumDecode(_$ToolGroupEnumMap, json['group']),
   available: json['available'] as bool? ?? true,
   alwaysOn: json['alwaysOn'] as bool? ?? false,
 );
@@ -415,6 +416,7 @@ Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
   'name': instance.name,
   'description': instance.description,
   'risk': _$ToolRiskEnumMap[instance.risk]!,
+  'group': _$ToolGroupEnumMap[instance.group]!,
   'available': instance.available,
   'alwaysOn': instance.alwaysOn,
 };
@@ -424,6 +426,16 @@ const _$ToolRiskEnumMap = {
   ToolRisk.write: 'write',
   ToolRisk.command: 'command',
   ToolRisk.dangerous: 'dangerous',
+};
+
+const _$ToolGroupEnumMap = {
+  ToolGroup.filesystem: 'filesystem',
+  ToolGroup.editing: 'editing',
+  ToolGroup.execution: 'execution',
+  ToolGroup.attachments: 'attachments',
+  ToolGroup.mcp: 'mcp',
+  ToolGroup.collaboration: 'collaboration',
+  ToolGroup.session: 'session',
 };
 
 _McpServerConfigDto _$McpServerConfigDtoFromJson(Map<String, dynamic> json) =>

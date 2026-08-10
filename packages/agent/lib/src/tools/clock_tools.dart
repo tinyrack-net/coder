@@ -225,6 +225,7 @@ final class CurrentTimeToolProvider extends SelectableToolProvider {
     name: 'clock__curr_time',
     description: 'Get the current time in UTC.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.session,
     alwaysOn: true,
   );
 
@@ -249,6 +250,7 @@ final class SleepToolProvider extends SelectableToolProvider {
     description:
         'Pause before checking something again; ends early on new user input.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.session,
     alwaysOn: true,
   );
 

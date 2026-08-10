@@ -490,6 +490,7 @@ final class ExecCommandToolProvider extends SelectableToolProvider {
         'Run shell commands, on pipes or in a pseudo-terminal, '
         'including REPLs and servers driven across several calls.',
     risk: AgentToolRisk.command,
+    group: AgentToolGroup.execution,
   );
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/agents/application/agent_definitions_controller.dart';
+import 'package:app/src/features/agents/presentation/tool_groups.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
@@ -245,6 +246,9 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
   PermissionMode? _permissionMode;
   late Set<String> _tools;
   late Set<String> _callableAgents;
+  // Every group starts closed. The header carries the count, so a closed list
+  // still says what is on, and seventeen tools fit on screen as seven rows.
+  final Set<ToolGroup> _expandedGroups = <ToolGroup>{};
   bool _saving = false;
 
   @override
@@ -453,36 +457,40 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
               SettingsSection(
                 title: l10n.agentSettingsBuiltinTools,
                 children: <Widget>[
-                  for (final tool in _sortedTools)
-                    CoderCheckboxRow(
-                      key: ValueKey<String>('agent-tool-tile-${tool.id}'),
-                      value: tool.alwaysOn || _tools.contains(tool.id),
-                      // An always-on tool has no toggle to offer, so the tile
-                      // is checked and inert rather than lying about being
-                      // editable.
-                      onChanged: editable && !tool.alwaysOn
-                          ? (enabled) => setState(() {
-                              enabled!
-                                  ? _tools.add(tool.id)
-                                  : _tools.remove(tool.id);
-                            })
-                          : null,
-                      secondary: tool.alwaysOn
-                          ? Icon(
-                              CoderIcons.lock,
-                              key: ValueKey<String>(
-                                'agent-tool-lock-${tool.id}',
-                              ),
-                            )
-                          : null,
-                      title: TRText.inherit(tool.name),
-                      subtitle: TRText.inherit(
-                        tool.alwaysOn
-                            ? '${tool.description} · '
-                                  '${l10n.agentSettingsToolAlwaysOn}'
-                            : tool.description,
-                      ),
-                    ),
+                  for (final view in groupAgentTools(widget.state.tools)) ...[
+                    _toolGroupHeader(l10n, view, editable: editable),
+                    if (_expandedGroups.contains(view.group))
+                      for (final tool in view.tools)
+                        CoderCheckboxRow(
+                          key: ValueKey<String>('agent-tool-tile-${tool.id}'),
+                          value: tool.alwaysOn || _tools.contains(tool.id),
+                          // An always-on tool has no toggle to offer, so the
+                          // tile is checked and inert rather than lying about
+                          // being editable.
+                          onChanged: editable && !tool.alwaysOn
+                              ? (enabled) => setState(() {
+                                  enabled!
+                                      ? _tools.add(tool.id)
+                                      : _tools.remove(tool.id);
+                                })
+                              : null,
+                          secondary: tool.alwaysOn
+                              ? Icon(
+                                  CoderIcons.lock,
+                                  key: ValueKey<String>(
+                                    'agent-tool-lock-${tool.id}',
+                                  ),
+                                )
+                              : null,
+                          title: TRText.inherit(tool.name),
+                          subtitle: TRText.inherit(
+                            tool.alwaysOn
+                                ? '${tool.description} · '
+                                      '${l10n.agentSettingsToolAlwaysOn}'
+                                : tool.description,
+                          ),
+                        ),
+                  ],
                 ],
               ),
               if (definition.mode == AgentMode.primary)
@@ -515,13 +523,49 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     );
   }
 
-  /// Always-on tools first, so the inert tiles do not interleave with the
-  /// ones the user can actually change.
-  List<AgentToolDefinitionDto> get _sortedTools =>
-      widget.state.tools.toList()..sort((left, right) {
-        if (left.alwaysOn != right.alwaysOn) return left.alwaysOn ? -1 : 1;
-        return left.name.compareTo(right.name);
-      });
+  /// The row standing for one group: its state, and the whole-group toggle.
+  ///
+  /// The checkbox and the row do different things — one turns the group on and
+  /// off, the other opens it — so each is its own tab stop rather than the row
+  /// repeating the control the way a plain setting does.
+  Widget _toolGroupHeader(
+    AppLocalizations l10n,
+    AgentToolGroupView view, {
+    required bool editable,
+  }) {
+    final expanded = _expandedGroups.contains(view.group);
+    final enabled = view.enabledCount(_tools);
+    return CoderCheckboxRow(
+      key: ValueKey<String>('agent-tool-group-${view.group.name}'),
+      value: view.allEnabled(_tools),
+      indeterminate: view.partiallyEnabled(_tools),
+      // A group of nothing but always-on tools has no toggle to offer, so its
+      // checkbox is locked for the same reason each of its tools is.
+      onChanged: editable && !view.locked
+          ? (checked) => setState(() {
+              checked!
+                  ? _tools.addAll(view.toggleableIds)
+                  : _tools.removeAll(view.toggleableIds);
+            })
+          : null,
+      onRowTap: () => setState(() {
+        expanded
+            ? _expandedGroups.remove(view.group)
+            : _expandedGroups.add(view.group);
+      }),
+      // The chevron, even on a locked group: the row opens either way, and a
+      // lock here would say it does not. That a group is always on is already
+      // said by its disabled checkbox and its subtitle, and each tool inside
+      // still carries its own lock.
+      secondary: Icon(expanded ? CoderIcons.collapse : CoderIcons.expand),
+      title: TRText.inherit(toolGroupLabel(l10n, view.group)),
+      subtitle: TRText.inherit(
+        view.locked
+            ? l10n.agentSettingsToolGroupAlwaysOn
+            : l10n.agentSettingsToolGroupSummary(enabled, view.tools.length),
+      ),
+    );
+  }
 
   AgentDefinitionDto _editedDefinition() => widget.definition.copyWith(
     name: _name.text.trim(),

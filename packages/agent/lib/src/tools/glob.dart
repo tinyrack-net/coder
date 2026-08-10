@@ -163,6 +163,7 @@ final class GlobToolProvider extends SelectableToolProvider {
     name: id,
     description: GlobTool(gitignoreEnvironment: _gitignore).description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
     alwaysOn: true,
   );
 

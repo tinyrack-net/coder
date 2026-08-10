@@ -476,17 +476,33 @@ void main() {
       // the row lives in, but stops as soon as the row exists rather than when
       // it is on screen; ensureVisible then brings it fully into view. The row
       // is addressed by key because a section builds as a unit, so a text match
-      // can resolve to an occurrence far below the fold.
-      final collaborationTool = find.byKey(
-        const ValueKey<String>('agent-tool-tile-collaboration'),
+      // can resolve to an occurrence far below the fold. The group header is
+      // the waypoint rather than the tool: a group starts closed, so its tools
+      // are not in the tree until someone opens it.
+      final collaborationGroup = find.byKey(
+        const ValueKey<String>('agent-tool-group-collaboration'),
       );
       await tester.scrollUntilVisible(
-        collaborationTool,
+        collaborationGroup,
         400,
         scrollable: editorScrollable,
       );
-      await tester.ensureVisible(collaborationTool);
+      await tester.ensureVisible(collaborationGroup);
       await tester.pumpAndSettle();
+      // Opening it proves the group really does carry the tool the reset
+      // default turned on, which the assertion below reads back off disk.
+      await tester.tap(collaborationGroup);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<CoderCheckboxRow>(
+              find.byKey(
+                const ValueKey<String>('agent-tool-tile-collaboration'),
+              ),
+            )
+            .value,
+        isTrue,
+      );
 
       await tester.scrollUntilVisible(
         find.text('호출 가능한 Subagent'),
@@ -597,7 +613,14 @@ void main() {
       await tester.pumpAndSettle();
       // MCP: expose a real child-process failure, repair its command and
       // secret through the UI, test discovery, then remove it again.
-      await tester.tap(find.text('MCP').last);
+      // Scoped to the sidebar: the agent editor behind it also has a row
+      // labelled MCP, the group its resource tools are toggled in.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+          matching: find.text('MCP'),
+        ),
+      );
       await pumpUntil(tester, find.text('MCP 서버'));
       await tester.pumpAndSettle();
       expect(

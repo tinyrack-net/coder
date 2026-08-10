@@ -61,6 +61,8 @@ class CoderCheckboxRow extends StatelessWidget {
     required this.title,
     required this.value,
     this.onChanged,
+    this.onRowTap,
+    this.indeterminate = false,
     this.secondary,
     this.subtitle,
     this.wrapsSubtitle = false,
@@ -82,21 +84,38 @@ class CoderCheckboxRow extends StatelessWidget {
   /// Current checked state.
   final bool value;
 
+  /// Whether the checkbox reads as partially checked.
+  ///
+  /// For a row standing for several settings that disagree, such as a group
+  /// header over tools where only some are on.
+  final bool indeterminate;
+
   /// Called with the next checked state.
   final ValueChanged<bool?>? onChanged;
 
+  /// What the row does when the checkbox is not what was tapped.
+  ///
+  /// Left null, the row simply repeats the checkbox, which is the usual shape
+  /// and keeps one setting at one tab stop. A row that does something else —
+  /// a group header that expands while its checkbox toggles the whole group —
+  /// supplies this, and then the row and the checkbox are two actions and get
+  /// a tab stop each.
+  final VoidCallback? onRowTap;
+
   @override
   Widget build(BuildContext context) => SettingsRow(
-    enabled: onChanged != null,
-    // The row's tap is the checkbox's tap, so the checkbox is the tab stop.
-    controlOwnsFocus: true,
-    onTap: onChanged == null ? null : () => onChanged!(!value),
+    enabled: onChanged != null || onRowTap != null,
+    // Without [onRowTap] the row's tap is the checkbox's tap, so the checkbox
+    // is the single tab stop. With one they are two actions, and two stops.
+    controlOwnsFocus: onRowTap == null,
+    onTap: onRowTap ?? (onChanged == null ? null : () => onChanged!(!value)),
     leading: secondary,
     title: title,
     description: subtitle,
     wrapsDescription: wrapsSubtitle,
     control: TRCheckbox(
       checked: value,
+      indeterminate: indeterminate,
       disabled: onChanged == null,
       onCheckedChange: (checked) => onChanged?.call(checked),
     ),

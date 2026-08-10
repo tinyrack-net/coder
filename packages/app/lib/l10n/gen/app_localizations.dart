@@ -1690,6 +1690,60 @@ abstract class AppLocalizations {
   /// **'Built-in tools'**
   String get agentSettingsBuiltinTools;
 
+  /// Tool group covering workspace search and reading.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get agentSettingsToolGroupFilesystem;
+
+  /// Tool group covering workspace file changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing'**
+  String get agentSettingsToolGroupEditing;
+
+  /// Tool group covering shell and process execution.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get agentSettingsToolGroupExecution;
+
+  /// Tool group covering conversation attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get agentSettingsToolGroupAttachments;
+
+  /// Tool group covering MCP servers and their resources.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP'**
+  String get agentSettingsToolGroupMcp;
+
+  /// Tool group covering collaborating subagents.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaboration'**
+  String get agentSettingsToolGroupCollaboration;
+
+  /// Tool group covering plans, questions, and time.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get agentSettingsToolGroupSession;
+
+  /// Subtitle counting the enabled tools in one group.
+  ///
+  /// In en, this message translates to:
+  /// **'{enabled} of {total} on'**
+  String agentSettingsToolGroupSummary(int enabled, int total);
+
+  /// Subtitle of a group whose tools every agent gets.
+  ///
+  /// In en, this message translates to:
+  /// **'Always available'**
+  String get agentSettingsToolGroupAlwaysOn;
+
   /// Heading of the subagent list.
   ///
   /// In en, this message translates to:

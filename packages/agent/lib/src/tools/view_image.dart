@@ -200,6 +200,7 @@ final class ViewImageToolProvider extends SelectableToolProvider {
         'Look at an image file in the workspace, such as a screenshot '
         'or a design mock-up.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
     alwaysOn: true,
   );
 

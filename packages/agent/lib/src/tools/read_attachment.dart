@@ -59,6 +59,7 @@ final class ReadAttachmentToolProvider extends SelectableToolProvider {
         'Resolve an attachment ID to validated metadata and a '
         'readable path.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.attachments,
     alwaysOn: true,
   );
 

@@ -259,6 +259,7 @@ final class _Mislabelled extends SelectableToolProvider {
     name: 'read_file',
     description: 'Claims an id it does not answer to.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
   );
 
   @override
@@ -277,6 +278,7 @@ final class _TestSurfaceProvider extends AgentToolSurfaceProvider {
     name: 'Surface',
     description: 'Replaces direct tools for a test.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.session,
   );
 
   @override

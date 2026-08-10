@@ -76,6 +76,7 @@ final class ReadFileToolProvider extends SelectableToolProvider {
     name: id,
     description: ReadFileTool().description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
     alwaysOn: true,
   );
 

@@ -1410,6 +1410,7 @@ final class FakeCoderApi
       name: 'read_file',
       description: 'Read a file.',
       risk: ToolRisk.read,
+      group: ToolGroup.filesystem,
       alwaysOn: true,
     ),
     AgentToolDefinitionDto(
@@ -1417,6 +1418,30 @@ final class FakeCoderApi
       name: 'exec_command',
       description: 'Run a command in a pseudo-terminal.',
       risk: ToolRisk.command,
+      group: ToolGroup.execution,
+    ),
+    // Three of one group, so a test can tell a whole-group toggle from a
+    // per-tool one and see the header report a partial selection.
+    AgentToolDefinitionDto(
+      id: 'list_mcp_resources',
+      name: 'list_mcp_resources',
+      description: 'List MCP resources.',
+      risk: ToolRisk.read,
+      group: ToolGroup.mcp,
+    ),
+    AgentToolDefinitionDto(
+      id: 'list_mcp_resource_templates',
+      name: 'list_mcp_resource_templates',
+      description: 'List MCP resource templates.',
+      risk: ToolRisk.read,
+      group: ToolGroup.mcp,
+    ),
+    AgentToolDefinitionDto(
+      id: 'read_mcp_resource',
+      name: 'read_mcp_resource',
+      description: 'Read one MCP resource.',
+      risk: ToolRisk.read,
+      group: ToolGroup.mcp,
     ),
   ];
 

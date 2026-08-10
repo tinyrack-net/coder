@@ -875,6 +875,35 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsBuiltinTools => '내장 도구';
 
   @override
+  String get agentSettingsToolGroupFilesystem => '파일';
+
+  @override
+  String get agentSettingsToolGroupEditing => '편집';
+
+  @override
+  String get agentSettingsToolGroupExecution => '명령 실행';
+
+  @override
+  String get agentSettingsToolGroupAttachments => '첨부';
+
+  @override
+  String get agentSettingsToolGroupMcp => 'MCP';
+
+  @override
+  String get agentSettingsToolGroupCollaboration => '협업';
+
+  @override
+  String get agentSettingsToolGroupSession => '세션';
+
+  @override
+  String agentSettingsToolGroupSummary(int enabled, int total) {
+    return '$total개 중 $enabled개 사용';
+  }
+
+  @override
+  String get agentSettingsToolGroupAlwaysOn => '항상 사용 가능';
+
+  @override
   String get agentSettingsSubagents => '호출 가능한 Subagent';
 
   @override

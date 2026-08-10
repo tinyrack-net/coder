@@ -1747,6 +1747,7 @@ void main() {
       name: 'run_command',
       description: 'Starts a child process.',
       risk: ToolRisk.command,
+      group: ToolGroup.execution,
     );
     expect(toggleable.alwaysOn, isFalse);
     _roundTrip(
@@ -1755,6 +1756,7 @@ void main() {
         name: 'read_file',
         description: 'Reads a workspace file.',
         risk: ToolRisk.read,
+        group: ToolGroup.filesystem,
         alwaysOn: true,
       ),
       (value) => value.toJson(),
@@ -1766,10 +1768,34 @@ void main() {
         name: 'mcp__github__create_issue',
         description: 'Creates a GitHub issue.',
         risk: ToolRisk.dangerous,
+        group: ToolGroup.mcp,
         available: false,
       ),
       (value) => value.toJson(),
       AgentToolDefinitionDto.fromJson,
+    );
+  });
+
+  test('agent tool definitions carry the group they are toggled in', () {
+    const tool = AgentToolDefinitionDto(
+      id: 'read_mcp_resource',
+      name: 'read_mcp_resource',
+      description: 'Reads one MCP resource.',
+      risk: ToolRisk.read,
+      group: ToolGroup.mcp,
+    );
+    expect(tool.toJson()['group'], 'mcp');
+    expect(
+      ToolGroup.values.map((value) => value.name),
+      <String>[
+        'filesystem',
+        'editing',
+        'execution',
+        'attachments',
+        'mcp',
+        'collaboration',
+        'session',
+      ],
     );
   });
 

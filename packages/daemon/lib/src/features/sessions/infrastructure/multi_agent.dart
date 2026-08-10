@@ -844,6 +844,7 @@ final class CollaborationToolProvider extends AgentToolProvider {
         'Spawn, message, wait on, interrupt, and list collaborating '
         'subagents that share this workspace.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.collaboration,
   );
 
   @override
