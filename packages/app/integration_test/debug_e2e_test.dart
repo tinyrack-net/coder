@@ -669,7 +669,8 @@ void main() {
       );
       final setSecret = find.byKey(const ValueKey<String>('mcp-secret-set'));
       await tester.ensureVisible(setSecret);
-      await tester.tap(setSecret);
+      await pumpUntil(tester, setSecret.hitTestable());
+      await tester.tap(setSecret.hitTestable());
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey<String>('mcp-secret-key')),
