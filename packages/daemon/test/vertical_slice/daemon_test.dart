@@ -2363,6 +2363,17 @@ void main() {
       expect(registered.workspace.kind, WorkspaceKind.git);
       expect(await client.listGitBranches('git-workspace'), hasLength(1));
 
+      // The repository checkout stays on disk either way, so archiving it would
+      // only hide the project from the catalog.
+      await expectLater(
+        client.archiveWorktree('main-checkout', force: true),
+        throwsA(isA<CoderClientException>()),
+      );
+      expect(
+        (await client.getWorkspaceCatalog()).worktrees.single.id,
+        'main-checkout',
+      );
+
       expect(
         (await client.getProjectSettings('git-workspace')).settings,
         const ProjectSettingsDto(),
