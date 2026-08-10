@@ -147,24 +147,63 @@ local verification failure.
 
 ## Continuous integration
 
-Pull requests and main pushes run independent static, generated-source,
-platform-test, coverage, golden, Debug E2E, and mobile-build jobs. Linux coverage
-is the Linux execution of the full suite; macOS and Windows run the non-coverage
-Dart and Flutter suites independently. The `Quality Gate` job requires every
-job to succeed and is the sole required branch-protection check.
-
 Merging goes through a merge queue. A pull request is not merged on the commit
 it was tested at: the queue rebuilds it on top of whatever `main` has become,
-runs the same quality set against that projected merge, and squashes it in.
-Nothing has to be rebased by hand to stay current, and a green pull request no
-longer goes stale because another one landed first. Enable auto-merge and the
-queue takes it from there.
+runs the quality set against that projected merge, and squashes it in. Nothing
+has to be rebased by hand to stay current, and a green pull request no longer
+goes stale because another one landed first. Enable auto-merge and the queue
+takes it from there.
 
-Two consequences worth knowing. A queue run reports as the `merge_group` event
-rather than `pull_request`, so a job that must run before merging cannot be
-gated on `pull_request` alone. And a cancelled queue check counts as a failure
+Because the queue, not the pull request, is what `main` is actually reachable
+through, the two run different scopes. Every pull request runs the Linux
+static, generated-source, coverage, golden, Debug E2E, IBus terminal, web,
+Android, and Linux CLI jobs. The merge queue adds what only a second host can
+prove: the macOS and Windows Dart and Flutter test jobs, the macOS and Windows
+Debug builds, the iOS build, and the remaining three CLI targets.
+
+That split exists because every job restores a 1.7-2.1 GB Flutter SDK cache
+that cannot be pruned. Measured against the published archives the cached blob
+is the pristine SDK — Windows caches 1.81 GB against a 1.8 GB archive, macOS
+2.08 against 2.1, Linux 1.69 against 1.5 — so there is no precache bloat to
+strip, and the per-job cost is fixed. The pipeline pays it fewer times instead,
+by moving the cross-platform jobs to the queue. Measured across four runs
+before and one after, a pull request went from ~260 billed minutes to 33, and
+from ~7.5 minutes of wall clock to 6.4 — this is overwhelmingly a cost saving,
+not a latency one, because the jobs that moved ran in parallel and were rarely
+the critical path.
+
+Merging the Dart and Flutter suites into one job per host, to pay the setup
+once, was tried and reverted. On Windows the suites take 7.6 and 4.4 minutes,
+so a single job serialises them into 15.6 and the queue run went from 7.7 to
+18.2 minutes. Repeating a sub-two-minute setup is the cheaper of the two, and
+the queue gates every merge, so its wall clock is what matters.
+
+Because the payload is identical either way, throughput is the only variable
+left, and Windows restores that blob at ~6 MB/s against 48 MB/s for the same
+blob on macOS. `setup-flutter` therefore skips the SDK cache on Windows alone
+and fetches the archive from Google's CDN. That is the one tuning decision here
+taken on inference rather than measurement: if a Windows setup step is not
+faster than the 4.5 minutes it used to take, drop the condition in
+`.github/actions/setup-flutter/action.yml` and cache unconditionally again.
+
+Coverage is unaffected by any of this. It is collected only by
+`coverage-dart-linux` and `coverage-flutter-linux`, both of which run on every
+pull request, and the 90%/80% gate reads their LCOV exactly as before. What
+moved to the queue were the macOS and Windows re-runs of those same suites,
+which never produced coverage.
+
+A `changes` job decides the scope. It narrows the CLI and mobile matrices from
+`.github/ci-matrices.json`, and skips the whole matrix for a pull request whose
+diff is only `docs/` and Markdown. An unreadable or empty file listing counts
+as code, never as documentation.
+
+Three consequences worth knowing. A queue run reports as the `merge_group`
+event rather than `pull_request`, so a job that must run before merging cannot
+be gated on `pull_request` alone. A cancelled queue check counts as a failure
 that ejects the pull request, which is why merge-queue runs opt out of
-`cancel-in-progress`.
+`cancel-in-progress`. And `Quality Gate`, the sole required branch-protection
+check, accepts a `skipped` job — that is how a scoped-out job passes — but
+fails if `changes` itself failed, since that would skip everything at once.
 
 Nightly runs the same desktop shard matrix on macOS and Windows. Android and
 iOS run the remote-only bootstrap and provider suites; desktop-owned daemon,

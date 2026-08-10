@@ -1,6 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
+
+/// Matrix entries `changes` narrows for a pull request and expands otherwise.
+final Map<String, dynamic> _matrices =
+    jsonDecode(File('.github/ci-matrices.json').readAsStringSync())
+        as Map<String, dynamic>;
 
 void main() {
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
@@ -45,6 +51,7 @@ void main() {
 
   test('normal quality jobs do not run in the nightly workflow', () {
     for (final job in <String>[
+      'changes',
       'static-linux',
       'generated-linux',
       'dart-tests',
@@ -59,10 +66,7 @@ void main() {
       'web-build',
       'cli-verify',
     ]) {
-      expect(
-        _job(workflow, job),
-        contains("if: github.event_name != 'schedule'"),
-      );
+      expect(_job(workflow, job), contains("github.event_name != 'schedule'"));
     }
     for (final job in <String>[
       'nightly-desktop-e2e',
@@ -72,6 +76,124 @@ void main() {
       expect(
         _job(workflow, job),
         contains("if: github.event_name == 'schedule'"),
+      );
+    }
+  });
+
+  test('the cross-platform suites stay in separate parallel jobs', () {
+    // Merging them to pay `setup-flutter` once was tried and measured: on
+    // Windows the suites take 7.6 and 4.4 minutes, so one job serialises them
+    // into 15.6 and the merge-queue run went 7.7 -> 18.2 minutes. Repeating a
+    // setup that now costs under 2 minutes is the cheaper of the two, and the
+    // queue gates every merge, so its wall clock is what matters here.
+    final dart = _job(workflow, 'dart-tests');
+    final flutter = _job(workflow, 'flutter-tests');
+    expect(dart, contains('dart run melos test:dart'));
+    expect(dart, isNot(contains('dart run melos test:flutter')));
+    expect(flutter, contains('dart run melos test:flutter'));
+    expect(flutter, isNot(contains('dart run melos test:dart')));
+    for (final job in <String>[dart, flutter]) {
+      expect(job, contains('macos-26'));
+      expect(job, contains('windows-2025'));
+    }
+    // A single job running both is what the measurement rejected.
+    expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
+  });
+
+  test('Windows fetches the SDK archive instead of the Actions cache', () {
+    // The cached blob and the published archive are the same size on every
+    // host (Windows 1.81 GB against 1.8, macOS 2.08 against 2.1, Linux 1.69
+    // against 1.5), so the cache carries no precache bloat and the payload is
+    // identical either way. Only throughput differs, and Windows restores at
+    // ~6 MB/s against 48 MB/s for the same blob on macOS.
+    final setup = File(
+      '.github/actions/setup-flutter/action.yml',
+    ).readAsStringSync();
+    expect(setup, contains(r"cache: ${{ runner.os != 'Windows' }}"));
+    expect(setup, isNot(contains('cache: true')));
+    // One definition, so no job can quietly opt back into the slow path.
+    expect(
+      RegExp('setup-flutter').allMatches(workflow).length,
+      greaterThan(1),
+    );
+    expect(workflow, isNot(contains('subosito/flutter-action')));
+  });
+
+  test('cross-platform duplicates run in the merge queue, not on every PR', () {
+    // macOS is 68% of the bill and these jobs re-run suites the Linux jobs
+    // already run. The merge queue is an active ALLGREEN ruleset, so it still
+    // blocks `main`; only the per-pull-request copy goes away.
+    for (final job in <String>[
+      'dart-tests',
+      'flutter-tests',
+      'desktop-debug-build',
+    ]) {
+      expect(
+        _job(workflow, job),
+        contains("github.event_name != 'pull_request'"),
+      );
+    }
+    // Coverage is Linux-only and is what the 90%/80% gate reads, so it must
+    // stay on every pull request.
+    for (final job in <String>[
+      'coverage-dart-linux',
+      'coverage-flutter-linux',
+      'golden-linux',
+      'debug-e2e-linux',
+      'static-linux',
+    ]) {
+      expect(
+        _job(workflow, job),
+        isNot(contains("github.event_name != 'pull_request'")),
+      );
+    }
+  });
+
+  test('scoped matrices keep one host and expand to every queue target', () {
+    // Both matrices are chosen in `changes`, so each job body stays single.
+    expect(_job(workflow, 'cli-verify'), contains('fromJSON'));
+    expect(_job(workflow, 'mobile-debug-build'), contains('fromJSON'));
+    expect(_job(workflow, 'changes'), contains('CROSS_PLATFORM'));
+
+    // An empty matrix is a workflow error, not a skipped job, so every `host`
+    // list has to stay non-empty however the scope is narrowed.
+    for (final key in <String>['cli', 'mobile']) {
+      final group = _matrices[key]! as Map<String, dynamic>;
+      expect(group['host'], isNotEmpty, reason: '$key host matrix is empty');
+      expect(group['cross'], isNotEmpty, reason: '$key cross matrix is empty');
+    }
+    expect(
+      (_matrices['cli']! as Map<String, dynamic>)['host'],
+      hasLength(1),
+      reason: 'a pull request should build one CLI target',
+    );
+  });
+
+  test('a documentation-only pull request skips the quality matrix', () {
+    final scope = _job(workflow, 'changes');
+    expect(scope, contains('docs_only'));
+    expect(scope, contains('pulls/'));
+    // An empty or unreadable diff must not read as documentation-only, or a
+    // code change could merge without ever running a gate.
+    expect(scope, contains('docs_only=false'));
+    for (final job in <String>[
+      'static-linux',
+      'coverage-dart-linux',
+      'coverage-flutter-linux',
+      'golden-linux',
+      'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
+      'linux-ibus-terminal-wayland-e2e',
+      'web-build',
+      'cli-verify',
+      'mobile-debug-build',
+      'dart-tests',
+      'flutter-tests',
+      'desktop-debug-build',
+    ]) {
+      expect(
+        _job(workflow, job),
+        contains("needs.changes.outputs.docs_only != 'true'"),
       );
     }
   });
@@ -210,18 +332,32 @@ void main() {
       expect(job, contains('./.github/actions/build-cli-bundle'));
       expect(job, contains('./.github/actions/smoke-cli-bundle'));
     }
+    // `cli-verify` now takes its matrix from `changes` so a pull request can
+    // build the host target alone; the target list lives in the matrix file.
+    final cli = _matrices['cli']! as Map<String, dynamic>;
+    final verified =
+        <dynamic>[
+              ...(cli['host']! as List<dynamic>),
+              ...(cli['cross']! as List<dynamic>),
+            ]
+            .cast<Map<String, dynamic>>()
+            .map((entry) => entry['target']! as String)
+            .toList();
     for (final target in <String>[
       'linux-x64',
       'macos-x64',
       'macos-arm64',
       'windows-x64',
     ]) {
-      expect(verify, contains('target: $target'));
+      expect(verified, contains(target));
       expect(release, contains('target: $target'));
     }
+    // A queue run has to verify exactly what a tag releases, or the job stops
+    // being the thing that catches a release-path breakage.
+    expect(verified, hasLength(4));
     // Linux arm64 has no Flutter SDK, so it is not a release target and must
     // not reappear here; `shipworld.yaml` omits it too.
-    expect(verify, isNot(contains('linux-arm64')));
+    expect(verified, isNot(contains('linux-arm64')));
     expect(release, isNot(contains('linux-arm64')));
     // A fork pull request has no signing secrets and no release to upload to.
     expect(verify, isNot(contains('APPLE_CERTIFICATE')));
@@ -231,6 +367,7 @@ void main() {
   test('the aggregate gate requires every quality job', () {
     final gate = _job(workflow, 'quality-gate');
     for (final dependency in <String>[
+      'changes',
       'static-linux',
       'generated-linux',
       'dart-tests',
@@ -249,7 +386,15 @@ void main() {
     ]) {
       expect(gate, contains('- $dependency'));
     }
-    expect(gate, contains('all(.[]; .result == "success")'));
+    // Scoping jobs out by event or by diff makes them report `skipped`, which
+    // the gate has to accept. It must not accept a skip that came from
+    // `changes` itself failing, because that skips everything at once.
+    expect(
+      gate,
+      contains('all(.[]; .result == "success" or .result == "skipped")'),
+    );
+    expect(gate, contains('.changes.result == "success"'));
+    expect(gate, isNot(contains('.result == "failure"')));
     expect(_job(workflow, 'publish-release'), contains('- quality-gate'));
   });
 
@@ -313,11 +458,11 @@ void main() {
 
   test('only Android mobile builds use the enhanced Gradle cache', () {
     final mobileBuild = _job(workflow, 'mobile-debug-build');
-    final androidBuild = _matrixEntry(mobileBuild, 'ubuntu-24.04');
-    final iosBuild = _matrixEntry(mobileBuild, 'macos-26');
+    final androidBuild = _mobileEntry('ubuntu-24.04');
+    final iosBuild = _mobileEntry('macos-26');
 
-    expect(androidBuild, contains('gradle_cache: true'));
-    expect(iosBuild, contains('gradle_cache: false'));
+    expect(androidBuild['gradle_cache'], isTrue);
+    expect(iosBuild['gradle_cache'], isFalse);
     expect(mobileBuild, contains('if: matrix.gradle_cache'));
     expect(mobileBuild, contains('uses: gradle/actions/setup-gradle@v6'));
     expect(mobileBuild, contains('cache-provider: enhanced'));
@@ -347,12 +492,12 @@ void main() {
       iosPodfile,
       contains("raise 'Missing redundant Pods-Runner library reference'"),
     );
-    final iosBuild = _matrixEntry(
-      _job(workflow, 'mobile-debug-build'),
-      'macos-26',
+    final iosBuild = _mobileEntry('macos-26');
+    expect(
+      iosBuild['command'],
+      contains('flutter build ios --debug --no-codesign'),
     );
-    expect(iosBuild, contains('flutter build ios --debug --no-codesign'));
-    expect(iosBuild, isNot(contains('--simulator')));
+    expect(iosBuild['command'], isNot(contains('--simulator')));
     expect(iosProject, isNot(contains('FlutterGeneratedPluginSwiftPackage')));
   });
 
@@ -446,6 +591,20 @@ String _job(String workflow, String name) {
       ? workflow.length
       : start + name.length + 3 + next.start;
   return workflow.substring(start, end);
+}
+
+/// The mobile build matrix entry for [os], from either scope.
+Map<String, dynamic> _mobileEntry(String os) {
+  final mobile = _matrices['mobile']! as Map<String, dynamic>;
+  final entries = <dynamic>[
+    ...(mobile['host']! as List<dynamic>),
+    ...(mobile['cross']! as List<dynamic>),
+  ];
+  return entries
+          .cast<Map<String, dynamic>>()
+          .where((entry) => entry['os'] == os)
+          .firstOrNull ??
+      (throw StateError('Missing mobile matrix entry for $os'));
 }
 
 String _matrixEntry(String job, String os) {
