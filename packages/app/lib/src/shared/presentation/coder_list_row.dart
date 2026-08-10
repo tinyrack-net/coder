@@ -15,8 +15,8 @@ enum CoderListRowSelectionAppearance {
 ///
 /// The row rings itself only while it holds the primary focus. A row reports
 /// focus for its descendants as well, so a row that read plain focus painted
-/// its ring beside the one a focused trailing control was already painting,
-/// which showed two rings for one control.
+/// its ring beside the emphasis a focused trailing control was already
+/// carrying, which marked one control twice.
 ///
 /// A row whose [onTap] only repeats what its trailing control already does sets
 /// [controlOwnsFocus] so the control is the single tab stop for the setting.
