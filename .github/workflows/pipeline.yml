@@ -221,10 +221,9 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    # Reproduction job for the Wayland-only Hangul reorder (안녕하세요. →
-    # 안세녕하요.). Expected red until the termworld fix lands; not part of
-    # the Quality Gate yet. Flip this off once the fix is pinned.
-    continue-on-error: true
+    # Regression gate for the Wayland-only Hangul reorder (안녕하세요. →
+    # 안세녕하요.): red before the termworld arrival-order fix landed, green
+    # since the pin moved past it.
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
@@ -377,6 +376,7 @@ jobs:
       - golden-linux
       - debug-e2e-linux
       - linux-ibus-terminal-e2e
+      - linux-ibus-terminal-wayland-e2e
       - mobile-debug-build
       - desktop-debug-build
       - web-build
