@@ -1731,6 +1731,12 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get workspaceArchiveFailed => '워크트리를 보관하지 못했습니다.';
+
+  @override
+  String get workspaceUnregisterFailed => '프로젝트를 제거하지 못했습니다.';
+
+  @override
   String get projectSettingsSaveFailed => '프로젝트 설정을 저장하지 못했습니다.';
 
   @override

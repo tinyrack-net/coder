@@ -107,6 +107,25 @@ void main() {
     );
   });
 
+  group('retirement', () {
+    test(
+      'a result that arrives after the scope is gone is dropped, not thrown',
+      () async {
+        messenger.retire();
+
+        final saved = await messenger.run(
+          () async {},
+          failure: 'Could not save.',
+          success: 'Saved.',
+        );
+
+        expect(saved, isTrue, reason: 'the action itself still completed');
+        expect(controller.toasts, isEmpty);
+      },
+      tags: const <String>['feature_test__app_toast__unit'],
+    );
+  });
+
   group('run', () {
     test(
       'a completed action answers true and reports only when asked',

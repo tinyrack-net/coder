@@ -2204,6 +2204,14 @@
       }
     }
   },
+  "workspaceArchiveFailed": "Could not archive the worktree.",
+  "@workspaceArchiveFailed": {
+    "description": "Reported when a worktree could not be archived."
+  },
+  "workspaceUnregisterFailed": "Could not remove the project.",
+  "@workspaceUnregisterFailed": {
+    "description": "Reported when a project could not be unregistered."
+  },
   "projectSettingsSaveFailed": "Could not save the project settings.",
   "@projectSettingsSaveFailed": {
     "description": "Reported when a project's hooks or shell could not be written."

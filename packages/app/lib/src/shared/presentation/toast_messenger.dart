@@ -20,9 +20,11 @@ final appToastControllerProvider = Provider<TRToastController>((ref) {
 });
 
 /// Reports the results of user actions.
-final toastMessengerProvider = Provider<ToastMessenger>(
-  (ref) => ToastMessenger(ref.watch(appToastControllerProvider)),
-);
+final toastMessengerProvider = Provider<ToastMessenger>((ref) {
+  final messenger = ToastMessenger(ref.watch(appToastControllerProvider));
+  ref.onDispose(messenger.retire);
+  return messenger;
+});
 
 /// Reports the outcome of a user action as a transient notification.
 ///
@@ -33,9 +35,18 @@ final toastMessengerProvider = Provider<ToastMessenger>(
 /// settings forms already do.
 class ToastMessenger {
   /// Reports through the queue the region is rendering.
-  const ToastMessenger(this._controller);
+  ToastMessenger(this._controller);
 
   final TRToastController _controller;
+  bool _retired = false;
+
+  /// Stops reporting, because the queue behind this messenger is gone.
+  ///
+  /// An action can outlive the whole application scope — a shutdown while a
+  /// write is in flight — and the result then arrives with nothing left to
+  /// show it on. Answering that with a disposed-notifier crash would turn a
+  /// successful action into a failed one.
+  void retire() => _retired = true;
 
   /// Reports an action that finished and left nothing on screen to show for it.
   ///
@@ -93,14 +104,17 @@ class ToastMessenger {
     required TRStatusVariant variant,
     String? description,
     String? id,
-  }) => _controller.show(
-    TRToastData(
-      title: TRText.inherit(title),
-      description: description == null ? null : TRText.inherit(description),
-      variant: variant,
-      id: id,
-    ),
-  );
+  }) {
+    if (_retired) return;
+    _controller.show(
+      TRToastData(
+        title: TRText.inherit(title),
+        description: description == null ? null : TRText.inherit(description),
+        variant: variant,
+        id: id,
+      ),
+    );
+  }
 
   /// The part of [error] worth repeating to the user.
   ///

@@ -3160,6 +3160,18 @@ abstract class AppLocalizations {
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
 
+  /// Reported when a worktree could not be archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not archive the worktree.'**
+  String get workspaceArchiveFailed;
+
+  /// Reported when a project could not be unregistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the project.'**
+  String get workspaceUnregisterFailed;
+
   /// Reported when a project's hooks or shell could not be written.
   ///
   /// In en, this message translates to:

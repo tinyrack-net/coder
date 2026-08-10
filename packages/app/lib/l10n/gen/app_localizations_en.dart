@@ -1762,6 +1762,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get workspaceArchiveFailed => 'Could not archive the worktree.';
+
+  @override
+  String get workspaceUnregisterFailed => 'Could not remove the project.';
+
+  @override
   String get projectSettingsSaveFailed =>
       'Could not save the project settings.';
 

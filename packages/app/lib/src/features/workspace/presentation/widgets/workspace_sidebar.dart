@@ -7,6 +7,7 @@ import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -449,10 +450,19 @@ class WorkspaceSidebar extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    final archived = await entry.api.workspaces.archiveWorktree(
-      worktree.id,
-      force: risky,
-    );
+    WorktreeResultDto? archived;
+    final succeeded = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () async => archived = await entry.api.workspaces.archiveWorktree(
+            worktree.id,
+            force: risky,
+          ),
+          failure: l10n.workspaceArchiveFailed,
+          success: l10n.commonDeleted,
+          id: 'worktree-archive',
+        );
+    if (!succeeded || archived == null) return;
     // Archiving the selected worktree can unmount this sidebar, and reading a
     // provider after that throws. Whatever replaces it reads the catalog
     // itself, so an unmounted sidebar has nothing left to do here.
@@ -462,7 +472,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         .refreshHost(entry.hostId);
     // Teardown never blocks the archive, so surface failures afterwards.
     if (context.mounted) {
-      reportWorktreeHookFailure(context, archived.hookRuns);
+      reportWorktreeHookFailure(context, archived!.hookRuns);
     }
     if (context.mounted && selected?.worktreeId == worktree.id) {
       onArchivedSelection();
@@ -499,9 +509,19 @@ class WorkspaceSidebar extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await entry.api.workspaces.unregisterWorkspace(workspace.id);
+    // Reported rather than swallowed: the user has just confirmed a
+    // destructive action, and a refusal that says nothing is indistinguishable
+    // from one that worked.
+    final unregistered = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => entry.api.workspaces.unregisterWorkspace(workspace.id),
+          failure: l10n.workspaceUnregisterFailed,
+          success: l10n.commonDeleted,
+          id: 'workspace-unregister',
+        );
     // Same unmount hazard as archiving.
-    if (!context.mounted) return;
+    if (!unregistered || !context.mounted) return;
     ref.invalidate(workspaceCatalogControllerProvider);
     if (selected?.workspaceId == workspace.id) onArchivedSelection();
   }

@@ -85,19 +85,21 @@ class _StartupSection extends ConsumerWidget {
           onChanged: settings == null
               ? null
               : (enabled) => unawaited(
-                  ref.read(toastMessengerProvider).run(
-                    () async {
-                      await controller.setStartAtBoot(enabled: enabled);
-                      await autostart.apply(
-                        enabled: enabled,
-                        minimized: settings.startMinimizedAtBoot,
-                      );
-                    },
-                    failure: l10n.generalStartupFailed,
-                    // The switch snaps back to the stored value on its own, so
-                    // only the failure needs saying.
-                    id: 'general-settings-startup',
-                  ),
+                  ref
+                      .read(toastMessengerProvider)
+                      .run(
+                        () async {
+                          await controller.setStartAtBoot(enabled: enabled);
+                          await autostart.apply(
+                            enabled: enabled,
+                            minimized: settings.startMinimizedAtBoot,
+                          );
+                        },
+                        failure: l10n.generalStartupFailed,
+                        // The switch snaps back to the stored value on
+                        // its own, so only the failure needs saying.
+                        id: 'general-settings-startup',
+                      ),
                 ),
         ),
         CoderSwitchRow(
@@ -114,19 +116,21 @@ class _StartupSection extends ConsumerWidget {
           onChanged: settings == null || !settings.startAtBoot
               ? null
               : (minimized) => unawaited(
-                  ref.read(toastMessengerProvider).run(
-                    () async {
-                      await controller.setStartMinimizedAtBoot(
-                        enabled: minimized,
-                      );
-                      await autostart.apply(
-                        enabled: settings.startAtBoot,
-                        minimized: minimized,
-                      );
-                    },
-                    failure: l10n.generalStartupFailed,
-                    id: 'general-settings-startup',
-                  ),
+                  ref
+                      .read(toastMessengerProvider)
+                      .run(
+                        () async {
+                          await controller.setStartMinimizedAtBoot(
+                            enabled: minimized,
+                          );
+                          await autostart.apply(
+                            enabled: settings.startAtBoot,
+                            minimized: minimized,
+                          );
+                        },
+                        failure: l10n.generalStartupFailed,
+                        id: 'general-settings-startup',
+                      ),
                 ),
         ),
       ],
@@ -169,15 +173,17 @@ class _AppearanceSection extends ConsumerWidget {
               onValueChange: settings == null
                   ? null
                   : (mode) => unawaited(
-                      ref.read(toastMessengerProvider).run(
-                        () => ref
-                            .read(hostRegistryControllerProvider.notifier)
-                            .setThemeMode(mode ?? AppThemeMode.system),
-                        failure: l10n.generalAppearanceFailed,
-                        // A theme that changed is its own confirmation, so a
-                        // success here would only be noise.
-                        id: 'general-settings-theme-mode',
-                      ),
+                      ref
+                          .read(toastMessengerProvider)
+                          .run(
+                            () => ref
+                                .read(hostRegistryControllerProvider.notifier)
+                                .setThemeMode(mode ?? AppThemeMode.system),
+                            failure: l10n.generalAppearanceFailed,
+                            // A theme that changed is its own
+                            // confirmation; success would be noise.
+                            id: 'general-settings-theme-mode',
+                          ),
                     ),
             ),
           ),
@@ -231,13 +237,15 @@ class _LanguageSection extends ConsumerWidget {
               onValueChange: settings == null
                   ? null
                   : (tag) => unawaited(
-                      ref.read(toastMessengerProvider).run(
-                        () => ref
-                            .read(hostRegistryControllerProvider.notifier)
-                            .setLocaleTag(tag),
-                        failure: l10n.generalLanguageFailed,
-                        id: 'general-settings-language',
-                      ),
+                      ref
+                          .read(toastMessengerProvider)
+                          .run(
+                            () => ref
+                                .read(hostRegistryControllerProvider.notifier)
+                                .setLocaleTag(tag),
+                            failure: l10n.generalLanguageFailed,
+                            id: 'general-settings-language',
+                          ),
                     ),
             ),
           ),
