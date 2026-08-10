@@ -29,6 +29,7 @@ import 'package:app/src/features/terminals/application/terminals_controller.dart
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
+import 'package:app/src/shared/presentation/client_error_alert.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
@@ -396,13 +397,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             key: const ValueKey<String>('terminal-creation-error'),
             variant: TRStatusVariant.danger,
             title: TRText.inherit(l10n.terminalCreationFailed),
-            description: TRText.inherit(
-              switch (error.code) {
-                'worktree_unavailable' => l10n.terminalWorktreeUnavailable,
-                'terminal_start_failed' => l10n.terminalShellStartFailed,
-                _ => error.message,
-              },
-            ),
+            description: TRText.inherit(clientErrorText(l10n, error)),
           ),
         ),
         Expanded(child: content),

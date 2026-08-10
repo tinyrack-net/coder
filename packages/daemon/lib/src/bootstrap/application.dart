@@ -732,6 +732,7 @@ abstract final class DaemonApplication {
         serverInfo: info,
         token: token,
         events: events.stream,
+        ids: effectiveIds,
         allowedOrigins: config.allowedOrigins,
       );
       relayRpcSessions = rpc;

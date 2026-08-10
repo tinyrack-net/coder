@@ -110,12 +110,17 @@ abstract class GitBranchesListParamsDto with _$GitBranchesListParamsDto {
 /// Creates a managed Git worktree from a new or existing local branch.
 abstract class WorktreeCreateParamsDto with _$WorktreeCreateParamsDto {
   /// Creates managed-worktree parameters.
+  ///
+  /// [branchNaming] decides what happens when [branchName] is already taken by
+  /// a local branch or an existing checkout path. The daemon owns that check
+  /// because only it can see branches left behind by archived worktrees.
   const factory WorktreeCreateParamsDto({
     required String id,
     required String workspaceId,
     required WorktreeCreateMode mode,
     required String branchName,
     String? baseBranch,
+    @Default(WorktreeBranchNaming.exact) WorktreeBranchNaming branchNaming,
   }) = _WorktreeCreateParamsDto;
 
   /// Decodes managed-worktree parameters.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:daemon/src/bootstrap/config.dart';
+import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/http/attachment_binding.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:daemon/src/transport/rpc/diagnostics.dart';
@@ -22,6 +23,7 @@ final class DaemonRpcServer implements RpcSessionHost {
     required this.serverInfo,
     required this.token,
     required Stream<OutboundNotification> events,
+    required this.ids,
     this.allowedOrigins = defaultAllowedOrigins,
     this.diagnostics = const StderrRpcDiagnostics(),
   }) {
@@ -42,6 +44,10 @@ final class DaemonRpcServer implements RpcSessionHost {
 
   /// Browser origins permitted to call this daemon.
   final Set<String> allowedOrigins;
+
+  /// Mints the trace id that ties a client-visible failure to a diagnostics
+  /// record.
+  final IdGenerator ids;
 
   /// Sink for errors this boundary replaces with an opaque client failure.
   final RpcDiagnostics diagnostics;
@@ -128,6 +134,7 @@ final class DaemonRpcServer implements RpcSessionHost {
       bindings: bindings,
       serverInfo: serverInfo,
       relayDeviceId: relayDeviceId,
+      ids: ids,
       diagnostics: diagnostics,
       onClosed: () {},
     );
@@ -191,6 +198,7 @@ final class _ClientSession {
     required this.bindings,
     required this.serverInfo,
     required this.relayDeviceId,
+    required this.ids,
     required this.diagnostics,
     required this.onClosed,
   });
@@ -199,6 +207,7 @@ final class _ClientSession {
   final RpcBindingRegistry bindings;
   final ServerInfoDto serverInfo;
   final String? relayDeviceId;
+  final IdGenerator ids;
   final RpcDiagnostics diagnostics;
   final RpcConnectionContext context = RpcConnectionContext();
   void Function() onClosed;
@@ -218,7 +227,7 @@ final class _ClientSession {
       throw json_rpc.RpcException(
         1002,
         'Unknown RPC method.',
-        data: const RpcFailureDto(code: 'unknown_method').toJson(),
+        data: const RpcFailureDto(code: RpcErrorCodes.unknownMethod).toJson(),
       );
     });
     unawaited(_peer.listen().whenComplete(onClosed));
@@ -234,26 +243,19 @@ final class _ClientSession {
       throw json_rpc.RpcException(
         1002,
         'Invalid handshake parameters.',
-        data: const RpcFailureDto(code: 'invalid_params').toJson(),
+        data: const RpcFailureDto(code: RpcErrorCodes.invalidParams).toJson(),
       );
     } on Object catch (error, stackTrace) {
-      diagnostics.unhandledError(
-        systemHelloProcedure.name,
-        error,
-        stackTrace,
-      );
-      throw json_rpc.RpcException(
-        1003,
-        'Internal daemon error.',
-        data: const RpcFailureDto(code: 'internal_error').toJson(),
-      );
+      throw _internalFailure(systemHelloProcedure.name, error, stackTrace);
     }
     if (payload.protocolMajor != coderProtocolMajor ||
         payload.protocolRevision != coderProtocolRevision) {
       throw json_rpc.RpcException(
         1001,
         'Unsupported protocol version.',
-        data: const RpcFailureDto(code: 'protocol_mismatch').toJson(),
+        data: const RpcFailureDto(
+          code: RpcErrorCodes.protocolMismatch,
+        ).toJson(),
       );
     }
     _handshakeComplete = true;
@@ -272,7 +274,9 @@ final class _ClientSession {
       throw json_rpc.RpcException(
         1000,
         'Handshake required.',
-        data: const RpcFailureDto(code: 'handshake_required').toJson(),
+        data: const RpcFailureDto(
+          code: RpcErrorCodes.handshakeRequired,
+        ).toJson(),
       );
     }
     try {
@@ -295,18 +299,38 @@ final class _ClientSession {
       throw json_rpc.RpcException(
         1002,
         'Invalid request parameters.',
-        data: const RpcFailureDto(code: 'invalid_params').toJson(),
+        data: const RpcFailureDto(code: RpcErrorCodes.invalidParams).toJson(),
       );
     } on Object catch (error, stackTrace) {
-      // The client must not see the cause, but discarding it leaves an
-      // `internal_error` that names neither the method nor the failure.
-      diagnostics.unhandledError(method, error, stackTrace);
-      throw json_rpc.RpcException(
-        1003,
-        'Internal daemon error.',
-        data: const RpcFailureDto(code: 'internal_error').toJson(),
-      );
+      throw _internalFailure(method, error, stackTrace);
     }
+  }
+
+  /// Reports an unexpected handler failure without leaking its cause.
+  ///
+  /// The client must not see the message or stack, which routinely carry
+  /// paths, tokens, and prompt text. It does get the method, the exception
+  /// type, and a trace id, which is enough to say what failed and to match a
+  /// user's report against the diagnostics record holding the stack.
+  json_rpc.RpcException _internalFailure(
+    String method,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    final traceId = ids.generate();
+    diagnostics.unhandledError(method, error, stackTrace, traceId: traceId);
+    return json_rpc.RpcException(
+      1003,
+      'Internal daemon error.',
+      data: RpcFailureDto(
+        code: RpcErrorCodes.internalError,
+        details: <String, dynamic>{
+          'method': method,
+          'errorType': error.runtimeType.toString(),
+          'traceId': traceId,
+        },
+      ).toJson(),
+    );
   }
 
   void send(OutboundNotification event) {

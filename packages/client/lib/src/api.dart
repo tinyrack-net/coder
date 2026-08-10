@@ -83,12 +83,18 @@ abstract interface class WorkspacesApi {
   );
 
   /// Creates a managed worktree.
+  ///
+  /// [branchNaming] decides what the daemon does when [branchName] is taken.
+  /// Callers that derive the name from a prompt pass
+  /// [WorktreeBranchNaming.derive] so a branch an archived worktree left
+  /// behind cannot block the request.
   Future<WorktreeResultDto> createWorktree({
     required String id,
     required String workspaceId,
     required WorktreeCreateMode mode,
     required String branchName,
     String? baseBranch,
+    WorktreeBranchNaming branchNaming,
   });
 
   /// Previews archive safety conditions.

@@ -1134,6 +1134,18 @@ void main() {
       WorktreeCreateParamsDto.fromJson,
     );
     _roundTrip(
+      const WorktreeCreateParamsDto(
+        id: 'worktree',
+        workspaceId: 'workspace',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'flutter',
+        baseBranch: 'origin/main',
+        branchNaming: WorktreeBranchNaming.derive,
+      ),
+      (value) => value.toJson(),
+      WorktreeCreateParamsDto.fromJson,
+    );
+    _roundTrip(
       const WorktreeIdParamsDto(worktreeId: 'worktree'),
       (value) => value.toJson(),
       WorktreeIdParamsDto.fromJson,
@@ -2015,6 +2027,41 @@ void main() {
       );
     },
     tags: const <String>['feature_test__composer_slash_command__contract'],
+  );
+
+  test(
+    'worktree creation defaults to exact branch naming for older callers',
+    () {
+      // A client built before derive existed omits the field entirely, and the
+      // daemon must keep failing loudly rather than silently renaming a branch
+      // that caller believes it controls.
+      final decoded = WorktreeCreateParamsDto.fromJson(<String, dynamic>{
+        'id': 'worktree',
+        'workspaceId': 'workspace',
+        'mode': 'newBranch',
+        'branchName': 'flutter',
+      });
+      expect(decoded.branchNaming, WorktreeBranchNaming.exact);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__contract'],
+  );
+
+  test(
+    'failure codes stay unique and self-describing',
+    () {
+      // Codes are the translation key every client switches on, so a duplicate
+      // or a renamed constant silently drops a localized message.
+      const codes = RpcErrorCodes.all;
+      expect(codes, contains(RpcErrorCodes.branchAlreadyExists));
+      expect(codes, contains(RpcErrorCodes.gitCommandFailed));
+      expect(codes, contains(RpcErrorCodes.requestTimeout));
+      expect(codes, contains(RpcErrorCodes.internalError));
+      expect(
+        codes.every((code) => RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(code)),
+        isTrue,
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__contract'],
   );
 }
 

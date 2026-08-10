@@ -503,6 +503,61 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceOpenDaemonSettings => 'Daemon settings';
 
   @override
+  String get workspaceStartFailedTitle => 'セッションを開始できませんでした';
+
+  @override
+  String get composerSelectProviderModel => '使用するProviderとモデルを先に選択してください。';
+
+  @override
+  String get errorBranchAlreadyExists => '同じ名前のブランチが既に存在します。別の名前を指定してください。';
+
+  @override
+  String get errorWorktreePathInUse => '別のチェックアウトが既にそのフォルダーを使用しています。';
+
+  @override
+  String get errorInvalidBranchName => 'その名前はGitブランチとして使用できません。';
+
+  @override
+  String get errorGitCommandFailed => 'Gitコマンドが失敗しました。以下はGitの出力そのものです。';
+
+  @override
+  String get errorWorkspaceNotFound => 'そのプロジェクトはDaemonに登録されていません。';
+
+  @override
+  String get errorWorkspaceNotGit => 'そのプロジェクトはGitリポジトリではないためworktreeを作成できません。';
+
+  @override
+  String get errorWorkspaceProtected => 'Daemonが直接管理しているフォルダーです。';
+
+  @override
+  String get errorWorktreeNotFound => 'そのチェックアウトはDaemonに登録されていません。';
+
+  @override
+  String get errorWorktreeArchiveBlocked => '現在このチェックアウトはアーカイブできません。';
+
+  @override
+  String get errorAgentDefinitionNotFound => 'そのAgentは存在しません。別のAgentを選択してください。';
+
+  @override
+  String get errorAgentDefinitionUnusable =>
+      'そのAgentではセッションを開始できません。別のAgentを選択してください。';
+
+  @override
+  String get errorProtocolMismatch =>
+      'アプリとDaemonのプロトコルバージョンが異なります。両方を同じリリースに更新してください。';
+
+  @override
+  String get errorInvalidProjectSettings =>
+      'プロジェクトのcoder.jsonを読み込めませんでした。ファイルを修正して再試行してください。';
+
+  @override
+  String get errorRequestTimeout => 'Daemonが時間内に応答しませんでした。もう一度お試しください。';
+
+  @override
+  String get errorInternalDaemon =>
+      'Daemonで予期しない問題が発生しました。報告する際は以下の内容をコピーしてください。';
+
+  @override
   String get hostStatusOnline => 'Online';
 
   @override
@@ -1118,7 +1173,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get composerStartHint => 'Start a new session with a coding request.';
 
   @override
-  String get composerNoPrimaryAgent => 'No primary agent is available.';
+  String get composerNoPrimaryAgent => '利用できるprimary Agentがありません。';
 
   @override
   String get composerConnectProviderFirst => 'Connect a provider first.';

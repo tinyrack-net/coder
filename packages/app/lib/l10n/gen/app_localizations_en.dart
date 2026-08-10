@@ -503,6 +503,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceOpenDaemonSettings => 'Daemon settings';
 
   @override
+  String get workspaceStartFailedTitle => 'The session could not be started';
+
+  @override
+  String get composerSelectProviderModel =>
+      'Choose a provider and model first.';
+
+  @override
+  String get errorBranchAlreadyExists =>
+      'A branch with that name already exists. Choose another name.';
+
+  @override
+  String get errorWorktreePathInUse =>
+      'Another checkout already uses that folder.';
+
+  @override
+  String get errorInvalidBranchName =>
+      'That name can\'t be used as a Git branch.';
+
+  @override
+  String get errorGitCommandFailed =>
+      'A Git command failed. The details below are Git\'s own output.';
+
+  @override
+  String get errorWorkspaceNotFound =>
+      'That project is no longer registered with the daemon.';
+
+  @override
+  String get errorWorkspaceNotGit =>
+      'That project is not a Git repository, so it has no worktrees.';
+
+  @override
+  String get errorWorkspaceProtected =>
+      'The daemon owns that folder and manages it itself.';
+
+  @override
+  String get errorWorktreeNotFound =>
+      'That checkout is no longer registered with the daemon.';
+
+  @override
+  String get errorWorktreeArchiveBlocked =>
+      'This checkout can\'t be archived right now.';
+
+  @override
+  String get errorAgentDefinitionNotFound =>
+      'That agent no longer exists. Choose another agent.';
+
+  @override
+  String get errorAgentDefinitionUnusable =>
+      'That agent can\'t start a session. Choose another agent.';
+
+  @override
+  String get errorProtocolMismatch =>
+      'This app and the daemon speak different protocol versions. Update both to the same release.';
+
+  @override
+  String get errorInvalidProjectSettings =>
+      'The project\'s coder.json could not be read. Fix the file and try again.';
+
+  @override
+  String get errorRequestTimeout =>
+      'The daemon didn\'t respond in time. Try again.';
+
+  @override
+  String get errorInternalDaemon =>
+      'The daemon hit an unexpected problem. Copy the details below when reporting it.';
+
+  @override
   String get hostStatusOnline => 'Online';
 
   @override

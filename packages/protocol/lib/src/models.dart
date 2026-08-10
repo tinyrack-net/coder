@@ -329,6 +329,20 @@ enum WorktreeCreateMode {
   existingBranch,
 }
 
+/// How the daemon treats a requested branch name that is already taken.
+enum WorktreeBranchNaming {
+  /// Fails with `branch_already_exists` when the name is not free.
+  exact,
+
+  /// Treats the requested name as a preferred slug and appends `-2`, `-3`, ...
+  /// until a free branch name and checkout path are found.
+  ///
+  /// Callers that generate the name from a prompt use this so an archived
+  /// worktree, whose local branch survives archiving, cannot block a new
+  /// session.
+  derive,
+}
+
 /// Credential families supported by a provider connection.
 enum ProviderAuthKind {
   /// A provider-issued API key.

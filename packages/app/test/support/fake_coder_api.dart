@@ -450,7 +450,10 @@ final class FakeCoderApi
   final Future<void>? suggestDirectoriesGate;
 
   /// Optional daemon failure returned while creating a worktree.
-  final CoderClientException? createWorktreeError;
+  ///
+  /// Mutable so a test can clear it and assert that a failed submission left
+  /// the composer usable for the retry.
+  CoderClientException? createWorktreeError;
 
   /// Optional gate used to keep a worktree creation pending.
   Completer<void>? createWorktreeGate;
@@ -477,9 +480,23 @@ final class FakeCoderApi
   final List<String> searchedQueries = <String>[];
 
   /// Worktree creations recorded by the fake.
-  final List<({WorktreeCreateMode mode, String branchName, String? baseBranch})>
+  final List<
+    ({
+      WorktreeCreateMode mode,
+      String branchName,
+      String? baseBranch,
+      WorktreeBranchNaming branchNaming,
+    })
+  >
   createdWorktrees =
-      <({WorktreeCreateMode mode, String branchName, String? baseBranch})>[];
+      <
+        ({
+          WorktreeCreateMode mode,
+          String branchName,
+          String? baseBranch,
+          WorktreeBranchNaming branchNaming,
+        })
+      >[];
 
   /// Workspace IDs whose Git branches were requested.
   final List<String> listedGitBranchWorkspaceIds = <String>[];
@@ -942,6 +959,7 @@ final class FakeCoderApi
     required WorktreeCreateMode mode,
     required String branchName,
     String? baseBranch,
+    WorktreeBranchNaming branchNaming = WorktreeBranchNaming.exact,
   }) async {
     if (createWorktreeGate case final gate?) await gate.future;
     final failure = createWorktreeError;
@@ -950,6 +968,7 @@ final class FakeCoderApi
       mode: mode,
       branchName: branchName,
       baseBranch: baseBranch,
+      branchNaming: branchNaming,
     ));
     final worktree = WorktreeDto(
       id: id,

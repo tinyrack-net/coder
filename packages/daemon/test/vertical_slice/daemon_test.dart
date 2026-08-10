@@ -2438,7 +2438,7 @@ void main() {
           isA<CoderClientException>().having(
             (error) => error.code,
             'code',
-            'worktree_unavailable',
+            RpcErrorCodes.worktreeUnavailable,
           ),
         ),
       );
@@ -2482,6 +2482,62 @@ void main() {
       expect(archived.hookRuns.single.exitCode, 0);
       expect(File(teardownMarker).existsSync(), isTrue);
       expect(Directory(managed.worktree.path).existsSync(), isFalse);
+
+      // Archiving removed the checkout but left the local branch, so asking
+      // again with the same derived name used to fail as an unexplained
+      // internal error. Requesting derived naming keeps the session possible.
+      await expectLater(
+        client.createWorktree(
+          id: 'managed-worktree-exact',
+          workspaceId: 'git-workspace',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'feature/vertical-slice',
+          baseBranch: 'main',
+        ),
+        throwsA(
+          isA<CoderClientException>().having(
+            (error) => error.code,
+            'code',
+            RpcErrorCodes.branchAlreadyExists,
+          ),
+        ),
+      );
+      final derived = await client.createWorktree(
+        id: 'managed-worktree-derived',
+        workspaceId: 'git-workspace',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'feature/vertical-slice',
+        baseBranch: 'main',
+        branchNaming: WorktreeBranchNaming.derive,
+      );
+      expect(derived.worktree.branch, 'feature-vertical-slice-2');
+      expect(Directory(derived.worktree.path).existsSync(), isTrue);
+      await client.archiveWorktree(derived.worktree.id, force: true);
+
+      // A base ref Git cannot resolve reports the command and its own stderr
+      // rather than collapsing into a generic internal failure.
+      await expectLater(
+        client.createWorktree(
+          id: 'managed-worktree-bad-base',
+          workspaceId: 'git-workspace',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'no-such-base',
+          baseBranch: 'refs/heads/definitely-missing',
+        ),
+        throwsA(
+          isA<CoderClientException>()
+              .having(
+                (error) => error.code,
+                'code',
+                RpcErrorCodes.gitCommandFailed,
+              )
+              .having(
+                (error) => error.details['stderr'],
+                'stderr',
+                isNotEmpty,
+              ),
+        ),
+      );
       await client.unregisterWorkspace('git-workspace');
       expect((await client.getWorkspaceCatalog()).workspaces, isEmpty);
     },

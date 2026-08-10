@@ -36,8 +36,9 @@ List<RpcBindingDescriptor> terminalRpcBindings({
       throw RpcFailureException(
         code: switch (error.reason) {
           TerminalCreationFailureReason.worktreeUnavailable =>
-            'worktree_unavailable',
-          TerminalCreationFailureReason.startFailed => 'terminal_start_failed',
+            RpcErrorCodes.worktreeUnavailable,
+          TerminalCreationFailureReason.startFailed =>
+            RpcErrorCodes.terminalStartFailed,
         },
         message: error.message,
       );

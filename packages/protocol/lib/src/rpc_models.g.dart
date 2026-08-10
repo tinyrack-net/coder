@@ -103,6 +103,12 @@ _WorktreeCreateParamsDto _$WorktreeCreateParamsDtoFromJson(
   mode: $enumDecode(_$WorktreeCreateModeEnumMap, json['mode']),
   branchName: json['branchName'] as String,
   baseBranch: json['baseBranch'] as String?,
+  branchNaming:
+      $enumDecodeNullable(
+        _$WorktreeBranchNamingEnumMap,
+        json['branchNaming'],
+      ) ??
+      WorktreeBranchNaming.exact,
 );
 
 Map<String, dynamic> _$WorktreeCreateParamsDtoToJson(
@@ -113,11 +119,17 @@ Map<String, dynamic> _$WorktreeCreateParamsDtoToJson(
   'mode': _$WorktreeCreateModeEnumMap[instance.mode]!,
   'branchName': instance.branchName,
   'baseBranch': instance.baseBranch,
+  'branchNaming': _$WorktreeBranchNamingEnumMap[instance.branchNaming]!,
 };
 
 const _$WorktreeCreateModeEnumMap = {
   WorktreeCreateMode.newBranch: 'newBranch',
   WorktreeCreateMode.existingBranch: 'existingBranch',
+};
+
+const _$WorktreeBranchNamingEnumMap = {
+  WorktreeBranchNaming.exact: 'exact',
+  WorktreeBranchNaming.derive: 'derive',
 };
 
 _WorktreeIdParamsDto _$WorktreeIdParamsDtoFromJson(Map<String, dynamic> json) =>

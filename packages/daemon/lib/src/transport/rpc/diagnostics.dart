@@ -9,7 +9,16 @@ import 'dart:io';
 /// diagnosed at all. Every swallowed error goes through this port instead.
 abstract interface class RpcDiagnostics {
   /// Reports [error] raised by [method] and converted into `internal_error`.
-  void unhandledError(String method, Object error, StackTrace stackTrace);
+  ///
+  /// [traceId] is the one token the client is given, so it has to appear in
+  /// this record too: without it a user's screenshot cannot be matched to the
+  /// stack trace that explains it.
+  void unhandledError(
+    String method,
+    Object error,
+    StackTrace stackTrace, {
+    required String traceId,
+  });
 }
 
 /// Writes unhandled RPC errors to the daemon's standard error stream.
@@ -18,9 +27,14 @@ final class StderrRpcDiagnostics implements RpcDiagnostics {
   const StderrRpcDiagnostics();
 
   @override
-  void unhandledError(String method, Object error, StackTrace stackTrace) {
+  void unhandledError(
+    String method,
+    Object error,
+    StackTrace stackTrace, {
+    required String traceId,
+  }) {
     stderr
-      ..writeln('Unhandled RPC error in $method: $error')
+      ..writeln('Unhandled RPC error in $method [$traceId]: $error')
       ..writeln(stackTrace);
   }
 }

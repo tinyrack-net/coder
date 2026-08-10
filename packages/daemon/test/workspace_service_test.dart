@@ -139,12 +139,14 @@ branch refs/heads/feature/settings
           name: 'Repository',
         ),
       );
+      // `topic` is already a local branch here, and `git worktree add -b` on a
+      // name Git already holds fails, so this asks for a free one.
       final managed = await service.createWorktree(
         const WorktreeCreateParamsDto(
           id: 'managed-1',
           workspaceId: 'repo-1',
           mode: WorktreeCreateMode.newBranch,
-          branchName: 'topic',
+          branchName: 'resolved-path',
           baseBranch: 'main',
         ),
       );
@@ -154,7 +156,7 @@ branch refs/heads/feature/settings
       // used to archive the managed row and rediscover it as an external one.
       final catalog = await service.catalog();
       final owned = catalog.worktrees
-          .where((worktree) => worktree.branch == 'topic')
+          .where((worktree) => worktree.branch == 'resolved-path')
           .toList(growable: false);
       expect(owned.map((worktree) => worktree.id), <String>['managed-1']);
       expect(owned.single.kind, WorktreeKind.managed);
@@ -397,7 +399,7 @@ branch refs/heads/feature/settings
       expect(preview.removesDirectory, isTrue);
       await expectLater(
         service.archive('managed-1', force: false),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
       );
       final archived = await service.archive('managed-1', force: true);
       expect(archived.worktree.archivedAt?.toUtc(), _FixedClock.now);
@@ -428,7 +430,7 @@ branch refs/heads/feature/settings
       // the directory and let the next refresh rediscover it under a new id.
       await expectLater(
         service.archive('checkout-1', force: true),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
       );
       expect(git.removed, isEmpty);
       expect(
@@ -481,7 +483,7 @@ branch refs/heads/feature/settings
       expect(paths.lastSuggestion, (query: '/pl', limit: 4));
       await expectLater(
         service.listBranches('directory-1'),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.workspaceNotGit)),
       );
       await expectLater(
         service.createWorktree(
@@ -492,7 +494,7 @@ branch refs/heads/feature/settings
             branchName: 'topic',
           ),
         ),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.workspaceNotGit)),
       );
       final preview = await service.previewArchive('directory-checkout');
       expect(preview.dirty, isFalse);
@@ -501,7 +503,7 @@ branch refs/heads/feature/settings
       // would hide the project while leaving the registration behind.
       await expectLater(
         service.archive('directory-checkout', force: false),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
       );
       expect(git.removed, isEmpty);
       await service.unregister('directory-1');
@@ -594,11 +596,11 @@ branch refs/heads/feature/settings
 
       await expectLater(
         service.unregister(home.workspaceId),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.workspaceProtected)),
       );
       await expectLater(
         service.archive(home.id, force: true),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
       );
       // Registering the home directory as a project would otherwise merge into
       // the home workspace by root path and vanish from every project list.
@@ -611,7 +613,7 @@ branch refs/heads/feature/settings
             name: 'Home again',
           ),
         ),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.workspaceProtected)),
       );
       expect((await service.catalog()).workspaces, hasLength(1));
     },
@@ -716,7 +718,7 @@ branch refs/heads/feature/settings
             branchName: 'Topic Branch',
           ),
         ),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.branchAlreadyExists)),
       );
       await expectLater(
         service.createWorktree(
@@ -727,17 +729,177 @@ branch refs/heads/feature/settings
             branchName: '../',
           ),
         ),
-        throwsA(isA<FormatException>()),
+        throwsA(_failsWith(WorktreeFailureReason.invalidBranchName)),
       );
       await expectLater(
         service.refresh('missing'),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.workspaceNotFound)),
       );
       await expectLater(
         service.previewArchive('missing'),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.worktreeNotFound)),
       );
     },
+  );
+
+  test(
+    'derived naming steps past a branch an archived worktree left behind',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = WorkspaceOperations(
+        database.workspaceDao,
+        database.worktreeDao,
+        database.sessionDao,
+        _FakeWorkspacePaths(),
+        git,
+        _FixedClock(),
+        '/state/worktrees',
+        FakeFileIndexGateway(),
+      );
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      const request = WorktreeCreateParamsDto(
+        id: 'managed-1',
+        workspaceId: 'repo-1',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'flutter',
+        branchNaming: WorktreeBranchNaming.derive,
+      );
+      final first = await service.createWorktree(request);
+      expect(first.worktree.branch, 'flutter');
+
+      // Archiving removes the checkout and the catalog row but leaves the
+      // local branch, which is exactly what the client cannot see.
+      await service.archive('managed-1', force: true);
+      expect(git.localBranches, contains('flutter'));
+      expect(await database.worktreeDao.getByPath(first.worktree.path), isNull);
+
+      final second = await service.createWorktree(
+        request.copyWith(id: 'managed-2'),
+      );
+      expect(second.worktree.branch, 'flutter-2');
+      expect(second.worktree.path, endsWith('flutter-2'));
+
+      // The same request without derived naming is the failure the user hit,
+      // and it now names the conflict instead of collapsing into an internal
+      // error.
+      await expectLater(
+        service.createWorktree(
+          request.copyWith(
+            id: 'managed-3',
+            branchNaming: WorktreeBranchNaming.exact,
+          ),
+        ),
+        throwsA(
+          _failsWith(
+            WorktreeFailureReason.branchAlreadyExists,
+          ).having((error) => error.details, 'details', <String, dynamic>{
+            'branchName': 'flutter',
+          }),
+        ),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
+  );
+
+  test(
+    'two simultaneous submissions of one prompt take different branches',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = WorkspaceOperations(
+        database.workspaceDao,
+        database.worktreeDao,
+        database.sessionDao,
+        _FakeWorkspacePaths(),
+        git,
+        _FixedClock(),
+        '/state/worktrees',
+        FakeFileIndexGateway(),
+      );
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      const request = WorktreeCreateParamsDto(
+        id: 'managed-1',
+        workspaceId: 'repo-1',
+        mode: WorktreeCreateMode.newBranch,
+        branchName: 'flutter',
+        branchNaming: WorktreeBranchNaming.derive,
+      );
+
+      // Both resolve their name before either has a registered checkout, so
+      // the reservation has to be what keeps them apart.
+      final results = await Future.wait(<Future<WorktreeResultDto>>[
+        service.createWorktree(request),
+        service.createWorktree(request.copyWith(id: 'managed-2')),
+      ]);
+
+      expect(
+        results.map((result) => result.worktree.branch).toSet(),
+        <String>{'flutter', 'flutter-2'},
+      );
+      expect(
+        results.map((result) => result.worktree.path).toSet(),
+        hasLength(2),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
+  );
+
+  test(
+    'a failing Git worktree command reports the command and its stderr',
+    () async {
+      final commands = _FakeCommandRunner(<CommandResult>[
+        _result(exitCode: 128, stderr: "fatal: invalid reference: 'nope'"),
+      ]);
+      final gateway = ProcessGitWorkspaceGateway(commands);
+      await expectLater(
+        gateway.createWorktree(
+          const GitWorktreeCreateRequest(
+            repositoryRoot: '/repo',
+            path: '/state/worktrees/hash/topic',
+            mode: WorktreeCreateMode.newBranch,
+            branchName: 'topic',
+            baseBranch: 'nope',
+          ),
+        ),
+        throwsA(
+          isA<GitCommandException>()
+              .having(
+                (error) => error.commandLine,
+                'commandLine',
+                'git worktree add -b topic /state/worktrees/hash/topic nope',
+              )
+              .having(
+                (error) => error.stderr,
+                'stderr',
+                "fatal: invalid reference: 'nope'",
+              ),
+        ),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
   );
 
   group(
@@ -870,7 +1032,7 @@ branch refs/heads/feature/settings
     expect((await service.previewArchive('checkout-1')).runningSessionCount, 1);
     await expectLater(
       service.archive('checkout-1', force: true),
-      throwsA(isA<StateError>()),
+      throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
     );
   });
 
@@ -954,7 +1116,7 @@ branch refs/heads/feature/settings
         expect(projectSettings.saved, <ProjectSettingsDto>[settings]);
         await expectLater(
           service.getProjectSettings('missing'),
-          throwsA(isA<StateError>()),
+          throwsA(_failsWith(WorktreeFailureReason.workspaceNotFound)),
         );
       },
       tags: const <String>['feature_test__project_settings__unit'],
@@ -1100,7 +1262,7 @@ branch refs/heads/feature/settings
 
       await expectLater(
         service.archive('managed-1', force: false),
-        throwsA(isA<StateError>()),
+        throwsA(_failsWith(WorktreeFailureReason.archiveBlocked)),
       );
       expect(hooks.invocations, isEmpty);
     });
@@ -1171,11 +1333,18 @@ branch refs/heads/feature/settings
       await expectLater(
         gateway.listWorktrees('/repo'),
         throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            contains('broken repository'),
-          ),
+          isA<GitCommandException>()
+              .having(
+                (error) => error.stderr,
+                'stderr',
+                contains('broken repository'),
+              )
+              .having((error) => error.exitCode, 'exitCode', 1)
+              .having(
+                (error) => error.commandLine,
+                'commandLine',
+                'git worktree list --porcelain',
+              ),
         ),
       );
     });
@@ -1277,7 +1446,7 @@ branch refs/heads/feature/settings
         );
         await expectLater(
           gateway.inspectWorktree('/repo'),
-          throwsA(isA<StateError>()),
+          throwsA(isA<GitCommandException>()),
         );
       },
     );
@@ -1386,6 +1555,13 @@ final class _FakeWorkspacePaths implements WorkspacePathGateway {
   }
 }
 
+/// Matches a typed workspace failure carrying [reason].
+///
+/// Asserting the reason rather than the exception type is what keeps the RPC
+/// code stable: the transport switches on exactly this value.
+TypeMatcher<WorktreeFailure> _failsWith(WorktreeFailureReason reason) =>
+    isA<WorktreeFailure>().having((error) => error.reason, 'reason', reason);
+
 final class _FakeProjectSettings implements ProjectSettingsStore {
   ProjectSettingsDto settings = const ProjectSettingsDto();
   FormatException? loadFailure;
@@ -1460,6 +1636,14 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
     String repositoryRoot,
   ) async => List<GitWorktreeSnapshot>.unmodifiable(snapshots);
 
+  /// Local branch names Git would report, including ones whose worktree was
+  /// archived: archiving removes the checkout but never the branch.
+  final Set<String> localBranches = <String>{'main', 'topic'};
+
+  @override
+  Future<Set<String>> localBranchNames(String repositoryRoot) async =>
+      Set<String>.of(localBranches);
+
   @override
   Future<List<GitBranchDto>> listBranches(String repositoryRoot) async =>
       const <GitBranchDto>[
@@ -1500,6 +1684,15 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
 
   @override
   Future<void> createWorktree(GitWorktreeCreateRequest request) async {
+    if (request.mode == WorktreeCreateMode.newBranch &&
+        !localBranches.add(request.branchName)) {
+      throw GitCommandException(
+        arguments: <String>['worktree', 'add', '-b', request.branchName],
+        workingDirectory: request.repositoryRoot,
+        exitCode: 128,
+        stderr: "fatal: a branch named '${request.branchName}' already exists",
+      );
+    }
     created.add(request);
     var reported = request.path;
     for (final entry in reportedPrefixes.entries) {

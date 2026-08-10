@@ -1000,6 +1000,108 @@ abstract class AppLocalizations {
   /// **'Daemon settings'**
   String get workspaceOpenDaemonSettings;
 
+  /// Title of the failure alert on the new workspace screen.
+  ///
+  /// In en, this message translates to:
+  /// **'The session could not be started'**
+  String get workspaceStartFailedTitle;
+
+  /// Composer hint when no provider model is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider and model first.'**
+  String get composerSelectProviderModel;
+
+  /// Daemon rejected a branch name that is already taken.
+  ///
+  /// In en, this message translates to:
+  /// **'A branch with that name already exists. Choose another name.'**
+  String get errorBranchAlreadyExists;
+
+  /// Daemon rejected a worktree path that is already occupied.
+  ///
+  /// In en, this message translates to:
+  /// **'Another checkout already uses that folder.'**
+  String get errorWorktreePathInUse;
+
+  /// Daemon rejected a branch name that is not a valid Git ref.
+  ///
+  /// In en, this message translates to:
+  /// **'That name can\'t be used as a Git branch.'**
+  String get errorInvalidBranchName;
+
+  /// A Git invocation exited non-zero.
+  ///
+  /// In en, this message translates to:
+  /// **'A Git command failed. The details below are Git\'s own output.'**
+  String get errorGitCommandFailed;
+
+  /// Daemon could not find the referenced workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'That project is no longer registered with the daemon.'**
+  String get errorWorkspaceNotFound;
+
+  /// Operation requires a Git repository.
+  ///
+  /// In en, this message translates to:
+  /// **'That project is not a Git repository, so it has no worktrees.'**
+  String get errorWorkspaceNotGit;
+
+  /// Home workspace cannot be registered or removed.
+  ///
+  /// In en, this message translates to:
+  /// **'The daemon owns that folder and manages it itself.'**
+  String get errorWorkspaceProtected;
+
+  /// Daemon could not find the referenced worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'That checkout is no longer registered with the daemon.'**
+  String get errorWorktreeNotFound;
+
+  /// Archive refused because of running sessions or local changes.
+  ///
+  /// In en, this message translates to:
+  /// **'This checkout can\'t be archived right now.'**
+  String get errorWorktreeArchiveBlocked;
+
+  /// Referenced agent definition was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'That agent no longer exists. Choose another agent.'**
+  String get errorAgentDefinitionNotFound;
+
+  /// Referenced agent definition exists but cannot start a session.
+  ///
+  /// In en, this message translates to:
+  /// **'That agent can\'t start a session. Choose another agent.'**
+  String get errorAgentDefinitionUnusable;
+
+  /// The daemon rejected a request as unknown or malformed, which means version skew.
+  ///
+  /// In en, this message translates to:
+  /// **'This app and the daemon speak different protocol versions. Update both to the same release.'**
+  String get errorProtocolMismatch;
+
+  /// A project settings file failed to parse.
+  ///
+  /// In en, this message translates to:
+  /// **'The project\'s coder.json could not be read. Fix the file and try again.'**
+  String get errorInvalidProjectSettings;
+
+  /// A request exceeded the client deadline.
+  ///
+  /// In en, this message translates to:
+  /// **'The daemon didn\'t respond in time. Try again.'**
+  String get errorRequestTimeout;
+
+  /// Unexpected daemon-side failure with a trace id in the details.
+  ///
+  /// In en, this message translates to:
+  /// **'The daemon hit an unexpected problem. Copy the details below when reporting it.'**
+  String get errorInternalDaemon;
+
   /// Daemon runtime status.
   ///
   /// In en, this message translates to:

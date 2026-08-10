@@ -39,8 +39,14 @@ List<RpcBindingDescriptor> sessionRpcBindings({
       if (definition.mode != AgentMode.primary ||
           definition.isArchived ||
           definition.isStale) {
-        throw const FormatException(
-          'New sessions require an active primary agent definition.',
+        throw RpcFailureException(
+          code: RpcErrorCodes.agentDefinitionUnusable,
+          message:
+              'New sessions require an active primary agent definition, and '
+              '"${definition.name}" is not one.',
+          details: <String, dynamic>{
+            'agentDefinitionId': definition.id,
+          },
         );
       }
       if (request.model case final selected?) {
@@ -69,6 +75,14 @@ List<RpcBindingDescriptor> sessionRpcBindings({
       );
     } on ProviderConnectionFailure catch (error) {
       throw RpcFailureException(code: error.code, message: error.message);
+    } on AgentDefinitionLookupFailure catch (error) {
+      throw RpcFailureException(
+        code: error.isMissing
+            ? RpcErrorCodes.agentDefinitionNotFound
+            : RpcErrorCodes.agentDefinitionUnusable,
+        message: error.message,
+        details: <String, dynamic>{'agentDefinitionId': error.id},
+      );
     }
   }),
   RpcBinding(sessionsUpdateSettingsProcedure, (request, _) async {
@@ -111,6 +125,14 @@ List<RpcBindingDescriptor> sessionRpcBindings({
       );
     } on ProviderConnectionFailure catch (error) {
       throw RpcFailureException(code: error.code, message: error.message);
+    } on AgentDefinitionLookupFailure catch (error) {
+      throw RpcFailureException(
+        code: error.isMissing
+            ? RpcErrorCodes.agentDefinitionNotFound
+            : RpcErrorCodes.agentDefinitionUnusable,
+        message: error.message,
+        details: <String, dynamic>{'agentDefinitionId': error.id},
+      );
     }
   }),
   RpcBinding(sessionsCancelTurnProcedure, (request, _) async {
