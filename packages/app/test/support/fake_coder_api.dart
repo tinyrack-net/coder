@@ -106,6 +106,7 @@ final class FakeCoderApi
     Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
     List<ProviderUsageDto>? providerUsage,
+    List<WorkspaceCatalogDto>? workspaceCatalogResponses,
     this.eventStream,
     this.agentListError,
     this.skillListError,
@@ -145,6 +146,8 @@ final class FakeCoderApi
     this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
+       workspaceCatalogResponses =
+           workspaceCatalogResponses ?? <WorkspaceCatalogDto>[],
        directories = directories ?? const <String, List<String>>{},
        files = files ?? const <String, List<String>>{},
        commands = List<AgentCommandDto>.of(
@@ -348,6 +351,7 @@ final class FakeCoderApi
   final List<ProviderConnectionDto> _connections;
   final List<WorkspaceDto> _workspaces;
   final List<WorktreeDto> _worktrees;
+  final List<WorkspaceCatalogDto> workspaceCatalogResponses;
   final List<SessionDto> _agents;
   final List<TerminalDto> _terminals;
   ShellSpecDto? _terminalShell;
@@ -785,6 +789,9 @@ final class FakeCoderApi
   @override
   Future<WorkspaceCatalogDto> getWorkspaceCatalog() async {
     await workspaceCatalogGate;
+    if (workspaceCatalogResponses.isNotEmpty) {
+      return workspaceCatalogResponses.removeAt(0);
+    }
     return WorkspaceCatalogDto(
       workspaces: List<WorkspaceDto>.unmodifiable(_workspaces),
       worktrees: List<WorktreeDto>.unmodifiable(_worktrees),

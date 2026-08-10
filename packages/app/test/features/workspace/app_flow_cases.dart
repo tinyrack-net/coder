@@ -63,6 +63,41 @@ void _registerWorkspaceAppFlows() {
     );
   }
   testWidgets(
+    'a transient stale catalog does not eject a newly created worktree route',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        workspaceCatalogResponses: <WorkspaceCatalogDto>[
+          WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: const <WorktreeDto>[],
+          ),
+          WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[checkout],
+          ),
+        ],
+      );
+      final route = WorktreeRoute(
+        hostId: 'server',
+        workspaceId: workspace.id,
+        worktreeId: checkout.id,
+      );
+      final router = await _pumpRoute(tester, api, route.location);
+      addTearDown(router.dispose);
+
+      await tester.pumpAndSettle();
+
+      expect(router.routeInformationProvider.value.uri.path, route.location);
+      expect(find.text('main'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+  testWidgets(
     'desktop workspace uses a flat workspace tree and session tabs',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));

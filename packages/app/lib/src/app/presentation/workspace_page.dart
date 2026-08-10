@@ -286,8 +286,36 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     if (exists) return;
     _missingSelectionScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) const WorkspaceHomeRoute().replace(context);
+      if (mounted) unawaited(_confirmMissingSelection(selection));
     });
+  }
+
+  Future<void> _confirmMissingSelection(WorkspaceSelection selection) async {
+    try {
+      await ref
+          .read(workspaceCatalogControllerProvider.notifier)
+          .refreshHost(selection.hostId);
+    } on CoderClientException {
+      _missingSelectionScheduled = false;
+      return;
+    }
+    if (!mounted || widget.selection != selection) {
+      _missingSelectionScheduled = false;
+      return;
+    }
+    final refreshed = ref.read(workspaceCatalogControllerProvider).value;
+    final stillMissing =
+        refreshed?.catalogs[selection.hostId]?.worktrees.any(
+          (worktree) =>
+              worktree.id == selection.worktreeId &&
+              worktree.workspaceId == selection.workspaceId,
+        ) !=
+        true;
+    if (stillMissing) {
+      const WorkspaceHomeRoute().replace(context);
+      return;
+    }
+    _missingSelectionScheduled = false;
   }
 }
 
