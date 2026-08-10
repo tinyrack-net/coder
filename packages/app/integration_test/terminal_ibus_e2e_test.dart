@@ -65,8 +65,9 @@ void main() {
         }
       });
 
+      const typed = '한글 abc 안녕 안녕하세요. ㅁㄴㅇㄻㄴㅇㄹ ';
       const expected =
-          '한글 abc 안녕 ㅁㄴㅇㄻㄴㅇㄹ '
+          '$typed'
           '\u001bz붙여넣기 👩🏽\u200d💻1\u007f\u001b\u007f';
       final expectedBytes = utf8.encode(expected);
       final artifactDirectory =
@@ -235,6 +236,11 @@ void main() {
       await _keys(<String>['a', 'b', 'c', 'space']);
       await _toggleLanguage();
       await _keys(<String>[...'dkssud'.split(''), 'space']);
+      // ㅅ and ㅇ first land as the final consonant of the syllable in
+      // progress and are redistributed into the next one. Each redistribution
+      // settles a syllable and reopens the preedit in the same keystroke, so
+      // the syllables must still reach the PTY in typed order.
+      await _keys(<String>[...'dkssudgktpdy'.split(''), 'period', 'space']);
       // Bare consonants cannot start a syllable, so IBus commits each one as
       // the next arrives while the last stays in preedit until Space — except
       // ㄹ followed by ㅁ, which compose the cluster ㄻ. Every jamo must reach
@@ -252,7 +258,7 @@ void main() {
       await _waitUntil(
         () =>
             capture.existsSync() &&
-            capture.lengthSync() >= utf8.encode('한글 abc 안녕 \u001bz').length,
+            capture.lengthSync() >= utf8.encode('$typed\u001bz').length,
         'terminal input to resume after native-menu cancellation',
       );
       await _clickFinder(tester, windowId, terminalSurface, button: 3);
