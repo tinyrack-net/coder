@@ -2526,9 +2526,22 @@ Future<void> _submitComposerPrompt(
 ) async {
   await _waitForComposerReady(tester, sendKey);
   await _typeComposerPrompt(tester, composerKey, prompt);
+  // The send button and the toast stack share the bottom-trailing corner, so a
+  // report still on screen from an earlier action takes the tap instead. A
+  // reader waits it out or dismisses it; this waits.
+  await _waitForToastsToClear(tester);
   await tester.tap(find.byKey(sendKey));
   await tester.pump();
 }
+
+/// Waits until nothing is left in the toast stack.
+Future<void> _waitForToastsToClear(WidgetTester tester) => pumpUntilGone(
+  tester,
+  find.descendant(
+    of: find.byType(TRToastRegion),
+    matching: find.byType(Dismissible),
+  ),
+);
 
 Future<void> _replaceMcpFieldText(
   WidgetTester tester,
