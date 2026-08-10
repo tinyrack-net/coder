@@ -3203,7 +3203,7 @@ final class _AgentE2eProvider implements ModelProvider {
         'task_name': 'review_task',
         'message': 'Review without changing files.',
         'agent_type': 'reviewer',
-        'fork_turns': null,
+        'fork_turns': 'none',
         'model': null,
         'reasoning_effort': null,
       };

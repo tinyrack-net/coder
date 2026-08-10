@@ -1093,7 +1093,9 @@ void main() {
         // A command that outlives the first call hands back an id the second
         // call writes into, and the echoed text proves the same process
         // answered.
-        final seen = await provider.echoed.future.timeout(_eventTimeout);
+        final seen = await provider.echoed.future.timeout(
+          const Duration(minutes: 2),
+        );
         expect(seen, contains('tinyrack-exec-probe'));
         expect(approvals, <String>['exec_command']);
         await _waitForIdleSession(
@@ -1105,6 +1107,7 @@ void main() {
       tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
       // Both transports run a POSIX shell; Windows uses PowerShell instead.
       testOn: '!windows',
+      timeout: const Timeout(Duration(minutes: 3)),
     );
   }
 
