@@ -2650,7 +2650,8 @@ final class _PatchProvider implements ModelProvider {
   ) async* {
     if (_round == 0) {
       _round += 1;
-      const patch = '*** Begin Patch\n'
+      const patch =
+          '*** Begin Patch\n'
           '*** Add File: result.txt\n'
           '+done\n'
           '*** End Patch';
@@ -2991,7 +2992,7 @@ final class _AgentE2eProvider implements ModelProvider {
         'task_name': 'forbidden_task',
         'message': 'This spawn must not start.',
         'agent_type': 'not-allowed',
-        'fork_turns': null,
+        'fork_turns': 'none',
         'model': null,
         'reasoning_effort': null,
       };
@@ -3231,7 +3232,8 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Create result.txt' && !hasPatchResult) {
-      const patch = '*** Begin Patch\n'
+      const patch =
+          '*** Begin Patch\n'
           '*** Add File: result.txt\n'
           '+done\n'
           '*** End Patch';
@@ -3255,7 +3257,8 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Reject result.txt' && !hasRejectedPatchResult) {
-      const patch = '*** Begin Patch\n'
+      const patch =
+          '*** Begin Patch\n'
           '*** Add File: rejected.txt\n'
           '+nope\n'
           '*** End Patch';
