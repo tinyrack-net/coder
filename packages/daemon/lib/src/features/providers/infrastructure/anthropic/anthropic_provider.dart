@@ -136,7 +136,8 @@ final class AnthropicMessagesProvider implements ModelProvider {
         },
       if (fast == true) 'speed': 'fast',
       'tools': <Map<String, dynamic>>[
-        for (final tool in request.tools)
+        for (final tool
+            in request.tools.whereType<ModelFunctionToolDefinition>())
           <String, dynamic>{
             'name': tool.name,
             'description': tool.description,
@@ -200,7 +201,12 @@ final class AnthropicMessagesProvider implements ModelProvider {
                       'type': 'tool_use',
                       'id': call.callId,
                       'name': call.name,
-                      'input': call.arguments,
+                      'input': switch (call.input) {
+                        JsonToolCallInput(:final value) => value,
+                        FreeformToolCallInput() => throw StateError(
+                          'Anthropic Messages does not support freeform tools.',
+                        ),
+                      },
                     },
                 ],
               },
@@ -274,7 +280,7 @@ final class AnthropicMessagesProvider implements ModelProvider {
           final block = index is int ? blocks[index] : null;
           if (block == null) continue;
           if (block.raw['type'] == 'tool_use') {
-            final call = ConversationToolCall(
+            final call = ConversationToolCall.function(
               callId: block.raw['id']! as String,
               name: block.raw['name']! as String,
               arguments: _jsonObject(block.arguments.toString()),
@@ -283,7 +289,12 @@ final class AnthropicMessagesProvider implements ModelProvider {
             yield ModelFunctionCall(
               callId: call.callId,
               name: call.name,
-              arguments: call.arguments,
+              arguments: switch (call.input) {
+                JsonToolCallInput(:final value) => value,
+                FreeformToolCallInput() => throw StateError(
+                  'Anthropic Messages emitted a freeform call.',
+                ),
+              },
             );
           } else if (block.raw['type'] == 'thinking' ||
               block.raw['type'] == 'redacted_thinking') {

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
 import 'package:agent/src/tools.dart';
@@ -19,9 +17,7 @@ class GetContextRemainingTool extends AgentTool {
 
   @override
   String get description =>
-      'Check how many tokens are left in the context window. Use it before '
-      'reading something large, and start a fresh window with new_context '
-      'when it is running low.';
+      'Get the remaining tokens in the current context window.';
 
   @override
   AgentToolRisk get risk => AgentToolRisk.read;
@@ -29,6 +25,27 @@ class GetContextRemainingTool extends AgentTool {
   @override
   Map<String, dynamic> get strictJsonSchema =>
       strictToolObject(const <String, Map<String, dynamic>>{});
+
+  @override
+  ModelToolDefinition get modelSpec => ModelFunctionToolDefinition(
+    name: name,
+    description: description,
+    parameters: strictJsonSchema,
+    strict: false,
+    outputSchema: const <String, dynamic>{
+      'type': 'object',
+      'properties': <String, dynamic>{
+        'tokens_left': <String, dynamic>{
+          'anyOf': <Map<String, dynamic>>[
+            <String, dynamic>{'type': 'integer'},
+            <String, dynamic>{'type': 'null'},
+          ],
+        },
+      },
+      'required': <String>['tokens_left'],
+      'additionalProperties': false,
+    },
+  );
 
   @override
   Future<ToolResult> execute(
@@ -40,13 +57,7 @@ class GetContextRemainingTool extends AgentTool {
     // A provider that never reported a window size gets an honest null rather
     // than a guess the model would then reason from.
     final remaining = window == null ? null : (window - used).clamp(0, window);
-    return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'usedTokens': used,
-        'contextWindowTokens': window,
-        'remainingTokens': remaining,
-      }),
-    );
+    return ToolResult(value: <String, dynamic>{'tokens_left': remaining});
   }
 }
 
@@ -60,13 +71,12 @@ class NewContextTool extends AgentTool {
 
   @override
   String get description =>
-      'Start a fresh context window. The conversation so far is discarded '
-      'without being summarized, so carry anything you still need into your '
-      'next message first. Files, processes, and the workspace are untouched.';
+      'Start a new context window. Does not clear, reset, or otherwise affect '
+      'environment state.';
 
-  // Read risk, like update_plan and ask_user: it must work in plan mode and
-  // under readOnly, and its visibility is the timeline divider rather than an
-  // approval dialog.
+  // Read risk, like update_plan and request_user_input: it must work in plan
+  // mode and under readOnly, and its visibility is the timeline divider rather
+  // than an approval dialog.
   @override
   AgentToolRisk get risk => AgentToolRisk.read;
 
@@ -82,11 +92,10 @@ class NewContextTool extends AgentTool {
     // The runner performs the reset once the whole round finishes; doing it
     // here would strand any tool call that follows in the same round.
     context.requestContextReset();
-    return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'started': true,
-        'note': 'History before this point is gone from the model context.',
-      }),
+    return const ToolResult(
+      value:
+          'A new context window will start without summarizing conversation '
+          'history.',
     );
   }
 }

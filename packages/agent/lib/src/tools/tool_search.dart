@@ -267,6 +267,12 @@ class ToolSearchTool extends AgentTool {
       });
 
   @override
+  ModelToolDefinition get modelSpec => ModelDeferredSearchToolDefinition(
+    description: description,
+    parameters: strictJsonSchema,
+  );
+
+  @override
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
@@ -274,7 +280,7 @@ class ToolSearchTool extends AgentTool {
     final query = arguments['query'];
     if (query is! String || query.trim().isEmpty) {
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'query must be a non-empty string.',
         }),
         isError: true,
@@ -287,19 +293,59 @@ class ToolSearchTool extends AgentTool {
     final found = _index.search(query, limit: limit);
     _onSurfaced(found.map((tool) => tool.name));
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<String, dynamic>{
-          'tools': <Map<String, dynamic>>[
-            for (final tool in found)
-              <String, dynamic>{
-                'name': tool.name,
-                'description': tool.description,
-                'parameters': tool.strictJsonSchema,
-              },
-          ],
-          'remaining': _index.tools.length - found.length,
-        }),
-      ),
+      value: <String, dynamic>{
+        'tools': <Map<String, dynamic>>[
+          for (final tool in found) _loadableToolSpec(tool),
+        ],
+      },
     );
+  }
+
+  Map<String, dynamic> _loadableToolSpec(AgentTool tool) {
+    final spec = tool.modelSpec;
+    return switch (spec) {
+      ModelFunctionToolDefinition() => <String, dynamic>{
+        'type': 'function',
+        'canonical_name': tool.name,
+        'name': spec.name,
+        'description': spec.description,
+        'parameters': spec.parameters,
+        'strict': spec.strict,
+        if (spec.outputSchema != null) 'output_schema': spec.outputSchema,
+      },
+      ModelFreeformToolDefinition() => <String, dynamic>{
+        'type': 'custom',
+        'canonical_name': tool.name,
+        'name': spec.name,
+        'description': spec.description,
+        if (spec.format != null)
+          'format': <String, dynamic>{
+            'type': spec.format!.type,
+            'syntax': spec.format!.syntax,
+            'definition': spec.format!.definition,
+          },
+      },
+      ModelNamespaceToolDefinition() => <String, dynamic>{
+        'type': 'namespace',
+        'canonical_name': tool.name,
+        'name': spec.name,
+        'description': spec.description,
+        'tools': <Map<String, dynamic>>[
+          for (final inner in spec.tools)
+            <String, dynamic>{
+              'type': 'function',
+              'name': inner.name,
+              'description': inner.description,
+              'parameters': inner.parameters,
+              'strict': inner.strict,
+              if (inner.outputSchema != null)
+                'output_schema': inner.outputSchema,
+            },
+        ],
+      },
+      ModelDeferredSearchToolDefinition() => throw StateError(
+        'tool_search cannot be deferred behind itself.',
+      ),
+    };
   }
 }

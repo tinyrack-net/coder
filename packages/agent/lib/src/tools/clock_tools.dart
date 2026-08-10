@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
 import 'package:agent/src/tools.dart';
@@ -33,13 +31,13 @@ abstract interface class AgentClock {
 }
 
 /// Shortest wait [SleepTool] accepts.
-const Duration minSleepDuration = Duration(milliseconds: 100);
+const Duration minSleepDuration = Duration(milliseconds: 1);
 
 /// Longest wait [SleepTool] accepts.
 ///
 /// A turn that needs to wait longer than this should end and be resumed, not
 /// hold a provider connection open.
-const Duration maxSleepDuration = Duration(minutes: 5);
+const Duration maxSleepDuration = Duration(hours: 12);
 
 /// Reports the current UTC time to the model.
 class CurrentTimeTool extends AgentTool {
@@ -52,7 +50,7 @@ class CurrentTimeTool extends AgentTool {
   final AgentClock _clock;
 
   @override
-  String get name => 'current_time';
+  String get name => 'clock__curr_time';
 
   @override
   String get description =>
@@ -70,6 +68,28 @@ class CurrentTimeTool extends AgentTool {
       strictToolObject(const <String, Map<String, dynamic>>{});
 
   @override
+  ModelToolDefinition get modelSpec => ModelNamespaceToolDefinition(
+    name: 'clock',
+    description: 'Tools for reading and waiting on time.',
+    tools: <ModelFunctionToolDefinition>[
+      ModelFunctionToolDefinition(
+        name: 'curr_time',
+        description: 'Return the current time in UTC.',
+        parameters: strictJsonSchema,
+        strict: false,
+        outputSchema: const <String, dynamic>{
+          'type': 'object',
+          'properties': <String, dynamic>{
+            'current_time': <String, dynamic>{'type': 'string'},
+          },
+          'required': <String>['current_time'],
+          'additionalProperties': false,
+        },
+      ),
+    ],
+  );
+
+  @override
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
@@ -77,11 +97,13 @@ class CurrentTimeTool extends AgentTool {
     // UTC only: a remote daemon's host timezone is not the user's, and
     // shipping a timezone database to guess is out of scope.
     final now = _clock.nowUtc();
+    final formatted =
+        '${now.toIso8601String().substring(0, 10)} '
+        '${now.toIso8601String().substring(11, 19)} UTC';
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'utc': now.toIso8601String(),
-        'unixSeconds': now.millisecondsSinceEpoch ~/ 1000,
-      }),
+      value: context.toolSurfaceMode == AgentToolSurfaceMode.luaCode
+          ? <String, dynamic>{'current_time': formatted}
+          : formatted,
     );
   }
 }
@@ -96,14 +118,14 @@ class SleepTool extends AgentTool {
   final AgentClock _clock;
 
   @override
-  String get name => 'sleep';
+  String get name => 'clock__sleep';
 
   @override
   String get description =>
       'Pause before checking something again — a build, a deployment, a file '
       'another process writes. Ends early if the user sends new input. '
       'Accepts ${minSleepDuration.inMilliseconds}ms to '
-      '${maxSleepDuration.inSeconds}s.';
+      '${maxSleepDuration.inMilliseconds}ms and returns elapsed wall time.';
 
   @override
   AgentToolRisk get risk => AgentToolRisk.read;
@@ -118,19 +140,33 @@ class SleepTool extends AgentTool {
               '${minSleepDuration.inMilliseconds}…'
               '${maxSleepDuration.inMilliseconds}.',
         },
-        'reason': <String, dynamic>{
-          'type': <String>['string', 'null'],
-          'description': 'What you are waiting for, shown to the user.',
-        },
       });
+
+  @override
+  bool get strict => false;
+
+  @override
+  ModelToolDefinition get modelSpec => ModelNamespaceToolDefinition(
+    name: 'clock',
+    description: 'Tools for reading and waiting on time.',
+    tools: <ModelFunctionToolDefinition>[
+      ModelFunctionToolDefinition(
+        name: 'sleep',
+        description:
+            'Pause execution for a specified duration. The sleep ends early '
+            'when new input arrives and returns elapsed wall-clock time.',
+        parameters: strictJsonSchema,
+        strict: false,
+      ),
+    ],
+  );
 
   @override
   Future<String?> preview(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    final reason = arguments['reason'];
-    return reason is String && reason.isNotEmpty ? reason : null;
+    return '${arguments['duration_ms']} ms';
   }
 
   @override
@@ -140,26 +176,37 @@ class SleepTool extends AgentTool {
   ) async {
     final raw = arguments['duration_ms'];
     if (raw is! int) {
-      return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+      return const ToolResult(
+        value: <String, dynamic>{
           'error': 'duration_ms must be an integer.',
-        }),
+        },
         isError: true,
       );
     }
-    final duration = Duration(
-      milliseconds: raw.clamp(
-        minSleepDuration.inMilliseconds,
-        maxSleepDuration.inMilliseconds,
-      ),
-    );
+    if (raw < minSleepDuration.inMilliseconds ||
+        raw > maxSleepDuration.inMilliseconds) {
+      return ToolResult(
+        value:
+            'duration_ms must be between ${minSleepDuration.inMilliseconds} '
+            'and ${maxSleepDuration.inMilliseconds}',
+        isError: true,
+      );
+    }
+    final duration = Duration(milliseconds: raw);
     context.cancellation.throwIfCancelled();
+    final stopwatch = Stopwatch()..start();
     final outcome = await _clock.sleep(duration, context.cancellation);
+    stopwatch.stop();
+    final message = outcome == SleepOutcome.interrupted
+        ? 'Sleep interrupted by new input.'
+        : 'Sleep completed.';
+    final wallSeconds =
+        stopwatch.elapsedMicroseconds / Duration.microsecondsPerSecond;
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'sleptMs': duration.inMilliseconds,
-        'outcome': outcome.name,
-      }),
+      value:
+          'Wall time: '
+          '${wallSeconds.toStringAsFixed(4)} '
+          'seconds\n$message',
     );
   }
 }
@@ -170,12 +217,12 @@ final class CurrentTimeToolProvider extends SelectableToolProvider {
   const CurrentTimeToolProvider();
 
   @override
-  String get id => 'current_time';
+  String get id => 'clock__curr_time';
 
   @override
   AgentToolDefinition get catalogEntry => const AgentToolDefinition(
-    id: 'current_time',
-    name: 'current_time',
+    id: 'clock__curr_time',
+    name: 'clock__curr_time',
     description: 'Get the current time in UTC.',
     risk: AgentToolRisk.read,
     alwaysOn: true,
@@ -193,12 +240,12 @@ final class SleepToolProvider extends SelectableToolProvider {
   const SleepToolProvider();
 
   @override
-  String get id => 'sleep';
+  String get id => 'clock__sleep';
 
   @override
   AgentToolDefinition get catalogEntry => const AgentToolDefinition(
-    id: 'sleep',
-    name: 'sleep',
+    id: 'clock__sleep',
+    name: 'clock__sleep',
     description:
         'Pause before checking something again; ends early on new user input.',
     risk: AgentToolRisk.read,

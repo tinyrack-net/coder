@@ -9641,7 +9641,7 @@ as int,
 /// @nodoc
 mixin _$ModelCapabilitiesDto {
 
- CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get imageInput; CapabilitySupport get fileInput; List<ModelControlDescriptorDto> get controls; CapabilitySource get source;
+ CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get imageInput; CapabilitySupport get fileInput; List<ModelControlDescriptorDto> get controls; ModelToolSurface get toolSurface; CapabilitySource get source;
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -9654,16 +9654,16 @@ $ModelCapabilitiesDtoCopyWith<ModelCapabilitiesDto> get copyWith => _$ModelCapab
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other.controls, controls)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other.controls, controls)&&(identical(other.toolSurface, toolSurface) || other.toolSurface == toolSurface)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(controls),source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(controls),toolSurface,source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, toolSurface: $toolSurface, source: $source)';
 }
 
 
@@ -9674,7 +9674,7 @@ abstract mixin class $ModelCapabilitiesDtoCopyWith<$Res>  {
   factory $ModelCapabilitiesDtoCopyWith(ModelCapabilitiesDto value, $Res Function(ModelCapabilitiesDto) _then) = _$ModelCapabilitiesDtoCopyWithImpl;
 @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, ModelToolSurface toolSurface, CapabilitySource source
 });
 
 
@@ -9691,14 +9691,15 @@ class _$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? source = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? toolSurface = null,Object? source = null,}) {
   return _then(_self.copyWith(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,controls: null == controls ? _self.controls : controls // ignore: cast_nullable_to_non_nullable
-as List<ModelControlDescriptorDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as List<ModelControlDescriptorDto>,toolSurface: null == toolSurface ? _self.toolSurface : toolSurface // ignore: cast_nullable_to_non_nullable
+as ModelToolSurface,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,
   ));
 }
@@ -9784,10 +9785,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
   return orElse();
 
 }
@@ -9805,10 +9806,10 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto():
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -9825,10 +9826,10 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)?  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
   return null;
 
 }
@@ -9840,7 +9841,7 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 @JsonSerializable()
 
 class _ModelCapabilitiesDto implements ModelCapabilitiesDto {
-  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.imageInput = CapabilitySupport.unknown, this.fileInput = CapabilitySupport.unknown, final  List<ModelControlDescriptorDto> controls = const <ModelControlDescriptorDto>[], this.source = CapabilitySource.unknown}): _controls = controls;
+  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.imageInput = CapabilitySupport.unknown, this.fileInput = CapabilitySupport.unknown, final  List<ModelControlDescriptorDto> controls = const <ModelControlDescriptorDto>[], this.toolSurface = ModelToolSurface.direct, this.source = CapabilitySource.unknown}): _controls = controls;
   factory _ModelCapabilitiesDto.fromJson(Map<String, dynamic> json) => _$ModelCapabilitiesDtoFromJson(json);
 
 @override@JsonKey() final  CapabilitySupport streaming;
@@ -9854,6 +9855,7 @@ class _ModelCapabilitiesDto implements ModelCapabilitiesDto {
   return EqualUnmodifiableListView(_controls);
 }
 
+@override@JsonKey() final  ModelToolSurface toolSurface;
 @override@JsonKey() final  CapabilitySource source;
 
 /// Create a copy of ModelCapabilitiesDto
@@ -9869,16 +9871,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other._controls, _controls)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other._controls, _controls)&&(identical(other.toolSurface, toolSurface) || other.toolSurface == toolSurface)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(_controls),source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(_controls),toolSurface,source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, toolSurface: $toolSurface, source: $source)';
 }
 
 
@@ -9889,7 +9891,7 @@ abstract mixin class _$ModelCapabilitiesDtoCopyWith<$Res> implements $ModelCapab
   factory _$ModelCapabilitiesDtoCopyWith(_ModelCapabilitiesDto value, $Res Function(_ModelCapabilitiesDto) _then) = __$ModelCapabilitiesDtoCopyWithImpl;
 @override @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, ModelToolSurface toolSurface, CapabilitySource source
 });
 
 
@@ -9906,14 +9908,15 @@ class __$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? source = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? toolSurface = null,Object? source = null,}) {
   return _then(_ModelCapabilitiesDto(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,controls: null == controls ? _self._controls : controls // ignore: cast_nullable_to_non_nullable
-as List<ModelControlDescriptorDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as List<ModelControlDescriptorDto>,toolSurface: null == toolSurface ? _self.toolSurface : toolSurface // ignore: cast_nullable_to_non_nullable
+as ModelToolSurface,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,
   ));
 }

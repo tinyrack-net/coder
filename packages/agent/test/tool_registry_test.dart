@@ -24,9 +24,9 @@ void main() {
       'attach_file',
       'read_attachment',
       'view_image',
-      'ask_user',
-      'current_time',
-      'sleep',
+      'request_user_input',
+      'clock__curr_time',
+      'clock__sleep',
       'exec_command',
     ]);
     // Hidden capabilities are built, never advertised.
@@ -155,7 +155,7 @@ void main() {
           callId: 'call-1',
           workspaceRoot: '/workspace',
           name: writeStdinToolName,
-          arguments: <String, dynamic>{'session_id': 'shell-1'},
+          arguments: <String, dynamic>{'session_id': 1},
           risk: AgentToolRisk.command,
         ),
       ),
@@ -167,7 +167,7 @@ void main() {
           callId: 'call-2',
           workspaceRoot: '/workspace',
           name: execCommandToolName,
-          arguments: <String, dynamic>{'command': 'ls'},
+          arguments: <String, dynamic>{'cmd': 'ls'},
           risk: AgentToolRisk.command,
         ),
       ),
@@ -198,7 +198,7 @@ List<AgentToolProvider> _providers() => <AgentToolProvider>[
   const AttachFileToolProvider(),
   const ReadAttachmentToolProvider(),
   const ViewImageToolProvider(),
-  const AskUserToolProvider(),
+  const RequestUserInputToolProvider(),
   const CurrentTimeToolProvider(),
   const SleepToolProvider(),
   const ExecCommandToolProvider(),
@@ -300,7 +300,7 @@ final class _UnusedPorts
 
 final class _ApprovedHost implements ExecSessionHost {
   @override
-  bool isApproved(String sessionId) => sessionId == 'shell-1';
+  bool isApproved(int sessionId) => sessionId == 1;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -327,5 +327,5 @@ final class _ExternalTool extends AgentTool {
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
-  ) async => const ToolResult(output: 'ok');
+  ) async => const ToolResult(value: 'ok');
 }

@@ -95,6 +95,7 @@ data: {"type":"message_stop"}
               const ToolResultConversationItem(
                 callId: 'call-1',
                 output: 'contents',
+                toolKind: ModelToolKind.function,
               ),
             ],
           ),

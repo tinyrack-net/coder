@@ -89,10 +89,20 @@ void main() {
       owner: 'session-1',
       workingDirectory: '/workspace',
       request: const LuaExecuteRequest(
-        source: 'text(tools.echo({value="hi"}).output)',
+        source: 'text(tools.echo({value="hi"}))',
         yieldTime: Duration(seconds: 1),
         maxOutputTokens: 1000,
-        tools: <LuaNestedToolDefinition>[],
+        tools: <LuaNestedToolDefinition>[
+          LuaNestedToolDefinition(
+            name: 'echo',
+            description: 'Echo a value.',
+            kind: 'function',
+            namespace: 'sample',
+            exposure: 'advertised',
+            inputSchema: <String, dynamic>{'type': 'object'},
+            outputSchema: <String, dynamic>{'type': 'string'},
+          ),
+        ],
       ),
       context: _context(invoker),
     );
@@ -100,6 +110,18 @@ void main() {
     final process = pipes.process;
     final init = process.writtenFrame(0);
     final cellId = init['cell_id']! as String;
+    final initPayload = Map<String, dynamic>.from(init['payload']! as Map);
+    expect(initPayload['tools'], <Object?>[
+      <String, Object?>{
+        'name': 'echo',
+        'description': 'Echo a value.',
+        'kind': 'function',
+        'namespace': 'sample',
+        'exposure': 'advertised',
+        'input_schema': <String, Object?>{'type': 'object'},
+        'output_schema': <String, Object?>{'type': 'string'},
+      },
+    ]);
 
     process.emitFrame(cellId, 1, 'tool_batch', <String, dynamic>{
       'calls': <Map<String, dynamic>>[
@@ -115,19 +137,29 @@ void main() {
     expect(invoker.calls, <String>['echo:hi']);
     final response = process.writtenFrame(1);
     expect(response['type'], 'tool_results');
+    final responsePayload = Map<String, dynamic>.from(
+      response['payload']! as Map,
+    );
+    final results = responsePayload['results']! as List;
+    expect((results.single as Map)['value'], 'echoed hi');
     process
       ..emitFrame(cellId, 2, 'output', <String, dynamic>{
+        'kind': 'notify',
+        'value': <String, dynamic>{'progress': 1},
+      })
+      ..emitFrame(cellId, 3, 'output', <String, dynamic>{
         'kind': 'text',
         'value': 'echoed hi',
       })
-      ..emitFrame(cellId, 3, 'completed', const <String, dynamic>{
+      ..emitFrame(cellId, 4, 'completed', const <String, dynamic>{
         'store': <String, dynamic>{},
       });
 
-    final chunk = await future;
-    expect(chunk.output, 'echoed hi');
-    if (chunk.running) {
-      final finalChunk = await service.wait(
+    var chunk = await future;
+    final output = StringBuffer(chunk.output);
+    final notifications = <Object?>[...chunk.notifications];
+    while (chunk.running) {
+      chunk = await service.wait(
         owner: 'session-1',
         request: LuaWaitRequest(
           cellId: cellId,
@@ -137,8 +169,14 @@ void main() {
         ),
         context: _context(invoker),
       );
-      expect(finalChunk.running, isFalse);
+      output.write(chunk.output);
+      notifications.addAll(chunk.notifications);
     }
+    expect(chunk.running, isFalse);
+    expect(output.toString(), 'echoed hi');
+    expect(notifications, <Object?>[
+      <String, Object?>{'progress': 1},
+    ]);
   });
 
   test('yielded cells resume through wait and can be terminated', () async {
@@ -299,7 +337,7 @@ final class _Invoker implements NestedToolInvoker {
     Map<String, dynamic> arguments,
   ) async {
     calls.add('$name:${arguments['value']}');
-    return ToolResult(output: 'echoed ${arguments['value']}');
+    return ToolResult(value: 'echoed ${arguments['value']}');
   }
 }
 
@@ -313,7 +351,7 @@ final class _AttachmentInvoker implements NestedToolInvoker {
     String name,
     Map<String, dynamic> arguments,
   ) async => ToolResult(
-    output: 'image',
+    value: 'image',
     attachments: <ConversationAttachment>[attachment],
   );
 }

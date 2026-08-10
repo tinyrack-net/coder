@@ -94,6 +94,43 @@ void main() {
   );
 
   testWidgets(
+    'an expanded failed collaboration tool shows its structured error',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'spawn-call',
+          'name': 'spawn_agent',
+          'arguments': <String, dynamic>{
+            'task_name': 'forbidden_task',
+            'message': 'This spawn must not start.',
+            'agent_type': 'not-allowed',
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'spawn-call',
+          'name': 'spawn_agent',
+          'output': '{"error":"Agent type is not allowed: not-allowed"}',
+          'isError': true,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('실패'), findsOneWidget);
+      expect(
+        find.textContaining('Agent type is not allowed: not-allowed'),
+        findsNothing,
+      );
+      await tester.tap(find.byType(ChatToolCard));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Agent type is not allowed: not-allowed'),
+        findsWidgets,
+      );
+    },
+    tags: const <String>['feature_test__agent_collaboration__widget'],
+  );
+
+  testWidgets(
     'expanding a command shows its output without the JSON wrapper',
     (tester) async {
       final clipboard = <String>[];
@@ -257,7 +294,7 @@ void main() {
         }),
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'arguments': <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{
@@ -271,7 +308,7 @@ void main() {
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'output':
               '[{"questionId":"store","answer":"SQLite","isFreeForm":false}]',
         }),
@@ -527,7 +564,7 @@ void main() {
       await pump(tester, <TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'arguments': <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{
@@ -547,7 +584,7 @@ void main() {
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'output':
               '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
               '{"questionId":"ttl","answer":"A week","isFreeForm":true}]',
@@ -572,7 +609,7 @@ void main() {
       // the countdown is recomputed rather than counted — correct on replay.
       final started = event('tool.requested', <String, dynamic>{
         'callId': 'call-sleep',
-        'name': 'sleep',
+        'name': 'clock__sleep',
         'arguments': <String, dynamic>{
           'duration_ms': 4000,
           'reason': 'waiting for CI',
@@ -584,7 +621,7 @@ void main() {
       expect(find.byKey(const ValueKey<String>('chat-sleep-card')), findsOne);
       expect(find.text('waiting for CI'), findsOneWidget);
       // No generic tool row duplicates the card.
-      expect(find.text('sleep'), findsNothing);
+      expect(find.text('clock__sleep'), findsNothing);
 
       // The card animates, so the tree never settles while it runs.
       await tester.pump(const Duration(seconds: 1));
@@ -601,7 +638,7 @@ void main() {
         started,
         event('tool.completed', <String, dynamic>{
           'callId': 'call-sleep',
-          'name': 'sleep',
+          'name': 'clock__sleep',
           'output': '{"sleptMs":4000,"outcome":"elapsed"}',
         }),
       ]);
@@ -625,7 +662,7 @@ void main() {
       await pump(tester, <TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-sleep',
-          'name': 'sleep',
+          'name': 'clock__sleep',
           'arguments': <String, dynamic>{'duration_ms': 'soon'},
         }),
       ]);

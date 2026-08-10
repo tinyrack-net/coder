@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:protocol/protocol.dart';
@@ -44,24 +42,36 @@ abstract base class _GoalTool extends AgentTool {
   @override
   AgentToolRisk get risk => AgentToolRisk.read;
 
-  ToolResult json(Object? value, {bool isError = false}) => ToolResult(
-    output: jsonEncode(value),
-    isError: isError,
-  );
+  ToolResult result(Object? value, {bool isError = false}) =>
+      ToolResult(value: value, isError: isError);
 
   Future<ToolResult> guard(Future<Object?> Function() operation) async {
     try {
-      return json(await operation());
+      return result(await operation());
     } on Object catch (error) {
-      return json(<String, dynamic>{'error': '$error'}, isError: true);
+      return result(<String, dynamic>{'error': '$error'}, isError: true);
     }
   }
 
-  Map<String, dynamic> response(GoalDto? goal) => <String, dynamic>{
+  Map<String, dynamic> response(
+    GoalDto? goal, {
+    bool includeCompletionBudgetReport = false,
+  }) => <String, dynamic>{
     'goal': goal?.toJson(),
     'remainingTokens': goal?.tokenBudget == null
         ? null
         : (goal!.tokenBudget! - goal.tokensUsed).clamp(0, 1 << 62),
+    'completionBudgetReport':
+        includeCompletionBudgetReport &&
+            goal?.status == GoalStatus.complete &&
+            (goal!.tokenBudget != null || goal.timeUsedSeconds > 0)
+        ? "Goal achieved. Report final usage from this tool result's "
+              'structured goal fields. If `goal.tokenBudget` is present, '
+              'include token usage from `goal.tokensUsed` and '
+              '`goal.tokenBudget`. If `goal.timeUsedSeconds` is greater than '
+              '0, summarize elapsed time in a concise, human-friendly form '
+              'appropriate to the response language.'
+        : null,
   };
 }
 
@@ -103,13 +113,18 @@ final class CreateGoalTool extends _GoalTool {
       'goal must be completed or managed by the user first.';
 
   @override
-  Map<String, dynamic> get strictJsonSchema => strictToolObject({
-    'objective': <String, dynamic>{'type': 'string'},
-    'token_budget': <String, dynamic>{
-      'type': <String>['integer', 'null'],
-      'description': 'Positive budget, only when explicitly requested.',
+  Map<String, dynamic> get strictJsonSchema => <String, dynamic>{
+    'type': 'object',
+    'properties': <String, dynamic>{
+      'objective': <String, dynamic>{'type': 'string'},
+      'token_budget': <String, dynamic>{
+        'type': 'integer',
+        'description': 'Positive budget, only when explicitly requested.',
+      },
     },
-  });
+    'required': <String>['objective'],
+    'additionalProperties': false,
+  };
 
   @override
   Future<ToolResult> execute(
@@ -160,6 +175,7 @@ final class UpdateGoalTool extends _GoalTool {
     };
     return response(
       await service.updateFromAgent(sessionId: sessionId, status: status),
+      includeCompletionBudgetReport: status == GoalStatus.complete,
     );
   });
 }

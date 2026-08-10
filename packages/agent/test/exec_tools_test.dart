@@ -3,6 +3,7 @@ library;
 
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io' as io;
 
 import 'package:agent/agent.dart';
 import 'package:file/file.dart' as file_api;
@@ -32,7 +33,7 @@ void main() {
 
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'echo hi',
+        'cmd': 'echo hi',
         'yield_time_ms': null,
         'max_output_tokens': null,
       },
@@ -42,10 +43,10 @@ void main() {
     final decoded = decode(result);
     expect(result.isError, isFalse);
     expect(decoded['output'], 'hi\n');
-    expect(decoded['isRunning'], isFalse);
-    expect(decoded['exitCode'], 0);
+    expect(decoded, isNot(contains('is_running')));
+    expect(decoded['exit_code'], 0);
     // A finished command leaves nothing to drive, so no id is offered.
-    expect(decoded.containsKey('sessionId'), isFalse);
+    expect(decoded.containsKey('session_id'), isFalse);
     expect(host.started.single.command, 'echo hi');
     expect(host.started.single.workingDirectory, '/workspace');
     // Pipes are the default: an ordinary command wants its real output, not a
@@ -60,7 +61,7 @@ void main() {
 
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'false',
+        'cmd': 'false',
         'yield_time_ms': null,
         'max_output_tokens': null,
       },
@@ -68,7 +69,7 @@ void main() {
     );
 
     expect(result.isError, isTrue);
-    expect(decode(result)['exitCode'], 1);
+    expect(decode(result)['exit_code'], 1);
   });
 
   test('a still-running command is driven through write_stdin', () async {
@@ -79,15 +80,18 @@ void main() {
 
     final started = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'python3',
+        'cmd': 'python3',
         'yield_time_ms': 250,
         'max_output_tokens': null,
       },
       context,
     );
-    final sessionId = decode(started)['sessionId'] as String;
-    expect(sessionId, isNotEmpty);
-    expect(host.started.single.yieldTimes.single.inMilliseconds, 250);
+    final sessionId = decode(started)['session_id'] as int;
+    expect(sessionId, greaterThan(0));
+    expect(
+      host.started.single.yieldTimes.single,
+      io.Platform.isWindows ? const Duration(seconds: 10) : minExecYieldTime,
+    );
 
     final written = await WriteStdinTool(host: host).execute(
       <String, dynamic>{
@@ -101,7 +105,7 @@ void main() {
 
     expect(host.started.single.writes, <String>['2 + 2\n']);
     expect(decode(written)['output'], '4\n>>> ');
-    expect(decode(written)['sessionId'], sessionId);
+    expect(decode(written)['session_id'], sessionId);
   });
 
   test('an empty write polls without sending anything', () async {
@@ -111,7 +115,7 @@ void main() {
     ]);
     final started = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'tail -f log',
+        'cmd': 'tail -f log',
         'yield_time_ms': null,
         'max_output_tokens': null,
       },
@@ -120,7 +124,7 @@ void main() {
 
     final polled = await WriteStdinTool(host: host).execute(
       <String, dynamic>{
-        'session_id': decode(started)['sessionId'],
+        'session_id': decode(started)['session_id'],
         'chars': '',
         'yield_time_ms': null,
         'max_output_tokens': null,
@@ -135,7 +139,7 @@ void main() {
   test('an unknown session is a correctable error, not a failure', () async {
     final result = await WriteStdinTool(host: host).execute(
       <String, dynamic>{
-        'session_id': 'exec-gone',
+        'session_id': 999,
         'chars': 'ls\n',
         'yield_time_ms': null,
         'max_output_tokens': null,
@@ -151,7 +155,7 @@ void main() {
   test('an empty command never reaches the host', () async {
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': '   ',
+        'cmd': '   ',
         'yield_time_ms': null,
         'max_output_tokens': null,
       },
@@ -168,7 +172,7 @@ void main() {
     ]);
     await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'sleep 1',
+        'cmd': 'sleep 1',
         'yield_time_ms': 999999,
         'max_output_tokens': null,
       },
@@ -181,13 +185,16 @@ void main() {
     ]);
     await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'sleep 2',
+        'cmd': 'sleep 2',
         'yield_time_ms': 0,
         'max_output_tokens': null,
       },
       context,
     );
-    expect(host.started.last.yieldTimes.single, minExecYieldTime);
+    expect(
+      host.started.last.yieldTimes.single,
+      io.Platform.isWindows ? const Duration(seconds: 10) : minExecYieldTime,
+    );
   });
 
   test('the output budget keeps the tail and reports truncation', () async {
@@ -201,7 +208,7 @@ void main() {
 
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'yes',
+        'cmd': 'yes',
         'yield_time_ms': null,
         'max_output_tokens': minExecOutputTokens,
       },
@@ -209,7 +216,10 @@ void main() {
     );
 
     final output = decode(result)['output'] as String;
-    expect(decode(result)['truncated'], isTrue);
+    expect(
+      decode(result)['original_token_count'],
+      greaterThan(minExecOutputTokens),
+    );
     expect(output, startsWith('[…'));
     expect(output, contains('line 399'));
     expect(output, isNot(contains('line 0\n')));
@@ -235,7 +245,7 @@ void main() {
 
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'yes',
+        'cmd': 'yes',
         'workdir': null,
         'tty': null,
         'yield_time_ms': null,
@@ -247,9 +257,9 @@ void main() {
     final decoded = decode(result);
     // The count describes the output before the budget was applied, which is
     // how the model learns that raising the budget would show it more.
-    expect(decoded['originalTokenCount'], estimateTokenCount(flood));
-    expect(decoded['originalTokenCount'], greaterThan(minExecOutputTokens));
-    expect(decoded['wallTimeSeconds'], 1.5);
+    expect(decoded['original_token_count'], estimateTokenCount(flood));
+    expect(decoded['original_token_count'], greaterThan(minExecOutputTokens));
+    expect(decoded['wall_time_seconds'], 1.5);
   });
 
   test('tty is opt-in and reaches the host', () async {
@@ -259,7 +269,7 @@ void main() {
 
     await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'python3',
+        'cmd': 'python3',
         'workdir': null,
         'tty': true,
         'yield_time_ms': null,
@@ -302,7 +312,7 @@ void main() {
           environment: const <String, String>{},
         ),
       ).execute(<String, dynamic>{
-        'command': 'ls',
+        'cmd': 'ls',
         'workdir': workdir,
         'tty': null,
         'yield_time_ms': null,
@@ -342,7 +352,7 @@ void main() {
     test('the preview names the directory the user is approving', () async {
       expect(
         await ExecCommandTool(host: host).preview(
-          const <String, dynamic>{'command': 'ls', 'workdir': 'packages/app'},
+          const <String, dynamic>{'cmd': 'ls', 'workdir': 'packages/app'},
           rooted,
         ),
         'ls  (in packages/app)',
@@ -358,7 +368,7 @@ void main() {
     ]);
     final started = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'sh',
+        'cmd': 'sh',
         'workdir': null,
         'tty': true,
         'yield_time_ms': null,
@@ -366,7 +376,7 @@ void main() {
       },
       context,
     );
-    final sessionId = decode(started)['sessionId'];
+    final sessionId = decode(started)['session_id'];
 
     await WriteStdinTool(host: host).execute(<String, dynamic>{
       'session_id': sessionId,
@@ -398,7 +408,7 @@ void main() {
     ]);
     final started = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'sh',
+        'cmd': 'sh',
         'workdir': null,
         'tty': true,
         'yield_time_ms': null,
@@ -406,7 +416,7 @@ void main() {
       },
       context,
     );
-    final sessionId = decode(started)['sessionId'];
+    final sessionId = decode(started)['session_id'];
 
     await WriteStdinTool(host: host).execute(<String, dynamic>{
       'session_id': sessionId,
@@ -435,23 +445,16 @@ void main() {
     expect(exec.description, contains('exit code'));
     final execSchema = exec.strictJsonSchema;
     expect(execSchema['additionalProperties'], isFalse);
-    expect(execSchema['required'], <String>[
-      'command',
-      'workdir',
-      'tty',
-      'yield_time_ms',
-      'max_output_tokens',
-    ]);
-    // Optional values are nullable rather than absent, which is what a strict
-    // provider schema requires.
+    expect(execSchema['required'], <String>['cmd']);
+    expect(exec.strict, isFalse);
     final execProperties = execSchema['properties']! as Map<String, dynamic>;
     expect(
       (execProperties['yield_time_ms']! as Map<String, dynamic>)['type'],
-      <String>['integer', 'null'],
+      'integer',
     );
     expect(
       await exec.preview(
-        const <String, dynamic>{'command': 'dart test'},
+        const <String, dynamic>{'cmd': 'dart test'},
         context,
       ),
       'dart test',
@@ -462,18 +465,14 @@ void main() {
     expect(stdin.name, 'write_stdin');
     expect(stdin.risk, AgentToolRisk.command);
     expect(stdin.description, contains('standard input'));
-    expect(stdin.strictJsonSchema['required'], <String>[
-      'session_id',
-      'chars',
-      'yield_time_ms',
-      'max_output_tokens',
-    ]);
+    expect(stdin.strictJsonSchema['required'], <String>['session_id']);
+    expect(stdin.strict, isFalse);
     expect(
       await stdin.preview(
-        const <String, dynamic>{'session_id': 'exec-1', 'chars': 'ls\n'},
+        const <String, dynamic>{'session_id': 1, 'chars': 'ls\n'},
         context,
       ),
-      'exec-1 ← ls',
+      '1 ← ls',
     );
     expect(await stdin.preview(const <String, dynamic>{}, context), isNull);
   });
@@ -481,7 +480,7 @@ void main() {
   test('malformed write_stdin arguments are rejected', () async {
     final result = await WriteStdinTool(host: host).execute(
       <String, dynamic>{
-        'session_id': 7,
+        'session_id': '7',
         'chars': null,
         'yield_time_ms': null,
         'max_output_tokens': null,
@@ -490,7 +489,7 @@ void main() {
     );
 
     expect(result.isError, isTrue);
-    expect(decode(result)['error'], contains('must both be strings'));
+    expect(decode(result)['error'], contains('must be an integer'));
   });
 
   test('the output budget is clamped to the supported range', () async {
@@ -499,7 +498,7 @@ void main() {
     ]);
     final result = await ExecCommandTool(host: host).execute(
       <String, dynamic>{
-        'command': 'yes',
+        'cmd': 'yes',
         'yield_time_ms': null,
         'max_output_tokens': 1,
       },
@@ -507,7 +506,7 @@ void main() {
     );
     // A one-token request still gets the floor, so nothing useful is lost.
     expect(decode(result)['output'], 'x');
-    expect(decode(result)['truncated'], isFalse);
+    expect(decode(result), isNot(contains('chunk_id')));
   });
 
   test('cancelling interrupts the command and aborts the call', () async {
@@ -521,7 +520,7 @@ void main() {
     await expectLater(
       ExecCommandTool(host: host).execute(
         <String, dynamic>{
-          'command': 'sleep 100',
+          'cmd': 'sleep 100',
           'yield_time_ms': null,
           'max_output_tokens': null,
         },
@@ -561,7 +560,7 @@ void main() {
       expect(
         policy.evaluate(
           invocation(execCommandToolName, <String, dynamic>{
-            'command': 'python3',
+            'cmd': 'python3',
           }),
         ),
         ApprovalEvaluation.ask,
@@ -569,13 +568,13 @@ void main() {
 
       final started = await ExecCommandTool(host: host).execute(
         <String, dynamic>{
-          'command': 'python3',
+          'cmd': 'python3',
           'yield_time_ms': null,
           'max_output_tokens': null,
         },
         context,
       );
-      final sessionId = decode(started)['sessionId'];
+      final sessionId = decode(started)['session_id'];
 
       expect(
         policy.evaluate(
@@ -588,7 +587,7 @@ void main() {
       expect(
         policy.evaluate(
           invocation(writeStdinToolName, <String, dynamic>{
-            'session_id': 'exec-other',
+            'session_id': 999,
           }),
         ),
         ApprovalEvaluation.ask,
@@ -602,12 +601,12 @@ void main() {
         host,
         toolName: writeStdinToolName,
       );
-      host.markApproved('exec-1');
+      host.markApproved(1);
 
       expect(
         policy.evaluate(
           invocation(writeStdinToolName, <String, dynamic>{
-            'session_id': 'exec-1',
+            'session_id': 1,
           }),
         ),
         ApprovalEvaluation.deny,
@@ -642,9 +641,9 @@ void main() {
 final class _ScriptedExecHost implements ExecSessionHost {
   final Map<String, Queue<ExecSessionChunk>> _scripts =
       <String, Queue<ExecSessionChunk>>{};
-  final Map<String, _ScriptedExecSession> _sessions =
-      <String, _ScriptedExecSession>{};
-  final Set<String> _approved = <String>{};
+  final Map<int, _ScriptedExecSession> _sessions =
+      <int, _ScriptedExecSession>{};
+  final Set<int> _approved = <int>{};
   final List<_ScriptedExecSession> started = <_ScriptedExecSession>[];
 
   /// Cancelled just before the next read completes, if set.
@@ -658,9 +657,11 @@ final class _ScriptedExecHost implements ExecSessionHost {
     required String command,
     required String workingDirectory,
     required bool tty,
+    String? shell,
+    bool login = false,
   }) async {
     final session = _ScriptedExecSession(
-      id: 'exec-${started.length + 1}',
+      id: started.length + 1,
       command: command,
       workingDirectory: workingDirectory,
       tty: tty,
@@ -673,13 +674,13 @@ final class _ScriptedExecHost implements ExecSessionHost {
   }
 
   @override
-  ExecSession? lookup(String sessionId) => _sessions[sessionId];
+  ExecSession? lookup(int sessionId) => _sessions[sessionId];
 
   @override
-  bool isApproved(String sessionId) => _approved.contains(sessionId);
+  bool isApproved(int sessionId) => _approved.contains(sessionId);
 
   @override
-  void markApproved(String sessionId) => _approved.add(sessionId);
+  void markApproved(int sessionId) => _approved.add(sessionId);
 }
 
 final class _ScriptedExecSession implements ExecSession {
@@ -693,7 +694,7 @@ final class _ScriptedExecSession implements ExecSession {
   });
 
   @override
-  final String id;
+  final int id;
 
   final String command;
   final String workingDirectory;

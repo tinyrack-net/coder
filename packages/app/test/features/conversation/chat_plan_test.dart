@@ -186,12 +186,12 @@ void main() {
       final items = projectChatTimeline(<TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'arguments': arguments,
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'output':
               '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
               '{"questionId":"ttl","answer":"Evicted","isFreeForm":true}]',
@@ -223,7 +223,7 @@ void main() {
       final items = projectChatTimeline(<TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'arguments': <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{
@@ -250,12 +250,12 @@ void main() {
       final items = projectChatTimeline(<TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'arguments': <String, dynamic>{'questions': <Map<String, dynamic>>[]},
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
-          'name': 'ask_user',
+          'name': 'request_user_input',
           'output': '{"error":"Ask between 1 and 3 questions."}',
           'isError': true,
         }),

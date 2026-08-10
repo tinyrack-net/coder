@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
-
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
 import 'package:agent/src/tools/tool_registry.dart';
 import 'package:agent/src/tools/tool_support.dart';
 
-/// Largest number of questions one `ask_user` call may raise.
+/// Largest number of questions one `request_user_input` call may raise.
 const int maxUserQuestions = 3;
 
 /// Bounds on the fixed choices one question may offer.
@@ -23,17 +21,18 @@ const int maxUserQuestionHeader = 12;
 /// The schema cannot express the bounds — strict provider schemas reject
 /// `minItems` and `maxItems` — so they are enforced here and a violation comes
 /// back as a correctable tool error instead of a failed turn.
-class AskUserTool extends AgentTool {
-  /// Creates an [AskUserTool].
-  factory AskUserTool({required UserQuestionCoordinator coordinator}) =>
-      AskUserTool._(coordinator);
+class RequestUserInputTool extends AgentTool {
+  /// Creates a [RequestUserInputTool].
+  factory RequestUserInputTool({
+    required UserQuestionCoordinator coordinator,
+  }) => RequestUserInputTool._(coordinator);
 
-  AskUserTool._(this._coordinator);
+  RequestUserInputTool._(this._coordinator);
 
   final UserQuestionCoordinator _coordinator;
 
   @override
-  String get name => 'ask_user';
+  String get name => 'request_user_input';
 
   @override
   String get description =>
@@ -170,32 +169,30 @@ class AskUserTool extends AgentTool {
       context.cancellation,
     );
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<Map<String, dynamic>>[
+      value: <String, dynamic>{
+        'answers': <String, dynamic>{
           for (final answer in answers)
-            <String, dynamic>{
-              'questionId': answer.questionId,
-              'answer': answer.answer,
-              'isFreeForm': answer.isFreeForm,
+            answer.questionId: <String, dynamic>{
+              'answers': <String>[answer.answer],
             },
-        ]),
-      ),
+        },
+      },
     );
   }
 
   ToolResult _reject(String reason) => ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': reason}),
+    value: <String, dynamic>{'error': reason},
     isError: true,
   );
 }
 
 /// Registers raising multiple-choice questions to the user.
-final class AskUserToolProvider extends SelectableToolProvider {
-  /// Creates a [AskUserToolProvider].
-  const AskUserToolProvider();
+final class RequestUserInputToolProvider extends SelectableToolProvider {
+  /// Creates a [RequestUserInputToolProvider].
+  const RequestUserInputToolProvider();
 
   @override
-  String get id => 'ask_user';
+  String get id => 'request_user_input';
 
   @override
   AgentToolDefinition get catalogEntry => AgentToolDefinition(
@@ -209,7 +206,7 @@ final class AskUserToolProvider extends SelectableToolProvider {
   );
 
   @override
-  List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
-    AskUserTool(coordinator: scope.questions),
-  ];
+  List<AgentTool> build(AgentToolScope scope) => scope.isRootAgent
+      ? <AgentTool>[RequestUserInputTool(coordinator: scope.questions)]
+      : const <AgentTool>[];
 }

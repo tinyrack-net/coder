@@ -224,6 +224,28 @@ void main() {
   );
 
   test(
+    'budgeted completion returns the modern completion report',
+    () async {
+      await service.createFromAgent(
+        sessionId: 'root',
+        objective: 'Finish safely',
+        tokenBudget: 1000,
+      );
+      final result = await UpdateGoalTool(service, 'root').execute(
+        const <String, dynamic>{'status': 'complete'},
+        ToolExecutionContext(
+          workspaceRoot: '/workspace',
+          cancellation: CancellationToken(),
+        ),
+      );
+      final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+      expect(decoded['remainingTokens'], 1000);
+      expect(decoded['completionBudgetReport'], contains('Goal achieved'));
+    },
+    tags: const <String>['feature_test__session_goal__unit'],
+  );
+
+  test(
     'continuation respects plan mode and queued user input',
     () async {
       var pending = true;

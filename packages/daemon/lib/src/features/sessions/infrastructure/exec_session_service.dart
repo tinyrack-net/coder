@@ -24,21 +24,20 @@ class ExecSessionService {
   ExecSessionService({
     required this._gateway,
     required this._pipes,
-    required this._ids,
     required this._clock,
     bool? isWindows,
   }) : isWindows = isWindows ?? Platform.isWindows;
 
   final TerminalGateway _gateway;
   final PipeGateway _pipes;
-  final IdGenerator _ids;
   final Clock _clock;
 
   /// Whether the host uses PowerShell, injected so tests stay deterministic.
   final bool isWindows;
 
-  final Map<String, _LiveExecSession> _sessions = <String, _LiveExecSession>{};
-  final Set<String> _approved = <String>{};
+  final Map<int, _LiveExecSession> _sessions = <int, _LiveExecSession>{};
+  final Set<int> _approved = <int>{};
+  int _nextSessionId = 0;
 
   /// Live sessions, newest last, owned by [owner].
   List<_LiveExecSession> _ownedBy(String owner) =>
@@ -54,6 +53,8 @@ class ExecSessionService {
     required String command,
     required String workingDirectory,
     required bool tty,
+    String? requestedShell,
+    bool login = true,
   }) async {
     sweepIdle();
     final existing = _ownedBy(owner);
@@ -64,17 +65,17 @@ class ExecSessionService {
     }
     final shell = isWindows
         ? ShellSpecDto(
-            executable: 'powershell.exe',
+            executable: requestedShell ?? 'powershell.exe',
             arguments: <String>[
-              '-NoProfile',
+              if (!login) '-NoProfile',
               '-NonInteractive',
               '-Command',
               command,
             ],
           )
         : ShellSpecDto(
-            executable: '/bin/sh',
-            arguments: <String>['-lc', command],
+            executable: requestedShell ?? '/bin/sh',
+            arguments: <String>[if (login) '-lc' else '-c', command],
           );
     final process = tty
         ? await _gateway.start(
@@ -88,7 +89,7 @@ class ExecSessionService {
           )
         : await _pipes.start(shell: shell, workingDirectory: workingDirectory);
     final session = _LiveExecSession(
-      id: 'exec-${_ids.generate()}',
+      id: _nextSessionId += 1,
       owner: owner,
       process: process,
       clock: _clock,
@@ -98,16 +99,16 @@ class ExecSessionService {
   }
 
   /// Returns a live session owned by [owner], or null.
-  ExecSession? lookup(String owner, String sessionId) {
+  ExecSession? lookup(String owner, int sessionId) {
     final session = _sessions[sessionId];
     return session != null && session.owner == owner ? session : null;
   }
 
   /// Whether the user already approved commands for [sessionId].
-  bool isApproved(String sessionId) => _approved.contains(sessionId);
+  bool isApproved(int sessionId) => _approved.contains(sessionId);
 
   /// Records that the user approved the command that started [sessionId].
-  void markApproved(String sessionId) => _approved.add(sessionId);
+  void markApproved(int sessionId) => _approved.add(sessionId);
 
   /// Terminates every session untouched for [execSessionIdleTimeout].
   void sweepIdle() {
@@ -156,22 +157,25 @@ class SessionExecHost implements ExecSessionHost {
     required String command,
     required String workingDirectory,
     required bool tty,
+    String? shell,
+    bool login = true,
   }) => _service.start(
     owner: _sessionId,
     command: command,
     workingDirectory: workingDirectory,
     tty: tty,
+    requestedShell: shell,
+    login: login,
   );
 
   @override
-  ExecSession? lookup(String sessionId) =>
-      _service.lookup(_sessionId, sessionId);
+  ExecSession? lookup(int sessionId) => _service.lookup(_sessionId, sessionId);
 
   @override
-  bool isApproved(String sessionId) => _service.isApproved(sessionId);
+  bool isApproved(int sessionId) => _service.isApproved(sessionId);
 
   @override
-  void markApproved(String sessionId) => _service.markApproved(sessionId);
+  void markApproved(int sessionId) => _service.markApproved(sessionId);
 }
 
 class _LiveExecSession implements ExecSession {
@@ -198,7 +202,7 @@ class _LiveExecSession implements ExecSession {
   }
 
   @override
-  final String id;
+  final int id;
 
   /// Coder session that owns this pseudo-terminal.
   final String owner;

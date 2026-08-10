@@ -83,6 +83,9 @@ class UpdatePlanTool extends AgentTool {
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
+    if (context.sessionMode == AgentSessionMode.plan) {
+      return _reject('update_plan is unavailable in Plan Mode.');
+    }
     final raw = arguments['plan'];
     if (raw is! List || raw.isEmpty) {
       return _reject('A plan must contain at least one step.');
@@ -120,19 +123,15 @@ class UpdatePlanTool extends AgentTool {
     if (active > 1) {
       return _reject('At most one step may be in_progress; found $active.');
     }
-    final explanation = arguments['explanation'];
     return ToolResult(
-      output: truncateToolOutput(
-        jsonEncode(<String, dynamic>{
-          'plan': steps,
-          'explanation': explanation is String ? explanation : '',
-        }),
-      ),
+      value: context.toolSurfaceMode == AgentToolSurfaceMode.luaCode
+          ? const <String, dynamic>{}
+          : 'Plan updated',
     );
   }
 
   ToolResult _reject(String reason) => ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': reason}),
+    value: jsonEncode(<String, dynamic>{'error': reason}),
     isError: true,
   );
 }

@@ -259,6 +259,11 @@ class SessionTurnCoordinator implements SessionTurnPort {
       execHost: _execHostFor(sessionId),
       luaCodeModeHost: _luaHostFor(sessionId, worktree.path),
       skills: skills,
+      sessionMode: agentSessionMode(session.mode),
+      isRootAgent: session.parentSessionId == null,
+      toolSurfaceMode: resolvedModel.toolSurface == ModelToolSurface.luaCode
+          ? AgentToolSurfaceMode.luaCode
+          : AgentToolSurfaceMode.direct,
     );
     final turnTools = _toolRegistry.build(
       scope,
@@ -340,6 +345,9 @@ class SessionTurnCoordinator implements SessionTurnPort {
           attachments: turnAttachments,
           safetyIdentifier: _safetyIdentifier,
           sessionMode: agentSessionMode(session.mode),
+          toolSurfaceMode: turnTools.nestedTools.isEmpty
+              ? AgentToolSurfaceMode.direct
+              : AgentToolSurfaceMode.luaCode,
           customSystemPrompt: _composeCustomPrompt(
             definition.promptEnabled ? definition.systemPrompt : null,
             multiAgent?.usageHintFor(session, definition),

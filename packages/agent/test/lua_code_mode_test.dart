@@ -32,15 +32,20 @@ void main() {
         nestedTools: _EchoInvoker(),
       );
 
-      final result = await tool.execute(<String, dynamic>{
-        'source': 'text("done")',
-        'yield_time_ms': 999999,
-        'max_output_tokens': 1,
-      }, context);
+      final result = await tool.executeFreeform(
+        '-- @exec: {"yield_time_ms": 999999, "max_output_tokens": 1}\n'
+        'text("done")',
+        context,
+      );
 
-      expect(host.request!.source, 'text("done")');
+      expect(host.request!.source, contains('text("done")'));
       expect(host.request!.yieldTime, const Duration(seconds: 60));
       expect(host.request!.maxOutputTokens, 256);
+      final definition = host.request!.tools.single;
+      expect(definition.kind, 'function');
+      expect(definition.exposure, 'advertised');
+      expect(definition.namespace, isNull);
+      expect(definition.inputSchema, _NestedEchoTool().strictJsonSchema);
       expect(result.output, contains('Script completed'));
       expect(result.output, contains('done'));
     },
@@ -66,12 +71,41 @@ void main() {
     expect(host.terminated, isTrue);
     expect(result.output, contains('Script terminated'));
   });
+
+  test('notify values remain separate from textual Lua output', () async {
+    final host = _FakeLuaHost(
+      result: const LuaCellChunk(
+        cellId: 'lua-1',
+        output: 'visible',
+        notifications: <Object?>[
+          <String, Object?>{'progress': 1},
+        ],
+      ),
+    );
+    final result =
+        await LuaExecTool(
+          host: host,
+          nestedTools: const <AgentTool>[],
+        ).executeFreeform(
+          'notify({progress=1}); text("visible")',
+          ToolExecutionContext(
+            workspaceRoot: '/workspace',
+            cancellation: CancellationToken(),
+          ),
+        );
+
+    expect(result.output, contains('visible'));
+    expect(result.output, isNot(contains('progress')));
+    expect(result.notifications, <Object?>[
+      <String, Object?>{'progress': 1},
+    ]);
+  });
 }
 
 AgentToolScope _scope(LuaCodeModeHost host) => AgentToolScope(
   session: const AgentSessionContext(id: 'session'),
   definition: const AgentDefinitionContext(id: 'coder'),
-  selectedToolIds: const <String>{'lua_code_mode'},
+  selectedToolIds: const <String>{},
   workspaceRoot: '/workspace',
   turnId: 'turn',
   attachmentPublisher: const _UnusedPorts(),
@@ -81,9 +115,15 @@ AgentToolScope _scope(LuaCodeModeHost host) => AgentToolScope(
   execHost: const _UnusedPorts(),
   skills: const _UnusedSkills(),
   luaCodeModeHost: host,
+  toolSurfaceMode: AgentToolSurfaceMode.luaCode,
 );
 
 final class _FakeLuaHost implements LuaCodeModeHost {
+  _FakeLuaHost({
+    this.result = const LuaCellChunk(cellId: 'lua-1', output: 'done'),
+  });
+
+  final LuaCellChunk result;
   LuaExecuteRequest? request;
   String? waitCellId;
   bool terminated = false;
@@ -94,7 +134,7 @@ final class _FakeLuaHost implements LuaCodeModeHost {
     ToolExecutionContext context,
   ) async {
     this.request = request;
-    return const LuaCellChunk(cellId: 'lua-1', output: 'done');
+    return result;
   }
 
   @override
@@ -117,7 +157,7 @@ final class _EchoInvoker implements NestedToolInvoker {
   Future<ToolResult> invoke(
     String name,
     Map<String, dynamic> arguments,
-  ) async => ToolResult(output: arguments['value'] as String? ?? 'ok');
+  ) async => ToolResult(value: arguments['value'] as String? ?? 'ok');
 }
 
 final class _NestedEchoTool extends AgentTool {
@@ -144,7 +184,7 @@ final class _NestedEchoTool extends AgentTool {
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
-  ) async => const ToolResult(output: 'unused');
+  ) async => const ToolResult(value: 'unused');
 }
 
 final class _UnusedPorts

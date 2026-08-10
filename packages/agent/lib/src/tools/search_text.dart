@@ -112,7 +112,7 @@ class SearchTextTool extends AgentTool {
         // A bad expression is something the model can fix on the next call, so
         // it is reported as tool output rather than failing the turn.
         return ToolResult(
-          output: jsonEncode(<String, dynamic>{
+          value: jsonEncode(<String, dynamic>{
             'error': 'query is not a valid regular expression.',
             'detail': error.message,
           }),
@@ -183,7 +183,7 @@ class SearchTextTool extends AgentTool {
     }
 
     return ToolResult(
-      output: truncateToolOutput(
+      value: truncateToolOutput(
         jsonEncode(<String, dynamic>{
           'matches': matches,
           'matchCount': matches.length,

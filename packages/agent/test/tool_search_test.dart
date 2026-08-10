@@ -181,7 +181,9 @@ void main() {
       expect(found.single['name'], 'mcp__a__alpha');
       // The full schema goes back so the model can call it immediately.
       expect(found.single['parameters'], isA<Map<String, dynamic>>());
-      expect(decoded['remaining'], 2);
+      expect(found.single['type'], 'function');
+      expect(found.single['canonical_name'], 'mcp__a__alpha');
+      expect(decoded.containsKey('remaining'), isFalse);
       expect(surfaced, <String>{'mcp__a__alpha'});
     });
 
@@ -221,6 +223,87 @@ void main() {
       expect(await count(1000), maxToolSearchLimit);
       expect(await count(0), 1);
     });
+
+    test('returns loadable freeform and namespace specifications', () async {
+      final tool = ToolSearchTool(
+        deferred: <AgentTool>[
+          _SpecTool(
+            name: 'patch_source',
+            description: 'Apply grammar patch source.',
+            spec: const ModelFreeformToolDefinition(
+              name: 'apply_patch',
+              description: 'Apply grammar patch source.',
+              format: ModelFreeformToolFormat(
+                type: 'grammar',
+                syntax: 'lark',
+                definition: 'start: patch',
+              ),
+            ),
+          ),
+          _SpecTool(
+            name: 'clock_namespace',
+            description: 'Namespaced clock operations.',
+            spec: const ModelNamespaceToolDefinition(
+              name: 'clock',
+              description: 'Clock operations.',
+              tools: <ModelFunctionToolDefinition>[
+                ModelFunctionToolDefinition(
+                  name: 'curr_time',
+                  description: 'Read time.',
+                  parameters: <String, dynamic>{'type': 'object'},
+                  outputSchema: <String, dynamic>{'type': 'object'},
+                ),
+              ],
+            ),
+          ),
+        ],
+        onSurfaced: (_) {},
+      );
+
+      final patch =
+          jsonDecode(
+                (await tool.execute(<String, dynamic>{
+                  'query': 'grammar patch',
+                }, context())).output,
+              )
+              as Map<String, dynamic>;
+      final patchSpec = (patch['tools']! as List<dynamic>).first as Map;
+      expect(patchSpec['type'], 'custom');
+      expect((patchSpec['format']! as Map)['syntax'], 'lark');
+
+      final clock =
+          jsonDecode(
+                (await tool.execute(<String, dynamic>{
+                  'query': 'namespaced clock',
+                }, context())).output,
+              )
+              as Map<String, dynamic>;
+      final clockSpec = (clock['tools']! as List<dynamic>).first as Map;
+      expect(clockSpec['type'], 'namespace');
+      expect(((clockSpec['tools']! as List).first as Map)['name'], 'curr_time');
+    });
+
+    test('never permits tool_search to hide behind itself', () async {
+      final tool = ToolSearchTool(
+        deferred: <AgentTool>[
+          _SpecTool(
+            name: 'deferred_search',
+            description: 'Recursive discovery search.',
+            spec: const ModelDeferredSearchToolDefinition(
+              description: 'Recursive discovery search.',
+              parameters: <String, dynamic>{'type': 'object'},
+            ),
+          ),
+        ],
+        onSurfaced: (_) {},
+      );
+      expect(
+        () => tool.execute(<String, dynamic>{
+          'query': 'recursive discovery',
+        }, context()),
+        throwsA(isA<StateError>()),
+      );
+    });
   });
 }
 
@@ -257,5 +340,18 @@ final class _FakeTool extends AgentTool {
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
-  ) async => const ToolResult(output: '{}');
+  ) async => const ToolResult(value: '{}');
+}
+
+final class _SpecTool extends _FakeTool {
+  _SpecTool({
+    required super.name,
+    required super.description,
+    required this.spec,
+  });
+
+  final ModelToolDefinition spec;
+
+  @override
+  ModelToolDefinition get modelSpec => spec;
 }

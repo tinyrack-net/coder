@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
-import 'package:agent/src/tools/patch/unified_diff.dart';
+import 'package:agent/src/tools/patch/codex_patch.dart';
 import 'package:agent/src/tools/tool_registry.dart';
 import 'package:agent/src/tools/tool_support.dart';
 import 'package:file/file.dart' as file_api;
@@ -32,16 +31,26 @@ class ApplyPatchTool extends AgentTool {
   String get name => 'apply_patch';
   @override
   String get description =>
-      'Apply a unified diff to UTF-8 files inside the workspace. Create a file '
-      'with a /dev/null source, delete one with a /dev/null target, and move '
-      'or rename one by naming different paths in the --- and +++ headers.';
+      'Apply a patch to UTF-8 files inside the workspace. The input must use '
+      'the *** Begin Patch format with Add, Update, Delete, and Move sections.';
   @override
   AgentToolRisk get risk => AgentToolRisk.write;
   @override
   Map<String, dynamic> get strictJsonSchema =>
-      strictToolObject(<String, Map<String, dynamic>>{
-        'patch': <String, dynamic>{'type': 'string'},
-      });
+      throw StateError('apply_patch accepts freeform input.');
+
+  @override
+  ModelToolDefinition get modelSpec => const ModelFreeformToolDefinition(
+    name: 'apply_patch',
+    description:
+        'Apply a patch to UTF-8 files inside the workspace using the '
+        '*** Begin Patch format.',
+    format: ModelFreeformToolFormat(
+      type: 'grammar',
+      syntax: 'lark',
+      definition: _applyPatchGrammar,
+    ),
+  );
 
   @override
   Future<String?> preview(
@@ -50,11 +59,25 @@ class ApplyPatchTool extends AgentTool {
   ) async => arguments['patch'] as String;
 
   @override
+  Future<String?> previewFreeform(
+    String input,
+    ToolExecutionContext context,
+  ) async => input;
+
+  @override
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    final patch = UnifiedPatch.parse(arguments['patch'] as String);
+    throw StateError('apply_patch accepts freeform input.');
+  }
+
+  @override
+  Future<ToolResult> executeFreeform(
+    String input,
+    ToolExecutionContext context,
+  ) async {
+    final patch = CodexPatch.parse(input);
     final guard = WorkspacePathGuard(
       context.workspaceRoot,
       fileSystem: _fileSystem,
@@ -65,9 +88,9 @@ class ApplyPatchTool extends AgentTool {
     // single byte is written. A patch that cannot apply must leave the
     // workspace exactly as it found it.
     final plan = <_PlannedChange>[];
-    for (final filePatch in patch.files) {
+    for (final operation in patch.operations) {
       context.cancellation.throwIfCancelled();
-      plan.add(await _plan(filePatch, guard));
+      plan.add(await _plan(operation, guard));
     }
 
     final applied = <_PlannedChange>[];
@@ -83,25 +106,19 @@ class ApplyPatchTool extends AgentTool {
       rethrow;
     }
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{'changedFiles': applied.length}),
+      value: <String, dynamic>{'changed_files': applied.length},
     );
   }
 
   /// Works out what one file header asks for, and reads what it needs.
   Future<_PlannedChange> _plan(
-    FilePatch filePatch,
+    CodexPatchOperation operation,
     WorkspacePathGuard guard,
   ) async {
-    final from = _cleanPath(filePatch.oldPath);
-    final to = _cleanPath(filePatch.newPath);
-    if (from == null && to == null) {
-      throw const FormatException('A patch cannot move /dev/null to itself.');
-    }
-
-    if (to == null) {
-      final source = guard.resolveWritable(from!);
+    if (operation case CodexDeleteFile(:final path)) {
+      final source = guard.resolveWritable(path);
       if (!_fileSystem.file(source).existsSync()) {
-        throw FormatException('Cannot delete a missing file: $from');
+        throw FormatException('Cannot delete a missing file: $path');
       }
       return _PlannedChange(
         source: source,
@@ -109,45 +126,62 @@ class ApplyPatchTool extends AgentTool {
       );
     }
 
-    final target = guard.resolveWritable(to);
-    // A creation names /dev/null as its source; a plain edit names the same
-    // path on both sides. Anything else is a move.
-    final source = from == null ? null : guard.resolveWritable(from);
-    final moving = source != null && source != target;
-
-    final readFrom = source ?? target;
-    final originalExists = _fileSystem.file(readFrom).existsSync();
-    if (moving && !originalExists) {
-      throw FormatException('Cannot move a missing file: $from');
+    if (operation case CodexAddFile(:final path, :final content)) {
+      final target = guard.resolveWritable(path);
+      if (_fileSystem.file(target).existsSync()) {
+        throw FormatException('Cannot add an existing file: $path');
+      }
+      return _PlannedChange(
+        target: target,
+        targetContents: content.isEmpty ? '' : '$content\n',
+      );
     }
-    final original = originalExists
-        ? await _fileSystem.file(readFrom).readAsString()
-        : '';
+
+    final update = operation as CodexUpdateFile;
+    final source = guard.resolveWritable(update.path);
+    final target = guard.resolveWritable(update.moveTo ?? update.path);
+    final moving = source != target;
+
+    final originalExists = _fileSystem.file(source).existsSync();
+    if (!originalExists) {
+      throw FormatException('Cannot update a missing file: ${update.path}');
+    }
+    final original = await _fileSystem.file(source).readAsString();
 
     if (moving && _fileSystem.file(target).existsSync()) {
       // Silently clobbering the destination would lose a file the patch never
       // mentioned, so the move is refused instead.
-      throw FormatException('Cannot move onto an existing file: $to');
+      throw FormatException(
+        'Cannot move onto an existing file: ${update.moveTo}',
+      );
     }
 
     return _PlannedChange(
       source: moving ? source : null,
       sourceContents: moving ? original : null,
       target: target,
-      targetContents: filePatch.apply(original),
+      targetContents: update.apply(original),
       targetExisted: !moving && originalExists,
       targetOriginal: !moving && originalExists ? original : null,
     );
   }
-
-  /// Strips the `a/` and `b/` prefixes, mapping `/dev/null` to null.
-  static String? _cleanPath(String path) {
-    if (path == '/dev/null') return null;
-    return path.startsWith('a/') || path.startsWith('b/')
-        ? path.substring(2)
-        : path;
-  }
 }
+
+const String _applyPatchGrammar = r'''
+start: begin operation+ end
+begin: "*** Begin Patch" NEWLINE
+end: "*** End Patch" NEWLINE?
+operation: add_file | delete_file | update_file
+add_file: "*** Add File: " PATH NEWLINE add_line*
+delete_file: "*** Delete File: " PATH NEWLINE
+update_file: "*** Update File: " PATH NEWLINE move_to? chunk*
+move_to: "*** Move to: " PATH NEWLINE
+chunk: "@@" /[^\n]*/ NEWLINE patch_line*
+add_line: "+" /[^\n]*/ NEWLINE
+patch_line: /[ +\-][^\n]*/ NEWLINE
+PATH: /[^\n]+/
+%import common.NEWLINE
+''';
 
 /// One file's worth of work, and everything needed to undo it.
 class _PlannedChange {
@@ -224,7 +258,7 @@ class _PlannedChange {
   }
 }
 
-/// Registers the unified-diff writer.
+/// Registers the modern freeform patch writer.
 final class ApplyPatchToolProvider extends SelectableToolProvider {
   /// Creates a [ApplyPatchToolProvider].
   const ApplyPatchToolProvider();

@@ -313,6 +313,34 @@ void main() {
       );
     });
 
+    test('persists explicit model controls on a non-full fork', () async {
+      final root = await database.sessionDao.create(session('root'));
+      await service.spawn(
+        caller: root,
+        callerDefinition: _coderDefinition,
+        turnId: 'turn-1',
+        taskName: 'controlled',
+        message: 'Work.',
+        reasoningEffort: 'high',
+        serviceTier: 'priority',
+      );
+      final child = (await database.sessionDao.getByAgentPath(
+        'root',
+        '/root/controlled',
+      ))!;
+      expect(
+        child.modelControls,
+        <String, ModelControlValueDto>{
+          'reasoning_effort': const ModelControlValueDto.stringValue(
+            value: 'high',
+          ),
+          'service_tier': const ModelControlValueDto.stringValue(
+            value: 'priority',
+          ),
+        },
+      );
+    });
+
     test('rejects agent types outside the caller allowlist', () async {
       final root = await database.sessionDao.create(session('root'));
       await expectLater(
@@ -825,7 +853,7 @@ void main() {
           AssistantConversationItem(
             text: 'First answer',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'call',
                 name: 'read_file',
                 arguments: <String, dynamic>{'path': 'a'},
@@ -835,7 +863,11 @@ void main() {
               <String, dynamic>{'type': 'reasoning', 'encrypted': 'secret'},
             ],
           ),
-          ToolResultConversationItem(callId: 'call', output: 'contents'),
+          ToolResultConversationItem(
+            callId: 'call',
+            output: 'contents',
+            toolKind: ModelToolKind.function,
+          ),
           UserConversationItem('Second prompt'),
           AssistantConversationItem(text: ''),
           AssistantConversationItem(text: 'Second answer'),
@@ -881,6 +913,52 @@ void main() {
   });
 
   group('tools', () {
+    test('v2 schemas require only canonical mandatory fields', () async {
+      final root = await database.sessionDao.create(session('root'));
+      final spawn = SpawnAgentTool(service, root, _coderDefinition, 'turn-1');
+      expect(spawn.strictJsonSchema['required'], <String>[
+        'task_name',
+        'message',
+      ]);
+      expect(
+        (spawn.strictJsonSchema['properties'] as Map<String, dynamic>).keys,
+        containsAll(<String>[
+          'fork_turns',
+          'model',
+          'reasoning_effort',
+          'service_tier',
+        ]),
+      );
+      expect(
+        WaitAgentTool(service, root).strictJsonSchema['required'],
+        isEmpty,
+      );
+      expect(
+        ListAgentsTool(service, root).strictJsonSchema['required'],
+        isEmpty,
+      );
+
+      final tools = <AgentTool>[
+        spawn,
+        SendMessageTool(service, root),
+        FollowupTaskTool(service, root),
+        WaitAgentTool(service, root),
+        InterruptAgentTool(service, root),
+        ListAgentsTool(service, root),
+      ];
+      for (final tool in tools) {
+        expect(tool.name, isNotEmpty);
+        expect(tool.description, isNotEmpty, reason: tool.name);
+        expect(tool.risk, AgentToolRisk.read, reason: tool.name);
+        expect(tool.strictJsonSchema['type'], 'object', reason: tool.name);
+        expect(
+          tool.strictJsonSchema['additionalProperties'],
+          isFalse,
+          reason: tool.name,
+        );
+      }
+    });
+
     test('surface collaboration failures as error results', () async {
       final root = await database.sessionDao.create(session('root'));
       final tool = SpawnAgentTool(service, root, _coderDefinition, 'turn-1');

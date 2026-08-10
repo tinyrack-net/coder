@@ -634,7 +634,7 @@ void main() {
   );
 
   test(
-    'view_image and ask_user get their own glyphs and summaries',
+    'view_image and request_user_input get their own glyphs and summaries',
     tags: const <String>['feature_test__tool_image_context__widget'],
     () {
       final viewed = describeToolActivity(
@@ -684,7 +684,7 @@ void main() {
       final asked = describeToolActivity(
         testL10n,
         activity(
-          'ask_user',
+          'request_user_input',
           arguments: const <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{'id': 'store', 'header': 'Storage'},
@@ -692,8 +692,8 @@ void main() {
             ],
           },
           output:
-              '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
-              '{"questionId":"cache","answer":"Redis","isFreeForm":true}]',
+              '{"answers":{"store":{"answers":["SQLite"]},'
+              '"cache":{"answers":["Redis"]}}}',
         ),
       );
       expect(asked.glyph, ChatToolGlyph.ask);
@@ -712,7 +712,7 @@ void main() {
       final now = describeToolActivity(
         testL10n,
         activity(
-          'current_time',
+          'clock__curr_time',
           output: '{"utc":"2026-08-05T14:23:01.000Z","unixSeconds":1785508981}',
         ),
       );
@@ -725,7 +725,7 @@ void main() {
       final slept = describeToolActivity(
         testL10n,
         activity(
-          'sleep',
+          'clock__sleep',
           arguments: const <String, dynamic>{'duration_ms': 2500},
           output: '{"sleptMs":2500,"outcome":"elapsed"}',
         ),
@@ -736,7 +736,7 @@ void main() {
       final rejected = describeToolActivity(
         testL10n,
         activity(
-          'sleep',
+          'clock__sleep',
           output: '{"error":"duration_ms must be an integer."}',
           isError: true,
         ),

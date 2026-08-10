@@ -6,6 +6,8 @@ import 'package:agent/agent.dart';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
@@ -936,6 +938,7 @@ void main() {
           return true;
         },
         'the spawned subagent to complete',
+        budget: e2eTurnBudget,
       );
       expect(spawnedChild.taskName, 'review_task');
       expect(spawnedChild.agentPath, '/root/review_task');
@@ -1133,20 +1136,15 @@ void main() {
         ),
         setupClient,
       );
-      final failedToolDisclosure = find.ancestor(
-        of: find.text('실패', findRichText: true).last,
-        matching: find.byType(TRChatToolDisclosure),
+      final failedToolCard = find.byWidgetPredicate(
+        (widget) =>
+            widget is ChatToolCard &&
+            widget.activity.callId == 'disallowed-delegate-call',
       );
-      expect(failedToolDisclosure, findsOneWidget);
-      await tester.tap(failedToolDisclosure);
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining(
-          'Agent type is not allowed: not-allowed',
-          findRichText: true,
-        ),
-        findsWidgets,
-      );
+      expect(failedToolCard, findsOneWidget);
+      // Expansion and the structured error body are owned by the focused
+      // chat-view widget test. This real-daemon slice pins the failed card and
+      // the exact tool event below without depending on virtual-list details.
       await pumpUntilCondition(
         tester,
         () => tester.widget<TRIconButton>(find.byKey(send)).onPressed != null,
@@ -1154,8 +1152,14 @@ void main() {
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Create result.txt');
-      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
-      await tester.tap(find.text('승인'));
+      final patchApproval = _approvalForCall('patch-call');
+      await pumpUntil(tester, patchApproval);
+      await tester.tap(
+        find.descendant(
+          of: patchApproval,
+          matching: find.widgetWithText(TRButton, '승인'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('Created result.txt', findRichText: true),
@@ -1301,8 +1305,14 @@ void main() {
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Reject result.txt');
-      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
-      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      final rejectedPatchApproval = _approvalForCall('reject-patch-call');
+      await pumpUntil(tester, rejectedPatchApproval);
+      await tester.tap(
+        find.descendant(
+          of: rejectedPatchApproval,
+          matching: find.widgetWithText(TRButton, '거부'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('Rejected safely', findRichText: true),
@@ -1320,24 +1330,36 @@ void main() {
         contains('mcp__e2e__echo'),
       );
       await _submitComposerPrompt(tester, composer, send, 'MCP echo');
+      final mcpApproval = _approvalForCall('mcp-call');
       await _pumpUntilWithSessionDiagnostics(
         tester,
-        find.text('승인 필요 · mcp__e2e__echo'),
+        mcpApproval,
         setupClient,
       );
-      await tester.tap(find.widgetWithText(TRButton, '승인'));
+      await tester.tap(
+        find.descendant(
+          of: mcpApproval,
+          matching: find.widgetWithText(TRButton, '승인'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('MCP completed', findRichText: true),
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Reject MCP');
+      final rejectedMcpApproval = _approvalForCall('reject-mcp-call');
       await _pumpUntilWithSessionDiagnostics(
         tester,
-        find.text('승인 필요 · mcp__e2e__echo'),
+        rejectedMcpApproval,
         setupClient,
       );
-      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      await tester.tap(
+        find.descendant(
+          of: rejectedMcpApproval,
+          matching: find.widgetWithText(TRButton, '거부'),
+        ),
+      );
       await pumpUntil(tester, find.text('MCP rejected', findRichText: true));
 
       await setupClient.mcp.removeMcpServer('e2e');
@@ -1462,18 +1484,16 @@ void main() {
       );
       await tester.pumpAndSettle();
       await _submitComposerPrompt(tester, composer, send, 'Plan the change');
-      await pumpUntil(tester, find.text('계획'));
       await pumpUntil(
         tester,
-        find.text('이 계획대로 진행할까요?'),
+        find.text('Plan ready: Create result.txt', findRichText: true),
       );
-      // The plan arrived as an update_plan call, so it renders as a checklist
-      // rather than a generic tool row.
-      expect(find.text('Create result.txt'), findsOneWidget);
-      final implement = find.widgetWithText(TRButton, '계획대로 실행');
-      await tester.ensureVisible(implement);
-      await tester.pumpAndSettle();
-      await tester.tap(implement);
+      // update_plan records execution progress and is unavailable in Plan
+      // Mode. The user explicitly returns to Default mode after reading the
+      // prose proposal.
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
+      );
       await tester.pump();
       // The chip returning to 실행 proves the session left plan mode.
       await pumpUntil(tester, find.text('실행'));
@@ -1492,19 +1512,16 @@ void main() {
       );
 
       // A blocking agent question stops the turn until the user answers it,
-      // and the chosen answer reaches the model. Implementing the plan started
-      // a turn of its own, so this prompt may queue behind it; the wait spans
-      // both turns.
+      // and the chosen answer reaches the model.
       await _submitComposerPrompt(
         tester,
         composer,
         send,
         'Ask me about storage',
       );
-      // The prompt has to leave the composer either way: straight into the
-      // transcript, or held as a queue chip behind the implement turn. Failing
-      // here separates "never left the client" from "the daemon never
-      // answered", which the 120s wait below cannot tell apart.
+      // The prompt has to leave the composer. Failing here separates "never
+      // left the client" from "the daemon never answered", which the 120s
+      // wait below cannot tell apart.
       await pumpUntilCondition(
         tester,
         () =>
@@ -2348,6 +2365,14 @@ Finder _trTextInput(String label) => find.descendant(
   matching: find.byType(EditableText),
 );
 
+Finder _approvalForCall(String toolCallId) => find.byWidgetPredicate(
+  (widget) =>
+      widget is ApprovalCard &&
+      (widget.interaction?.approval ?? widget.approval)?.toolCallId ==
+          toolCallId,
+  description: 'approval card for tool call $toolCallId',
+);
+
 Future<void> _initializeGitRepository(String path) async {
   await _runGit(path, <String>['init', '-b', 'main']);
   await File('$path/README.md').writeAsString('# E2E fixture\n');
@@ -2654,22 +2679,24 @@ final class _PatchProvider implements ModelProvider {
   ) async* {
     if (_round == 0) {
       _round += 1;
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -2760,7 +2787,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'goal-complete-call',
               name: 'update_goal',
               arguments: arguments,
@@ -2773,37 +2800,11 @@ final class _AgentE2eProvider implements ModelProvider {
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {
-      final hasPlanResult = request.history
-          .whereType<ToolResultConversationItem>()
-          .any((item) => item.callId == 'plan-call');
-      if (!hasPlanResult) {
-        const arguments = <String, dynamic>{
-          'plan': <Map<String, dynamic>>[
-            <String, dynamic>{'step': 'Create result.txt', 'status': 'pending'},
-          ],
-          'explanation': 'Explored the workspace.',
-        };
-        yield const ModelFunctionCall(
-          callId: 'plan-call',
-          name: 'update_plan',
-          arguments: arguments,
-        );
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(
-            text: '',
-            toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
-                callId: 'plan-call',
-                name: 'update_plan',
-                arguments: arguments,
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+      yield const ModelTextDelta('Plan ready: Create result.txt');
       yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: ''),
+        assistant: AssistantConversationItem(
+          text: 'Plan ready: Create result.txt',
+        ),
       );
       return;
     }
@@ -2864,16 +2865,16 @@ final class _AgentE2eProvider implements ModelProvider {
         };
         yield const ModelFunctionCall(
           callId: 'ask-call',
-          name: 'ask_user',
+          name: 'request_user_input',
           arguments: arguments,
         );
         yield const ModelResponseCompleted(
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'ask-call',
-                name: 'ask_user',
+                name: 'request_user_input',
                 arguments: arguments,
               ),
             ],
@@ -2948,7 +2949,7 @@ final class _AgentE2eProvider implements ModelProvider {
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'attach-call',
                 name: 'attach_file',
                 arguments: arguments,
@@ -2994,7 +2995,7 @@ final class _AgentE2eProvider implements ModelProvider {
         'task_name': 'forbidden_task',
         'message': 'This spawn must not start.',
         'agent_type': 'not-allowed',
-        'fork_turns': null,
+        'fork_turns': 'none',
         'model': null,
         'reasoning_effort': null,
       };
@@ -3007,7 +3008,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'disallowed-delegate-call',
               name: 'spawn_agent',
               arguments: arguments,
@@ -3044,7 +3045,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'skill-list-call',
               name: 'list_skills',
               arguments: listArguments,
@@ -3074,7 +3075,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'skill-call',
               name: 'skill',
               arguments: arguments,
@@ -3133,7 +3134,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'mcp-call',
               name: 'mcp__e2e__echo',
               arguments: arguments,
@@ -3161,7 +3162,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'reject-mcp-call',
               name: 'mcp__e2e__echo',
               arguments: arguments,
@@ -3203,7 +3204,7 @@ final class _AgentE2eProvider implements ModelProvider {
         'task_name': 'review_task',
         'message': 'Review without changing files.',
         'agent_type': 'reviewer',
-        'fork_turns': null,
+        'fork_turns': 'none',
         'model': null,
         'reasoning_effort': null,
       };
@@ -3216,7 +3217,7 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'spawn-call',
               name: 'spawn_agent',
               arguments: arguments,
@@ -3234,22 +3235,24 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Create result.txt' && !hasPatchResult) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -3257,22 +3260,24 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Reject result.txt' && !hasRejectedPatchResult) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/rejected.txt\n@@ -0,0 +1,1 @@\n+nope\n',
-      };
-      yield const ModelFunctionCall(
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: rejected.txt\n'
+          '+nope\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'reject-patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.freeform(
               callId: 'reject-patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),

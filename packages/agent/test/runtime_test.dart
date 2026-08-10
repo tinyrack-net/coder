@@ -22,7 +22,7 @@ void main() {
   });
 
   test('canonical conversation items round-trip and reject unknown types', () {
-    const call = ConversationToolCall(
+    const call = ConversationToolCall.function(
       callId: 'call',
       name: 'echo',
       arguments: <String, dynamic>{'value': 'hello'},
@@ -39,6 +39,7 @@ void main() {
       ToolResultConversationItem(
         callId: 'call',
         output: 'hello',
+        toolKind: ModelToolKind.function,
         isError: true,
       ),
     ];
@@ -148,6 +149,36 @@ void main() {
     );
   });
 
+  test(
+    'declared parallel calls execute together and persist model order',
+    () async {
+      final tracker = _ParallelTracker();
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          _twoToolResponse('parallel_first', 'parallel_second'),
+          _textResponse('done'),
+        ]),
+        tools: <AgentTool>[
+          _ParallelTool('parallel_first', tracker, delay: true),
+          _ParallelTool('parallel_second', tracker),
+        ],
+        permissionMode: AgentPermissionMode.fullAccess,
+      );
+
+      final result = await harness.runner.startTurn(
+        _request(),
+        CancellationToken(),
+      );
+
+      expect(tracker.maximumActive, 2);
+      final outputs = result.conversationItems
+          .whereType<ToolResultConversationItem>()
+          .map((item) => item.output)
+          .toList();
+      expect(outputs, <String>['parallel_first', 'parallel_second']);
+    },
+  );
+
   test('queued turn input is drained before every model request', () async {
     final provider = _SnapshottingProvider(<List<ModelEvent>>[
       _toolResponseWith('echo', <String, dynamic>{'value': 'one'}),
@@ -229,7 +260,9 @@ void main() {
 
     await harness.runner.startTurn(_request(), CancellationToken());
 
-    final tools = provider.requests.single.tools;
+    final tools = provider.requests.single.tools
+        .whereType<ModelFunctionToolDefinition>()
+        .toList(growable: false);
     expect(
       tools.firstWhere((tool) => tool.name == 'echo').strict,
       isTrue,
@@ -900,6 +933,37 @@ void main() {
   );
 
   test(
+    'new_context clears tools surfaced in the previous window',
+    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    () async {
+      final provider = _FakeProvider(<List<ModelEvent>>[
+        _toolResponseWith('tool_search', <String, dynamic>{
+          'query': 'hidden',
+          'limit': null,
+        }),
+        _toolResponse('new_context'),
+        _textResponse('done'),
+      ]);
+      final harness = _RunnerHarness(
+        provider,
+        tools: <AgentTool>[_DeferredTool(), NewContextTool()],
+        contextResets: (_) {},
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      expect(
+        provider.requests[1].tools.map((tool) => tool.name),
+        contains('hidden'),
+      );
+      expect(
+        provider.requests[2].tools.map((tool) => tool.name),
+        isNot(contains('hidden')),
+      );
+    },
+  );
+
+  test(
     'a session that already searched keeps its tools advertised',
     tags: const <String>['feature_test__tool_search_deferred__unit'],
     () async {
@@ -919,7 +983,7 @@ void main() {
             const AssistantConversationItem(
               text: '',
               toolCalls: <ConversationToolCall>[
-                ConversationToolCall(
+                ConversationToolCall.function(
                   callId: 'call-search',
                   name: 'tool_search',
                   arguments: <String, dynamic>{'query': 'hidden'},
@@ -929,6 +993,7 @@ void main() {
             const ToolResultConversationItem(
               callId: 'call-search',
               output: '{"tools":[{"name":"hidden"}],"remaining":0}',
+              toolKind: ModelToolKind.function,
             ),
           ],
         ),
@@ -1054,14 +1119,14 @@ void main() {
   );
 
   test('model and tool value objects expose their complete contract', () async {
-    const definition = ModelToolDefinition(
+    const definition = ModelFunctionToolDefinition(
       name: 'echo',
       description: 'Echo',
       parameters: <String, dynamic>{'type': 'object'},
     );
     expect(definition.strict, isTrue);
     expect(
-      const ModelToolDefinition(
+      const ModelFunctionToolDefinition(
         name: 'external',
         description: 'External',
         parameters: <String, dynamic>{'type': 'object'},
@@ -1090,7 +1155,7 @@ void main() {
       workspaceRoot: '/workspace',
       preview: 'preview',
     );
-    const result = ToolResult(output: 'done', isError: true);
+    const result = ToolResult(value: 'done', isError: true);
     final tool = _EchoTool();
 
     expect(request.model, 'model');
@@ -1168,7 +1233,7 @@ List<ModelEvent> _toolResponse(
     assistant: AssistantConversationItem(
       text: '',
       toolCalls: <ConversationToolCall>[
-        ConversationToolCall(
+        ConversationToolCall.function(
           callId: 'call-$name',
           name: name,
           arguments: const <String, dynamic>{'value': 'hello'},
@@ -1194,12 +1259,12 @@ List<ModelEvent> _twoToolResponse(String first, String second) => <ModelEvent>[
     assistant: AssistantConversationItem(
       text: '',
       toolCalls: <ConversationToolCall>[
-        ConversationToolCall(
+        ConversationToolCall.function(
           callId: 'call-$first',
           name: first,
           arguments: const <String, dynamic>{'value': 'hello'},
         ),
-        ConversationToolCall(
+        ConversationToolCall.function(
           callId: 'call-$second',
           name: second,
           arguments: const <String, dynamic>{'value': 'hello'},
@@ -1219,7 +1284,7 @@ List<ModelEvent> _toolResponseWith(
     assistant: AssistantConversationItem(
       text: '',
       toolCalls: <ConversationToolCall>[
-        ConversationToolCall(
+        ConversationToolCall.function(
           callId: 'call-$name',
           name: name,
           arguments: arguments,
@@ -1327,7 +1392,7 @@ final class _PermissionChangingTool extends AgentTool {
     ToolExecutionContext context,
   ) async {
     permissions.mode = AgentPermissionMode.fullAccess;
-    return const ToolResult(output: 'changed');
+    return const ToolResult(value: 'changed');
   }
 }
 
@@ -1400,7 +1465,7 @@ final class _EnqueueOnExecuteTool extends _EchoTool {
     ToolExecutionContext context,
   ) async {
     _source.queue.add(_item);
-    return const ToolResult(output: '{"queued":true}');
+    return const ToolResult(value: '{"queued":true}');
   }
 }
 
@@ -1457,7 +1522,53 @@ class _EchoTool extends AgentTool {
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
-  ) async => ToolResult(output: arguments['value'] as String);
+  ) async => ToolResult(value: arguments['value'] as String);
+}
+
+final class _ParallelTracker {
+  int active = 0;
+  int maximumActive = 0;
+  final Completer<void> bothStarted = Completer<void>();
+}
+
+final class _ParallelTool extends _EchoTool {
+  _ParallelTool(this.toolName, this.tracker, {this.delay = false});
+
+  final String toolName;
+  final _ParallelTracker tracker;
+  final bool delay;
+
+  @override
+  String get name => toolName;
+
+  @override
+  AgentToolRisk get risk => AgentToolRisk.read;
+
+  @override
+  ModelToolDefinition get modelSpec => ModelFunctionToolDefinition(
+    name: name,
+    description: description,
+    parameters: strictJsonSchema,
+    supportsParallelToolCalls: true,
+  );
+
+  @override
+  Future<ToolResult> execute(
+    Map<String, dynamic> arguments,
+    ToolExecutionContext context,
+  ) async {
+    tracker.active += 1;
+    tracker.maximumActive = tracker.maximumActive < tracker.active
+        ? tracker.active
+        : tracker.maximumActive;
+    if (tracker.active == 2 && !tracker.bothStarted.isCompleted) {
+      tracker.bothStarted.complete();
+    }
+    await tracker.bothStarted.future;
+    if (delay) await Future<void>.delayed(const Duration(milliseconds: 10));
+    tracker.active -= 1;
+    return ToolResult(value: name);
+  }
 }
 
 final class _OrchestratingTool extends AgentTool {
@@ -1517,7 +1628,7 @@ final class _ContextImageTool extends _EchoTool {
       imageDetail: 'high',
     );
     return ToolResult(
-      output: '{"attachmentId":"screenshot"}',
+      value: '{"attachmentId":"screenshot"}',
       attachments: <ConversationAttachment>[attachment],
       contextImages: <ConversationAttachment>[attachment],
     );
@@ -1537,7 +1648,7 @@ final class _NewContextTool extends _EchoTool {
     ToolExecutionContext context,
   ) async {
     context.requestContextReset();
-    return const ToolResult(output: '{"started":true}');
+    return const ToolResult(value: '{"started":true}');
   }
 }
 
@@ -1558,7 +1669,7 @@ final class _ContextProbeTool extends _EchoTool {
   ) async {
     seenWindow = context.contextWindowTokens;
     seenUsage = context.turnUsage;
-    return const ToolResult(output: '{}');
+    return const ToolResult(value: '{}');
   }
 }
 

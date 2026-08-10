@@ -58,6 +58,7 @@ class AgentRunRequest {
     this.modelControls = const <String, AgentModelControlValue>{},
     this.maxToolRounds = 64,
     this.sessionMode = AgentSessionMode.normal,
+    this.toolSurfaceMode = AgentToolSurfaceMode.direct,
     this.customSystemPrompt,
     this.toolPrompts = const <String>[],
     this.contextWindowTokens,
@@ -117,6 +118,9 @@ class AgentRunRequest {
 
   /// Collaboration mode of the owning session.
   final AgentSessionMode sessionMode;
+
+  /// Model-facing tool surface selected for this turn.
+  final AgentToolSurfaceMode toolSurfaceMode;
 
   /// Optional Markdown agent prompt appended after immutable safety rules.
   final String? customSystemPrompt;
@@ -213,17 +217,31 @@ class AgentRunner {
 
   /// Tools the model is told about: everything advertised, plus what a search
   /// surfaced.
-  List<ModelToolDefinition> _advertisedTools() => <ModelToolDefinition>[
-    for (final tool in _tools.values)
-      if (tool.exposure == ToolExposure.advertised ||
-          _surfaced.contains(tool.name))
-        ModelToolDefinition(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.strictJsonSchema,
-          strict: tool.strict,
-        ),
-  ];
+  List<ModelToolDefinition> _advertisedTools() {
+    final direct = <ModelToolDefinition>[];
+    final namespaces = <String, ModelNamespaceToolDefinition>{};
+    for (final tool in _tools.values) {
+      if (tool.exposure != ToolExposure.advertised &&
+          !_surfaced.contains(tool.name)) {
+        continue;
+      }
+      final spec = tool.modelSpec;
+      if (spec is! ModelNamespaceToolDefinition) {
+        direct.add(spec);
+        continue;
+      }
+      final previous = namespaces[spec.name];
+      namespaces[spec.name] = ModelNamespaceToolDefinition(
+        name: spec.name,
+        description: spec.description,
+        tools: <ModelFunctionToolDefinition>[
+          ...?previous?.tools,
+          ...spec.tools,
+        ],
+      );
+    }
+    return <ModelToolDefinition>[...direct, ...namespaces.values];
+  }
 
   /// Restores the tools an earlier turn in this session already surfaced.
   ///
@@ -245,7 +263,7 @@ class AgentRunner {
       final tools = decoded['tools'];
       if (tools is! List) continue;
       for (final entry in tools.whereType<Map<dynamic, dynamic>>()) {
-        final name = entry['name'];
+        final name = entry['canonical_name'] ?? entry['name'];
         if (name is String && _tools.containsKey(name)) _surfaced.add(name);
       }
     }
@@ -309,13 +327,13 @@ class AgentRunner {
           });
         }
 
-        var functionCalls = <ModelFunctionCall>[];
+        var toolCalls = <ModelToolCall>[];
         ModelResponseCompleted? completed;
         // One recovery per round: a second refusal means compacting is not
         // what is oversized, and retrying would only spend another summary.
         var overflowRetried = false;
         while (completed == null) {
-          functionCalls = <ModelFunctionCall>[];
+          toolCalls = <ModelToolCall>[];
           var recovered = false;
           final modelRequest = ModelRequest(
             model: request.model,
@@ -339,12 +357,12 @@ class AgentRunner {
                   await _onEvent('assistant.delta', <String, dynamic>{
                     'text': delta,
                   });
-                case ModelFunctionCall():
-                  functionCalls.add(event);
+                case ModelToolCall():
+                  toolCalls.add(event);
                   await _onEvent('tool.requested', <String, dynamic>{
                     'callId': event.callId,
                     'name': event.name,
-                    'arguments': event.arguments,
+                    'input': event.input.toJson(),
                   });
                 case ModelResponseCompleted():
                   completed = event;
@@ -376,7 +394,7 @@ class AgentRunner {
         turnUsage = completed.usage;
         await _onEvent('model.usage', completed.usage.toJson());
 
-        if (functionCalls.isEmpty) {
+        if (toolCalls.isEmpty) {
           await _onEvent('turn.completed', <String, dynamic>{
             'toolRounds': toolRounds,
           });
@@ -393,40 +411,98 @@ class AgentRunner {
           );
         }
         toolRounds += 1;
-        for (final call in functionCalls) {
-          cancellation.throwIfCancelled();
+        Future<({ModelToolCall call, ToolResult result})> executeCall(
+          ModelToolCall call,
+        ) async {
           final tool = _tools[call.name];
           if (tool == null) {
-            final output = <String, dynamic>{
-              'error': 'Unknown tool: ${call.name}',
-            };
-            final item = ToolResultConversationItem(
-              callId: call.callId,
-              output: jsonEncode(output),
-              isError: true,
+            return (
+              call: call,
+              result: ToolResult(
+                value: <String, dynamic>{
+                  'error': 'Unknown tool: ${call.name}',
+                },
+                isError: true,
+              ),
             );
-            input.add(item);
-            persisted.add(item);
-            await _onProviderItems(<ConversationItem>[item]);
-            continue;
           }
-
           try {
             final result = await _executeTool(
               tool: tool,
               name: call.name,
-              arguments: call.arguments,
+              input: call.input,
               callId: call.callId,
               request: request,
               cancellation: cancellation,
               turnUsage: turnUsage,
               requestContextReset: () => resetRequested = true,
             );
+            return (call: call, result: result);
+          } on AgentCancelledException {
+            rethrow;
+          } on Exception catch (error) {
+            await _onEvent('tool.failed', <String, dynamic>{
+              'callId': call.callId,
+              'name': call.name,
+              'error': '$error',
+            });
+            return (
+              call: call,
+              result: ToolResult(
+                value: <String, dynamic>{'error': '$error'},
+                isError: true,
+              ),
+            );
+          }
+        }
+
+        var callIndex = 0;
+        while (callIndex < toolCalls.length) {
+          cancellation.throwIfCancelled();
+          final first = toolCalls[callIndex];
+          final parallel =
+              _tools[first.name]?.modelSpec.supportsParallelToolCalls ?? false;
+          final group = <ModelToolCall>[first];
+          callIndex += 1;
+          if (parallel) {
+            while (callIndex < toolCalls.length) {
+              final candidate = toolCalls[callIndex];
+              final candidateParallel =
+                  _tools[candidate.name]?.modelSpec.supportsParallelToolCalls ??
+                  false;
+              if (!candidateParallel) break;
+              group.add(candidate);
+              callIndex += 1;
+            }
+          }
+          final executions = parallel && group.length > 1
+              ? await Future.wait(group.map(executeCall))
+              : <({ModelToolCall call, ToolResult result})>[
+                  await executeCall(first),
+                ];
+          for (final execution in executions) {
+            final call = execution.call;
+            final result = execution.result;
             final item = ToolResultConversationItem(
               callId: call.callId,
               output: result.output,
+              toolKind: call is ModelDeferredSearchCall
+                  ? ModelToolKind.deferredSearch
+                  : call.input is FreeformToolCallInput
+                  ? ModelToolKind.freeform
+                  : ModelToolKind.function,
               isError: result.isError,
+              content: result.content,
+              structuredContent: result.structuredContent,
+              meta: result.meta,
             );
+            for (final notification in result.notifications) {
+              await _onEvent('tool.notification', <String, dynamic>{
+                'callId': call.callId,
+                'name': call.name,
+                'value': notification,
+              });
+            }
             input.add(item);
             persisted.add(item);
             await _onProviderItems(<ConversationItem>[item]);
@@ -447,22 +523,6 @@ class AgentRunner {
                 _attachmentSnapshot(attachment),
               );
             }
-          } on AgentCancelledException {
-            rethrow;
-          } on Exception catch (error) {
-            final item = ToolResultConversationItem(
-              callId: call.callId,
-              output: jsonEncode(<String, dynamic>{'error': '$error'}),
-              isError: true,
-            );
-            input.add(item);
-            persisted.add(item);
-            await _onProviderItems(<ConversationItem>[item]);
-            await _onEvent('tool.failed', <String, dynamic>{
-              'callId': call.callId,
-              'name': call.name,
-              'error': '$error',
-            });
           }
         }
 
@@ -495,7 +555,7 @@ class AgentRunner {
   Future<ToolResult> _executeTool({
     required AgentTool tool,
     required String name,
-    required Map<String, dynamic> arguments,
+    required ToolCallInput input,
     required String callId,
     required AgentRunRequest request,
     required CancellationToken cancellation,
@@ -509,7 +569,7 @@ class AgentRunner {
         'callId': callId,
         'parentCallId': parentCallId,
         'name': name,
-        'arguments': arguments,
+        'input': input.toJson(),
       });
     }
     final context = ToolExecutionContext(
@@ -525,7 +585,7 @@ class AgentRunner {
               final nested = _nestedTools[nestedName];
               if (nested == null) {
                 return ToolResult(
-                  output: jsonEncode(<String, dynamic>{
+                  value: jsonEncode(<String, dynamic>{
                     'error': 'Unknown nested tool: $nestedName',
                   }),
                   isError: true,
@@ -536,7 +596,7 @@ class AgentRunner {
                 return await _executeTool(
                   tool: nested,
                   name: nestedName,
-                  arguments: nestedArguments,
+                  input: JsonToolCallInput(nestedArguments),
                   callId: nestedCallId,
                   request: request,
                   cancellation: cancellation,
@@ -554,17 +614,29 @@ class AgentRunner {
                   'error': '$error',
                 });
                 return ToolResult(
-                  output: jsonEncode(<String, dynamic>{'error': '$error'}),
+                  value: jsonEncode(<String, dynamic>{'error': '$error'}),
                   isError: true,
                 );
               }
             }),
+      sessionMode: request.sessionMode,
+      toolSurfaceMode: request.toolSurfaceMode,
     );
-    final preview = await tool.preview(arguments, context);
+    final approvalArguments = switch (input) {
+      JsonToolCallInput(:final value) => value,
+      FreeformToolCallInput(:final value) => <String, dynamic>{'input': value},
+    };
+    final preview = await switch (input) {
+      JsonToolCallInput(:final value) => tool.preview(value, context),
+      FreeformToolCallInput(:final value) => tool.previewFreeform(
+        value,
+        context,
+      ),
+    };
     final invocation = ToolInvocation(
       callId: callId,
       name: name,
-      arguments: arguments,
+      arguments: approvalArguments,
       risk: tool.risk,
       workspaceRoot: request.workspaceRoot,
       preview: preview,
@@ -585,13 +657,19 @@ class AgentRunner {
         'name': name,
       });
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: jsonEncode(<String, dynamic>{
           'error': 'Tool execution was denied.',
         }),
         isError: true,
       );
     }
-    final result = await tool.execute(arguments, context);
+    final result = await switch (input) {
+      JsonToolCallInput(:final value) => tool.execute(value, context),
+      FreeformToolCallInput(:final value) => tool.executeFreeform(
+        value,
+        context,
+      ),
+    };
     await _onEvent('tool.completed', <String, dynamic>{
       'callId': callId,
       'parentCallId': ?parentCallId,
@@ -691,6 +769,7 @@ class AgentRunner {
     persisted
       ..clear()
       ..addAll(retain);
+    _surfaced.clear();
     await _contextResets?.reset(retain);
     await _onEvent('context.reset', <String, dynamic>{
       'retained': retain.length,

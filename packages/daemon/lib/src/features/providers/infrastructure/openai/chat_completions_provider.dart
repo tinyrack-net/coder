@@ -83,6 +83,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
         modelControlBool(request, AgentModelControlIds.fastMode) == true)
       'service_tier': 'priority',
     'tools': request.tools
+        .whereType<ModelFunctionToolDefinition>()
         .map(
           (tool) => <String, dynamic>{
             'type': 'function',
@@ -162,7 +163,12 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
                       'type': 'function',
                       'function': <String, dynamic>{
                         'name': call.name,
-                        'arguments': jsonEncode(call.arguments),
+                        'arguments': jsonEncode(switch (call.input) {
+                          JsonToolCallInput(:final value) => value,
+                          FreeformToolCallInput() => throw StateError(
+                            'Chat Completions does not support freeform tools.',
+                          ),
+                        }),
                       },
                     },
                   )
@@ -240,7 +246,12 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       yield ModelFunctionCall(
         callId: call.callId,
         name: call.name,
-        arguments: call.arguments,
+        arguments: switch (call.input) {
+          JsonToolCallInput(:final value) => value,
+          FreeformToolCallInput() => throw StateError(
+            'Chat Completions emitted a freeform call.',
+          ),
+        },
       );
     }
     yield ModelResponseCompleted(
@@ -295,7 +306,7 @@ class _ChatToolCallBuilder {
     if (callId.isEmpty || name.isEmpty || decoded is! Map) {
       throw const OpenAIProviderException('Invalid streamed tool call.');
     }
-    return ConversationToolCall(
+    return ConversationToolCall.function(
       callId: callId,
       name: name,
       arguments: Map<String, dynamic>.from(decoded),

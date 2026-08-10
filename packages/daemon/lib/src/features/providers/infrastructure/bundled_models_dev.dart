@@ -36,6 +36,9 @@ ProviderCatalogMetadata _model(Map<String, dynamic> value) {
       toolCalling: _support(value['toolCalling']),
       imageInput: _support(value['imageInput']),
       fileInput: _support(value['fileInput']),
+      toolSurface: id.startsWith('gpt-5.6')
+          ? ModelToolSurface.luaCode
+          : ModelToolSurface.direct,
       source: CapabilitySource.bundled,
     ),
     pricing: _pricing(value['cost']),

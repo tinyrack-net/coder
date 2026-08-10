@@ -32,7 +32,7 @@ class ExecSessionChunk {
 /// A live pseudo-terminal the agent can drive across several tool calls.
 abstract interface class ExecSession {
   /// Host-assigned identifier the model refers to the session by.
-  String get id;
+  int get id;
 
   /// Writes [chars] to the session's standard input.
   Future<void> write(String chars);
@@ -60,16 +60,18 @@ abstract interface class ExecSessionHost {
     required String command,
     required String workingDirectory,
     required bool tty,
+    String? shell,
+    bool login = true,
   });
 
   /// Returns a live session, or null when it never existed or already ended.
-  ExecSession? lookup(String sessionId);
+  ExecSession? lookup(int sessionId);
 
   /// Whether the user already approved commands for [sessionId].
-  bool isApproved(String sessionId);
+  bool isApproved(int sessionId);
 
   /// Records that the user approved the command that started [sessionId].
-  void markApproved(String sessionId);
+  void markApproved(int sessionId);
 }
 
 /// Approves later writes into a pseudo-terminal the user already allowed.
@@ -96,7 +98,7 @@ class ExecSessionApprovalPolicy implements ApprovalPolicy {
     if (decision != ApprovalEvaluation.ask) return decision;
     if (invocation.name != _toolName) return decision;
     final sessionId = invocation.arguments['session_id'];
-    return sessionId is String && _host.isApproved(sessionId)
+    return sessionId is int && _host.isApproved(sessionId)
         ? ApprovalEvaluation.allow
         : decision;
   }

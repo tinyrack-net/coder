@@ -6,7 +6,7 @@ import 'package:agent/src/tools/tool_registry.dart';
 import 'package:agent/src/tools/tool_support.dart';
 
 /// Stable capability identifier for Lua orchestration.
-const String luaCodeModeCapabilityId = 'lua_code_mode';
+const String luaCodeModeCapabilityId = 'lua_code_surface';
 
 /// Model-facing tool that starts a Lua cell.
 const String luaExecToolName = 'exec';
@@ -78,7 +78,11 @@ final class LuaNestedToolDefinition {
   const LuaNestedToolDefinition({
     required this.name,
     required this.description,
+    required this.kind,
+    required this.exposure,
     required this.inputSchema,
+    this.namespace,
+    this.outputSchema,
   });
 
   /// Exact dispatcher name.
@@ -87,8 +91,20 @@ final class LuaNestedToolDefinition {
   /// Human-readable behavior.
   final String description;
 
+  /// Wire-level declaration kind.
+  final String kind;
+
+  /// Namespace owning this tool, when declared through one.
+  final String? namespace;
+
+  /// Whether this tool was initially advertised or deferred.
+  final String exposure;
+
   /// JSON schema for the argument table.
   final Map<String, dynamic> inputSchema;
+
+  /// Declared result schema, when the tool supplies one.
+  final Map<String, dynamic>? outputSchema;
 }
 
 /// Output drained from one Lua cell.
@@ -102,6 +118,7 @@ final class LuaCellChunk {
     this.error,
     this.attachments = const <ConversationAttachment>[],
     this.contextImages = const <ConversationAttachment>[],
+    this.notifications = const <Object?>[],
   });
 
   /// Cell identifier used by [LuaWaitTool].
@@ -124,6 +141,9 @@ final class LuaCellChunk {
 
   /// Images forwarded into model context.
   final List<ConversationAttachment> contextImages;
+
+  /// Values emitted with `notify` since the previous drain.
+  final List<Object?> notifications;
 }
 
 /// Session-scoped host for Lua cells.
@@ -150,12 +170,7 @@ final class LuaCodeModeToolProvider extends AgentToolSurfaceProvider {
   String get id => luaCodeModeCapabilityId;
 
   @override
-  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
-    id: luaCodeModeCapabilityId,
-    name: luaCodeModeCapabilityId,
-    description: 'Orchestrate selected tools from sandboxed Lua code.',
-    risk: AgentToolRisk.read,
-  );
+  AgentToolDefinition? get catalogEntry => null;
 
   @override
   AgentToolSurface buildSurface(
@@ -200,57 +215,81 @@ final class LuaExecTool extends AgentTool {
 
   @override
   Map<String, dynamic> get strictJsonSchema => strictToolObject(
-    <String, Map<String, dynamic>>{
-      'source': <String, dynamic>{
-        'type': 'string',
-        'description': 'Raw Lua source code.',
-      },
-      'yield_time_ms': <String, dynamic>{
-        'type': <String>['integer', 'null'],
-        'description': 'Milliseconds to wait before yielding a live cell.',
-      },
-      'max_output_tokens': <String, dynamic>{
-        'type': <String>['integer', 'null'],
-        'description': 'Approximate output token budget.',
-      },
-    },
+    const <String, Map<String, dynamic>>{},
+  );
+
+  @override
+  ModelToolDefinition get modelSpec => ModelFreeformToolDefinition(
+    name: name,
+    description: description,
+    format: const ModelFreeformToolFormat(
+      type: 'grammar',
+      syntax: 'lark',
+      definition: r'''
+start: source
+source: /(.|\n)+/''',
+    ),
   );
 
   @override
   Future<ToolResult> execute(
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
+  ) async => const ToolResult(
+    value: 'exec accepts raw Lua source, not JSON arguments.',
+    isError: true,
+  );
+
+  @override
+  Future<ToolResult> executeFreeform(
+    String input,
+    ToolExecutionContext context,
   ) async {
-    final source = arguments['source'];
-    if (source is! String || source.trim().isEmpty) {
+    if (input.trim().isEmpty) {
       return const ToolResult(
-        output: 'Lua source must be non-empty.',
+        value: 'Lua source must be non-empty.',
         isError: true,
       );
     }
-    if (utf8.encode(source).length > maxLuaSourceBytes) {
+    if (utf8.encode(input).length > maxLuaSourceBytes) {
       return const ToolResult(
-        output: 'Lua source exceeds 256 KiB.',
+        value: 'Lua source exceeds 256 KiB.',
         isError: true,
       );
     }
+    final pragma = _parseExecPragma(input);
     final chunk = await _host.execute(
       LuaExecuteRequest(
-        source: source,
-        yieldTime: _yieldTime(arguments['yield_time_ms']),
-        maxOutputTokens: _outputTokens(arguments['max_output_tokens']),
+        source: input,
+        yieldTime: _yieldTime(pragma['yield_time_ms']),
+        maxOutputTokens: _outputTokens(pragma['max_output_tokens']),
         tools: <LuaNestedToolDefinition>[
-          for (final tool in _nestedTools)
-            LuaNestedToolDefinition(
-              name: tool.name,
-              description: tool.description,
-              inputSchema: tool.strictJsonSchema,
-            ),
+          for (final tool in _nestedTools) _nestedDefinition(tool),
         ],
       ),
       context,
     );
     return _chunkResult(chunk);
+  }
+}
+
+Map<String, dynamic> _parseExecPragma(String source) {
+  final firstLine = source.split('\n').first.trimRight();
+  const prefix = '-- @exec:';
+  if (!firstLine.startsWith(prefix)) return const <String, dynamic>{};
+  final raw = firstLine.substring(prefix.length).trim();
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('pragma must be a JSON object');
+    }
+    const allowed = <String>{'yield_time_ms', 'max_output_tokens'};
+    if (decoded.keys.any((key) => !allowed.contains(key))) {
+      throw const FormatException('pragma contains an unknown option');
+    }
+    return decoded;
+  } on FormatException catch (error) {
+    throw FormatException('Invalid -- @exec pragma: ${error.message}');
   }
 }
 
@@ -292,7 +331,7 @@ final class LuaWaitTool extends AgentTool {
     final cellId = arguments['cell_id'];
     if (cellId is! String || cellId.isEmpty) {
       return const ToolResult(
-        output: 'cell_id must be non-empty.',
+        value: 'cell_id must be non-empty.',
         isError: true,
       );
     }
@@ -332,11 +371,51 @@ ToolResult _chunkResult(LuaCellChunk chunk) {
     if (chunk.error case final error?) 'Script error:\n$error',
   ].join('\n');
   return ToolResult(
-    output: truncateToolOutput(output),
+    value: truncateToolOutput(output),
     isError: chunk.error != null,
     attachments: chunk.attachments,
     contextImages: chunk.contextImages,
+    notifications: chunk.notifications,
   );
+}
+
+LuaNestedToolDefinition _nestedDefinition(AgentTool tool) {
+  final spec = tool.modelSpec;
+  return switch (spec) {
+    ModelFunctionToolDefinition() => LuaNestedToolDefinition(
+      name: tool.name,
+      description: tool.description,
+      kind: spec.kind.name,
+      exposure: tool.exposure.name,
+      inputSchema: spec.parameters,
+      outputSchema: spec.outputSchema,
+    ),
+    ModelNamespaceToolDefinition() => LuaNestedToolDefinition(
+      name: tool.name,
+      description: tool.description,
+      kind: spec.kind.name,
+      namespace: spec.name,
+      exposure: tool.exposure.name,
+      inputSchema: tool.strictJsonSchema,
+      outputSchema: spec.tools.length == 1
+          ? spec.tools.single.outputSchema
+          : null,
+    ),
+    ModelFreeformToolDefinition() => LuaNestedToolDefinition(
+      name: tool.name,
+      description: tool.description,
+      kind: spec.kind.name,
+      exposure: tool.exposure.name,
+      inputSchema: tool.strictJsonSchema,
+    ),
+    ModelDeferredSearchToolDefinition() => LuaNestedToolDefinition(
+      name: tool.name,
+      description: tool.description,
+      kind: spec.kind.name,
+      exposure: tool.exposure.name,
+      inputSchema: spec.parameters,
+    ),
+  };
 }
 
 /// Renders the Lua globals and nested tool schemas into the turn prompt.

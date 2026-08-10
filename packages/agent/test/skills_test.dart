@@ -107,6 +107,45 @@ void main() {
     });
   });
 
+  group('modern skills namespace', () {
+    test('list returns executor authority and read handles', () async {
+      final result =
+          await SkillsListTool(
+            _FakeCatalog(directory: skill.path),
+          ).execute(const <String, dynamic>{
+            'authority': <String, dynamic>{'kind': 'executor'},
+          }, context());
+      final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+      final listed = (decoded['skills'] as List).single as Map<String, dynamic>;
+      expect(listed['package'], 'commit');
+      expect(listed['main_resource'], 'SKILL.md');
+      expect(
+        listed['authority'],
+        <String, dynamic>{'kind': 'executor', 'id': 'local'},
+      );
+      expect(decoded['next_cursor'], isNull);
+    });
+
+    test('read accepts the exact list handle and returns contents', () async {
+      final tool = SkillsReadTool(_FakeCatalog(directory: skill.path));
+      final result = await tool.execute(const <String, dynamic>{
+        'authority': <String, dynamic>{
+          'kind': 'executor',
+          'id': 'local',
+        },
+        'package': 'commit',
+        'resource': 'SKILL.md',
+      }, context());
+      expect(
+        jsonDecode(result.output),
+        containsPair('contents', 'Stage related changes together.'),
+      );
+      final spec = tool.modelSpec as ModelNamespaceToolDefinition;
+      expect(spec.name, 'skills');
+      expect(spec.tools.single.name, 'read');
+    });
+  });
+
   test(
     'skill tool advertises a read-risk strict schema',
     () {

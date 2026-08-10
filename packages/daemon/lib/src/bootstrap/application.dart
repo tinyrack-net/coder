@@ -267,12 +267,12 @@ abstract final class DaemonApplication {
       DaemonRpcServer? relayRpcSessions;
       DaemonRelayTransport? relayTransport;
       final relayPairing = RelayPairingService(
+        ids: effectiveIds,
         serverId: serverId,
         relayUri: config.relay.endpoint,
         daemonIdentityPublicKey: relayIdentity.publicKey,
         devices: SettingsRelayDeviceRepository(database.settingsDao),
         clock: effectiveClock,
-        ids: effectiveIds,
         terminateDeviceSessions: (deviceId) async {
           await relayTransport?.terminateDeviceSessions(deviceId);
           await relayRpcSessions?.terminateRelayDeviceSessions(deviceId);
@@ -447,7 +447,6 @@ abstract final class DaemonApplication {
       final execSessions = ExecSessionService(
         gateway: const PtyworldTerminalGateway(),
         pipes: const IoPipeGateway(),
-        ids: effectiveIds,
         clock: effectiveClock,
       );
       final execSweep = Timer.periodic(

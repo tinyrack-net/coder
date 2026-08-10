@@ -21,7 +21,7 @@ const Set<String> supportedContextImageTypes = <String>{
 };
 
 /// Fidelity levels a provider understands for a model-visible image.
-const Set<String> contextImageDetails = <String>{'auto', 'low', 'high'};
+const Set<String> contextImageDetails = <String>{'high', 'original'};
 
 /// Largest size of one image loaded into the model's context.
 ///
@@ -77,8 +77,8 @@ class ViewImageTool extends AgentTool {
         'detail': <String, dynamic>{
           'type': <String>['string', 'null'],
           'description':
-              'How closely to read the image: auto, low, or high. Null uses '
-              'the provider default.',
+              'How closely to read the image: high or original. Null uses '
+              'high.',
         },
       });
 
@@ -87,9 +87,9 @@ class ViewImageTool extends AgentTool {
     Map<String, dynamic> arguments,
     ToolExecutionContext context,
   ) async {
-    final detail = arguments['detail'];
-    if (detail != null &&
-        (detail is! String || !contextImageDetails.contains(detail))) {
+    final requestedDetail = arguments['detail'];
+    final detail = requestedDetail ?? 'high';
+    if (detail is! String || !contextImageDetails.contains(detail)) {
       return _reject(
         'detail must be one of ${contextImageDetails.join(', ')}, or null.',
       );
@@ -141,16 +141,17 @@ class ViewImageTool extends AgentTool {
       kind: published.kind,
       sha256: published.sha256,
       createdAt: published.createdAt,
-      imageDetail: detail as String?,
+      imageDetail: detail,
     );
+    final imageUrl = 'data:$mimeType;base64,${base64Encode(attachment.bytes!)}';
     return ToolResult(
-      output: jsonEncode(<String, dynamic>{
-        'attachmentId': attachment.id,
-        'fileName': attachment.fileName,
-        'mimeType': attachment.mimeType,
-        'byteSize': attachment.byteSize,
+      value: <String, dynamic>{
         'detail': detail,
-      }),
+        'image_url': imageUrl,
+      },
+      content: <ToolContent>[
+        ToolImageContent(imageUrl: imageUrl, detail: detail),
+      ],
       attachments: <ConversationAttachment>[attachment],
       contextImages: <ConversationAttachment>[attachment],
     );
@@ -178,7 +179,7 @@ class ViewImageTool extends AgentTool {
   }
 
   ToolResult _reject(String reason) => ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': reason}),
+    value: jsonEncode(<String, dynamic>{'error': reason}),
     isError: true,
   );
 }

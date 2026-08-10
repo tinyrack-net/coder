@@ -17,6 +17,7 @@ final class ResolvedAgentModel {
     required this.connectionId,
     required this.modelId,
     required this.provider,
+    required this.toolSurface,
     this.limits,
     this.pricing,
   });
@@ -29,6 +30,9 @@ final class ResolvedAgentModel {
 
   /// Executable provider adapter.
   final ModelProvider provider;
+
+  /// Tool orchestration surface selected by the model profile.
+  final ModelToolSurface toolSurface;
 
   /// Advertised limits of the model, when the catalog knows them.
   final ModelLimitsDto? limits;
@@ -477,6 +481,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       connectionId: connectionId,
       modelId: model.providerModelId,
       provider: await resolve(connectionId, modelId: modelId),
+      toolSurface: model.capabilities.toolSurface,
       limits: model.limits,
       pricing: model.pricing,
     );

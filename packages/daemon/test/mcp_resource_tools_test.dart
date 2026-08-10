@@ -38,7 +38,71 @@ void main() {
         ApprovalEvaluation.allow,
         reason: tool.name,
       );
+      expect(tool.description, isNotEmpty, reason: tool.name);
+      expect(tool.strictJsonSchema['type'], 'object', reason: tool.name);
+      expect(
+        tool.strictJsonSchema['additionalProperties'],
+        isFalse,
+        reason: tool.name,
+      );
     }
+  });
+
+  test('list contracts preserve every resource and template field', () async {
+    host
+      ..addDescriptor(
+        'alpha',
+        const McpResourceDescriptor(
+          uri: 'file:///schema.json',
+          name: 'schema',
+          title: 'Schema',
+          description: 'A JSON schema.',
+          mimeType: 'application/json',
+          sizeBytes: 2,
+          annotations: <String, dynamic>{'priority': 1},
+          meta: <String, dynamic>{'etag': 'one'},
+        ),
+      )
+      ..addTemplateDescriptor(
+        'alpha',
+        const McpResourceTemplateDescriptor(
+          uriTemplate: 'file:///schema/{name}.json',
+          name: 'schema-template',
+          title: 'Schema template',
+          description: 'Parameterized schema.',
+          mimeType: 'application/json',
+          annotations: <String, dynamic>{'priority': 1},
+          meta: <String, dynamic>{'etag': 'two'},
+        ),
+      );
+
+    final resourceResult = await ListMcpResourcesTool(host: host).execute(
+      const <String, dynamic>{},
+      context,
+    );
+    final resource =
+        (decode(resourceResult)['resources']! as List).single
+            as Map<String, dynamic>;
+    expect(resource, containsPair('name', 'schema'));
+    expect(resource, containsPair('title', 'Schema'));
+    expect(resource, containsPair('description', 'A JSON schema.'));
+    expect(resource, containsPair('mimeType', 'application/json'));
+    expect(resource, containsPair('sizeBytes', 2));
+    expect(resource, contains('annotations'));
+    expect(resource, contains('_meta'));
+
+    final templateResult = await ListMcpResourceTemplatesTool(
+      host: host,
+    ).execute(const <String, dynamic>{}, context);
+    final template =
+        (decode(templateResult)['resourceTemplates']! as List).single
+            as Map<String, dynamic>;
+    expect(template, containsPair('name', 'schema-template'));
+    expect(template, containsPair('title', 'Schema template'));
+    expect(template, containsPair('description', 'Parameterized schema.'));
+    expect(template, containsPair('mimeType', 'application/json'));
+    expect(template, contains('annotations'));
+    expect(template, contains('_meta'));
   });
 
   test('omitting the server fans out sorted by server name', () async {
@@ -65,7 +129,6 @@ void main() {
     );
     // Fan-out is unpaginated, so it never offers a cursor.
     expect(decode(result).containsKey('nextCursor'), isFalse);
-    expect(decode(result)['truncated'], isFalse);
   });
 
   test('a blank server or cursor is treated as absent', () async {
@@ -81,17 +144,23 @@ void main() {
   });
 
   test('a cursor without a server is refused', () async {
-    final result = await ListMcpResourcesTool(host: host).execute(
+    final resourceResult = await ListMcpResourcesTool(host: host).execute(
       <String, dynamic>{'server': null, 'cursor': '1'},
       context,
     );
 
-    expect(result.isError, isTrue);
-    expect(decode(result)['error'], contains('server'));
+    expect(resourceResult.isError, isTrue);
+    expect(decode(resourceResult)['error'], contains('server'));
+
+    final templateResult = await ListMcpResourceTemplatesTool(
+      host: host,
+    ).execute(<String, dynamic>{'server': null, 'cursor': '1'}, context);
+    expect(templateResult.isError, isTrue);
+    expect(decode(templateResult)['error'], contains('server'));
   });
 
-  test('a named server pages its resources with an offset cursor', () async {
-    for (var index = 0; index < mcpResourcePageSize + 2; index += 1) {
+  test('a named server preserves its opaque resource cursor', () async {
+    for (var index = 0; index < 4; index += 1) {
       host.add('alpha', 'file:///a$index.txt');
     }
 
@@ -101,18 +170,16 @@ void main() {
     );
     expect(
       decode(first)['resources']! as List<dynamic>,
-      hasLength(mcpResourcePageSize),
+      hasLength(2),
     );
-    expect(decode(first)['truncated'], isTrue);
     final cursor = decode(first)['nextCursor'];
-    expect(cursor, isNotNull);
+    expect(cursor, 'opaque:2');
 
     final second = await ListMcpResourcesTool(host: host).execute(
       <String, dynamic>{'server': 'alpha', 'cursor': cursor},
       context,
     );
     expect(decode(second)['resources']! as List<dynamic>, hasLength(2));
-    expect(decode(second)['truncated'], isFalse);
     expect(decode(second).containsKey('nextCursor'), isFalse);
   });
 
@@ -126,6 +193,18 @@ void main() {
       );
       expect(result.isError, isTrue, reason: cursor);
     }
+  });
+
+  test('a server list failure is correctable tool output', () async {
+    host.listError = const McpServerException(code: -32000, message: 'down');
+
+    final result = await ListMcpResourcesTool(host: host).execute(
+      <String, dynamic>{'server': 'alpha'},
+      context,
+    );
+
+    expect(result.isError, isTrue);
+    expect(decode(result)['error'], contains('down'));
   });
 
   test('templates list through the same rules', () async {
@@ -159,8 +238,11 @@ void main() {
     final contents = (decoded['contents']! as List<dynamic>)
         .cast<Map<String, dynamic>>();
     expect(contents.first['text'], 'body of file:///a.txt');
-    expect(contents.last['byteLength'], 3);
+    expect(contents.first['_meta'], <String, dynamic>{'kind': 'text'});
+    expect(contents.last['blob'], 'AQID');
+    expect(contents.last['_meta'], <String, dynamic>{'kind': 'blob'});
     expect(contents.last.containsKey('text'), isFalse);
+    expect(result.content.last, isA<ToolEmbeddedResourceContent>());
   });
 
   test('an offline server is a correctable error, not a failed turn', () async {
@@ -188,6 +270,8 @@ void main() {
 
 /// A host that answers from in-memory descriptors instead of live servers.
 final class _FakeResourceHost implements McpResourceHost {
+  Exception? listError;
+
   final Map<String, List<McpResourceDescriptor>> _resources =
       <String, List<McpResourceDescriptor>>{};
   final Map<String, List<McpResourceTemplateDescriptor>> _templates =
@@ -197,24 +281,60 @@ final class _FakeResourceHost implements McpResourceHost {
       .putIfAbsent(server, () => <McpResourceDescriptor>[])
       .add(McpResourceDescriptor(uri: uri));
 
+  void addDescriptor(String server, McpResourceDescriptor descriptor) =>
+      _resources
+          .putIfAbsent(server, () => <McpResourceDescriptor>[])
+          .add(descriptor);
+
   void addTemplate(String server, String uriTemplate) => _templates
       .putIfAbsent(server, () => <McpResourceTemplateDescriptor>[])
       .add(McpResourceTemplateDescriptor(uriTemplate: uriTemplate));
 
-  @override
-  List<McpServerResource> resources({String? server}) => <McpServerResource>[
-    for (final name in _names(server, _resources.keys))
-      for (final descriptor in _resources[name]!)
-        McpServerResource(server: name, descriptor: descriptor),
-  ];
+  void addTemplateDescriptor(
+    String server,
+    McpResourceTemplateDescriptor descriptor,
+  ) => _templates
+      .putIfAbsent(server, () => <McpResourceTemplateDescriptor>[])
+      .add(descriptor);
 
   @override
-  List<McpServerResourceTemplate> resourceTemplates({String? server}) =>
-      <McpServerResourceTemplate>[
-        for (final name in _names(server, _templates.keys))
-          for (final descriptor in _templates[name]!)
-            McpServerResourceTemplate(server: name, descriptor: descriptor),
-      ];
+  Future<McpListPage<McpServerResource>> resources({
+    String? server,
+    String? cursor,
+  }) async {
+    if (listError case final error?) throw error;
+    final all = <McpServerResource>[
+      for (final name in _names(server, _resources.keys))
+        for (final descriptor in _resources[name]!)
+          McpServerResource(server: name, descriptor: descriptor),
+    ];
+    if (server == null) return McpListPage<McpServerResource>(items: all);
+    final offset = cursor == null
+        ? 0
+        : cursor.startsWith('opaque:')
+        ? int.tryParse(cursor.substring('opaque:'.length))
+        : null;
+    if (offset == null || offset < 0 || offset > all.length) {
+      throw const McpProtocolException('Unknown cursor.');
+    }
+    final end = (offset + 2).clamp(0, all.length);
+    return McpListPage<McpServerResource>(
+      items: all.sublist(offset, end),
+      nextCursor: end < all.length ? 'opaque:$end' : null,
+    );
+  }
+
+  @override
+  Future<McpListPage<McpServerResourceTemplate>> resourceTemplates({
+    String? server,
+    String? cursor,
+  }) async => McpListPage<McpServerResourceTemplate>(
+    items: <McpServerResourceTemplate>[
+      for (final name in _names(server, _templates.keys))
+        for (final descriptor in _templates[name]!)
+          McpServerResourceTemplate(server: name, descriptor: descriptor),
+    ],
+  );
 
   @override
   Future<McpReadResourceResult> readResource({
@@ -230,11 +350,13 @@ final class _FakeResourceHost implements McpResourceHost {
           uri: uri,
           mimeType: 'text/plain',
           text: 'body of $uri',
+          meta: const <String, dynamic>{'kind': 'text'},
         ),
         McpBlobResourceContents(
           uri: uri,
           mimeType: 'image/png',
-          byteLength: 3,
+          blob: 'AQID',
+          meta: const <String, dynamic>{'kind': 'blob'},
         ),
       ],
     );

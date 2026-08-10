@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:protocol/protocol.dart';
@@ -16,7 +14,7 @@ String agentLifecycleWireName(AgentLifecycle lifecycle) => switch (lifecycle) {
 ToolResult _errorResult(Object error) {
   final text = '$error';
   return ToolResult(
-    output: jsonEncode(<String, dynamic>{'error': text}),
+    value: <String, dynamic>{'error': text},
     isError: true,
   );
 }
@@ -63,28 +61,30 @@ final class SpawnAgentTool extends AgentTool {
         'description': 'The initial task delivered to the subagent.',
       },
       'agent_type': <String, dynamic>{
-        'type': <String>['string', 'null'],
+        'type': 'string',
         'description':
             'Allowlisted subagent definition ID; omit to reuse your own.',
       },
       'fork_turns': <String, dynamic>{
-        'type': <String>['string', 'null'],
+        'type': 'string',
         'description':
-            'History the subagent inherits: "none" (default), "all", or the '
-            'number of trailing turns.',
+            'Optional number of turns to fork. Defaults to "all". Use '
+            '"none", "all", or a positive integer string.',
       },
       'model': <String, dynamic>{
-        'type': <String>['string', 'null'],
+        'type': 'string',
         'description': 'Model ID override on your provider connection.',
       },
+      'reasoning_effort': <String, dynamic>{
+        'type': 'string',
+        'description': 'Reasoning effort override; omit to inherit.',
+      },
+      'service_tier': <String, dynamic>{
+        'type': 'string',
+        'description': 'Service tier override; omit unless requested.',
+      },
     },
-    'required': <String>[
-      'task_name',
-      'message',
-      'agent_type',
-      'fork_turns',
-      'model',
-    ],
+    'required': <String>['task_name', 'message'],
     'additionalProperties': false,
   };
 
@@ -101,11 +101,13 @@ final class SpawnAgentTool extends AgentTool {
         taskName: arguments['task_name'] as String,
         message: arguments['message'] as String,
         agentType: arguments['agent_type'] as String?,
-        forkTurns: arguments['fork_turns'] as String? ?? 'none',
+        forkTurns: arguments['fork_turns'] as String? ?? 'all',
         model: arguments['model'] as String?,
+        reasoningEffort: arguments['reasoning_effort'] as String?,
+        serviceTier: arguments['service_tier'] as String?,
       );
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{'task_name': path}),
+        value: <String, dynamic>{'task_name': path},
       );
     } on CollaborationException catch (error) {
       return _errorResult(error);
@@ -159,9 +161,7 @@ final class SendMessageTool extends AgentTool {
         target: target,
         message: arguments['message'] as String,
       );
-      return ToolResult(
-        output: jsonEncode(<String, dynamic>{'queued': true}),
-      );
+      return const ToolResult(value: <String, dynamic>{'queued': true});
     } on CollaborationException catch (error) {
       return _errorResult(error);
     }
@@ -214,9 +214,9 @@ final class FollowupTaskTool extends AgentTool {
         message: arguments['message'] as String,
       );
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: <String, dynamic>{
           'delivery': triggered ? 'triggered' : 'queued',
-        }),
+        },
       );
     } on CollaborationException catch (error) {
       return _errorResult(error);
@@ -250,13 +250,13 @@ final class WaitAgentTool extends AgentTool {
     'type': 'object',
     'properties': <String, dynamic>{
       'timeout_ms': <String, dynamic>{
-        'type': <String>['number', 'null'],
+        'type': 'number',
         'description':
             'Deadline in milliseconds ($minWaitTimeoutMs-$maxWaitTimeoutMs); '
             'defaults to $defaultWaitTimeoutMs.',
       },
     },
-    'required': <String>['timeout_ms'],
+    'required': <String>[],
     'additionalProperties': false,
   };
 
@@ -277,10 +277,10 @@ final class WaitAgentTool extends AgentTool {
         WaitAgentOutcome.timeout => 'Wait timed out.',
       };
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: <String, dynamic>{
           'message': message,
           'timed_out': result.timedOut,
-        }),
+        },
       );
     } on CollaborationException catch (error) {
       return _errorResult(error);
@@ -331,9 +331,9 @@ final class InterruptAgentTool extends AgentTool {
         target: arguments['target'] as String,
       );
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: <String, dynamic>{
           'previous_status': agentLifecycleWireName(previous),
-        }),
+        },
       );
     } on CollaborationException catch (error) {
       return _errorResult(error);
@@ -365,11 +365,11 @@ final class ListAgentsTool extends AgentTool {
     'type': 'object',
     'properties': <String, dynamic>{
       'path_prefix': <String, dynamic>{
-        'type': <String>['string', 'null'],
+        'type': 'string',
         'description': 'Canonical path prefix, e.g. /root/task_1.',
       },
     },
-    'required': <String>['path_prefix'],
+    'required': <String>[],
     'additionalProperties': false,
   };
 
@@ -384,7 +384,7 @@ final class ListAgentsTool extends AgentTool {
         pathPrefix: arguments['path_prefix'] as String?,
       );
       return ToolResult(
-        output: jsonEncode(<String, dynamic>{
+        value: <String, dynamic>{
           'agents': <Map<String, dynamic>>[
             for (final agent in agents)
               <String, dynamic>{
@@ -392,7 +392,7 @@ final class ListAgentsTool extends AgentTool {
                 'agent_status': agentLifecycleWireName(agent.agentStatus),
               },
           ],
-        }),
+        },
       );
     } on CollaborationException catch (error) {
       return _errorResult(error);

@@ -707,6 +707,15 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'tool.harness.parity',
+    description:
+        'Pins the modern Codex v2 tool contract, distinguishes Coder '
+        'extensions and exclusions, and verifies typed wire declarations.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+    },
+  ),
+  FeatureContract(
     id: 'tool.exec.session',
     description:
         'Runs and drives command sessions inside a turn, on plain pipes or a '

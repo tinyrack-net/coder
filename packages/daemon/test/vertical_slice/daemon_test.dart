@@ -1,3 +1,6 @@
+@Timeout(Duration(minutes: 2))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -18,7 +21,7 @@ import 'package:web_socket_channel/io.dart';
 /// isolate, and a cold Windows runner is comfortably slower than the five
 /// seconds this used to allow. A generous budget costs wall-clock only when
 /// something is genuinely broken.
-const Duration _eventTimeout = Duration(seconds: 30);
+const Duration _eventTimeout = Duration(minutes: 1);
 
 void main() {
   test(
@@ -582,7 +585,9 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          // Collaboration is the subject of this slice. Lua orchestration has
+          // its own vertical slice and must not add a native cold start here.
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final timelineEvents = client.sessions.timelineEvents;
@@ -680,7 +685,7 @@ void main() {
       await _waitForIdleSession(client, worktreeId, child.id);
     },
     tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
-    timeout: const Timeout(Duration(minutes: 1)),
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 
   test(
@@ -730,7 +735,7 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -855,7 +860,7 @@ void main() {
         title: 'MCP',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       // A dangerous tool always asks, even under workspaceWrite.
@@ -1065,7 +1070,7 @@ void main() {
           title: 'Exec',
           agentDefinitionId: 'coder',
           model: const SessionModelSelectionDto(
-            modelId: 'openai/gpt-5.6-sol',
+            modelId: 'openai/gpt-5.2',
           ),
         );
         await client.subscribeTimeline(session.id);
@@ -1093,7 +1098,9 @@ void main() {
         // A command that outlives the first call hands back an id the second
         // call writes into, and the echoed text proves the same process
         // answered.
-        final seen = await provider.echoed.future.timeout(_eventTimeout);
+        final seen = await provider.echoed.future.timeout(
+          const Duration(minutes: 2),
+        );
         expect(seen, contains('tinyrack-exec-probe'));
         expect(approvals, <String>['exec_command']);
         await _waitForIdleSession(
@@ -1105,6 +1112,7 @@ void main() {
       tags: const <String>['feature_test__tool_exec_session__verticalSlice'],
       // Both transports run a POSIX shell; Windows uses PowerShell instead.
       testOn: '!windows',
+      timeout: const Timeout(Duration(minutes: 3)),
     );
   }
 
@@ -1157,7 +1165,7 @@ void main() {
         title: 'Image',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1232,7 +1240,7 @@ void main() {
         title: 'Sleep',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1417,7 +1425,7 @@ void main() {
         title: 'Compact',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1536,7 +1544,7 @@ void main() {
         title: 'Search',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1608,7 +1616,7 @@ void main() {
         title: 'Ask',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1689,7 +1697,8 @@ void main() {
       );
       final result = events.firstWhere(
         (event) =>
-            event.type == 'tool.completed' && event.data['name'] == 'ask_user',
+            event.type == 'tool.completed' &&
+            event.data['name'] == 'request_user_input',
       );
       // The chosen answer reaches the model as the tool's output.
       expect(result.data['output'], contains('Postgres'));
@@ -1763,7 +1772,7 @@ void main() {
         title: 'Broken',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -1918,7 +1927,7 @@ void main() {
         title: 'Skills',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -3336,7 +3345,7 @@ class _EchoingMcpProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'echo-call',
               name: 'mcp__fake__echo',
               arguments: arguments,
@@ -3365,22 +3374,24 @@ class _PatchProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     if (_round++ == 0) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -3418,16 +3429,16 @@ class _SleepProvider implements ModelProvider {
       };
       yield const ModelFunctionCall(
         callId: 'sleep-call',
-        name: 'sleep',
+        name: 'clock__sleep',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'sleep-call',
-              name: 'sleep',
+              name: 'clock__sleep',
               arguments: arguments,
             ),
           ],
@@ -3437,13 +3448,13 @@ class _SleepProvider implements ModelProvider {
       return;
     }
     if (!outcome.isCompleted) {
-      final result = jsonDecode(
-        request.history
-            .whereType<ToolResultConversationItem>()
-            .firstWhere((item) => item.callId == 'sleep-call')
-            .output,
+      final result = request.history
+          .whereType<ToolResultConversationItem>()
+          .firstWhere((item) => item.callId == 'sleep-call')
+          .output;
+      outcome.complete(
+        result.contains('interrupted') ? 'interrupted' : 'completed',
       );
-      outcome.complete((result as Map<String, dynamic>)['outcome'] as String);
     }
     yield const ModelTextDelta('Done.');
     yield const ModelResponseCompleted(
@@ -3493,7 +3504,7 @@ class _ContextResetProvider implements ModelProvider {
           assistant: AssistantConversationItem(
             text: 'Starting over.',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall(
+              ConversationToolCall.function(
                 callId: 'reset-call',
                 name: 'new_context',
                 arguments: arguments,
@@ -3585,16 +3596,16 @@ class _AskingProvider implements ModelProvider {
       };
       yield const ModelFunctionCall(
         callId: 'ask-call',
-        name: 'ask_user',
+        name: 'request_user_input',
         arguments: arguments,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'ask-call',
-              name: 'ask_user',
+              name: 'request_user_input',
               arguments: arguments,
             ),
           ],
@@ -3639,7 +3650,7 @@ final class _AttachmentProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'attach-call',
               name: 'attach_file',
               arguments: arguments,
@@ -3665,7 +3676,7 @@ class _ExecProvider implements ModelProvider {
   final Completer<String> echoed = Completer<String>();
 
   var _round = 0;
-  String? _sessionId;
+  int? _sessionId;
 
   @override
   String get id => 'exec-fake';
@@ -3689,7 +3700,7 @@ class _ExecProvider implements ModelProvider {
       // `cat` keeps running with no arguments, so the session survives the
       // call and the next one can write into it.
       final arguments = <String, dynamic>{
-        'command': 'cat',
+        'cmd': 'cat',
         'workdir': null,
         'tty': tty,
         'yield_time_ms': 300,
@@ -3704,7 +3715,7 @@ class _ExecProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'exec-call',
               name: 'exec_command',
               arguments: arguments,
@@ -3715,7 +3726,7 @@ class _ExecProvider implements ModelProvider {
       return;
     }
     if (_round == 2) {
-      _sessionId = resultFor('exec-call')['sessionId'] as String?;
+      _sessionId = resultFor('exec-call')['session_id'] as int?;
       final arguments = <String, dynamic>{
         'session_id': _sessionId,
         'chars': 'tinyrack-exec-probe\n',
@@ -3731,7 +3742,7 @@ class _ExecProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'stdin-call',
               name: 'write_stdin',
               arguments: arguments,
@@ -3780,7 +3791,7 @@ final class _ViewImageProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'view-call',
               name: 'view_image',
               arguments: arguments,
@@ -3848,7 +3859,7 @@ final class _SearchProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'search-call',
               name: 'search_text',
               arguments: arguments,
@@ -3875,7 +3886,7 @@ final class _SearchProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: 'glob-call',
               name: 'glob',
               arguments: arguments,
@@ -3914,7 +3925,7 @@ final class _CollaboratingProvider implements ModelProvider {
       assistant: AssistantConversationItem(
         text: '',
         toolCalls: <ConversationToolCall>[
-          ConversationToolCall(
+          ConversationToolCall.function(
             callId: callId,
             name: name,
             arguments: arguments,
@@ -3946,12 +3957,27 @@ final class _CollaboratingProvider implements ModelProvider {
     );
     if (isSubagent) {
       if (!hasToolResult) {
-        yield* Stream<ModelEvent>.fromIterable(
-          _toolCall('write-call', 'apply_patch', const <String, dynamic>{
-            'patch':
-                '--- /dev/null\n+++ b/forbidden.txt\n'
-                '@@ -0,0 +1,1 @@\n+forbidden\n',
-          }),
+        const patch =
+            '*** Begin Patch\n'
+            '*** Add File: forbidden.txt\n'
+            '+forbidden\n'
+            '*** End Patch';
+        yield const ModelFreeformCall(
+          callId: 'write-call',
+          name: 'apply_patch',
+          rawInput: patch,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall.freeform(
+                callId: 'write-call',
+                name: 'apply_patch',
+                input: patch,
+              ),
+            ],
+          ),
         );
         return;
       }
@@ -3968,7 +3994,7 @@ final class _CollaboratingProvider implements ModelProvider {
           'task_name': 'review_task',
           'message': 'Review without changing files.',
           'agent_type': agentType,
-          'fork_turns': null,
+          'fork_turns': 'none',
           'model': null,
           'reasoning_effort': null,
         }),
@@ -4030,7 +4056,7 @@ final class _SkillProvider implements ModelProvider {
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall(
+            ConversationToolCall.function(
               callId: callId,
               name: name,
               arguments: arguments,
