@@ -1745,6 +1745,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get mcpSettingsSaveFailed => 'Could not save the server.';
+
+  @override
+  String get mcpSettingsDeleteFailed => 'Could not delete the server.';
+
+  @override
+  String get mcpSettingsSecretFailed => 'Could not store the secret.';
+
+  @override
   String get mcpSettingsDelete => 'Delete server';
 
   @override

@@ -3130,6 +3130,24 @@ abstract class AppLocalizations {
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
 
+  /// Reported when an MCP server could not be added or updated.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the server.'**
+  String get mcpSettingsSaveFailed;
+
+  /// Reported when an MCP server could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the server.'**
+  String get mcpSettingsDeleteFailed;
+
+  /// Reported when an MCP secret could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not store the secret.'**
+  String get mcpSettingsSecretFailed;
+
   /// Label of the delete action.
   ///
   /// In en, this message translates to:

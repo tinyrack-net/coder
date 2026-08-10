@@ -1716,6 +1716,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get mcpSettingsSaveFailed => '서버를 저장하지 못했습니다.';
+
+  @override
+  String get mcpSettingsDeleteFailed => '서버를 삭제하지 못했습니다.';
+
+  @override
+  String get mcpSettingsSecretFailed => '시크릿을 저장하지 못했습니다.';
+
+  @override
   String get mcpSettingsDelete => '서버 삭제';
 
   @override

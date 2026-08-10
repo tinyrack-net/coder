@@ -2180,6 +2180,18 @@
       }
     }
   },
+  "mcpSettingsSaveFailed": "Could not save the server.",
+  "@mcpSettingsSaveFailed": {
+    "description": "Reported when an MCP server could not be added or updated."
+  },
+  "mcpSettingsDeleteFailed": "Could not delete the server.",
+  "@mcpSettingsDeleteFailed": {
+    "description": "Reported when an MCP server could not be removed."
+  },
+  "mcpSettingsSecretFailed": "Could not store the secret.",
+  "@mcpSettingsSecretFailed": {
+    "description": "Reported when an MCP secret could not be written."
+  },
   "mcpSettingsDelete": "Delete server",
   "@mcpSettingsDelete": {
     "description": "Label of the delete action."
