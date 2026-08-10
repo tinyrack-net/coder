@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:daemon/src/features/workspaces/infrastructure/project_settings.dart';
@@ -503,8 +502,6 @@ final class WorkspaceOperations {
     try {
       return _paths.canonicalizeExistingDirectory(path);
     } on FormatException {
-      return p.normalize(path);
-    } on FileSystemException {
       return p.normalize(path);
     }
   }
