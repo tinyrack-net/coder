@@ -9,6 +9,7 @@ import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -941,10 +942,17 @@ class _ProviderConnectionPaneState
       ),
     );
     if (confirmed != true) return;
-    await ref
-        .read(providerSettingsControllerProvider(widget.hostId).notifier)
-        .disconnect(widget.connection.id);
-    widget.onRemoved();
+    final disconnected = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(providerSettingsControllerProvider(widget.hostId).notifier)
+              .disconnect(widget.connection.id),
+          failure: l10n.providerSettingsDisconnectFailed,
+          success: l10n.providerSettingsDisconnected,
+          id: 'provider-disconnect',
+        );
+    if (disconnected) widget.onRemoved();
   }
 }
 
@@ -1294,15 +1302,36 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       ),
     );
     if (confirmed != true) return;
-    await ref
-        .read(providerSettingsControllerProvider(widget.hostId).notifier)
-        .deleteCustom(connection.id);
-    widget.onRemoved?.call();
+    final deleted = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(providerSettingsControllerProvider(widget.hostId).notifier)
+              .deleteCustom(connection.id),
+          failure: l10n.providerSettingsDeleteFailed,
+          success: l10n.commonDeleted,
+          id: 'provider-delete',
+        );
+    if (deleted) widget.onRemoved?.call();
   }
 
-  Future<void> _setDefault(SessionModelSelectionDto? model) => ref
-      .read(providerSettingsControllerProvider(widget.hostId).notifier)
-      .setDefaultModel(model);
+  /// Stores [model] as the default, reporting a refusal.
+  ///
+  /// The row that triggers this ignores the future it returns, so without a
+  /// report a rejected write left the previous default selected and
+  /// unexplained.
+  Future<void> _setDefault(SessionModelSelectionDto? model) async {
+    final l10n = AppLocalizations.of(context);
+    await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(providerSettingsControllerProvider(widget.hostId).notifier)
+              .setDefaultModel(model),
+          failure: l10n.providerSettingsDefaultModelFailed,
+          id: 'provider-default-model',
+        );
+  }
 
   Future<void> _disconnect() async {
     final connection = widget.existing!;
@@ -1329,10 +1358,17 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       ),
     );
     if (confirmed != true) return;
-    await ref
-        .read(providerSettingsControllerProvider(widget.hostId).notifier)
-        .disconnect(connection.id);
-    widget.onRemoved?.call();
+    final disconnected = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(providerSettingsControllerProvider(widget.hostId).notifier)
+              .disconnect(connection.id),
+          failure: l10n.providerSettingsDisconnectFailed,
+          success: l10n.providerSettingsDisconnected,
+          id: 'provider-disconnect',
+        );
+    if (disconnected) widget.onRemoved?.call();
   }
 }
 

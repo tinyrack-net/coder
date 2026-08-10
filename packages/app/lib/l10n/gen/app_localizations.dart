@@ -3160,6 +3160,48 @@ abstract class AppLocalizations {
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
 
+  /// Reported when a daemon preference could not be stored or applied.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the daemon setting.'**
+  String get appSettingsDaemonChangeFailed;
+
+  /// Reported when a remote daemon profile could not be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the daemon.'**
+  String get appSettingsDeleteFailed;
+
+  /// Reported when a remote daemon could not be reconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reconnect.'**
+  String get appSettingsReconnectFailed;
+
+  /// Reported when a provider connection could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not disconnect the provider.'**
+  String get providerSettingsDisconnectFailed;
+
+  /// Reported when a custom provider could not be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the provider.'**
+  String get providerSettingsDeleteFailed;
+
+  /// Reported when the default model could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the default model.'**
+  String get providerSettingsDefaultModelFailed;
+
+  /// Reported after a provider connection is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected.'**
+  String get providerSettingsDisconnected;
+
   /// Reported when a worktree could not be archived.
   ///
   /// In en, this message translates to:

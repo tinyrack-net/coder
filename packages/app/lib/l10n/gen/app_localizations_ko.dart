@@ -1731,6 +1731,27 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get appSettingsDaemonChangeFailed => 'daemon 설정을 바꾸지 못했습니다.';
+
+  @override
+  String get appSettingsDeleteFailed => 'daemon을 제거하지 못했습니다.';
+
+  @override
+  String get appSettingsReconnectFailed => '다시 연결하지 못했습니다.';
+
+  @override
+  String get providerSettingsDisconnectFailed => '프로바이더 연결을 해제하지 못했습니다.';
+
+  @override
+  String get providerSettingsDeleteFailed => '프로바이더를 삭제하지 못했습니다.';
+
+  @override
+  String get providerSettingsDefaultModelFailed => '기본 모델을 바꾸지 못했습니다.';
+
+  @override
+  String get providerSettingsDisconnected => '연결을 해제했습니다.';
+
+  @override
   String get workspaceArchiveFailed => '워크트리를 보관하지 못했습니다.';
 
   @override

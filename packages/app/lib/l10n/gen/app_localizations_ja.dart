@@ -1756,6 +1756,30 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get appSettingsDaemonChangeFailed =>
+      'Could not change the daemon setting.';
+
+  @override
+  String get appSettingsDeleteFailed => 'Could not remove the daemon.';
+
+  @override
+  String get appSettingsReconnectFailed => 'Could not reconnect.';
+
+  @override
+  String get providerSettingsDisconnectFailed =>
+      'Could not disconnect the provider.';
+
+  @override
+  String get providerSettingsDeleteFailed => 'Could not delete the provider.';
+
+  @override
+  String get providerSettingsDefaultModelFailed =>
+      'Could not change the default model.';
+
+  @override
+  String get providerSettingsDisconnected => 'Disconnected.';
+
+  @override
   String get workspaceArchiveFailed => 'Could not archive the worktree.';
 
   @override

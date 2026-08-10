@@ -2204,6 +2204,34 @@
       }
     }
   },
+  "appSettingsDaemonChangeFailed": "Could not change the daemon setting.",
+  "@appSettingsDaemonChangeFailed": {
+    "description": "Reported when a daemon preference could not be stored or applied."
+  },
+  "appSettingsDeleteFailed": "Could not remove the daemon.",
+  "@appSettingsDeleteFailed": {
+    "description": "Reported when a remote daemon profile could not be deleted."
+  },
+  "appSettingsReconnectFailed": "Could not reconnect.",
+  "@appSettingsReconnectFailed": {
+    "description": "Reported when a remote daemon could not be reconnected."
+  },
+  "providerSettingsDisconnectFailed": "Could not disconnect the provider.",
+  "@providerSettingsDisconnectFailed": {
+    "description": "Reported when a provider connection could not be removed."
+  },
+  "providerSettingsDeleteFailed": "Could not delete the provider.",
+  "@providerSettingsDeleteFailed": {
+    "description": "Reported when a custom provider could not be deleted."
+  },
+  "providerSettingsDefaultModelFailed": "Could not change the default model.",
+  "@providerSettingsDefaultModelFailed": {
+    "description": "Reported when the default model could not be stored."
+  },
+  "providerSettingsDisconnected": "Disconnected.",
+  "@providerSettingsDisconnected": {
+    "description": "Reported after a provider connection is removed."
+  },
   "workspaceArchiveFailed": "Could not archive the worktree.",
   "@workspaceArchiveFailed": {
     "description": "Reported when a worktree could not be archived."
