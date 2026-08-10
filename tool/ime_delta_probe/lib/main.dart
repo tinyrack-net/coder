@@ -40,7 +40,9 @@ void _traceMessage(String dir, ByteData message) {
   try {
     final call = SystemChannels.textInput.codec.decodeMethodCall(message);
     _trace(dir, call.method, call.arguments);
-  } catch (error) {
+  } on Object catch (error) {
+    // The probe must record rather than crash on any undecodable message, so
+    // it deliberately catches everything the codec can throw.
     _trace(dir, '<undecodable>', error.toString());
   }
 }
@@ -62,7 +64,7 @@ class _LoggingMessenger implements BinaryMessenger {
   @override
   void setMessageHandler(String channel, MessageHandler? handler) {
     if (channel == _channel && handler != null) {
-      _inner.setMessageHandler(channel, (ByteData? message) {
+      _inner.setMessageHandler(channel, (message) {
         if (message != null) _traceMessage('rx', message);
         return handler(message);
       });
@@ -102,7 +104,7 @@ void main() {
   ProbeBinding.ensureInitialized();
 
   final terminal = Terminal();
-  terminal.onData.listen((String data) {
+  terminal.onData.listen((data) {
     _ptyFile.writeAsBytesSync(
       utf8.encode(data),
       mode: FileMode.append,

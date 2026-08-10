@@ -15,7 +15,7 @@ dependencies:
   dropwell:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git
-      ref: e7d3b14f57684d2a8db910ecf24f6d3e1860582e
+      ref: c21627dcd525f899223ac584a931c72ddf6f2b12
       path: packages/dropwell
   file_selector: ^1.0.3
   flutter:
@@ -38,7 +38,7 @@ dependencies:
   termworld:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git
-      ref: e7d3b14f57684d2a8db910ecf24f6d3e1860582e
+      ref: c21627dcd525f899223ac584a931c72ddf6f2b12
       path: packages/termworld
   tinyrack_ui:
     git:
