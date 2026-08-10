@@ -1504,10 +1504,10 @@ abstract class AppLocalizations {
   /// **'Copy file location'**
   String get agentSettingsCopyPath;
 
-  /// Reported after the built-in agent definition is restored.
+  /// Tooltip that restores a built-in agent definition.
   ///
   /// In en, this message translates to:
-  /// **'Restored the built-in agent.'**
+  /// **'Reset to defaults'**
   String get agentSettingsReset;
 
   /// Toggle that overrides the built-in system prompt.
@@ -1617,6 +1617,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archived.'**
   String get agentSettingsArchived;
+
+  /// Reported after the built-in agent definition is restored. Distinct from agentSettingsReset, which labels the button.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored the built-in agent.'**
+  String get agentSettingsResetDone;
 
   /// Title of the save conflict dialog.
   ///
@@ -2746,7 +2752,7 @@ abstract class AppLocalizations {
   /// **'Daemon to add the folder to'**
   String get directoryBrowserHostTitle;
 
-  /// Snackbar shown when a worktree hook fails.
+  /// Line naming a worktree hook that failed, listed in the dialog that reports the failure.
   ///
   /// In en, this message translates to:
   /// **'{phase} failed (exit {exitCode}): {command}'**
@@ -3159,6 +3165,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
+
+  /// Reported when a running terminal could not be terminated, so its tab stays open.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not stop the terminal.'**
+  String get terminalTerminateFailed;
+
+  /// Reported when a paired relay device could not be revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke the device.'**
+  String get relayRevokeFailed;
 
   /// Reported when a daemon preference could not be stored or applied.
   ///

@@ -783,7 +783,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentSettingsCopyPath => 'Copy file location';
 
   @override
-  String get agentSettingsReset => 'Restored the built-in agent.';
+  String get agentSettingsReset => 'Reset to defaults';
 
   @override
   String get agentSettingsCustomPrompt => 'Use a custom system prompt';
@@ -839,6 +839,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agentSettingsArchived => 'Archived.';
+
+  @override
+  String get agentSettingsResetDone => 'Restored the built-in agent.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Could not save the agent';
@@ -1754,6 +1757,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String mcpSettingsTestFailed(String error) {
     return 'Could not connect: $error';
   }
+
+  @override
+  String get terminalTerminateFailed => 'Could not stop the terminal.';
+
+  @override
+  String get relayRevokeFailed => 'Could not revoke the device.';
 
   @override
   String get appSettingsDaemonChangeFailed =>

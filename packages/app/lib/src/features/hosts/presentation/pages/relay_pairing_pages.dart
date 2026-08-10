@@ -9,6 +9,7 @@ import 'package:app/src/features/hosts/application/relay_devices_controller.dart
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
@@ -396,11 +397,15 @@ class _DaemonDevicesPageState extends ConsumerState<DaemonDevicesPage> {
     );
     if (confirmed != true) return;
     setState(() => _busy = true);
-    try {
-      await (await _relay()).revokeRelayDevice(device.id);
-      ref.invalidate(relayDevicesProvider(widget.hostId));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final revoked = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () async => (await _relay()).revokeRelayDevice(device.id),
+          failure: l10n.relayRevokeFailed,
+          success: l10n.commonDeleted,
+          id: 'relay-revoke',
+        );
+    if (revoked) ref.invalidate(relayDevicesProvider(widget.hostId));
+    if (mounted) setState(() => _busy = false);
   }
 }

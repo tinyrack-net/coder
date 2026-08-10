@@ -33,6 +33,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -989,11 +990,22 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         ),
       );
       if (confirmed != true || !mounted) return;
-      final registry = await ref.read(hostRegistryControllerProvider.future);
-      await registry.runtimes[widget.selection.hostId]!.api!.terminals
-          .terminateTerminal(
-            id,
+      // A terminate the daemon refuses must not close the tab, or the process
+      // keeps running with nothing left on screen that can reach it.
+      final terminated = await ref
+          .read(toastMessengerProvider)
+          .run(
+            () async {
+              final registry = await ref.read(
+                hostRegistryControllerProvider.future,
+              );
+              await registry.runtimes[widget.selection.hostId]!.api!.terminals
+                  .terminateTerminal(id);
+            },
+            failure: AppLocalizations.of(context).terminalTerminateFailed,
+            id: 'terminal-terminate',
           );
+      if (!terminated) return;
     }
     await ref
         .read(sessionTabsControllerProvider(widget.selection).notifier)

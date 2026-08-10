@@ -777,7 +777,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsCopyPath => '파일 위치 복사';
 
   @override
-  String get agentSettingsReset => '기본 Agent로 되돌렸습니다.';
+  String get agentSettingsReset => '기본값으로 초기화';
 
   @override
   String get agentSettingsCustomPrompt => 'Custom system prompt 사용';
@@ -832,6 +832,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsArchived => '보관했습니다.';
+
+  @override
+  String get agentSettingsResetDone => '기본 Agent로 되돌렸습니다.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Agent 저장 실패';
@@ -1729,6 +1732,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String mcpSettingsTestFailed(String error) {
     return '연결할 수 없습니다: $error';
   }
+
+  @override
+  String get terminalTerminateFailed => '터미널을 종료하지 못했습니다.';
+
+  @override
+  String get relayRevokeFailed => '기기를 폐기하지 못했습니다.';
 
   @override
   String get appSettingsDaemonChangeFailed => 'daemon 설정을 바꾸지 못했습니다.';

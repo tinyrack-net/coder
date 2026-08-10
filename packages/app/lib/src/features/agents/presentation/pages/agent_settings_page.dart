@@ -631,7 +631,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
               .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
               .resetCoder(),
           failure: l10n.agentSettingsResetFailed,
-          success: l10n.agentSettingsReset,
+          success: l10n.agentSettingsResetDone,
           id: 'agent-reset',
         );
   }

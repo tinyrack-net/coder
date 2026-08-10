@@ -119,7 +119,6 @@
   "relayPathRelay": "Relay",
   "relayConnectionDetails": "接続の詳細",
   "relayApprovedDevices": "デバイス",
-  "composerDropFilesHere": "ここにファイルをドロップ",
   "sessionContextDetailsTitle": "コンテキスト使用量",
   "sessionContextPercent": "{percent}% 使用",
   "sessionContextTokens": "{used} / {max} トークン",

@@ -960,9 +960,9 @@
   "@agentSettingsArchived": {
     "description": "Reported after an agent definition is archived and the editor closes."
   },
-  "agentSettingsReset": "Restored the built-in agent.",
-  "@agentSettingsReset": {
-    "description": "Reported after the built-in agent definition is restored."
+  "agentSettingsResetDone": "Restored the built-in agent.",
+  "@agentSettingsResetDone": {
+    "description": "Reported after the built-in agent definition is restored. Distinct from agentSettingsReset, which labels the button."
   },
   "agentSettingsSaveFailedTitle": "Could not save the agent",
   "@agentSettingsSaveFailedTitle": {
@@ -1888,7 +1888,7 @@
   },
   "hookFailureMessage": "{phase} failed (exit {exitCode}): {command}",
   "@hookFailureMessage": {
-    "description": "Snackbar shown when a worktree hook fails.",
+    "description": "Line naming a worktree hook that failed, listed in the dialog that reports the failure.",
     "placeholders": {
       "phase": {
         "type": "String"
@@ -2203,6 +2203,14 @@
         "type": "String"
       }
     }
+  },
+  "terminalTerminateFailed": "Could not stop the terminal.",
+  "@terminalTerminateFailed": {
+    "description": "Reported when a running terminal could not be terminated, so its tab stays open."
+  },
+  "relayRevokeFailed": "Could not revoke the device.",
+  "@relayRevokeFailed": {
+    "description": "Reported when a paired relay device could not be revoked."
   },
   "appSettingsDaemonChangeFailed": "Could not change the daemon setting.",
   "@appSettingsDaemonChangeFailed": {
