@@ -271,6 +271,40 @@ void main() {
         Platform.isWindows ? 'echo $marker\r' : "printf '$marker\\n'\r",
       );
       expect(await output, contains(marker));
+
+      // What a full-screen program does, driven by printf so the assertion
+      // does not depend on which editor a CI image ships. The screen the
+      // daemon hands back has to carry the alternate buffer, or reattaching
+      // to a running editor comes back to the shell behind it.
+      if (!Platform.isWindows) {
+        const altMarker = 'coder-alt-screen';
+        final painted = client.terminals.output
+            .where((output) => output.terminalId == terminal.id)
+            .map((output) => output.data)
+            .firstWhere((data) => data.contains(altMarker))
+            .timeout(_eventTimeout);
+        // Backslash escapes here are for printf, not for Dart: the shell
+        // is what turns them into control bytes, the way a real program
+        // entering its alternate screen would.
+        const enterAltScreen = r'\033[?1049h\033[H\033[2J';
+        await client.writeTerminal(
+          terminal.id,
+          "printf '$enterAltScreen$altMarker'\r",
+        );
+        await painted;
+
+        final restored = await client.attachTerminal(
+          terminal.id,
+          mode: TerminalRestoreMode.snapshot,
+        );
+        final restore = restored.restore;
+        expect(restore, isA<TerminalSnapshotRestoreDto>());
+        restore as TerminalSnapshotRestoreDto;
+        expect(restore.ansi, contains('\u001b[?1049h'));
+        expect(restore.ansi, contains(altMarker));
+        expect(restore.throughSequence, greaterThan(0));
+      }
+
       await client.terminateTerminal(terminal.id);
 
       // The built-in agent picks no model of its own, so creation now falls

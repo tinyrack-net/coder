@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:daemon/src/features/terminals/application/terminal_screen.dart';
 import 'package:daemon/src/features/terminals/application/terminal_service.dart';
 import 'package:daemon/src/features/terminals/domain/terminal.dart';
 import 'package:daemon/src/features/terminals/transport/rpc_bindings.dart';
@@ -15,6 +16,7 @@ void main() {
       for (final reason in TerminalCreationFailureReason.values) {
         final service = TerminalService(
           gateway: _FailingGateway(reason),
+          screens: const _UnusedScreenFactory(),
           worktreePath: (_) async => '/worktree',
           shellFor: (_) async => const TerminalShell(executable: '/bin/sh'),
         );
@@ -80,4 +82,16 @@ final class _MemorySettings implements SettingsRepository {
   Future<void> setValue(String key, String value) async {
     _values[key] = value;
   }
+}
+
+/// Creating a terminal fails before a screen is ever needed here.
+final class _UnusedScreenFactory implements TerminalScreenFactory {
+  const _UnusedScreenFactory();
+
+  @override
+  TerminalScreen create({
+    required int columns,
+    required int rows,
+    required int scrollbackLines,
+  }) => throw StateError('no terminal reaches a screen in this test');
 }
