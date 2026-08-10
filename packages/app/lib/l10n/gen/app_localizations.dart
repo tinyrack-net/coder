@@ -1102,6 +1102,18 @@ abstract class AppLocalizations {
   /// **'The daemon hit an unexpected problem. Copy the details below when reporting it.'**
   String get errorInternalDaemon;
 
+  /// A session setting such as the mode or the model was changed while a turn was still streaming.
+  ///
+  /// In en, this message translates to:
+  /// **'This session is running a turn. Wait for it to finish or stop it, then change the setting.'**
+  String get errorSessionTurnActive;
+
+  /// Fallback shown when a session setting change fails for a reason the daemon did not name.
+  ///
+  /// In en, this message translates to:
+  /// **'The session setting could not be changed.'**
+  String get errorSessionSettingFailed;
+
   /// Daemon runtime status.
   ///
   /// In en, this message translates to:

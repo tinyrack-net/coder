@@ -86,12 +86,23 @@ List<RpcBindingDescriptor> sessionRpcBindings({
     }
   }),
   RpcBinding(sessionsUpdateSettingsProcedure, (request, _) async {
-    final session = await settings.updateSettings(
-      request.sessionId,
-      request.patch,
-    );
-    await goals.reconsider(request.sessionId);
-    return SessionResultDto(session: session);
+    try {
+      final session = await settings.updateSettings(
+        request.sessionId,
+        request.patch,
+      );
+      await goals.reconsider(request.sessionId);
+      return SessionResultDto(session: session);
+    } on SessionTurnActiveFailure catch (error) {
+      throw RpcFailureException(
+        code: RpcErrorCodes.sessionTurnActive,
+        message: error.message,
+        details: <String, dynamic>{
+          'sessionId': error.sessionId,
+          'setting': error.setting,
+        },
+      );
+    }
   }),
   RpcBinding(sessionsGetGoalProcedure, (request, _) async {
     return GoalGetResultDto(goal: await goals.get(request.sessionId));

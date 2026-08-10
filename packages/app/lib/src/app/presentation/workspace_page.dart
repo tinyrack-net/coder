@@ -1285,6 +1285,32 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     ).notifier,
   );
 
+  /// Applies a session setting and explains a refusal instead of dropping it.
+  ///
+  /// These controls stay live while a turn runs because they are meant for the
+  /// next one, so the daemon can legitimately refuse the change: the mode and
+  /// the model are read when a turn starts. Firing the change and forgetting
+  /// it left the chip snapping back to its old value with nothing said, and
+  /// the failure escaping as an unhandled asynchronous error.
+  Future<void> _applySessionSetting(Future<void> Function() change) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ref.read(toastMessengerProvider);
+    try {
+      await change();
+    }
+    // Deliberately broad: this is the boundary that turns a refused setting
+    // into something the user can read, and anything it declined to catch
+    // would go back to being silent.
+    on Object catch (error) {
+      messenger.failure(
+        error is CoderClientException
+            ? clientErrorText(l10n, error)
+            : l10n.errorSessionSettingFailed,
+        id: 'session-setting',
+      );
+    }
+  }
+
   ConversationController _conversation(WidgetRef ref, String sessionId) =>
       ref.read(
         conversationControllerProvider(
@@ -1572,36 +1598,34 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           selection: effective,
                           mode: current.mode,
                           onModeChanged: (mode) => unawaited(
-                            ref
-                                .read(
-                                  sessionsControllerProvider(
-                                    widget.selection.hostId,
-                                    widget.selection.worktreeId,
-                                  ).notifier,
-                                )
-                                .setMode(current.id, mode),
+                            _applySessionSetting(
+                              () => _sessions(ref).setMode(current.id, mode),
+                            ),
                           ),
                           // Turn settings apply to the next turn, so they stay
                           // reachable while one is running.
                           agentEnabled: false,
                           onAgentChanged: (_) {},
                           onModelChanged: (model, controls) => unawaited(
-                            ref
-                                .read(
-                                  sessionsControllerProvider(
-                                    widget.selection.hostId,
-                                    widget.selection.worktreeId,
-                                  ).notifier,
-                                )
-                                .setModel(current.id, model, controls),
+                            _applySessionSetting(
+                              () => _sessions(
+                                ref,
+                              ).setModel(current.id, model, controls),
+                            ),
                           ),
                           modelControls: current.modelControls,
                           onModelControlsChanged: (controls) => unawaited(
-                            _sessions(
-                              ref,
-                            ).setModelControls(current.id, controls),
+                            _applySessionSetting(
+                              () => _sessions(
+                                ref,
+                              ).setModelControls(current.id, controls),
+                            ),
                           ),
                           permissionMode: current.permissionMode,
+                          // Not routed through [_applySessionSetting]: the
+                          // permission mode is not read at turn start, so the
+                          // daemon never refuses it, and the composer already
+                          // reports a save failure on the control itself.
                           onPermissionModeChanged: (mode) async {
                             await _sessions(
                               ref,
@@ -1609,11 +1633,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           },
                         ),
                         onModeToggled: () => unawaited(
-                          _sessions(ref).setMode(
-                            current.id,
-                            current.mode == SessionMode.plan
-                                ? SessionMode.normal
-                                : SessionMode.plan,
+                          _applySessionSetting(
+                            () => _sessions(ref).setMode(
+                              current.id,
+                              current.mode == SessionMode.plan
+                                  ? SessionMode.normal
+                                  : SessionMode.plan,
+                            ),
                           ),
                         ),
                         attachmentInput: ref.read(attachmentInputProvider),
@@ -1653,11 +1679,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           model: session.model,
         );
       case ClientCommandAction.toggleMode:
-        await _sessions(ref).setMode(
-          session.id,
-          session.mode == SessionMode.plan
-              ? SessionMode.normal
-              : SessionMode.plan,
+        await _applySessionSetting(
+          () => _sessions(ref).setMode(
+            session.id,
+            session.mode == SessionMode.plan
+                ? SessionMode.normal
+                : SessionMode.plan,
+          ),
         );
       case ClientCommandAction.openAgentSettings:
         if (mounted) {

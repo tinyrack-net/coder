@@ -168,6 +168,51 @@ void _registerConversationAppFlows() {
   );
 
   testWidgets(
+    'a mode refused during a turn is explained rather than dropped',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final planning = session('planning');
+      // The composer keeps the mode reachable while a turn runs because it
+      // applies to the next one, so the daemon's refusal is a normal answer.
+      // It used to be fired and forgotten: the chip snapped back with nothing
+      // said and the failure escaped as an unhandled asynchronous error.
+      final api =
+          FakeCoderApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+              agents: <SessionDto>[planning],
+            )
+            ..sessionUpdateError = const CoderClientException(
+              'Cannot change the settings while a turn is running.',
+              code: RpcErrorCodes.sessionTurnActive,
+            );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: planning.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.textContaining('turn을 실행 중입니다', findRichText: true),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
     'a plan can be handed to a fresh session or postponed',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));

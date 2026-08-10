@@ -23,6 +23,8 @@
   "errorInvalidProjectSettings": "プロジェクトのcoder.jsonを読み込めませんでした。ファイルを修正して再試行してください。",
   "errorRequestTimeout": "Daemonが時間内に応答しませんでした。もう一度お試しください。",
   "errorInternalDaemon": "Daemonで予期しない問題が発生しました。報告する際は以下の内容をコピーしてください。",
+  "errorSessionTurnActive": "この sessionは turnを実行中です。完了を待つか停止してから設定を変更してください。",
+  "errorSessionSettingFailed": "Session設定を変更できませんでした。",
   "commonCancel": "キャンセル",
   "commonSave": "保存",
   "commonSaving": "保存中",

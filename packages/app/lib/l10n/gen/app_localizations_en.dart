@@ -570,6 +570,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The daemon hit an unexpected problem. Copy the details below when reporting it.';
 
   @override
+  String get errorSessionTurnActive =>
+      'This session is running a turn. Wait for it to finish or stop it, then change the setting.';
+
+  @override
+  String get errorSessionSettingFailed =>
+      'The session setting could not be changed.';
+
+  @override
   String get hostStatusOnline => 'Online';
 
   @override
