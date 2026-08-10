@@ -1504,10 +1504,10 @@ abstract class AppLocalizations {
   /// **'Copy file location'**
   String get agentSettingsCopyPath;
 
-  /// Tooltip that restores a built-in agent definition.
+  /// Reported after the built-in agent definition is restored.
   ///
   /// In en, this message translates to:
-  /// **'Reset to defaults'**
+  /// **'Restored the built-in agent.'**
   String get agentSettingsReset;
 
   /// Toggle that overrides the built-in system prompt.
@@ -1599,6 +1599,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No subagents are registered.'**
   String get agentSettingsNoSubagents;
+
+  /// Reported when an agent definition could not be archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not archive the agent.'**
+  String get agentSettingsArchiveFailed;
+
+  /// Reported when the built-in agent definition could not be restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore the built-in agent.'**
+  String get agentSettingsResetFailed;
+
+  /// Reported after an agent definition is archived and the editor closes.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived.'**
+  String get agentSettingsArchived;
 
   /// Title of the save conflict dialog.
   ///
@@ -2823,6 +2841,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete skill'**
   String get skillSettingsDelete;
+
+  /// Reported when a skill could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the skill.'**
+  String get skillSettingsDeleteFailed;
+
+  /// Reported when a skill's enabled state could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change whether the skill is enabled.'**
+  String get skillSettingsToggleFailed;
 
   /// Title of the delete confirmation dialog.
   ///

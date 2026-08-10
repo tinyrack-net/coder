@@ -9,6 +9,7 @@ import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -605,16 +606,34 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
   }
 
   Future<void> _archive() async {
-    await ProviderScope.containerOf(context)
-        .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
-        .archive(widget.definition.id);
-    widget.onArchived();
+    final l10n = AppLocalizations.of(context);
+    final container = ProviderScope.containerOf(context);
+    final archived = await container
+        .read(toastMessengerProvider)
+        .run(
+          () => container
+              .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
+              .archive(widget.definition.id),
+          failure: l10n.agentSettingsArchiveFailed,
+          success: l10n.agentSettingsArchived,
+          id: 'agent-archive',
+        );
+    if (archived) widget.onArchived();
   }
 
   Future<void> _reset() async {
-    await ProviderScope.containerOf(context)
-        .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
-        .resetCoder();
+    final l10n = AppLocalizations.of(context);
+    final container = ProviderScope.containerOf(context);
+    await container
+        .read(toastMessengerProvider)
+        .run(
+          () => container
+              .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
+              .resetCoder(),
+          failure: l10n.agentSettingsResetFailed,
+          success: l10n.agentSettingsReset,
+          id: 'agent-reset',
+        );
   }
 }
 

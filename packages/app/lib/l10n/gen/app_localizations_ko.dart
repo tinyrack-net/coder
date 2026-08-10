@@ -777,7 +777,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsCopyPath => '파일 위치 복사';
 
   @override
-  String get agentSettingsReset => '기본값으로 초기화';
+  String get agentSettingsReset => '기본 Agent로 되돌렸습니다.';
 
   @override
   String get agentSettingsCustomPrompt => 'Custom system prompt 사용';
@@ -823,6 +823,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsNoSubagents => '등록된 Subagent가 없습니다.';
+
+  @override
+  String get agentSettingsArchiveFailed => 'Agent를 보관하지 못했습니다.';
+
+  @override
+  String get agentSettingsResetFailed => '기본 Agent를 되돌리지 못했습니다.';
+
+  @override
+  String get agentSettingsArchived => '보관했습니다.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Agent 저장 실패';
@@ -1550,6 +1559,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get skillSettingsDelete => '스킬 삭제';
+
+  @override
+  String get skillSettingsDeleteFailed => '스킬을 삭제하지 못했습니다.';
+
+  @override
+  String get skillSettingsToggleFailed => '스킬 사용 여부를 바꾸지 못했습니다.';
 
   @override
   String skillSettingsDeleteTitle(String name) {

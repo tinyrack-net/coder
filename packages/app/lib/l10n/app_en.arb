@@ -948,6 +948,22 @@
   "@agentSettingsNoSubagents": {
     "description": "Empty state of the subagent list."
   },
+  "agentSettingsArchiveFailed": "Could not archive the agent.",
+  "@agentSettingsArchiveFailed": {
+    "description": "Reported when an agent definition could not be archived."
+  },
+  "agentSettingsResetFailed": "Could not restore the built-in agent.",
+  "@agentSettingsResetFailed": {
+    "description": "Reported when the built-in agent definition could not be restored."
+  },
+  "agentSettingsArchived": "Archived.",
+  "@agentSettingsArchived": {
+    "description": "Reported after an agent definition is archived and the editor closes."
+  },
+  "agentSettingsReset": "Restored the built-in agent.",
+  "@agentSettingsReset": {
+    "description": "Reported after the built-in agent definition is restored."
+  },
   "agentSettingsSaveFailedTitle": "Could not save the agent",
   "@agentSettingsSaveFailedTitle": {
     "description": "Title of the save conflict dialog."
@@ -1954,6 +1970,14 @@
   "skillSettingsDelete": "Delete skill",
   "@skillSettingsDelete": {
     "description": "Tooltip for deleting a skill."
+  },
+  "skillSettingsDeleteFailed": "Could not delete the skill.",
+  "@skillSettingsDeleteFailed": {
+    "description": "Reported when a skill could not be removed."
+  },
+  "skillSettingsToggleFailed": "Could not change whether the skill is enabled.",
+  "@skillSettingsToggleFailed": {
+    "description": "Reported when a skill's enabled state could not be stored."
   },
   "skillSettingsDeleteTitle": "Delete {name}?",
   "@skillSettingsDeleteTitle": {

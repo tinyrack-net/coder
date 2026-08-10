@@ -783,7 +783,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentSettingsCopyPath => 'Copy file location';
 
   @override
-  String get agentSettingsReset => 'Reset to defaults';
+  String get agentSettingsReset => 'Restored the built-in agent.';
 
   @override
   String get agentSettingsCustomPrompt => 'Use a custom system prompt';
@@ -829,6 +829,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agentSettingsNoSubagents => 'No subagents are registered.';
+
+  @override
+  String get agentSettingsArchiveFailed => 'Could not archive the agent.';
+
+  @override
+  String get agentSettingsResetFailed =>
+      'Could not restore the built-in agent.';
+
+  @override
+  String get agentSettingsArchived => 'Archived.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Could not save the agent';
@@ -1567,6 +1577,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get skillSettingsDelete => 'Delete skill';
+
+  @override
+  String get skillSettingsDeleteFailed => 'Could not delete the skill.';
+
+  @override
+  String get skillSettingsToggleFailed =>
+      'Could not change whether the skill is enabled.';
 
   @override
   String skillSettingsDeleteTitle(String name) {
