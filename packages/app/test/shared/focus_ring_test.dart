@@ -102,8 +102,8 @@ void main() {
       tester.widget<TextButton>(trigger).focusNode!.requestFocus();
       await tester.pumpAndSettle();
 
-      // The select draws its own focus, so a row that also drew one showed two
-      // rings for one control. A row reports focus for its descendants too, so
+      // The select answers focus itself, so a row that also ringed showed two
+      // marks for one control. A row reports focus for its descendants too, so
       // the ring has to follow the primary focus rather than that.
       expect(
         _focusRingPainter(tester, find.byType(CoderListRow)),
