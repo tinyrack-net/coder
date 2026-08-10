@@ -301,6 +301,16 @@ enum WorktreeKind {
   directory,
 }
 
+/// Whether a worktree of [kind] may be archived.
+///
+/// [WorktreeKind.checkout] and [WorktreeKind.directory] are the workspace's own
+/// root: archiving one would hide the project while leaving its registration
+/// and directory in place, so both daemon and clients refuse it.
+bool isArchivableWorktreeKind(WorktreeKind kind) => switch (kind) {
+  WorktreeKind.managed || WorktreeKind.external => true,
+  WorktreeKind.checkout || WorktreeKind.directory => false,
+};
+
 /// Worktree lifecycle stage that triggers a configured project hook.
 enum WorktreeHookPhase {
   /// Runs after a managed worktree checkout is created.

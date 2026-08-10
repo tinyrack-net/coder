@@ -618,6 +618,13 @@ void main() {
     );
   });
 
+  test('only non-root worktree kinds are archivable', () {
+    expect(isArchivableWorktreeKind(WorktreeKind.managed), isTrue);
+    expect(isArchivableWorktreeKind(WorktreeKind.external), isTrue);
+    expect(isArchivableWorktreeKind(WorktreeKind.checkout), isFalse);
+    expect(isArchivableWorktreeKind(WorktreeKind.directory), isFalse);
+  });
+
   test(
     'the home workspace kind round-trips under a stable JSON name',
     () {

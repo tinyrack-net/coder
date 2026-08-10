@@ -37,6 +37,20 @@ void main() {
         createdAt: now,
       );
 
+  /// A Coder-owned checkout, which is the only kind a row menu can archive.
+  WorktreeDto managedWorktree(String id, String workspaceId, String branch) =>
+      WorktreeDto(
+        id: id,
+        workspaceId: workspaceId,
+        name: branch,
+        path: '/state/worktrees/$workspaceId/$branch',
+        branch: branch,
+        head: 'def',
+        kind: WorktreeKind.managed,
+        isCoderOwned: true,
+        createdAt: now,
+      );
+
   HostRuntimeSnapshot host(
     String id,
     String label, {
@@ -400,6 +414,7 @@ void main() {
             workspaces: <WorkspaceDto>[project],
             worktrees: <WorktreeDto>[
               worktree('project-main', project.id, 'main'),
+              managedWorktree('project-topic', project.id, 'topic'),
             ],
           ),
         },
@@ -410,7 +425,7 @@ void main() {
       final square = Size.square(TRControlMetrics.heightOf(TRUiSize.md));
       for (final key in const <String>[
         'workspace-menu-project',
-        'worktree-menu-project-main',
+        'worktree-menu-project-topic',
       ]) {
         expect(
           tester.getSize(find.byKey(ValueKey<String>(key))),
@@ -493,11 +508,34 @@ void main() {
           workspaces: <WorkspaceDto>[project],
           worktrees: <WorktreeDto>[
             worktree('project-main', project.id, 'main'),
+            managedWorktree('project-topic', project.id, 'topic'),
           ],
         ),
       },
     );
   }
+
+  testWidgets(
+    'only worktrees the daemon can archive carry a row menu',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpProject(tester);
+
+      // Archiving the workspace root would hide the project without removing
+      // anything, so that row offers no menu at all.
+      expect(
+        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+        findsNothing,
+      );
+      await clickWithMouse(
+        tester,
+        find.byKey(const ValueKey<String>('worktree-menu-project-topic')),
+      );
+      expect(find.text(testL10n.workspaceArchive), findsOneWidget);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
 
   testWidgets(
     'a row menu opens on a single pointer press',
@@ -527,7 +565,7 @@ void main() {
       // above it uncovered.
       final mouse = await clickWithMouse(
         tester,
-        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+        find.byKey(const ValueKey<String>('worktree-menu-project-topic')),
       );
       expect(find.text(testL10n.workspaceArchive), findsOneWidget);
 
@@ -586,7 +624,7 @@ void main() {
 
       await clickWithMouse(
         tester,
-        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+        find.byKey(const ValueKey<String>('worktree-menu-project-topic')),
       );
 
       expect(rowBackground(tester, 'Project'), Colors.transparent);

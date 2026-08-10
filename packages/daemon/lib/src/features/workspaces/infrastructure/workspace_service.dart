@@ -381,6 +381,12 @@ final class WorkspaceOperations {
         WorkspaceKind.home) {
       throw StateError('The home checkout cannot be archived.');
     }
+    if (!isArchivableWorktreeKind(worktree.kind)) {
+      // The workspace root is never Coder-owned, so archiving it would keep the
+      // directory, hide the project, and let the next refresh rediscover the
+      // same path under a new id that no existing session references.
+      throw StateError('The project checkout cannot be archived.');
+    }
     final preview = await previewArchive(worktreeId);
     if (preview.runningSessionCount > 0) {
       throw StateError('A session is still running in this worktree.');

@@ -366,19 +366,23 @@ class WorkspaceSidebar extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: TRMenu.icon(
-              key: ValueKey<String>('worktree-menu-${worktree.id}'),
-              icon: const Icon(CoderIcons.more),
-              label: l10n.workspaceWorktreeMenu,
-              menuChildren: <Widget>[
-                TRMenuItem(
-                  onPressed: () => unawaited(
-                    _archiveWorktree(context, ref, entry, worktree),
-                  ),
-                  child: TRText.inherit(l10n.workspaceArchive),
-                ),
-              ],
-            ),
+            // Archive is the only row action, so the workspace root keeps no
+            // menu at all rather than an empty one.
+            trailing: isArchivableWorktreeKind(worktree.kind)
+                ? TRMenu.icon(
+                    key: ValueKey<String>('worktree-menu-${worktree.id}'),
+                    icon: const Icon(CoderIcons.more),
+                    label: l10n.workspaceWorktreeMenu,
+                    menuChildren: <Widget>[
+                      TRMenuItem(
+                        onPressed: () => unawaited(
+                          _archiveWorktree(context, ref, entry, worktree),
+                        ),
+                        child: TRText.inherit(l10n.workspaceArchive),
+                      ),
+                    ],
+                  )
+                : null,
           ),
       ],
     );
