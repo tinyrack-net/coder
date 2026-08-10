@@ -266,6 +266,10 @@ void _registerAgentsAppFlows() {
 
       await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-confirm')),
+      );
+      await tester.pumpAndSettle();
       expect(
         (await api.agents.getAgentDefinition('coder')).systemPrompt,
         'Code carefully.',
@@ -273,6 +277,10 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.text('Reviewer').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-archive-confirm')),
+      );
       await tester.pumpAndSettle();
       expect(
         (await api.agents.listAgentDefinitions()).map(
@@ -324,4 +332,53 @@ void _registerAgentsAppFlows() {
     await tester.pumpAndSettle();
     expect(find.textContaining('definition load failed'), findsOneWidget);
   });
+
+  testWidgets(
+    'resetting a built-in agent asks first and reports what it did',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      // Edit first, so a reset that runs has something to undo.
+      await tester.enterText(
+        _textInput('시스템 프롬프트 (Markdown)'),
+        'Always run focused tests.',
+      );
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '취소'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.agents.getAgentDefinition('coder')).systemPrompt,
+        'Always run focused tests.',
+        reason: 'declining the question must not discard the edit',
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-confirm')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('기본 Agent로 되돌렸습니다.'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+      'feature_test__app_toast__widget',
+    ],
+  );
 }

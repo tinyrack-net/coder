@@ -948,6 +948,24 @@
   "@agentSettingsNoSubagents": {
     "description": "Empty state of the subagent list."
   },
+  "agentSettingsArchiveTitle": "Archive {name}?",
+  "@agentSettingsArchiveTitle": {
+    "description": "Asks whether to archive an agent definition.",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "agentSettingsArchiveBody": "Sessions already using this agent keep running. It stops being offered for new ones.",
+  "@agentSettingsArchiveBody": {
+    "description": "Explains what archiving an agent definition does before it happens."
+  },
+  "agentSettingsResetTitle": "Reset {name} to defaults?",
+  "@agentSettingsResetTitle": {
+    "description": "Asks whether to restore a built-in agent definition.",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "agentSettingsResetBody": "Every edit made to this built-in agent is discarded and cannot be recovered.",
+  "@agentSettingsResetBody": {
+    "description": "Explains that resetting a built-in agent discards local edits."
+  },
   "agentSettingsArchiveFailed": "Could not archive the agent.",
   "@agentSettingsArchiveFailed": {
     "description": "Reported when an agent definition could not be archived."

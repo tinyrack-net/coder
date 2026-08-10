@@ -825,6 +825,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsNoSubagents => '등록된 Subagent가 없습니다.';
 
   @override
+  String agentSettingsArchiveTitle(String name) {
+    return '$name 을(를) 보관할까요?';
+  }
+
+  @override
+  String get agentSettingsArchiveBody =>
+      '이미 이 agent를 쓰고 있는 세션은 그대로 실행됩니다. 새 세션에서만 더 이상 제공되지 않습니다.';
+
+  @override
+  String agentSettingsResetTitle(String name) {
+    return '$name 을(를) 기본값으로 되돌릴까요?';
+  }
+
+  @override
+  String get agentSettingsResetBody =>
+      '이 기본 agent에 적용한 수정 사항이 모두 사라지며 되돌릴 수 없습니다.';
+
+  @override
   String get agentSettingsArchiveFailed => 'Agent를 보관하지 못했습니다.';
 
   @override

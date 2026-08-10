@@ -1600,6 +1600,30 @@ abstract class AppLocalizations {
   /// **'No subagents are registered.'**
   String get agentSettingsNoSubagents;
 
+  /// Asks whether to archive an agent definition.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive {name}?'**
+  String agentSettingsArchiveTitle(String name);
+
+  /// Explains what archiving an agent definition does before it happens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions already using this agent keep running. It stops being offered for new ones.'**
+  String get agentSettingsArchiveBody;
+
+  /// Asks whether to restore a built-in agent definition.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {name} to defaults?'**
+  String agentSettingsResetTitle(String name);
+
+  /// Explains that resetting a built-in agent discards local edits.
+  ///
+  /// In en, this message translates to:
+  /// **'Every edit made to this built-in agent is discarded and cannot be recovered.'**
+  String get agentSettingsResetBody;
+
   /// Reported when an agent definition could not be archived.
   ///
   /// In en, this message translates to:

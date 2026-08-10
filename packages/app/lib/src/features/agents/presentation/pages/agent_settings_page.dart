@@ -605,8 +605,51 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     }
   }
 
+  /// Asks before a destructive change, the way every other one here does.
+  ///
+  /// Archiving and resetting used to run straight off a single click, which
+  /// made them the only two irreversible actions in the application without a
+  /// step between the pointer and the consequence.
+  Future<bool> _confirm({
+    required String title,
+    required String body,
+    required String accept,
+    required String confirmKey,
+  }) async {
+    final confirmed = await showTRDialog<bool>(
+      context: context,
+      builder: (context) => TRAlertDialog(
+        title: TRText.inherit(title),
+        content: TRText.inherit(body),
+        actions: <TRButton>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            onPressed: () => Navigator.pop(context, false),
+            child: TRText.inherit(AppLocalizations.of(context).commonCancel),
+          ),
+          TRButton(
+            key: ValueKey<String>(confirmKey),
+            intent: TRIntent.primary,
+            onPressed: () => Navigator.pop(context, true),
+            child: TRText.inherit(accept),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Future<void> _archive() async {
     final l10n = AppLocalizations.of(context);
+    if (!await _confirm(
+      title: l10n.agentSettingsArchiveTitle(widget.definition.name),
+      body: l10n.agentSettingsArchiveBody,
+      accept: l10n.workspaceArchive,
+      confirmKey: 'agent-archive-confirm',
+    )) {
+      return;
+    }
+    if (!mounted) return;
     final container = ProviderScope.containerOf(context);
     final archived = await container
         .read(toastMessengerProvider)
@@ -623,6 +666,15 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
 
   Future<void> _reset() async {
     final l10n = AppLocalizations.of(context);
+    if (!await _confirm(
+      title: l10n.agentSettingsResetTitle(widget.definition.name),
+      body: l10n.agentSettingsResetBody,
+      accept: l10n.agentSettingsReset,
+      confirmKey: 'agent-reset-confirm',
+    )) {
+      return;
+    }
+    if (!mounted) return;
     final container = ProviderScope.containerOf(context);
     await container
         .read(toastMessengerProvider)

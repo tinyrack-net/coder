@@ -835,6 +835,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsNoSubagents => 'No subagents are registered.';
 
   @override
+  String agentSettingsArchiveTitle(String name) {
+    return 'Archive $name?';
+  }
+
+  @override
+  String get agentSettingsArchiveBody =>
+      'Sessions already using this agent keep running. It stops being offered for new ones.';
+
+  @override
+  String agentSettingsResetTitle(String name) {
+    return 'Reset $name to defaults?';
+  }
+
+  @override
+  String get agentSettingsResetBody =>
+      'Every edit made to this built-in agent is discarded and cannot be recovered.';
+
+  @override
   String get agentSettingsArchiveFailed => 'Could not archive the agent.';
 
   @override
