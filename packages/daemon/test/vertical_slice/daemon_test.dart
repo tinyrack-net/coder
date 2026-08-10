@@ -585,7 +585,9 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          // Collaboration is the subject of this slice. Lua orchestration has
+          // its own vertical slice and must not add a native cold start here.
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final timelineEvents = client.sessions.timelineEvents;
@@ -3672,7 +3674,7 @@ class _ExecProvider implements ModelProvider {
       return;
     }
     if (_round == 2) {
-      _sessionId = resultFor('exec-call')['sessionId'] as String?;
+      _sessionId = resultFor('exec-call')['session_id'] as String?;
       final arguments = <String, dynamic>{
         'session_id': _sessionId,
         'chars': 'tinyrack-exec-probe\n',

@@ -1483,18 +1483,16 @@ void main() {
       );
       await tester.pumpAndSettle();
       await _submitComposerPrompt(tester, composer, send, 'Plan the change');
-      await pumpUntil(tester, find.text('계획'));
       await pumpUntil(
         tester,
-        find.text('이 계획대로 진행할까요?'),
+        find.text('Plan ready: Create result.txt', findRichText: true),
       );
-      // The plan arrived as an update_plan call, so it renders as a checklist
-      // rather than a generic tool row.
-      expect(find.text('Create result.txt'), findsOneWidget);
-      final implement = find.widgetWithText(TRButton, '계획대로 실행');
-      await tester.ensureVisible(implement);
-      await tester.pumpAndSettle();
-      await tester.tap(implement);
+      // update_plan records execution progress and is unavailable in Plan
+      // Mode. The user explicitly returns to Default mode after reading the
+      // prose proposal.
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
+      );
       await tester.pump();
       // The chip returning to 실행 proves the session left plan mode.
       await pumpUntil(tester, find.text('실행'));
@@ -1513,19 +1511,16 @@ void main() {
       );
 
       // A blocking agent question stops the turn until the user answers it,
-      // and the chosen answer reaches the model. Implementing the plan started
-      // a turn of its own, so this prompt may queue behind it; the wait spans
-      // both turns.
+      // and the chosen answer reaches the model.
       await _submitComposerPrompt(
         tester,
         composer,
         send,
         'Ask me about storage',
       );
-      // The prompt has to leave the composer either way: straight into the
-      // transcript, or held as a queue chip behind the implement turn. Failing
-      // here separates "never left the client" from "the daemon never
-      // answered", which the 120s wait below cannot tell apart.
+      // The prompt has to leave the composer. Failing here separates "never
+      // left the client" from "the daemon never answered", which the 120s
+      // wait below cannot tell apart.
       await pumpUntilCondition(
         tester,
         () =>
@@ -2804,37 +2799,11 @@ final class _AgentE2eProvider implements ModelProvider {
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
     if (request.instructions.contains('You are in Plan Mode')) {
-      final hasPlanResult = request.history
-          .whereType<ToolResultConversationItem>()
-          .any((item) => item.callId == 'plan-call');
-      if (!hasPlanResult) {
-        const arguments = <String, dynamic>{
-          'plan': <Map<String, dynamic>>[
-            <String, dynamic>{'step': 'Create result.txt', 'status': 'pending'},
-          ],
-          'explanation': 'Explored the workspace.',
-        };
-        yield const ModelFunctionCall(
-          callId: 'plan-call',
-          name: 'update_plan',
-          arguments: arguments,
-        );
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(
-            text: '',
-            toolCalls: <ConversationToolCall>[
-              ConversationToolCall.function(
-                callId: 'plan-call',
-                name: 'update_plan',
-                arguments: arguments,
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+      yield const ModelTextDelta('Plan ready: Create result.txt');
       yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: ''),
+        assistant: AssistantConversationItem(
+          text: 'Plan ready: Create result.txt',
+        ),
       );
       return;
     }

@@ -540,6 +540,18 @@ void main() {
     );
 
     test(
+      'plan mode instructions do not advertise the unavailable plan tool',
+      tags: const <String>['feature_test__turn_execution__unit'],
+      () {
+        final instructions = planModeInstructions();
+
+        expect(instructions, contains('final response'));
+        expect(instructions, contains('`update_plan` is unavailable'));
+        expect(instructions, isNot(contains('Call `update_plan`')));
+      },
+    );
+
+    test(
       'rejects an empty plan, duplicate steps, and two active steps',
       tags: const <String>['feature_test__turn_execution__unit'],
       () async {
