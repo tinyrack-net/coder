@@ -372,7 +372,6 @@ Review the requested code without modifying it.
       final coder = (await store.get('coder'))!;
       expect(coder.toolIds, <String>[
         'apply_patch',
-        'lua_code_mode',
         'list_mcp_resources',
         'list_mcp_resource_templates',
         'read_mcp_resource',

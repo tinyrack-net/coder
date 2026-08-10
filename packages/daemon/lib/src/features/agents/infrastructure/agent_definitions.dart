@@ -679,10 +679,12 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
       'your work.',
   model: const AgentModelSelectionDto(source: AgentModelSource.session),
   // The always-on tools are implicit; every selectable built-in capability is
-  // enabled for the shipped Coder definition.
+  // enabled for the shipped Coder definition. The Lua tool surface is not among
+  // them: a model that wants it declares `ModelToolSurface.luaCode` and the
+  // registry swaps the surface in for the whole turn, so naming it here would
+  // select nothing.
   toolIds: const <String>[
     'apply_patch',
-    'lua_code_mode',
     'list_mcp_resources',
     'list_mcp_resource_templates',
     'read_mcp_resource',

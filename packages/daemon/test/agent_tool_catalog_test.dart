@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:daemon/src/features/agents/infrastructure/built_in_tools.dart';
+import 'package:daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -310,7 +311,6 @@ void main() {
 
         expect(coder.toolIds, <String>[
           'apply_patch',
-          'lua_code_mode',
           'list_mcp_resources',
           'list_mcp_resource_templates',
           'read_mcp_resource',
@@ -332,7 +332,6 @@ void main() {
             'request_user_input',
             'read_attachment',
             'apply_patch',
-            'lua_code_mode',
             'list_mcp_resources',
             'list_mcp_resource_templates',
             'read_mcp_resource',
@@ -340,6 +339,29 @@ void main() {
             'collaboration',
           ],
         );
+      },
+      tags: const <String>['feature_test__agent_definition_management__unit'],
+    );
+
+    test(
+      'the built-in agent lists nothing this daemon cannot supply',
+      () async {
+        // The shipped definition names capabilities by id, and nothing keeps
+        // that list in step with the registry. Wire the service to the real
+        // built-in catalog the way the daemon does so a retired or renamed id
+        // fails here instead of showing every user an unavailable_tool
+        // warning on the one agent they cannot delete.
+        final real = AgentDefinitionService(
+          store: FileAgentDefinitionStore(directory.path),
+          tools: StaticAgentToolCatalog(
+            registry.catalog.map(protocolToolDefinition).toList(),
+          ),
+          alwaysOnToolIds: registry.alwaysOnIds,
+        );
+        addTearDown(real.close);
+        await real.initialize();
+
+        expect((await real.get('coder')).diagnostics, isEmpty);
       },
       tags: const <String>['feature_test__agent_definition_management__unit'],
     );
