@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/permissions/application/permission_settings_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -25,8 +25,6 @@ class PermissionSettingsPage extends ConsumerStatefulWidget {
 
 class _PermissionSettingsPageState
     extends ConsumerState<PermissionSettingsPage> {
-  String? _saveError;
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(
@@ -45,19 +43,6 @@ class _PermissionSettingsPageState
             SettingsSection(
               title: l10n.permissionSettingsSection,
               description: l10n.permissionSettingsSectionDescription,
-              banner: _saveError == null
-                  ? null
-                  : TRAlert(
-                      key: const ValueKey<String>(
-                        'permission-settings-error',
-                      ),
-                      title: TRText.inherit(
-                        l10n.permissionSettingsSaveFailed,
-                      ),
-                      description: TRText.inherit(_saveError!),
-                      icon: const Icon(CoderIcons.error),
-                      variant: TRStatusVariant.danger,
-                    ),
               children: <Widget>[
                 SettingsRow(
                   title: TRText.inherit(
@@ -95,16 +80,22 @@ class _PermissionSettingsPageState
       currentMode: currentMode,
     );
     if (choice?.mode case final mode?) {
-      if (mounted) setState(() => _saveError = null);
-      try {
-        await ref
-            .read(
-              permissionSettingsControllerProvider(widget.hostId).notifier,
-            )
-            .setDefaultMode(mode);
-      } on Object catch (error) {
-        if (mounted) setState(() => _saveError = '$error');
-      }
+      if (!context.mounted) return;
+      // Resolved before the write: the messenger keeps no context of its own,
+      // which is what lets its report outlive this screen.
+      final l10n = AppLocalizations.of(context);
+      await ref
+          .read(toastMessengerProvider)
+          .run(
+            () => ref
+                .read(
+                  permissionSettingsControllerProvider(widget.hostId).notifier,
+                )
+                .setDefaultMode(mode),
+            failure: l10n.permissionSettingsSaveFailed,
+            success: l10n.commonSaved,
+            id: 'permission-settings-default-mode',
+          );
     }
   }
 }

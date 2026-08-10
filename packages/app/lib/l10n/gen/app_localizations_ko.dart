@@ -63,6 +63,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonSaved => '저장했습니다.';
 
   @override
+  String get commonDeleted => '삭제했습니다.';
+
+  @override
+  String get commonCopied => '클립보드에 복사했습니다.';
+
+  @override
+  String get commonActionFailed => '문제가 발생했습니다.';
+
+  @override
+  String get toastRegionLabel => '알림';
+
+  @override
   String get settingsTitle => '설정';
 
   @override
@@ -142,6 +154,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get advancedResetConfirmAccept => '초기화';
 
   @override
+  String get advancedResetDone => '초기 설정으로 되돌렸습니다.';
+
+  @override
   String get advancedResetFailedTitle => '초기화 실패';
 
   @override
@@ -209,6 +224,15 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get generalStartupMinimizedDescription =>
       '로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.';
+
+  @override
+  String get generalAppearanceFailed => '테마를 바꾸지 못했습니다.';
+
+  @override
+  String get generalLanguageFailed => '언어를 바꾸지 못했습니다.';
+
+  @override
+  String get generalStartupFailed => '시작 설정을 바꾸지 못했습니다.';
 
   @override
   String generalStartupCloseNotice(String appDisplayName) {
@@ -799,6 +823,36 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get agentSettingsNoSubagents => '등록된 Subagent가 없습니다.';
+
+  @override
+  String agentSettingsArchiveTitle(String name) {
+    return '$name 을(를) 보관할까요?';
+  }
+
+  @override
+  String get agentSettingsArchiveBody =>
+      '이미 이 agent를 쓰고 있는 세션은 그대로 실행됩니다. 새 세션에서만 더 이상 제공되지 않습니다.';
+
+  @override
+  String agentSettingsResetTitle(String name) {
+    return '$name 을(를) 기본값으로 되돌릴까요?';
+  }
+
+  @override
+  String get agentSettingsResetBody =>
+      '이 기본 agent에 적용한 수정 사항이 모두 사라지며 되돌릴 수 없습니다.';
+
+  @override
+  String get agentSettingsArchiveFailed => 'Agent를 보관하지 못했습니다.';
+
+  @override
+  String get agentSettingsResetFailed => '기본 Agent를 되돌리지 못했습니다.';
+
+  @override
+  String get agentSettingsArchived => '보관했습니다.';
+
+  @override
+  String get agentSettingsResetDone => '기본 Agent로 되돌렸습니다.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Agent 저장 실패';
@@ -1528,6 +1582,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get skillSettingsDelete => '스킬 삭제';
 
   @override
+  String get skillSettingsDeleteFailed => '스킬을 삭제하지 못했습니다.';
+
+  @override
+  String get skillSettingsToggleFailed => '스킬 사용 여부를 바꾸지 못했습니다.';
+
+  @override
   String skillSettingsDeleteTitle(String name) {
     return '$name 을(를) 삭제할까요?';
   }
@@ -1690,6 +1750,51 @@ class AppLocalizationsKo extends AppLocalizations {
   String mcpSettingsTestFailed(String error) {
     return '연결할 수 없습니다: $error';
   }
+
+  @override
+  String get terminalTerminateFailed => '터미널을 종료하지 못했습니다.';
+
+  @override
+  String get relayRevokeFailed => '기기를 폐기하지 못했습니다.';
+
+  @override
+  String get appSettingsDaemonChangeFailed => 'daemon 설정을 바꾸지 못했습니다.';
+
+  @override
+  String get appSettingsDeleteFailed => 'daemon을 제거하지 못했습니다.';
+
+  @override
+  String get appSettingsReconnectFailed => '다시 연결하지 못했습니다.';
+
+  @override
+  String get providerSettingsDisconnectFailed => '프로바이더 연결을 해제하지 못했습니다.';
+
+  @override
+  String get providerSettingsDeleteFailed => '프로바이더를 삭제하지 못했습니다.';
+
+  @override
+  String get providerSettingsDefaultModelFailed => '기본 모델을 바꾸지 못했습니다.';
+
+  @override
+  String get providerSettingsDisconnected => '연결을 해제했습니다.';
+
+  @override
+  String get workspaceArchiveFailed => '워크트리를 보관하지 못했습니다.';
+
+  @override
+  String get workspaceUnregisterFailed => '프로젝트를 제거하지 못했습니다.';
+
+  @override
+  String get projectSettingsSaveFailed => '프로젝트 설정을 저장하지 못했습니다.';
+
+  @override
+  String get mcpSettingsSaveFailed => '서버를 저장하지 못했습니다.';
+
+  @override
+  String get mcpSettingsDeleteFailed => '서버를 삭제하지 못했습니다.';
+
+  @override
+  String get mcpSettingsSecretFailed => '시크릿을 저장하지 못했습니다.';
 
   @override
   String get mcpSettingsDelete => '서버 삭제';

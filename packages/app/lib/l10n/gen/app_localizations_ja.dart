@@ -63,6 +63,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonSaved => 'Saved.';
 
   @override
+  String get commonDeleted => 'Deleted.';
+
+  @override
+  String get commonCopied => 'Copied to the clipboard.';
+
+  @override
+  String get commonActionFailed => 'Something went wrong.';
+
+  @override
+  String get toastRegionLabel => 'Notifications';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -142,6 +154,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get advancedResetConfirmAccept => 'Reset';
 
   @override
+  String get advancedResetDone => 'Reset to factory defaults.';
+
+  @override
   String get advancedResetFailedTitle => 'Reset failed';
 
   @override
@@ -211,6 +226,15 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get generalStartupMinimizedDescription =>
       'A login-time launch goes straight to the tray without opening a window.';
+
+  @override
+  String get generalAppearanceFailed => 'Could not change the appearance.';
+
+  @override
+  String get generalLanguageFailed => 'Could not change the language.';
+
+  @override
+  String get generalStartupFailed => 'Could not change the startup setting.';
 
   @override
   String generalStartupCloseNotice(String appDisplayName) {
@@ -805,6 +829,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agentSettingsNoSubagents => 'No subagents are registered.';
+
+  @override
+  String agentSettingsArchiveTitle(String name) {
+    return 'Archive $name?';
+  }
+
+  @override
+  String get agentSettingsArchiveBody =>
+      'Sessions already using this agent keep running. It stops being offered for new ones.';
+
+  @override
+  String agentSettingsResetTitle(String name) {
+    return 'Reset $name to defaults?';
+  }
+
+  @override
+  String get agentSettingsResetBody =>
+      'Every edit made to this built-in agent is discarded and cannot be recovered.';
+
+  @override
+  String get agentSettingsArchiveFailed => 'Could not archive the agent.';
+
+  @override
+  String get agentSettingsResetFailed =>
+      'Could not restore the built-in agent.';
+
+  @override
+  String get agentSettingsArchived => 'Archived.';
+
+  @override
+  String get agentSettingsResetDone => 'Restored the built-in agent.';
 
   @override
   String get agentSettingsSaveFailedTitle => 'Could not save the agent';
@@ -1545,6 +1600,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get skillSettingsDelete => 'Delete skill';
 
   @override
+  String get skillSettingsDeleteFailed => 'Could not delete the skill.';
+
+  @override
+  String get skillSettingsToggleFailed =>
+      'Could not change whether the skill is enabled.';
+
+  @override
   String skillSettingsDeleteTitle(String name) {
     return 'Delete $name?';
   }
@@ -1713,6 +1775,55 @@ class AppLocalizationsJa extends AppLocalizations {
   String mcpSettingsTestFailed(String error) {
     return 'Could not connect: $error';
   }
+
+  @override
+  String get terminalTerminateFailed => 'Could not stop the terminal.';
+
+  @override
+  String get relayRevokeFailed => 'Could not revoke the device.';
+
+  @override
+  String get appSettingsDaemonChangeFailed =>
+      'Could not change the daemon setting.';
+
+  @override
+  String get appSettingsDeleteFailed => 'Could not remove the daemon.';
+
+  @override
+  String get appSettingsReconnectFailed => 'Could not reconnect.';
+
+  @override
+  String get providerSettingsDisconnectFailed =>
+      'Could not disconnect the provider.';
+
+  @override
+  String get providerSettingsDeleteFailed => 'Could not delete the provider.';
+
+  @override
+  String get providerSettingsDefaultModelFailed =>
+      'Could not change the default model.';
+
+  @override
+  String get providerSettingsDisconnected => 'Disconnected.';
+
+  @override
+  String get workspaceArchiveFailed => 'Could not archive the worktree.';
+
+  @override
+  String get workspaceUnregisterFailed => 'Could not remove the project.';
+
+  @override
+  String get projectSettingsSaveFailed =>
+      'Could not save the project settings.';
+
+  @override
+  String get mcpSettingsSaveFailed => 'Could not save the server.';
+
+  @override
+  String get mcpSettingsDeleteFailed => 'Could not delete the server.';
+
+  @override
+  String get mcpSettingsSecretFailed => 'Could not store the secret.';
 
   @override
   String get mcpSettingsDelete => 'Delete server';

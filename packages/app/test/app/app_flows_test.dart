@@ -14,6 +14,7 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +81,10 @@ Future<GoRouter> _pumpRoute(
     localizationsDelegates: testLocalizationsDelegates,
     supportedLocales: testSupportedLocales,
     routerConfig: router,
+    // Mirrors what CoderApp wraps every route in, so a screen under test can
+    // report a result the same way it does when the app runs.
+    builder: (context, child) =>
+        CoderToastScope(child: child ?? const SizedBox.shrink()),
   );
   await tester.pumpWidget(
     ProviderScope(

@@ -208,6 +208,30 @@ abstract class AppLocalizations {
   /// **'Saved.'**
   String get commonSaved;
 
+  /// Confirmation shown after a successful removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted.'**
+  String get commonDeleted;
+
+  /// Confirmation shown after copying a value the screen does not otherwise change to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to the clipboard.'**
+  String get commonCopied;
+
+  /// Fallback title for an action that failed without a more specific message.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong.'**
+  String get commonActionFailed;
+
+  /// Accessible name of the region that announces the result of an action.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get toastRegionLabel;
+
   /// Title of the settings shell.
   ///
   /// In en, this message translates to:
@@ -352,6 +376,12 @@ abstract class AppLocalizations {
   /// **'Reset'**
   String get advancedResetConfirmAccept;
 
+  /// Reported after a factory reset finishes and the app returns to the workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to factory defaults.'**
+  String get advancedResetDone;
+
   /// Title of the alert shown when a reset fails.
   ///
   /// In en, this message translates to:
@@ -471,6 +501,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A login-time launch goes straight to the tray without opening a window.'**
   String get generalStartupMinimizedDescription;
+
+  /// Reported when the chosen theme could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the appearance.'**
+  String get generalAppearanceFailed;
+
+  /// Reported when the chosen language could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the language.'**
+  String get generalLanguageFailed;
+
+  /// Reported when a login-item preference could not be applied.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the startup setting.'**
+  String get generalStartupFailed;
 
   /// Explains that the window close button no longer quits the app.
   ///
@@ -1551,6 +1599,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No subagents are registered.'**
   String get agentSettingsNoSubagents;
+
+  /// Asks whether to archive an agent definition.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive {name}?'**
+  String agentSettingsArchiveTitle(String name);
+
+  /// Explains what archiving an agent definition does before it happens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions already using this agent keep running. It stops being offered for new ones.'**
+  String get agentSettingsArchiveBody;
+
+  /// Asks whether to restore a built-in agent definition.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {name} to defaults?'**
+  String agentSettingsResetTitle(String name);
+
+  /// Explains that resetting a built-in agent discards local edits.
+  ///
+  /// In en, this message translates to:
+  /// **'Every edit made to this built-in agent is discarded and cannot be recovered.'**
+  String get agentSettingsResetBody;
+
+  /// Reported when an agent definition could not be archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not archive the agent.'**
+  String get agentSettingsArchiveFailed;
+
+  /// Reported when the built-in agent definition could not be restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore the built-in agent.'**
+  String get agentSettingsResetFailed;
+
+  /// Reported after an agent definition is archived and the editor closes.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived.'**
+  String get agentSettingsArchived;
+
+  /// Reported after the built-in agent definition is restored. Distinct from agentSettingsReset, which labels the button.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored the built-in agent.'**
+  String get agentSettingsResetDone;
 
   /// Title of the save conflict dialog.
   ///
@@ -2680,7 +2776,7 @@ abstract class AppLocalizations {
   /// **'Daemon to add the folder to'**
   String get directoryBrowserHostTitle;
 
-  /// Snackbar shown when a worktree hook fails.
+  /// Line naming a worktree hook that failed, listed in the dialog that reports the failure.
   ///
   /// In en, this message translates to:
   /// **'{phase} failed (exit {exitCode}): {command}'**
@@ -2775,6 +2871,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete skill'**
   String get skillSettingsDelete;
+
+  /// Reported when a skill could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the skill.'**
+  String get skillSettingsDeleteFailed;
+
+  /// Reported when a skill's enabled state could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change whether the skill is enabled.'**
+  String get skillSettingsToggleFailed;
 
   /// Title of the delete confirmation dialog.
   ///
@@ -3081,6 +3189,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
+
+  /// Reported when a running terminal could not be terminated, so its tab stays open.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not stop the terminal.'**
+  String get terminalTerminateFailed;
+
+  /// Reported when a paired relay device could not be revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke the device.'**
+  String get relayRevokeFailed;
+
+  /// Reported when a daemon preference could not be stored or applied.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the daemon setting.'**
+  String get appSettingsDaemonChangeFailed;
+
+  /// Reported when a remote daemon profile could not be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the daemon.'**
+  String get appSettingsDeleteFailed;
+
+  /// Reported when a remote daemon could not be reconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reconnect.'**
+  String get appSettingsReconnectFailed;
+
+  /// Reported when a provider connection could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not disconnect the provider.'**
+  String get providerSettingsDisconnectFailed;
+
+  /// Reported when a custom provider could not be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the provider.'**
+  String get providerSettingsDeleteFailed;
+
+  /// Reported when the default model could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the default model.'**
+  String get providerSettingsDefaultModelFailed;
+
+  /// Reported after a provider connection is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected.'**
+  String get providerSettingsDisconnected;
+
+  /// Reported when a worktree could not be archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not archive the worktree.'**
+  String get workspaceArchiveFailed;
+
+  /// Reported when a project could not be unregistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the project.'**
+  String get workspaceUnregisterFailed;
+
+  /// Reported when a project's hooks or shell could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the project settings.'**
+  String get projectSettingsSaveFailed;
+
+  /// Reported when an MCP server could not be added or updated.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the server.'**
+  String get mcpSettingsSaveFailed;
+
+  /// Reported when an MCP server could not be removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the server.'**
+  String get mcpSettingsDeleteFailed;
+
+  /// Reported when an MCP secret could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not store the secret.'**
+  String get mcpSettingsSecretFailed;
 
   /// Label of the delete action.
   ///

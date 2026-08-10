@@ -72,6 +72,22 @@
   "@commonSaved": {
     "description": "Confirmation shown after a successful write."
   },
+  "commonDeleted": "Deleted.",
+  "@commonDeleted": {
+    "description": "Confirmation shown after a successful removal."
+  },
+  "commonCopied": "Copied to the clipboard.",
+  "@commonCopied": {
+    "description": "Confirmation shown after copying a value the screen does not otherwise change to show."
+  },
+  "commonActionFailed": "Something went wrong.",
+  "@commonActionFailed": {
+    "description": "Fallback title for an action that failed without a more specific message."
+  },
+  "toastRegionLabel": "Notifications",
+  "@toastRegionLabel": {
+    "description": "Accessible name of the region that announces the result of an action."
+  },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Title of the settings shell."
@@ -178,6 +194,10 @@
   "@advancedResetConfirmAccept": {
     "description": "Confirm action of the full reset dialog."
   },
+  "advancedResetDone": "Reset to factory defaults.",
+  "@advancedResetDone": {
+    "description": "Reported after a factory reset finishes and the app returns to the workspace."
+  },
   "advancedResetFailedTitle": "Reset failed",
   "@advancedResetFailedTitle": {
     "description": "Title of the alert shown when a reset fails."
@@ -265,6 +285,18 @@
   "generalStartupMinimizedDescription": "A login-time launch goes straight to the tray without opening a window.",
   "@generalStartupMinimizedDescription": {
     "description": "Explains that start-minimized applies only to login launches."
+  },
+  "generalAppearanceFailed": "Could not change the appearance.",
+  "@generalAppearanceFailed": {
+    "description": "Reported when the chosen theme could not be stored."
+  },
+  "generalLanguageFailed": "Could not change the language.",
+  "@generalLanguageFailed": {
+    "description": "Reported when the chosen language could not be stored."
+  },
+  "generalStartupFailed": "Could not change the startup setting.",
+  "@generalStartupFailed": {
+    "description": "Reported when a login-item preference could not be applied."
   },
   "generalStartupCloseNotice": "Closing the window keeps {appDisplayName} running in the tray.",
   "@generalStartupCloseNotice": {
@@ -915,6 +947,40 @@
   "agentSettingsNoSubagents": "No subagents are registered.",
   "@agentSettingsNoSubagents": {
     "description": "Empty state of the subagent list."
+  },
+  "agentSettingsArchiveTitle": "Archive {name}?",
+  "@agentSettingsArchiveTitle": {
+    "description": "Asks whether to archive an agent definition.",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "agentSettingsArchiveBody": "Sessions already using this agent keep running. It stops being offered for new ones.",
+  "@agentSettingsArchiveBody": {
+    "description": "Explains what archiving an agent definition does before it happens."
+  },
+  "agentSettingsResetTitle": "Reset {name} to defaults?",
+  "@agentSettingsResetTitle": {
+    "description": "Asks whether to restore a built-in agent definition.",
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "agentSettingsResetBody": "Every edit made to this built-in agent is discarded and cannot be recovered.",
+  "@agentSettingsResetBody": {
+    "description": "Explains that resetting a built-in agent discards local edits."
+  },
+  "agentSettingsArchiveFailed": "Could not archive the agent.",
+  "@agentSettingsArchiveFailed": {
+    "description": "Reported when an agent definition could not be archived."
+  },
+  "agentSettingsResetFailed": "Could not restore the built-in agent.",
+  "@agentSettingsResetFailed": {
+    "description": "Reported when the built-in agent definition could not be restored."
+  },
+  "agentSettingsArchived": "Archived.",
+  "@agentSettingsArchived": {
+    "description": "Reported after an agent definition is archived and the editor closes."
+  },
+  "agentSettingsResetDone": "Restored the built-in agent.",
+  "@agentSettingsResetDone": {
+    "description": "Reported after the built-in agent definition is restored. Distinct from agentSettingsReset, which labels the button."
   },
   "agentSettingsSaveFailedTitle": "Could not save the agent",
   "@agentSettingsSaveFailedTitle": {
@@ -1840,7 +1906,7 @@
   },
   "hookFailureMessage": "{phase} failed (exit {exitCode}): {command}",
   "@hookFailureMessage": {
-    "description": "Snackbar shown when a worktree hook fails.",
+    "description": "Line naming a worktree hook that failed, listed in the dialog that reports the failure.",
     "placeholders": {
       "phase": {
         "type": "String"
@@ -1922,6 +1988,14 @@
   "skillSettingsDelete": "Delete skill",
   "@skillSettingsDelete": {
     "description": "Tooltip for deleting a skill."
+  },
+  "skillSettingsDeleteFailed": "Could not delete the skill.",
+  "@skillSettingsDeleteFailed": {
+    "description": "Reported when a skill could not be removed."
+  },
+  "skillSettingsToggleFailed": "Could not change whether the skill is enabled.",
+  "@skillSettingsToggleFailed": {
+    "description": "Reported when a skill's enabled state could not be stored."
   },
   "skillSettingsDeleteTitle": "Delete {name}?",
   "@skillSettingsDeleteTitle": {
@@ -2147,6 +2221,66 @@
         "type": "String"
       }
     }
+  },
+  "terminalTerminateFailed": "Could not stop the terminal.",
+  "@terminalTerminateFailed": {
+    "description": "Reported when a running terminal could not be terminated, so its tab stays open."
+  },
+  "relayRevokeFailed": "Could not revoke the device.",
+  "@relayRevokeFailed": {
+    "description": "Reported when a paired relay device could not be revoked."
+  },
+  "appSettingsDaemonChangeFailed": "Could not change the daemon setting.",
+  "@appSettingsDaemonChangeFailed": {
+    "description": "Reported when a daemon preference could not be stored or applied."
+  },
+  "appSettingsDeleteFailed": "Could not remove the daemon.",
+  "@appSettingsDeleteFailed": {
+    "description": "Reported when a remote daemon profile could not be deleted."
+  },
+  "appSettingsReconnectFailed": "Could not reconnect.",
+  "@appSettingsReconnectFailed": {
+    "description": "Reported when a remote daemon could not be reconnected."
+  },
+  "providerSettingsDisconnectFailed": "Could not disconnect the provider.",
+  "@providerSettingsDisconnectFailed": {
+    "description": "Reported when a provider connection could not be removed."
+  },
+  "providerSettingsDeleteFailed": "Could not delete the provider.",
+  "@providerSettingsDeleteFailed": {
+    "description": "Reported when a custom provider could not be deleted."
+  },
+  "providerSettingsDefaultModelFailed": "Could not change the default model.",
+  "@providerSettingsDefaultModelFailed": {
+    "description": "Reported when the default model could not be stored."
+  },
+  "providerSettingsDisconnected": "Disconnected.",
+  "@providerSettingsDisconnected": {
+    "description": "Reported after a provider connection is removed."
+  },
+  "workspaceArchiveFailed": "Could not archive the worktree.",
+  "@workspaceArchiveFailed": {
+    "description": "Reported when a worktree could not be archived."
+  },
+  "workspaceUnregisterFailed": "Could not remove the project.",
+  "@workspaceUnregisterFailed": {
+    "description": "Reported when a project could not be unregistered."
+  },
+  "projectSettingsSaveFailed": "Could not save the project settings.",
+  "@projectSettingsSaveFailed": {
+    "description": "Reported when a project's hooks or shell could not be written."
+  },
+  "mcpSettingsSaveFailed": "Could not save the server.",
+  "@mcpSettingsSaveFailed": {
+    "description": "Reported when an MCP server could not be added or updated."
+  },
+  "mcpSettingsDeleteFailed": "Could not delete the server.",
+  "@mcpSettingsDeleteFailed": {
+    "description": "Reported when an MCP server could not be removed."
+  },
+  "mcpSettingsSecretFailed": "Could not store the secret.",
+  "@mcpSettingsSecretFailed": {
+    "description": "Reported when an MCP secret could not be written."
   },
   "mcpSettingsDelete": "Delete server",
   "@mcpSettingsDelete": {

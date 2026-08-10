@@ -6,7 +6,7 @@ import 'package:app/src/features/workspace/application/workspace_controller.dart
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:client/client.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,8 +193,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   bool _loaded = false;
   bool _hostShellLoaded = false;
   bool _saving = false;
-  String? _error;
-  bool _saved = false;
 
   @override
   void dispose() {
@@ -255,8 +253,18 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                 TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: l10n.projectSettingsCopyPath,
-                  onPressed: () =>
-                      Clipboard.setData(ClipboardData(text: value.sourcePath)),
+                  onPressed: () => unawaited(
+                    ref
+                        .read(toastMessengerProvider)
+                        .run(
+                          () => Clipboard.setData(
+                            ClipboardData(text: value.sourcePath),
+                          ),
+                          failure: l10n.commonActionFailed,
+                          success: l10n.commonCopied,
+                          id: 'project-settings-copy-path',
+                        ),
+                  ),
                   icon: const Icon(CoderIcons.copy),
                 ),
                 TRButton(
@@ -274,19 +282,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                   SettingsSection.form(
                     title: l10n.projectSettingsHookHeading,
                     description: l10n.projectSettingsHookHelp,
-                    banner: switch ((_saved, _error)) {
-                      (_, final String error) => TRAlert(
-                        title: TRText.inherit(error),
-                        variant: TRStatusVariant.danger,
-                        icon: const Icon(CoderIcons.error),
-                      ),
-                      (true, _) => TRAlert(
-                        title: TRText.inherit(l10n.commonSaved),
-                        variant: TRStatusVariant.success,
-                        icon: const Icon(CoderIcons.success),
-                      ),
-                      _ => null,
-                    },
                     children: <Widget>[
                       TRTextField(
                         controller: _setup,
@@ -380,12 +375,23 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
   }
 
   Future<void> _save() async {
-    setState(() {
-      _saving = true;
-      _error = null;
-      _saved = false;
-    });
-    try {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _saving = true);
+    // Every outcome runs through here, so the button cannot be left disabled by
+    // a failure the previous catch clause did not name.
+    await ref
+        .read(toastMessengerProvider)
+        .run(
+          _write,
+          failure: l10n.projectSettingsSaveFailed,
+          success: l10n.commonSaved,
+          id: 'project-settings-save',
+        );
+    if (mounted) setState(() => _saving = false);
+  }
+
+  Future<void> _write() async {
+    {
       final hostShell = _hostShellExecutable.text.trim().isEmpty
           ? null
           : ShellSpecDto(
@@ -416,17 +422,6 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                     ),
             ),
           );
-      if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _saved = true;
-      });
-    } on CoderClientException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.message;
-        _saving = false;
-      });
     }
   }
 }

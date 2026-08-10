@@ -8,9 +8,9 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -46,7 +46,6 @@ class _ResetSection extends ConsumerStatefulWidget {
 
 class _ResetSectionState extends ConsumerState<_ResetSection> {
   bool _busy = false;
-  String? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -54,18 +53,8 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
     final erasesDaemonData = ref
         .watch(appServicesProvider)
         .erasesEmbeddedDaemonData;
-    final error = _error;
     return SettingsSection(
       title: l10n.advancedResetSection,
-      banner: error == null
-          ? null
-          : TRAlert(
-              key: const ValueKey<String>('advanced-settings-reset-error'),
-              title: TRText.inherit(l10n.advancedResetFailedTitle),
-              description: TRText.inherit(error),
-              icon: const Icon(CoderIcons.error),
-              variant: TRStatusVariant.danger,
-            ),
       children: <Widget>[
         SettingsRow(
           title: TRText.inherit(l10n.advancedResetTitle),
@@ -117,10 +106,7 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
     if (confirmed != true || !mounted) return;
 
     final autostart = ref.read(autostartProvider);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
+    setState(() => _busy = true);
     try {
       await ref
           .read(hostRegistryControllerProvider.notifier)
@@ -148,22 +134,40 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
         );
       }
       if (!mounted) return;
+      // Reported rather than shown in place, because the next line leaves this
+      // screen for the workspace and a banner here would go with it.
+      ref
+          .read(toastMessengerProvider)
+          .success(AppLocalizations.of(context).advancedResetDone);
       const WorkspaceHomeRoute().go(context);
     } on FactoryResetFailure catch (failure) {
       if (!mounted) return;
       // Read after the await: a reset clears the language override, so the
       // localizations in scope before it may no longer be the active ones.
       final l10n = AppLocalizations.of(context);
-      setState(() {
-        _error = switch (failure.reason) {
-          FactoryResetFailureReason.daemonStillRunning =>
-            l10n.advancedResetFailedDaemonRunning(AppIdentity.displayName),
-          FactoryResetFailureReason.filesystem =>
-            l10n.advancedResetFailedFilesystem(failure.message),
-          FactoryResetFailureReason.incomplete =>
-            l10n.advancedResetFailedIncomplete(AppIdentity.displayName),
-        };
-      });
+      ref
+          .read(toastMessengerProvider)
+          .failure(
+            l10n.advancedResetFailedTitle,
+            error: switch (failure.reason) {
+              FactoryResetFailureReason.daemonStillRunning =>
+                l10n.advancedResetFailedDaemonRunning(AppIdentity.displayName),
+              FactoryResetFailureReason.filesystem =>
+                l10n.advancedResetFailedFilesystem(failure.message),
+              FactoryResetFailureReason.incomplete =>
+                l10n.advancedResetFailedIncomplete(AppIdentity.displayName),
+            },
+          );
+    } on Object catch (error) {
+      // A reset that failed for a reason it does not model is still a reset
+      // that did not happen, and saying nothing would read as success.
+      if (!mounted) return;
+      ref
+          .read(toastMessengerProvider)
+          .failure(
+            AppLocalizations.of(context).advancedResetFailedTitle,
+            error: error,
+          );
     } finally {
       if (mounted) setState(() => _busy = false);
     }

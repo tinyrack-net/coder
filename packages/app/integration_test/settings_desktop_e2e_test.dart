@@ -263,10 +263,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey<String>('advanced-settings-reset-error')),
-        findsNothing,
-      );
+      // The reset reports its outcome as a toast now, so a failure would name
+      // itself here rather than leave a banner behind on a screen the reset
+      // has already navigated away from.
+      expect(find.text('초기화 실패'), findsNothing);
       expect(launcher.serverIds.last, isNot(launcher.serverIds.first));
       expect(launcher.tokens.last, isNot(launcher.tokens.first));
       expect(store.settings.localeTag, isNull);

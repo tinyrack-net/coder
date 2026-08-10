@@ -312,6 +312,18 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'app.toast',
+    description:
+        'Reports the outcome of a user action as a transient notification: '
+        'every failure, and the successes whose result the screen does not '
+        'otherwise show. Survives the screen that started the action closing, '
+        'and describes a failure without leaking the exception that caused it.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'settings.startup',
     description:
         'Registers the app with the operating system login items and chooses '

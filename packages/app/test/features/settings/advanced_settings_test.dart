@@ -95,10 +95,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey<String>('advanced-settings-reset-error')),
-        findsOneWidget,
-      );
+      expect(find.text('초기화 실패'), findsOneWidget);
       expect(_resetButton, findsOneWidget);
       expect(store.profiles, hasLength(1));
       expect(store.tokens, hasLength(1));

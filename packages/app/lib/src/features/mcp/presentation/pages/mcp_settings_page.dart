@@ -5,6 +5,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -693,23 +694,22 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
       _error = null;
       _notice = null;
     });
-    try {
-      final controller = ref.read(
-        mcpServersControllerProvider(widget.hostId, widget.worktreeId).notifier,
-      );
-      if (_isNew) {
-        await controller.add(edited);
-      } else {
-        await controller.save(edited);
-      }
-      if (!mounted) return;
-      widget.onDone(edited.id);
-    } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _error = '$error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final controller = ref.read(
+      mcpServersControllerProvider(widget.hostId, widget.worktreeId).notifier,
+    );
+    // Reported rather than shown in place: a save that works closes this
+    // editor, so a banner announcing it would leave with the editor.
+    final saved = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => _isNew ? controller.add(edited) : controller.save(edited),
+          failure: l10n.mcpSettingsSaveFailed,
+          success: l10n.commonSaved,
+          id: 'mcp-editor-save',
+        );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (saved) widget.onDone(edited.id);
   }
 
   Future<void> _test() async {
@@ -774,21 +774,24 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
     );
     if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
-    try {
-      await ref
-          .read(
-            mcpServersControllerProvider(
-              widget.hostId,
-              widget.worktreeId,
-            ).notifier,
-          )
-          .remove(id);
-      if (mounted) widget.onDone('');
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final removed = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(
+                mcpServersControllerProvider(
+                  widget.hostId,
+                  widget.worktreeId,
+                ).notifier,
+              )
+              .remove(id),
+          failure: l10n.mcpSettingsDeleteFailed,
+          success: l10n.commonDeleted,
+          id: 'mcp-editor-delete',
+        );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (removed) widget.onDone('');
   }
 
   Future<void> _promptForSecret() async {
@@ -797,18 +800,22 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
       builder: (context) => const _SecretDialog(),
     );
     if (secret == null || !mounted) return;
-    try {
-      await ref
-          .read(
-            mcpServersControllerProvider(
-              widget.hostId,
-              widget.worktreeId,
-            ).notifier,
-          )
-          .setSecret(secret.key, secret.value);
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    }
+    final l10n = AppLocalizations.of(context);
+    await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(
+                mcpServersControllerProvider(
+                  widget.hostId,
+                  widget.worktreeId,
+                ).notifier,
+              )
+              .setSecret(secret.key, secret.value),
+          failure: l10n.mcpSettingsSecretFailed,
+          success: l10n.commonSaved,
+          id: 'mcp-editor-secret',
+        );
   }
 }
 

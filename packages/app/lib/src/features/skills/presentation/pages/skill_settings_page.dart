@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/skills/application/skills_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -5,6 +7,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -413,8 +416,20 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
               TRIconButton(
                 appearance: TRAppearance.ghost,
                 label: l10n.skillSettingsCopyPath,
-                onPressed: () =>
-                    Clipboard.setData(ClipboardData(text: skill.sourcePath)),
+                onPressed: () => unawaited(
+                  // A copy leaves nothing on screen, so without this the
+                  // button is indistinguishable from one that did nothing.
+                  ref
+                      .read(toastMessengerProvider)
+                      .run(
+                        () => Clipboard.setData(
+                          ClipboardData(text: skill.sourcePath),
+                        ),
+                        failure: l10n.commonActionFailed,
+                        success: l10n.commonCopied,
+                        id: 'skill-copy-path',
+                      ),
+                ),
                 icon: const Icon(CoderIcons.copy),
               ),
             if (skill.isEditable)
@@ -475,14 +490,22 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     value: skill.isEnabled,
                     onChanged: skill.isMandatory
                         ? null
-                        : (enabled) => ref
-                              .read(
-                                skillsControllerProvider(
-                                  widget.hostId,
-                                  widget.workspaceId,
-                                ).notifier,
-                              )
-                              .setEnabled(skill.id, enabled: enabled),
+                        : (enabled) => unawaited(
+                            ref
+                                .read(toastMessengerProvider)
+                                .run(
+                                  () => ref
+                                      .read(
+                                        skillsControllerProvider(
+                                          widget.hostId,
+                                          widget.workspaceId,
+                                        ).notifier,
+                                      )
+                                      .setEnabled(skill.id, enabled: enabled),
+                                  failure: l10n.skillSettingsToggleFailed,
+                                  id: 'skill-enabled-${skill.id}',
+                                ),
+                          ),
                     title: TRText.inherit(l10n.skillSettingsEnabled),
                     subtitle: skill.isMandatory
                         ? TRText(l10n.skillSettingsMandatory)
@@ -561,6 +584,9 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
             expectedContentHash: widget.skill.contentHash,
             force: force,
           );
+      ref
+          .read(toastMessengerProvider)
+          .success(l10n.commonSaved, id: 'skill-save');
     } on Exception catch (error) {
       if (!mounted) return;
       final retry = await showTRDialog<bool>(
@@ -610,12 +636,22 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await ref
-        .read(
-          skillsControllerProvider(widget.hostId, widget.workspaceId).notifier,
-        )
-        .delete(widget.skill.id);
-    widget.onDeleted();
+    final deleted = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(
+                skillsControllerProvider(
+                  widget.hostId,
+                  widget.workspaceId,
+                ).notifier,
+              )
+              .delete(widget.skill.id),
+          failure: l10n.skillSettingsDeleteFailed,
+          success: l10n.commonDeleted,
+          id: 'skill-delete',
+        );
+    if (deleted) widget.onDeleted();
   }
 }
 

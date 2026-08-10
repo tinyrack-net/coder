@@ -1,5 +1,6 @@
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,8 @@ void main() {
             localizationsDelegates: testLocalizationsDelegates,
             supportedLocales: testSupportedLocales,
             routerConfig: router,
+            builder: (context, child) =>
+                CoderToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );
@@ -91,6 +94,8 @@ void main() {
             localizationsDelegates: testLocalizationsDelegates,
             supportedLocales: testSupportedLocales,
             routerConfig: router,
+            builder: (context, child) =>
+                CoderToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );
@@ -109,10 +114,7 @@ void main() {
 
       expect(api.defaultPermissionMode, PermissionMode.ask);
       expect(find.text('변경 전 확인'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey<String>('permission-settings-error')),
-        findsOneWidget,
-      );
+      expect(find.text('기본 권한을 변경하지 못했습니다'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__permission_settings__widget'],
@@ -144,6 +146,8 @@ void main() {
             localizationsDelegates: testLocalizationsDelegates,
             supportedLocales: testSupportedLocales,
             routerConfig: router,
+            builder: (context, child) =>
+                CoderToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );

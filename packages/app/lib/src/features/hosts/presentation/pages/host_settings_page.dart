@@ -10,6 +10,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -98,14 +99,24 @@ class AppSettingsPage extends ConsumerWidget {
           key: const ValueKey<String>('embedded-daemon-error-copy'),
           appearance: TRAppearance.ghost,
           label: l10n.commonCopy,
-          onPressed: () => Clipboard.setData(
-            ClipboardData(
-              text: <String>[
-                title,
-                guidance,
-                if (diagnostic != null && diagnostic != guidance) diagnostic,
-              ].join('\n'),
-            ),
+          onPressed: () => unawaited(
+            ref
+                .read(toastMessengerProvider)
+                .run(
+                  () => Clipboard.setData(
+                    ClipboardData(
+                      text: <String>[
+                        title,
+                        guidance,
+                        if (diagnostic != null && diagnostic != guidance)
+                          diagnostic,
+                      ].join('\n'),
+                    ),
+                  ),
+                  failure: l10n.commonActionFailed,
+                  success: l10n.commonCopied,
+                  id: 'host-copy-diagnostic',
+                ),
           ),
           icon: const Icon(CoderIcons.copy),
         ),
@@ -165,13 +176,21 @@ class AppSettingsPage extends ConsumerWidget {
                     EmbeddedDaemonExposure.allInterfaces,
                 onChanged: _embeddedRestarting(registry)
                     ? null
-                    : (enabled) => ref
-                          .read(hostRegistryControllerProvider.notifier)
-                          .setEmbeddedDaemonExposure(
-                            enabled
-                                ? EmbeddedDaemonExposure.allInterfaces
-                                : EmbeddedDaemonExposure.loopback,
-                          ),
+                    : (enabled) => unawaited(
+                        ref
+                            .read(toastMessengerProvider)
+                            .run(
+                              () => ref
+                                  .read(hostRegistryControllerProvider.notifier)
+                                  .setEmbeddedDaemonExposure(
+                                    enabled
+                                        ? EmbeddedDaemonExposure.allInterfaces
+                                        : EmbeddedDaemonExposure.loopback,
+                                  ),
+                              failure: l10n.appSettingsDaemonChangeFailed,
+                              id: 'host-embedded-exposure',
+                            ),
+                      ),
               ),
               _EmbeddedPortEditor(
                 port: registry.settings.embeddedDaemonPort,
@@ -248,8 +267,14 @@ class AppSettingsPage extends ConsumerWidget {
       if (confirmed != true) return;
     }
     await ref
-        .read(hostRegistryControllerProvider.notifier)
-        .setEmbeddedDaemonEnabled(enabled: enabled);
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(hostRegistryControllerProvider.notifier)
+              .setEmbeddedDaemonEnabled(enabled: enabled),
+          failure: l10n.appSettingsDaemonChangeFailed,
+          id: 'host-embedded-enabled',
+        );
   }
 }
 
@@ -348,14 +373,19 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
   }
 
   Future<void> _apply(int port) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _applying = true);
-    try {
-      await ref
-          .read(hostRegistryControllerProvider.notifier)
-          .setEmbeddedDaemonPort(port);
-    } finally {
-      if (mounted) setState(() => _applying = false);
-    }
+    await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(hostRegistryControllerProvider.notifier)
+              .setEmbeddedDaemonPort(port),
+          failure: l10n.appSettingsDaemonChangeFailed,
+          success: l10n.commonSaved,
+          id: 'host-embedded-port',
+        );
+    if (mounted) setState(() => _applying = false);
   }
 }
 
@@ -427,9 +457,17 @@ class _RemoteHostCard extends ConsumerWidget {
           CoderSwitchRow(
             title: TRText.inherit(l10n.appSettingsAutoConnect),
             value: profile.autoConnect,
-            onChanged: (enabled) => ref
-                .read(hostRegistryControllerProvider.notifier)
-                .setRemoteAutoConnect(profile.id, enabled: enabled),
+            onChanged: (enabled) => unawaited(
+              ref
+                  .read(toastMessengerProvider)
+                  .run(
+                    () => ref
+                        .read(hostRegistryControllerProvider.notifier)
+                        .setRemoteAutoConnect(profile.id, enabled: enabled),
+                    failure: l10n.appSettingsDaemonChangeFailed,
+                    id: 'host-auto-connect',
+                  ),
+            ),
           ),
           Padding(
             // Sharing the row inset keeps the actions on the same trailing edge
@@ -445,9 +483,17 @@ class _RemoteHostCard extends ConsumerWidget {
               children: <Widget>[
                 TRButton(
                   appearance: TRAppearance.ghost,
-                  onPressed: () => ref
-                      .read(hostRegistryControllerProvider.notifier)
-                      .reconnect(profile.id),
+                  onPressed: () => unawaited(
+                    ref
+                        .read(toastMessengerProvider)
+                        .run(
+                          () => ref
+                              .read(hostRegistryControllerProvider.notifier)
+                              .reconnect(profile.id),
+                          failure: l10n.appSettingsReconnectFailed,
+                          id: 'host-reconnect',
+                        ),
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
@@ -727,9 +773,17 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
       ),
     );
     if (confirmed != true) return;
-    await ref
-        .read(hostRegistryControllerProvider.notifier)
-        .removeRemote(profile.id);
+    final removed = await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(hostRegistryControllerProvider.notifier)
+              .removeRemote(profile.id),
+          failure: l10n.appSettingsDeleteFailed,
+          success: l10n.commonDeleted,
+          id: 'host-delete',
+        );
+    if (!removed) return;
     // Deleting the daemon being edited invalidates the settings task that was
     // opened for it, so this clears the stack rather than popping into it.
     if (mounted) const WorkspaceHomeRoute().go(context);

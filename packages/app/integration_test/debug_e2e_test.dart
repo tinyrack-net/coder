@@ -451,6 +451,10 @@ void main() {
       await _waitForAgentDefinition(setupClient, 'temporary');
       await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-archive-confirm')),
+      );
+      await tester.pumpAndSettle();
       expect(
         (await setupClient.agents.listAgentDefinitions()).map(
           (item) => item.id,
@@ -461,6 +465,10 @@ void main() {
       await tester.tap(find.text('Coder').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-reset-confirm')),
+      );
       await tester.pumpAndSettle();
       final editorList = find.byType(ListView).last;
       final editorScrollable = find
@@ -727,6 +735,11 @@ void main() {
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
       await tester.ensureVisible(deleteServer);
       await tester.pumpAndSettle();
+      // The save reported itself over the bottom-trailing corner, which is
+      // where this button sits. Waiting the report out is what a user does
+      // before reaching underneath it, and it doubles as proof that a toast
+      // gives the surface back on its own.
+      await pumpUntilGone(tester, find.text('저장했습니다.'));
       await tester.tap(deleteServer);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
@@ -2509,9 +2522,22 @@ Future<void> _submitComposerPrompt(
 ) async {
   await _waitForComposerReady(tester, sendKey);
   await _typeComposerPrompt(tester, composerKey, prompt);
+  // The send button and the toast stack share the bottom-trailing corner, so a
+  // report still on screen from an earlier action takes the tap instead. A
+  // reader waits it out or dismisses it; this waits.
+  await _waitForToastsToClear(tester);
   await tester.tap(find.byKey(sendKey));
   await tester.pump();
 }
+
+/// Waits until nothing is left in the toast stack.
+Future<void> _waitForToastsToClear(WidgetTester tester) => pumpUntilGone(
+  tester,
+  find.descendant(
+    of: find.byType(TRToastRegion),
+    matching: find.byType(Dismissible),
+  ),
+);
 
 Future<void> _replaceMcpFieldText(
   WidgetTester tester,
