@@ -918,11 +918,15 @@ void main() {
         kind: PointerDeviceKind.mouse,
       );
       await contextMouse.addPointer(location: Offset.zero);
-      addTearDown(contextMouse.removePointer);
       await contextMouse.moveTo(tester.getCenter(contextMeter));
       await pumpUntil(tester, find.text('컨텍스트 사용량'));
       await contextMouse.moveTo(Offset.zero);
       await pumpUntilGone(tester, find.text('컨텍스트 사용량'));
+      // Do not leave a live hover pointer at the origin while this long-lived
+      // test replaces routes. A later control can move underneath it and
+      // create the second OverlayPortal show/hide cycle that triggers
+      // flutter/flutter#189902 on Flutter 3.44.
+      await contextMouse.removePointer();
       // The child works asynchronously; wait for its FINAL_ANSWER so the
       // track rows below render settled icons instead of live spinners.
       late SessionDto spawnedChild;
