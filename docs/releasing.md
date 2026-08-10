@@ -72,6 +72,16 @@ resolves against its real path.
 The Cask (`coder`) and the Formula (`coder-cli`) land in the same
 `tinyrack-net/homebrew-tap` commit.
 
+### Android application
+
+| Platform | Artifact | Channel |
+| --- | --- | --- |
+| Android | signed universal `Coder-android-universal.apk` | GitHub Releases |
+
+The APK uses the mobile entrypoint and is built once for all supported Android
+ABIs. Google Play App Bundles and Play App Signing are not part of this release
+channel.
+
 ### Web client
 
 | Artifact | Channel |
@@ -207,22 +217,54 @@ All are repository secrets on `tinyrack-net/coder`.
 | `APPLE_NOTARY_KEY_ID` | notarization | yes |
 | `APPLE_NOTARY_ISSUER_ID` | notarization | yes |
 | `APPLE_NOTARY_KEY_P8_BASE64` | notarization | yes |
+| `ANDROID_KEYSTORE_BASE64` | Android APK signing keystore | no |
+| `ANDROID_KEYSTORE_PASSWORD` | Android keystore password | no |
+| `ANDROID_KEY_ALIAS` | Android signing key alias | no |
+| `ANDROID_KEY_PASSWORD` | Android signing key password | no |
 | `HOMEBREW_TAP_TOKEN` | pushing the Cask to the tap | yes |
 | `WINGET_TOKEN` | the winget-pkgs pull requests | yes |
 | `CLOUDFLARE_API_TOKEN` | the web deployment | organisation-wide |
 | `CLOUDFLARE_ACCOUNT_ID` | the web deployment | organisation-wide |
+| `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
+| `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
+| `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |
 
 The two Cloudflare values are read as either a secret or an Actions variable,
 so the deployment works from whichever organisation tab holds them. Prefer the
 secret for `CLOUDFLARE_API_TOKEN`: an Actions variable is not masked in logs,
 and that token can deploy Workers.
-| `MSIX_IDENTITY_NAME` | MSIX identity, optional | no, `tinyrack.coder` |
-| `MSIX_PUBLISHER` | MSIX identity, optional | yes, matches the signing certificate |
-| `MSIX_PUBLISHER_DISPLAY_NAME` | MSIX identity, optional | yes |
 
-The eight shared values are identical across `dotweave`, `proxer`, and this
-repository, so promoting them to organisation secrets removes the copying
-entirely. Only the `MSIX_IDENTITY_NAME` differs per product.
+Create and retain the Android key outside the repository. For example, a JKS
+key with a long-lived RSA certificate can be created interactively with:
+
+```powershell
+keytool -genkeypair -v -keystore coder-release.jks -storetype JKS `
+  -keyalg RSA -keysize 4096 -validity 10000 -alias coder-release
+```
+
+Encode the complete keystore file, then register the result and the three
+credentials as repository secrets without writing their values into the shell
+history:
+
+```powershell
+[Convert]::ToBase64String(
+  [IO.File]::ReadAllBytes((Resolve-Path '.\coder-release.jks'))
+) | gh secret set ANDROID_KEYSTORE_BASE64 --repo tinyrack-net/coder
+gh secret set ANDROID_KEYSTORE_PASSWORD --repo tinyrack-net/coder
+gh secret set ANDROID_KEY_ALIAS --repo tinyrack-net/coder
+gh secret set ANDROID_KEY_PASSWORD --repo tinyrack-net/coder
+```
+
+GitHub secrets cannot be read back after registration. Keep the original JKS
+and its credentials in the user's own durable storage: every future update of
+`net.tinyrack.coder` must be signed by the same key. Use passwords without
+newlines because the CI job writes one property per line into the ignored
+`android/key.properties` file on its ephemeral runner.
+
+The values marked as shared are identical across `dotweave`, `proxer`, and
+this repository, so promoting them to organisation secrets removes the copying
+entirely. The Android signing values and `MSIX_IDENTITY_NAME` remain
+product-specific.
 
 Signing is skipped rather than failed when the Apple secrets are absent: the
 app is ad-hoc signed and left un-notarized, which is what non-tag builds do

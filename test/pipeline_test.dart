@@ -18,6 +18,9 @@ void main() {
   final androidBuild = File(
     'packages/app/android/build.gradle.kts',
   ).readAsStringSync();
+  final androidAppBuild = File(
+    'packages/app/android/app/build.gradle.kts',
+  ).readAsStringSync();
   final appPubspec = File('packages/app/pubspec.yaml').readAsStringSync();
   final iosDebugConfig = File(
     'packages/app/ios/Flutter/Debug.xcconfig',
@@ -77,10 +80,24 @@ void main() {
     'release builds are tag or manual only and publishing stays tag only',
     () {
       final build = _job(workflow, 'build-and-package');
+      final androidRelease = _job(workflow, 'build-android-release');
       expect(build, contains("startsWith(github.ref, 'refs/tags/v')"));
       expect(build, contains("github.event_name == 'workflow_dispatch'"));
       expect(build, contains('inputs.package_release'));
       expect(build, isNot(contains("github.ref == 'refs/heads/main'")));
+      expect(
+        androidRelease,
+        contains("startsWith(github.ref, 'refs/tags/v')"),
+      );
+      expect(
+        androidRelease,
+        contains("github.event_name == 'workflow_dispatch'"),
+      );
+      expect(androidRelease, contains('inputs.package_release'));
+      expect(
+        androidRelease,
+        isNot(contains("github.ref == 'refs/heads/main'")),
+      );
 
       for (final job in <String>[
         'publish-release',
@@ -94,6 +111,42 @@ void main() {
       }
     },
   );
+
+  test('Android releases require the private key and publish a signed APK', () {
+    final release = _job(workflow, 'build-android-release');
+    for (final secret in <String>[
+      'ANDROID_KEYSTORE_BASE64',
+      'ANDROID_KEYSTORE_PASSWORD',
+      'ANDROID_KEY_ALIAS',
+      'ANDROID_KEY_PASSWORD',
+    ]) {
+      final reference = r'${{ secrets.SECRET }}'.replaceFirst('SECRET', secret);
+      expect(release, contains(reference));
+    }
+    expect(release, contains('gradle/actions/setup-gradle@v6'));
+    expect(
+      release,
+      contains('flutter build apk --release -t lib/main_mobile.dart'),
+    );
+    expect(release, contains('verify --verbose --print-certs'));
+    expect(release, contains('Coder-android-universal.apk'));
+    expect(release, contains('if: always()'));
+    expect(release, isNot(contains('pull_request')));
+
+    final publish = _job(workflow, 'publish-release');
+    expect(publish, contains('- build-android-release'));
+    expect(publish, contains('pattern: coder-*'));
+  });
+
+  test('Android release builds cannot fall back to the debug signing key', () {
+    expect(androidAppBuild, contains('key.properties'));
+    expect(androidAppBuild, contains('signingConfigs'));
+    expect(androidAppBuild, contains('signingConfigs.getByName("release")'));
+    expect(
+      androidAppBuild,
+      isNot(contains('signingConfigs.getByName("debug")')),
+    );
+  });
 
   test('app tags deploy web as a required release artifact', () {
     final deployWeb = _job(workflow, 'deploy-web');

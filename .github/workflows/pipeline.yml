@@ -513,6 +513,67 @@ jobs:
             dist/*.msix
           if-no-files-found: error
 
+  build-android-release:
+    name: Build Android Release
+    if: startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.package_release)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: enhanced
+      - run: dart pub get --enforce-lockfile
+      - name: Restore Android signing material
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD \
+            ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required repository secret: ${name}" >&2
+              exit 1
+            fi
+          done
+          keystore="$RUNNER_TEMP/coder-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          {
+            printf 'storeFile=%s\n' "$keystore"
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+          } > packages/app/android/key.properties
+      - name: Build the signed universal APK
+        run: flutter build apk --release -t lib/main_mobile.dart
+        working-directory: packages/app
+      - name: Verify and stage the signed APK
+        run: |
+          set -euo pipefail
+          apksigner="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner \
+            | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          apk="packages/app/build/app/outputs/flutter-apk/app-release.apk"
+          "$apksigner" verify --verbose --print-certs "$apk"
+          mkdir -p dist
+          cp "$apk" dist/Coder-android-universal.apk
+      - name: Remove Android signing material
+        if: always()
+        run: rm -f packages/app/android/key.properties
+          "$RUNNER_TEMP/coder-release.jks"
+      - name: Upload Android release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coder-android-universal
+          retention-days: 7
+          path: dist/Coder-android-universal.apk
+          if-no-files-found: error
+
   deploy-web:
     name: Deploy Web
     needs:
@@ -655,6 +716,7 @@ jobs:
     name: Publish Release
     needs:
       - build-and-package
+      - build-android-release
       - build-cli
       - quality-gate
       - deploy-web
