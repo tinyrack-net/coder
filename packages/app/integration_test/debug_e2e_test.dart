@@ -1140,12 +1140,12 @@ void main() {
       expect(failedToolDisclosure, findsOneWidget);
       await tester.tap(failedToolDisclosure);
       await tester.pumpAndSettle();
-      expect(
+      await pumpUntil(
+        tester,
         find.textContaining(
           'Agent type is not allowed: not-allowed',
           findRichText: true,
         ),
-        findsWidgets,
       );
       await pumpUntilCondition(
         tester,
