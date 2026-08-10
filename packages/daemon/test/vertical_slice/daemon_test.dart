@@ -3648,7 +3648,7 @@ class _ExecProvider implements ModelProvider {
       // `cat` keeps running with no arguments, so the session survives the
       // call and the next one can write into it.
       final arguments = <String, dynamic>{
-        'command': 'cat',
+        'cmd': 'cat',
         'workdir': null,
         'tty': tty,
         'yield_time_ms': 300,
