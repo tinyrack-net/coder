@@ -115,10 +115,12 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
         worktrees: <WorktreeDto>[],
       );
     }
-    // The daemon request above crosses an async boundary, allowing the empty
-    // snapshot from build to install before this merge. Do not await this
-    // provider's future: a late daemon response may arrive after a registry
-    // rebuild has disposed this notifier.
+    // The empty snapshot from build installs after this notifier returns, so
+    // a catalog that answers first waits for it before merging. Check before
+    // reading the provider future because a late daemon response may arrive
+    // after a registry rebuild has disposed this notifier.
+    if (!ref.mounted) return;
+    await future;
     if (!ref.mounted) return;
     final current = state.requireValue;
     state = AsyncData<UnifiedWorkspaceCatalogState>(
