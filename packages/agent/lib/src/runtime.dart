@@ -5,6 +5,8 @@ import 'package:agent/src/compaction.dart';
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
 import 'package:agent/src/plan_mode_prompt.dart';
+import 'package:agent/src/prompts/permissions_instructions.dart';
+import 'package:agent/src/prompts/system_prompt.dart';
 import 'package:agent/src/tools/tool_search.dart';
 import 'package:agent/src/usage.dart';
 
@@ -59,6 +61,7 @@ class AgentRunRequest {
     this.maxToolRounds = 64,
     this.sessionMode = AgentSessionMode.normal,
     this.toolSurfaceMode = AgentToolSurfaceMode.direct,
+    this.projectDoc,
     this.customSystemPrompt,
     this.toolPrompts = const <String>[],
     this.contextWindowTokens,
@@ -121,6 +124,9 @@ class AgentRunRequest {
 
   /// Model-facing tool surface selected for this turn.
   final AgentToolSurfaceMode toolSurfaceMode;
+
+  /// Workspace documentation the host collected, already marked as user data.
+  final String? projectDoc;
 
   /// Optional Markdown agent prompt appended after immutable safety rules.
   final String? customSystemPrompt;
@@ -341,6 +347,7 @@ class AgentRunner {
             instructions: _instructions(
               request,
               await request.internalInstructions?.call(),
+              await _permissions.currentMode(),
             ),
             history: List<ConversationItem>.unmodifiable(input),
             safetyIdentifier: request.safetyIdentifier,
@@ -776,20 +783,29 @@ class AgentRunner {
     });
   }
 
-  String _instructions(AgentRunRequest request, String? internal) {
-    final customPrompt = request.customSystemPrompt?.trim();
-    final planning = request.sessionMode == AgentSessionMode.plan
-        ? '\n${planModeInstructions()}'
-        : '';
-    final internalPrompt = internal?.trim();
-    return '''
-You are a coding agent operating in ${request.workspaceRoot}.
-Use only the supplied tools. Read before editing, keep changes scoped to the request,
-and validate relevant behavior before finishing. Never attempt to access paths outside
-the workspace. Approval decisions are enforced by the host; do not work around them.
-${request.toolPrompts.map((prompt) => '\n$prompt\n').join()}$planning${customPrompt == null || customPrompt.isEmpty ? '' : '\n$customPrompt'}${internalPrompt == null || internalPrompt.isEmpty ? '' : '\n$internalPrompt'}
-''';
-  }
+  String _instructions(
+    AgentRunRequest request,
+    String? internal,
+    AgentPermissionMode permissions,
+  ) => buildSystemPrompt(
+    SystemPromptInputs(
+      workspaceRoot: request.workspaceRoot,
+      permissionsInstructions: permissionsInstructions(
+        mode: permissions,
+        workspaceRoot: request.workspaceRoot,
+      ),
+      environmentContext: environmentContext(
+        workspaceRoot: request.workspaceRoot,
+      ),
+      projectDoc: request.projectDoc,
+      toolPrompts: request.toolPrompts,
+      modeInstructions: request.sessionMode == AgentSessionMode.plan
+          ? planModeInstructions()
+          : null,
+      customInstructions: request.customSystemPrompt,
+      internalInstructions: internal,
+    ),
+  );
 }
 
 final class _CallbackNestedToolInvoker implements NestedToolInvoker {

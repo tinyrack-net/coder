@@ -1,0 +1,1 @@
+Filesystem permissions define which files can be read or written. `sandbox_mode` is `workspace-write`: the host permits reading files and editing files under the workspace root. Editing files outside it is refused by the tool itself, not escalated.

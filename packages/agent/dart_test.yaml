@@ -1,5 +1,6 @@
 tags:
   feature_test__context_compaction__unit:
+  feature_test__session_goal__unit:
   feature_test__provider_catalog__unit:
   feature_test__conversation_attachments__unit:
   feature_test__skill_invocation__unit:

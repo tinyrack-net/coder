@@ -291,6 +291,45 @@ branch refs/heads/feature/settings
   );
 
   test(
+    'the project checkout cannot be archived but extra worktrees can',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = _service(database, git: git);
+      final registered = await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+
+      // The repository checkout is not Coder-owned, so archiving it would keep
+      // the directory and let the next refresh rediscover it under a new id.
+      await expectLater(
+        service.archive('checkout-1', force: true),
+        throwsA(isA<StateError>()),
+      );
+      expect(git.removed, isEmpty);
+      expect(
+        (await service.catalog()).worktrees.map((item) => item.id),
+        contains('checkout-1'),
+      );
+
+      final external = registered.worktrees.last;
+      expect(external.kind, WorktreeKind.external);
+      final archived = await service.archive(external.id, force: false);
+      expect(archived.worktree.archivedAt?.toUtc(), _FixedClock.now);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
+  );
+
+  test(
     'supports directory lifecycle and rejects Git-only operations',
     () async {
       final database = CoderDatabase.forTesting(
@@ -343,7 +382,12 @@ branch refs/heads/feature/settings
       final preview = await service.previewArchive('directory-checkout');
       expect(preview.dirty, isFalse);
       expect(preview.removesDirectory, isFalse);
-      await service.archive('directory-checkout', force: false);
+      // The registered directory itself is the workspace root, so archiving it
+      // would hide the project while leaving the registration behind.
+      await expectLater(
+        service.archive('directory-checkout', force: false),
+        throwsA(isA<StateError>()),
+      );
       expect(git.removed, isEmpty);
       await service.unregister('directory-1');
       expect((await service.catalog()).workspaces, isEmpty);

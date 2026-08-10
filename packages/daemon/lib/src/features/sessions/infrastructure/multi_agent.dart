@@ -216,7 +216,9 @@ subagent's result.
 - All agents share one workspace and filesystem; coordinate edits so agents
   do not overwrite each other.
 At most $maxConcurrentSubagentTurnsPerTree subagent turns run concurrently
-per tree.''';
+per tree.
+
+$orchestratorPrompt''';
   }
 
   /// The mailbox drain handed to the runner of one session's turns.

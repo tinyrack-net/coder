@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:agent/src/contracts.dart';
 import 'package:agent/src/model.dart';
+import 'package:agent/src/prompts/named_prompts.dart';
 import 'package:agent/src/tools/patch/codex_patch.dart';
 import 'package:agent/src/tools/tool_registry.dart';
 import 'package:agent/src/tools/tool_support.dart';
@@ -278,4 +279,10 @@ final class ApplyPatchToolProvider extends SelectableToolProvider {
   List<AgentTool> build(AgentToolScope scope) => <AgentTool>[
     ApplyPatchTool(),
   ];
+
+  // The schema says what the argument is; a patch that applies cleanly on the
+  // first try needs the conventions around it too, which do not fit a
+  // description a settings list also renders.
+  @override
+  String? promptFragment(AgentToolScope scope) => applyPatchToolInstructions;
 }
