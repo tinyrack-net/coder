@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:daemon/src/features/terminals/application/terminal_screen.dart';
 import 'package:daemon/src/features/terminals/domain/terminal.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 
@@ -51,18 +52,23 @@ final class TerminalCreationException implements Exception {
   String toString() => 'TerminalCreationException(${reason.name}): $message';
 }
 
-/// Owns live terminals and bounded replay while the daemon is running.
+/// Owns live terminals, their screens, and a short output tail.
 final class TerminalService {
   /// Creates a terminal service around injected host boundaries.
   TerminalService({
     required this.gateway,
+    required this.screens,
     required this.worktreePath,
     required this.shellFor,
-    this.maxReplayBytes = 1024 * 1024,
+    this.maxDeltaBytes = 256 * 1024,
+    this.scrollbackLines = 200,
   });
 
   /// Host PTY boundary.
   final TerminalGateway gateway;
+
+  /// Screen models mirroring each PTY.
+  final TerminalScreenFactory screens;
 
   /// Active worktree path resolver.
   final WorktreePathResolver worktreePath;
@@ -70,8 +76,20 @@ final class TerminalService {
   /// Effective shell resolver.
   final ShellResolver shellFor;
 
-  /// Maximum UTF-8 bytes retained per terminal.
-  final int maxReplayBytes;
+  /// UTF-8 bytes of recent output retained per terminal.
+  ///
+  /// This covers a short gap, not a session: a client that reconnects seconds
+  /// later should resume the byte stream rather than repaint. Anything larger
+  /// is faster to serve as a screen than to replay, and the screen is the only
+  /// answer that is correct once the tail has been trimmed at all.
+  final int maxDeltaBytes;
+
+  /// Retained rows a rebuilt screen can carry.
+  ///
+  /// This is the cold-restore floor, not what a user sees: a live emulator
+  /// keeps everything it received. Each retained row is a list of per-cell
+  /// objects, so this is also the dominant term in a terminal's memory.
+  final int scrollbackLines;
   final Map<String, _LiveTerminal> _terminals = <String, _LiveTerminal>{};
   final StreamController<Object> _events = StreamController<Object>.broadcast(
     sync: true,
@@ -121,6 +139,11 @@ final class TerminalService {
     );
     final terminal = _LiveTerminal(
       process: process,
+      screen: screens.create(
+        columns: columns,
+        rows: rows,
+        scrollbackLines: scrollbackLines,
+      ),
       dto: Terminal(
         id: id,
         worktreeId: worktreeId,
@@ -164,12 +187,30 @@ final class TerminalService {
             size.rows != terminal.dto.rows) {
       await resize(id, columns: size.columns, rows: size.rows);
     }
-    return TerminalDeltaRestore(
+    final resumable =
+        request.strategy == TerminalRestoreStrategy.resume &&
+        request.afterSequence >= terminal.deltaFloor &&
+        request.afterSequence <= terminal.dto.lastSequence;
+    if (resumable) {
+      return TerminalDeltaRestore(
+        terminal: terminal.dto,
+        afterSequence: request.afterSequence,
+        chunks: terminal.delta
+            .where((item) => item.sequence > request.afterSequence)
+            .toList(growable: false),
+      );
+    }
+    // Let the queued chunks finish parsing, then read the grid and its
+    // watermark together. Nothing can land between the two: serializing is
+    // synchronous, so no feed continuation runs in the gap.
+    await terminal.screenTail;
+    final throughSequence = terminal.screenSequence;
+    return TerminalSnapshotRestore(
       terminal: terminal.dto,
-      afterSequence: request.afterSequence,
-      chunks: terminal.replay
-          .where((item) => item.sequence > request.afterSequence)
-          .toList(growable: false),
+      throughSequence: throughSequence,
+      ansi: terminal.screen.snapshot(
+        scrollbackLines: request.scrollbackLines.clamp(0, scrollbackLines),
+      ),
     );
   }
 
@@ -188,6 +229,7 @@ final class TerminalService {
     }
     final terminal = _require(id);
     await terminal.process.resize(columns, rows);
+    terminal.screen.resize(columns, rows);
     terminal.dto = terminal.dto.copyWith(columns: columns, rows: rows);
     _events.add(terminal.dto);
     return terminal.dto;
@@ -201,44 +243,47 @@ final class TerminalService {
     await Future.wait(
       _terminals.values.map((terminal) => terminal.process.terminate()),
     );
+    for (final terminal in _terminals.values) {
+      terminal.screen.dispose();
+    }
     await _events.close();
   }
 
   void _record(_LiveTerminal terminal, String data) {
     final sequence = terminal.dto.lastSequence + 1;
-    terminal.dto = terminal.dto.copyWith(lastSequence: sequence);
-    terminal.replay.add(
-      TerminalOutput(
-        terminalId: terminal.dto.id,
-        sequence: sequence,
-        data: data,
-      ),
-    );
-    // Carried across chunks rather than recomputed. Re-measuring the whole
-    // buffer here costs a full megabyte of encoding per chunk once the budget
-    // is reached, which blocks this isolate for hundreds of milliseconds on a
-    // single burst of PTY reads and stalls every other request with it.
-    terminal.replayBytes += utf8.encode(data).length;
-    while (terminal.replayBytes > maxReplayBytes &&
-        terminal.replay.isNotEmpty) {
-      final first = terminal.replay.first;
-      final bytes = utf8.encode(first.data);
-      final excess = terminal.replayBytes - maxReplayBytes;
-      if (bytes.length <= excess) {
-        terminal.replay.removeAt(0);
-        terminal.replayBytes -= bytes.length;
-      } else {
-        var start = excess;
-        while (start < bytes.length && (bytes[start] & 0xC0) == 0x80) {
-          start += 1;
-        }
-        terminal.replay[0] = first.copyWith(
-          data: utf8.decode(bytes.sublist(start)),
-        );
-        terminal.replayBytes -= start;
-      }
+    // Parsing is asynchronous — a custom sequence handler may be — so the
+    // screen trails the counter. Chaining keeps chunks in order and records
+    // how far the grid has actually got, which is the watermark a snapshot is
+    // labelled with.
+    terminal
+      ..dto = terminal.dto.copyWith(lastSequence: sequence)
+      ..screenTail = terminal.screenTail.then((_) async {
+        await terminal.screen.feed(data);
+        terminal.screenSequence = sequence;
+      })
+      ..delta.add(
+        TerminalOutput(
+          terminalId: terminal.dto.id,
+          sequence: sequence,
+          data: data,
+        ),
+      )
+      ..deltaBytes += utf8.encode(data).length;
+    // `deltaBytes` is carried across chunks rather than recomputed above:
+    // re-measuring the whole buffer per chunk once the budget is reached
+    // blocks this isolate on a single burst of PTY reads and stalls every
+    // other request with it.
+    //
+    // Whole chunks only. Slicing one to make the budget exact used to matter
+    // when this buffer was how a screen got rebuilt; now that a screen model
+    // does that, a partial chunk would just be a stream starting mid-escape.
+    while (terminal.deltaBytes > maxDeltaBytes && terminal.delta.length > 1) {
+      final dropped = terminal.delta.removeAt(0);
+      terminal
+        ..deltaBytes -= utf8.encode(dropped.data).length
+        ..deltaFloor = dropped.sequence;
     }
-    _events.add(terminal.replay.last);
+    _events.add(terminal.delta.last);
   }
 
   void _fail(_LiveTerminal terminal, Object error) {
@@ -257,11 +302,33 @@ final class TerminalService {
 }
 
 final class _LiveTerminal {
-  _LiveTerminal({required this.process, required this.dto});
+  _LiveTerminal({
+    required this.process,
+    required this.screen,
+    required this.dto,
+  });
   final TerminalProcess process;
-  Terminal dto;
-  final List<TerminalOutput> replay = <TerminalOutput>[];
 
-  /// UTF-8 bytes currently held in [replay].
-  int replayBytes = 0;
+  /// Parsed mirror of everything this terminal has emitted.
+  final TerminalScreen screen;
+  Terminal dto;
+
+  /// Recent output, newest last, bounded by [TerminalService.maxDeltaBytes].
+  final List<TerminalOutput> delta = <TerminalOutput>[];
+
+  /// UTF-8 bytes currently held in [delta].
+  int deltaBytes = 0;
+
+  /// Highest sequence whose bytes have been dropped from [delta].
+  ///
+  /// A client whose cursor is at or below this cannot be served a resume; the
+  /// bytes it is missing are gone, and handing it the remainder would replay a
+  /// stream that starts mid-escape.
+  int deltaFloor = 0;
+
+  /// Highest sequence the screen has finished parsing.
+  int screenSequence = 0;
+
+  /// Completes when every chunk fed so far has been parsed.
+  Future<void> screenTail = Future<void>.value();
 }

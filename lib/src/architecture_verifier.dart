@@ -117,6 +117,10 @@ final class ArchitectureVerifier {
   static const Map<String, Set<String>> _restrictedExternalPackages =
       <String, Set<String>>{
         'ptyworld': <String>{'daemon'},
+        // The app reaches the same emulator through `termworld`, which
+        // re-exports it. Importing it directly here would let a second copy of
+        // the grid semantics into the tree.
+        'vtworld': <String>{'daemon'},
       };
 
   /// Whether [consumer] is forbidden from depending on [dependency].

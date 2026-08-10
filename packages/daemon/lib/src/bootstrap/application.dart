@@ -49,6 +49,7 @@ import 'package:daemon/src/features/sessions/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/terminals/application/terminal_service.dart';
 import 'package:daemon/src/features/terminals/domain/terminal.dart';
 import 'package:daemon/src/features/terminals/infrastructure/portable_terminal.dart';
+import 'package:daemon/src/features/terminals/infrastructure/vtworld_terminal_screen.dart';
 import 'package:daemon/src/features/terminals/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/terminals/transport/terminal_mapper.dart';
 import 'package:daemon/src/features/workspaces/infrastructure/file_index.dart';
@@ -543,6 +544,7 @@ abstract final class DaemonApplication {
       await workspaceCatalog.provisionHome(config.userHomeDirectory);
       final terminals = TerminalService(
         gateway: const PtyworldTerminalGateway(),
+        screens: const VtworldTerminalScreenFactory(),
         worktreePath: (worktreeId) async {
           final worktree = await database.worktreeDao.getById(worktreeId);
           if (worktree == null || worktree.archivedAt != null) {

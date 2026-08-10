@@ -1495,6 +1495,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.2.0"
+  vtworld:
+    dependency: transitive
+    description:
+      path: "packages/vtworld"
+      ref: "7fcd102c36eac932f37ae30d450e375018a165f5"
+      resolved-ref: "7fcd102c36eac932f37ae30d450e375018a165f5"
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
+    version: "0.1.0"
   watcher:
     dependency: transitive
     description:

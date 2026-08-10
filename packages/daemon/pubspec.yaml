@@ -33,6 +33,11 @@ dependencies:
   shelf_web_socket: ^3.0.0
   stream_channel: ^2.1.4
   uuid: ^4.6.0
+  vtworld:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: 7fcd102c36eac932f37ae30d450e375018a165f5
+      path: packages/vtworld
   web_socket_channel: ^3.0.3
   yaml: ^3.1.3
   yaml_edit: ^2.2.4
