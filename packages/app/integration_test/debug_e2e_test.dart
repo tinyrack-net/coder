@@ -6,6 +6,7 @@ import 'package:agent/agent.dart';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
@@ -1133,12 +1134,12 @@ void main() {
         ),
         setupClient,
       );
-      final failedToolDisclosure = find.ancestor(
+      final failedToolCard = find.ancestor(
         of: find.text('실패', findRichText: true).last,
-        matching: find.byType(TRChatToolDisclosure),
+        matching: find.byType(ChatToolCard),
       );
-      expect(failedToolDisclosure, findsOneWidget);
-      await tester.tap(find.text('실패', findRichText: true).last);
+      expect(failedToolCard, findsOneWidget);
+      await tester.tap(failedToolCard);
       await tester.pumpAndSettle();
       await pumpUntil(
         tester,
