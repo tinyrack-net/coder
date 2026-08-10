@@ -38,7 +38,7 @@ dependencies:
   termworld:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git
-      ref: c21627dcd525f899223ac584a931c72ddf6f2b12
+      ref: 33d749b26e98a8a317982bac0048095cd76cc514
       path: packages/termworld
   tinyrack_ui:
     git:
