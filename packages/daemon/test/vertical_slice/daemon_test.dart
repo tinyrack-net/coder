@@ -735,7 +735,7 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -860,7 +860,7 @@ void main() {
         title: 'MCP',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       // A dangerous tool always asks, even under workspaceWrite.
@@ -1070,7 +1070,7 @@ void main() {
           title: 'Exec',
           agentDefinitionId: 'coder',
           model: const SessionModelSelectionDto(
-            modelId: 'openai/gpt-5.6-sol',
+            modelId: 'openai/gpt-5.2',
           ),
         );
         await client.subscribeTimeline(session.id);
@@ -1165,7 +1165,7 @@ void main() {
         title: 'Image',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1240,7 +1240,7 @@ void main() {
         title: 'Sleep',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1425,7 +1425,7 @@ void main() {
         title: 'Compact',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1544,7 +1544,7 @@ void main() {
         title: 'Search',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1616,7 +1616,7 @@ void main() {
         title: 'Ask',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1772,7 +1772,7 @@ void main() {
         title: 'Broken',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -1927,7 +1927,7 @@ void main() {
         title: 'Skills',
         agentDefinitionId: 'coder',
         model: const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+          modelId: 'openai/gpt-5.2',
         ),
       );
       final completed = client.sessions.timelineEvents
