@@ -207,7 +207,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Starting minimized only describes a login launch, so it cannot be
-      // chosen while there is no login launch to describe.
+      // chosen while there is no login launch to describe. The stored choice
+      // still shows, because the reader is losing access to it, not losing it.
       final startMinimized = find.byKey(
         const ValueKey<String>('general-settings-start-minimized'),
       );
@@ -215,7 +216,7 @@ void main() {
         tester.widget<CoderSwitchRow>(startMinimized),
         isA<CoderSwitchRow>()
             .having((row) => row.onChanged, 'onChanged', isNull)
-            .having((row) => row.value, 'value', isFalse),
+            .having((row) => row.value, 'value', isTrue),
       );
       expect(
         tester.widget<TRSwitch>(
@@ -223,11 +224,11 @@ void main() {
         ),
         isA<TRSwitch>()
             .having((control) => control.disabled, 'disabled', isTrue)
-            .having((control) => control.checked, 'checked', isFalse),
+            .having((control) => control.checked, 'checked', isTrue),
       );
 
-      // The stored choice is preserved rather than forced off, so turning
-      // start-at-login back on restores it.
+      // Turning start-at-login back on may not move the switch, because it
+      // never claimed the preference had changed.
       expect(store.settings.startMinimizedAtBoot, isTrue);
       await tester.tap(
         find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
@@ -236,6 +237,42 @@ void main() {
       expect(
         autostart.applications.single,
         (enabled: true, minimized: true),
+      );
+    },
+    tags: const <String>['feature_test__settings_startup__widget'],
+  );
+
+  testWidgets(
+    'a disabled start minimized shows a stored off choice as off',
+    (tester) async {
+      final store = MemoryAppStore(
+        settings: const AppSettings(
+          embeddedDaemonEnabled: false,
+          startAtBoot: false,
+          startMinimizedAtBoot: false,
+        ),
+      );
+      await tester.pumpWidget(
+        _app(store, autostart: FakeAutostartRegistration()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      // The row reports the stored preference either way, so it must not
+      // report a stored off as on any more than it forced a stored on to off.
+      expect(
+        tester.widget<CoderSwitchRow>(
+          find.byKey(
+            const ValueKey<String>('general-settings-start-minimized'),
+          ),
+        ),
+        isA<CoderSwitchRow>()
+            .having((row) => row.onChanged, 'onChanged', isNull)
+            .having((row) => row.value, 'value', isFalse),
       );
     },
     tags: const <String>['feature_test__settings_startup__widget'],
