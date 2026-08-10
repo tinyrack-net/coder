@@ -42,9 +42,71 @@ concurrency:
     github.event_name != 'merge_group' }}
 
 jobs:
+  # Every job below installs a 1.7-2.1 GB Flutter SDK, and none of that is
+  # prunable: the cached blob measures the same as the published archive on
+  # every host (Windows 1.81 GB against 1.8, macOS 2.08 against 2.1, Linux 1.69
+  # against 1.5), so it is the pristine SDK rather than precache bloat. The
+  # per-job cost is therefore fixed, and this job exists to decide how many
+  # jobs have to pay it: it narrows the matrices for a pull request and skips
+  # the whole set for a documentation-only diff.
+  changes:
+    name: Change scope
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+      cli_matrix: ${{ steps.scope.outputs.cli_matrix }}
+      mobile_matrix: ${{ steps.scope.outputs.mobile_matrix }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          # A pull request builds the host target of each matrix; the merge
+          # queue, main, tags, and manual dispatch build every target. The
+          # queue is an active ALLGREEN ruleset, so `main` is still only
+          # reachable through a full-matrix run.
+          CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
+        run: |
+          set -euo pipefail
+
+          # Anything that is not a pull request keeps the full matrix, so it
+          # never has to be decided from a diff.
+          docs_only=false
+          if [ -n "${PR_NUMBER}" ]; then
+            files="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
+              --paginate --jq '.[].filename')"
+            # An empty file list means the diff could not be read, not that
+            # nothing changed, so it stays `false`: a code change must never
+            # merge because a listing came back blank.
+            if [ -n "$files" ] &&
+              ! grep -qvE '^docs/|(^|/)[^/]+\.md$' <<< "$files"; then
+              docs_only=true
+            fi
+          fi
+
+          scope='.host'
+          if [ "${CROSS_PLATFORM}" = "true" ]; then
+            scope='.host, .cross'
+          fi
+          matrices=.github/ci-matrices.json
+          {
+            echo "docs_only=$docs_only"
+            echo "cli_matrix=$(jq -c "[.cli | $scope] | add" "$matrices")"
+            echo "mobile_matrix=$(jq -c "[.mobile | $scope] | add" "$matrices")"
+          } >> "$GITHUB_OUTPUT"
+
   static-linux:
     name: Static checks
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -63,7 +125,9 @@ jobs:
 
   generated-linux:
     name: Generated sources
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -72,9 +136,22 @@ jobs:
       - run: dart pub get --enforce-lockfile
       - run: dart run melos generate:check
 
+  # These two re-run on macOS and Windows what `coverage-dart-linux` and
+  # `coverage-flutter-linux` already run on Linux; only the host differs. They
+  # were 68% of the bill, so they moved to the merge queue, which still gates
+  # `main`. Coverage is unaffected: it is collected on Linux only and those
+  # jobs stay on every pull request.
+  #
+  # They stay two jobs. Merging them to pay `setup-flutter` once was measured
+  # and reverted: on Windows the suites take 7.6 and 4.4 minutes, so one job
+  # serialises them into 15.6 and the queue run went 7.7 -> 18.2 minutes,
+  # against a setup that now costs under 2 minutes to repeat.
   dart-tests:
     name: Dart tests (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: true
       matrix:
@@ -91,7 +168,10 @@ jobs:
 
   flutter-tests:
     name: Flutter tests (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: true
       matrix:
@@ -108,7 +188,9 @@ jobs:
 
   coverage-dart-linux:
     name: Dart coverage
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -127,7 +209,9 @@ jobs:
 
   coverage-flutter-linux:
     name: Flutter coverage
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -139,7 +223,9 @@ jobs:
 
   golden-linux:
     name: Linux goldens
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -150,7 +236,9 @@ jobs:
 
   debug-e2e-linux:
     name: Linux Debug E2E (${{ matrix.shard }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -183,7 +271,9 @@ jobs:
 
   linux-ibus-terminal-e2e:
     name: Linux IBus Terminal E2E
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -218,7 +308,9 @@ jobs:
 
   linux-ibus-terminal-wayland-e2e:
     name: Linux IBus Terminal Wayland E2E
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # Regression gate for the Wayland-only Hangul reorder (안녕하세요. →
@@ -255,19 +347,15 @@ jobs:
 
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
+      # Android on a pull request, plus iOS everywhere else. The entries live
+      # in `.github/ci-matrices.json` so this job keeps one body.
       matrix:
-        include:
-          - os: ubuntu-24.04
-            gradle_cache: true
-            command: flutter build apk --debug -t lib/main_mobile.dart
-          - os: macos-26
-            gradle_cache: false
-            command: >-
-              flutter build ios --debug --no-codesign
-              -t lib/main_mobile.dart -v
+        include: ${{ fromJSON(needs.changes.outputs.mobile_matrix) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:
@@ -284,7 +372,13 @@ jobs:
 
   desktop-debug-build:
     name: Desktop Debug Build (${{ matrix.os }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    # Same argument as `cross-platform-tests`: a macOS and Windows Debug build
+    # is worth blocking a merge on, not worth rebuilding on every push to a
+    # pull request branch.
+    if: github.event_name != 'schedule' &&
+      github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -304,7 +398,9 @@ jobs:
 
   web-build:
     name: Web Build
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -323,28 +419,20 @@ jobs:
 
   cli-verify:
     name: CLI Verify (${{ matrix.target }})
-    if: github.event_name != 'schedule'
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true'
     # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
     # build the CLI on a pull request. Two release-path breakages reached main
     # that way: a workspace resolution failure that made the job fail on every
     # target, and a smoke test left on a stale flag order. Same argument as
-    # `web-build` above — the failure mode exists only here.
+    # `web-build` above — the failure mode exists only here. Both breakages
+    # were target-independent, so a pull request builds the Linux target and
+    # the merge queue builds all four.
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-24.04
-            target: linux-x64
-            platform: linux
-          - os: macos-15-intel
-            target: macos-x64
-            platform: macos
-          - os: macos-26
-            target: macos-arm64
-            platform: macos
-          - os: windows-2025
-            target: windows-x64
-            platform: windows
+        include: ${{ fromJSON(needs.changes.outputs.cli_matrix) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -367,6 +455,7 @@ jobs:
     name: Quality Gate
     if: always() && github.event_name != 'schedule'
     needs:
+      - changes
       - static-linux
       - generated-linux
       - dart-tests
@@ -387,7 +476,13 @@ jobs:
       - name: Require every quality job to succeed
         env:
           QUALITY_RESULTS: ${{ toJSON(needs) }}
-        run: jq -e 'all(.[]; .result == "success")' <<< "$QUALITY_RESULTS"
+        # A job scoped out by event or by diff reports `skipped`, which is a
+        # pass. `changes` is the one job that cannot be: it decides the scope,
+        # so if it fails every other job skips and the gate would wave through
+        # a run that verified nothing.
+        run: >-
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")
+          and (.changes.result == "success")' <<< "$QUALITY_RESULTS"
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})

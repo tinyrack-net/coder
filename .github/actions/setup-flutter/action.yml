@@ -1,8 +1,8 @@
 name: Set up Flutter
 description: >-
-  Install the pinned Flutter SDK. flutter-action already caches both the SDK and
-  the pub cache, so this only exists to keep the version pin in one place
-  instead of in every job.
+  Install the pinned Flutter SDK. flutter-action does the caching, so this
+  exists to keep the version pin, and the one host that opts out of the SDK
+  cache, in a single place instead of in every job.
 
 runs:
   using: composite
@@ -10,4 +10,18 @@ runs:
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
+        # The SDK cache holds nothing this repository can prune: measured
+        # against the published archives, the cached blob is the pristine SDK
+        # (Windows 1.81 GB cached against a 1.8 GB archive, macOS 2.08 against
+        # 2.1, Linux 1.69 against 1.5), so no precache bloat is being carried.
+        #
+        # That makes the payload identical either way and leaves throughput as
+        # the only variable. Windows restores the blob at ~6 MB/s against
+        # 48 MB/s for the same-sized blob on macOS, which cost 4.5 of the 8.5
+        # minutes the critical-path job took, so Windows fetches the archive
+        # from Google's CDN instead. Every other host keeps the cache.
+        #
+        # This is the one change here measured only by inference. If a Windows
+        # setup step is not faster than the 4.5 minutes it took before, drop
+        # the condition and cache unconditionally again.
+        cache: ${{ runner.os != 'Windows' }}
