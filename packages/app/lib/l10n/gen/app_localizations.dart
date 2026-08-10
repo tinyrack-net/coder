@@ -208,6 +208,30 @@ abstract class AppLocalizations {
   /// **'Saved.'**
   String get commonSaved;
 
+  /// Confirmation shown after a successful removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted.'**
+  String get commonDeleted;
+
+  /// Confirmation shown after copying a value the screen does not otherwise change to show.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to the clipboard.'**
+  String get commonCopied;
+
+  /// Fallback title for an action that failed without a more specific message.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong.'**
+  String get commonActionFailed;
+
+  /// Accessible name of the region that announces the result of an action.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get toastRegionLabel;
+
   /// Title of the settings shell.
   ///
   /// In en, this message translates to:

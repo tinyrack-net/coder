@@ -72,6 +72,22 @@
   "@commonSaved": {
     "description": "Confirmation shown after a successful write."
   },
+  "commonDeleted": "Deleted.",
+  "@commonDeleted": {
+    "description": "Confirmation shown after a successful removal."
+  },
+  "commonCopied": "Copied to the clipboard.",
+  "@commonCopied": {
+    "description": "Confirmation shown after copying a value the screen does not otherwise change to show."
+  },
+  "commonActionFailed": "Something went wrong.",
+  "@commonActionFailed": {
+    "description": "Fallback title for an action that failed without a more specific message."
+  },
+  "toastRegionLabel": "Notifications",
+  "@toastRegionLabel": {
+    "description": "Accessible name of the region that announces the result of an action."
+  },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Title of the settings shell."

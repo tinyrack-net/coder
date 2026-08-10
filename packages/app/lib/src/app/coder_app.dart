@@ -10,6 +10,7 @@ import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -126,13 +127,18 @@ class _CoderAppView extends ConsumerWidget {
         // menu the operating system would draw outside the tree.
         presenter: const TRNativeContextMenuPresenter(),
         child: TRTooltipProvider(
-          child: !resident
-              ? child ?? const SizedBox.shrink()
-              : DesktopShellScope(
-                  router: router,
-                  startHidden: startHidden,
-                  child: child ?? const SizedBox.shrink(),
-                ),
+          // Outside the desktop shell rather than inside it: that shell only
+          // builds where the platform has a window to dress, so a report placed
+          // within it would never reach mobile or the web.
+          child: CoderToastScope(
+            child: !resident
+                ? child ?? const SizedBox.shrink()
+                : DesktopShellScope(
+                    router: router,
+                    startHidden: startHidden,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+          ),
         ),
       ),
     );

@@ -63,6 +63,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonSaved => 'Saved.';
 
   @override
+  String get commonDeleted => 'Deleted.';
+
+  @override
+  String get commonCopied => 'Copied to the clipboard.';
+
+  @override
+  String get commonActionFailed => 'Something went wrong.';
+
+  @override
+  String get toastRegionLabel => 'Notifications';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

@@ -63,6 +63,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonSaved => '저장했습니다.';
 
   @override
+  String get commonDeleted => '삭제했습니다.';
+
+  @override
+  String get commonCopied => '클립보드에 복사했습니다.';
+
+  @override
+  String get commonActionFailed => '문제가 발생했습니다.';
+
+  @override
+  String get toastRegionLabel => '알림';
+
+  @override
   String get settingsTitle => '설정';
 
   @override
