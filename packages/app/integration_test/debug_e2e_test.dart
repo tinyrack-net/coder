@@ -2084,6 +2084,12 @@ void main() {
       await pumpUntil(tester, find.text('Home e2e'));
       expect(find.text(homeWorkspace.name), findsNothing);
     },
+    // This test validates visible desktop interactions, not accessibility.
+    // Flutter 3.44's testWidgets semantics handle exposes the open
+    // OverlayPortal corruption tracked by flutter/flutter#189902, making the
+    // otherwise successful run fail nondeterministically during a later frame.
+    // Focused widget tests retain semantics coverage for these controls.
+    semanticsEnabled: false,
     tags: const <String>[
       'feature_test__daemon_management__e2e',
       'feature_test__daemon_exposure__e2e',
