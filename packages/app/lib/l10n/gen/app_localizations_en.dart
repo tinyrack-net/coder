@@ -1762,6 +1762,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get projectSettingsSaveFailed =>
+      'Could not save the project settings.';
+
+  @override
   String get mcpSettingsSaveFailed => 'Could not save the server.';
 
   @override

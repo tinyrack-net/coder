@@ -1731,6 +1731,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get projectSettingsSaveFailed => '프로젝트 설정을 저장하지 못했습니다.';
+
+  @override
   String get mcpSettingsSaveFailed => '서버를 저장하지 못했습니다.';
 
   @override

@@ -3160,6 +3160,12 @@ abstract class AppLocalizations {
   /// **'Could not connect: {error}'**
   String mcpSettingsTestFailed(String error);
 
+  /// Reported when a project's hooks or shell could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the project settings.'**
+  String get projectSettingsSaveFailed;
+
   /// Reported when an MCP server could not be added or updated.
   ///
   /// In en, this message translates to:
