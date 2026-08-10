@@ -94,6 +94,9 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                         name: input.name,
                         description: '',
                         mode: input.mode,
+                        // A new agent starts without a prompt, so the override
+                        // stays off regardless of the template's own setting.
+                        promptEnabled: false,
                         systemPrompt: '',
                         callableAgentIds: const <String>[],
                         contentHash: '',

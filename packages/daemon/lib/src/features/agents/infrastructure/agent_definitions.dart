@@ -670,7 +670,10 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
   name: 'Coder',
   description: 'General-purpose coding agent',
   mode: AgentMode.primary,
-  promptEnabled: true,
+  // The built-in system prompt is the shipped behaviour, so the override starts
+  // off. The text below is only the starting point a user sees once they turn
+  // it on.
+  promptEnabled: false,
   systemPrompt:
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
