@@ -135,6 +135,10 @@ void main() {
       final created = api.createdWorktrees.single;
       expect(created.branchName, 'fix-the-parser');
       expect(created.mode, WorktreeCreateMode.newBranch);
+      // The name is derived from the prompt, so the daemon resolves any
+      // collision: it is the only party that sees a branch an archived
+      // worktree left behind.
+      expect(created.branchNaming, WorktreeBranchNaming.derive);
       expect(api.createdSessions.single.title, 'Fix the parser');
       expect(api.startedPrompts, <String>['Fix the parser']);
       expect(
@@ -247,6 +251,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await tester.pumpAndSettle();
 
+      // An unrecognized code has no localized wording, so the daemon's own
+      // message is the best available explanation and is shown verbatim.
       expect(
         find.textContaining('A worktree already uses'),
         findsOneWidget,
@@ -255,6 +261,70 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.path,
         isNot(contains('/sessions/')),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'a typed daemon failure is explained, diagnosable, and recoverable',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        createWorktreeError: const CoderClientException(
+          'Internal daemon error.',
+          code: RpcErrorCodes.internalError,
+          details: <String, dynamic>{
+            'method': 'workspaces.createWorktree',
+            'errorType': 'StateError',
+            'traceId': 'trace-1',
+          },
+        ),
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Coder');
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      // The raw daemon sentence is replaced by a localized explanation, and
+      // the trace id that points at the daemon log record is on screen.
+      final alert = find.byKey(const ValueKey<String>('new-workspace-error'));
+      expect(alert, findsOneWidget);
+      expect(find.text('세션을 시작하지 못했습니다'), findsOneWidget);
+      expect(find.textContaining('Internal daemon error.'), findsNothing);
+      expect(find.textContaining('traceId: trace-1'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: alert,
+          matching: find.byKey(const ValueKey<String>('client-error-copy')),
+        ),
+        findsOneWidget,
+      );
+
+      // The composer is released, so once the daemon recovers the same
+      // submission goes through without restarting the app.
+      expect(api.createdSessions, isEmpty);
+      api.createWorktreeError = null;
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+      expect(api.createdWorktrees, hasLength(1));
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        contains('/sessions/'),
       );
     },
     tags: const <String>['feature_test__worktree_lifecycle__widget'],

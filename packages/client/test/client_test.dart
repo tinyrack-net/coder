@@ -1079,9 +1079,20 @@ void main() {
       connector: connector,
       requestTimeout: const Duration(milliseconds: 10),
     );
+    // A raw TimeoutException escapes every `on CoderClientException` handler
+    // in the app, which leaves the submitting UI stuck mid-flight; the
+    // deadline has to arrive as an ordinary retryable client failure.
     await expectLater(
       client.getWorkspaceCatalog(),
-      throwsA(isA<TimeoutException>()),
+      throwsA(
+        isA<CoderClientException>()
+            .having(
+              (error) => error.code,
+              'code',
+              RpcErrorCodes.requestTimeout,
+            )
+            .having((error) => error.retryable, 'retryable', isTrue),
+      ),
     );
     await client.close();
     await client.close();

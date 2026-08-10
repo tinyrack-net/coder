@@ -1,4 +1,5 @@
 export 'src/catalog.dart';
+export 'src/common/rpc_error_codes.dart';
 export 'src/common/rpc_values.dart';
 export 'src/features/agents/procedures.dart';
 export 'src/features/mcp/procedures.dart';

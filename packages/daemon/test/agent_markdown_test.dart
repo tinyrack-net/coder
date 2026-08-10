@@ -477,8 +477,21 @@ Review the requested code without modifying it.
         'Alpha',
         'Zulu',
       ]);
-      await expectLater(service.get('missing'), throwsA(isA<StateError>()));
-      await expectLater(service.resolve('missing'), throwsA(isA<StateError>()));
+      // A missing definition is reported as a typed lookup failure so
+      // session creation can name the agent instead of reporting an
+      // unexplained internal error.
+      await expectLater(
+        service.get('missing'),
+        throwsA(
+          isA<AgentDefinitionLookupFailure>()
+              .having((error) => error.id, 'id', 'missing')
+              .having((error) => error.isMissing, 'isMissing', isTrue),
+        ),
+      );
+      await expectLater(
+        service.resolve('missing'),
+        throwsA(isA<AgentDefinitionLookupFailure>()),
+      );
       await expectLater(service.reset('reviewer'), throwsA(isA<StateError>()));
 
       final coder = await service.get('coder');

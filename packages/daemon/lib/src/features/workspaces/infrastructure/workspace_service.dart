@@ -10,6 +10,62 @@ import 'package:protocol/protocol.dart';
 bool _sameWorktreePath(String first, String second) =>
     p.equals(first, second) || p.windows.equals(first, second);
 
+/// Why a worktree lifecycle operation could not proceed.
+enum WorktreeFailureReason {
+  /// No workspace is registered under the requested id.
+  workspaceNotFound,
+
+  /// The operation needs a Git repository and the workspace is not one.
+  workspaceNotGit,
+
+  /// No worktree is registered under the requested id.
+  worktreeNotFound,
+
+  /// The requested branch name cannot be normalized into a Git ref.
+  invalidBranchName,
+
+  /// A local branch already uses the requested name.
+  branchAlreadyExists,
+
+  /// Another active checkout already occupies the generated path.
+  pathInUse,
+
+  /// A Git command exited non-zero.
+  gitFailed,
+
+  /// The checkout is not in a state that allows archiving.
+  archiveBlocked,
+
+  /// The daemon owns this workspace and refuses to register or remove it.
+  workspaceProtected,
+}
+
+/// A worktree lifecycle operation that failed for a reason the user can act on.
+///
+/// Modelled on `TerminalCreationException`: the reason is what the transport
+/// maps to a stable protocol code, and [details] carries the extra context a
+/// client needs to explain the failure without parsing [message].
+final class WorktreeFailure implements Exception {
+  /// Creates a typed worktree lifecycle failure.
+  const WorktreeFailure(
+    this.reason,
+    this.message, {
+    this.details = const <String, dynamic>{},
+  });
+
+  /// Why the operation failed.
+  final WorktreeFailureReason reason;
+
+  /// Diagnostic description; clients translate [reason] instead.
+  final String message;
+
+  /// Structured context safe to hand to a client.
+  final Map<String, dynamic> details;
+
+  @override
+  String toString() => 'WorktreeFailure(${reason.name}): $message';
+}
+
 /// Repository and checkout lifecycle application service.
 final class WorkspaceOperations {
   /// Creates a workspace service from typed persistence and host ports.
@@ -118,7 +174,10 @@ final class WorkspaceOperations {
     // filters out.
     if ((await _workspaces.getByRootPath(selectedPath))?.kind ==
         WorkspaceKind.home) {
-      throw StateError('The home directory cannot be registered as a project.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.workspaceProtected,
+        'The home directory cannot be registered as a project.',
+      );
     }
     final discoveredRoot = await _git.repositoryRoot(selectedPath);
     if (discoveredRoot == null) {
@@ -198,7 +257,10 @@ final class WorkspaceOperations {
   Future<void> unregister(String workspaceId) async {
     final workspace = await _requireWorkspace(workspaceId);
     if (workspace.kind == WorkspaceKind.home) {
-      throw StateError('The home workspace cannot be unregistered.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.workspaceProtected,
+        'The home workspace cannot be unregistered.',
+      );
     }
     await _workspaces.unregister(workspaceId);
   }
@@ -243,7 +305,10 @@ final class WorkspaceOperations {
   Future<List<GitBranchDto>> listBranches(String workspaceId) async {
     final workspace = await _requireWorkspace(workspaceId);
     if (workspace.kind != WorkspaceKind.git) {
-      throw StateError('Workspace is not a Git repository.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.workspaceNotGit,
+        'Workspace is not a Git repository.',
+      );
     }
     return _git.listBranches(workspace.rootPath);
   }
@@ -274,12 +339,15 @@ final class WorkspaceOperations {
   ) async {
     final workspace = await _requireWorkspace(request.workspaceId);
     if (workspace.kind != WorkspaceKind.git) {
-      throw StateError('Managed worktrees require a Git repository.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.workspaceNotGit,
+        'Managed worktrees require a Git repository.',
+      );
     }
     if (await _worktrees.getById(request.id) case final existing?) {
       return WorktreeResultDto(worktree: existing);
     }
-    final branch = _normalizeBranch(request.branchName);
+    final requested = _normalizeBranch(request.branchName);
     await _fetchBaseRemote(workspace.rootPath, request);
     final repositoryHash = sha256
         .convert(utf8.encode(workspace.rootPath))
@@ -291,31 +359,38 @@ final class WorkspaceOperations {
     // no snapshot ever matches, and the worktree would be archived and
     // rediscovered as a foreign one on the next catalog read.
     await _paths.createDirectory(_managedWorktreeRoot);
-    final checkoutPath = p.join(
-      _paths.canonicalizeExistingDirectory(_managedWorktreeRoot),
-      repositoryHash,
-      branch,
+    final managedRoot = _paths.canonicalizeExistingDirectory(
+      _managedWorktreeRoot,
     );
-    if (await _worktrees.getByPath(checkoutPath) != null) {
-      throw StateError('A worktree already uses the generated path.');
-    }
+    String pathFor(String branch) =>
+        p.join(managedRoot, repositoryHash, branch);
+    final branch = await _resolveBranchName(
+      workspace,
+      request,
+      requested,
+      pathFor,
+    );
+    // The checkout path is already reserved by the branch resolution above, so
+    // the release below balances that claim.
+    final checkoutPath = pathFor(branch);
     late final WorktreeDto worktree;
-    _pendingManagedWorktreePaths.update(
-      checkoutPath,
-      (count) => count + 1,
-      ifAbsent: () => 1,
-    );
     try {
       await _paths.createDirectory(p.dirname(checkoutPath));
-      await _git.createWorktree(
-        GitWorktreeCreateRequest(
-          repositoryRoot: workspace.rootPath,
-          path: checkoutPath,
-          mode: request.mode,
-          branchName: branch,
-          baseBranch: request.baseBranch,
-        ),
-      );
+      try {
+        await _git.createWorktree(
+          GitWorktreeCreateRequest(
+            repositoryRoot: workspace.rootPath,
+            path: checkoutPath,
+            mode: request.mode,
+            branchName: branch,
+            baseBranch: request.baseBranch,
+          ),
+        );
+      } on GitCommandException catch (error) {
+        // The pre-flight checks race with anything else touching the
+        // repository, so Git remains the authority on why this failed.
+        throw _gitFailure(error);
+      }
       final snapshots = await _listWorktrees(workspace.rootPath);
       final snapshot = snapshots
           .where((item) => p.equals(item.path, checkoutPath))
@@ -365,6 +440,85 @@ final class WorkspaceOperations {
     return WorktreeResultDto(worktree: worktree, hookRuns: hookRuns);
   }
 
+  /// Picks the branch a new managed checkout will use.
+  ///
+  /// Only the daemon can answer this. Archiving a worktree removes the checkout
+  /// but leaves its local branch behind, and the catalog a client deduplicates
+  /// against hides archived rows, so a client left to choose alone keeps
+  /// proposing a name Git already refuses.
+  ///
+  /// On success the generated checkout path is reserved; the caller releases
+  /// it once the checkout is registered.
+  Future<String> _resolveBranchName(
+    WorkspaceDto workspace,
+    WorktreeCreateParamsDto request,
+    String requested,
+    String Function(String branch) pathFor,
+  ) async {
+    // Checking out an existing branch cannot rename it, so only the new-branch
+    // path consults the local branch list.
+    final branches = request.mode == WorktreeCreateMode.newBranch
+        ? await _git.localBranchNames(workspace.rootPath)
+        : const <String>{};
+    final conflict = await _reserveCheckoutPath(requested, branches, pathFor);
+    if (conflict == null) return requested;
+    if (request.branchNaming == WorktreeBranchNaming.exact) {
+      throw WorktreeFailure(
+        conflict,
+        'The branch "$requested" is already in use.',
+        details: <String, dynamic>{'branchName': requested},
+      );
+    }
+    for (var suffix = 2; suffix <= _maxDerivedBranchSuffix; suffix += 1) {
+      final candidate = '$requested-$suffix';
+      if (await _reserveCheckoutPath(candidate, branches, pathFor) == null) {
+        return candidate;
+      }
+    }
+    throw WorktreeFailure(
+      conflict,
+      'No free branch name derived from "$requested" was available.',
+      details: <String, dynamic>{'branchName': requested},
+    );
+  }
+
+  /// Claims the checkout path of [candidate], or reports the blocking conflict.
+  ///
+  /// The claim is made in the same synchronous step as the last free check so
+  /// two concurrent submissions of the same prompt cannot both take one slug.
+  Future<WorktreeFailureReason?> _reserveCheckoutPath(
+    String candidate,
+    Set<String> branches,
+    String Function(String branch) pathFor,
+  ) async {
+    if (branches.contains(candidate)) {
+      return WorktreeFailureReason.branchAlreadyExists;
+    }
+    final path = pathFor(candidate);
+    if (_pendingManagedWorktreePaths.containsKey(path)) {
+      return WorktreeFailureReason.pathInUse;
+    }
+    final registered = await _worktrees.getByPath(path);
+    if (registered != null) return WorktreeFailureReason.pathInUse;
+    if (_pendingManagedWorktreePaths.containsKey(path)) {
+      return WorktreeFailureReason.pathInUse;
+    }
+    _pendingManagedWorktreePaths[path] = 1;
+    return null;
+  }
+
+  WorktreeFailure _gitFailure(GitCommandException error) => WorktreeFailure(
+    WorktreeFailureReason.gitFailed,
+    error.stderr.isEmpty
+        ? '${error.commandLine} exited with ${error.exitCode}.'
+        : error.stderr,
+    details: <String, dynamic>{
+      'command': error.commandLine,
+      'exitCode': error.exitCode,
+      'stderr': error.stderr,
+    },
+  );
+
   /// Returns current archive safety conditions.
   Future<WorktreeArchivePreviewDto> previewArchive(String worktreeId) async {
     final worktree = await _requireWorktree(worktreeId);
@@ -388,20 +542,32 @@ final class WorkspaceOperations {
     final worktree = await _requireWorktree(worktreeId);
     if ((await _workspaces.getById(worktree.workspaceId))?.kind ==
         WorkspaceKind.home) {
-      throw StateError('The home checkout cannot be archived.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.archiveBlocked,
+        'The home checkout cannot be archived.',
+      );
     }
     if (!isArchivableWorktreeKind(worktree.kind)) {
       // The workspace root is never Coder-owned, so archiving it would keep the
       // directory, hide the project, and let the next refresh rediscover the
       // same path under a new id that no existing session references.
-      throw StateError('The project checkout cannot be archived.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.archiveBlocked,
+        'The project checkout cannot be archived.',
+      );
     }
     final preview = await previewArchive(worktreeId);
     if (preview.runningSessionCount > 0) {
-      throw StateError('A session is still running in this worktree.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.archiveBlocked,
+        'A session is still running in this worktree.',
+      );
     }
     if (!force && (preview.dirty || preview.unpushedCommitCount > 0)) {
-      throw StateError('Archive confirmation is required for local changes.');
+      throw const WorktreeFailure(
+        WorktreeFailureReason.archiveBlocked,
+        'Archive confirmation is required for local changes.',
+      );
     }
     final workspace = await _requireWorkspace(worktree.workspaceId);
     final hookRuns = await _runHooks(
@@ -581,11 +747,19 @@ final class WorkspaceOperations {
 
   Future<WorkspaceDto> _requireWorkspace(String id) async =>
       await _workspaces.getById(id) ??
-      (throw StateError('Workspace not found: $id'));
+      (throw WorktreeFailure(
+        WorktreeFailureReason.workspaceNotFound,
+        'Workspace not found: $id',
+        details: <String, dynamic>{'workspaceId': id},
+      ));
 
   Future<WorktreeDto> _requireWorktree(String id) async =>
       await _worktrees.getById(id) ??
-      (throw StateError('Worktree not found: $id'));
+      (throw WorktreeFailure(
+        WorktreeFailureReason.worktreeNotFound,
+        'Worktree not found: $id',
+        details: <String, dynamic>{'worktreeId': id},
+      ));
 }
 
 /// Repository registration and discovery operations used by RPC callers.
@@ -711,6 +885,9 @@ final class WorktreeLifecycleService implements WorktreeLifecyclePort {
   }) => _operations.archive(worktreeId, force: force);
 }
 
+/// Longest chain of derived `-2`, `-3`, ... candidates before giving up.
+const int _maxDerivedBranchSuffix = 200;
+
 String _normalizeBranch(String input) {
   final slug = input
       .trim()
@@ -719,7 +896,11 @@ String _normalizeBranch(String input) {
       .replaceAll(RegExp('-+'), '-')
       .replaceAll(RegExp(r'^[-/.]+|[-/.]+$'), '');
   if (slug.isEmpty || slug.contains('..') || slug.endsWith('.lock')) {
-    throw const FormatException('Invalid branch name.');
+    throw WorktreeFailure(
+      WorktreeFailureReason.invalidBranchName,
+      'The branch name "$input" cannot be used as a Git ref.',
+      details: <String, dynamic>{'branchName': input},
+    );
   }
   return slug;
 }

@@ -403,6 +403,14 @@ class CoderClient
       return procedure.decodeResult(
         Map<String, dynamic>.from(result as Map),
       );
+    } on TimeoutException {
+      // Without this the deadline escapes _call untyped, so every caller that
+      // handles CoderClientException misses it and leaves its UI mid-flight.
+      throw const CoderClientException(
+        'The daemon did not respond in time.',
+        code: RpcErrorCodes.requestTimeout,
+        retryable: true,
+      );
     } on json_rpc.RpcException catch (error) {
       RpcFailureDto? failure;
       if (error.data case final Map<Object?, Object?> data) {
@@ -542,6 +550,7 @@ class CoderClient
     required WorktreeCreateMode mode,
     required String branchName,
     String? baseBranch,
+    WorktreeBranchNaming branchNaming = WorktreeBranchNaming.exact,
   }) async {
     final response = await _call(
       workspacesCreateWorktreeProcedure,
@@ -551,6 +560,7 @@ class CoderClient
         mode: mode,
         branchName: branchName,
         baseBranch: baseBranch,
+        branchNaming: branchNaming,
       ),
     );
     return response;

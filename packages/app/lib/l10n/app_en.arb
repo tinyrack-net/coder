@@ -588,6 +588,74 @@
   "@workspaceOpenDaemonSettings": {
     "description": "Button that opens daemon settings from the empty sidebar."
   },
+  "workspaceStartFailedTitle": "The session could not be started",
+  "@workspaceStartFailedTitle": {
+    "description": "Title of the failure alert on the new workspace screen."
+  },
+  "composerSelectProviderModel": "Choose a provider and model first.",
+  "@composerSelectProviderModel": {
+    "description": "Composer hint when no provider model is selected."
+  },
+  "errorBranchAlreadyExists": "A branch with that name already exists. Choose another name.",
+  "@errorBranchAlreadyExists": {
+    "description": "Daemon rejected a branch name that is already taken."
+  },
+  "errorWorktreePathInUse": "Another checkout already uses that folder.",
+  "@errorWorktreePathInUse": {
+    "description": "Daemon rejected a worktree path that is already occupied."
+  },
+  "errorInvalidBranchName": "That name can't be used as a Git branch.",
+  "@errorInvalidBranchName": {
+    "description": "Daemon rejected a branch name that is not a valid Git ref."
+  },
+  "errorGitCommandFailed": "A Git command failed. The details below are Git's own output.",
+  "@errorGitCommandFailed": {
+    "description": "A Git invocation exited non-zero."
+  },
+  "errorWorkspaceNotFound": "That project is no longer registered with the daemon.",
+  "@errorWorkspaceNotFound": {
+    "description": "Daemon could not find the referenced workspace."
+  },
+  "errorWorkspaceNotGit": "That project is not a Git repository, so it has no worktrees.",
+  "@errorWorkspaceNotGit": {
+    "description": "Operation requires a Git repository."
+  },
+  "errorWorkspaceProtected": "The daemon owns that folder and manages it itself.",
+  "@errorWorkspaceProtected": {
+    "description": "Home workspace cannot be registered or removed."
+  },
+  "errorWorktreeNotFound": "That checkout is no longer registered with the daemon.",
+  "@errorWorktreeNotFound": {
+    "description": "Daemon could not find the referenced worktree."
+  },
+  "errorWorktreeArchiveBlocked": "This checkout can't be archived right now.",
+  "@errorWorktreeArchiveBlocked": {
+    "description": "Archive refused because of running sessions or local changes."
+  },
+  "errorAgentDefinitionNotFound": "That agent no longer exists. Choose another agent.",
+  "@errorAgentDefinitionNotFound": {
+    "description": "Referenced agent definition was deleted."
+  },
+  "errorAgentDefinitionUnusable": "That agent can't start a session. Choose another agent.",
+  "@errorAgentDefinitionUnusable": {
+    "description": "Referenced agent definition exists but cannot start a session."
+  },
+  "errorProtocolMismatch": "This app and the daemon speak different protocol versions. Update both to the same release.",
+  "@errorProtocolMismatch": {
+    "description": "The daemon rejected a request as unknown or malformed, which means version skew."
+  },
+  "errorInvalidProjectSettings": "The project's coder.json could not be read. Fix the file and try again.",
+  "@errorInvalidProjectSettings": {
+    "description": "A project settings file failed to parse."
+  },
+  "errorRequestTimeout": "The daemon didn't respond in time. Try again.",
+  "@errorRequestTimeout": {
+    "description": "A request exceeded the client deadline."
+  },
+  "errorInternalDaemon": "The daemon hit an unexpected problem. Copy the details below when reporting it.",
+  "@errorInternalDaemon": {
+    "description": "Unexpected daemon-side failure with a trace id in the details."
+  },
   "hostStatusOnline": "Online",
   "@hostStatusOnline": {
     "description": "Daemon runtime status."

@@ -1219,6 +1219,7 @@ class SessionComposer extends StatefulWidget {
     this.onModeToggled,
     this.header,
     this.hint,
+    this.failure,
     this.attachmentInput,
     this.contextTokens = 0,
     this.contextWindow,
@@ -1296,7 +1297,13 @@ class SessionComposer extends StatefulWidget {
   final bool enabled;
 
   /// Reason shown below the input when sending is unavailable.
+  ///
+  /// Guidance only. A failure that already happened goes to [failure]: mixing
+  /// the two made "Select a project." and a daemon error look identical.
   final String? hint;
+
+  /// Report of an operation that failed, rendered above [hint].
+  final Widget? failure;
 
   /// Rows offered for the token being completed; closed by default.
   final ComposerSuggestionsState suggestions;
@@ -1599,6 +1606,10 @@ class _SessionComposerState extends State<SessionComposer> {
                 ),
               ),
             ),
+            if (widget.failure case final failure?) ...<Widget>[
+              const SizedBox(height: TRSpacing.extraSmall),
+              failure,
+            ],
             if (widget.hint != null)
               TRText(
                 widget.hint!,

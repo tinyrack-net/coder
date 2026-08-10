@@ -1895,7 +1895,7 @@ as String,
 /// @nodoc
 mixin _$WorktreeCreateParamsDto {
 
- String get id; String get workspaceId; WorktreeCreateMode get mode; String get branchName; String? get baseBranch;
+ String get id; String get workspaceId; WorktreeCreateMode get mode; String get branchName; String? get baseBranch; WorktreeBranchNaming get branchNaming;
 /// Create a copy of WorktreeCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1908,16 +1908,16 @@ $WorktreeCreateParamsDtoCopyWith<WorktreeCreateParamsDto> get copyWith => _$Work
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.branchName, branchName) || other.branchName == branchName)&&(identical(other.baseBranch, baseBranch) || other.baseBranch == baseBranch));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.branchName, branchName) || other.branchName == branchName)&&(identical(other.baseBranch, baseBranch) || other.baseBranch == baseBranch)&&(identical(other.branchNaming, branchNaming) || other.branchNaming == branchNaming));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,mode,branchName,baseBranch);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,mode,branchName,baseBranch,branchNaming);
 
 @override
 String toString() {
-  return 'WorktreeCreateParamsDto(id: $id, workspaceId: $workspaceId, mode: $mode, branchName: $branchName, baseBranch: $baseBranch)';
+  return 'WorktreeCreateParamsDto(id: $id, workspaceId: $workspaceId, mode: $mode, branchName: $branchName, baseBranch: $baseBranch, branchNaming: $branchNaming)';
 }
 
 
@@ -1928,7 +1928,7 @@ abstract mixin class $WorktreeCreateParamsDtoCopyWith<$Res>  {
   factory $WorktreeCreateParamsDtoCopyWith(WorktreeCreateParamsDto value, $Res Function(WorktreeCreateParamsDto) _then) = _$WorktreeCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String workspaceId, WorktreeCreateMode mode, String branchName, String? baseBranch
+ String id, String workspaceId, WorktreeCreateMode mode, String branchName, String? baseBranch, WorktreeBranchNaming branchNaming
 });
 
 
@@ -1945,14 +1945,15 @@ class _$WorktreeCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorktreeCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? mode = null,Object? branchName = null,Object? baseBranch = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? mode = null,Object? branchName = null,Object? baseBranch = freezed,Object? branchNaming = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as WorktreeCreateMode,branchName: null == branchName ? _self.branchName : branchName // ignore: cast_nullable_to_non_nullable
 as String,baseBranch: freezed == baseBranch ? _self.baseBranch : baseBranch // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,branchNaming: null == branchNaming ? _self.branchNaming : branchNaming // ignore: cast_nullable_to_non_nullable
+as WorktreeBranchNaming,
   ));
 }
 
@@ -2037,10 +2038,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch,  WorktreeBranchNaming branchNaming)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WorktreeCreateParamsDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch);case _:
+return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch,_that.branchNaming);case _:
   return orElse();
 
 }
@@ -2058,10 +2059,10 @@ return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.bas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch,  WorktreeBranchNaming branchNaming)  $default,) {final _that = this;
 switch (_that) {
 case _WorktreeCreateParamsDto():
-return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch);case _:
+return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch,_that.branchNaming);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2078,10 +2079,10 @@ return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.bas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  WorktreeCreateMode mode,  String branchName,  String? baseBranch,  WorktreeBranchNaming branchNaming)?  $default,) {final _that = this;
 switch (_that) {
 case _WorktreeCreateParamsDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch);case _:
+return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.baseBranch,_that.branchNaming);case _:
   return null;
 
 }
@@ -2093,7 +2094,7 @@ return $default(_that.id,_that.workspaceId,_that.mode,_that.branchName,_that.bas
 @JsonSerializable()
 
 class _WorktreeCreateParamsDto implements WorktreeCreateParamsDto {
-  const _WorktreeCreateParamsDto({required this.id, required this.workspaceId, required this.mode, required this.branchName, this.baseBranch});
+  const _WorktreeCreateParamsDto({required this.id, required this.workspaceId, required this.mode, required this.branchName, this.baseBranch, this.branchNaming = WorktreeBranchNaming.exact});
   factory _WorktreeCreateParamsDto.fromJson(Map<String, dynamic> json) => _$WorktreeCreateParamsDtoFromJson(json);
 
 @override final  String id;
@@ -2101,6 +2102,7 @@ class _WorktreeCreateParamsDto implements WorktreeCreateParamsDto {
 @override final  WorktreeCreateMode mode;
 @override final  String branchName;
 @override final  String? baseBranch;
+@override@JsonKey() final  WorktreeBranchNaming branchNaming;
 
 /// Create a copy of WorktreeCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -2115,16 +2117,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.branchName, branchName) || other.branchName == branchName)&&(identical(other.baseBranch, baseBranch) || other.baseBranch == baseBranch));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.branchName, branchName) || other.branchName == branchName)&&(identical(other.baseBranch, baseBranch) || other.baseBranch == baseBranch)&&(identical(other.branchNaming, branchNaming) || other.branchNaming == branchNaming));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,mode,branchName,baseBranch);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,mode,branchName,baseBranch,branchNaming);
 
 @override
 String toString() {
-  return 'WorktreeCreateParamsDto(id: $id, workspaceId: $workspaceId, mode: $mode, branchName: $branchName, baseBranch: $baseBranch)';
+  return 'WorktreeCreateParamsDto(id: $id, workspaceId: $workspaceId, mode: $mode, branchName: $branchName, baseBranch: $baseBranch, branchNaming: $branchNaming)';
 }
 
 
@@ -2135,7 +2137,7 @@ abstract mixin class _$WorktreeCreateParamsDtoCopyWith<$Res> implements $Worktre
   factory _$WorktreeCreateParamsDtoCopyWith(_WorktreeCreateParamsDto value, $Res Function(_WorktreeCreateParamsDto) _then) = __$WorktreeCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String workspaceId, WorktreeCreateMode mode, String branchName, String? baseBranch
+ String id, String workspaceId, WorktreeCreateMode mode, String branchName, String? baseBranch, WorktreeBranchNaming branchNaming
 });
 
 
@@ -2152,14 +2154,15 @@ class __$WorktreeCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorktreeCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? mode = null,Object? branchName = null,Object? baseBranch = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? mode = null,Object? branchName = null,Object? baseBranch = freezed,Object? branchNaming = null,}) {
   return _then(_WorktreeCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as WorktreeCreateMode,branchName: null == branchName ? _self.branchName : branchName // ignore: cast_nullable_to_non_nullable
 as String,baseBranch: freezed == baseBranch ? _self.baseBranch : baseBranch // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,branchNaming: null == branchNaming ? _self.branchNaming : branchNaming // ignore: cast_nullable_to_non_nullable
+as WorktreeBranchNaming,
   ));
 }
 

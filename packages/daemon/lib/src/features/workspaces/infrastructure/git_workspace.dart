@@ -22,28 +22,50 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
   Future<List<GitWorktreeSnapshot>> listWorktrees(
     String repositoryRoot,
   ) async {
+    const arguments = <String>['worktree', 'list', '--porcelain'];
     final result = await _commands.run(
       'git',
-      const <String>['worktree', 'list', '--porcelain'],
+      arguments,
       workingDirectory: repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to list Git worktrees.');
+    _requireSuccess(result, arguments, repositoryRoot);
     return parseGitWorktreePorcelain(result.stdout);
   }
 
   @override
-  Future<List<GitBranchDto>> listBranches(String repositoryRoot) async {
+  Future<Set<String>> localBranchNames(String repositoryRoot) async {
+    const arguments = <String>[
+      'for-each-ref',
+      '--format=%(refname:short)',
+      'refs/heads',
+    ];
     final result = await _commands.run(
       'git',
-      const <String>[
-        'for-each-ref',
-        '--format=%(refname)%00%(refname:short)%00%(HEAD)%00%(symref:short)',
-        'refs/heads',
-        'refs/remotes',
-      ],
+      arguments,
       workingDirectory: repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to list branches.');
+    _requireSuccess(result, arguments, repositoryRoot);
+    return result.stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toSet();
+  }
+
+  @override
+  Future<List<GitBranchDto>> listBranches(String repositoryRoot) async {
+    const arguments = <String>[
+      'for-each-ref',
+      '--format=%(refname)%00%(refname:short)%00%(HEAD)%00%(symref:short)',
+      'refs/heads',
+      'refs/remotes',
+    ];
+    final result = await _commands.run(
+      'git',
+      arguments,
+      workingDirectory: repositoryRoot,
+    );
+    _requireSuccess(result, arguments, repositoryRoot);
     final checkedOut = (await listWorktrees(
       repositoryRoot,
     )).map((item) => item.branch).nonNulls.toSet();
@@ -82,12 +104,13 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
 
   @override
   Future<List<String>> listRemotes(String repositoryRoot) async {
+    const arguments = <String>['remote'];
     final result = await _commands.run(
       'git',
-      const <String>['remote'],
+      arguments,
       workingDirectory: repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to list Git remotes.');
+    _requireSuccess(result, arguments, repositoryRoot);
     return result.stdout
         .split('\n')
         .map((line) => line.trim())
@@ -124,17 +147,18 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
       arguments,
       workingDirectory: request.repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to create Git worktree.');
+    _requireSuccess(result, arguments, request.repositoryRoot);
   }
 
   @override
   Future<GitWorktreeState> inspectWorktree(String path) async {
+    const statusArguments = <String>['status', '--porcelain=v1'];
     final status = await _commands.run(
       'git',
-      const <String>['status', '--porcelain=v1'],
+      statusArguments,
       workingDirectory: path,
     );
-    _requireSuccess(status, 'Unable to inspect Git worktree.');
+    _requireSuccess(status, statusArguments, path);
     final upstream = await _commands.run(
       'git',
       const <String>['rev-parse', '--abbrev-ref', '@{upstream}'],
@@ -142,12 +166,17 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
     );
     var unpushed = 0;
     if (upstream.exitCode == 0) {
+      const countArguments = <String>[
+        'rev-list',
+        '--count',
+        '@{upstream}..HEAD',
+      ];
       final count = await _commands.run(
         'git',
-        const <String>['rev-list', '--count', '@{upstream}..HEAD'],
+        countArguments,
         workingDirectory: path,
       );
-      _requireSuccess(count, 'Unable to inspect unpushed commits.');
+      _requireSuccess(count, countArguments, path);
       unpushed = int.tryParse(count.stdout.trim()) ?? 0;
     }
     return GitWorktreeState(
@@ -162,12 +191,18 @@ final class ProcessGitWorkspaceGateway implements GitWorkspaceGateway {
     String path, {
     bool force = false,
   }) async {
+    final arguments = <String>[
+      'worktree',
+      'remove',
+      if (force) '--force',
+      path,
+    ];
     final result = await _commands.run(
       'git',
-      <String>['worktree', 'remove', if (force) '--force', path],
+      arguments,
       workingDirectory: repositoryRoot,
     );
-    _requireSuccess(result, 'Unable to remove Git worktree.');
+    _requireSuccess(result, arguments, repositoryRoot);
   }
 }
 
@@ -199,8 +234,16 @@ List<GitWorktreeSnapshot> parseGitWorktreePorcelain(String output) {
   return List<GitWorktreeSnapshot>.unmodifiable(result);
 }
 
-void _requireSuccess(CommandResult result, String message) {
-  if (result.exitCode != 0) {
-    throw StateError('$message ${result.stderr.trim()}');
-  }
+void _requireSuccess(
+  CommandResult result,
+  List<String> arguments,
+  String workingDirectory,
+) {
+  if (result.exitCode == 0) return;
+  throw GitCommandException(
+    arguments: arguments,
+    workingDirectory: workingDirectory,
+    exitCode: result.exitCode,
+    stderr: result.stderr.trim(),
+  );
 }

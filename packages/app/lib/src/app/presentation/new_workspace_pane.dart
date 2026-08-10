@@ -23,6 +23,7 @@ import 'package:app/src/features/workspace/domain/branch_defaults.dart';
 import 'package:app/src/features/workspace/domain/branch_name.dart';
 import 'package:app/src/features/workspace/presentation/widgets/directory_browser.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
+import 'package:app/src/shared/presentation/client_error_alert.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -118,7 +119,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   // Which submit step is running, so the wait is narrated instead of the
   // composer merely appearing frozen while a worktree is checked out.
   _NewWorkspaceStage _stage = _NewWorkspaceStage.creatingWorktree;
-  String? _error;
+  // Guidance and failure are tracked apart: guidance says what is still
+  // missing, a failure says what already went wrong, and rendering them
+  // through one red line made a daemon error indistinguishable from a prompt
+  // to pick a project.
+  String? _guidance;
+  CoderClientException? _failure;
 
   @override
   void dispose() {
@@ -230,6 +236,13 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         home: home,
         loading: catalogLoading || agentsLoading || connectionsLoading,
       ),
+      failure: _failure == null
+          ? null
+          : ClientErrorAlert(
+              key: const ValueKey<String>('new-workspace-error'),
+              error: _failure!,
+              title: AppLocalizations.of(context).workspaceStartFailedTitle,
+            ),
       header: _targets(
         projects: projects,
         project: project,
@@ -371,7 +384,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     required WorkspaceSelection? home,
     required bool loading,
   }) {
-    if (_error != null) return _error;
+    if (_guidance != null) return _guidance;
     if (loading) return null;
     if (project == null) {
       // A daemon configured without a user home publishes no home workspace,
@@ -384,8 +397,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     if (project.workspace.kind == WorkspaceKind.directory && worktree == null) {
       return l10n.workspaceCheckoutMissing;
     }
-    if (agent == null) return '사용 가능한 primary Agent가 없습니다.';
-    if (model == null) return '사용할 Provider와 모델을 먼저 선택하세요.';
+    if (agent == null) return l10n.composerNoPrimaryAgent;
+    if (model == null) return l10n.composerSelectProviderModel;
     return null;
   }
 
@@ -503,14 +516,16 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       _projectKey = chosen;
       _worktreeId = null;
       _baseBranch = null;
-      _error = null;
+      _guidance = null;
+      _failure = null;
     });
   }
 
   void _selectWorktree(String? chosen) {
     setState(() {
       _worktreeId = chosen;
-      _error = null;
+      _guidance = null;
+      _failure = null;
     });
   }
 
@@ -552,11 +567,11 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         _projectKey = '$hostId\u0000${result.workspace.id}';
         _worktreeId = null;
         _baseBranch = null;
-        _error = null;
+        _failure = null;
       });
     } on CoderClientException catch (error) {
       if (!mounted) return;
-      setState(() => _error = error.message);
+      setState(() => _failure = error);
     }
   }
 
@@ -574,17 +589,15 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     setState(() {
       _submitting = true;
       _stage = _NewWorkspaceStage.startingSession;
-      _error = null;
+      _guidance = null;
+      _failure = null;
     });
     try {
       if (project == null) {
         // No project was picked, so the session runs in the home checkout the
         // daemon provisioned; there is no worktree to create.
         if (home == null) {
-          setState(() {
-            _error = AppLocalizations.of(context).workspaceDaemonRequired;
-            _submitting = false;
-          });
+          _reportGuidance(AppLocalizations.of(context).workspaceDaemonRequired);
           return;
         }
         await _start(home, agent, draft, submission, seed);
@@ -593,18 +606,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       var worktreeId = worktree?.id;
       if (worktreeId == null) {
         if (project.workspace.kind != WorkspaceKind.git) {
-          setState(() {
-            _error = AppLocalizations.of(context).workspaceCheckoutMissing;
-            _submitting = false;
-          });
+          _reportGuidance(
+            AppLocalizations.of(context).workspaceCheckoutMissing,
+          );
           return;
         }
         final api = _hostApi(project.hostId);
         if (api == null) {
-          setState(() {
-            _error = AppLocalizations.of(context).workspaceDaemonRequired;
-            _submitting = false;
-          });
+          _reportGuidance(AppLocalizations.of(context).workspaceDaemonRequired);
           return;
         }
         setState(() => _stage = _NewWorkspaceStage.creatingWorktree);
@@ -614,11 +623,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           mode: WorktreeCreateMode.newBranch,
           branchName: deriveWorktreeBranchName(
             seed,
-            existingBranchNames: project.worktrees.map(
-              (item) => item.branch ?? item.name,
-            ),
+            existingBranchNames: _takenBranchNames(project),
           ),
           baseBranch: _baseBranch ?? defaultBaseBranch(_branches(project)),
+          // The name comes from a prompt, not from the user, so a collision is
+          // the daemon's to resolve. It is also the only party that can: a
+          // branch outlives the archived worktree that created it and never
+          // appears in the catalog this pane reads.
+          branchNaming: WorktreeBranchNaming.derive,
         );
         // The routed pages read the catalog, so refresh before navigating.
         await ref
@@ -627,10 +639,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         // The daemon removes a checkout whose setup failed. Surface the exact
         // hook output and keep the submission available for a corrected retry.
         if (failedWorktreeHook(created.hookRuns) != null) {
-          if (mounted) {
-            reportWorktreeHookFailure(context, created.hookRuns);
-            setState(() => _submitting = false);
-          }
+          if (mounted) reportWorktreeHookFailure(context, created.hookRuns);
           return;
         }
         worktreeId = created.worktree.id;
@@ -650,13 +659,28 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         seed,
       );
     } on CoderClientException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.message;
-        _submitting = false;
-      });
+      if (mounted) setState(() => _failure = error);
+    } finally {
+      // Every exit releases the composer. Without this a failure the typed
+      // catch does not match leaves the pane permanently unable to submit.
+      if (mounted) setState(() => _submitting = false);
     }
   }
+
+  /// Shows a still-missing precondition and releases the composer.
+  void _reportGuidance(String message) => setState(() => _guidance = message);
+
+  /// Names the derived branch must avoid on the first attempt.
+  ///
+  /// Local branches are included alongside the catalog so the optimistic name
+  /// is usually already free; the daemon stays the authority, since only it
+  /// sees branches left behind by archived checkouts.
+  Iterable<String> _takenBranchNames(NewWorkspaceProject project) => <String>[
+    ...project.worktrees.map((item) => item.branch ?? item.name),
+    ..._branches(
+      project,
+    ).where((branch) => !branch.isRemote).map((branch) => branch.name),
+  ];
 
   /// Creates the session on [selection] and hands it to the caller.
   Future<void> _start(

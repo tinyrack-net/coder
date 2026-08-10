@@ -751,6 +751,34 @@ final class CompositeAgentToolCatalog implements AgentToolCatalog {
   );
 }
 
+/// An agent definition a caller referenced could not be used.
+///
+/// Typed rather than a bare [StateError] so the session-create transport can
+/// report which agent is missing instead of collapsing into a generic internal
+/// failure the user cannot act on.
+final class AgentDefinitionLookupFailure implements Exception {
+  /// Reports a definition that no longer exists.
+  const AgentDefinitionLookupFailure.notFound(this.id)
+    : message = 'Agent definition not found: $id',
+      isMissing = true;
+
+  /// Reports a definition that exists but cannot start a session.
+  const AgentDefinitionLookupFailure.unusable(this.id, this.message)
+    : isMissing = false;
+
+  /// Identifier the caller referenced.
+  final String id;
+
+  /// Diagnostic description; clients translate the protocol code instead.
+  final String message;
+
+  /// Whether the definition is absent rather than merely unusable.
+  final bool isMissing;
+
+  @override
+  String toString() => 'AgentDefinitionLookupFailure($id): $message';
+}
+
 /// Validates domain relationships independently of filesystem mechanics.
 final class AgentDefinitionService {
   /// Creates an agent definition application service.
@@ -789,16 +817,19 @@ final class AgentDefinitionService {
   /// Returns one visible definition.
   Future<AgentDefinitionDto> get(String id) async {
     final definition = await _store.get(id);
-    if (definition == null) throw StateError('Agent definition not found: $id');
+    if (definition == null) throw AgentDefinitionLookupFailure.notFound(id);
     return _decorate(definition);
   }
 
   /// Resolves active or archived configuration for a turn snapshot.
   Future<AgentDefinitionDto> resolve(String id) async {
     final definition = await _store.resolve(id);
-    if (definition == null) throw StateError('Agent definition not found: $id');
+    if (definition == null) throw AgentDefinitionLookupFailure.notFound(id);
     if (definition.isStale && definition.contentHash.isEmpty) {
-      throw StateError('Agent definition is invalid: $id');
+      throw AgentDefinitionLookupFailure.unusable(
+        id,
+        'Agent definition is invalid: $id',
+      );
     }
     return _decorate(definition);
   }

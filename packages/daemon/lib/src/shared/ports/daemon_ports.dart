@@ -8,6 +8,73 @@ import 'package:uuid/uuid.dart';
 
 export 'package:agent/agent.dart' show Clock, SystemClock;
 
+/// Severity of a daemon diagnostic record.
+enum DaemonLogLevel {
+  /// Detail useful only while tracing a specific problem.
+  debug,
+
+  /// A normal lifecycle event.
+  info,
+
+  /// A recoverable problem the daemon handled.
+  warn,
+
+  /// A failure a maintainer needs to see.
+  error,
+}
+
+/// One structured diagnostic emitted by the daemon.
+final class DaemonLogRecord {
+  /// Creates a diagnostic record.
+  const DaemonLogRecord({
+    required this.level,
+    required this.event,
+    required this.message,
+    this.error,
+    this.stackTrace,
+    this.fields = const <String, Object?>{},
+  });
+
+  /// Severity of this record.
+  final DaemonLogLevel level;
+
+  /// Stable dotted event name, such as `rpc.internal_error`.
+  final String event;
+
+  /// Human-readable summary.
+  final String message;
+
+  /// Originating error, when the record reports a failure.
+  final Object? error;
+
+  /// Stack trace captured with [error].
+  final StackTrace? stackTrace;
+
+  /// Structured context, such as the RPC method and trace id.
+  final Map<String, Object?> fields;
+}
+
+/// Destination for daemon diagnostics.
+///
+/// A port rather than a direct `print`, because on desktop the daemon runs in
+/// an isolate inside the Flutter process where nothing captures stdout, and
+/// because tests assert on what was recorded.
+abstract interface class DaemonLogSink {
+  /// Records one diagnostic.
+  void write(DaemonLogRecord record);
+}
+
+/// Discards every record.
+///
+/// Used by tests and embedders that install their own diagnostics.
+final class NullDaemonLogSink implements DaemonLogSink {
+  /// Creates a discarding sink.
+  const NullDaemonLogSink();
+
+  @override
+  void write(DaemonLogRecord record) {}
+}
+
 /// Public API exposed by this library.
 abstract interface class IdGenerator {
   /// The generate public API member.
@@ -208,6 +275,39 @@ final class GitWorktreeCreateRequest {
   final String? baseBranch;
 }
 
+/// A Git invocation that exited non-zero.
+///
+/// The adapter raises this instead of a bare [StateError] so the transport can
+/// report the real command and its stderr; without it the only surviving
+/// diagnostic is a generic internal failure.
+final class GitCommandException implements Exception {
+  /// Creates a failed Git invocation report.
+  const GitCommandException({
+    required this.arguments,
+    required this.workingDirectory,
+    required this.exitCode,
+    required this.stderr,
+  });
+
+  /// Arguments passed to `git`, without the executable itself.
+  final List<String> arguments;
+
+  /// Directory the command ran in.
+  final String workingDirectory;
+
+  /// Non-zero exit code Git reported.
+  final int exitCode;
+
+  /// Trimmed standard error, which is where Git explains itself.
+  final String stderr;
+
+  /// The invocation as a copy-pasteable command line.
+  String get commandLine => 'git ${arguments.join(' ')}';
+
+  @override
+  String toString() => 'GitCommandException($commandLine): exit $exitCode';
+}
+
 /// Git operations used by workspace lifecycle logic.
 abstract interface class GitWorkspaceGateway {
   /// Resolves a repository root, or null for a non-Git directory.
@@ -218,6 +318,13 @@ abstract interface class GitWorkspaceGateway {
 
   /// Lists local and remote-tracking branches with checkout state.
   Future<List<GitBranchDto>> listBranches(String repositoryRoot);
+
+  /// Lists the names of every local branch.
+  ///
+  /// Separate from [listBranches] because collision checks run on the create
+  /// path and do not need the checkout state that method resolves with a
+  /// second `git worktree list` call.
+  Future<Set<String>> localBranchNames(String repositoryRoot);
 
   /// Lists configured remote names.
   Future<List<String>> listRemotes(String repositoryRoot);
