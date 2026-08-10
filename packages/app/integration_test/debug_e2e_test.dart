@@ -935,6 +935,7 @@ void main() {
           return true;
         },
         'the spawned subagent to complete',
+        budget: e2eTurnBudget,
       );
       expect(spawnedChild.taskName, 'review_task');
       expect(spawnedChild.agentPath, '/root/review_task');
