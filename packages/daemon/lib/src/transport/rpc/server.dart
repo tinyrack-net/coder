@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:daemon/src/bootstrap/config.dart';
 import 'package:daemon/src/transport/http/attachment_binding.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
+import 'package:daemon/src/transport/rpc/diagnostics.dart';
 import 'package:daemon/src/transport/rpc/session_host.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:protocol/protocol.dart';
@@ -22,6 +23,7 @@ final class DaemonRpcServer implements RpcSessionHost {
     required this.token,
     required Stream<OutboundNotification> events,
     this.allowedOrigins = defaultAllowedOrigins,
+    this.diagnostics = const StderrRpcDiagnostics(),
   }) {
     _eventSubscription = events.listen(_broadcast);
   }
@@ -40,6 +42,9 @@ final class DaemonRpcServer implements RpcSessionHost {
 
   /// Browser origins permitted to call this daemon.
   final Set<String> allowedOrigins;
+
+  /// Sink for errors this boundary replaces with an opaque client failure.
+  final RpcDiagnostics diagnostics;
 
   final Set<_ClientSession> _sessions = <_ClientSession>{};
   late final StreamSubscription<OutboundNotification> _eventSubscription;
@@ -123,6 +128,7 @@ final class DaemonRpcServer implements RpcSessionHost {
       bindings: bindings,
       serverInfo: serverInfo,
       relayDeviceId: relayDeviceId,
+      diagnostics: diagnostics,
       onClosed: () {},
     );
     session.onClosed = () => _sessions.remove(session);
@@ -185,6 +191,7 @@ final class _ClientSession {
     required this.bindings,
     required this.serverInfo,
     required this.relayDeviceId,
+    required this.diagnostics,
     required this.onClosed,
   });
 
@@ -192,6 +199,7 @@ final class _ClientSession {
   final RpcBindingRegistry bindings;
   final ServerInfoDto serverInfo;
   final String? relayDeviceId;
+  final RpcDiagnostics diagnostics;
   final RpcConnectionContext context = RpcConnectionContext();
   void Function() onClosed;
   late final json_rpc.Peer _peer;
@@ -228,7 +236,12 @@ final class _ClientSession {
         'Invalid handshake parameters.',
         data: const RpcFailureDto(code: 'invalid_params').toJson(),
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      diagnostics.unhandledError(
+        systemHelloProcedure.name,
+        error,
+        stackTrace,
+      );
       throw json_rpc.RpcException(
         1003,
         'Internal daemon error.',
@@ -284,7 +297,10 @@ final class _ClientSession {
         'Invalid request parameters.',
         data: const RpcFailureDto(code: 'invalid_params').toJson(),
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      // The client must not see the cause, but discarding it leaves an
+      // `internal_error` that names neither the method nor the failure.
+      diagnostics.unhandledError(method, error, stackTrace);
       throw json_rpc.RpcException(
         1003,
         'Internal daemon error.',
