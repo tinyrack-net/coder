@@ -6,6 +6,7 @@ import 'package:agent/agent.dart';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
+import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
@@ -1150,8 +1151,14 @@ void main() {
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Create result.txt');
-      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
-      await tester.tap(find.text('승인'));
+      final patchApproval = _approvalForCall('patch-call');
+      await pumpUntil(tester, patchApproval);
+      await tester.tap(
+        find.descendant(
+          of: patchApproval,
+          matching: find.widgetWithText(TRButton, '승인'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('Created result.txt', findRichText: true),
@@ -1297,8 +1304,14 @@ void main() {
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Reject result.txt');
-      await pumpUntil(tester, find.text('승인 필요 · apply_patch'));
-      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      final rejectedPatchApproval = _approvalForCall('reject-patch-call');
+      await pumpUntil(tester, rejectedPatchApproval);
+      await tester.tap(
+        find.descendant(
+          of: rejectedPatchApproval,
+          matching: find.widgetWithText(TRButton, '거부'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('Rejected safely', findRichText: true),
@@ -1316,24 +1329,36 @@ void main() {
         contains('mcp__e2e__echo'),
       );
       await _submitComposerPrompt(tester, composer, send, 'MCP echo');
+      final mcpApproval = _approvalForCall('mcp-call');
       await _pumpUntilWithSessionDiagnostics(
         tester,
-        find.text('승인 필요 · mcp__e2e__echo'),
+        mcpApproval,
         setupClient,
       );
-      await tester.tap(find.widgetWithText(TRButton, '승인'));
+      await tester.tap(
+        find.descendant(
+          of: mcpApproval,
+          matching: find.widgetWithText(TRButton, '승인'),
+        ),
+      );
       await pumpUntil(
         tester,
         find.text('MCP completed', findRichText: true),
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Reject MCP');
+      final rejectedMcpApproval = _approvalForCall('reject-mcp-call');
       await _pumpUntilWithSessionDiagnostics(
         tester,
-        find.text('승인 필요 · mcp__e2e__echo'),
+        rejectedMcpApproval,
         setupClient,
       );
-      await tester.tap(find.widgetWithText(TRButton, '거부'));
+      await tester.tap(
+        find.descendant(
+          of: rejectedMcpApproval,
+          matching: find.widgetWithText(TRButton, '거부'),
+        ),
+      );
       await pumpUntil(tester, find.text('MCP rejected', findRichText: true));
 
       await setupClient.mcp.removeMcpServer('e2e');
@@ -2342,6 +2367,14 @@ Finder _trTextInput(String label) => find.descendant(
     description: 'TRTextField labelled "$label"',
   ),
   matching: find.byType(EditableText),
+);
+
+Finder _approvalForCall(String toolCallId) => find.byWidgetPredicate(
+  (widget) =>
+      widget is ApprovalCard &&
+      (widget.interaction?.approval ?? widget.approval)?.toolCallId ==
+          toolCallId,
+  description: 'approval card for tool call $toolCallId',
 );
 
 Future<void> _initializeGitRepository(String path) async {
