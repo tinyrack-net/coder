@@ -130,18 +130,30 @@ class WorkspaceSidebar extends ConsumerWidget {
     // Connected daemons whose catalog has not arrived yet: their sections are
     // still loading, which must never read as "no workspaces".
     final pendingHosts = catalog.value?.hasPendingHosts ?? false;
-    final selection = selected;
-    if (selection != null) {
-      final selectedGroup = (
-        hostId: selection.hostId,
-        workspaceId: selection.workspaceId,
-        worktreeId: null,
-      );
-      if (!treeController.expanded.contains(selectedGroup)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          treeController.setExpanded(selectedGroup, true);
-        });
-      }
+    final groupsToExpand = <WorkspaceNavValue>{
+      if (entries.length == 1)
+        (
+          hostId: entries.single.hostId,
+          workspaceId: entries.single.workspace.id,
+          worktreeId: null,
+        ),
+      if (selected case final selection?)
+        (
+          hostId: selection.hostId,
+          workspaceId: selection.workspaceId,
+          worktreeId: null,
+        ),
+    };
+    final collapsedTargets = groupsToExpand
+        .where((group) => !treeController.expanded.contains(group))
+        .toList(growable: false);
+    if (collapsedTargets.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        for (final group in collapsedTargets) {
+          treeController.setExpanded(group, true);
+        }
+      });
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
