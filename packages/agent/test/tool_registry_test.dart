@@ -127,38 +127,42 @@ void main() {
     expect(turn.promptFragments.single, contains('Nested tool surface'));
   });
 
-  test('the Lua surface follows the model, not the selected capabilities', () {
-    // The shipped agent definitions name no Lua capability, because there is
-    // none to name: the surface is hidden from the catalog and switched on by
-    // the model's declared tool surface. Selecting nothing must still yield
-    // exec/wait over the direct tools as nested ones.
-    final luaRegistry = AgentToolRegistry(<AgentToolProvider>[
-      const ReadFileToolProvider(),
-      const LuaCodeModeToolProvider(),
-    ]);
+  test(
+    'the Lua surface follows the model, not the selected capabilities',
+    () {
+      // The shipped agent definitions name no Lua capability, because there is
+      // none to name: the surface is hidden from the catalog and switched on by
+      // the model's declared tool surface. Selecting nothing must still yield
+      // exec/wait over the direct tools as nested ones.
+      final luaRegistry = AgentToolRegistry(<AgentToolProvider>[
+        const ReadFileToolProvider(),
+        const LuaCodeModeToolProvider(),
+      ]);
 
-    final turn = luaRegistry.build(
-      _scope(
-        selected: luaRegistry.resolveIds(const <String>[]).toSet(),
-        luaCodeModeHost: _UnusedLuaHost(),
-        toolSurfaceMode: AgentToolSurfaceMode.luaCode,
-      ),
-    );
+      final turn = luaRegistry.build(
+        _scope(
+          selected: luaRegistry.resolveIds(const <String>[]).toSet(),
+          luaCodeModeHost: _UnusedLuaHost(),
+          toolSurfaceMode: AgentToolSurfaceMode.luaCode,
+        ),
+      );
 
-    expect(turn.tools.map((tool) => tool.name), <String>['exec', 'wait']);
-    expect(turn.nestedTools.map((tool) => tool.name), <String>['read_file']);
+      expect(turn.tools.map((tool) => tool.name), <String>['exec', 'wait']);
+      expect(turn.nestedTools.map((tool) => tool.name), <String>['read_file']);
 
-    // And the same registry under the direct surface leaves the tools alone,
-    // so nothing an agent lists can turn the surface on or off.
-    final direct = luaRegistry.build(
-      _scope(
-        selected: luaRegistry.resolveIds(const <String>[]).toSet(),
-        luaCodeModeHost: _UnusedLuaHost(),
-      ),
-    );
-    expect(direct.tools.map((tool) => tool.name), <String>['read_file']);
-    expect(direct.nestedTools, isEmpty);
-  }, tags: const <String>['feature_test__lua_tool_orchestration__unit']);
+      // And the same registry under the direct surface leaves the tools alone,
+      // so nothing an agent lists can turn the surface on or off.
+      final direct = luaRegistry.build(
+        _scope(
+          selected: luaRegistry.resolveIds(const <String>[]).toSet(),
+          luaCodeModeHost: _UnusedLuaHost(),
+        ),
+      );
+      expect(direct.tools.map((tool) => tool.name), <String>['read_file']);
+      expect(direct.nestedTools, isEmpty);
+    },
+    tags: const <String>['feature_test__lua_tool_orchestration__unit'],
+  );
 
   test('an unselected capability builds nothing and shapes nothing', () {
     final scope = _scope(
