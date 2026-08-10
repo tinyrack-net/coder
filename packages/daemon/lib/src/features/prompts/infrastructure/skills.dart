@@ -224,7 +224,9 @@ final class NativeSkillFiles implements SkillFiles {
     final temporary = File('${file.path}.$pid.tmp');
     try {
       await temporary.writeAsString(source, flush: true);
-      if (Platform.isWindows && file.existsSync()) file.deleteSync();
+      // `rename` replaces the destination on its own; unlinking it first
+      // throws while anything else holds the file and loses the skill outright
+      // if the process stops between the two calls.
       await temporary.rename(file.path);
       if (createIfMissing) await _restrict(file.path, '600');
     } finally {

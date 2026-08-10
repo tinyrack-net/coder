@@ -168,7 +168,10 @@ class CredentialStore implements CredentialRepository {
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', temporary.path]);
     }
-    if (Platform.isWindows && file.existsSync()) await file.delete();
+    // `rename` removes an existing destination itself. Unlinking it first
+    // fails while anything else holds the file — on Windows the scanner that
+    // reads every newly created file is enough — and leaves the credentials
+    // gone rather than replaced if the process stops in between.
     await temporary.rename(file.path);
     if (!Platform.isWindows) {
       await Process.run('chmod', <String>['600', file.path]);

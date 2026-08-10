@@ -124,8 +124,9 @@ final class FileMcpConfigStore implements McpConfigStore {
     final temporary = File('$path.tmp');
     await temporary.writeAsString('$encoded\n', flush: true);
     await _protect(temporary.path);
-    final file = File(path);
-    if (Platform.isWindows && file.existsSync()) await file.delete();
+    // `rename` replaces the destination on its own; unlinking it first throws
+    // while anything else holds the file and loses the configuration outright
+    // if the process stops between the two calls.
     await temporary.rename(path);
     await _protect(path);
   }

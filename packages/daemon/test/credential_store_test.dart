@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/providers/infrastructure/credential_store.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -179,6 +180,47 @@ void main() {
     await expectLater(
       CredentialStore(directory.path).load(),
       throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('a rewrite leaves the credentials file in place throughout', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'coder-credential-rewrite-test-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final store = CredentialStore(directory.path);
+    final file = File(p.join(directory.path, 'secrets.json'));
+
+    // A daemon writes twice before it finishes starting — a token, then a
+    // relay key — and every provider change writes again. None of those may
+    // reach the disk by way of a moment where the file is missing: a process
+    // that stops there has destroyed the credentials rather than updated
+    // them, and on Windows the write throws outright if anything still holds
+    // the file it is about to unlink.
+    await store.setDaemonToken('first-token');
+    for (var attempt = 0; attempt < 20; attempt += 1) {
+      await store.setCredential(
+        'openai',
+        ApiKeyCredential('api-secret-$attempt'),
+      );
+      expect(file.existsSync(), isTrue);
+    }
+
+    final reloaded = CredentialStore(directory.path);
+    await reloaded.load();
+    expect(reloaded.bearerToken, 'first-token');
+    expect(
+      reloaded.credential('openai'),
+      isA<ApiKeyCredential>().having(
+        (credential) => credential.key,
+        'key',
+        'api-secret-19',
+      ),
+    );
+    expect(
+      File('${file.path}.tmp').existsSync(),
+      isFalse,
+      reason: 'the staging file is renamed away, not left behind',
     );
   });
 

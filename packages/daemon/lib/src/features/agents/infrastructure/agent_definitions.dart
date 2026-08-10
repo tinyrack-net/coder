@@ -217,7 +217,9 @@ final class NativeAgentDefinitionFiles implements AgentDefinitionFiles {
     try {
       await temporary.writeAsString(source, flush: true);
       await _restrictFile(temporary);
-      if (Platform.isWindows && file.existsSync()) file.deleteSync();
+      // `rename` replaces the destination on its own; unlinking it first
+      // throws while anything else holds the file and loses the definition
+      // outright if the process stops between the two calls.
       await temporary.rename(file.path);
       await _restrictFile(file);
     } finally {

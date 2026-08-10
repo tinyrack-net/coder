@@ -84,7 +84,9 @@ final class FileProjectSettingsStore implements ProjectSettingsStore {
       '${encoder.convert(document)}\n',
       flush: true,
     );
-    if (Platform.isWindows && file.existsSync()) await file.delete();
+    // `rename` replaces the destination on its own; unlinking it first throws
+    // while anything else holds the file and loses the settings outright if
+    // the process stops between the two calls.
     await temporary.rename(file.path);
   }
 
