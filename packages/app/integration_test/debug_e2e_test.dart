@@ -758,17 +758,13 @@ void main() {
       final coderDefinition = await setupClient.agents.getAgentDefinition(
         'coder',
       );
-      // The remaining turn fixtures invoke individual tools directly. Keep
-      // the Lua surface out of them so each scenario exercises its named
-      // capability rather than the nested orchestration path.
+      // The remaining turn fixtures invoke individual tools directly, so they
+      // need the MCP echo capability on top of the shipped set. The Lua
+      // surface stays out of them because these models declare the direct
+      // tool surface, not because of anything listed here.
       await setupClient.agents.updateAgentDefinition(
         coderDefinition.copyWith(
-          toolIds: <String>[
-            ...coderDefinition.toolIds.where(
-              (id) => id != 'lua_code_mode',
-            ),
-            'mcp__e2e__echo',
-          ],
+          toolIds: <String>[...coderDefinition.toolIds, 'mcp__e2e__echo'],
         ),
         expectedContentHash: coderDefinition.contentHash,
       );
