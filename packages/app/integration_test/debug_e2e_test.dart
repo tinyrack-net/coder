@@ -735,6 +735,11 @@ void main() {
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
       await tester.ensureVisible(deleteServer);
       await tester.pumpAndSettle();
+      // The save reported itself over the bottom-trailing corner, which is
+      // where this button sits. Waiting the report out is what a user does
+      // before reaching underneath it, and it doubles as proof that a toast
+      // gives the surface back on its own.
+      await pumpUntilGone(tester, find.text('저장했습니다.'));
       await tester.tap(deleteServer);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
