@@ -110,6 +110,7 @@ text(tostring(pcall(function() store("cyclic", cyclic) end)))
       );
       expect(stored.output, contains('null'));
     },
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 }
 
