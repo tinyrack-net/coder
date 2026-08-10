@@ -25,7 +25,11 @@ final class UuidIdGenerator implements IdGenerator {
 
 /// Public API exposed by this library.
 abstract interface class WorkspaceCanonicalizer {
-  /// The canonicalizeExistingDirectory public API member.
+  /// Resolves [path] to its real directory.
+  ///
+  /// Throws a [FormatException], and nothing else, when the directory cannot
+  /// be resolved. Callers live in the application layer and cannot name a
+  /// `dart:io` failure, so every host error arrives as that one type.
   String canonicalizeExistingDirectory(String path);
 }
 
@@ -40,7 +44,15 @@ final class IoWorkspaceCanonicalizer implements WorkspaceCanonicalizer {
     if (!directory.existsSync()) {
       throw const FormatException('Workspace directory not found.');
     }
-    return directory.resolveSymbolicLinksSync();
+    try {
+      return directory.resolveSymbolicLinksSync();
+    } on FileSystemException catch (error) {
+      // A directory can vanish or turn unreadable between the check and the
+      // resolve, and a broken link resolves to nothing at all.
+      throw FormatException(
+        'Workspace directory not resolvable: ${error.message}',
+      );
+    }
   }
 }
 

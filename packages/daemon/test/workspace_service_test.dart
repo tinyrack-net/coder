@@ -6,6 +6,7 @@ import 'package:daemon/src/features/workspaces/infrastructure/workspace_service.
 import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:drift/native.dart';
+import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -102,6 +103,65 @@ branch refs/heads/feature/settings
       'feature_test__workspace_registration__unit',
       'feature_test__worktree_lifecycle__unit',
     ],
+  );
+
+  test(
+    'a managed worktree keeps one identity when Git resolves its real path',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      // The managed root is reachable under two spellings, as it is through a
+      // Windows short name or a symlinked parent. Git always answers with the
+      // resolved one.
+      final paths = _FakeWorkspacePaths()
+        ..canonicalPrefixes['/state/worktrees'] = '/real/worktrees';
+      final git = _FakeGitGateway()
+        ..reportedPrefixes['/state/worktrees'] = '/real/worktrees';
+      final service = WorkspaceOperations(
+        database.workspaceDao,
+        database.worktreeDao,
+        database.sessionDao,
+        paths,
+        git,
+        _FixedClock(),
+        '/state/worktrees',
+        FakeFileIndexGateway(),
+      );
+
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      final managed = await service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-1',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'topic',
+          baseBranch: 'main',
+        ),
+      );
+      expect(p.isWithin('/real/worktrees', managed.worktree.path), isTrue);
+
+      // Re-reading the catalog re-reads Git, which is where a second spelling
+      // used to archive the managed row and rediscover it as an external one.
+      final catalog = await service.catalog();
+      final owned = catalog.worktrees
+          .where((worktree) => worktree.branch == 'topic')
+          .toList(growable: false);
+      expect(owned.map((worktree) => worktree.id), <String>['managed-1']);
+      expect(owned.single.kind, WorktreeKind.managed);
+      expect(owned.single.isCoderOwned, isTrue);
+      expect(owned.single.head, 'created-head');
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
   );
 
   test(
@@ -1241,6 +1301,13 @@ CommandResult _result({
   String stderr = '',
 }) => CommandResult(exitCode: exitCode, stdout: stdout, stderr: stderr);
 
+/// Respells [path] under [to] when it names [from] or something inside it.
+String _rewritePrefix(String path, String from, String to) {
+  if (p.equals(path, from)) return to;
+  if (!p.isWithin(from, path)) return path;
+  return p.join(to, p.relative(path, from: from));
+}
+
 final class _CommandInvocation {
   const _CommandInvocation({
     required this.executable,
@@ -1286,11 +1353,29 @@ final class _FixedClock implements Clock {
 final class _FakeWorkspacePaths implements WorkspacePathGateway {
   ({String query, int limit})? lastSuggestion;
 
-  @override
-  String canonicalizeExistingDirectory(String path) => path;
+  /// Directories the host resolves to a different real path.
+  ///
+  /// Mirrors a Windows short (8.3) name or a symlinked parent, where the path
+  /// the daemon builds and the path Git reports name the same directory in two
+  /// different spellings.
+  final Map<String, String> canonicalPrefixes = <String, String>{};
+
+  /// Directories created through this gateway, in call order.
+  final List<String> createdDirectories = <String>[];
 
   @override
-  Future<void> createDirectory(String path) async {}
+  String canonicalizeExistingDirectory(String path) {
+    for (final entry in canonicalPrefixes.entries) {
+      final resolved = _rewritePrefix(path, entry.key, entry.value);
+      if (resolved != path) return resolved;
+    }
+    return path;
+  }
+
+  @override
+  Future<void> createDirectory(String path) async {
+    createdDirectories.add(path);
+  }
 
   @override
   Future<List<DirectorySuggestionDto>> suggest(String query, int limit) async {
@@ -1407,12 +1492,22 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
     return fetchSucceeds;
   }
 
+  /// Directories this Git reports under a different real path than requested.
+  ///
+  /// `git worktree list` always prints the resolved directory, so a checkout
+  /// created under a short or symlinked path comes back spelled differently.
+  final Map<String, String> reportedPrefixes = <String, String>{};
+
   @override
   Future<void> createWorktree(GitWorktreeCreateRequest request) async {
     created.add(request);
+    var reported = request.path;
+    for (final entry in reportedPrefixes.entries) {
+      reported = _rewritePrefix(reported, entry.key, entry.value);
+    }
     snapshots.add(
       GitWorktreeSnapshot(
-        path: request.path,
+        path: reported,
         branch: request.branchName,
         head: 'created-head',
       ),

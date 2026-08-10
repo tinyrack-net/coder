@@ -45,7 +45,7 @@ final class WorkspaceOperations {
       if (workspace.kind != WorkspaceKind.git) continue;
       await _syncGitSnapshots(
         workspace,
-        await _git.listWorktrees(workspace.rootPath),
+        await _listWorktrees(workspace.rootPath),
       );
     }
     return WorkspaceCatalogDto(
@@ -151,7 +151,7 @@ final class WorkspaceOperations {
       );
     }
 
-    final snapshots = await _git.listWorktrees(discoveredRoot);
+    final snapshots = await _listWorktrees(discoveredRoot);
     final repositoryRoot = snapshots.isEmpty
         ? discoveredRoot
         : snapshots.first.path;
@@ -185,7 +185,7 @@ final class WorkspaceOperations {
     if (workspace.kind == WorkspaceKind.git) {
       await _syncGitSnapshots(
         workspace,
-        await _git.listWorktrees(workspace.rootPath),
+        await _listWorktrees(workspace.rootPath),
       );
     }
     return catalog();
@@ -285,8 +285,14 @@ final class WorkspaceOperations {
         .convert(utf8.encode(workspace.rootPath))
         .toString()
         .substring(0, 12);
+    // Build the checkout under the resolved managed root. Git answers every
+    // later `worktree list` with the real directory, so a root reachable
+    // through a Windows short name or a symlink would otherwise store a path
+    // no snapshot ever matches, and the worktree would be archived and
+    // rediscovered as a foreign one on the next catalog read.
+    await _paths.createDirectory(_managedWorktreeRoot);
     final checkoutPath = p.join(
-      _managedWorktreeRoot,
+      _paths.canonicalizeExistingDirectory(_managedWorktreeRoot),
       repositoryHash,
       branch,
     );
@@ -310,9 +316,9 @@ final class WorkspaceOperations {
           baseBranch: request.baseBranch,
         ),
       );
-      final snapshots = await _git.listWorktrees(workspace.rootPath);
+      final snapshots = await _listWorktrees(workspace.rootPath);
       final snapshot = snapshots
-          .where((item) => item.path == checkoutPath)
+          .where((item) => p.equals(item.path, checkoutPath))
           .firstOrNull;
       worktree = await _worktrees.upsert(
         WorktreeDto(
@@ -469,6 +475,38 @@ final class WorkspaceOperations {
       if (result.exitCode != 0) break;
     }
     return runs;
+  }
+
+  /// Reads Git worktrees with every path resolved to its real directory.
+  ///
+  /// Git and the daemon can spell the same directory differently: Git prints
+  /// the resolved path with forward slashes, while a stored path keeps the host
+  /// separator and whatever short or symlinked prefix it was built from.
+  /// Resolving here gives the whole service one spelling to compare and store.
+  Future<List<GitWorktreeSnapshot>> _listWorktrees(
+    String repositoryRoot,
+  ) async {
+    final snapshots = await _git.listWorktrees(repositoryRoot);
+    return <GitWorktreeSnapshot>[
+      for (final snapshot in snapshots)
+        GitWorktreeSnapshot(
+          path: _resolveExistingPath(snapshot.path),
+          branch: snapshot.branch,
+          head: snapshot.head,
+        ),
+    ];
+  }
+
+  /// Resolves [path] when it still exists, and normalizes it when it does not.
+  ///
+  /// Git lists prunable worktrees whose directory is already gone, and those
+  /// must stay in the snapshot so the catalog can archive them.
+  String _resolveExistingPath(String path) {
+    try {
+      return _paths.canonicalizeExistingDirectory(path);
+    } on FormatException {
+      return p.normalize(path);
+    }
   }
 
   Future<List<WorktreeDto>> _upsertGitSnapshots(

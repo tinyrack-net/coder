@@ -46,6 +46,25 @@ void main() {
     );
   });
 
+  test('a directory lost mid-resolve still fails as a FormatException', () {
+    // The caller is application code and cannot name a dart:io failure, so the
+    // adapter owes it exactly one exception type. A path that passes the
+    // existence check and then cannot be resolved is the realistic race; a
+    // dangling link reproduces it without one.
+    final root = Directory.systemTemp.createTempSync('coder-path-race-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final target = Directory(p.join(root.path, 'target'))..createSync();
+    final link = Link(p.join(root.path, 'link'))..createSync(target.path);
+    target.deleteSync();
+
+    expect(
+      () => const IoWorkspaceCanonicalizer().canonicalizeExistingDirectory(
+        link.path,
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('system adapters produce UTC time and unique UUID identifiers', () {
     expect(const SystemClock().nowUtc().isUtc, isTrue);
     final first = const UuidIdGenerator().generate();
