@@ -2650,22 +2650,23 @@ final class _PatchProvider implements ModelProvider {
   ) async* {
     if (_round == 0) {
       _round += 1;
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch = '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.function(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -3230,22 +3231,23 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Create result.txt' && !hasPatchResult) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/result.txt\n@@ -0,0 +1,1 @@\n+done\n',
-      };
-      yield const ModelFunctionCall(
+      const patch = '*** Begin Patch\n'
+          '*** Add File: result.txt\n'
+          '+done\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.function(
+            ConversationToolCall.freeform(
               callId: 'patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
@@ -3253,22 +3255,23 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Reject result.txt' && !hasRejectedPatchResult) {
-      const arguments = <String, dynamic>{
-        'patch': '--- /dev/null\n+++ b/rejected.txt\n@@ -0,0 +1,1 @@\n+nope\n',
-      };
-      yield const ModelFunctionCall(
+      const patch = '*** Begin Patch\n'
+          '*** Add File: rejected.txt\n'
+          '+nope\n'
+          '*** End Patch';
+      yield const ModelFreeformCall(
         callId: 'reject-patch-call',
         name: 'apply_patch',
-        arguments: arguments,
+        rawInput: patch,
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.function(
+            ConversationToolCall.freeform(
               callId: 'reject-patch-call',
               name: 'apply_patch',
-              arguments: arguments,
+              input: patch,
             ),
           ],
         ),
