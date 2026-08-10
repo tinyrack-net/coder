@@ -1138,7 +1138,7 @@ void main() {
         matching: find.byType(TRChatToolDisclosure),
       );
       expect(failedToolDisclosure, findsOneWidget);
-      await tester.tap(failedToolDisclosure);
+      await tester.tap(find.text('실패', findRichText: true).last);
       await tester.pumpAndSettle();
       await pumpUntil(
         tester,

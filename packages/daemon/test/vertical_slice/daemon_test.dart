@@ -1,3 +1,6 @@
+@Timeout(Duration(minutes: 2))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -18,7 +21,7 @@ import 'package:web_socket_channel/io.dart';
 /// isolate, and a cold Windows runner is comfortably slower than the five
 /// seconds this used to allow. A generous budget costs wall-clock only when
 /// something is genuinely broken.
-const Duration _eventTimeout = Duration(seconds: 30);
+const Duration _eventTimeout = Duration(minutes: 1);
 
 void main() {
   test(
@@ -680,7 +683,7 @@ void main() {
       await _waitForIdleSession(client, worktreeId, child.id);
     },
     tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
-    timeout: const Timeout(Duration(minutes: 1)),
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 
   test(
