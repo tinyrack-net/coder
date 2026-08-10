@@ -924,34 +924,91 @@ Map<String, dynamic> _$TerminalIdParamsDtoToJson(
   _TerminalIdParamsDto instance,
 ) => <String, dynamic>{'terminalId': instance.terminalId};
 
+_TerminalViewportDto _$TerminalViewportDtoFromJson(Map<String, dynamic> json) =>
+    _TerminalViewportDto(
+      columns: (json['columns'] as num).toInt(),
+      rows: (json['rows'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$TerminalViewportDtoToJson(
+  _TerminalViewportDto instance,
+) => <String, dynamic>{'columns': instance.columns, 'rows': instance.rows};
+
 _TerminalAttachParamsDto _$TerminalAttachParamsDtoFromJson(
   Map<String, dynamic> json,
 ) => _TerminalAttachParamsDto(
   terminalId: json['terminalId'] as String,
+  mode: $enumDecode(_$TerminalRestoreModeEnumMap, json['mode']),
   afterSequence: (json['afterSequence'] as num?)?.toInt() ?? 0,
+  scrollbackLines:
+      (json['scrollbackLines'] as num?)?.toInt() ??
+      terminalRestoreScrollbackLines,
+  viewport: json['viewport'] == null
+      ? null
+      : TerminalViewportDto.fromJson(json['viewport'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TerminalAttachParamsDtoToJson(
   _TerminalAttachParamsDto instance,
 ) => <String, dynamic>{
   'terminalId': instance.terminalId,
+  'mode': _$TerminalRestoreModeEnumMap[instance.mode]!,
   'afterSequence': instance.afterSequence,
+  'scrollbackLines': instance.scrollbackLines,
+  'viewport': instance.viewport,
+};
+
+const _$TerminalRestoreModeEnumMap = {
+  TerminalRestoreMode.resume: 'resume',
+  TerminalRestoreMode.snapshot: 'snapshot',
+};
+
+TerminalDeltaRestoreDto _$TerminalDeltaRestoreDtoFromJson(
+  Map<String, dynamic> json,
+) => TerminalDeltaRestoreDto(
+  afterSequence: (json['afterSequence'] as num).toInt(),
+  chunks: (json['chunks'] as List<dynamic>)
+      .map((e) => TerminalOutputDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$TerminalDeltaRestoreDtoToJson(
+  TerminalDeltaRestoreDto instance,
+) => <String, dynamic>{
+  'afterSequence': instance.afterSequence,
+  'chunks': instance.chunks,
+  'type': instance.$type,
+};
+
+TerminalSnapshotRestoreDto _$TerminalSnapshotRestoreDtoFromJson(
+  Map<String, dynamic> json,
+) => TerminalSnapshotRestoreDto(
+  throughSequence: (json['throughSequence'] as num).toInt(),
+  ansi: json['ansi'] as String,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$TerminalSnapshotRestoreDtoToJson(
+  TerminalSnapshotRestoreDto instance,
+) => <String, dynamic>{
+  'throughSequence': instance.throughSequence,
+  'ansi': instance.ansi,
+  'type': instance.$type,
 };
 
 _TerminalAttachResultDto _$TerminalAttachResultDtoFromJson(
   Map<String, dynamic> json,
 ) => _TerminalAttachResultDto(
   terminal: TerminalDto.fromJson(json['terminal'] as Map<String, dynamic>),
-  replay: (json['replay'] as List<dynamic>)
-      .map((e) => TerminalOutputDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  restore: TerminalRestoreDto.fromJson(json['restore'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TerminalAttachResultDtoToJson(
   _TerminalAttachResultDto instance,
 ) => <String, dynamic>{
   'terminal': instance.terminal,
-  'replay': instance.replay,
+  'restore': instance.restore,
 };
 
 _TerminalResultDto _$TerminalResultDtoFromJson(Map<String, dynamic> json) =>

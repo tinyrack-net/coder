@@ -189,7 +189,10 @@ void main() {
         columns: 80,
         rows: 24,
       );
-      await setupClient.terminals.attachTerminal(terminal.id);
+      await setupClient.terminals.attachTerminal(
+        terminal.id,
+        mode: TerminalRestoreMode.snapshot,
+      );
       const terminalMarker = 'terminal-e2e-ready';
       final terminalOutput = setupClient.terminals.output
           .where((output) => output.terminalId == terminal.id)

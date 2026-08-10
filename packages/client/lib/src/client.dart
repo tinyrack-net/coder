@@ -277,16 +277,10 @@ class CoderClient
           }),
         );
       }
-      for (final entry in Map<String, int>.from(
-        _terminalSubscriptions,
-      ).entries) {
-        unawaited(
-          attachTerminal(entry.key, afterSequence: entry.value).then((result) {
-            _terminalUpdates.add(result.terminal);
-            result.replay.forEach(_terminalOutput.add);
-          }),
-        );
-      }
+      // Terminals are deliberately not re-attached here. A restore may be a
+      // rebuilt screen rather than output, and applying one means resetting an
+      // emulator first — which only the layer that owns the emulator can do.
+      // It watches this client's connection state and re-attaches itself.
     } catch (error) {
       await _peer?.close();
       if (initial) rethrow;
@@ -750,22 +744,40 @@ class CoderClient
   @override
   Future<TerminalAttachResultDto> attachTerminal(
     String terminalId, {
+    required TerminalRestoreMode mode,
     int afterSequence = 0,
+    int scrollbackLines = terminalRestoreScrollbackLines,
+    TerminalViewportDto? viewport,
   }) async {
-    _terminalSubscriptions[terminalId] = afterSequence;
+    // The cursor only ever moves forward. The daemon computes the replay from
+    // the requested `afterSequence`, so rewinding the notification gate cannot
+    // recover anything; it can only re-deliver output a subscriber has already
+    // consumed.
+    final known = _terminalSubscriptions[terminalId];
+    _terminalSubscriptions[terminalId] = known == null || afterSequence > known
+        ? afterSequence
+        : known;
     final response = await _call(
       terminalsAttachProcedure,
       TerminalAttachParamsDto(
         terminalId: terminalId,
+        mode: mode,
         afterSequence: afterSequence,
+        scrollbackLines: scrollbackLines,
+        viewport: viewport,
       ),
     );
     final result = response;
-    for (final output in result.replay) {
+    // The gate advances to whatever the restore already accounts for, so a
+    // notification the daemon published before answering is not applied twice.
+    final applied = switch (result.restore) {
+      TerminalDeltaRestoreDto(:final chunks) =>
+        chunks.isEmpty ? null : chunks.last.sequence,
+      TerminalSnapshotRestoreDto(:final throughSequence) => throughSequence,
+    };
+    if (applied != null) {
       final current = _terminalSubscriptions[terminalId] ?? 0;
-      if (output.sequence > current) {
-        _terminalSubscriptions[terminalId] = output.sequence;
-      }
+      if (applied > current) _terminalSubscriptions[terminalId] = applied;
     }
     return result;
   }

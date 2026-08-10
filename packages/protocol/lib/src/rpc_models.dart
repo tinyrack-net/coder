@@ -917,13 +917,48 @@ abstract class TerminalIdParamsDto with _$TerminalIdParamsDto {
       _$TerminalIdParamsDtoFromJson(json);
 }
 
+/// How much history an attaching client needs rebuilt.
+enum TerminalRestoreMode {
+  /// Continue the byte stream after a cursor.
+  ///
+  /// The daemon substitutes a snapshot when it no longer retains output that
+  /// far back, so a client asking to resume must still handle either answer.
+  resume,
+
+  /// Rebuild from the daemon's screen model regardless of what it retains.
+  snapshot,
+}
+
 @freezed
-/// Requests replay output while attaching to a terminal.
+/// Cell geometry an attaching client is claiming for the pseudo-terminal.
+abstract class TerminalViewportDto with _$TerminalViewportDto {
+  /// Creates a viewport claim.
+  const factory TerminalViewportDto({
+    required int columns,
+    required int rows,
+  }) = _TerminalViewportDto;
+
+  /// Decodes a viewport claim.
+  factory TerminalViewportDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalViewportDtoFromJson(json);
+}
+
+@freezed
+/// Requests a restore while attaching to a terminal.
 abstract class TerminalAttachParamsDto with _$TerminalAttachParamsDto {
   /// Creates terminal-attach parameters.
   const factory TerminalAttachParamsDto({
     required String terminalId,
+    required TerminalRestoreMode mode,
     @Default(0) int afterSequence,
+    @Default(terminalRestoreScrollbackLines) int scrollbackLines,
+
+    /// Null for a passive attach, which must not claim the terminal's size.
+    ///
+    /// Only a viewport the user genuinely changed or focused claims the size.
+    /// Attaching, restoring visibility, and a renderer settling are not that,
+    /// and a claim from one would fight every other attached client.
+    TerminalViewportDto? viewport,
   }) = _TerminalAttachParamsDto;
 
   /// Decodes terminal-attach parameters.
@@ -931,13 +966,40 @@ abstract class TerminalAttachParamsDto with _$TerminalAttachParamsDto {
       _$TerminalAttachParamsDtoFromJson(json);
 }
 
+/// Scrollback lines an attaching client asks the daemon to rebuild.
+const int terminalRestoreScrollbackLines = 200;
+
+@Freezed(unionKey: 'type')
+/// What the daemon sends an attaching client to make it current.
+sealed class TerminalRestoreDto with _$TerminalRestoreDto {
+  /// Retained output continuing [afterSequence], which the client writes as-is.
+  const factory TerminalRestoreDto.delta({
+    required int afterSequence,
+    required List<TerminalOutputDto> chunks,
+  }) = TerminalDeltaRestoreDto;
+
+  /// A rebuilt screen.
+  ///
+  /// [ansi] reproduces every chunk at or below [throughSequence] in a reset
+  /// terminal, including the alternate buffer and the DEC private modes, so a
+  /// client resets, writes it, and resumes its cursor at [throughSequence].
+  const factory TerminalRestoreDto.snapshot({
+    required int throughSequence,
+    required String ansi,
+  }) = TerminalSnapshotRestoreDto;
+
+  /// Decodes a restore.
+  factory TerminalRestoreDto.fromJson(Map<String, dynamic> json) =>
+      _$TerminalRestoreDtoFromJson(json);
+}
+
 @freezed
-/// Terminal metadata and replay returned by attach.
+/// Terminal metadata and the restore that makes an attaching client current.
 abstract class TerminalAttachResultDto with _$TerminalAttachResultDto {
   /// Creates a terminal-attach result.
   const factory TerminalAttachResultDto({
     required TerminalDto terminal,
-    required List<TerminalOutputDto> replay,
+    required TerminalRestoreDto restore,
   }) = _TerminalAttachResultDto;
 
   /// Decodes a terminal-attach result.

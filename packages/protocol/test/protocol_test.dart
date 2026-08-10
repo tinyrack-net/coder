@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:json_annotation/json_annotation.dart';
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -1829,7 +1830,19 @@ void main() {
       _roundTrip(
         const TerminalAttachParamsDto(
           terminalId: 'terminal-1',
+          mode: TerminalRestoreMode.resume,
           afterSequence: 3,
+        ),
+        (value) => value.toJson(),
+        TerminalAttachParamsDto.fromJson,
+      );
+      // A passive attach leaves the viewport null; an active one claims a size.
+      _roundTrip(
+        const TerminalAttachParamsDto(
+          terminalId: 'terminal-1',
+          mode: TerminalRestoreMode.snapshot,
+          scrollbackLines: 500,
+          viewport: TerminalViewportDto(columns: 100, rows: 30),
         ),
         (value) => value.toJson(),
         TerminalAttachParamsDto.fromJson,
@@ -1870,16 +1883,46 @@ void main() {
       _roundTrip(
         const TerminalAttachResultDto(
           terminal: terminal,
-          replay: <TerminalOutputDto>[
-            TerminalOutputDto(
-              terminalId: 'terminal-1',
-              sequence: 7,
-              data: 'ready',
-            ),
-          ],
+          restore: TerminalRestoreDto.delta(
+            afterSequence: 6,
+            chunks: <TerminalOutputDto>[
+              TerminalOutputDto(
+                terminalId: 'terminal-1',
+                sequence: 7,
+                data: 'ready',
+              ),
+            ],
+          ),
         ),
         (value) => value.toJson(),
         TerminalAttachResultDto.fromJson,
+      );
+      // The union discriminator is what stops a client from writing snapshot
+      // ANSI without resetting, so it is part of the contract, not an
+      // implementation detail of the encoder.
+      _roundTrip(
+        const TerminalAttachResultDto(
+          terminal: terminal,
+          restore: TerminalRestoreDto.snapshot(
+            throughSequence: 12,
+            ansi: '\u001b[?1049h\u001b[Hrestored',
+          ),
+        ),
+        (value) => value.toJson(),
+        TerminalAttachResultDto.fromJson,
+      );
+      expect(
+        const TerminalRestoreDto.snapshot(
+          throughSequence: 12,
+          ansi: 'x',
+        ).toJson()['type'],
+        'snapshot',
+      );
+      expect(
+        () => TerminalRestoreDto.fromJson(const <String, dynamic>{
+          'type': 'unknown',
+        }),
+        throwsA(isA<CheckedFromJsonException>()),
       );
     },
     tags: const <String>[

@@ -66,6 +66,25 @@ typedef HostApiConnection = ({
   StackTrace? stackTrace,
 });
 
+/// Reports one host's connected API to [onChanged] without rebuilding.
+///
+/// A provider that owns long-lived state cannot `watch` its connection: every
+/// rebuild would discard that state. Listening leaves the provider's own build
+/// untouched and lets it reconcile a reconnect in place. [onChanged] runs once
+/// with the current API, which may be null while the registry is still loading.
+void listenHostApi(
+  Ref ref,
+  String hostId,
+  void Function(CoderApi? api) onChanged,
+) => ref.listen(
+  hostRegistryControllerProvider.select((value) {
+    final runtime = value.value?.runtimes[hostId];
+    return runtime?.connected == true ? runtime!.api : null;
+  }),
+  (previous, next) => onChanged(next),
+  fireImmediately: true,
+);
+
 /// Awaits one host's connected API, or null once the host is known offline.
 ///
 /// Stays loading while the registry has yet to answer and rethrows a registry

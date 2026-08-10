@@ -428,10 +428,17 @@ abstract interface class TerminalsApi {
     required int rows,
   });
 
-  /// Attaches to a terminal.
+  /// Attaches to a terminal and asks for whatever makes the caller current.
+  ///
+  /// [viewport] claims the terminal's size and must be null unless the caller
+  /// genuinely changed or focused its own viewport; a passive attach that
+  /// claims a size fights every other attached client.
   Future<TerminalAttachResultDto> attachTerminal(
     String terminalId, {
+    required TerminalRestoreMode mode,
     int afterSequence = 0,
+    int scrollbackLines = terminalRestoreScrollbackLines,
+    TerminalViewportDto? viewport,
   });
 
   /// Writes terminal input.

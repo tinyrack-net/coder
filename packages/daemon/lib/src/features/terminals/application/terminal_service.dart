@@ -150,13 +150,25 @@ final class TerminalService {
     return terminal.dto;
   }
 
-  /// Returns metadata and output newer than [afterSequence].
-  TerminalAttachment attach(String id, {required int afterSequence}) {
+  /// Brings an attaching client up to date.
+  ///
+  /// A viewport claim is applied before anything is read, so whatever the
+  /// restore describes is already at the geometry the caller asked for.
+  Future<TerminalRestore> attach(
+    String id,
+    TerminalRestoreRequest request,
+  ) async {
     final terminal = _require(id);
-    return TerminalAttachment(
+    if (request.viewport case final size?
+        when size.columns != terminal.dto.columns ||
+            size.rows != terminal.dto.rows) {
+      await resize(id, columns: size.columns, rows: size.rows);
+    }
+    return TerminalDeltaRestore(
       terminal: terminal.dto,
-      replay: terminal.replay
-          .where((item) => item.sequence > afterSequence)
+      afterSequence: request.afterSequence,
+      chunks: terminal.replay
+          .where((item) => item.sequence > request.afterSequence)
           .toList(growable: false),
     );
   }

@@ -254,7 +254,10 @@ void main() {
         (await client.listTerminals(checkout.id)).map((item) => item.id),
         contains(terminal.id),
       );
-      final attached = await client.attachTerminal(terminal.id);
+      final attached = await client.attachTerminal(
+        terminal.id,
+        mode: TerminalRestoreMode.snapshot,
+      );
       expect(attached.terminal.id, terminal.id);
       const marker = 'coder-terminal-ready';
       final output = client.terminals.output

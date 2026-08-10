@@ -45,10 +45,10 @@ List<RpcBindingDescriptor> terminalRpcBindings({
     }
   }),
   RpcBinding(terminalsAttachProcedure, (request, _) async {
-    return terminalAttachmentToDto(
-      terminals.attach(
+    return terminalRestoreToDto(
+      await terminals.attach(
         request.terminalId,
-        afterSequence: request.afterSequence,
+        terminalRestoreRequestFromDto(request),
       ),
     );
   }),

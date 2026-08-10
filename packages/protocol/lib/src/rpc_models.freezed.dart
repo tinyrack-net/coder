@@ -17248,9 +17248,280 @@ as String,
 
 
 /// @nodoc
+mixin _$TerminalViewportDto {
+
+ int get columns; int get rows;
+/// Create a copy of TerminalViewportDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalViewportDtoCopyWith<TerminalViewportDto> get copyWith => _$TerminalViewportDtoCopyWithImpl<TerminalViewportDto>(this as TerminalViewportDto, _$identity);
+
+  /// Serializes this TerminalViewportDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalViewportDto&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalViewportDto(columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalViewportDtoCopyWith<$Res>  {
+  factory $TerminalViewportDtoCopyWith(TerminalViewportDto value, $Res Function(TerminalViewportDto) _then) = _$TerminalViewportDtoCopyWithImpl;
+@useResult
+$Res call({
+ int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalViewportDtoCopyWithImpl<$Res>
+    implements $TerminalViewportDtoCopyWith<$Res> {
+  _$TerminalViewportDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalViewportDto _self;
+  final $Res Function(TerminalViewportDto) _then;
+
+/// Create a copy of TerminalViewportDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? columns = null,Object? rows = null,}) {
+  return _then(_self.copyWith(
+columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalViewportDto].
+extension TerminalViewportDtoPatterns on TerminalViewportDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TerminalViewportDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TerminalViewportDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TerminalViewportDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalViewportDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TerminalViewportDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TerminalViewportDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int columns,  int rows)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TerminalViewportDto() when $default != null:
+return $default(_that.columns,_that.rows);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int columns,  int rows)  $default,) {final _that = this;
+switch (_that) {
+case _TerminalViewportDto():
+return $default(_that.columns,_that.rows);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int columns,  int rows)?  $default,) {final _that = this;
+switch (_that) {
+case _TerminalViewportDto() when $default != null:
+return $default(_that.columns,_that.rows);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TerminalViewportDto implements TerminalViewportDto {
+  const _TerminalViewportDto({required this.columns, required this.rows});
+  factory _TerminalViewportDto.fromJson(Map<String, dynamic> json) => _$TerminalViewportDtoFromJson(json);
+
+@override final  int columns;
+@override final  int rows;
+
+/// Create a copy of TerminalViewportDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TerminalViewportDtoCopyWith<_TerminalViewportDto> get copyWith => __$TerminalViewportDtoCopyWithImpl<_TerminalViewportDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalViewportDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalViewportDto&&(identical(other.columns, columns) || other.columns == columns)&&(identical(other.rows, rows) || other.rows == rows));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,columns,rows);
+
+@override
+String toString() {
+  return 'TerminalViewportDto(columns: $columns, rows: $rows)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TerminalViewportDtoCopyWith<$Res> implements $TerminalViewportDtoCopyWith<$Res> {
+  factory _$TerminalViewportDtoCopyWith(_TerminalViewportDto value, $Res Function(_TerminalViewportDto) _then) = __$TerminalViewportDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ int columns, int rows
+});
+
+
+
+
+}
+/// @nodoc
+class __$TerminalViewportDtoCopyWithImpl<$Res>
+    implements _$TerminalViewportDtoCopyWith<$Res> {
+  __$TerminalViewportDtoCopyWithImpl(this._self, this._then);
+
+  final _TerminalViewportDto _self;
+  final $Res Function(_TerminalViewportDto) _then;
+
+/// Create a copy of TerminalViewportDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? columns = null,Object? rows = null,}) {
+  return _then(_TerminalViewportDto(
+columns: null == columns ? _self.columns : columns // ignore: cast_nullable_to_non_nullable
+as int,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$TerminalAttachParamsDto {
 
- String get terminalId; int get afterSequence;
+ String get terminalId; TerminalRestoreMode get mode; int get afterSequence; int get scrollbackLines;/// Null for a passive attach, which must not claim the terminal's size.
+///
+/// Only a viewport the user genuinely changed or focused claims the size.
+/// Attaching, restoring visibility, and a renderer settling are not that,
+/// and a claim from one would fight every other attached client.
+ TerminalViewportDto? get viewport;
 /// Create a copy of TerminalAttachParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -17263,16 +17534,16 @@ $TerminalAttachParamsDtoCopyWith<TerminalAttachParamsDto> get copyWith => _$Term
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence)&&(identical(other.scrollbackLines, scrollbackLines) || other.scrollbackLines == scrollbackLines)&&(identical(other.viewport, viewport) || other.viewport == viewport));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,terminalId,afterSequence);
+int get hashCode => Object.hash(runtimeType,terminalId,mode,afterSequence,scrollbackLines,viewport);
 
 @override
 String toString() {
-  return 'TerminalAttachParamsDto(terminalId: $terminalId, afterSequence: $afterSequence)';
+  return 'TerminalAttachParamsDto(terminalId: $terminalId, mode: $mode, afterSequence: $afterSequence, scrollbackLines: $scrollbackLines, viewport: $viewport)';
 }
 
 
@@ -17283,11 +17554,11 @@ abstract mixin class $TerminalAttachParamsDtoCopyWith<$Res>  {
   factory $TerminalAttachParamsDtoCopyWith(TerminalAttachParamsDto value, $Res Function(TerminalAttachParamsDto) _then) = _$TerminalAttachParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String terminalId, int afterSequence
+ String terminalId, TerminalRestoreMode mode, int afterSequence, int scrollbackLines, TerminalViewportDto? viewport
 });
 
 
-
+$TerminalViewportDtoCopyWith<$Res>? get viewport;
 
 }
 /// @nodoc
@@ -17300,14 +17571,29 @@ class _$TerminalAttachParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TerminalAttachParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,Object? afterSequence = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? terminalId = null,Object? mode = null,Object? afterSequence = null,Object? scrollbackLines = null,Object? viewport = freezed,}) {
   return _then(_self.copyWith(
 terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
-as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
-as int,
+as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as TerminalRestoreMode,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,scrollbackLines: null == scrollbackLines ? _self.scrollbackLines : scrollbackLines // ignore: cast_nullable_to_non_nullable
+as int,viewport: freezed == viewport ? _self.viewport : viewport // ignore: cast_nullable_to_non_nullable
+as TerminalViewportDto?,
   ));
 }
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalViewportDtoCopyWith<$Res>? get viewport {
+    if (_self.viewport == null) {
+    return null;
+  }
 
+  return $TerminalViewportDtoCopyWith<$Res>(_self.viewport!, (value) {
+    return _then(_self.copyWith(viewport: value));
+  });
+}
 }
 
 
@@ -17389,10 +17675,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId,  int afterSequence)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String terminalId,  TerminalRestoreMode mode,  int afterSequence,  int scrollbackLines,  TerminalViewportDto? viewport)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TerminalAttachParamsDto() when $default != null:
-return $default(_that.terminalId,_that.afterSequence);case _:
+return $default(_that.terminalId,_that.mode,_that.afterSequence,_that.scrollbackLines,_that.viewport);case _:
   return orElse();
 
 }
@@ -17410,10 +17696,10 @@ return $default(_that.terminalId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId,  int afterSequence)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String terminalId,  TerminalRestoreMode mode,  int afterSequence,  int scrollbackLines,  TerminalViewportDto? viewport)  $default,) {final _that = this;
 switch (_that) {
 case _TerminalAttachParamsDto():
-return $default(_that.terminalId,_that.afterSequence);case _:
+return $default(_that.terminalId,_that.mode,_that.afterSequence,_that.scrollbackLines,_that.viewport);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -17430,10 +17716,10 @@ return $default(_that.terminalId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId,  int afterSequence)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String terminalId,  TerminalRestoreMode mode,  int afterSequence,  int scrollbackLines,  TerminalViewportDto? viewport)?  $default,) {final _that = this;
 switch (_that) {
 case _TerminalAttachParamsDto() when $default != null:
-return $default(_that.terminalId,_that.afterSequence);case _:
+return $default(_that.terminalId,_that.mode,_that.afterSequence,_that.scrollbackLines,_that.viewport);case _:
   return null;
 
 }
@@ -17445,11 +17731,19 @@ return $default(_that.terminalId,_that.afterSequence);case _:
 @JsonSerializable()
 
 class _TerminalAttachParamsDto implements TerminalAttachParamsDto {
-  const _TerminalAttachParamsDto({required this.terminalId, this.afterSequence = 0});
+  const _TerminalAttachParamsDto({required this.terminalId, required this.mode, this.afterSequence = 0, this.scrollbackLines = terminalRestoreScrollbackLines, this.viewport});
   factory _TerminalAttachParamsDto.fromJson(Map<String, dynamic> json) => _$TerminalAttachParamsDtoFromJson(json);
 
 @override final  String terminalId;
+@override final  TerminalRestoreMode mode;
 @override@JsonKey() final  int afterSequence;
+@override@JsonKey() final  int scrollbackLines;
+/// Null for a passive attach, which must not claim the terminal's size.
+///
+/// Only a viewport the user genuinely changed or focused claims the size.
+/// Attaching, restoring visibility, and a renderer settling are not that,
+/// and a claim from one would fight every other attached client.
+@override final  TerminalViewportDto? viewport;
 
 /// Create a copy of TerminalAttachParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -17464,16 +17758,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachParamsDto&&(identical(other.terminalId, terminalId) || other.terminalId == terminalId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence)&&(identical(other.scrollbackLines, scrollbackLines) || other.scrollbackLines == scrollbackLines)&&(identical(other.viewport, viewport) || other.viewport == viewport));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,terminalId,afterSequence);
+int get hashCode => Object.hash(runtimeType,terminalId,mode,afterSequence,scrollbackLines,viewport);
 
 @override
 String toString() {
-  return 'TerminalAttachParamsDto(terminalId: $terminalId, afterSequence: $afterSequence)';
+  return 'TerminalAttachParamsDto(terminalId: $terminalId, mode: $mode, afterSequence: $afterSequence, scrollbackLines: $scrollbackLines, viewport: $viewport)';
 }
 
 
@@ -17484,11 +17778,11 @@ abstract mixin class _$TerminalAttachParamsDtoCopyWith<$Res> implements $Termina
   factory _$TerminalAttachParamsDtoCopyWith(_TerminalAttachParamsDto value, $Res Function(_TerminalAttachParamsDto) _then) = __$TerminalAttachParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String terminalId, int afterSequence
+ String terminalId, TerminalRestoreMode mode, int afterSequence, int scrollbackLines, TerminalViewportDto? viewport
 });
 
 
-
+@override $TerminalViewportDtoCopyWith<$Res>? get viewport;
 
 }
 /// @nodoc
@@ -17501,11 +17795,368 @@ class __$TerminalAttachParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TerminalAttachParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,Object? afterSequence = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? terminalId = null,Object? mode = null,Object? afterSequence = null,Object? scrollbackLines = null,Object? viewport = freezed,}) {
   return _then(_TerminalAttachParamsDto(
 terminalId: null == terminalId ? _self.terminalId : terminalId // ignore: cast_nullable_to_non_nullable
-as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
-as int,
+as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as TerminalRestoreMode,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,scrollbackLines: null == scrollbackLines ? _self.scrollbackLines : scrollbackLines // ignore: cast_nullable_to_non_nullable
+as int,viewport: freezed == viewport ? _self.viewport : viewport // ignore: cast_nullable_to_non_nullable
+as TerminalViewportDto?,
+  ));
+}
+
+/// Create a copy of TerminalAttachParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalViewportDtoCopyWith<$Res>? get viewport {
+    if (_self.viewport == null) {
+    return null;
+  }
+
+  return $TerminalViewportDtoCopyWith<$Res>(_self.viewport!, (value) {
+    return _then(_self.copyWith(viewport: value));
+  });
+}
+}
+
+TerminalRestoreDto _$TerminalRestoreDtoFromJson(
+  Map<String, dynamic> json
+) {
+        switch (json['type']) {
+                  case 'delta':
+          return TerminalDeltaRestoreDto.fromJson(
+            json
+          );
+                case 'snapshot':
+          return TerminalSnapshotRestoreDto.fromJson(
+            json
+          );
+        
+          default:
+            throw CheckedFromJsonException(
+  json,
+  'type',
+  'TerminalRestoreDto',
+  'Invalid union type "${json['type']}"!'
+);
+        }
+      
+}
+
+/// @nodoc
+mixin _$TerminalRestoreDto {
+
+
+
+  /// Serializes this TerminalRestoreDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalRestoreDto);
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TerminalRestoreDto()';
+}
+
+
+}
+
+/// @nodoc
+class $TerminalRestoreDtoCopyWith<$Res>  {
+$TerminalRestoreDtoCopyWith(TerminalRestoreDto _, $Res Function(TerminalRestoreDto) __);
+}
+
+
+/// Adds pattern-matching-related methods to [TerminalRestoreDto].
+extension TerminalRestoreDtoPatterns on TerminalRestoreDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TerminalDeltaRestoreDto value)?  delta,TResult Function( TerminalSnapshotRestoreDto value)?  snapshot,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto() when delta != null:
+return delta(_that);case TerminalSnapshotRestoreDto() when snapshot != null:
+return snapshot(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TerminalDeltaRestoreDto value)  delta,required TResult Function( TerminalSnapshotRestoreDto value)  snapshot,}){
+final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto():
+return delta(_that);case TerminalSnapshotRestoreDto():
+return snapshot(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TerminalDeltaRestoreDto value)?  delta,TResult? Function( TerminalSnapshotRestoreDto value)?  snapshot,}){
+final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto() when delta != null:
+return delta(_that);case TerminalSnapshotRestoreDto() when snapshot != null:
+return snapshot(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int afterSequence,  List<TerminalOutputDto> chunks)?  delta,TResult Function( int throughSequence,  String ansi)?  snapshot,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto() when delta != null:
+return delta(_that.afterSequence,_that.chunks);case TerminalSnapshotRestoreDto() when snapshot != null:
+return snapshot(_that.throughSequence,_that.ansi);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int afterSequence,  List<TerminalOutputDto> chunks)  delta,required TResult Function( int throughSequence,  String ansi)  snapshot,}) {final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto():
+return delta(_that.afterSequence,_that.chunks);case TerminalSnapshotRestoreDto():
+return snapshot(_that.throughSequence,_that.ansi);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int afterSequence,  List<TerminalOutputDto> chunks)?  delta,TResult? Function( int throughSequence,  String ansi)?  snapshot,}) {final _that = this;
+switch (_that) {
+case TerminalDeltaRestoreDto() when delta != null:
+return delta(_that.afterSequence,_that.chunks);case TerminalSnapshotRestoreDto() when snapshot != null:
+return snapshot(_that.throughSequence,_that.ansi);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class TerminalDeltaRestoreDto implements TerminalRestoreDto {
+  const TerminalDeltaRestoreDto({required this.afterSequence, required final  List<TerminalOutputDto> chunks, final  String? $type}): _chunks = chunks,$type = $type ?? 'delta';
+  factory TerminalDeltaRestoreDto.fromJson(Map<String, dynamic> json) => _$TerminalDeltaRestoreDtoFromJson(json);
+
+ final  int afterSequence;
+ final  List<TerminalOutputDto> _chunks;
+ List<TerminalOutputDto> get chunks {
+  if (_chunks is EqualUnmodifiableListView) return _chunks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_chunks);
+}
+
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of TerminalRestoreDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalDeltaRestoreDtoCopyWith<TerminalDeltaRestoreDto> get copyWith => _$TerminalDeltaRestoreDtoCopyWithImpl<TerminalDeltaRestoreDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalDeltaRestoreDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalDeltaRestoreDto&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence)&&const DeepCollectionEquality().equals(other._chunks, _chunks));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,afterSequence,const DeepCollectionEquality().hash(_chunks));
+
+@override
+String toString() {
+  return 'TerminalRestoreDto.delta(afterSequence: $afterSequence, chunks: $chunks)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalDeltaRestoreDtoCopyWith<$Res> implements $TerminalRestoreDtoCopyWith<$Res> {
+  factory $TerminalDeltaRestoreDtoCopyWith(TerminalDeltaRestoreDto value, $Res Function(TerminalDeltaRestoreDto) _then) = _$TerminalDeltaRestoreDtoCopyWithImpl;
+@useResult
+$Res call({
+ int afterSequence, List<TerminalOutputDto> chunks
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalDeltaRestoreDtoCopyWithImpl<$Res>
+    implements $TerminalDeltaRestoreDtoCopyWith<$Res> {
+  _$TerminalDeltaRestoreDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalDeltaRestoreDto _self;
+  final $Res Function(TerminalDeltaRestoreDto) _then;
+
+/// Create a copy of TerminalRestoreDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? afterSequence = null,Object? chunks = null,}) {
+  return _then(TerminalDeltaRestoreDto(
+afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,chunks: null == chunks ? _self._chunks : chunks // ignore: cast_nullable_to_non_nullable
+as List<TerminalOutputDto>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class TerminalSnapshotRestoreDto implements TerminalRestoreDto {
+  const TerminalSnapshotRestoreDto({required this.throughSequence, required this.ansi, final  String? $type}): $type = $type ?? 'snapshot';
+  factory TerminalSnapshotRestoreDto.fromJson(Map<String, dynamic> json) => _$TerminalSnapshotRestoreDtoFromJson(json);
+
+ final  int throughSequence;
+ final  String ansi;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of TerminalRestoreDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalSnapshotRestoreDtoCopyWith<TerminalSnapshotRestoreDto> get copyWith => _$TerminalSnapshotRestoreDtoCopyWithImpl<TerminalSnapshotRestoreDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TerminalSnapshotRestoreDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalSnapshotRestoreDto&&(identical(other.throughSequence, throughSequence) || other.throughSequence == throughSequence)&&(identical(other.ansi, ansi) || other.ansi == ansi));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,throughSequence,ansi);
+
+@override
+String toString() {
+  return 'TerminalRestoreDto.snapshot(throughSequence: $throughSequence, ansi: $ansi)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalSnapshotRestoreDtoCopyWith<$Res> implements $TerminalRestoreDtoCopyWith<$Res> {
+  factory $TerminalSnapshotRestoreDtoCopyWith(TerminalSnapshotRestoreDto value, $Res Function(TerminalSnapshotRestoreDto) _then) = _$TerminalSnapshotRestoreDtoCopyWithImpl;
+@useResult
+$Res call({
+ int throughSequence, String ansi
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalSnapshotRestoreDtoCopyWithImpl<$Res>
+    implements $TerminalSnapshotRestoreDtoCopyWith<$Res> {
+  _$TerminalSnapshotRestoreDtoCopyWithImpl(this._self, this._then);
+
+  final TerminalSnapshotRestoreDto _self;
+  final $Res Function(TerminalSnapshotRestoreDto) _then;
+
+/// Create a copy of TerminalRestoreDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? throughSequence = null,Object? ansi = null,}) {
+  return _then(TerminalSnapshotRestoreDto(
+throughSequence: null == throughSequence ? _self.throughSequence : throughSequence // ignore: cast_nullable_to_non_nullable
+as int,ansi: null == ansi ? _self.ansi : ansi // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -17516,7 +18167,7 @@ as int,
 /// @nodoc
 mixin _$TerminalAttachResultDto {
 
- TerminalDto get terminal; List<TerminalOutputDto> get replay;
+ TerminalDto get terminal; TerminalRestoreDto get restore;
 /// Create a copy of TerminalAttachResultDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -17529,16 +18180,16 @@ $TerminalAttachResultDtoCopyWith<TerminalAttachResultDto> get copyWith => _$Term
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&const DeepCollectionEquality().equals(other.replay, replay));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&(identical(other.restore, restore) || other.restore == restore));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,terminal,const DeepCollectionEquality().hash(replay));
+int get hashCode => Object.hash(runtimeType,terminal,restore);
 
 @override
 String toString() {
-  return 'TerminalAttachResultDto(terminal: $terminal, replay: $replay)';
+  return 'TerminalAttachResultDto(terminal: $terminal, restore: $restore)';
 }
 
 
@@ -17549,11 +18200,11 @@ abstract mixin class $TerminalAttachResultDtoCopyWith<$Res>  {
   factory $TerminalAttachResultDtoCopyWith(TerminalAttachResultDto value, $Res Function(TerminalAttachResultDto) _then) = _$TerminalAttachResultDtoCopyWithImpl;
 @useResult
 $Res call({
- TerminalDto terminal, List<TerminalOutputDto> replay
+ TerminalDto terminal, TerminalRestoreDto restore
 });
 
 
-$TerminalDtoCopyWith<$Res> get terminal;
+$TerminalDtoCopyWith<$Res> get terminal;$TerminalRestoreDtoCopyWith<$Res> get restore;
 
 }
 /// @nodoc
@@ -17566,11 +18217,11 @@ class _$TerminalAttachResultDtoCopyWithImpl<$Res>
 
 /// Create a copy of TerminalAttachResultDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? terminal = null,Object? replay = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? terminal = null,Object? restore = null,}) {
   return _then(_self.copyWith(
 terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
-as TerminalDto,replay: null == replay ? _self.replay : replay // ignore: cast_nullable_to_non_nullable
-as List<TerminalOutputDto>,
+as TerminalDto,restore: null == restore ? _self.restore : restore // ignore: cast_nullable_to_non_nullable
+as TerminalRestoreDto,
   ));
 }
 /// Create a copy of TerminalAttachResultDto
@@ -17581,6 +18232,15 @@ $TerminalDtoCopyWith<$Res> get terminal {
   
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
+  });
+}/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalRestoreDtoCopyWith<$Res> get restore {
+  
+  return $TerminalRestoreDtoCopyWith<$Res>(_self.restore, (value) {
+    return _then(_self.copyWith(restore: value));
   });
 }
 }
@@ -17664,10 +18324,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TerminalDto terminal,  List<TerminalOutputDto> replay)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TerminalDto terminal,  TerminalRestoreDto restore)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TerminalAttachResultDto() when $default != null:
-return $default(_that.terminal,_that.replay);case _:
+return $default(_that.terminal,_that.restore);case _:
   return orElse();
 
 }
@@ -17685,10 +18345,10 @@ return $default(_that.terminal,_that.replay);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TerminalDto terminal,  List<TerminalOutputDto> replay)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TerminalDto terminal,  TerminalRestoreDto restore)  $default,) {final _that = this;
 switch (_that) {
 case _TerminalAttachResultDto():
-return $default(_that.terminal,_that.replay);case _:
+return $default(_that.terminal,_that.restore);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -17705,10 +18365,10 @@ return $default(_that.terminal,_that.replay);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TerminalDto terminal,  List<TerminalOutputDto> replay)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TerminalDto terminal,  TerminalRestoreDto restore)?  $default,) {final _that = this;
 switch (_that) {
 case _TerminalAttachResultDto() when $default != null:
-return $default(_that.terminal,_that.replay);case _:
+return $default(_that.terminal,_that.restore);case _:
   return null;
 
 }
@@ -17720,17 +18380,11 @@ return $default(_that.terminal,_that.replay);case _:
 @JsonSerializable()
 
 class _TerminalAttachResultDto implements TerminalAttachResultDto {
-  const _TerminalAttachResultDto({required this.terminal, required final  List<TerminalOutputDto> replay}): _replay = replay;
+  const _TerminalAttachResultDto({required this.terminal, required this.restore});
   factory _TerminalAttachResultDto.fromJson(Map<String, dynamic> json) => _$TerminalAttachResultDtoFromJson(json);
 
 @override final  TerminalDto terminal;
- final  List<TerminalOutputDto> _replay;
-@override List<TerminalOutputDto> get replay {
-  if (_replay is EqualUnmodifiableListView) return _replay;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_replay);
-}
-
+@override final  TerminalRestoreDto restore;
 
 /// Create a copy of TerminalAttachResultDto
 /// with the given fields replaced by the non-null parameter values.
@@ -17745,16 +18399,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&const DeepCollectionEquality().equals(other._replay, _replay));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TerminalAttachResultDto&&(identical(other.terminal, terminal) || other.terminal == terminal)&&(identical(other.restore, restore) || other.restore == restore));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,terminal,const DeepCollectionEquality().hash(_replay));
+int get hashCode => Object.hash(runtimeType,terminal,restore);
 
 @override
 String toString() {
-  return 'TerminalAttachResultDto(terminal: $terminal, replay: $replay)';
+  return 'TerminalAttachResultDto(terminal: $terminal, restore: $restore)';
 }
 
 
@@ -17765,11 +18419,11 @@ abstract mixin class _$TerminalAttachResultDtoCopyWith<$Res> implements $Termina
   factory _$TerminalAttachResultDtoCopyWith(_TerminalAttachResultDto value, $Res Function(_TerminalAttachResultDto) _then) = __$TerminalAttachResultDtoCopyWithImpl;
 @override @useResult
 $Res call({
- TerminalDto terminal, List<TerminalOutputDto> replay
+ TerminalDto terminal, TerminalRestoreDto restore
 });
 
 
-@override $TerminalDtoCopyWith<$Res> get terminal;
+@override $TerminalDtoCopyWith<$Res> get terminal;@override $TerminalRestoreDtoCopyWith<$Res> get restore;
 
 }
 /// @nodoc
@@ -17782,11 +18436,11 @@ class __$TerminalAttachResultDtoCopyWithImpl<$Res>
 
 /// Create a copy of TerminalAttachResultDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? terminal = null,Object? replay = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? terminal = null,Object? restore = null,}) {
   return _then(_TerminalAttachResultDto(
 terminal: null == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
-as TerminalDto,replay: null == replay ? _self._replay : replay // ignore: cast_nullable_to_non_nullable
-as List<TerminalOutputDto>,
+as TerminalDto,restore: null == restore ? _self.restore : restore // ignore: cast_nullable_to_non_nullable
+as TerminalRestoreDto,
   ));
 }
 
@@ -17798,6 +18452,15 @@ $TerminalDtoCopyWith<$Res> get terminal {
   
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
+  });
+}/// Create a copy of TerminalAttachResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TerminalRestoreDtoCopyWith<$Res> get restore {
+  
+  return $TerminalRestoreDtoCopyWith<$Res>(_self.restore, (value) {
+    return _then(_self.copyWith(restore: value));
   });
 }
 }

@@ -607,7 +607,13 @@ void main() {
         columns: 80,
         rows: 24,
       );
-      expect((await client.attachTerminal(terminal.id)).terminal, terminal);
+      expect(
+        (await client.attachTerminal(
+          terminal.id,
+          mode: TerminalRestoreMode.snapshot,
+        )).terminal,
+        terminal,
+      );
       await client.writeTerminal(terminal.id, 'echo ready\r');
       expect(
         await client.resizeTerminal(terminal.id, columns: 100, rows: 30),
@@ -1149,6 +1155,218 @@ void main() {
       expect(subscriptions.last.payload['afterSequence'], 7);
     },
   );
+
+  test(
+    're-attaching a terminal never re-delivers consumed output',
+    () async {
+      const terminal = TerminalDto(
+        id: 'terminal',
+        worktreeId: 'checkout',
+        title: 'Terminal',
+        shell: ShellSpecDto(executable: '/bin/sh'),
+        status: TerminalStatus.running,
+        columns: 80,
+        rows: 24,
+        lastSequence: 0,
+      );
+      final connector = _TestConnector(
+        onConfigure: (peer, requests) {
+          _registerHello(peer, requests);
+          peer.registerMethod(
+            terminalsAttachProcedure.name,
+            (json_rpc.Parameters parameters) => const TerminalAttachResultDto(
+              terminal: terminal,
+              restore: TerminalRestoreDto.delta(
+                afterSequence: 0,
+                chunks: <TerminalOutputDto>[],
+              ),
+            ).toJson(),
+          );
+        },
+      );
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint.parse('ws://localhost/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'token'),
+        clientId: 'client',
+        clientKind: 'test',
+        connector: connector,
+      );
+      addTearDown(client.close);
+      final received = <TerminalOutputDto>[];
+      final subscription = client.terminals.output.listen(received.add);
+      addTearDown(subscription.cancel);
+
+      await client.attachTerminal(
+        terminal.id,
+        mode: TerminalRestoreMode.snapshot,
+      );
+      connector.connections.single.peer.sendNotification(
+        terminalsOutputNotification.name,
+        const TerminalOutputDto(
+          terminalId: 'terminal',
+          sequence: 4,
+          data: 'consumed',
+        ).toJson(),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      // A second attach from zero must not rewind the notification gate: the
+      // daemon decides what to replay, and everything already consumed would
+      // otherwise be delivered a second time.
+      await client.attachTerminal(
+        terminal.id,
+        mode: TerminalRestoreMode.snapshot,
+      );
+      connector.connections.single.peer.sendNotification(
+        terminalsOutputNotification.name,
+        const TerminalOutputDto(
+          terminalId: 'terminal',
+          sequence: 4,
+          data: 'consumed',
+        ).toJson(),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received.map((output) => output.sequence), <int>[4]);
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__contract'],
+  );
+
+  test(
+    'a snapshot restore advances the gate to the sequence it already carries',
+    () async {
+      const terminal = TerminalDto(
+        id: 'terminal',
+        worktreeId: 'checkout',
+        title: 'Terminal',
+        shell: ShellSpecDto(executable: '/bin/sh'),
+        status: TerminalStatus.running,
+        columns: 80,
+        rows: 24,
+        lastSequence: 9,
+      );
+      final connector = _TestConnector(
+        onConfigure: (peer, requests) {
+          _registerHello(peer, requests);
+          peer.registerMethod(
+            terminalsAttachProcedure.name,
+            (json_rpc.Parameters parameters) => const TerminalAttachResultDto(
+              terminal: terminal,
+              restore: TerminalRestoreDto.snapshot(
+                throughSequence: 9,
+                ansi: 'restored',
+              ),
+            ).toJson(),
+          );
+        },
+      );
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint.parse('ws://localhost/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'token'),
+        clientId: 'client',
+        clientKind: 'test',
+        connector: connector,
+      );
+      addTearDown(client.close);
+      final received = <TerminalOutputDto>[];
+      final subscription = client.terminals.output.listen(received.add);
+      addTearDown(subscription.cancel);
+
+      await client.attachTerminal(
+        terminal.id,
+        mode: TerminalRestoreMode.snapshot,
+      );
+      // A snapshot is not output, so it never reaches the stream; but it does
+      // account for everything up to its watermark, and re-delivering that as
+      // a notification would paint it twice on top of the restored screen.
+      for (final sequence in <int>[9, 10]) {
+        connector.connections.single.peer.sendNotification(
+          terminalsOutputNotification.name,
+          TerminalOutputDto(
+            terminalId: 'terminal',
+            sequence: sequence,
+            data: 'chunk-$sequence',
+          ).toJson(),
+        );
+      }
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received.map((output) => output.sequence), <int>[10]);
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__contract'],
+  );
+
+  test(
+    'a reconnect leaves restoring a terminal to the layer that owns one',
+    () async {
+      final connector = _TestConnector(
+        onConfigure: (peer, requests) {
+          _registerHello(peer, requests);
+          peer.registerMethod(terminalsAttachProcedure.name, (
+            json_rpc.Parameters parameters,
+          ) {
+            requests.add((
+              method: terminalsAttachProcedure.name,
+              payload: Map<String, dynamic>.from(parameters.asMap),
+            ));
+            return const TerminalAttachResultDto(
+              terminal: TerminalDto(
+                id: 'terminal',
+                worktreeId: 'checkout',
+                title: 'Terminal',
+                shell: ShellSpecDto(executable: '/bin/sh'),
+                status: TerminalStatus.running,
+                columns: 80,
+                rows: 24,
+                lastSequence: 0,
+              ),
+              restore: TerminalRestoreDto.delta(
+                afterSequence: 0,
+                chunks: <TerminalOutputDto>[],
+              ),
+            ).toJson();
+          });
+        },
+      );
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint.parse('ws://localhost/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'token'),
+        clientId: 'client',
+        clientKind: 'test',
+        connector: connector,
+        reconnectDelay: (_) => Duration.zero,
+      );
+      addTearDown(client.close);
+      final received = <TerminalOutputDto>[];
+      final subscription = client.terminals.output.listen(received.add);
+      addTearDown(subscription.cancel);
+      await client.attachTerminal(
+        'terminal',
+        mode: TerminalRestoreMode.snapshot,
+      );
+
+      final connectedAgain = client.states.firstWhere(
+        (state) =>
+            state == ClientConnectionState.connected &&
+            connector.connections.length == 2,
+      );
+      await connector.connections.first.peer.close();
+      await connectedAgain.timeout(const Duration(seconds: 2));
+      await Future<void>.delayed(Duration.zero);
+
+      // A restore can be a rebuilt screen rather than output, and applying one
+      // means resetting an emulator first. A transport has no emulator, so it
+      // must not re-attach on its own and synthesise output from the answer.
+      expect(received, isEmpty);
+      expect(
+        connector.requests
+            .where((request) => request.method == terminalsAttachProcedure.name)
+            .length,
+        1,
+      );
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__contract'],
+  );
 }
 
 typedef _Request = ({String method, Map<String, dynamic> payload});
@@ -1382,7 +1600,10 @@ void _registerFixtureMethods(
     ).toJson(),
     terminalsAttachProcedure.name: const TerminalAttachResultDto(
       terminal: terminal,
-      replay: <TerminalOutputDto>[],
+      restore: TerminalRestoreDto.delta(
+        afterSequence: 0,
+        chunks: <TerminalOutputDto>[],
+      ),
     ).toJson(),
     terminalsWriteProcedure.name: const <String, dynamic>{},
     terminalsResizeProcedure.name: const TerminalResultDto(
