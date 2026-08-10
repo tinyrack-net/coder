@@ -1,5 +1,6 @@
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -92,6 +93,35 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       expect(find.text(testL10n.commonSaved), findsNothing);
+    },
+    tags: const <String>['feature_test__app_toast__widget'],
+  );
+
+  testWidgets(
+    'a report is styled by the region rather than by the page under it',
+    (tester) async {
+      final messenger = await _pumpScope(tester);
+
+      messenger.failure(
+        testL10n.commonActionFailed,
+        error: StateError('no host selected'),
+      );
+      await tester.pumpAndSettle();
+
+      // The region is a sibling of the routes, not a descendant, so nothing on
+      // the page hands its text a style. Text left to MaterialApp's fallback
+      // there is painted with a yellow double underline, which is what the app
+      // shipped until the region brought its own surface.
+      for (final report in <Finder>[
+        find.text(testL10n.commonActionFailed),
+        find.textContaining('no host selected'),
+      ]) {
+        expect(
+          tester.renderObject<RenderParagraph>(report).text.style?.decoration ??
+              TextDecoration.none,
+          TextDecoration.none,
+        );
+      }
     },
     tags: const <String>['feature_test__app_toast__widget'],
   );
