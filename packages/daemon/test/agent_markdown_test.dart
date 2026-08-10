@@ -317,6 +317,7 @@ Review the requested code without modifying it.
             name: 'read_file',
             description: 'Read files.',
             risk: ToolRisk.read,
+            group: ToolGroup.filesystem,
           ),
         ]),
       );
@@ -462,12 +463,14 @@ Review the requested code without modifying it.
             name: 'Zulu',
             description: 'Last.',
             risk: ToolRisk.read,
+            group: ToolGroup.filesystem,
           ),
           AgentToolDefinitionDto(
             id: 'a_tool',
             name: 'Alpha',
             description: 'First.',
             risk: ToolRisk.read,
+            group: ToolGroup.filesystem,
           ),
         ]),
       );

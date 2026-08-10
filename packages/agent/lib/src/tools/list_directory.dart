@@ -84,6 +84,7 @@ final class ListDirectoryToolProvider extends SelectableToolProvider {
     name: id,
     description: ListDirectoryTool().description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
     alwaysOn: true,
   );
 

@@ -13,6 +13,36 @@ enum AgentToolRisk {
   dangerous,
 }
 
+/// The related set of capabilities a client presents and toggles together.
+///
+/// A capability declares its own group, so the one list in
+/// `builtInAgentToolRegistry` stays the whole registration surface. Declaration
+/// order here is the order groups are presented in, which is why it is separate
+/// from registry order: the registry order is what the model is advertised, and
+/// reordering it to suit a settings screen would change what the model sees.
+enum AgentToolGroup {
+  /// Finds and reads workspace files.
+  filesystem,
+
+  /// Changes workspace files.
+  editing,
+
+  /// Starts processes.
+  execution,
+
+  /// Moves files in and out of the conversation as attachments.
+  attachments,
+
+  /// Reaches MCP servers and the resources they publish.
+  mcp,
+
+  /// Drives collaborating subagents.
+  collaboration,
+
+  /// Steers the turn itself: plans, questions, and time.
+  session,
+}
+
 /// Permission policy selected for one agent turn.
 enum AgentPermissionMode {
   /// Refuses mutation.
@@ -439,6 +469,7 @@ final class AgentToolDefinition {
     required this.name,
     required this.description,
     required this.risk,
+    required this.group,
     this.available = true,
     this.alwaysOn = false,
   });
@@ -454,6 +485,9 @@ final class AgentToolDefinition {
 
   /// Approval risk.
   final AgentToolRisk risk;
+
+  /// The related capabilities this one is presented and toggled with.
+  final AgentToolGroup group;
 
   /// Whether the tool is available.
   final bool available;

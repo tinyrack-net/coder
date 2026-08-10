@@ -224,6 +224,7 @@ final class SearchTextToolProvider extends SelectableToolProvider {
     name: id,
     description: SearchTextTool(gitignoreEnvironment: _gitignore).description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.filesystem,
     alwaysOn: true,
   );
 

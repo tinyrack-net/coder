@@ -4,7 +4,11 @@ import 'dart:convert';
 const int coderProtocolMajor = 4;
 
 /// Exact revision supported by this implementation.
-const int coderProtocolRevision = 0;
+///
+/// Revision 1 added the required `group` on `AgentToolDefinitionDto`. A
+/// revision-0 peer cannot decode the tool catalog, so the handshake rejects the
+/// pairing rather than letting it fail later at an arbitrary RPC.
+const int coderProtocolRevision = 1;
 
 /// WebSocket subprotocol offered by v4 clients and servers.
 const String coderWebSocketProtocol = 'tinyrack.coder.v4';

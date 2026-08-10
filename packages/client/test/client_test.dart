@@ -73,6 +73,7 @@ void main() {
     name: 'read_file',
     description: 'Read a file.',
     risk: ToolRisk.read,
+    group: ToolGroup.filesystem,
   );
   const mcpServer = McpServerStateDto(
     config: McpServerConfigDto(

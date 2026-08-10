@@ -91,6 +91,7 @@ final class AttachFileToolProvider extends SelectableToolProvider {
     description:
         'Attach a regular file from the workspace to the conversation.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.attachments,
     alwaysOn: true,
   );
 

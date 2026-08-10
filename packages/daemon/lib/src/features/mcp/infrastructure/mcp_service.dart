@@ -615,6 +615,7 @@ final class _Connection {
           name: mcpToolId(config.id, descriptor.name),
           description: descriptor.description ?? descriptor.name,
           risk: ToolRisk.dangerous,
+          group: ToolGroup.mcp,
         ),
     ];
   }

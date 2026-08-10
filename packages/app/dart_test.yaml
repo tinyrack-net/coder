@@ -149,6 +149,7 @@ tags:
   feature_test__turn_execution__unit:
   feature_test__turn_execution__widget:
   feature_test__turn_execution__e2e:
+  feature_test__agent_definition_management__unit:
   feature_test__agent_definition_management__widget:
   feature_test__mcp_server_management__widget:
   feature_test__mcp_server_management__unit:

@@ -896,6 +896,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsBuiltinTools => 'Built-in tools';
 
   @override
+  String get agentSettingsToolGroupFilesystem => 'Files';
+
+  @override
+  String get agentSettingsToolGroupEditing => 'Editing';
+
+  @override
+  String get agentSettingsToolGroupExecution => 'Commands';
+
+  @override
+  String get agentSettingsToolGroupAttachments => 'Attachments';
+
+  @override
+  String get agentSettingsToolGroupMcp => 'MCP';
+
+  @override
+  String get agentSettingsToolGroupCollaboration => 'Collaboration';
+
+  @override
+  String get agentSettingsToolGroupSession => 'Session';
+
+  @override
+  String agentSettingsToolGroupSummary(int enabled, int total) {
+    return '$enabled of $total on';
+  }
+
+  @override
+  String get agentSettingsToolGroupAlwaysOn => 'Always available';
+
+  @override
   String get agentSettingsSubagents => 'Callable subagents';
 
   @override

@@ -241,6 +241,34 @@ enum ToolRisk {
   dangerous,
 }
 
+/// The related set of tools a client presents and toggles together.
+///
+/// Declaration order is presentation order. It is deliberately not the order
+/// the daemon advertises tools in: that order is what a model is shown, and
+/// rearranging it to suit a settings screen would change what the model sees.
+enum ToolGroup {
+  /// Finds and reads workspace files.
+  filesystem,
+
+  /// Changes workspace files.
+  editing,
+
+  /// Starts processes.
+  execution,
+
+  /// Moves files in and out of the conversation as attachments.
+  attachments,
+
+  /// Reaches MCP servers and the resources they publish.
+  mcp,
+
+  /// Drives collaborating subagents.
+  collaboration,
+
+  /// Steers the turn itself: plans, questions, and time.
+  session,
+}
+
 /// Storage kind of a registered workspace repository.
 enum WorkspaceKind {
   /// A Git repository whose checkouts and worktrees can be discovered.
@@ -761,6 +789,7 @@ abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
     required String name,
     required String description,
     required ToolRisk risk,
+    required ToolGroup group,
     @Default(true) bool available,
     @Default(false) bool alwaysOn,
   }) = _AgentToolDefinitionDto;

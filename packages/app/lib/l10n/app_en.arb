@@ -1008,6 +1008,50 @@
   "@agentSettingsBuiltinTools": {
     "description": "Heading of the tool permission list."
   },
+  "agentSettingsToolGroupFilesystem": "Files",
+  "@agentSettingsToolGroupFilesystem": {
+    "description": "Tool group covering workspace search and reading."
+  },
+  "agentSettingsToolGroupEditing": "Editing",
+  "@agentSettingsToolGroupEditing": {
+    "description": "Tool group covering workspace file changes."
+  },
+  "agentSettingsToolGroupExecution": "Commands",
+  "@agentSettingsToolGroupExecution": {
+    "description": "Tool group covering shell and process execution."
+  },
+  "agentSettingsToolGroupAttachments": "Attachments",
+  "@agentSettingsToolGroupAttachments": {
+    "description": "Tool group covering conversation attachments."
+  },
+  "agentSettingsToolGroupMcp": "MCP",
+  "@agentSettingsToolGroupMcp": {
+    "description": "Tool group covering MCP servers and their resources."
+  },
+  "agentSettingsToolGroupCollaboration": "Collaboration",
+  "@agentSettingsToolGroupCollaboration": {
+    "description": "Tool group covering collaborating subagents."
+  },
+  "agentSettingsToolGroupSession": "Session",
+  "@agentSettingsToolGroupSession": {
+    "description": "Tool group covering plans, questions, and time."
+  },
+  "agentSettingsToolGroupSummary": "{enabled} of {total} on",
+  "@agentSettingsToolGroupSummary": {
+    "description": "Subtitle counting the enabled tools in one group.",
+    "placeholders": {
+      "enabled": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSettingsToolGroupAlwaysOn": "Always available",
+  "@agentSettingsToolGroupAlwaysOn": {
+    "description": "Subtitle of a group whose tools every agent gets."
+  },
   "agentSettingsSubagents": "Callable subagents",
   "@agentSettingsSubagents": {
     "description": "Heading of the subagent list."

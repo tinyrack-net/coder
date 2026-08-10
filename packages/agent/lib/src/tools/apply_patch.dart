@@ -273,6 +273,7 @@ final class ApplyPatchToolProvider extends SelectableToolProvider {
     name: id,
     description: ApplyPatchTool().description,
     risk: AgentToolRisk.write,
+    group: AgentToolGroup.editing,
   );
 
   @override

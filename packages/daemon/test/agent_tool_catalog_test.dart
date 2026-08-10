@@ -25,6 +25,7 @@ void main() {
     name: 'read_file',
     description: 'Read files.',
     risk: ToolRisk.read,
+    group: ToolGroup.filesystem,
     alwaysOn: true,
   );
   const runCommand = AgentToolDefinitionDto(
@@ -32,12 +33,14 @@ void main() {
     name: 'run_command',
     description: 'Run a command.',
     risk: ToolRisk.command,
+    group: ToolGroup.execution,
   );
   const projectTool = AgentToolDefinitionDto(
     id: 'mcp__repo__lint',
     name: 'mcp__repo__lint',
     description: 'Lint the repository.',
     risk: ToolRisk.dangerous,
+    group: ToolGroup.mcp,
   );
 
   test('read-only built-in tools are always on', () {
@@ -54,6 +57,64 @@ void main() {
       'request_user_input',
       'read_attachment',
     });
+  });
+
+  test('every tool group has a built-in capability in it', () {
+    // A group nothing belongs to would be a heading a client can never draw,
+    // so a group is added with the capability that needs it and not before.
+    expect(
+      registry.catalog.map((entry) => entry.group).toSet(),
+      AgentToolGroup.values.toSet(),
+    );
+  });
+
+  test('capabilities are grouped by what they do', () {
+    Set<String> idsIn(AgentToolGroup group) => <String>{
+      for (final entry in registry.catalog)
+        if (entry.group == group) entry.id,
+    };
+    expect(idsIn(AgentToolGroup.filesystem), <String>{
+      'list_directory',
+      'read_file',
+      'search_text',
+      'glob',
+      'view_image',
+    });
+    expect(idsIn(AgentToolGroup.editing), <String>{'apply_patch'});
+    expect(idsIn(AgentToolGroup.execution), <String>{'exec_command'});
+    expect(idsIn(AgentToolGroup.attachments), <String>{
+      'attach_file',
+      'read_attachment',
+    });
+    expect(idsIn(AgentToolGroup.mcp), <String>{
+      'list_mcp_resources',
+      'list_mcp_resource_templates',
+      'read_mcp_resource',
+    });
+    expect(idsIn(AgentToolGroup.collaboration), <String>{'collaboration'});
+    expect(idsIn(AgentToolGroup.session), <String>{
+      'update_plan',
+      'request_user_input',
+      'clock__curr_time',
+      'clock__sleep',
+    });
+  });
+
+  test('the protocol catalog carries each capability group', () {
+    expect(
+      registry.catalog
+          .map(protocolToolDefinition)
+          .where((entry) => entry.id == 'exec_command')
+          .single
+          .group,
+      ToolGroup.execution,
+    );
+    // The twin enums are mapped by name, so a case added to one and not the
+    // other has to fail here rather than at runtime on a user's machine.
+    expect(
+      AgentToolGroup.values.map((value) => value.name),
+      ToolGroup.values.map((value) => value.name),
+    );
   });
 
   test('resolution forces the always-on tools ahead of the chosen ones', () {

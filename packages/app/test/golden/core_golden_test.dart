@@ -891,6 +891,42 @@ void main() {
     ),
   );
 
+  // The tool list is far below the fold of the agent_settings golden, so the
+  // group rows need a frame of their own. All three states are in it: a locked
+  // group of always-on tools, a closed group nothing is on in, and an open one
+  // where the header reads partial because only some of its tools are on.
+  // One theme per file: the interaction has to scroll, and a scroll needs a
+  // single scrollable rather than one per scenario in a shared tree.
+  for (final (fileName, mode) in <(String, ThemeMode)>[
+    ('agent_tool_groups_light', ThemeMode.light),
+    ('agent_tool_groups_dark', ThemeMode.dark),
+  ]) {
+    unawaited(
+      goldenTest(
+        'agent tool groups collapse, lock, and report a partial selection '
+        '($fileName)',
+        fileName: fileName,
+        constraints: const BoxConstraints.tightFor(width: 1160, height: 860),
+        pumpBeforeTest: _revealAgentToolGroups,
+        builder: () => GoldenTestGroup(
+          children: <Widget>[
+            // The desktop width on purpose: below the list-detail breakpoint
+            // the page shows its agent list instead of the editor the tool
+            // groups live in.
+            GoldenTestScenario(
+              name: 'desktop',
+              child: SizedBox(
+                width: 1100,
+                height: 760,
+                child: _agentSettings(mode),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   unawaited(
     goldenTest(
       'MCP settings shows user and project servers with their status',
@@ -1754,6 +1790,42 @@ Widget _projectSettings(ThemeMode mode) {
       ),
     ),
   );
+}
+
+/// Scrolls the agent editor to its tool groups and puts one in a partial state.
+///
+/// scrollUntilVisible stops as soon as a row is built, which a list does before
+/// the row is on screen, so ensureVisible has to finish the job.
+Future<void> _revealAgentToolGroups(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  // The editor's own list, not the agent collection beside it.
+  final scrollable = find
+      .descendant(
+        of: find.byType(ListView).last,
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  Future<void> reveal(Finder finder) async {
+    await tester.scrollUntilVisible(finder, 200, scrollable: scrollable);
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+  }
+
+  const mcp = ValueKey<String>('agent-tool-group-mcp');
+  await reveal(find.byKey(mcp));
+  // Check the whole group, then clear one tool, so the header has a partial
+  // state to draw rather than a plain on or off.
+  await tester.tap(
+    find.descendant(of: find.byKey(mcp), matching: find.byType(TRCheckbox)),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(mcp));
+  await tester.pumpAndSettle();
+  const member = ValueKey<String>('agent-tool-tile-read_mcp_resource');
+  await reveal(find.byKey(member));
+  await tester.tap(find.byKey(member));
+  await tester.pumpAndSettle();
+  await reveal(find.byKey(mcp));
 }
 
 Widget _agentSettings(ThemeMode mode) {

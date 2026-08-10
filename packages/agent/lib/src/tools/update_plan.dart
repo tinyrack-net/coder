@@ -150,6 +150,7 @@ final class UpdatePlanToolProvider extends SelectableToolProvider {
     name: id,
     description: UpdatePlanTool().description,
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.session,
     alwaysOn: true,
   );
 

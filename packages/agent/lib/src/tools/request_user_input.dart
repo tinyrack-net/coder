@@ -202,6 +202,7 @@ final class RequestUserInputToolProvider extends SelectableToolProvider {
         'Ask the user multiple-choice questions and wait for the '
         'answers.',
     risk: AgentToolRisk.read,
+    group: AgentToolGroup.session,
     alwaysOn: true,
   );
 
