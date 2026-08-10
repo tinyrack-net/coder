@@ -3624,7 +3624,7 @@ class _ExecProvider implements ModelProvider {
   final Completer<String> echoed = Completer<String>();
 
   var _round = 0;
-  String? _sessionId;
+  int? _sessionId;
 
   @override
   String get id => 'exec-fake';
@@ -3674,7 +3674,7 @@ class _ExecProvider implements ModelProvider {
       return;
     }
     if (_round == 2) {
-      _sessionId = resultFor('exec-call')['session_id'] as String?;
+      _sessionId = resultFor('exec-call')['session_id'] as int?;
       final arguments = <String, dynamic>{
         'session_id': _sessionId,
         'chars': 'tinyrack-exec-probe\n',
