@@ -215,6 +215,61 @@ branch refs/heads/feature/settings
   );
 
   test(
+    'catalog preserves a managed identity across path separators',
+    () async {
+      final database = CoderDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway();
+      final service = _service(database, git: git);
+      await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+
+      final created = await service.createWorktree(
+        const WorktreeCreateParamsDto(
+          id: 'managed-equivalent-path',
+          workspaceId: 'repo-1',
+          mode: WorktreeCreateMode.newBranch,
+          branchName: 'feature-equivalent-path',
+          baseBranch: 'main',
+        ),
+      );
+      final createdPath = created.worktree.path;
+      final snapshotIndex = git.snapshots.indexWhere(
+        (snapshot) => snapshot.path == createdPath,
+      );
+      final alternatePath = createdPath.contains(r'\')
+          ? createdPath.replaceAll(r'\', '/')
+          : createdPath.replaceAll('/', r'\');
+      git.snapshots[snapshotIndex] = GitWorktreeSnapshot(
+        path: alternatePath,
+        branch: 'feature-equivalent-path',
+        head: 'created-head',
+      );
+
+      final catalog = await service.catalog();
+      final matching = catalog.worktrees
+          .where((worktree) => worktree.branch == 'feature-equivalent-path')
+          .toList(growable: false);
+      expect(matching, hasLength(1));
+      expect(matching.single.id, 'managed-equivalent-path');
+      expect(matching.single.kind, WorktreeKind.managed);
+    },
+    tags: const <String>[
+      'feature_test__workspace_catalog__unit',
+      'feature_test__worktree_lifecycle__unit',
+    ],
+  );
+
+  test(
     'catalog does not archive unavailable directory workspaces',
     () async {
       final database = CoderDatabase.forTesting(

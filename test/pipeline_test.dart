@@ -4,6 +4,14 @@ import 'package:test/test.dart';
 
 void main() {
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
+  final relayWorkflowFile = File('.github/workflows/relay-release.yml');
+  final relayWorkflow = relayWorkflowFile.existsSync()
+      ? relayWorkflowFile.readAsStringSync()
+      : '';
+  final relayDockerfile = File(
+    'packages/relay/Dockerfile',
+  ).readAsStringSync();
+  final shipworld = File('shipworld.yaml').readAsStringSync();
   final ibusTerminalRunner = File(
     'tool/run_linux_ibus_terminal_e2e.sh',
   ).readAsStringSync();
@@ -86,6 +94,58 @@ void main() {
       }
     },
   );
+
+  test('app tags deploy web as a required release artifact', () {
+    final deployWeb = _job(workflow, 'deploy-web');
+    final publishRelease = _job(workflow, 'publish-release');
+
+    expect(deployWeb, contains("startsWith(github.ref, 'refs/tags/v')"));
+    expect(deployWeb, isNot(contains("github.ref == 'refs/heads/main'")));
+    for (final dependency in <String>[
+      'quality-gate',
+      'web-build',
+      'build-and-package',
+      'build-cli',
+    ]) {
+      expect(deployWeb, contains('- $dependency'));
+    }
+    expect(publishRelease, contains('- deploy-web'));
+  });
+
+  test('relay tags publish one attested multi-platform GHCR image', () {
+    expect(relayWorkflow, contains('relay-v*.*.*'));
+    expect(relayWorkflow, contains('packages: write'));
+    expect(relayWorkflow, contains('attestations: write'));
+    expect(relayWorkflow, contains('id-token: write'));
+    expect(relayWorkflow, contains('release verify relay'));
+    expect(relayWorkflow, contains('linux/amd64,linux/arm64'));
+    expect(relayWorkflow, contains('ghcr.io/tinyrack-net/coder-relay'));
+    expect(
+      relayWorkflow,
+      contains(r'v${{ steps.version.outputs.version }}'),
+    );
+    expect(relayWorkflow, contains('latest'));
+    expect(relayWorkflow, contains('actions/attest'));
+    expect(
+      relayWorkflow,
+      contains('packages/relay/tool/smoke_relay.dart'),
+    );
+    expect(relayWorkflow, isNot(contains('gh release create')));
+  });
+
+  test('relay release has an independent version and reproducible image', () {
+    expect(shipworld, contains('  relay:'));
+    expect(shipworld, contains('source: packages/relay/pubspec.yaml'));
+    expect(shipworld, contains('tag: "relay-v{version}"'));
+
+    expect(relayDockerfile, contains('dart:3.12.2@sha256:'));
+    expect(relayDockerfile, contains('cc-debian12:nonroot@sha256:'));
+    expect(relayDockerfile, contains('docker/pubspec.lock pubspec.lock'));
+    expect(relayDockerfile, contains('dart pub get --enforce-lockfile'));
+    expect(relayDockerfile, isNot(contains('dart:stable')));
+    expect(File('packages/relay/docker/pubspec.lock').existsSync(), isTrue);
+    expect(File('packages/relay/deploy/kubernetes.yaml').existsSync(), isFalse);
+  });
 
   test('both CLI jobs build and smoke the bundle through one definition', () {
     final verify = _job(workflow, 'cli-verify');

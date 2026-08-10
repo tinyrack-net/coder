@@ -474,11 +474,16 @@ final class WorkspaceOperations {
     String? checkoutId,
   }) async {
     final result = <WorktreeDto>[];
+    final activeWorktrees = await _worktrees.list(workspaceId: workspace.id);
     for (var index = 0; index < snapshots.length; index += 1) {
       final snapshot = snapshots[index];
-      final existing = await _worktrees.getByPathIncludingArchived(
+      var existing = await _worktrees.getByPathIncludingArchived(
         snapshot.path,
       );
+      for (final worktree in activeWorktrees) {
+        if (existing != null) break;
+        if (p.equals(worktree.path, snapshot.path)) existing = worktree;
+      }
       if (existing == null &&
           _pendingManagedWorktreePaths.keys.any(
             (pending) => p.equals(pending, snapshot.path),

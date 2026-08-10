@@ -118,3 +118,14 @@ targets:
       # shipworld reads `<prefix>-<platform>-<arch>` bare executables from the
       # artifacts directory and installs them under this name.
       artifact-prefix: coder-cli
+
+  relay:
+    # The relay server ships only as a container and therefore owns a release
+    # cycle independent of the desktop application and command-line client.
+    kind: cli-application
+    root: .
+    version:
+      source: packages/relay/pubspec.yaml
+    tag: "relay-v{version}"
+    commit: "release: relay-v{version}"
+    branch: main

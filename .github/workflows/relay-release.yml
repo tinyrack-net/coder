@@ -1,0 +1,141 @@
+name: Relay Release
+
+on:
+  push:
+    tags:
+      - "relay-v*.*.*"
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.44.8
+  TINYRACK_DART_PACKAGES_REF: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+  RELAY_IMAGE: ghcr.io/tinyrack-net/coder-relay
+
+jobs:
+  publish-relay:
+    name: Publish Relay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - name: Test relay packages
+        run: >-
+          dart run melos exec --no-flutter
+          --scope=relay --scope=relay_protocol -c 2 --
+          dart test --concurrency=1 --test-randomize-ordering-seed=random
+
+      - name: Checkout Tinyrack Dart packages
+        uses: actions/checkout@v5
+        with:
+          repository: tinyrack-net/dart-packages
+          ref: ${{ env.TINYRACK_DART_PACKAGES_REF }}
+          path: .dart_tool/tinyrack-dart-packages
+      - run: dart pub get --directory .dart_tool/tinyrack-dart-packages
+      - name: Verify the tag matches the relay version
+        run: >-
+          dart run
+          .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart
+          release verify relay
+      - name: Resolve the image version
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#relay-v}"
+          test "relay-v${version}" = "${GITHUB_REF_NAME}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the native smoke image
+        run: docker build --file packages/relay/Dockerfile --tag coder-relay:smoke .
+      - name: Smoke the built relay and graceful shutdown
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker rm --force coder-relay-smoke >/dev/null 2>&1 || true
+            rm -f relay-smoke.ready relay-smoke.log
+          }
+          trap cleanup EXIT
+          docker run --detach --name coder-relay-smoke \
+            --publish 127.0.0.1:18080:8080 coder-relay:smoke
+          for _ in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:18080/health/ready \
+              >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          dart run packages/relay/tool/smoke_relay.dart \
+            http://127.0.0.1:18080 relay-smoke.ready \
+            >relay-smoke.log 2>&1 &
+          smoke_pid=$!
+          for _ in $(seq 1 40); do
+            test -f relay-smoke.ready && break
+            sleep 0.25
+          done
+          test -f relay-smoke.ready
+          docker stop --time 5 coder-relay-smoke >/dev/null
+          wait "$smoke_pid"
+          test "$(docker inspect --format '{{.State.ExitCode}}' \
+            coder-relay-smoke)" = "0"
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image tags and labels
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.RELAY_IMAGE }}
+          tags: |
+            type=raw,value=v${{ steps.version.outputs.version }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=Tinyrack Coder Relay
+            org.opencontainers.image.description=Opaque WebSocket relay for Tinyrack Coder
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+      - name: Build and publish the multi-platform image
+        id: publish
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: packages/relay/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Attest the image manifest
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.RELAY_IMAGE }}
+          subject-digest: ${{ steps.publish.outputs.digest }}
+          push-to-registry: true
+      - name: Verify both tags resolve to the published digest
+        shell: bash
+        env:
+          EXPECTED_DIGEST: ${{ steps.publish.outputs.digest }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          for tag in "v${VERSION}" latest; do
+            actual="$(docker buildx imagetools inspect \
+              "${RELAY_IMAGE}:${tag}" | awk '/^Digest:/ {print $2}')"
+            test "$actual" = "$EXPECTED_DIGEST"
+          done
