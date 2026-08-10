@@ -1134,9 +1134,10 @@ void main() {
         ),
         setupClient,
       );
-      final failedToolCard = find.ancestor(
-        of: find.text('실패', findRichText: true).last,
-        matching: find.byType(ChatToolCard),
+      final failedToolCard = find.byWidgetPredicate(
+        (widget) =>
+            widget is ChatToolCard &&
+            widget.activity.callId == 'disallowed-delegate-call',
       );
       expect(failedToolCard, findsOneWidget);
       await tester.tap(failedToolCard);

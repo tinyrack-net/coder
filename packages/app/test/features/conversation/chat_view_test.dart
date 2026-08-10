@@ -94,6 +94,43 @@ void main() {
   );
 
   testWidgets(
+    'an expanded failed collaboration tool shows its structured error',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'spawn-call',
+          'name': 'spawn_agent',
+          'arguments': <String, dynamic>{
+            'task_name': 'forbidden_task',
+            'message': 'This spawn must not start.',
+            'agent_type': 'not-allowed',
+          },
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'spawn-call',
+          'name': 'spawn_agent',
+          'output': '{"error":"Agent type is not allowed: not-allowed"}',
+          'isError': true,
+        }),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('실패'), findsOneWidget);
+      expect(
+        find.textContaining('Agent type is not allowed: not-allowed'),
+        findsNothing,
+      );
+      await tester.tap(find.byType(ChatToolCard));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Agent type is not allowed: not-allowed'),
+        findsWidgets,
+      );
+    },
+    tags: const <String>['feature_test__agent_collaboration__widget'],
+  );
+
+  testWidgets(
     'expanding a command shows its output without the JSON wrapper',
     (tester) async {
       final clipboard = <String>[];
