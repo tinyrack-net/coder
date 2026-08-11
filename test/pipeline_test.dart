@@ -64,6 +64,8 @@ void main() {
       'flutter-tests',
       'coverage-dart-linux',
       'coverage-flutter-linux',
+      'relay-coverage-linux',
+      'relay-smoke-linux',
       'golden-linux',
       'debug-e2e-linux',
       'linux-ibus-terminal-e2e',
@@ -144,6 +146,8 @@ void main() {
     for (final job in <String>[
       'coverage-dart-linux',
       'coverage-flutter-linux',
+      'relay-coverage-linux',
+      'relay-smoke-linux',
       'golden-linux',
       'debug-e2e-linux',
       'static-linux',
@@ -182,6 +186,7 @@ void main() {
     // An empty or unreadable diff must not read as documentation-only, or a
     // code change could merge without ever running a gate.
     expect(scope, contains('docs_only=false'));
+    expect(scope, contains('verification_scope=full'));
     for (final job in <String>[
       'static-linux',
       'coverage-dart-linux',
@@ -202,6 +207,63 @@ void main() {
         contains("needs.changes.outputs.docs_only != 'true'"),
       );
     }
+  });
+
+  test('pull request jobs follow the conservative change scope', () {
+    final scope = _job(workflow, 'changes');
+    expect(scope, contains('scope='));
+    expect(scope, contains('tool/resolve_ci_scope.dart'));
+
+    expect(
+      _job(workflow, 'relay-coverage-linux'),
+      contains("needs.changes.outputs.scope == 'relay-only'"),
+    );
+    expect(
+      _job(workflow, 'relay-smoke-linux'),
+      contains("needs.changes.outputs.scope == 'relay-only'"),
+    );
+    for (final job in <String>[
+      'generated-linux',
+      'coverage-flutter-linux',
+      'golden-linux',
+      'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
+      'linux-ibus-terminal-wayland-e2e',
+      'mobile-debug-build',
+      'web-build',
+    ]) {
+      expect(
+        _job(workflow, job),
+        contains("needs.changes.outputs.scope != 'relay-only'"),
+        reason: job,
+      );
+    }
+    for (final job in <String>['coverage-dart-linux', 'cli-verify']) {
+      expect(
+        _job(workflow, job),
+        contains("needs.changes.outputs.scope == 'full'"),
+        reason: job,
+      );
+    }
+  });
+
+  test('Dart coverage enforces every non-Flutter package', () {
+    final coverage = _job(workflow, 'coverage-dart-linux');
+    for (final package in <String>[
+      'agent',
+      'cli',
+      'client',
+      'daemon',
+      'protocol',
+      'relay',
+      'relay_protocol',
+    ]) {
+      expect(coverage, contains('--scope=$package'), reason: package);
+    }
+    expect(
+      _job(workflow, 'relay-coverage-linux'),
+      contains('test:coverage:relay'),
+    );
   });
 
   test(
@@ -414,6 +476,8 @@ void main() {
       'flutter-tests',
       'coverage-dart-linux',
       'coverage-flutter-linux',
+      'relay-coverage-linux',
+      'relay-smoke-linux',
       'golden-linux',
       'debug-e2e-linux',
       'linux-ibus-terminal-e2e',

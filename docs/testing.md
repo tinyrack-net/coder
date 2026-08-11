@@ -197,6 +197,16 @@ A `changes` job decides the scope. It narrows the CLI and mobile matrices from
 diff is only `docs/` and Markdown. An unreadable or empty file listing counts
 as code, never as documentation.
 
+Pull requests are additionally divided into conservative package scopes. A diff
+entirely under `packages/relay/` runs static checks, relay branch coverage, and
+the relay image smoke test without starting the Flutter application matrix. A
+diff entirely under `packages/app/` runs the application coverage, generated,
+golden, Debug E2E, IBus, mobile, and web gates without re-running unchanged Dart
+package coverage or the CLI build. Mixed changes, shared `relay_protocol`
+changes, and repository-level changes run the full matrix. Merge queue, main,
+tag, and manual runs are always full, so the projected merge commit still
+receives every gate.
+
 Three consequences worth knowing. A queue run reports as the `merge_group`
 event rather than `pull_request`, so a job that must run before merging cannot
 be gated on `pull_request` alone. A cancelled queue check counts as a failure
@@ -219,6 +229,12 @@ WinGet publishing proceed independently after the GitHub Release is available.
 for every app/package. Production Dart files missing from LCOV count as uncovered.
 Only `.g.dart` and `.freezed.dart` files are excluded. Do not use coverage-ignore
 comments to change the denominator.
+
+The full Dart coverage job enforces `agent`, `cli`, `client`, `daemon`,
+`protocol`, `relay`, and `relay_protocol`; the Flutter coverage job enforces
+`app`. A relay-only pull request collects and enforces `relay` coverage in its
+focused lane, while a `relay_protocol` change uses the full Dart lane because
+that protocol is shared by the application, client, and daemon.
 
 ## Completion report
 

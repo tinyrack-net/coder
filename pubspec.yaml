@@ -72,6 +72,8 @@ melos:
       run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random
     test:coverage:flutter:
       run: dart run melos exec --flutter --scope=app -- flutter test --coverage --concurrency=4 --branch-coverage --exclude-tags=golden --test-randomize-ordering-seed=random
+    test:coverage:relay:
+      run: dart run melos exec --no-flutter --scope=relay -c 1 -- dart test --concurrency=1 --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random
     coverage:check:
       run: dart run tool/verify_coverage.dart
     test:coverage:
