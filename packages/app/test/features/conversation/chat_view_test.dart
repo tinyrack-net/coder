@@ -274,7 +274,10 @@ void main() {
 
   testWidgets(
     'reasoning replaces generic progress and streams inside its disclosure',
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__streaming__widget',
+    ],
     (tester) async {
       final events = <TimelineEventDto>[
         event('assistant.reasoning.started', const <String, dynamic>{}),

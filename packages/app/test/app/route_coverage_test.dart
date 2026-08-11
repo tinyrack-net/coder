@@ -56,7 +56,11 @@ void main() {
       const WorkspaceHomeRoute().location,
       find.text('Workspaces'),
     ),
-    tags: const <String>['route_test__workspace_home_route__widget'],
+    tags: const <String>[
+      'route_test__workspace_home_route__widget',
+      'ui_state__workspace_home_route__rendered__widget',
+      'ui_variant__workspace_home_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -71,7 +75,11 @@ void main() {
       ).location,
       find.text('새 탭'),
     ),
-    tags: const <String>['route_test__worktree_route__widget'],
+    tags: const <String>[
+      'route_test__worktree_route__widget',
+      'ui_state__worktree_route__rendered__widget',
+      'ui_variant__worktree_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -87,7 +95,11 @@ void main() {
       ).location,
       find.text('Route session'),
     ),
-    tags: const <String>['route_test__session_route__widget'],
+    tags: const <String>[
+      'route_test__session_route__widget',
+      'ui_state__session_route__rendered__widget',
+      'ui_variant__session_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -178,6 +190,8 @@ void main() {
       'route_test__worktree_route__widget',
       'route_test__session_route__widget',
       'route_test__terminal_route__widget',
+      'ui_state__terminal_route__rendered__widget',
+      'ui_variant__terminal_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -189,7 +203,11 @@ void main() {
       const SettingsHomeRoute().location,
       find.text('설정'),
     ),
-    tags: const <String>['route_test__settings_home_route__widget'],
+    tags: const <String>[
+      'route_test__settings_home_route__widget',
+      'ui_state__settings_home_route__rendered__widget',
+      'ui_variant__settings_home_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -200,7 +218,13 @@ void main() {
       const DaemonCategoriesRoute(hostId: 'server').location,
       find.text('Provider'),
     ),
-    tags: const <String>['route_test__daemon_categories_route__widget'],
+    tags: const <String>[
+      'route_test__daemon_categories_route__widget',
+      'ui_state__daemon_categories_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__daemon_categories_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -214,6 +238,8 @@ void main() {
     tags: const <String>[
       'route_test__general_settings_route__widget',
       'feature_test__settings_language__widget',
+      'ui_state__general_settings_route__rendered__widget',
+      'ui_variant__general_settings_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -228,6 +254,8 @@ void main() {
     tags: const <String>[
       'route_test__mcp_settings_route__widget',
       'feature_test__mcp_server_management__widget',
+      'ui_state__mcp_settings_route__rendered__widget',
+      'ui_variant__mcp_settings_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -239,7 +267,13 @@ void main() {
       const ProviderSettingsRoute(hostId: 'server').location,
       find.text('연결됨'),
     ),
-    tags: const <String>['route_test__provider_settings_route__widget'],
+    tags: const <String>[
+      'route_test__provider_settings_route__widget',
+      'ui_state__provider_settings_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__provider_settings_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -253,6 +287,10 @@ void main() {
     tags: const <String>[
       'route_test__permission_settings_route__widget',
       'feature_test__permission_settings__widget',
+      'ui_state__permission_settings_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__permission_settings_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -264,7 +302,11 @@ void main() {
       const ProjectSettingsRoute(hostId: 'server').location,
       find.text('Projects'),
     ),
-    tags: const <String>['route_test__project_settings_route__widget'],
+    tags: const <String>[
+      'route_test__project_settings_route__widget',
+      'ui_state__project_settings_route__rendered__widget',
+      'ui_variant__project_settings_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -275,7 +317,11 @@ void main() {
       const AgentSettingsRoute(hostId: 'server').location,
       find.text('Agents'),
     ),
-    tags: const <String>['route_test__agent_settings_route__widget'],
+    tags: const <String>[
+      'route_test__agent_settings_route__widget',
+      'ui_state__agent_settings_route__rendered__widget',
+      'ui_variant__agent_settings_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -286,7 +332,11 @@ void main() {
       const SkillSettingsRoute(hostId: 'server').location,
       find.text('스킬'),
     ),
-    tags: const <String>['route_test__skill_settings_route__widget'],
+    tags: const <String>[
+      'route_test__skill_settings_route__widget',
+      'ui_state__skill_settings_route__rendered__widget',
+      'ui_variant__skill_settings_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -297,7 +347,11 @@ void main() {
       const DaemonSettingsRoute().location,
       find.text('원격 daemons'),
     ),
-    tags: const <String>['route_test__daemon_settings_route__widget'],
+    tags: const <String>[
+      'route_test__daemon_settings_route__widget',
+      'ui_state__daemon_settings_route__rendered__widget',
+      'ui_variant__daemon_settings_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -311,6 +365,10 @@ void main() {
     tags: const <String>[
       'route_test__advanced_settings_route__widget',
       'feature_test__settings_reset__widget',
+      'ui_state__advanced_settings_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__advanced_settings_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -325,6 +383,8 @@ void main() {
     tags: const <String>[
       'route_test__connect_daemon_route__widget',
       'feature_test__daemon_relay__widget',
+      'ui_state__connect_daemon_route__rendered__widget',
+      'ui_variant__connect_daemon_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -339,6 +399,8 @@ void main() {
     tags: const <String>[
       'route_test__pairing_link_route__widget',
       'feature_test__daemon_relay__widget',
+      'ui_state__pairing_link_route__rendered__widget',
+      'ui_variant__pairing_link_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -353,6 +415,8 @@ void main() {
     tags: const <String>[
       'route_test__pairing_scan_route__widget',
       'feature_test__daemon_relay__widget',
+      'ui_state__pairing_scan_route__rendered__widget',
+      'ui_variant__pairing_scan_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -367,6 +431,8 @@ void main() {
     tags: const <String>[
       'route_test__pair_offer_route__widget',
       'feature_test__daemon_relay__widget',
+      'ui_state__pair_offer_route__rendered__widget',
+      'ui_variant__pair_offer_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -378,7 +444,13 @@ void main() {
       const AdvancedNewHostRoute().location,
       find.text('원격 daemon 추가'),
     ),
-    tags: const <String>['route_test__advanced_new_host_route__widget'],
+    tags: const <String>[
+      'route_test__advanced_new_host_route__widget',
+      'ui_state__advanced_new_host_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__advanced_new_host_route__desktop_mobile_light_korean__widget',
+    ],
   );
 
   testWidgets(
@@ -393,6 +465,10 @@ void main() {
       'route_test__daemon_connections_route__widget',
       'feature_test__daemon_relay__widget',
       'feature_test__daemon_relay__platformSmoke',
+      'ui_state__daemon_connections_route__rendered__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__daemon_connections_route__desktop_mobile_light_korean__widget',
     ],
   );
 
@@ -404,7 +480,11 @@ void main() {
       const EditHostRoute(hostId: 'server').location,
       find.text('원격 daemon 편집'),
     ),
-    tags: const <String>['route_test__edit_host_route__widget'],
+    tags: const <String>[
+      'route_test__edit_host_route__widget',
+      'ui_state__edit_host_route__rendered__widget',
+      'ui_variant__edit_host_route__desktop_mobile_light_korean__widget',
+    ],
   );
 }
 

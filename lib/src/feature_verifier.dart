@@ -35,6 +35,124 @@ enum FeatureSurface {
   web,
 }
 
+/// Scheduling tier for UI evidence.
+enum UiEvidenceTier {
+  /// Blocks pull requests and merge-queue changes.
+  prRequired,
+
+  /// Runs in the expanded scheduled matrix.
+  nightlyExtended,
+}
+
+/// One user-observable state of a UI entry point.
+final class UiStateContract {
+  /// Creates an immutable UI state contract.
+  const UiStateContract({required this.id, required this.description});
+
+  /// Stable snake-case identifier used by evidence tags.
+  final String id;
+
+  /// Observable condition that proves the state.
+  final String description;
+}
+
+/// One user action and its allowed observable outcomes.
+final class UiTransitionContract {
+  /// Creates an immutable UI transition contract.
+  const UiTransitionContract({
+    required this.id,
+    required this.description,
+    required this.fromState,
+    required this.outcomes,
+  });
+
+  /// Stable snake-case identifier used by evidence tags.
+  final String id;
+
+  /// User action protected by the transition.
+  final String description;
+
+  /// State in which the action is reachable.
+  final String fromState;
+
+  /// States in which the action may observably finish.
+  final Set<String> outcomes;
+}
+
+/// One pairwise environment case required for a UI entry point.
+final class UiVariantContract {
+  /// Creates an immutable UI variant contract.
+  const UiVariantContract({required this.id, required this.description});
+
+  /// Stable snake-case case identifier.
+  final String id;
+
+  /// Viewport, locale, theme, input, and connection dimensions in this case.
+  final String description;
+}
+
+/// Complete atomic reachability contract for one route or transient surface.
+final class UiReachabilityContract {
+  /// Creates an immutable UI reachability contract.
+  const UiReachabilityContract({
+    required this.id,
+    required this.featureId,
+    required this.description,
+    required this.states,
+    required this.transitions,
+    required this.variants,
+    this.tier = UiEvidenceTier.prRequired,
+  });
+
+  /// Stable snake-case route, dialog, sheet, menu, overlay, or pane ID.
+  final String id;
+
+  /// Feature that owns this user-facing surface.
+  final String featureId;
+
+  /// Entry point and supported user outcome.
+  final String description;
+
+  /// Every user-observable state supported by the entry point.
+  final List<UiStateContract> states;
+
+  /// Every meaningful user action reachable from the entry point.
+  final List<UiTransitionContract> transitions;
+
+  /// Pairwise environment cases required for the entry point.
+  final List<UiVariantContract> variants;
+
+  /// CI scheduling tier for this contract.
+  final UiEvidenceTier tier;
+}
+
+/// A deliberately composite real-runner journey that cannot replace atomics.
+final class UiJourneyContract {
+  /// Creates an immutable composite journey contract.
+  const UiJourneyContract({
+    required this.id,
+    required this.description,
+    required this.tier,
+    required this.surfaces,
+    required this.transitionIds,
+  });
+
+  /// Stable snake-case journey ID.
+  final String id;
+
+  /// User-observable purpose of the journey.
+  final String description;
+
+  /// CI scheduling tier for this journey.
+  final UiEvidenceTier tier;
+
+  /// Runtime surfaces on which this journey executes.
+  final Set<FeatureSurface> surfaces;
+
+  /// Ordered `surface/transition` IDs composed by the journey.
+  final List<String> transitionIds;
+}
+
 /// One stable, user-observable E2E behavior owned by a feature.
 final class FeatureScenario {
   /// Creates an immutable E2E scenario contract.
@@ -103,6 +221,8 @@ final class FeatureVerifier {
   const FeatureVerifier(
     this.workspaceRoot, {
     required this.contracts,
+    this.uiContracts = const <UiReachabilityContract>[],
+    this.uiJourneys = const <UiJourneyContract>[],
     this.apiPath = 'packages/client/lib/src/api.dart',
     this.routePath = 'packages/app/lib/src/app/router/app_router.dart',
     this.forbiddenProductionTerms = const <String>[],
@@ -113,6 +233,12 @@ final class FeatureVerifier {
 
   /// Complete declared feature catalog.
   final List<FeatureContract> contracts;
+
+  /// Complete catalog of UI entry points, states, actions, and variants.
+  final List<UiReachabilityContract> uiContracts;
+
+  /// Composite real-runner journeys that supplement atomic evidence.
+  final List<UiJourneyContract> uiJourneys;
 
   /// Source containing the `TinestApi` interface.
   final String apiPath;
@@ -213,6 +339,147 @@ final class FeatureVerifier {
       }
     }
 
+    final uiById = <String, UiReachabilityContract>{};
+    final uiStateKeys = <String>{};
+    final uiTransitionKeys = <String>{};
+    final uiVariantKeys = <String>{};
+    for (final contract in uiContracts) {
+      if (uiById.containsKey(contract.id)) {
+        violations.add(
+          FeatureViolation('Duplicate UI reachability ID: ${contract.id}'),
+        );
+      }
+      uiById[contract.id] = contract;
+      _validateStableId(
+        contract.id,
+        label: 'UI reachability ID',
+        violations: violations,
+      );
+      if (contract.description.trim().isEmpty) {
+        violations.add(
+          FeatureViolation(
+            'UI reachability ${contract.id} has no description.',
+          ),
+        );
+      }
+      if (contract.states.isEmpty) {
+        violations.add(
+          FeatureViolation('UI reachability ${contract.id} has no states.'),
+        );
+      }
+      if (contract.variants.isEmpty) {
+        violations.add(
+          FeatureViolation('UI reachability ${contract.id} has no variants.'),
+        );
+      }
+      final stateIds = <String>{};
+      for (final state in contract.states) {
+        final key = '${contract.id}/${state.id}';
+        if (!stateIds.add(state.id)) {
+          violations.add(FeatureViolation('Duplicate UI state $key.'));
+        }
+        uiStateKeys.add(key);
+        _validateStableId(
+          state.id,
+          label: 'UI state ID $key',
+          violations: violations,
+        );
+        if (state.description.trim().isEmpty) {
+          violations.add(FeatureViolation('UI state $key has no description.'));
+        }
+      }
+      final transitionIds = <String>{};
+      for (final transition in contract.transitions) {
+        final key = '${contract.id}/${transition.id}';
+        if (!transitionIds.add(transition.id)) {
+          violations.add(FeatureViolation('Duplicate UI transition $key.'));
+        }
+        uiTransitionKeys.add(key);
+        _validateStableId(
+          transition.id,
+          label: 'UI transition ID $key',
+          violations: violations,
+        );
+        if (!stateIds.contains(transition.fromState)) {
+          violations.add(
+            FeatureViolation(
+              'UI transition $key starts from unknown state '
+              '${transition.fromState}.',
+            ),
+          );
+        }
+        if (transition.outcomes.isEmpty) {
+          violations.add(
+            FeatureViolation('UI transition $key has no outcomes.'),
+          );
+        }
+        for (final outcome in transition.outcomes) {
+          if (!stateIds.contains(outcome)) {
+            violations.add(
+              FeatureViolation(
+                'UI transition $key has unknown outcome $outcome.',
+              ),
+            );
+          }
+        }
+      }
+      final variantIds = <String>{};
+      for (final variant in contract.variants) {
+        final key = '${contract.id}/${variant.id}';
+        if (!variantIds.add(variant.id)) {
+          violations.add(FeatureViolation('Duplicate UI variant $key.'));
+        }
+        uiVariantKeys.add(key);
+        _validateStableId(
+          variant.id,
+          label: 'UI variant ID $key',
+          violations: violations,
+        );
+        if (variant.description.trim().isEmpty) {
+          violations.add(
+            FeatureViolation('UI variant $key has no description.'),
+          );
+        }
+      }
+    }
+    final journeysById = <String, UiJourneyContract>{};
+    for (final journey in uiJourneys) {
+      if (journeysById.containsKey(journey.id)) {
+        violations.add(FeatureViolation('Duplicate UI journey: ${journey.id}'));
+      }
+      journeysById[journey.id] = journey;
+      _validateStableId(
+        journey.id,
+        label: 'UI journey ID',
+        violations: violations,
+      );
+      if (journey.description.trim().isEmpty) {
+        violations.add(
+          FeatureViolation('UI journey ${journey.id} has no description.'),
+        );
+      }
+      if (journey.surfaces.isEmpty) {
+        violations.add(
+          FeatureViolation('UI journey ${journey.id} has no surfaces.'),
+        );
+      }
+      if (journey.transitionIds.isEmpty) {
+        violations.add(
+          FeatureViolation('UI journey ${journey.id} has no transitions.'),
+        );
+      }
+      for (final transitionId in journey.transitionIds) {
+        if (!uiTransitionKeys.contains(transitionId)) {
+          violations.add(
+            FeatureViolation(
+              'UI journey ${journey.id} references unknown transition '
+              '$transitionId.',
+            ),
+          );
+        }
+      }
+    }
+
     final apiMethods = _apiMethods(
       File(p.join(workspaceRoot, apiPath)).readAsStringSync(),
     );
@@ -238,6 +505,10 @@ final class FeatureVerifier {
     final evidence = <String, Set<FeatureVerificationLayer>>{};
     final scenarioEvidence = <String>{};
     final routeEvidence = <String>{};
+    final uiStateEvidence = <String>{};
+    final uiTransitionEvidence = <String>{};
+    final uiVariantEvidence = <String>{};
+    final uiJourneyEvidence = <String>{};
     final marker = RegExp(
       'feature_test__([a-z0-9_]+)__'
       '(unit|contract|verticalSlice|widget|e2e|platformSmoke)',
@@ -245,6 +516,18 @@ final class FeatureVerifier {
     final routeMarker = RegExp('route_test__([a-z0-9_]+)__widget');
     final scenarioMarker = RegExp(
       'feature_scenario__([a-z0-9_]+)__([a-z0-9_]+)__e2e',
+    );
+    final uiStateMarker = RegExp(
+      'ui_state__([a-z0-9_]+)__([a-z0-9_]+)__widget',
+    );
+    final uiTransitionMarker = RegExp(
+      'ui_transition__([a-z0-9_]+)__([a-z0-9_]+)__widget',
+    );
+    final uiVariantMarker = RegExp(
+      'ui_variant__([a-z0-9_]+)__([a-z0-9_]+)__widget',
+    );
+    final uiJourneyMarker = RegExp(
+      'ui_journey__([a-z0-9_]+)__e2e',
     );
     final routesByTag = <String, String>{
       for (final route in routes) _snakeCase(route): route,
@@ -299,7 +582,7 @@ final class FeatureVerifier {
             ),
           );
         }
-        if (!_hasExecutableScenario(source, match.start)) {
+        if (!_hasExecutableUiEvidence(source, match.start)) {
           violations.add(
             FeatureViolation(
               'E2E scenario $featureId/$scenarioId has no executable '
@@ -335,6 +618,74 @@ final class FeatureVerifier {
         }
         routeEvidence.add(route);
       }
+      for (final match in uiStateMarker.allMatches(source)) {
+        final key = '${match.group(1)!}/${match.group(2)!}';
+        if (!uiStateKeys.contains(key)) {
+          violations.add(FeatureViolation('Unknown UI state tag: $key'));
+          continue;
+        }
+        _recordAtomicUiEvidence(
+          source: source,
+          markerOffset: match.start,
+          key: key,
+          hasSkip: hasSkip,
+          relativePath: p.relative(file.path, from: workspaceRoot),
+          evidence: uiStateEvidence,
+          violations: violations,
+        );
+      }
+      for (final match in uiTransitionMarker.allMatches(source)) {
+        final key = '${match.group(1)!}/${match.group(2)!}';
+        if (!uiTransitionKeys.contains(key)) {
+          violations.add(FeatureViolation('Unknown UI transition tag: $key'));
+          continue;
+        }
+        _recordAtomicUiEvidence(
+          source: source,
+          markerOffset: match.start,
+          key: key,
+          hasSkip: hasSkip,
+          relativePath: p.relative(file.path, from: workspaceRoot),
+          evidence: uiTransitionEvidence,
+          violations: violations,
+        );
+      }
+      for (final match in uiVariantMarker.allMatches(source)) {
+        final key = '${match.group(1)!}/${match.group(2)!}';
+        if (!uiVariantKeys.contains(key)) {
+          violations.add(FeatureViolation('Unknown UI variant tag: $key'));
+          continue;
+        }
+        if (hasSkip) {
+          violations.add(
+            FeatureViolation('UI variant $key cannot use skip.'),
+          );
+        }
+        if (!_hasExecutableUiEvidence(source, match.start)) {
+          violations.add(
+            FeatureViolation('UI variant $key has no executable testWidgets.'),
+          );
+          continue;
+        }
+        uiVariantEvidence.add(key);
+      }
+      for (final match in uiJourneyMarker.allMatches(source)) {
+        final id = match.group(1)!;
+        if (!journeysById.containsKey(id)) {
+          violations.add(FeatureViolation('Unknown UI journey tag: $id'));
+          continue;
+        }
+        if (hasSkip) {
+          violations.add(FeatureViolation('UI journey $id cannot use skip.'));
+        }
+        if (!_hasExecutableScenario(source, match.start)) {
+          violations.add(
+            FeatureViolation('UI journey $id has no executable testWidgets.'),
+          );
+          continue;
+        }
+        uiJourneyEvidence.add(id);
+      }
     }
     for (final contract in contracts) {
       final observed = evidence[contract.id] ?? <FeatureVerificationLayer>{};
@@ -361,6 +712,26 @@ final class FeatureVerifier {
         FeatureViolation('Route $route is missing widget evidence.'),
       );
     }
+    for (final key in uiStateKeys.difference(uiStateEvidence)) {
+      violations.add(
+        FeatureViolation('UI state $key is missing widget evidence.'),
+      );
+    }
+    for (final key in uiTransitionKeys.difference(uiTransitionEvidence)) {
+      violations.add(
+        FeatureViolation('UI transition $key is missing widget evidence.'),
+      );
+    }
+    for (final key in uiVariantKeys.difference(uiVariantEvidence)) {
+      violations.add(
+        FeatureViolation('UI variant $key is missing widget evidence.'),
+      );
+    }
+    for (final id in journeysById.keys.toSet().difference(uiJourneyEvidence)) {
+      violations.add(
+        FeatureViolation('UI journey $id is missing E2E evidence.'),
+      );
+    }
     for (final file in _productionSources()) {
       final source = file.readAsStringSync();
       for (final term in _effectiveForbiddenProductionTerms) {
@@ -375,6 +746,76 @@ final class FeatureVerifier {
       }
     }
     return violations;
+  }
+
+  void _validateStableId(
+    String id, {
+    required String label,
+    required List<FeatureViolation> violations,
+  }) {
+    if (!RegExp(r'^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$').hasMatch(id)) {
+      violations.add(
+        FeatureViolation('$label $id must use a stable snake-case ID.'),
+      );
+    }
+  }
+
+  void _recordAtomicUiEvidence({
+    required String source,
+    required int markerOffset,
+    required String key,
+    required bool hasSkip,
+    required String relativePath,
+    required Set<String> evidence,
+    required List<FeatureViolation> violations,
+  }) {
+    if (hasSkip) {
+      violations.add(FeatureViolation('UI evidence for $key cannot use skip.'));
+    }
+    if (!_hasExecutableUiEvidence(source, markerOffset)) {
+      violations.add(
+        FeatureViolation(
+          'UI evidence for $key has no executable testWidgets in '
+          '$relativePath.',
+        ),
+      );
+      return;
+    }
+    if (_atomicUiMarkersInTest(source, markerOffset) != 1) {
+      violations.add(
+        FeatureViolation(
+          'Each testWidgets must prove exactly one atomic UI contract; '
+          '$key shares a test in $relativePath.',
+        ),
+      );
+      return;
+    }
+    evidence.add(key);
+  }
+
+  int _atomicUiMarkersInTest(String source, int markerOffset) {
+    final testSource = _testWidgetsSource(source, markerOffset);
+    if (testSource == null) return 0;
+    return RegExp(
+      'ui_(?:state|transition)__[a-z0-9_]+__[a-z0-9_]+__widget',
+    ).allMatches(testSource).length;
+  }
+
+  bool _hasExecutableUiEvidence(String source, int markerOffset) {
+    final testSource = _testWidgetsSource(source, markerOffset);
+    if (testSource == null) return false;
+    final inlineBehavior =
+        testSource.contains('await ') && testSource.contains('expect(');
+    final assertingRouteHelper = testSource.contains('=> _verifyRoute(');
+    return inlineBehavior || assertingRouteHelper;
+  }
+
+  String? _testWidgetsSource(String source, int markerOffset) {
+    final testStart = source.lastIndexOf('testWidgets(', markerOffset);
+    if (testStart < 0) return null;
+    final nextTest = source.indexOf('testWidgets(', markerOffset + 1);
+    final end = nextTest < 0 ? source.length : nextTest;
+    return source.substring(testStart, end);
   }
 
   List<String> get _effectiveForbiddenProductionTerms =>
