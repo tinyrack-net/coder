@@ -1279,3 +1279,278 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     ],
   ),
 ];
+
+const List<UiStateContract> _renderedRouteState = <UiStateContract>[
+  UiStateContract(
+    id: 'rendered',
+    description: 'The typed route renders its primary content without errors.',
+  ),
+];
+
+const List<UiVariantContract> _routeViewportVariant = <UiVariantContract>[
+  UiVariantContract(
+    id: 'desktop_mobile_light_korean',
+    description:
+        'Light Korean UI renders at 1200x900 desktop and 390x760 mobile sizes.',
+  ),
+];
+
+const List<({String id, String featureId, String description})>
+_uiRouteRegistrations = <({String id, String featureId, String description})>[
+  (
+    id: 'workspace_home_route',
+    featureId: 'workspace.catalog',
+    description: 'Workspace catalog home.',
+  ),
+  (
+    id: 'worktree_route',
+    featureId: 'worktree.lifecycle',
+    description: 'Selected worktree and tab workspace.',
+  ),
+  (
+    id: 'session_route',
+    featureId: 'session.lifecycle',
+    description: 'Conversation session timeline and composer.',
+  ),
+  (
+    id: 'terminal_route',
+    featureId: 'terminal.lifecycle',
+    description: 'Attached daemon terminal.',
+  ),
+  (
+    id: 'settings_home_route',
+    featureId: 'app.navigation',
+    description: 'Settings category home.',
+  ),
+  (
+    id: 'daemon_categories_route',
+    featureId: 'app.navigation',
+    description: 'Daemon-scoped settings categories.',
+  ),
+  (
+    id: 'general_settings_route',
+    featureId: 'settings.language',
+    description: 'Language, appearance, and startup settings.',
+  ),
+  (
+    id: 'provider_settings_route',
+    featureId: 'provider.catalog',
+    description: 'Provider connections and models.',
+  ),
+  (
+    id: 'permission_settings_route',
+    featureId: 'permission.settings',
+    description: 'Daemon permission defaults.',
+  ),
+  (
+    id: 'project_settings_route',
+    featureId: 'project.settings',
+    description: 'Registered project settings.',
+  ),
+  (
+    id: 'agent_settings_route',
+    featureId: 'agent.definition.management',
+    description: 'Agent definition management.',
+  ),
+  (
+    id: 'mcp_settings_route',
+    featureId: 'mcp.server.management',
+    description: 'MCP server management.',
+  ),
+  (
+    id: 'skill_settings_route',
+    featureId: 'skill.management',
+    description: 'Skill source management.',
+  ),
+  (
+    id: 'daemon_settings_route',
+    featureId: 'daemon.management',
+    description: 'Daemon host registry.',
+  ),
+  (
+    id: 'advanced_settings_route',
+    featureId: 'settings.reset',
+    description: 'Advanced settings and full reset.',
+  ),
+  (
+    id: 'connect_daemon_route',
+    featureId: 'daemon.relay',
+    description: 'Daemon connection entry point.',
+  ),
+  (
+    id: 'pairing_link_route',
+    featureId: 'daemon.relay',
+    description: 'Relay pairing link entry.',
+  ),
+  (
+    id: 'pairing_scan_route',
+    featureId: 'daemon.relay',
+    description: 'Relay pairing QR scan.',
+  ),
+  (
+    id: 'pair_offer_route',
+    featureId: 'daemon.relay',
+    description: 'Relay pairing confirmation.',
+  ),
+  (
+    id: 'advanced_new_host_route',
+    featureId: 'daemon.management',
+    description: 'Direct daemon host creation.',
+  ),
+  (
+    id: 'daemon_connections_route',
+    featureId: 'daemon.relay',
+    description: 'Paired daemon device management.',
+  ),
+  (
+    id: 'edit_host_route',
+    featureId: 'daemon.management',
+    description: 'Direct daemon host editing.',
+  ),
+];
+
+/// Complete typed-route reachability catalog.
+final List<UiReachabilityContract>
+tinestUiReachabilityManifest = <UiReachabilityContract>[
+  for (final route in _uiRouteRegistrations)
+    UiReachabilityContract(
+      id: route.id,
+      featureId: route.featureId,
+      description: route.description,
+      states: _renderedRouteState,
+      transitions: const <UiTransitionContract>[],
+      variants: _routeViewportVariant,
+    ),
+  const UiReachabilityContract(
+    id: 'conversation_timeline',
+    featureId: 'turn.execution',
+    description:
+        'Conversation loading, streaming, queued work, blocking cards, '
+        'errors, and recovery actions.',
+    states: <UiStateContract>[
+      UiStateContract(
+        id: 'loading',
+        description: 'Existing history is loading without a false empty state.',
+      ),
+      UiStateContract(
+        id: 'empty',
+        description: 'A loaded session with no history shows its empty state.',
+      ),
+      UiStateContract(
+        id: 'streaming',
+        description: 'Reasoning and response deltas remain visibly live.',
+      ),
+      UiStateContract(
+        id: 'approval_pending',
+        description: 'A tool approval remains actionable in the timeline.',
+      ),
+      UiStateContract(
+        id: 'question_pending',
+        description:
+            'A structured question remains actionable in the timeline.',
+      ),
+      UiStateContract(
+        id: 'queued_error',
+        description: 'A drained prompt failure remains visible and actionable.',
+      ),
+    ],
+    transitions: <UiTransitionContract>[
+      UiTransitionContract(
+        id: 'queue_prompt',
+        description: 'Queues input typed while a turn is running.',
+        fromState: 'streaming',
+        outcomes: <String>{'streaming'},
+      ),
+      UiTransitionContract(
+        id: 'retry_send',
+        description: 'Restores a failed prompt and sends it successfully.',
+        fromState: 'queued_error',
+        outcomes: <String>{'empty', 'queued_error'},
+      ),
+      UiTransitionContract(
+        id: 'cancel_turn',
+        description: 'Stops a running turn without disabling later input.',
+        fromState: 'streaming',
+        outcomes: <String>{'empty', 'streaming'},
+      ),
+      UiTransitionContract(
+        id: 'answer_question',
+        description: 'Submits ordered option and free-form answers.',
+        fromState: 'question_pending',
+        outcomes: <String>{'streaming'},
+      ),
+    ],
+    variants: <UiVariantContract>[
+      UiVariantContract(
+        id: 'desktop_light_korean_keyboard_online',
+        description: 'Desktop light Korean keyboard input while online.',
+      ),
+      UiVariantContract(
+        id: 'mobile_light_korean_large_text_touch_online',
+        description: 'Narrow mobile light Korean layout with enlarged text.',
+      ),
+    ],
+  ),
+  const UiReachabilityContract(
+    id: 'global_environment',
+    featureId: 'app.navigation',
+    description:
+        'Application shell across theme, locale, viewport, text scale, '
+        'and input-modality combinations.',
+    states: <UiStateContract>[
+      UiStateContract(
+        id: 'offline_shell',
+        description:
+            'The application shell remains reachable without a daemon.',
+      ),
+    ],
+    transitions: <UiTransitionContract>[],
+    variants: <UiVariantContract>[
+      UiVariantContract(
+        id: 'desktop_dark_english_keyboard_offline',
+        description: 'Desktop dark English keyboard path while offline.',
+      ),
+      UiVariantContract(
+        id: 'mobile_light_japanese_touch_offline',
+        description: 'Mobile light Japanese touch path while offline.',
+      ),
+      UiVariantContract(
+        id: 'desktop_light_korean_large_text_pointer_offline',
+        description:
+            'Desktop light Korean large-text pointer path while offline.',
+      ),
+    ],
+  ),
+];
+
+/// Composite conversation journeys which supplement atomic UI evidence.
+const List<UiJourneyContract> tinestUiJourneyManifest = <UiJourneyContract>[
+  UiJourneyContract(
+    id: 'conversation_adversity',
+    description:
+        'Queues input, crosses approval and question boundaries, reconnects, '
+        'and restores one durable timeline without duplication.',
+    tier: UiEvidenceTier.prRequired,
+    surfaces: <FeatureSurface>{FeatureSurface.desktop},
+    transitionIds: <String>[
+      'conversation_timeline/queue_prompt',
+      'conversation_timeline/retry_send',
+      'conversation_timeline/cancel_turn',
+      'conversation_timeline/answer_question',
+    ],
+  ),
+  UiJourneyContract(
+    id: 'conversation_long_running',
+    description:
+        'Combines goal continuation, subagent work, attachments, compaction, '
+        'provider recovery, and session switching.',
+    tier: UiEvidenceTier.nightlyExtended,
+    surfaces: <FeatureSurface>{FeatureSurface.desktop},
+    transitionIds: <String>[
+      'conversation_timeline/queue_prompt',
+      'conversation_timeline/retry_send',
+      'conversation_timeline/cancel_turn',
+      'conversation_timeline/answer_question',
+    ],
+  ),
+];

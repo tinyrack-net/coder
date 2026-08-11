@@ -37,6 +37,7 @@ void main() {
         'daemon_workspace_e2e_test.dart',
         'project_worktree_e2e_test.dart',
         'relay_e2e_test.dart',
+        'conversation_adversity_e2e_test.dart',
         'debug_e2e_test.dart',
         'provider_e2e_test.dart',
         'settings_desktop_e2e_test.dart',
@@ -63,7 +64,7 @@ void main() {
         );
 
     expect(result, 0);
-    expect(runtime.commands, hasLength(7));
+    expect(runtime.commands, hasLength(8));
     for (final command in runtime.commands) {
       expect(command.workingDirectory, 'packages/app');
       expect(command.environment, <String, String>{

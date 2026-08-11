@@ -32,7 +32,12 @@ void main() {
 
   testWidgets(
     'Enter sends, Shift+Enter opens a line, and touch platforms only tap',
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__conversation_timeline__desktop_light_korean_keyboard_online__widget',
+    ],
     (tester) async {
       for (final platform in <TargetPlatform>[
         TargetPlatform.linux,
@@ -140,7 +145,10 @@ void main() {
 
   testWidgets(
     'a running turn queues instead of locking the input',
-    tags: const <String>['feature_test__conversation_turn_queue__widget'],
+    tags: const <String>[
+      'feature_test__conversation_turn_queue__widget',
+      'ui_transition__conversation_timeline__queue_prompt__widget',
+    ],
     (tester) async {
       final queued = <QueuedTurn>[];
       final sent = <String>[];
@@ -222,7 +230,10 @@ void main() {
 
   testWidgets(
     'a queued prompt that stopped retrying shows why and stays actionable',
-    tags: const <String>['feature_test__conversation_turn_queue__widget'],
+    tags: const <String>[
+      'feature_test__conversation_turn_queue__widget',
+      'ui_state__conversation_timeline__queued_error__widget',
+    ],
     (tester) async {
       await tester.pumpWidget(
         _harness(
@@ -294,7 +305,10 @@ void main() {
 
   testWidgets(
     'a failed send returns the prompt to the input',
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_transition__conversation_timeline__retry_send__widget',
+    ],
     (tester) async {
       var fail = true;
       await tester.pumpWidget(
@@ -1372,7 +1386,10 @@ void main() {
 
   testWidgets(
     'a running turn is stopped from the composer, and typing still queues',
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_transition__conversation_timeline__cancel_turn__widget',
+    ],
     (tester) async {
       var stops = 0;
       final queued = <String>[];

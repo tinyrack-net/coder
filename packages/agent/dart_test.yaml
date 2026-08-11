@@ -12,3 +12,5 @@ tags:
   feature_test__tool_search__unit:
   feature_test__lua_tool_orchestration__unit:
   feature_test__tool_harness_parity__unit:
+  feature_test__tool_context_budget__unit:
+  feature_test__tool_image_context__unit:

@@ -830,7 +830,12 @@ void main() {
         find.byKey(const ValueKey('session-composer-input')),
         'Feature e2e',
       );
-      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      const newWorkspaceSend = ValueKey<String>('session-composer-send');
+      await _waitForComposerReady(tester, newWorkspaceSend);
+      final newWorkspaceSendButton = find.byKey(newWorkspaceSend);
+      await tester.ensureVisible(newWorkspaceSendButton);
+      await tester.pumpAndSettle();
+      await tester.tap(newWorkspaceSendButton);
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1050,8 +1055,23 @@ void main() {
           .descendant(of: goalDialog, matching: find.byType(EditableText))
           .first;
       await tester.enterText(goalObjective, 'Complete persistent goal e2e');
-      await tester.tap(find.text('Goal 시작'));
-      await tester.pump();
+      final startGoal = find
+          .descendant(
+            of: goalDialog,
+            matching: find.widgetWithText(TRButton, 'Goal 시작'),
+          )
+          .hitTestable();
+      expect(startGoal, findsOneWidget);
+      await tester.tap(startGoal);
+      await pumpUntilGone(tester, goalDialog);
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final goal = await setupClient.sessions.getGoal(goalSessionId);
+          return goal?.objective == 'Complete persistent goal e2e';
+        },
+        'the submitted goal editor to create the persistent goal',
+      );
       late GoalDto completedGoal;
       var observedGoalState = 'no goal state observed';
       try {
@@ -2178,6 +2198,7 @@ void main() {
     // Focused widget tests retain semantics coverage for these controls.
     semanticsEnabled: false,
     tags: const <String>[
+      'ui_journey__conversation_long_running__e2e',
       'feature_test__daemon_management__e2e',
       'feature_test__daemon_exposure__e2e',
       'feature_test__daemon_authentication__e2e',
@@ -2615,6 +2636,10 @@ Future<void> _selectComposerModel(
     find.byKey(ValueKey<String>('model-option-$modelId')),
   );
   await tester.pumpAndSettle();
+  await pumpUntilGone(
+    tester,
+    find.byKey(const ValueKey<String>('model-search-field')),
+  );
   if (find
       .byKey(const ValueKey<String>('session-composer-settings-sheet'))
       .evaluate()

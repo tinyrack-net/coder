@@ -88,7 +88,10 @@ void main() {
       expect(find.byType(ChatTimelineSkeleton), findsNothing);
       expect(find.text('Earlier request', findRichText: true), findsOneWidget);
     },
-    tags: const <String>['feature_test__workspace_async_loading__widget'],
+    tags: const <String>[
+      'feature_test__workspace_async_loading__widget',
+      'ui_state__conversation_timeline__loading__widget',
+    ],
   );
 
   testWidgets(
@@ -111,6 +114,9 @@ void main() {
       expect(find.byType(ChatTimelineSkeleton), findsNothing);
       expect(find.byType(ChatEmptyState), findsOneWidget);
     },
-    tags: const <String>['feature_test__workspace_async_loading__widget'],
+    tags: const <String>[
+      'feature_test__workspace_async_loading__widget',
+      'ui_state__conversation_timeline__empty__widget',
+    ],
   );
 }
