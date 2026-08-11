@@ -270,7 +270,10 @@ final class AnthropicMessagesProvider implements ModelProvider {
               if (value is String) block.arguments.write(value);
             case 'thinking_delta':
               final value = delta['thinking'];
-              if (value is String) block.thinking.write(value);
+              if (value is String) {
+                block.thinking.write(value);
+                if (value.isNotEmpty) yield ModelReasoningDelta(value);
+              }
             case 'signature_delta':
               final value = delta['signature'];
               if (value is String) block.signature.write(value);

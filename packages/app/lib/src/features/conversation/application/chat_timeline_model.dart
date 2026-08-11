@@ -120,6 +120,24 @@ final class ChatAssistantMessage extends ChatItem {
   final bool isStreaming;
 }
 
+/// One provider invocation's display-safe reasoning text.
+final class ChatReasoningActivity extends ChatItem {
+  /// Creates a reasoning timeline item.
+  const ChatReasoningActivity({
+    required super.key,
+    required super.turnId,
+    required super.createdAt,
+    required this.markdown,
+    required this.isStreaming,
+  });
+
+  /// Provider-authored plaintext reasoning or reasoning summary.
+  final String markdown;
+
+  /// Whether the provider invocation is still reasoning.
+  final bool isStreaming;
+}
+
 /// A plan the agent recorded with the `update_plan` tool.
 final class ChatPlanProposal extends ChatItem {
   /// Creates a plan proposal.
@@ -421,6 +439,7 @@ List<ChatItem> projectChatTimeline(
     ..sort((left, right) => left.sequence.compareTo(right.sequence));
   final builders = <_ChatItemBuilder>[];
   final openAssistant = <String?, _AssistantBuilder>{};
+  final openReasoning = <String?, _ReasoningBuilder>{};
   final openTools = <String, _ToolBuilder>{};
   final openPlans = <String, _PlanBuilder>{};
   final openSleeps = <String, _SleepBuilder>{};
@@ -429,9 +448,16 @@ List<ChatItem> projectChatTimeline(
   final terminatedTurns = <String?>{};
 
   void closeAssistant(String? turnId) => openAssistant.remove(turnId);
+  void closeReasoning(String? turnId) {
+    openReasoning.remove(turnId)?.complete();
+  }
 
   for (final event in ordered) {
     final turnId = event.turnId;
+    if (event.type != 'assistant.reasoning.started' &&
+        event.type != 'assistant.reasoning.delta') {
+      closeReasoning(turnId);
+    }
     switch (event.type) {
       case 'user.message':
         closeAssistant(turnId);
@@ -462,6 +488,7 @@ List<ChatItem> projectChatTimeline(
           );
         }
       case 'assistant.delta':
+        closeReasoning(turnId);
         final text = _string(event.data['text']) ?? '';
         final open = openAssistant[turnId];
         if (open == null) {
@@ -475,6 +502,34 @@ List<ChatItem> projectChatTimeline(
         } else {
           open.append(text);
         }
+      case 'assistant.reasoning.started':
+        closeAssistant(turnId);
+        closeReasoning(turnId);
+        final builder = _ReasoningBuilder(
+          key: 'reasoning-${event.sequence}',
+          turnId: turnId,
+          createdAt: event.createdAt,
+        );
+        openReasoning[turnId] = builder;
+        builders.add(builder);
+      case 'assistant.reasoning.delta':
+        closeAssistant(turnId);
+        final text = _string(event.data['text']) ?? '';
+        final builder = openReasoning[turnId];
+        if (builder != null) {
+          builder.append(text);
+        } else {
+          final synthesized = _ReasoningBuilder(
+            key: 'reasoning-${event.sequence}',
+            turnId: turnId,
+            createdAt: event.createdAt,
+          )..append(text);
+          openReasoning[turnId] = synthesized;
+          builders.add(synthesized);
+        }
+      case 'assistant.reasoning.completed':
+        closeAssistant(turnId);
+        closeReasoning(turnId);
       case 'tool.requested':
         closeAssistant(turnId);
         // A tool that renders as its own item wants no row beside it, which
@@ -928,6 +983,42 @@ final class _AssistantBuilder extends _ChatItemBuilder {
           createdAt: createdAt,
           markdown: markdown,
           isStreaming: isStreaming,
+        ),
+    ];
+  }
+}
+
+final class _ReasoningBuilder extends _ChatItemBuilder {
+  _ReasoningBuilder({
+    required this.key,
+    required this.turnId,
+    required this.createdAt,
+  });
+
+  final String key;
+
+  @override
+  final String? turnId;
+
+  final DateTime createdAt;
+  final StringBuffer _text = StringBuffer();
+  bool _completed = false;
+
+  void append(String text) => _text.write(text);
+
+  void complete() => _completed = true;
+
+  @override
+  List<ChatItem> build({required bool isStreaming}) {
+    final markdown = _text.toString();
+    return <ChatItem>[
+      if (markdown.isNotEmpty || !_completed)
+        ChatReasoningActivity(
+          key: key,
+          turnId: turnId,
+          createdAt: createdAt,
+          markdown: markdown,
+          isStreaming: !_completed,
         ),
     ];
   }

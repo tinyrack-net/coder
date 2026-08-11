@@ -533,6 +533,15 @@ void main() {
       );
       expect(timeline.map((event) => event.type), contains('tool.completed'));
       expect(timeline.map((event) => event.type), contains('turn.completed'));
+      expect(
+        timeline
+            .where((event) => event.type == 'assistant.reasoning.delta')
+            .map((event) => event.data['text']),
+        orderedEquals(<String>[
+          'Planning the patch.',
+          'Checking the patch result.',
+        ]),
+      );
       await client.disconnectProvider(custom.id);
       await expectLater(
         client.startTurn(
@@ -3747,6 +3756,7 @@ class _PatchProvider implements ModelProvider {
           '*** Add File: result.txt\n'
           '+done\n'
           '*** End Patch';
+      yield const ModelReasoningDelta('Planning the patch.');
       yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
@@ -3766,6 +3776,7 @@ class _PatchProvider implements ModelProvider {
       );
       return;
     }
+    yield const ModelReasoningDelta('Checking the patch result.');
     yield const ModelTextDelta('Created result.txt');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Created result.txt'),

@@ -98,6 +98,7 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
         // The subscription backend serves a narrower Responses surface and
         // answers 400 for the platform-only request fields.
         supportsPlatformRequestFields: request.credential is! OAuthCredential,
+        supportsReasoningSummary: true,
       );
 
   /// The API documents image and file inputs for every current model, which

@@ -655,7 +655,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'turn.execution',
-    description: 'Streams, cancels, approves, rejects, and restores turns.',
+    description:
+        'Streams visible reasoning and responses, cancels, approves, rejects, '
+        'and restores turns.',
     apiMethods: <String>[
       'sessions.startTurn',
       'sessions.cancelTurn',

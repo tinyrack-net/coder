@@ -613,6 +613,19 @@ class ModelTextDelta extends ModelEvent {
   final String delta;
 }
 
+/// Display-safe reasoning text emitted by a provider.
+///
+/// Providers must only surface plaintext reasoning or a provider-authored
+/// summary here. Encrypted, signed, or redacted continuation data belongs in
+/// [AssistantConversationItem.opaqueItems] instead.
+class ModelReasoningDelta extends ModelEvent {
+  /// Creates a reasoning text delta.
+  const ModelReasoningDelta(this.delta);
+
+  /// The next visible fragment of reasoning text.
+  final String delta;
+}
+
 /// A typed tool call emitted by a model provider.
 sealed class ModelToolCall extends ModelEvent {
   const ModelToolCall({

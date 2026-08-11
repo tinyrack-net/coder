@@ -228,7 +228,10 @@ final class GeminiInteractionsProvider implements ModelProvider {
               if (value is String) step.signature.write(value);
             case 'thought_summary' || 'thought':
               final value = delta['text'];
-              if (value is String) step.thought.write(value);
+              if (value is String) {
+                step.thought.write(value);
+                if (value.isNotEmpty) yield ModelReasoningDelta(value);
+              }
           }
         case 'step.stop':
           final index = event['index'];

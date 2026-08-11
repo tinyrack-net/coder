@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
@@ -5,6 +7,7 @@ import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
@@ -266,6 +269,81 @@ void main() {
       expect(find.text('코딩 요청을 입력하세요.'), findsOneWidget);
     },
     tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'reasoning replaces generic progress and streams inside its disclosure',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      final events = <TimelineEventDto>[
+        event('assistant.reasoning.started', const <String, dynamic>{}),
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': '**파일을 확인하고 있습니다.**',
+        }),
+      ];
+      await pump(tester, events, busy: true);
+      await tester.pump();
+
+      expect(find.byType(ChatReasoningCard), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('chat-running')), findsNothing);
+      expect(find.text('사고 중'), findsOneWidget);
+      expect(find.textContaining('파일을 확인하고 있습니다.'), findsNothing);
+
+      await tester.tap(find.byType(ChatReasoningCard));
+      await tester.pump();
+      expect(find.text('파일을 확인하고 있습니다.'), findsOneWidget);
+
+      events.add(
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': '\n\n결과를 검증합니다.',
+        }),
+      );
+      await pump(tester, events, busy: true);
+      await tester.pump();
+      expect(find.text('결과를 검증합니다.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'completed reasoning stays collapsed and can be opened from the keyboard',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.reasoning.started', const <String, dynamic>{}),
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': '완료된 사고 기록',
+        }),
+        event('assistant.reasoning.completed', const <String, dynamic>{}),
+        event('turn.completed', const <String, dynamic>{}),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('생각함'), findsOneWidget);
+      expect(find.text('완료된 사고 기록'), findsNothing);
+      final collapsedSemantics = tester.getSemantics(
+        find.byType(TRChatToolDisclosure),
+      );
+      expect(collapsedSemantics.flagsCollection.isButton, isTrue);
+      expect(
+        collapsedSemantics.flagsCollection.isExpanded,
+        Tristate.isFalse,
+      );
+      await tester.tap(find.byType(ChatReasoningCard));
+      await tester.pumpAndSettle();
+      expect(find.text('완료된 사고 기록'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.byType(TRChatToolDisclosure))
+            .flagsCollection
+            .isExpanded,
+        Tristate.isTrue,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(find.text('완료된 사고 기록'), findsNothing);
+    },
   );
 
   testWidgets(

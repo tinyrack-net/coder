@@ -17,6 +17,7 @@ class OpenAIProviderConfig {
     this.maxConnectAttempts = 3,
     this.requiresApiKey = true,
     this.supportsReasoningEffort = true,
+    this.supportsReasoningSummary = true,
     this.supportsImageInput = true,
     this.supportsFileInput = true,
     this.supportsServiceTier = false,
@@ -42,6 +43,9 @@ class OpenAIProviderConfig {
 
   /// The supportsReasoningEffort public API member.
   final bool supportsReasoningEffort;
+
+  /// Whether the endpoint accepts `reasoning.summary` and streams summaries.
+  final bool supportsReasoningSummary;
 
   /// Whether hydrated images may be sent as Responses content parts.
   final bool supportsImageInput;
@@ -106,6 +110,23 @@ bool isContextOverflowFailure(String? code, String message) {
   return _contextOverflowPhrases.any(lowered.contains);
 }
 
+bool _isReasoningSummaryRejection(
+  int? statusCode,
+  Object? body,
+  String message,
+) {
+  if (statusCode != 400 && statusCode != 403) return false;
+  Object? parameter;
+  if (body is Map && body['error'] is Map) {
+    parameter = (body['error'] as Map)['param'];
+  }
+  final description = '${parameter ?? ''} $message'.toLowerCase();
+  return description.contains('summary') &&
+      (description.contains('reasoning') ||
+          description.contains('verification') ||
+          description.contains('unsupported'));
+}
+
 /// Reads the `error.code` out of an OpenAI error envelope.
 String? contextOverflowCode(Object? body) {
   if (body is! Map) return null;
@@ -156,12 +177,17 @@ class OpenAIResponsesProvider implements ModelProvider {
     cancellation.onCancel(() => cancelToken.cancel('Agent turn cancelled.'));
     Response<ResponseBody>? response;
     Object? lastError;
+    var includeReasoningSummary = _config.supportsReasoningSummary;
+    var reasoningSummaryDowngraded = false;
     for (var attempt = 1; attempt <= _config.maxConnectAttempts; attempt += 1) {
       cancellation.throwIfCancelled();
       try {
         response = await _dio.post<ResponseBody>(
           '/responses',
-          data: _requestBody(request),
+          data: _requestBody(
+            request,
+            includeReasoningSummary: includeReasoningSummary,
+          ),
           cancelToken: cancelToken,
           options: Options(
             responseType: ResponseType.stream,
@@ -179,6 +205,18 @@ class OpenAIResponsesProvider implements ModelProvider {
         if (CancelToken.isCancel(error)) throw const AgentCancelledException();
         final body = await decodeProviderErrorBody(error.response?.data);
         final message = providerErrorMessage(body) ?? error.message ?? '$error';
+        if (includeReasoningSummary &&
+            !reasoningSummaryDowngraded &&
+            _isReasoningSummaryRejection(
+              error.response?.statusCode,
+              body,
+              message,
+            )) {
+          includeReasoningSummary = false;
+          reasoningSummaryDowngraded = true;
+          attempt -= 1;
+          continue;
+        }
         // An oversized prompt is rejected before the stream opens, so it has to
         // be classified here rather than among the SSE events.
         if (isContextOverflowFailure(contextOverflowCode(body), message)) {
@@ -204,41 +242,49 @@ class OpenAIResponsesProvider implements ModelProvider {
     yield* _modelEvents(response!.data!.stream, cancellation);
   }
 
-  Map<String, dynamic> _requestBody(ModelRequest request) => <String, dynamic>{
-    'model': request.model,
-    'instructions': request.instructions,
-    'input': _responsesInput(request.history),
-    if (_config.supportsReasoningEffort &&
-        modelControlString(request, AgentModelControlIds.reasoningEffort) !=
-            null)
-      'reasoning': <String, dynamic>{
-        'effort': modelControlString(
-          request,
-          AgentModelControlIds.reasoningEffort,
-        ),
-        'mode': ?modelControlString(
-          request,
-          AgentModelControlIds.reasoningMode,
-        ),
-      },
-    if (_config.supportsServiceTier &&
-        modelControlBool(request, AgentModelControlIds.fastMode) == true)
-      'service_tier': 'priority',
-    'tools': request.tools.map(_responsesTool).toList(growable: false),
-    'parallel_tool_calls': request.tools.any(
-      (tool) => tool.supportsParallelToolCalls,
-    ),
-    if (request.forceToolName != null)
-      'tool_choice': <String, dynamic>{
-        'type': 'function',
-        'name': request.forceToolName,
-      },
-    'stream': true,
-    'store': false,
-    'include': <String>['reasoning.encrypted_content'],
-    if (_config.supportsSafetyIdentifier)
-      'safety_identifier': request.safetyIdentifier,
-  };
+  Map<String, dynamic> _requestBody(
+    ModelRequest request, {
+    required bool includeReasoningSummary,
+  }) {
+    final effort = modelControlString(
+      request,
+      AgentModelControlIds.reasoningEffort,
+    );
+    final mode = modelControlString(
+      request,
+      AgentModelControlIds.reasoningMode,
+    );
+    return <String, dynamic>{
+      'model': request.model,
+      'instructions': request.instructions,
+      'input': _responsesInput(request.history),
+      if ((_config.supportsReasoningEffort &&
+              (effort != null || mode != null)) ||
+          includeReasoningSummary)
+        'reasoning': <String, dynamic>{
+          if (_config.supportsReasoningEffort) 'effort': ?effort,
+          if (_config.supportsReasoningEffort) 'mode': ?mode,
+          if (includeReasoningSummary) 'summary': 'auto',
+        },
+      if (_config.supportsServiceTier &&
+          modelControlBool(request, AgentModelControlIds.fastMode) == true)
+        'service_tier': 'priority',
+      'tools': request.tools.map(_responsesTool).toList(growable: false),
+      'parallel_tool_calls': request.tools.any(
+        (tool) => tool.supportsParallelToolCalls,
+      ),
+      if (request.forceToolName != null)
+        'tool_choice': <String, dynamic>{
+          'type': 'function',
+          'name': request.forceToolName,
+        },
+      'stream': true,
+      'store': false,
+      'include': <String>['reasoning.encrypted_content'],
+      if (_config.supportsSafetyIdentifier)
+        'safety_identifier': request.safetyIdentifier,
+    };
+  }
 
   List<Map<String, dynamic>> _responsesInput(List<ConversationItem> history) {
     final result = <Map<String, dynamic>>[];
@@ -476,6 +522,12 @@ class OpenAIResponsesProvider implements ModelProvider {
       final event = Map<String, dynamic>.from(decoded);
       final type = event['type'] as String? ?? sse.event;
       switch (type) {
+        case 'response.reasoning_summary_text.delta':
+        case 'response.reasoning.delta':
+          final delta = event['delta'];
+          if (delta is String && delta.isNotEmpty) {
+            yield ModelReasoningDelta(delta);
+          }
         case 'response.output_text.delta':
           final delta = event['delta'];
           if (delta is String && delta.isNotEmpty) yield ModelTextDelta(delta);
