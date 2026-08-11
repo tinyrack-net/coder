@@ -438,7 +438,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final chosen = await showModelPicker(
       context,
       loadOptions: () async {
-        final loaded = await loadModelPickerOptions(ref, widget.hostId);
+        final loaded = await ref.read(
+          modelPickerOptionsLoaderProvider(widget.hostId),
+        )();
         options = loaded;
         return loaded;
       },
