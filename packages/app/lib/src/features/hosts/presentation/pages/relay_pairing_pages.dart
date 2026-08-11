@@ -788,36 +788,34 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
           description: TRText.inherit(
             AppLocalizations.of(context).relayPairDialogDescription,
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const SizedBox(height: TRSpacing.large),
-                Center(
-                  child: TRQrCode(
-                    data: offer.url,
-                    semanticLabel: AppLocalizations.of(
-                      context,
-                    ).relayPairQrSemantics,
-                    uiSize: TRUiSize.lg,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const SizedBox(height: TRSpacing.large),
+              Center(
+                child: TRQrCode(
+                  data: offer.url,
+                  semanticLabel: AppLocalizations.of(
+                    context,
+                  ).relayPairQrSemantics,
+                  uiSize: TRUiSize.lg,
+                ),
+              ),
+              const SizedBox(height: TRSpacing.medium),
+              TRTextField(
+                controller: _offerLink,
+                label: AppLocalizations.of(context).relayPairLink,
+                readOnly: true,
+              ),
+              const SizedBox(height: TRSpacing.small),
+              TRText.inherit(
+                AppLocalizations.of(context).relayLinkExpires(
+                  MaterialLocalizations.of(context).formatTimeOfDay(
+                    TimeOfDay.fromDateTime(offer.expiresAt.toLocal()),
                   ),
                 ),
-                const SizedBox(height: TRSpacing.medium),
-                TRTextField(
-                  controller: _offerLink,
-                  label: AppLocalizations.of(context).relayPairLink,
-                  readOnly: true,
-                ),
-                const SizedBox(height: TRSpacing.small),
-                TRText.inherit(
-                  AppLocalizations.of(context).relayLinkExpires(
-                    MaterialLocalizations.of(context).formatTimeOfDay(
-                      TimeOfDay.fromDateTime(offer.expiresAt.toLocal()),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
           actions: Wrap(
             alignment: WrapAlignment.end,
