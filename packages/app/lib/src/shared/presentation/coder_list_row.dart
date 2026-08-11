@@ -151,9 +151,14 @@ class _CoderListRowState extends State<CoderListRow> {
         : widget.hoverEnabled && _hovered
         ? colors.surfaceHover
         : colors.surface;
-    final verticalPadding = widget.dense
-        ? TRSpacing.extraSmall
-        : TRSpacing.small;
+    final comfortable =
+        TRControlDensityScope.of(context) == TRControlDensity.comfortable;
+    final verticalPadding = switch ((comfortable, widget.dense)) {
+      (true, true) => TRSpacing.small,
+      (true, false) => TRSpacing.medium,
+      (false, true) => TRSpacing.extraSmall,
+      (false, false) => TRSpacing.small,
+    };
     final content = Row(
       crossAxisAlignment: widget.isThreeLine
           ? CrossAxisAlignment.start

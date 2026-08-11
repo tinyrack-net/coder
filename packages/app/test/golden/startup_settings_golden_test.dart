@@ -7,6 +7,7 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,6 +91,12 @@ class _StartupSettingsGoldenHostState
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: _router,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(size: widget.size),
+          child: CoderControlDensity(
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ),
       ),
     ),
   );

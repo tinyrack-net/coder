@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,6 +149,9 @@ void main() {
               localizationsDelegates: testLocalizationsDelegates,
               supportedLocales: testSupportedLocales,
               routerConfig: router,
+              builder: (context, child) => CoderControlDensity(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         );
@@ -425,6 +429,9 @@ Future<void> _verifyRoute(
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
           routerConfig: router,
+          builder: (context, child) => CoderControlDensity(
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
     );
