@@ -1551,6 +1551,7 @@ class SessionComposer extends StatefulWidget {
     this.onCompletionQueryChanged,
     this.onClientCommand,
     this.controller,
+    this.settingsBreakpoint = _composerSettingsBreakpoint,
     super.key,
   });
 
@@ -1581,6 +1582,9 @@ class SessionComposer extends StatefulWidget {
 
   /// Connects this composer to a pane-owned native drop target.
   final SessionComposerController? controller;
+
+  /// Width below which turn settings collapse into one settings action.
+  final double settingsBreakpoint;
 
   /// Whether a turn is running, so a new prompt has to wait its turn.
   final bool busy;
@@ -1828,7 +1832,7 @@ class _SessionComposerState extends State<SessionComposer> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => _buildContent(
       context,
-      compactSettings: constraints.maxWidth < _composerSettingsBreakpoint,
+      compactSettings: constraints.maxWidth < widget.settingsBreakpoint,
     ),
   );
 

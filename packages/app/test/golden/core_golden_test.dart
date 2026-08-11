@@ -1257,6 +1257,19 @@ void main() {
 
   unawaited(
     goldenTest(
+      'wide conversation keeps its content on one centered column',
+      fileName: 'conversation_content_width',
+      constraints: const BoxConstraints.tightFor(width: 1500, height: 900),
+      builder: () => SizedBox(
+        width: 1500,
+        height: 900,
+        child: _sessionComposer(ThemeMode.dark, conversation: true),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'desktop workspace renders a nested pane tree',
       fileName: 'workspace_multi_pane',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
@@ -1683,6 +1696,7 @@ Widget _sessionComposer(
   ThemeMode mode, {
   bool split = false,
   bool nestedSplit = false,
+  bool conversation = false,
 }) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
@@ -1703,9 +1717,85 @@ Widget _sessionComposer(
     isCoderOwned: false,
     createdAt: now,
   );
+  final rootSession = SessionDto(
+    id: 'golden-session',
+    worktreeId: checkout.id,
+    title: 'Centered conversation',
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.manual,
+    status: SessionStatus.idle,
+    createdAt: now,
+    updatedAt: now,
+  );
+  final childSession = SessionDto(
+    id: 'golden-child',
+    worktreeId: checkout.id,
+    title: 'Inspect responsive layout',
+    agentDefinitionId: 'coder',
+    origin: SessionOrigin.delegated,
+    status: SessionStatus.running,
+    parentSessionId: rootSession.id,
+    taskName: 'Inspect responsive layout',
+    lifecycle: AgentLifecycle.running,
+    createdAt: now,
+    updatedAt: now,
+  );
   final api = FakeCoderApi(
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[checkout],
+    agents: conversation
+        ? <SessionDto>[rootSession, childSession]
+        : const <SessionDto>[],
+    timelines: conversation
+        ? <String, List<TimelineEventDto>>{
+            rootSession.id: <TimelineEventDto>[
+              TimelineEventDto(
+                sessionId: rootSession.id,
+                sequence: 1,
+                turnId: 'golden-turn',
+                type: 'user.message',
+                data: const <String, dynamic>{
+                  'text': 'Center the conversation content like Paseo.',
+                },
+                createdAt: now,
+              ),
+              TimelineEventDto(
+                sessionId: rootSession.id,
+                sequence: 2,
+                turnId: 'golden-turn',
+                type: 'assistant.delta',
+                data: const <String, dynamic>{
+                  'text':
+                      'The timeline, goal, subagent track, and composer now '
+                      'share one readable centerline.',
+                },
+                createdAt: now,
+              ),
+              TimelineEventDto(
+                sessionId: rootSession.id,
+                sequence: 3,
+                turnId: 'golden-turn',
+                type: 'turn.completed',
+                data: const <String, dynamic>{'toolRounds': 0},
+                createdAt: now,
+              ),
+            ],
+          }
+        : const <String, List<TimelineEventDto>>{},
+    goals: conversation
+        ? <String, GoalDto>{
+            rootSession.id: GoalDto(
+              sessionId: rootSession.id,
+              goalId: 'golden-goal',
+              objective: 'Keep the conversation column aligned',
+              status: GoalStatus.active,
+              tokensUsed: 4200,
+              timeUsedSeconds: 30,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          }
+        : const <String, GoalDto>{},
   );
   const selection = WorkspaceSelection(
     hostId: 'server',
@@ -1776,7 +1866,10 @@ Widget _sessionComposer(
     ],
     child: _material(
       mode,
-      const WorkspacePage(selection: selection),
+      WorkspacePage(
+        selection: selection,
+        requestedAgentId: conversation ? rootSession.id : null,
+      ),
     ),
   );
 }

@@ -9,12 +9,17 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
+import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
+import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
+import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
