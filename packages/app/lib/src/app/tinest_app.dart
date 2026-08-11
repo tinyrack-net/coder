@@ -10,7 +10,7 @@ import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
-import 'package:app/src/shared/presentation/tinest_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -124,7 +124,7 @@ class _TinestAppView extends ConsumerWidget {
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
       // follow the selected language and a tray row can navigate.
-      builder: (context, child) => TinestControlDensity(
+      builder: (context, child) => TinestUiDensity(
         child: TRContextMenuPresenterScope(
           // The one place a concrete presenter is named. A widget test that
           // omits this scope gets the deterministic Flutter presentation

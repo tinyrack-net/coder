@@ -381,8 +381,8 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'desktop.window.chrome',
     description:
-        'Uses a custom Windows frame and native Linux frame with localized '
-        'application menus and platform-appropriate window controls.',
+        'Replaces Windows and Linux native title bars with localized menus, '
+        'window controls, and a draggable application frame.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,

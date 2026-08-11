@@ -1,5 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -58,7 +59,7 @@ class ChatCodeBlock extends StatelessWidget {
           trailing: showCopy
               ? TRIconButton(
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
+                  uiSize: TinestUiDensity.compactControlSize(context),
                   label: l10n.commonCopy,
                   // The untruncated text, so a capped block still copies whole.
                   onPressed: () => Clipboard.setData(ClipboardData(text: text)),

@@ -36,7 +36,6 @@ class SubagentStatusIcon extends StatelessWidget {
     }
     return switch (lifecycle) {
       AgentLifecycle.running || AgentLifecycle.pendingInit || null => TRSpinner(
-        uiSize: TRUiSize.sm,
         variant: TRSpinnerVariant.muted,
         label: l10n.subagentStatusRunning,
       ),

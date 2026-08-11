@@ -3,9 +3,11 @@ library;
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/localization.dart';
 
@@ -51,6 +53,21 @@ void main() {
     expect(find.byKey(const ValueKey('goal-status-bar')), findsOneWidget);
     expect(find.text(testL10n.goalPlanHold), findsAtLeast(1));
     expect(find.textContaining('Implement the complete'), findsOneWidget);
+    expect(
+      tester
+          .widget<TRCard>(
+            find.byKey(const ValueKey('goal-status-bar')),
+          )
+          .padding,
+      TRCardPadding.md,
+    );
+    expect(tester.widget<TRBadge>(find.byType(TRBadge)).uiSize, isNull);
+    expect(tester.widget<TRProgress>(find.byType(TRProgress)).uiSize, isNull);
+    for (final button in tester.widgetList<TRIconButton>(
+      find.byType(TRIconButton),
+    )) {
+      expect(button.uiSize, isNull);
+    }
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.bySemanticsLabel(testL10n.goalPause));
@@ -84,5 +101,5 @@ Widget _harness(Widget child) => MaterialApp(
   locale: testLocale,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: Scaffold(body: child),
+  home: TinestUiDensity(child: Scaffold(body: child)),
 );

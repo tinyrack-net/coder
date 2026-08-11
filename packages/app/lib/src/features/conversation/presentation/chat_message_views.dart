@@ -6,6 +6,7 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -287,7 +288,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
                 child: TRIconButton(
                   key: const ValueKey<String>('chat-response-copy'),
                   appearance: TRAppearance.ghost,
-                  uiSize: TRUiSize.sm,
+                  uiSize: TinestUiDensity.compactControlSize(context),
                   label: l10n.chatCopyResponse,
                   icon: const Icon(TinestIcons.copy),
                   onPressed: () => Clipboard.setData(

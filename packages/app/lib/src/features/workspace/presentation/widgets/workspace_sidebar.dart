@@ -181,7 +181,13 @@ class WorkspaceSidebar extends ConsumerWidget {
               children: <Widget>[
                 const Icon(TinestIcons.add),
                 const SizedBox(width: TRSpacing.extraSmall),
-                TRText(l10n.workspaceNewWorkspace),
+                Flexible(
+                  child: TRText(
+                    l10n.workspaceNewWorkspace,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ),
