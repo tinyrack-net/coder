@@ -68,6 +68,9 @@ class ChatToolCard extends StatelessWidget {
     return TRChatToolDisclosure(
       icon: chatToolIcon(presentation.glyph),
       label: _actionLabel(l10n, presentation.glyph),
+      secondaryLabel: status == TRChatToolStatus.running
+          ? presentation.title
+          : null,
       status: status,
       statusLabel: _statusLabel(l10n, status),
       open: expanded,

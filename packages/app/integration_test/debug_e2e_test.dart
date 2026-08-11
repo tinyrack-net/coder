@@ -1230,6 +1230,24 @@ void main() {
       await _submitComposerPrompt(tester, composer, send, 'Create result.txt');
       final patchApproval = _approvalForCall('patch-call');
       await pumpUntil(tester, patchApproval);
+      final runningPatch = find.byWidgetPredicate(
+        (widget) =>
+            widget is ChatToolCard && widget.activity.callId == 'patch-call',
+        description: 'running patch tool card',
+      );
+      await pumpUntil(tester, runningPatch);
+      expect(
+        find.descendant(of: runningPatch, matching: find.byType(ShaderMask)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: runningPatch, matching: find.byType(TRSpinner)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: runningPatch, matching: find.text('실행 중')),
+        findsNothing,
+      );
       await tester.tap(
         find.descendant(
           of: patchApproval,
