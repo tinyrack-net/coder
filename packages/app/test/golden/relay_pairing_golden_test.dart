@@ -18,7 +18,8 @@ void main() {
     daemonPublicKey: List<int>.filled(32, 1),
     offerId: 'golden-offer',
     secret: List<int>.filled(32, 2),
-    expiresAt: DateTime.utc(2100),
+    // Keep the rendered local clock stable across developer and CI time zones.
+    expiresAt: DateTime(2100),
   ).toUrl(Uri.parse('https://coder.tinyrack.net/pair'));
   final routes = <({String name, String location})>[
     (name: 'connect', location: const ConnectDaemonRoute().location),
