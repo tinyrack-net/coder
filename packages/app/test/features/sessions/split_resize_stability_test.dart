@@ -119,4 +119,59 @@ void main() {
     },
     tags: const <String>['feature_test__session_tabs__widget'],
   );
+
+  testWidgets(
+    'a resize drag keeps the divider under the pointer',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[agent],
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        api,
+        initialLocation: SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: agent.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
+      await tester.pumpAndSettle();
+      final splitView = find.byType(TRSplitView);
+      expect(splitView, findsOneWidget);
+
+      final available =
+          tester.getSize(splitView).width - TRControlMetrics.borderWidth;
+      final gesture = await tester.startGesture(
+        tester.getCenter(
+          find.byKey(const ValueKey<String>('tr-split-view-separator')),
+        ),
+      );
+      // The first movement is consumed by drag acceptance and reports nothing.
+      await gesture.moveBy(const Offset(TRSpacing.threeExtraLarge, 0));
+      await gesture.moveBy(const Offset(TRSpacing.large, 0));
+      await tester.pump();
+      final afterFirst = tester.widget<TRSplitView>(splitView).ratio;
+      // A fast pointer delivers several move events before the next frame can
+      // rebuild; the divider must absorb every one of them, not only the last.
+      await gesture.moveBy(const Offset(TRSpacing.large, 0));
+      await gesture.moveBy(const Offset(TRSpacing.large, 0));
+      await gesture.moveBy(const Offset(TRSpacing.large, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TRSplitView>(splitView).ratio,
+        closeTo(afterFirst + 3 * TRSpacing.large / available, 1e-9),
+      );
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
 }
