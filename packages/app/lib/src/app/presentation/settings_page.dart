@@ -193,16 +193,23 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         final compact =
             constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
         final body = compact
-            ? switch ((widget.category, widget.hostId)) {
-                (null, null) => _MobileSettingsHome(hosts: hosts),
-                (null, final String requestedHostId) => _MobileDaemonCategories(
-                  host: registry?.runtimes[requestedHostId],
+            ? SettingsCompactPaneTransition(
+                paneKey: _compactSettingsPaneKey(
+                  category: widget.category,
+                  hostId: widget.hostId,
                 ),
-                _ => SettingsPaneNavigationScope(
-                  controller: _paneNavigation,
-                  child: detail,
-                ),
-              }
+                child: switch ((widget.category, widget.hostId)) {
+                  (null, null) => _MobileSettingsHome(hosts: hosts),
+                  (null, final String requestedHostId) =>
+                    _MobileDaemonCategories(
+                      host: registry?.runtimes[requestedHostId],
+                    ),
+                  _ => SettingsPaneNavigationScope(
+                    controller: _paneNavigation,
+                    child: detail,
+                  ),
+                },
+              )
             : Row(
                 children: <Widget>[
                   TRAppShellSidebar(
@@ -271,6 +278,19 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     }
     closeTask(context, () => const WorkspaceHomeRoute().go(context));
   }
+}
+
+Key _compactSettingsPaneKey({
+  required SettingsCategory? category,
+  required String? hostId,
+}) {
+  if (category != null) {
+    return ValueKey<String>('settings-category-pane-${category.name}');
+  }
+  if (hostId != null) {
+    return const ValueKey<String>('settings-daemon-categories-pane');
+  }
+  return const ValueKey<String>('settings-home-pane');
 }
 
 class _MobileSettingsHome extends StatelessWidget {
