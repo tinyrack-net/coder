@@ -265,7 +265,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
       // One selection host for the whole answer. `MarkdownBody.selectable`
       // would give every block its own `SelectableText`, so a drag could never
       // leave the paragraph it started in.
-      child: SelectionArea(
+      child: ChatMarkdownSelectionArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,

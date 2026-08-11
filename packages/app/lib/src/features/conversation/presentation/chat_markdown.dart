@@ -1,6 +1,7 @@
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -52,10 +53,10 @@ MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
   final base = MarkdownStyleSheet.fromTheme(Theme.of(context));
   return base.copyWith(
     p: TRTypography.body.copyWith(color: colors.text),
-    code: TRTypography.code.copyWith(
-      color: colors.text,
-      backgroundColor: colors.surfaceMuted,
-    ),
+    // RenderParagraph paints the shared SelectionArea highlight before span
+    // backgrounds. An opaque inline-code fill would therefore cover the
+    // selection and make one continuous drag look fragmented.
+    code: TRTypography.code.copyWith(color: colors.text),
     codeblockDecoration: BoxDecoration(
       color: colors.surfaceMuted,
       borderRadius: const BorderRadius.all(TRRadii.medium),
@@ -79,4 +80,72 @@ Future<void> openChatLink(ExternalUrlOpener opener, String? href) async {
   final uri = Uri.tryParse(href);
   if (uri == null || !chatLinkSchemes.contains(uri.scheme)) return;
   await opener.open(uri);
+}
+
+/// One selectable Markdown document whose copied blocks retain separators.
+///
+/// Flutter's default multi-selectable delegate concatenates each selected
+/// widget without delimiters. Markdown renders headings, paragraphs, bullets,
+/// quotes, and code blocks as separate widgets, so the default result loses
+/// every block boundary and the space after a bullet.
+class ChatMarkdownSelectionArea extends StatefulWidget {
+  /// Creates a selectable Markdown document.
+  const ChatMarkdownSelectionArea({required this.child, super.key});
+
+  /// Markdown content and any response-owned actions below it.
+  final Widget child;
+
+  @override
+  State<ChatMarkdownSelectionArea> createState() =>
+      _ChatMarkdownSelectionAreaState();
+}
+
+class _ChatMarkdownSelectionAreaState extends State<ChatMarkdownSelectionArea> {
+  final _delegate = _ChatMarkdownSelectionDelegate();
+
+  @override
+  void dispose() {
+    _delegate.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SelectionArea(
+    child: SelectionContainer(delegate: _delegate, child: widget.child),
+  );
+}
+
+class _ChatMarkdownSelectionDelegate extends StaticSelectionContainerDelegate {
+  @override
+  SelectedContent? getSelectedContent() {
+    final selected = <({Rect bounds, String text})>[];
+    for (final selectable in selectables) {
+      final content = selectable.getSelectedContent();
+      if (content == null || content.plainText.isEmpty) continue;
+      final transform = getTransformFrom(selectable);
+      final boxes = selectable.boundingBoxes;
+      if (boxes.isEmpty) continue;
+      var bounds = MatrixUtils.transformRect(transform, boxes.first);
+      for (final box in boxes.skip(1)) {
+        bounds = bounds.expandToInclude(
+          MatrixUtils.transformRect(transform, box),
+        );
+      }
+      selected.add((bounds: bounds, text: content.plainText));
+    }
+    if (selected.isEmpty) return null;
+
+    final buffer = StringBuffer();
+    Rect? previous;
+    for (final item in selected) {
+      if (previous case final bounds?) {
+        final sharesLine =
+            bounds.top < item.bounds.bottom && item.bounds.top < bounds.bottom;
+        buffer.write(sharesLine ? ' ' : '\n');
+      }
+      buffer.write(item.text);
+      previous = item.bounds;
+    }
+    return SelectedContent(plainText: buffer.toString());
+  }
 }
