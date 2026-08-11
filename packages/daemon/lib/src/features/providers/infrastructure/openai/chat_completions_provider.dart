@@ -210,6 +210,9 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       for (final choice in choices.whereType<Map<dynamic, dynamic>>()) {
         final delta = choice['delta'];
         if (delta is! Map) continue;
+        for (final reasoning in _reasoningDeltas(delta)) {
+          yield ModelReasoningDelta(reasoning);
+        }
         final content = delta['content'];
         if (content is String && content.isNotEmpty) {
           text.write(content);
@@ -261,6 +264,33 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
       ),
       usage: usage,
     );
+  }
+
+  Iterable<String> _reasoningDeltas(Map<dynamic, dynamic> delta) sync* {
+    final details = delta['reasoning_details'];
+    var emittedStructured = false;
+    if (details is List) {
+      for (final detail in details.whereType<Map<dynamic, dynamic>>()) {
+        final type = detail['type'];
+        final value = switch (type) {
+          'reasoning.text' => detail['text'],
+          'reasoning.summary' => detail['summary'],
+          _ => null,
+        };
+        if (value is String && value.isNotEmpty) {
+          emittedStructured = true;
+          yield value;
+        }
+      }
+    }
+    if (emittedStructured) return;
+    final content = delta['reasoning_content'];
+    if (content is String && content.isNotEmpty) {
+      yield content;
+      return;
+    }
+    final reasoning = delta['reasoning'];
+    if (reasoning is String && reasoning.isNotEmpty) yield reasoning;
   }
 
   ModelUsage _usage(Object? value) {

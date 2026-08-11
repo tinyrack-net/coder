@@ -77,6 +77,7 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
     ModelProviderRequest request, {
     Map<String, String> additionalHeaders = const <String, String>{},
     bool supportsPlatformRequestFields = true,
+    bool supportsReasoningSummary = false,
   }) {
     final credential = request.credential;
     final capabilities = request.capabilities;
@@ -92,6 +93,7 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
       supportsReasoningEffort: capabilities.controls.any(
         (control) => control.id == AgentModelControlIds.reasoningEffort,
       ),
+      supportsReasoningSummary: supportsReasoningSummary,
       supportsImageInput:
           capabilities.imageInput == AgentCapabilitySupport.supported,
       supportsFileInput:

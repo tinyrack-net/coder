@@ -398,6 +398,15 @@ void main() {
       markdown: 'A streaming answer stops mid-',
       isStreaming: true,
     ),
+    ChatReasoningActivity(
+      key: 'reasoning-complete',
+      turnId: 'turn-all',
+      createdAt: now,
+      markdown:
+          'I will inspect the parser, update the smallest safe surface, and '
+          'verify the focused behavior.',
+      isStreaming: false,
+    ),
     ChatAttachmentMessage(
       key: 'assistant-attachment',
       turnId: 'turn-all',
@@ -590,7 +599,7 @@ void main() {
     goldenTest(
       'chat timeline and approval cards render in light and dark themes',
       fileName: 'core_cards',
-      constraints: const BoxConstraints.tightFor(width: 1000, height: 2560),
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 2880),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
@@ -624,6 +633,44 @@ void main() {
               width: 460,
               height: 260,
               child: _chatItem(ThemeMode.dark, diffActivity),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'reasoning light',
+            child: SizedBox(
+              width: 460,
+              height: 280,
+              child: _chatItem(
+                ThemeMode.light,
+                ChatReasoningActivity(
+                  key: 'reasoning-expanded-light',
+                  turnId: 'turn-reasoning',
+                  createdAt: now,
+                  markdown:
+                      'First inspect the **provider event**, then preserve it '
+                      'through the timeline and render the summary.',
+                  isStreaming: false,
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'reasoning dark',
+            child: SizedBox(
+              width: 460,
+              height: 280,
+              child: _chatItem(
+                ThemeMode.dark,
+                ChatReasoningActivity(
+                  key: 'reasoning-expanded-dark',
+                  turnId: 'turn-reasoning',
+                  createdAt: now,
+                  markdown:
+                      'First inspect the **provider event**, then preserve it '
+                      'through the timeline and render the summary.',
+                  isStreaming: false,
+                ),
+              ),
             ),
           ),
           GoldenTestScenario(

@@ -2566,6 +2566,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatToolActionGeneric => '도구 사용';
 
   @override
+  String get chatReasoningThinking => '사고 중';
+
+  @override
+  String get chatReasoningThought => '생각함';
+
+  @override
+  String get chatReasoningWaiting => '사고 내용을 기다리는 중…';
+
+  @override
   String get chatToolStatusFailed => '실패';
 
   @override

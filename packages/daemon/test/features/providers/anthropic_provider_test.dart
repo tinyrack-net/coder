@@ -59,6 +59,10 @@ data: {"type":"message_stop"}
 
     expect(events.whereType<ModelTextDelta>().single.delta, 'hello');
     expect(
+      events.whereType<ModelReasoningDelta>().single.delta,
+      'plan',
+    );
+    expect(
       events.whereType<ModelFunctionCall>().single.arguments,
       <String, dynamic>{
         'path': 'README.md',

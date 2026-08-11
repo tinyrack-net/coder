@@ -333,6 +333,50 @@ void main() {
   });
 
   test(
+    'agent records one reasoning phase for every provider invocation',
+    tags: const <String>['feature_test__turn_execution__unit'],
+    () async {
+      final harness = _RunnerHarness(
+        _FakeProvider(<List<ModelEvent>>[
+          <ModelEvent>[
+            const ModelReasoningDelta('Inspecting the workspace.'),
+            ..._toolResponse('echo'),
+          ],
+          <ModelEvent>[
+            const ModelReasoningDelta('Checking the result.'),
+            ..._textResponse('done'),
+          ],
+        ]),
+        tools: <AgentTool>[_EchoTool()],
+      );
+
+      await harness.runner.startTurn(_request(), CancellationToken());
+
+      expect(
+        harness.events,
+        containsAllInOrder(<String>[
+          'assistant.reasoning.started',
+          'assistant.reasoning.delta',
+          'assistant.reasoning.completed',
+          'tool.requested',
+          'tool.completed',
+          'assistant.reasoning.started',
+          'assistant.reasoning.delta',
+          'assistant.reasoning.completed',
+          'assistant.delta',
+          'turn.completed',
+        ]),
+      );
+      expect(
+        harness.eventData
+            .where((entry) => entry.$1 == 'assistant.reasoning.delta')
+            .map((entry) => entry.$2['text']),
+        <String>['Inspecting the workspace.', 'Checking the result.'],
+      );
+    },
+  );
+
+  test(
     'an orchestrator invokes a nested tool through normal approvals',
     () async {
       final approvals = _RecordingApproval();

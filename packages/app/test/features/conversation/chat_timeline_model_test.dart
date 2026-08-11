@@ -94,6 +94,68 @@ void main() {
   );
 
   test(
+    'reasoning phases stream, complete, split across tools, and omit empties',
+    tags: const <String>['feature_test__turn_execution__unit'],
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('assistant.reasoning.started', const <String, dynamic>{}),
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': 'Inspecting ',
+        }),
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': 'the code.',
+        }),
+        event('assistant.reasoning.completed', const <String, dynamic>{}),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'arguments': <String, dynamic>{'path': 'lib/main.dart'},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'output': 'contents',
+        }),
+        event('assistant.reasoning.started', const <String, dynamic>{}),
+        event('assistant.reasoning.delta', <String, dynamic>{
+          'text': 'Checking the result.',
+        }),
+      ]);
+
+      final reasoning = items.whereType<ChatReasoningActivity>().toList();
+      expect(reasoning, hasLength(2));
+      expect(reasoning.first.markdown, 'Inspecting the code.');
+      expect(reasoning.first.isStreaming, isFalse);
+      expect(reasoning.last.markdown, 'Checking the result.');
+      expect(reasoning.last.isStreaming, isTrue);
+
+      expect(
+        projectChatTimeline(<TimelineEventDto>[
+          event('assistant.reasoning.started', const <String, dynamic>{}),
+          event('assistant.reasoning.completed', const <String, dynamic>{}),
+          event('turn.completed', const <String, dynamic>{}),
+        ]).whereType<ChatReasoningActivity>(),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'an empty active reasoning phase remains visible while it is running',
+    tags: const <String>['feature_test__turn_execution__unit'],
+    () {
+      final reasoning =
+          projectChatTimeline(<TimelineEventDto>[
+                event('assistant.reasoning.started', const <String, dynamic>{}),
+              ]).single
+              as ChatReasoningActivity;
+
+      expect(reasoning.markdown, isEmpty);
+      expect(reasoning.isStreaming, isTrue);
+    },
+  );
+
+  test(
     'tool requests and results merge into one activity per call',
     () {
       final items = projectChatTimeline(<TimelineEventDto>[

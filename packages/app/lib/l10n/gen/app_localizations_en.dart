@@ -2624,6 +2624,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatToolActionGeneric => 'Use tool';
 
   @override
+  String get chatReasoningThinking => 'Thinking…';
+
+  @override
+  String get chatReasoningThought => 'Thought';
+
+  @override
+  String get chatReasoningWaiting => 'Waiting for reasoning details…';
+
+  @override
   String get chatToolStatusFailed => 'Failed';
 
   @override

@@ -7,6 +7,7 @@ import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
@@ -1247,7 +1248,6 @@ void main() {
       expect(find.textContaining('changedFiles'), findsNothing);
       expect(find.textContaining('"isError"'), findsNothing);
       expect(tester.takeException(), isNull);
-
       // Attachments use the authenticated HTTP transport even though the turn
       // and timeline continue to use the WebSocket API.
       await File('${workspace.path}/agent-output.txt').writeAsString(
@@ -1628,6 +1628,26 @@ void main() {
       );
       await pumpUntilGone(tester, questionSubmit);
 
+      await _submitComposerPrompt(tester, composer, send, 'Show reasoning');
+      await pumpUntil(
+        tester,
+        find.text('Reasoning shown.', findRichText: true),
+      );
+      final latestReasoning = find.byWidgetPredicate(
+        (widget) =>
+            widget is ChatReasoningCard &&
+            widget.activity.markdown.contains('복원 가능한 사고 요약'),
+        description: 'latest reasoning card',
+      );
+      await pumpUntil(tester, latestReasoning);
+      expect(find.text('생각함', findRichText: true), findsWidgets);
+      await tester.tap(latestReasoning);
+      await tester.pump();
+      expect(
+        find.text('복원 가능한 사고 요약입니다.', findRichText: true),
+        findsOneWidget,
+      );
+
       final reconnected = await CoderClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(
@@ -1653,6 +1673,16 @@ void main() {
       expect(child.parentSessionId, parent.id);
       final timeline = await reconnected.sessions.subscribeTimeline(parent.id);
       expect(timeline.map((event) => event.type), contains('turn.completed'));
+      expect(
+        timeline
+            .where((event) => event.type == 'assistant.reasoning.delta')
+            .map((event) => event.data['text']),
+        containsAll(<String>[
+          '패치를 적용할 방법을 정리합니다.',
+          '적용 결과를 확인합니다.',
+          '복원 가능한 사고 요약입니다.',
+        ]),
+      );
       final restoredAttachmentTimeline = await reconnected.sessions
           .subscribeTimeline(
             parent.id,
@@ -1709,6 +1739,25 @@ void main() {
         tester,
         find.byKey(ValueKey<String>('tr-tabs-close-${parent.id}')),
       );
+      final restoredReasoning = find.byWidgetPredicate(
+        (widget) =>
+            widget is ChatReasoningCard &&
+            widget.activity.markdown.contains('복원 가능한 사고 요약'),
+        description: 'restored latest reasoning card',
+      );
+      await pumpUntil(tester, restoredReasoning);
+      await tester.ensureVisible(restoredReasoning);
+      await tester.pump();
+      expect(find.text('생각함', findRichText: true), findsWidgets);
+      final restoredReasoningText = find.text(
+        '복원 가능한 사고 요약입니다.',
+        findRichText: true,
+      );
+      if (restoredReasoningText.evaluate().isEmpty) {
+        await tester.tap(restoredReasoning);
+        await tester.pump();
+      }
+      expect(restoredReasoningText, findsOneWidget);
       // The desktop workspace persists a binary layout, streams divider
       // changes, and collapses a source pane when its last tab moves away.
       await tester.tap(
@@ -3418,6 +3467,7 @@ final class _AgentE2eProvider implements ModelProvider {
           '*** Add File: result.txt\n'
           '+done\n'
           '*** End Patch';
+      yield const ModelReasoningDelta('패치를 적용할 방법을 정리합니다.');
       yield const ModelFreeformCall(
         callId: 'patch-call',
         name: 'apply_patch',
@@ -3468,6 +3518,17 @@ final class _AgentE2eProvider implements ModelProvider {
         assistant: AssistantConversationItem(text: 'Rejected safely'),
       );
       return;
+    }
+    if (latestPrompt == 'Show reasoning') {
+      yield const ModelReasoningDelta('복원 가능한 사고 요약입니다.');
+      yield const ModelTextDelta('Reasoning shown.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Reasoning shown.'),
+      );
+      return;
+    }
+    if (latestPrompt == 'Create result.txt') {
+      yield const ModelReasoningDelta('적용 결과를 확인합니다.');
     }
     yield const ModelTextDelta('Created result.txt');
     yield const ModelResponseCompleted(

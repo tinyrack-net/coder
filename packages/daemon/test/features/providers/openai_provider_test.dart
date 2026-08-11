@@ -224,9 +224,11 @@ data: [DONE]
     'and preserves output items',
     () async {
       final adapter = _RecordingAdapter('''
+data: {"type":"response.reasoning_summary_text.delta","item_id":"rs-1","output_index":0,"summary_index":0,"delta":"Checking the request."}
+
 data: {"type":"response.output_text.delta","delta":"hello"}
 
-data: {"type":"response.completed","response":{"output":[{"type":"reasoning","encrypted_content":"opaque"},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"hello"}]}],"usage":{"input_tokens":2,"output_tokens":1}}}
+data: {"type":"response.completed","response":{"output":[{"type":"reasoning","encrypted_content":"opaque","summary":[{"type":"summary_text","text":"Checking the request."}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"hello"}]}],"usage":{"input_tokens":2,"output_tokens":1}}}
 
 data: [DONE]
 
@@ -271,7 +273,10 @@ data: [DONE]
       expect(body['stream'], isTrue);
       expect(body['parallel_tool_calls'], isFalse);
       expect(body['model'], 'gpt-5.6-sol');
-      expect(body['reasoning'], <String, dynamic>{'effort': 'medium'});
+      expect(body['reasoning'], <String, dynamic>{
+        'effort': 'medium',
+        'summary': 'auto',
+      });
       expect(body['include'], contains('reasoning.encrypted_content'));
       expect((body['tools'] as List).single, containsPair('strict', true));
       expect(
@@ -279,6 +284,10 @@ data: [DONE]
         'Bearer secret-test-key',
       );
       expect(events.whereType<ModelTextDelta>().single.delta, 'hello');
+      expect(
+        events.whereType<ModelReasoningDelta>().single.delta,
+        'Checking the request.',
+      );
       final completed = events.whereType<ModelResponseCompleted>().single;
       expect(
         completed.assistant.opaqueItems.first['encrypted_content'],
@@ -839,6 +848,7 @@ data: [DONE]
           id: 'compatible-responses',
           requiresApiKey: false,
           supportsReasoningEffort: false,
+          supportsReasoningSummary: false,
           strictToolSchema: false,
         ),
         dio: dio,
@@ -1046,6 +1056,25 @@ data: [DONE]
     );
   });
 
+  test('Responses retries without an unavailable reasoning summary', () async {
+    final adapter = _ReasoningSummaryFallbackAdapter();
+    final events = await OpenAIResponsesProvider(
+      const OpenAIProviderConfig(requiresApiKey: false),
+      dio: Dio()..httpClientAdapter = adapter,
+    ).stream(_request(), CancellationToken()).toList();
+
+    expect(adapter.bodies, hasLength(2));
+    expect(
+      adapter.bodies.first['reasoning'],
+      containsPair('summary', 'auto'),
+    );
+    expect(
+      adapter.bodies.last['reasoning'],
+      isNot(contains('summary')),
+    );
+    expect(events.whereType<ModelTextDelta>().single.delta, 'ok');
+  });
+
   test('both adapters translate transport cancellation', () async {
     for (final providerFactory in <ModelProvider Function(Dio)>[
       (dio) => OpenAIResponsesProvider(
@@ -1065,6 +1094,39 @@ data: [DONE]
       await expectLater(events, throwsA(isA<AgentCancelledException>()));
     }
   });
+
+  test(
+    'Chat Completions normalizes structured and string reasoning deltas',
+    () async {
+      final adapter = _RecordingAdapter('''
+data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.summary","summary":"Structured "},{"type":"reasoning.text","text":"reasoning."}]}}]}
+
+data: {"choices":[{"delta":{"reasoning_content":"Fallback content"}}]}
+
+data: {"choices":[{"delta":{"reasoning":"Fallback reasoning"}}]}
+
+data: {"choices":[{"delta":{"content":"answer"}}]}
+
+data: [DONE]
+
+''');
+      final events = await OpenAIChatCompletionsProvider(
+        const OpenAIProviderConfig(apiKey: 'key'),
+        dio: Dio()..httpClientAdapter = adapter,
+      ).stream(_request(), CancellationToken()).toList();
+
+      expect(
+        events.whereType<ModelReasoningDelta>().map((event) => event.delta),
+        <String>[
+          'Structured ',
+          'reasoning.',
+          'Fallback content',
+          'Fallback reasoning',
+        ],
+      );
+      expect(events.whereType<ModelTextDelta>().single.delta, 'answer');
+    },
+  );
 
   test(
     'Chat Completions maps all canonical messages and forced tools',
@@ -1352,6 +1414,46 @@ final class _BadRequestAdapter implements HttpClientAdapter {
         data: body,
       ),
     );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+final class _ReasoningSummaryFallbackAdapter implements HttpClientAdapter {
+  final List<Map<String, dynamic>> bodies = <Map<String, dynamic>>[];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    bodies.add(Map<String, dynamic>.from(options.data as Map));
+    if (bodies.length == 1) {
+      throw DioException(
+        requestOptions: options,
+        type: DioExceptionType.badResponse,
+        response: Response<Object?>(
+          requestOptions: options,
+          statusCode: 400,
+          data: <String, dynamic>{
+            'error': <String, dynamic>{
+              'param': 'reasoning.summary',
+              'message': 'Reasoning summaries are unsupported.',
+            },
+          },
+        ),
+      );
+    }
+    return ResponseBody.fromString('''
+data: {"type":"response.output_text.delta","delta":"ok"}
+
+data: {"type":"response.completed","response":{"output":[{"type":"message","content":[{"type":"output_text","text":"ok"}]}],"usage":{}}}
+
+data: [DONE]
+
+''', 200);
   }
 
   @override
