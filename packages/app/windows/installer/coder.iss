@@ -46,7 +46,7 @@ SolidCompression=yes
 WizardStyle=modern
 ; Per-machine when elevated, per-user otherwise, so an unprivileged install
 ; still works.
-PrivilegesRequiredOverridesAllowed=dialog
+PrivilegesRequiredOverridesAllowed=commandline dialog
 ; Closing the window only hides the app to the tray, so a running copy would
 ; otherwise survive the install, keep the exclusive lock on the daemon home,
 ; and make the freshly launched copy fail to start its daemon. The mutex name
