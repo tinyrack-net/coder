@@ -512,7 +512,10 @@ void main() {
       final sheet = find.byKey(
         const ValueKey<String>('session-composer-settings-sheet'),
       );
-      expect(tester.getSize(sheet).height, lessThan(surfaceSize.height * 0.75));
+      expect(
+        tester.getSize(sheet).height,
+        lessThanOrEqualTo(surfaceSize.height * 0.7),
+      );
       expect(tester.getBottomLeft(sheet).dy, surfaceSize.height);
     },
   );
@@ -677,11 +680,12 @@ void main() {
         const ModelControlValueDto.intValue(value: 7),
       );
 
-      await tester.tap(
-        find.byKey(
-          const ValueKey<String>('session-composer-settings-permission'),
-        ),
+      final permissionSetting = find.byKey(
+        const ValueKey<String>('session-composer-settings-permission'),
       );
+      await tester.ensureVisible(permissionSetting);
+      await tester.pumpAndSettle();
+      await tester.tap(permissionSetting);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('permission-option-readOnly')),

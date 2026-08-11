@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
@@ -83,16 +84,12 @@ Future<ModelPickerChoice?> showModelPicker(
   if (surface == ModelPickerSurface.sheet ||
       MediaQuery.sizeOf(context).width <
           TinestLayoutMetrics.compactBreakpoint) {
-    return showTRDrawer<ModelPickerChoice>(
+    return showTinestBottomSheet<ModelPickerChoice>(
       context: context,
       useRootNavigator: useRootNavigator,
-      builder: (context) => TRDrawer(
+      builder: (context) => TinestBottomSheet(
         semanticLabel: title,
-        snapPoints: const <double>[0.8, 1],
-        content: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.8,
-          child: picker,
-        ),
+        content: picker,
       ),
     );
   }
@@ -103,7 +100,6 @@ Future<ModelPickerChoice?> showModelPicker(
       content: ConstrainedBox(
         constraints: const BoxConstraints(
           maxWidth: TRMeasurements.overlayWidthMd,
-          maxHeight: TRMeasurements.measureXl,
         ),
         child: picker,
       ),
@@ -238,6 +234,7 @@ class _ModelPickerState extends State<ModelPicker> {
               .toList(growable: false);
     final inheritLabel = widget.inheritLabel;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Row(
@@ -276,46 +273,47 @@ class _ModelPickerState extends State<ModelPicker> {
               const InheritModelPickerChoice(),
             ),
           ),
-        Expanded(
-          child: filtered.isEmpty
-              ? Center(child: TRText.inherit(l10n.modelPickerNoResults))
-              : ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final option = filtered[index];
-                    final model = option.model;
-                    final providerModelId = model.providerModelId.isEmpty
-                        ? model.id
-                        : model.providerModelId;
-                    return TinestListRow(
-                      key: ValueKey(
-                        'model-option-${model.connectionId}-'
-                        '$providerModelId',
-                      ),
-                      title: TRText.inherit(
-                        model.id,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: TRText.inherit(
-                        model.label == model.providerModelId ||
-                                model.label == model.id
-                            ? option.providerName
-                            : '${option.providerName} · ${model.label}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: _isSelected(option)
-                          ? const Icon(TinestIcons.check)
-                          : null,
-                      onTap: () => Navigator.pop(
-                        context,
-                        SelectedModelPickerChoice(option.selection),
-                      ),
-                    );
-                  },
+        if (filtered.isEmpty)
+          TRText.inherit(l10n.modelPickerNoResults)
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final option = filtered[index];
+              final model = option.model;
+              final providerModelId = model.providerModelId.isEmpty
+                  ? model.id
+                  : model.providerModelId;
+              return TinestListRow(
+                key: ValueKey(
+                  'model-option-${model.connectionId}-'
+                  '$providerModelId',
                 ),
-        ),
+                title: TRText.inherit(
+                  model.id,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: TRText.inherit(
+                  model.label == model.providerModelId ||
+                          model.label == model.id
+                      ? option.providerName
+                      : '${option.providerName} · ${model.label}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: _isSelected(option)
+                    ? const Icon(TinestIcons.check)
+                    : null,
+                onTap: () => Navigator.pop(
+                  context,
+                  SelectedModelPickerChoice(option.selection),
+                ),
+              );
+            },
+          ),
       ],
     );
   }
