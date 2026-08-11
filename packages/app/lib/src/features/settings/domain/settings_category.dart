@@ -12,6 +12,9 @@ enum SettingsCategory {
   /// External MCP servers owned by one daemon.
   mcp,
 
+  /// Transport, relay pairing, and approved devices for one daemon.
+  connection,
+
   /// Skills merged from built-in, user, config, and project sources.
   skill,
 
@@ -50,6 +53,7 @@ extension SettingsCategoryScopeX on SettingsCategory {
     SettingsCategory.project ||
     SettingsCategory.agent ||
     SettingsCategory.mcp ||
+    SettingsCategory.connection ||
     SettingsCategory.skill ||
     SettingsCategory.permission ||
     SettingsCategory.provider => SettingsCategoryScope.daemon,

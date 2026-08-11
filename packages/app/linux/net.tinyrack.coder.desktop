@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Coder
+Comment=Local-first AI coding agent with an always-on daemon
+Exec=coder %u
+Icon=net.tinyrack.coder
+Terminal=false
+Categories=Development;
+MimeType=x-scheme-handler/tinyrack-coder;

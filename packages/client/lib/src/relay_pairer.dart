@@ -5,6 +5,35 @@ import 'package:client/src/connection.dart';
 import 'package:client/src/web_socket_connector.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 
+/// Non-secret metadata decoded from a relay pairing capability.
+final class RelayPairingOfferMetadata {
+  /// Creates validated, non-secret offer metadata.
+  const RelayPairingOfferMetadata({
+    required this.serverId,
+    required this.relayUri,
+    required this.expiresAt,
+  });
+
+  /// Authoritative daemon identity.
+  final String serverId;
+
+  /// Relay WebSocket endpoint selected by the daemon.
+  final Uri relayUri;
+
+  /// UTC expiration of the one-time capability.
+  final DateTime expiresAt;
+}
+
+/// Validates a relay offer and returns only metadata safe for confirmation UI.
+RelayPairingOfferMetadata inspectRelayPairingOffer(Uri pairingUrl) {
+  final offer = RelayPairingOffer.parseUrl(pairingUrl);
+  return RelayPairingOfferMetadata(
+    serverId: offer.serverId,
+    relayUri: offer.relayUri,
+    expiresAt: offer.expiresAt,
+  );
+}
+
 /// Device-local result retained after a one-time offer is consumed.
 final class RelayPairingResult {
   /// Creates a paired relay path and its separately stored credential.

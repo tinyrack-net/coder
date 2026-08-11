@@ -876,11 +876,38 @@
     "description": "Opens the remote daemon form."
   },
   "relayPairTitle": "Connect a device",
+  "relayConnectDaemonTitle": "Connect a daemon",
+  "relayConnectDaemonDescription": "Choose how to connect to a daemon. Relay links keep daemon traffic end-to-end encrypted.",
+  "relayConnectScanDescription": "Scan the one-time QR code shown by the daemon.",
+  "relayConnectPasteTitle": "Paste connection link",
+  "relayConnectPasteDescription": "Paste the one-time link shown by the daemon.",
+  "relayConnectDirectDescription": "Connect with a WebSocket address and bearer token.",
+  "relayConfirmTitle": "Review daemon connection",
+  "relayConfirmDescription": "Confirm the daemon and relay before registering this device.",
+  "relayConfirmDaemon": "Daemon ID",
+  "relayConfirmRelay": "Relay server",
+  "relayConfirmExpires": "Link expires",
+  "relayShare": "Share",
+  "relayRefreshLink": "Create a new link",
+  "relayEnableTitle": "Connect this daemon through the relay",
+  "relayEnableDescription": "The daemon will open an outbound encrypted connection to the separate Tinyrack relay server so your other devices can reach it.",
+  "relayEnableAction": "Enable relay connection",
+  "settingsCategoryConnection": "Connections",
   "relayPairDescription": "Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.",
   "relayPairLink": "Pairing link",
   "relayPairDeviceName": "This device's name",
   "relayPairAction": "Connect",
   "relayPairScan": "Scan QR code",
+  "relayPairCameraUnavailable": "QR scanning is available on Android and iOS. Paste the connection link on this device instead.",
+  "relayPairCameraError": "{appDisplayName} could not open the camera. Allow camera access in system settings, then try again.",
+  "@relayPairCameraError": {
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
+  },
+  "relayPairCameraRetry": "Try camera again",
   "relayPairQrSemantics": "QR code for the one-time device connection link",
   "relayPairInvalid": "Enter a valid {appDisplayName} pairing link.",
   "@relayPairInvalid": {
@@ -891,6 +918,7 @@
     }
   },
   "relayPairExpired": "This pairing link expired or was already used. Create a new link on the daemon.",
+  "relayPairFailed": "Could not connect this daemon. Create a new link on the daemon and try again.",
   "relayAdvancedDirect": "Advanced direct connection",
   "relayDevicesTitle": "Connected devices",
   "relayDevicesDescription": "Create a ten-minute link for a new device or remove a device that should no longer connect.",

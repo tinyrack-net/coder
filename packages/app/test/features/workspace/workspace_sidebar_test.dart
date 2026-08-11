@@ -112,6 +112,7 @@ void main() {
               onSelect: onSelect ?? (_) {},
               onSelectSession: onSelectSession ?? (_, _) {},
               onOpenDaemonSettings: () {},
+              onConnectDaemon: () {},
               onArchivedSelection: () {},
             ),
           ),

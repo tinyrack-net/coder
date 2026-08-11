@@ -8,7 +8,11 @@ tags:
   feature_scenario__daemon_relay__relay_attachment__e2e:
   feature_test__daemon_relay__e2e:
   route_test__advanced_new_host_route__widget:
-  route_test__daemon_devices_route__widget:
+  route_test__connect_daemon_route__widget:
+  route_test__pairing_link_route__widget:
+  route_test__pairing_scan_route__widget:
+  route_test__pair_offer_route__widget:
+  route_test__daemon_connections_route__widget:
   feature_test__session_goal__widget:
   feature_test__session_goal__e2e:
   feature_scenario__session_goal__multi_turn_completion_reconnect__e2e:
@@ -187,7 +191,6 @@ tags:
   route_test__agent_settings_route__widget:
   route_test__skill_settings_route__widget:
   route_test__daemon_settings_route__widget:
-  route_test__new_host_route__widget:
   route_test__edit_host_route__widget:
   feature_test__settings_reset__unit:
   feature_test__settings_reset__verticalSlice:

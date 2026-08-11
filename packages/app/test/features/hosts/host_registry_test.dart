@@ -1309,6 +1309,56 @@ void main() {
   });
 
   test(
+    'pairing the same daemon updates its relay path without a duplicate',
+    () async {
+      final direct = DirectHostConnection(
+        id: 'direct',
+        credentialKey: 'direct-secret',
+        endpoint: HostEndpoint.parse('wss://daemon.example/v4/ws'),
+      );
+      final existing = RemoteDaemonProfile(
+        id: 'existing',
+        label: 'Existing daemon',
+        serverId: 'relay-daemon',
+        connections: <HostConnection>[direct],
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[existing],
+        tokens: const <String, String>{'direct-secret': 'token'},
+      );
+      final registry = HostRegistry(
+        store: store,
+        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        ids: const _Ids(),
+        clock: _Clock(now.add(const Duration(minutes: 1))),
+        delay: const _NoDelay(),
+        clientKind: 'test',
+        relayPairer: _Pairer(),
+      );
+      addTearDown(registry.close);
+      await registry.load();
+
+      final paired = await registry.pairRemote(
+        pairingUrl: Uri.parse('https://coder.tinyrack.net/pair#offer=test'),
+        deviceName: 'My phone',
+        autoConnect: false,
+      );
+
+      expect(paired.id, existing.id);
+      expect(store.profiles, hasLength(1));
+      expect(store.profiles.single.label, existing.label);
+      expect(store.profiles.single.connections, hasLength(2));
+      expect(store.profiles.single.directConnections.single, same(direct));
+      expect(store.profiles.single.relayConnections, hasLength(1));
+      expect(store.relayCredentials, hasLength(1));
+    },
+  );
+
+  test(
     'parallel startup selects the first valid path and fails over after loss',
     () async {
       final direct = DirectHostConnection(

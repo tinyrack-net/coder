@@ -45,4 +45,25 @@ void main() {
     },
     tags: const <String>['feature_test__settings_startup__unit'],
   );
+
+  test('custom pairing protocol becomes a canonical fragment-only route', () {
+    expect(
+      desktopPairingInitialLocation(const <String>[
+        'tinyrack-coder://pair#offer=secret-capability',
+      ]),
+      'https://coder.tinyrack.net/pair#offer=secret-capability',
+    );
+    expect(
+      desktopPairingInitialLocation(const <String>[
+        'tinyrack-coder://pair?offer=must-not-leak',
+      ]),
+      isNull,
+    );
+    expect(
+      desktopPairingInitialLocation(const <String>[
+        'tinyrack-coder://settings#offer=secret-capability',
+      ]),
+      isNull,
+    );
+  });
 }

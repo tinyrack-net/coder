@@ -1366,6 +1366,108 @@ abstract class AppLocalizations {
   /// **'Connect a device'**
   String get relayPairTitle;
 
+  /// No description provided for @relayConnectDaemonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a daemon'**
+  String get relayConnectDaemonTitle;
+
+  /// No description provided for @relayConnectDaemonDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to connect to a daemon. Relay links keep daemon traffic end-to-end encrypted.'**
+  String get relayConnectDaemonDescription;
+
+  /// No description provided for @relayConnectScanDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the one-time QR code shown by the daemon.'**
+  String get relayConnectScanDescription;
+
+  /// No description provided for @relayConnectPasteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste connection link'**
+  String get relayConnectPasteTitle;
+
+  /// No description provided for @relayConnectPasteDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the one-time link shown by the daemon.'**
+  String get relayConnectPasteDescription;
+
+  /// No description provided for @relayConnectDirectDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect with a WebSocket address and bearer token.'**
+  String get relayConnectDirectDescription;
+
+  /// No description provided for @relayConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review daemon connection'**
+  String get relayConfirmTitle;
+
+  /// No description provided for @relayConfirmDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the daemon and relay before registering this device.'**
+  String get relayConfirmDescription;
+
+  /// No description provided for @relayConfirmDaemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon ID'**
+  String get relayConfirmDaemon;
+
+  /// No description provided for @relayConfirmRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay server'**
+  String get relayConfirmRelay;
+
+  /// No description provided for @relayConfirmExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Link expires'**
+  String get relayConfirmExpires;
+
+  /// No description provided for @relayShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get relayShare;
+
+  /// No description provided for @relayRefreshLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new link'**
+  String get relayRefreshLink;
+
+  /// No description provided for @relayEnableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this daemon through the relay'**
+  String get relayEnableTitle;
+
+  /// No description provided for @relayEnableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The daemon will open an outbound encrypted connection to the separate Tinyrack relay server so your other devices can reach it.'**
+  String get relayEnableDescription;
+
+  /// No description provided for @relayEnableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable relay connection'**
+  String get relayEnableAction;
+
+  /// No description provided for @settingsCategoryConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get settingsCategoryConnection;
+
   /// No description provided for @relayPairDescription.
   ///
   /// In en, this message translates to:
@@ -1396,6 +1498,24 @@ abstract class AppLocalizations {
   /// **'Scan QR code'**
   String get relayPairScan;
 
+  /// No description provided for @relayPairCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'QR scanning is available on Android and iOS. Paste the connection link on this device instead.'**
+  String get relayPairCameraUnavailable;
+
+  /// No description provided for @relayPairCameraError.
+  ///
+  /// In en, this message translates to:
+  /// **'{appDisplayName} could not open the camera. Allow camera access in system settings, then try again.'**
+  String relayPairCameraError(String appDisplayName);
+
+  /// No description provided for @relayPairCameraRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try camera again'**
+  String get relayPairCameraRetry;
+
   /// No description provided for @relayPairQrSemantics.
   ///
   /// In en, this message translates to:
@@ -1413,6 +1533,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This pairing link expired or was already used. Create a new link on the daemon.'**
   String get relayPairExpired;
+
+  /// No description provided for @relayPairFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect this daemon. Create a new link on the daemon and try again.'**
+  String get relayPairFailed;
 
   /// No description provided for @relayAdvancedDirect.
   ///

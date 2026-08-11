@@ -28,6 +28,7 @@ class CoderApp extends StatelessWidget {
     this.trayIcon,
     this.terminator,
     this.autostart,
+    this.initialLocation,
     super.key,
   });
 
@@ -55,7 +56,13 @@ class CoderApp extends StatelessWidget {
   /// Login-item registration, or null where the app cannot register one.
   final AutostartRegistration? autostart;
 
-  late final GoRouter _router = GoRouter(routes: $appRoutes);
+  /// Optional startup route supplied by a native protocol activation.
+  final String? initialLocation;
+
+  late final GoRouter _router = GoRouter(
+    routes: $appRoutes,
+    initialLocation: initialLocation,
+  );
 
   @override
   Widget build(BuildContext context) => ProviderScope(

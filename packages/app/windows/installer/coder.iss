@@ -91,6 +91,13 @@ Filename: "{app}\{#AppExeName}"; \
   Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [Registry]
+; Register the fragment-only pairing protocol for installed desktop builds.
+Root: HKA; Subkey: "Software\Classes\tinyrack-coder"; \
+  ValueType: string; ValueData: "URL:Tinyrack Coder pairing protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\tinyrack-coder"; \
+  ValueName: "URL Protocol"; ValueType: string; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\tinyrack-coder\shell\open\command"; \
+  ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
 ; The app registers itself to start at login by writing this Run value, so the
 ; uninstaller has to remove it or Windows keeps launching a deleted path. The
 ; entry is never created here, only cleaned up.

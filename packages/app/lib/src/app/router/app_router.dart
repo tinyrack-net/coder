@@ -350,18 +350,51 @@ class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
       const UnifiedSettingsPage(category: SettingsCategory.advanced);
 }
 
-@TypedGoRoute<NewHostRoute>(path: '/settings/daemons/new')
-/// Pairs a remote daemon through its one-time relay link.
-class NewHostRoute extends GoRouteData with $NewHostRoute {
+@TypedGoRoute<ConnectDaemonRoute>(path: '/connect')
+/// Chooses how to connect a daemon.
+class ConnectDaemonRoute extends GoRouteData with $ConnectDaemonRoute {
   /// Creates the route.
-  const NewHostRoute();
+  const ConnectDaemonRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const RemoteHostPairPage();
+      const ConnectDaemonPage();
 }
 
-@TypedGoRoute<AdvancedNewHostRoute>(path: '/settings/daemons/new/direct')
+@TypedGoRoute<PairingLinkRoute>(path: '/connect/link')
+/// Accepts a one-time HTTPS daemon connection link.
+class PairingLinkRoute extends GoRouteData with $PairingLinkRoute {
+  /// Creates the route.
+  const PairingLinkRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const PairingLinkPage();
+}
+
+@TypedGoRoute<PairingScanRoute>(path: '/connect/scan')
+/// Scans a daemon connection QR code on supported native devices.
+class PairingScanRoute extends GoRouteData with $PairingScanRoute {
+  /// Creates the route.
+  const PairingScanRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const PairingScanPage();
+}
+
+@TypedGoRoute<PairOfferRoute>(path: '/pair')
+/// Reviews the fragment-only pairing capability from a web or app link.
+class PairOfferRoute extends GoRouteData with $PairOfferRoute {
+  /// Creates the route.
+  const PairOfferRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      PairOfferPage(pairingUrl: state.uri);
+}
+
+@TypedGoRoute<AdvancedNewHostRoute>(path: '/connect/direct')
 /// Adds a direct WebSocket connection for advanced users.
 class AdvancedNewHostRoute extends GoRouteData with $AdvancedNewHostRoute {
   /// Creates the route.
@@ -372,18 +405,20 @@ class AdvancedNewHostRoute extends GoRouteData with $AdvancedNewHostRoute {
       const RemoteHostEditPage();
 }
 
-@TypedGoRoute<DaemonDevicesRoute>(path: '/settings/daemons/:hostId/devices')
-/// Creates pairing links and manages devices approved by one daemon.
-class DaemonDevicesRoute extends GoRouteData with $DaemonDevicesRoute {
+@TypedGoRoute<DaemonConnectionsRoute>(
+  path: '/settings/daemons/:hostId/connections',
+)
+/// Opens one daemon's connection, pairing, and approved-device settings.
+class DaemonConnectionsRoute extends GoRouteData with $DaemonConnectionsRoute {
   /// Creates the route.
-  const DaemonDevicesRoute({required this.hostId});
+  const DaemonConnectionsRoute({required this.hostId});
 
   /// App-local daemon profile identifier.
   final String hostId;
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      DaemonDevicesPage(hostId: hostId);
+      DaemonConnectionsPage(hostId: hostId);
 }
 
 @TypedGoRoute<EditHostRoute>(path: '/settings/daemons/:hostId')

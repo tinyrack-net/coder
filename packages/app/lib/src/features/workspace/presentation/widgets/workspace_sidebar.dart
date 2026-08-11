@@ -44,6 +44,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     required this.onSelect,
     required this.onSelectSession,
     required this.onOpenDaemonSettings,
+    required this.onConnectDaemon,
     required this.onArchivedSelection,
     super.key,
   });
@@ -78,6 +79,9 @@ class WorkspaceSidebar extends ConsumerWidget {
 
   /// Opens daemon settings when no daemon is configured.
   final VoidCallback onOpenDaemonSettings;
+
+  /// Starts the shared daemon connection flow when none is configured.
+  final VoidCallback onConnectDaemon;
 
   /// Called when the open checkout was archived.
   final VoidCallback onArchivedSelection;
@@ -219,13 +223,15 @@ class WorkspaceSidebar extends ConsumerWidget {
     if (runtimes.isEmpty) {
       return _SidebarEmptyState(
         message: l10n.workspaceNoDaemons,
-        onSettings: onOpenDaemonSettings,
+        actionLabel: l10n.relayConnectDaemonTitle,
+        onAction: onConnectDaemon,
       );
     }
     if (!connected) {
       return _SidebarEmptyState(
         message: l10n.workspaceNoConnectedDaemons,
-        onSettings: onOpenDaemonSettings,
+        actionLabel: l10n.workspaceOpenDaemonSettings,
+        onAction: onOpenDaemonSettings,
       );
     }
     final loose = homeSessions.value ?? const <HomeSessionEntry>[];
@@ -552,16 +558,22 @@ class _SidebarSectionLabel extends StatelessWidget {
 }
 
 class _SidebarEmptyState extends StatelessWidget {
-  const _SidebarEmptyState({required this.message, this.onSettings});
+  const _SidebarEmptyState({
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String message;
 
   /// Offered only when daemon settings are what the user needs next.
-  final VoidCallback? onSettings;
+  final String? actionLabel;
+
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
-    final onSettings = this.onSettings;
+    final onAction = this.onAction;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(TRSpacing.extraLarge),
@@ -569,14 +581,12 @@ class _SidebarEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TRText(message, align: TRTextAlign.center),
-            if (onSettings != null) ...<Widget>[
+            if (onAction != null) ...<Widget>[
               const SizedBox(height: TRSpacing.medium),
               TRButton(
                 appearance: TRAppearance.outline,
-                onPressed: onSettings,
-                child: TRText.inherit(
-                  AppLocalizations.of(context).workspaceOpenDaemonSettings,
-                ),
+                onPressed: onAction,
+                child: TRText.inherit(actionLabel!),
               ),
             ],
           ],

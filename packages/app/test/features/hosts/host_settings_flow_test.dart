@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:protocol/protocol.dart';
+import 'package:relay_protocol/relay_protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_coder_api.dart';
@@ -21,7 +22,7 @@ import '../../support/localization.dart';
 
 void main() {
   testWidgets(
-    'QR pairing reports camera startup failures in the scanner dialog',
+    'QR pairing validates and reviews an offer before connecting',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -48,19 +49,27 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey<String>('relay-scan-qr')));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('connect-daemon-scan')),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('QR 코드 스캔'), findsWidgets);
-      expect(find.byType(TRAlert), findsWidgets);
       tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
-        const BarcodeCapture(
+        BarcodeCapture(
           barcodes: <Barcode>[
             Barcode(
-              rawValue: 'https://coder.tinyrack.net/pair#offer=scanned',
+              rawValue: _pairingUrl().toString(),
             ),
           ],
         ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daemon 연결 확인'), findsWidgets);
+      expect(find.text('relay-server'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-pair-submit')),
       );
       await tester.pumpAndSettle();
 
@@ -100,10 +109,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('고급 직접 연결'), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('relay-scan-qr')), findsNothing);
+      expect(
+        find.byKey(const ValueKey<String>('connect-daemon-scan')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('connect-daemon-paste')),
+      );
+      await tester.pumpAndSettle();
       debugDefaultTargetPlatformOverride = null;
       await tester.enterText(_field('연결 링크'), 'https://example.test/bad');
-      await tester.tap(find.byKey(const ValueKey<String>('relay-pair-submit')));
+      await tester.tap(find.byKey(const ValueKey<String>('relay-pair-review')));
       await tester.pumpAndSettle();
       expect(
         find.textContaining('올바른 Tinyrack Coder 연결 링크'),
@@ -111,8 +127,10 @@ void main() {
       );
       await tester.enterText(
         _field('연결 링크'),
-        'https://coder.tinyrack.net/pair#offer=opaque',
+        _pairingUrl().toString(),
       );
+      await tester.tap(find.byKey(const ValueKey<String>('relay-pair-review')));
+      await tester.pumpAndSettle();
       await tester.enterText(_field('이 기기 이름'), 'My phone');
       await tester.tap(find.byKey(const ValueKey<String>('relay-pair-submit')));
       await tester.pumpAndSettle();
@@ -264,15 +282,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      const DaemonDevicesRoute(hostId: 'remote').go(
+      const DaemonConnectionsRoute(hostId: 'remote').go(
         tester.element(find.byType(Navigator).first),
       );
       await tester.pumpAndSettle();
 
       expect(find.text('My phone'), findsOneWidget);
-      await tester.tap(
-        find.byKey(const ValueKey<String>('relay-create-offer')),
-      );
+      await tester.tap(find.byKey(const ValueKey<String>('relay-enable')));
       await tester.pumpAndSettle();
       expect(find.textContaining('offer=test-offer'), findsOneWidget);
       expect(find.byType(TRQrCode), findsOneWidget);
@@ -319,7 +335,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '고급 직접 연결'));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('connect-daemon-direct')),
+      );
       await tester.pumpAndSettle();
 
       await tester.enterText(_field('이름'), 'Production');
@@ -344,14 +362,18 @@ void main() {
         store.tokens[store.profiles.single.connections.single.credentialKey],
         'secret-token',
       );
-      await tester.tap(findAccessibleAction('연결 편집'));
+      EditHostRoute(hostId: store.profiles.single.id).go(
+        tester.element(find.byType(Navigator).first),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(_field('이름'), 'Renamed');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(store.profiles.single.label, 'Renamed');
 
-      await tester.tap(findAccessibleAction('연결 편집'));
+      EditHostRoute(hostId: store.profiles.single.id).go(
+        tester.element(find.byType(Navigator).first),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제').last);
       await tester.pumpAndSettle();
@@ -834,6 +856,15 @@ final class _ProfileClients implements HostClientFactory {
           .websocketUri
           .host]!();
 }
+
+Uri _pairingUrl() => RelayPairingOffer(
+  serverId: 'relay-server',
+  relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+  daemonPublicKey: List<int>.filled(32, 1),
+  offerId: 'test-offer',
+  secret: List<int>.filled(32, 2),
+  expiresAt: DateTime.utc(2100),
+).toUrl(Uri.parse('https://coder.tinyrack.net/pair'));
 
 Finder _field(String label) => find.descendant(
   of: find.byWidgetPredicate(

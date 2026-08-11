@@ -22,6 +22,15 @@ abstract final class CoderIcons {
   static const IconData paste = LucideIcons.clipboardPaste;
 
   /// Semantic Lucide glyph.
+  static const IconData scanQr = LucideIcons.scanQrCode;
+
+  /// Semantic Lucide glyph.
+  static const IconData link = LucideIcons.link;
+
+  /// Semantic Lucide glyph.
+  static const IconData share = LucideIcons.share2;
+
+  /// Semantic Lucide glyph.
   static const IconData selectAll = LucideIcons.textSelect;
 
   /// Semantic Lucide glyph.
@@ -89,6 +98,9 @@ abstract final class CoderIcons {
 
   /// Semantic Lucide glyph.
   static const IconData error = LucideIcons.circleAlert;
+
+  /// Semantic Lucide glyph.
+  static const IconData info = LucideIcons.info;
 
   /// Semantic Lucide glyph.
   static const IconData paused = LucideIcons.pauseCircle;

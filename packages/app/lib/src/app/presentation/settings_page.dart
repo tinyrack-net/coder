@@ -7,6 +7,7 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/hosts/presentation/pages/host_settings_page.dart';
+import 'package:app/src/features/hosts/presentation/pages/relay_pairing_pages.dart';
 import 'package:app/src/features/mcp/presentation/pages/mcp_settings_page.dart';
 import 'package:app/src/features/permissions/presentation/pages/permission_settings_page.dart';
 import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
@@ -141,6 +142,17 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           semanticLabel: AppLocalizations.of(context).settingsLoading,
         ),
         builder: (hostId) => McpSettingsPage(hostId: hostId),
+      ),
+      SettingsCategory.connection => _HostScopedDetail(
+        host: host,
+        loading: registryLoading,
+        loadingChild: SettingsSkeletonLayout.form(
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
+        builder: (hostId) => DaemonConnectionsPage(
+          hostId: hostId,
+          embedded: true,
+        ),
       ),
       SettingsCategory.skill => _HostScopedDetail(
         host: host,
@@ -524,6 +536,7 @@ IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
   SettingsCategory.project => CoderIcons.projects,
   SettingsCategory.agent => CoderIcons.agent,
   SettingsCategory.mcp => CoderIcons.extension,
+  SettingsCategory.connection => CoderIcons.link,
   SettingsCategory.skill => CoderIcons.sparkle,
   SettingsCategory.provider => CoderIcons.network,
   SettingsCategory.permission => CoderIcons.permission,
@@ -539,6 +552,7 @@ String _settingsCategoryLabel(
   SettingsCategory.project => l10n.settingsCategoryProjects,
   SettingsCategory.agent => l10n.settingsCategoryAgent,
   SettingsCategory.mcp => l10n.settingsCategoryMcp,
+  SettingsCategory.connection => l10n.settingsCategoryConnection,
   SettingsCategory.skill => l10n.settingsCategorySkill,
   SettingsCategory.provider => l10n.settingsCategoryProvider,
   SettingsCategory.permission => l10n.settingsCategoryPermission,
@@ -565,6 +579,10 @@ void _goToSettingsCategory(
       AgentSettingsRoute(hostId: hostId).replace(context);
     case SettingsCategory.mcp:
       McpSettingsRoute(hostId: hostId).replace(context);
+    case SettingsCategory.connection:
+      if (hostId != null) {
+        DaemonConnectionsRoute(hostId: hostId).replace(context);
+      }
     case SettingsCategory.skill:
       SkillSettingsRoute(hostId: hostId).replace(context);
     case SettingsCategory.provider:

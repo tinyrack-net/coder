@@ -182,7 +182,11 @@ tags:
   route_test__agent_settings_route__widget:
   route_test__skill_settings_route__widget:
   route_test__daemon_settings_route__widget:
-  route_test__new_host_route__widget:
+  route_test__connect_daemon_route__widget:
+  route_test__pairing_link_route__widget:
+  route_test__pairing_scan_route__widget:
+  route_test__pair_offer_route__widget:
+  route_test__daemon_connections_route__widget:
   route_test__edit_host_route__widget:
   feature_test__settings_reset__unit:
   feature_test__settings_reset__verticalSlice:

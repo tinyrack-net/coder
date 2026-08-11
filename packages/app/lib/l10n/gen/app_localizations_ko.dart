@@ -700,6 +700,60 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayPairTitle => '기기 연결';
 
   @override
+  String get relayConnectDaemonTitle => 'Daemon 연결';
+
+  @override
+  String get relayConnectDaemonDescription =>
+      'Daemon에 연결할 방법을 선택하세요. 릴레이 링크에서도 daemon 트래픽은 종단 간 암호화됩니다.';
+
+  @override
+  String get relayConnectScanDescription => 'Daemon에 표시된 일회용 QR 코드를 스캔합니다.';
+
+  @override
+  String get relayConnectPasteTitle => '연결 링크 붙여넣기';
+
+  @override
+  String get relayConnectPasteDescription => 'Daemon에 표시된 일회용 링크를 붙여넣습니다.';
+
+  @override
+  String get relayConnectDirectDescription =>
+      'WebSocket 주소와 bearer token으로 연결합니다.';
+
+  @override
+  String get relayConfirmTitle => 'Daemon 연결 확인';
+
+  @override
+  String get relayConfirmDescription => '이 기기를 등록하기 전에 daemon과 릴레이를 확인하세요.';
+
+  @override
+  String get relayConfirmDaemon => 'Daemon ID';
+
+  @override
+  String get relayConfirmRelay => '릴레이 서버';
+
+  @override
+  String get relayConfirmExpires => '링크 만료';
+
+  @override
+  String get relayShare => '공유';
+
+  @override
+  String get relayRefreshLink => '새 링크 만들기';
+
+  @override
+  String get relayEnableTitle => '이 daemon을 릴레이로 연결';
+
+  @override
+  String get relayEnableDescription =>
+      '다른 기기에서 접근할 수 있도록 daemon이 별도의 Tinyrack 릴레이 서버에 outbound 암호화 연결을 엽니다.';
+
+  @override
+  String get relayEnableAction => '릴레이 연결 활성화';
+
+  @override
+  String get settingsCategoryConnection => '연결';
+
+  @override
   String get relayPairDescription =>
       'daemon에 표시된 일회용 링크를 붙여 넣으세요. 코드와 파일은 relay를 통과할 때도 종단 간 암호화됩니다.';
 
@@ -716,6 +770,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayPairScan => 'QR 코드 스캔';
 
   @override
+  String get relayPairCameraUnavailable =>
+      'QR 스캔은 Android와 iOS에서 사용할 수 있습니다. 이 기기에서는 연결 링크를 붙여 넣으세요.';
+
+  @override
+  String relayPairCameraError(String appDisplayName) {
+    return '$appDisplayName에서 카메라를 열 수 없습니다. 시스템 설정에서 카메라 권한을 허용한 뒤 다시 시도하세요.';
+  }
+
+  @override
+  String get relayPairCameraRetry => '카메라 다시 시도';
+
+  @override
   String get relayPairQrSemantics => '일회용 기기 연결 링크 QR 코드';
 
   @override
@@ -726,6 +792,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get relayPairExpired =>
       '이 연결 링크가 만료되었거나 이미 사용되었습니다. daemon에서 새 링크를 만드세요.';
+
+  @override
+  String get relayPairFailed =>
+      '이 daemon을 연결하지 못했습니다. daemon에서 새 링크를 만든 뒤 다시 시도하세요.';
 
   @override
   String get relayAdvancedDirect => '고급 직접 연결';
