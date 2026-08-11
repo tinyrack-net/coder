@@ -57,6 +57,8 @@ final class NewWorkspaceProject {
   String get key => '$hostId\u0000${workspace.id}';
 }
 
+typedef _ProjectTarget = ({String? projectKey, bool addProject});
+
 /// Flattens every online daemon catalog into selectable projects.
 ///
 /// Takes [l10n] because the app owns the embedded daemon's name, and projects
@@ -112,6 +114,12 @@ class NewWorkspacePane extends ConsumerStatefulWidget {
 
 class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   final SessionComposerController _dropController = SessionComposerController();
+  bool _projectTooltipOpen = false;
+  bool _worktreeTooltipOpen = false;
+  bool _branchTooltipOpen = false;
+  bool _projectSelectOpen = false;
+  bool _worktreeSelectOpen = false;
+  bool _branchSelectOpen = false;
   String? _projectKey;
   String? _worktreeId;
   String? _baseBranch;
@@ -290,72 +298,86 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       onSubmit: (submission) =>
           _submit(submission, project, home, worktree, agent!, draft!),
     );
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: TRBreakpoints.small * 9 / 8,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(
+              left: TRSpacing.large + TRSpacing.extraSmall,
+              bottom: TRSpacing.extraSmall,
+            ),
+            child: TRText(
+              AppLocalizations.of(context).workspaceNewWorkspace,
+              variant: TRTextVariant.headingLg,
+            ),
+          ),
+          if (hostId == null)
+            composer(null)
+          else
+            ComposerCompletionScope(
+              hostId: hostId,
+              workspaceId: project?.workspace.id ?? home?.workspaceId,
+              // A Git project whose checkout is still to be created has no
+              // worktree to search, so it offers commands only.
+              worktreeId:
+                  worktree?.id ?? (project == null ? home?.worktreeId : null),
+              excludedClientActions: sessionlessClientActions,
+              builder: (context, completion) => composer(completion),
+            ),
+          if (_submitting)
+            Padding(
+              padding: const EdgeInsets.only(top: TRSpacing.medium),
+              child: Row(
+                key: const ValueKey<String>('new-workspace-progress'),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const TRSpinner(),
+                  const SizedBox(width: TRSpacing.small),
+                  TRText(
+                    _stage == _NewWorkspaceStage.creatingWorktree
+                        ? AppLocalizations.of(
+                            context,
+                          ).workspaceCreatingWorktree
+                        : AppLocalizations.of(
+                            context,
+                          ).workspaceStartingSession,
+                    variant: TRTextVariant.bodySm,
+                    color: TRTextColor.muted,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
     return ComposerDropPane(
       controller: _dropController,
       child: Column(
         children: <Widget>[
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: TRBreakpoints.small * 9 / 8,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: TRSpacing.large + TRSpacing.extraSmall,
-                        bottom: TRSpacing.extraSmall,
-                      ),
-                      child: TRText(
-                        AppLocalizations.of(context).workspaceNewWorkspace,
-                        variant: TRTextVariant.headingLg,
-                      ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= TRBreakpoints.small) {
+                  return Center(child: content);
+                }
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                    if (hostId == null)
-                      composer(null)
-                    else
-                      ComposerCompletionScope(
-                        hostId: hostId,
-                        workspaceId: project?.workspace.id ?? home?.workspaceId,
-                        // A Git project whose checkout is still to be created
-                        // has no worktree to search, so it offers commands
-                        // only.
-                        worktreeId:
-                            worktree?.id ??
-                            (project == null ? home?.worktreeId : null),
-                        excludedClientActions: sessionlessClientActions,
-                        builder: (context, completion) => composer(completion),
-                      ),
-                    if (_submitting)
-                      Padding(
-                        padding: const EdgeInsets.only(top: TRSpacing.medium),
-                        child: Row(
-                          key: const ValueKey<String>('new-workspace-progress'),
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            const TRSpinner(),
-                            const SizedBox(width: TRSpacing.small),
-                            TRText(
-                              _stage == _NewWorkspaceStage.creatingWorktree
-                                  ? AppLocalizations.of(
-                                      context,
-                                    ).workspaceCreatingWorktree
-                                  : AppLocalizations.of(
-                                      context,
-                                    ).workspaceStartingSession,
-                              variant: TRTextVariant.bodySm,
-                              color: TRTextColor.muted,
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: content,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -416,112 +438,149 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     required bool showGitTargets,
     required String? baseBranch,
     required bool anyDaemonConnected,
-  }) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: <Widget>[
-        ComposerChip(
-          valueKey: const ValueKey('new-workspace-project'),
-          icon: TinestIcons.folder,
-          // Without a home workspace the daemon cannot run a project-less
-          // session, so the chip must not offer or advertise one.
-          label:
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final narrow = MediaQuery.sizeOf(context).width < TRBreakpoints.small;
+    final selectors = <Widget>[
+      TRTooltip.controlled(
+        message: l10n.workspaceProjectChipTooltip,
+        open: _projectTooltipOpen && !_projectSelectOpen,
+        onOpenChange: (open) => setState(() => _projectTooltipOpen = open),
+        child: TRSelect<_ProjectTarget>.controlled(
+          key: const ValueKey('new-workspace-project'),
+          value: (projectKey: project?.key, addProject: false),
+          leading: const Icon(TinestIcons.folder),
+          placeholder:
               project?.workspace.name ??
               (home == null
-                  ? AppLocalizations.of(context).workspaceProjectChip
-                  : AppLocalizations.of(context).workspaceNoProjectOption),
-          tooltip: AppLocalizations.of(context).workspaceProjectChipTooltip,
-          menuChildren: _submitting || !anyDaemonConnected
-              ? null
-              : <Widget>[
-                  if (home != null)
-                    TRMenuItem(
-                      key: const ValueKey('new-workspace-project-none'),
-                      onPressed: () => _selectProject(null),
-                      child: TRText.inherit(
-                        AppLocalizations.of(context).workspaceNoProjectOption,
-                      ),
-                    ),
-                  for (final item in projects)
-                    TRMenuItem(
-                      key: ValueKey('new-workspace-project-${item.key}'),
-                      onPressed: () => _selectProject(item.key),
-                      child: TRText.inherit(
-                        '${item.workspace.name} · ${item.hostLabel}',
-                      ),
-                    ),
-                  TRMenuItem(
-                    key: const ValueKey('new-workspace-project-add'),
-                    leadingIcon: const Icon(TinestIcons.addCircle),
-                    onPressed: () => unawaited(_addProject()),
-                    child: TRText.inherit(
-                      AppLocalizations.of(context).workspaceProjectAdd,
-                    ),
-                  ),
-                ],
+                  ? l10n.workspaceProjectChip
+                  : l10n.workspaceNoProjectOption),
+          appearance: TRFieldAppearance.ghost,
+          width: narrow ? double.infinity : null,
+          enabled: !_submitting && anyDaemonConnected,
+          onOpen: () => setState(() {
+            _projectSelectOpen = true;
+            _projectTooltipOpen = false;
+          }),
+          onClose: () => setState(() => _projectSelectOpen = false),
+          items: <TRSelectItem<_ProjectTarget>>[
+            if (home != null)
+              TRSelectItem<_ProjectTarget>(
+                key: const ValueKey('new-workspace-project-none'),
+                value: (projectKey: null, addProject: false),
+                label: l10n.workspaceNoProjectOption,
+              ),
+            for (final item in projects)
+              TRSelectItem<_ProjectTarget>(
+                key: ValueKey('new-workspace-project-${item.key}'),
+                value: (projectKey: item.key, addProject: false),
+                label: '${item.workspace.name} · ${item.hostLabel}',
+              ),
+            TRSelectItem<_ProjectTarget>(
+              key: const ValueKey('new-workspace-project-add'),
+              value: (projectKey: null, addProject: true),
+              label: l10n.workspaceProjectAdd,
+              leading: const Icon(TinestIcons.addCircle),
+            ),
+          ],
+          onValueChange: (chosen) {
+            if (chosen == null) return;
+            if (chosen.addProject) {
+              unawaited(_addProject());
+            } else {
+              _selectProject(chosen.projectKey);
+            }
+          },
         ),
-        if (showGitTargets) ...<Widget>[
-          const SizedBox(width: TRSpacing.small),
-          ComposerChip(
-            valueKey: const ValueKey('new-workspace-worktree'),
-            icon: TinestIcons.branch,
-            label: worktree == null
-                ? AppLocalizations.of(context).workspaceWorktreeNew
+      ),
+      if (showGitTargets) ...<Widget>[
+        TRTooltip.controlled(
+          message: l10n.workspaceWorktreeChipTooltip,
+          open: _worktreeTooltipOpen && !_worktreeSelectOpen,
+          onOpenChange: (open) => setState(() => _worktreeTooltipOpen = open),
+          child: TRSelect<String?>.controlled(
+            key: const ValueKey('new-workspace-worktree'),
+            value: worktree?.id,
+            leading: const Icon(TinestIcons.branch),
+            placeholder: worktree == null
+                ? l10n.workspaceWorktreeNew
                 : (worktree.branch ?? worktree.name),
-            tooltip: AppLocalizations.of(context).workspaceWorktreeChipTooltip,
-            menuChildren: project == null || _submitting
-                ? null
-                : <Widget>[
-                    TRMenuItem(
-                      key: const ValueKey('new-workspace-worktree-new'),
-                      onPressed: () => _selectWorktree(null),
-                      child: TRText.inherit(
-                        AppLocalizations.of(context).workspaceWorktreeNew,
-                      ),
-                    ),
-                    for (final item in project.worktrees)
-                      TRMenuItem(
-                        key: ValueKey('new-workspace-worktree-${item.id}'),
-                        onPressed: () => _selectWorktree(item.id),
-                        child: TRText.inherit(item.branch ?? item.name),
-                      ),
-                  ],
+            appearance: TRFieldAppearance.ghost,
+            width: narrow ? double.infinity : null,
+            enabled: project != null && !_submitting,
+            onOpen: () => setState(() {
+              _worktreeSelectOpen = true;
+              _worktreeTooltipOpen = false;
+            }),
+            onClose: () => setState(() => _worktreeSelectOpen = false),
+            items: <TRSelectItem<String?>>[
+              TRSelectItem<String?>(
+                key: const ValueKey('new-workspace-worktree-new'),
+                value: null,
+                label: l10n.workspaceWorktreeNew,
+              ),
+              for (final item in project?.worktrees ?? const <WorktreeDto>[])
+                TRSelectItem<String?>(
+                  key: ValueKey('new-workspace-worktree-${item.id}'),
+                  value: item.id,
+                  label: item.branch ?? item.name,
+                ),
+            ],
+            onValueChange: _selectWorktree,
           ),
-          const SizedBox(width: TRSpacing.small),
-          ComposerChip(
-            valueKey: const ValueKey('new-workspace-branch'),
-            icon: TinestIcons.check,
-            label:
-                baseBranch ??
-                AppLocalizations.of(context).workspaceBaseBranchChip,
-            tooltip: AppLocalizations.of(
-              context,
-            ).workspaceBaseBranchChipTooltip,
-            menuChildren: project == null || worktree != null || _submitting
-                ? null
-                : <Widget>[
-                    for (final branch in branches.where(
-                      (branch) => branch.isRemote,
-                    ))
-                      TRMenuItem(
-                        key: ValueKey('new-workspace-branch-${branch.name}'),
-                        onPressed: () => _selectBranch(branch.name),
-                        child: TRText.inherit(branch.name),
-                      ),
-                    for (final branch in branches.where(
-                      (branch) => !branch.isRemote,
-                    ))
-                      TRMenuItem(
-                        key: ValueKey('new-workspace-branch-${branch.name}'),
-                        onPressed: () => _selectBranch(branch.name),
-                        child: TRText.inherit(branch.name),
-                      ),
-                  ],
+        ),
+        TRTooltip.controlled(
+          message: l10n.workspaceBaseBranchChipTooltip,
+          open: _branchTooltipOpen && !_branchSelectOpen,
+          onOpenChange: (open) => setState(() => _branchTooltipOpen = open),
+          child: TRSelect<String>.controlled(
+            key: const ValueKey('new-workspace-branch'),
+            value: baseBranch,
+            leading: const Icon(TinestIcons.check),
+            placeholder: baseBranch ?? l10n.workspaceBaseBranchChip,
+            appearance: TRFieldAppearance.ghost,
+            width: narrow ? double.infinity : null,
+            enabled: project != null && worktree == null && !_submitting,
+            onOpen: () => setState(() {
+              _branchSelectOpen = true;
+              _branchTooltipOpen = false;
+            }),
+            onClose: () => setState(() => _branchSelectOpen = false),
+            items: <TRSelectItem<String>>[
+              for (final branch in branches.where((branch) => branch.isRemote))
+                TRSelectItem<String>(
+                  key: ValueKey('new-workspace-branch-${branch.name}'),
+                  value: branch.name,
+                  label: branch.name,
+                ),
+              for (final branch in branches.where(
+                (branch) => !branch.isRemote,
+              ))
+                TRSelectItem<String>(
+                  key: ValueKey('new-workspace-branch-${branch.name}'),
+                  value: branch.name,
+                  label: branch.name,
+                ),
+            ],
+            onValueChange: (chosen) {
+              if (chosen != null) _selectBranch(chosen);
+            },
           ),
-        ],
+        ),
       ],
-    ),
-  );
+    ];
+    if (narrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: TRSpacing.small,
+        children: selectors,
+      );
+    }
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(spacing: TRSpacing.small, children: selectors),
+    );
+  }
 
   /// Selects one project, or null to run the session in the home folder.
   void _selectProject(String? chosen) {
