@@ -46,14 +46,40 @@ runs:
         printf '%s\n' '{"version":1,"cell_id":"smoke","sequence_id":0,"type":"init","payload":{"source":"text(\"ok\")","tools":[],"store":{}}}' \
           | "$helper" "$bundle/lua_tool_runtime/bootstrap.lua" \
           | grep '"type":"completed"'
-        # Daemon-addressing flags follow the subcommand, so `provider list`
-        # comes before `--listen`.
-        "$cli" daemon start --listen "127.0.0.1:$PORT" &
+        daemon_log="$RUNNER_TEMP/coder-smoke-daemon.log"
+        daemon=''
+        cleanup() {
+          if [ -n "$daemon" ] && kill -0 "$daemon" 2>/dev/null; then
+            kill "$daemon"
+          fi
+          if [ -n "$daemon" ]; then
+            wait "$daemon" 2>/dev/null || true
+          fi
+        }
+        trap cleanup EXIT
+
+        # Wait for startup to finish before a second Windows process reads the
+        # credential file while the daemon is atomically replacing it.
+        "$cli" daemon start --listen "127.0.0.1:$PORT" >"$daemon_log" 2>&1 &
         daemon=$!
+        ready=false
         for _ in $(seq 1 30); do
-          "$cli" provider list --listen "127.0.0.1:$PORT" >/dev/null 2>&1 &&
+          if grep -Fq 'Tinyrack Coder daemon listening on' "$daemon_log"; then
+            ready=true
             break
+          fi
+          if ! kill -0 "$daemon" 2>/dev/null; then
+            cat "$daemon_log"
+            wait "$daemon"
+            exit 1
+          fi
           sleep 1
         done
+        if [ "$ready" != true ]; then
+          cat "$daemon_log"
+          echo 'Timed out waiting for the Coder daemon to become ready.' >&2
+          exit 1
+        fi
+        # Daemon-addressing flags follow the subcommand, so `provider list`
+        # comes before `--listen`.
         "$cli" provider list --listen "127.0.0.1:$PORT"
-        kill "$daemon"

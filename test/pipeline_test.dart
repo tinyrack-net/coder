@@ -50,6 +50,9 @@ void main() {
   final windowsInstaller = File(
     'packages/app/windows/installer/coder.iss',
   ).readAsStringSync();
+  final cliSmoke = File(
+    '.github/actions/smoke-cli-bundle/action.yml',
+  ).readAsStringSync();
   final luaHostBuilder = File('tool/build_lua_host.dart').readAsStringSync();
 
   test('normal quality jobs do not run in the nightly workflow', () {
@@ -385,6 +388,20 @@ void main() {
     // A fork pull request has no signing secrets and no release to upload to.
     expect(verify, isNot(contains('APPLE_CERTIFICATE')));
     expect(verify, isNot(contains('upload-artifact')));
+  });
+
+  test('CLI smoke waits for daemon readiness before connecting', () {
+    expect(cliSmoke, contains('daemon_log='));
+    expect(cliSmoke, contains('trap cleanup EXIT'));
+    expect(cliSmoke, contains(r'kill -0 "$daemon"'));
+    expect(cliSmoke, contains(r'wait "$daemon"'));
+    expect(cliSmoke, contains(r'cat "$daemon_log"'));
+    expect(cliSmoke, contains('Tinyrack Coder daemon listening on'));
+
+    final ready = cliSmoke.indexOf('Tinyrack Coder daemon listening on');
+    final connect = cliSmoke.indexOf(r'"$cli" provider list');
+    expect(ready, isNonNegative);
+    expect(connect, greaterThan(ready));
   });
 
   test('the aggregate gate requires every quality job', () {
