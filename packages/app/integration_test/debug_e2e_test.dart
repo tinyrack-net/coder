@@ -2226,7 +2226,7 @@ void main() {
       addTearDown(window.releaseClose);
 
       await window.prepare(startHidden: false);
-      expect(window.supportsCustomTitleBar, isTrue);
+      expect(window.chrome, DesktopWindowChrome.nativeWithMenuBar);
       expect(await window.isVisible(), isTrue);
 
       await window.toggleMaximized();

@@ -94,7 +94,9 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     _l10n = AppLocalizations.of(context);
     _republish();
     final window = _window;
-    if (window == null || !window.supportsCustomTitleBar) return widget.child;
+    if (window == null || !window.chrome.showsApplicationMenuBar) {
+      return widget.child;
+    }
     // MaterialApp's builder sits above the router's Navigator, so its Overlay
     // is a descendant rather than an ancestor. Own one here for menus,
     // tooltips, and the about dialog rendered by the application frame.
@@ -180,7 +182,7 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
                 },
                 child: Column(
                   children: <Widget>[
-                    DesktopTitleBar(
+                    DesktopMenuBar(
                       window: window,
                       sidebarCollapsed: collapsed,
                       onNewWorkspace: newWorkspace,
