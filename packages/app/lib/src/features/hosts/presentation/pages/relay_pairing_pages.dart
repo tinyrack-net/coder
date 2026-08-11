@@ -10,6 +10,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/pairing_intent.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -740,9 +741,9 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
     );
     if (MediaQuery.sizeOf(context).width <
         TinestLayoutMetrics.compactBreakpoint) {
-      await showTRDrawer<void>(
+      await showTinestBottomSheet<void>(
         context: context,
-        builder: (context) => TRDrawer(
+        builder: (context) => TinestBottomSheet(
           semanticLabel: l10n.relayAdvancedRelayEndpointChange,
           title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
           description: TRText.inherit(l10n.relayAdvancedRelayEndpointHelp),

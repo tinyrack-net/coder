@@ -22,6 +22,7 @@ import 'package:app/src/features/providers/application/session_model_options.dar
 import 'package:app/src/features/sessions/domain/session_title.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
@@ -291,7 +292,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     );
   }
 
-  Future<void> _showSettings() => showTRDrawer<void>(
+  Future<void> _showSettings() => showTinestBottomSheet<void>(
     context: context,
     useRootNavigator: false,
     builder: (sheetContext) => StatefulBuilder(
@@ -300,11 +301,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           final snapshot = _settingsSnapshot(sheetRef);
           final l10n = AppLocalizations.of(context);
           final agentLocked = !widget.agentEnabled;
-          return TRDrawer(
+          return TinestBottomSheet(
             key: const ValueKey<String>('session-composer-settings-sheet'),
             title: TRText.inherit(l10n.composerMoreSettings),
             content: ListView(
               shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               children: <Widget>[
                 if (_permissionError case final error?)
                   TRAlert(
@@ -538,13 +540,14 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     BuildContext context, {
     required String title,
     required List<_ComposerSheetOption<T>> choices,
-  }) => showTRDrawer<_ComposerSheetChoice<T>>(
+  }) => showTinestBottomSheet<_ComposerSheetChoice<T>>(
     context: context,
     useRootNavigator: false,
-    builder: (context) => TRDrawer(
+    builder: (context) => TinestBottomSheet(
       title: TRText.inherit(title),
       content: ListView(
         shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         children: <Widget>[
           for (final choice in choices)
             TinestListRow(
@@ -627,7 +630,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         );
         if (chosen != null) _setControl(descriptor, chosen.value);
       case ModelControlKind.integer:
-        final chosen = await showTRDrawer<_ComposerSheetChoice<int?>>(
+        final chosen = await showTinestBottomSheet<_ComposerSheetChoice<int?>>(
           context: context,
           useRootNavigator: false,
           builder: (context) => _IntegerControlDrawer(
@@ -934,7 +937,7 @@ class _IntegerControlDrawerState extends State<_IntegerControlDrawer> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return TRDrawer(
+    return TinestBottomSheet(
       title: TRText.inherit(widget.descriptor.label),
       description: widget.descriptor.description == null
           ? null
