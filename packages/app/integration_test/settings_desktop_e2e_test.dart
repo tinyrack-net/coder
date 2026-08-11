@@ -497,17 +497,25 @@ final class _RecordingWindow implements DesktopWindow {
   @override
   ValueListenable<bool> get maximized => _maximized;
 
+  final ValueNotifier<bool> _visible = ValueNotifier<bool>(true);
+
+  @override
+  ValueListenable<bool> get visible => _visible;
+
   @override
   bool get supportsCustomTitleBar => false;
 
   @override
-  Future<void> hide() async => calls.add('hide');
+  Future<void> hide() async {
+    calls.add('hide');
+    _visible.value = false;
+  }
 
   @override
   Future<void> interceptClose(void Function() onClose) async {}
 
   @override
-  Future<bool> isVisible() async => true;
+  Future<bool> isVisible() async => _visible.value;
 
   @override
   Future<void> minimize() async {}
@@ -519,7 +527,7 @@ final class _RecordingWindow implements DesktopWindow {
   Future<void> releaseClose() async => calls.add('releaseClose');
 
   @override
-  Future<void> show() async {}
+  Future<void> show() async => _visible.value = true;
 
   @override
   Future<void> startDragging() async {}

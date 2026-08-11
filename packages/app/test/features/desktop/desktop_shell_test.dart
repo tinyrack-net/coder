@@ -96,11 +96,53 @@ void main() {
         await window.prepare(startHidden: false);
         expect(initialized, 1);
         expect(shown, 1);
+        expect(window.visible.value, isTrue);
 
         await window.prepare(startHidden: true);
         expect(initialized, 2);
         expect(shown, 1);
         expect(hidden, 1);
+        expect(window.visible.value, isFalse);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
+
+    test(
+      'visibility follows this app and the native show and hide events',
+      () async {
+        var shown = 0;
+        var hidden = 0;
+        final listeners = <WindowListener>[];
+        final window = PluginDesktopWindow(
+          showWindow: () async => shown += 1,
+          hideWindow: () async => hidden += 1,
+          preventClose: ({required prevent}) async {},
+          addWindowListener: listeners.add,
+          removeWindowListener: listeners.remove,
+        );
+
+        await window.interceptClose(() {});
+        expect(window.visible.value, isTrue);
+
+        await window.hide();
+        expect(window.visible.value, isFalse);
+        // A repeated call must not report a change that did not happen.
+        var changes = 0;
+        window.visible.addListener(() => changes += 1);
+        await window.hide();
+        expect((hidden, changes), (2, 0));
+
+        await window.show();
+        expect((shown, window.visible.value, changes), (1, true, 1));
+
+        // The window can also be hidden and shown without the app asking.
+        listeners.single.onWindowEvent('hide');
+        expect(window.visible.value, isFalse);
+        listeners.single.onWindowEvent('show');
+        expect(window.visible.value, isTrue);
+        // Every other native event leaves visibility alone.
+        listeners.single.onWindowEvent('resize');
+        expect((window.visible.value, changes), (true, 3));
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );

@@ -19,7 +19,6 @@ class DesktopBoot {
     required this.tray,
     required this.terminator,
     required this.autostart,
-    required this.startHidden,
   });
 
   /// Platform services used by feature controllers.
@@ -36,9 +35,6 @@ class DesktopBoot {
 
   /// Login-item registration port.
   final AutostartRegistration autostart;
-
-  /// Whether the launch should stay in the tray.
-  final bool startHidden;
 }
 
 /// Starts the desktop widget tree with an injectable bootstrap.
@@ -58,19 +54,20 @@ Future<void> runDesktopApp({
         final desktopWindow = window ?? PluginDesktopWindow();
         final resolved = services ?? await createDesktopServices();
         // Visibility is decided before the window is prepared so a login
-        // launch never flashes a window on its way to the tray.
-        final startHidden = shouldStartHidden(
-          arguments: arguments,
-          settings: await resolved.settings.loadSettings(),
+        // launch never flashes a window on its way to the tray. Preparing it
+        // is also what tells the shell which label the tray row starts with.
+        await desktopWindow.prepare(
+          startHidden: shouldStartHidden(
+            arguments: arguments,
+            settings: await resolved.settings.loadSettings(),
+          ),
         );
-        await desktopWindow.prepare(startHidden: startHidden);
         return DesktopBoot(
           services: resolved,
           window: desktopWindow,
           tray: tray ?? PluginTrayIcon(),
           terminator: terminator ?? const ProcessAppTerminator(),
           autostart: autostart ?? const LaunchAtStartupRegistration(),
-          startHidden: startHidden,
         );
       },
       builder: (context, boot) => CoderApp(
@@ -81,7 +78,6 @@ Future<void> runDesktopApp({
         trayIcon: boot.tray,
         terminator: boot.terminator,
         autostart: boot.autostart,
-        startHidden: boot.startHidden,
       ),
     ),
   );

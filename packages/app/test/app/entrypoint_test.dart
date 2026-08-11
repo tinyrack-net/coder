@@ -7,6 +7,7 @@ import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_export_web.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_web.dart';
 import 'package:app/src/features/desktop/application/desktop_startup.dart';
+import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:dropwell/dropwell.dart';
@@ -16,6 +17,7 @@ import 'package:protocol/protocol.dart';
 
 import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
+import '../support/localization.dart';
 
 void main() {
   test('platform dispatcher selects exactly one entry point', () async {
@@ -110,18 +112,26 @@ void main() {
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
       final window = FakeDesktopWindow();
+      final tray = FakeTrayIcon();
       await desktop_entry.runDesktopApp(
         services: fakeAppServices(FakeCoderApi(), store: store),
         arguments: const <String>[startMinimizedFlag],
         window: window,
-        tray: FakeTrayIcon(),
+        tray: tray,
         autostart: FakeAutostartRegistration(),
       );
       await tester.pumpAndSettle();
 
       expect(window.preparedHidden, isTrue);
-      expect(window.visible, isFalse);
+      expect(window.visible.value, isFalse);
       expect(window.shows, 0);
+      // Preparing the window is what tells the tray which label to start with.
+      expect(
+        tray.menu.entries
+            .firstWhere((entry) => entry.key == trayItemToggleWindow)
+            .label,
+        testL10n.trayShowWindow,
+      );
     },
     tags: const <String>['feature_test__settings_startup__widget'],
   );

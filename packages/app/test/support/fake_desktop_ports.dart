@@ -6,8 +6,9 @@ import 'package:flutter/foundation.dart';
 
 /// Records window control without opening a native window.
 final class FakeDesktopWindow implements DesktopWindow {
-  /// Creates a fake window that starts visible.
-  FakeDesktopWindow({this.visible = true, this.supportsCustomTitleBar = false});
+  /// Creates a fake window that starts visible unless told otherwise.
+  FakeDesktopWindow({bool visible = true, this.supportsCustomTitleBar = false})
+    : _visible = ValueNotifier<bool>(visible);
 
   @override
   final bool supportsCustomTitleBar;
@@ -17,8 +18,17 @@ final class FakeDesktopWindow implements DesktopWindow {
   @override
   ValueListenable<bool> get maximized => _maximized;
 
-  /// Whether the window is currently on screen.
-  bool visible;
+  final ValueNotifier<bool> _visible;
+
+  @override
+  ValueListenable<bool> get visible => _visible;
+
+  /// Reports a hide or show the app did not ask for, the way the OS can.
+  ///
+  /// Only a real change is reported, the way the production adapter does.
+  void emitNativeVisibility({required bool visible}) {
+    if (_visible.value != visible) _visible.value = visible;
+  }
 
   /// Whether the close gesture is being intercepted.
   bool preventingClose = false;
@@ -44,25 +54,25 @@ final class FakeDesktopWindow implements DesktopWindow {
   @override
   Future<void> prepare({required bool startHidden}) async {
     preparedHidden = startHidden;
-    visible = !startHidden;
+    _visible.value = !startHidden;
   }
 
   @override
   Future<void> show() async {
     shows += 1;
-    visible = true;
+    _visible.value = true;
     calls.add('show');
   }
 
   @override
   Future<void> hide() async {
     hides += 1;
-    visible = false;
+    _visible.value = false;
     calls.add('hide');
   }
 
   @override
-  Future<bool> isVisible() async => visible;
+  Future<bool> isVisible() async => _visible.value;
 
   @override
   Future<void> startDragging() async {

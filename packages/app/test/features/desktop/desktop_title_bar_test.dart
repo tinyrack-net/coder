@@ -127,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(harness.window.hides, 1);
       expect(harness.terminator.terminations, 0);
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
     },
     tags: const <String>['feature_test__desktop_window_chrome__widget'],
   );
