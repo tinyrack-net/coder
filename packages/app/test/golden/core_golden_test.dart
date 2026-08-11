@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:alchemist/alchemist.dart';
 import 'package:app/src/app/composition/app_providers.dart';
@@ -1313,7 +1314,7 @@ void main() {
     goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 1910),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 2400),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -1419,6 +1420,26 @@ void main() {
                     error: 'Exception: offline',
                   ),
                 ],
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'first turn failure restores light',
+            child: SizedBox(
+              width: 900,
+              height: 340,
+              child: _composerState(
+                ThemeMode.light,
+                restoreSubmission: ComposerSubmission(
+                  text: '복원된 첫 요청',
+                  attachments: <PendingAttachment>[
+                    PendingAttachment.fromBytes(
+                      fileName: 'fixture.txt',
+                      mimeType: 'text/plain',
+                      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1609,6 +1630,7 @@ Widget _composerState(
   double? totalCostUsd,
   String? providerConnectionId,
   Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage,
+  ComposerSubmission? restoreSubmission,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
@@ -1633,6 +1655,9 @@ Widget _composerState(
         onQueuedSendNow: (_) {},
         onStop: stoppable ? () {} : null,
         onSubmit: (_) {},
+        restoreSubmission: restoreSubmission,
+        restoreKey: restoreSubmission == null ? null : 'first-turn-restore',
+        onRestoreConsumed: restoreSubmission == null ? null : () {},
         bar: SessionComposerBar(
           hostId: 'server',
           definitions: const <AgentDefinitionDto>[

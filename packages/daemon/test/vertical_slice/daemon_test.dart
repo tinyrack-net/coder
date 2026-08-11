@@ -3177,6 +3177,130 @@ void main() {
     },
   );
 
+  test(
+    'a pre-launch attachment failure clears the session for retry',
+    tags: const <String>[
+      'feature_test__conversation_attachments__verticalSlice',
+      'feature_test__turn_execution__verticalSlice',
+    ],
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-prelaunch-failure-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'tinest-prelaunch-failure-workspace-',
+      );
+      const token = 'prelaunch-failure-token-0123456789abcdef012345';
+      final provider = _AttachmentProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: token,
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(bearerToken: token),
+        clientId: 'prelaunch-failure-test',
+        clientKind: 'test',
+      );
+      addTearDown(() async {
+        await client.close();
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      final imageBytes = <int>[
+        0x89,
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
+        1,
+        2,
+        3,
+      ];
+      final uploaded = await client.uploadAttachment(
+        fileName: 'missing.png',
+        mimeType: 'image/png',
+        byteSize: imageBytes.length,
+        bytes: Stream<List<int>>.value(imageBytes),
+      );
+      final blobFiles = Directory(home.path)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => p.extension(file.path) == '.blob')
+          .toList(growable: false);
+      expect(blobFiles, hasLength(1));
+      final blobPath = blobFiles.single.path;
+      await blobFiles.single.delete();
+
+      final catalog = await client.registerWorkspace(
+        workspaceId: 'prelaunch-failure-workspace',
+        checkoutId: 'prelaunch-failure-checkout',
+        rootPath: workspace.path,
+        name: 'Pre-launch failure',
+      );
+      final runnableModel = (await client.listProviderModels('openai'))
+          .firstWhere(
+            (model) =>
+                model.capabilities.streaming == CapabilitySupport.supported &&
+                model.capabilities.toolCalling == CapabilitySupport.supported,
+          );
+      final session = await client.createSession(
+        id: 'prelaunch-failure-session',
+        worktreeId: catalog.worktrees.single.id,
+        title: 'Pre-launch failure',
+        agentDefinitionId: 'tinest',
+        model: SessionModelSelectionDto(modelId: runnableModel.id),
+      );
+
+      await expectLater(
+        client.startTurn(
+          sessionId: session.id,
+          turnId: 'broken-turn',
+          prompt: 'This attachment cannot be opened.',
+          attachmentIds: <String>[uploaded.id],
+        ),
+        throwsA(isA<Exception>()),
+      );
+      final stuck = (await client.listSessions()).singleWhere(
+        (item) => item.id == session.id,
+      );
+      expect(stuck.status, SessionStatus.failed);
+      expect(stuck.activeTurnId, isNull);
+      expect(
+        await client.subscribeTimeline(session.id),
+        contains(
+          predicate<TimelineEventDto>(
+            (event) =>
+                event.type == 'turn.failed' && event.turnId == 'broken-turn',
+          ),
+        ),
+      );
+
+      await File(blobPath).writeAsBytes(imageBytes);
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'retry-turn',
+        prompt: 'Retry after the failure.',
+      );
+      await provider.firstRequest.future.timeout(_eventTimeout);
+      await _waitForIdleSession(
+        client,
+        catalog.worktrees.single.id,
+        session.id,
+      );
+    },
+  );
+
   test('secrets are not persisted in daemon files', () async {
     final home = await Directory.systemTemp.createTemp('tinest-secret-home-');
     final config = await Directory.systemTemp.createTemp(

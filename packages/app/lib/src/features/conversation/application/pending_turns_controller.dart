@@ -20,7 +20,7 @@ typedef PendingFirstTurn = ({
 /// optimistic user bubble until the real timeline echoes it. A turn that
 /// failed to start is marked rather than dropped: the auto-disposed
 /// conversation state cannot yet hold it, so the mounted conversation pane
-/// converts the entry into a queued turn once its conversation is live.
+/// restores the entry in the composer once its conversation is live.
 class PendingFirstTurns extends _$PendingFirstTurns {
   @override
   Map<String, PendingFirstTurn> build() => const <String, PendingFirstTurn>{};

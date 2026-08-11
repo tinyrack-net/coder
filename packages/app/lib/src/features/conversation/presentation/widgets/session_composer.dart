@@ -1534,6 +1534,9 @@ class SessionComposer extends StatefulWidget {
     this.header,
     this.hint,
     this.failure,
+    this.restoreSubmission,
+    this.restoreKey,
+    this.onRestoreConsumed,
     this.attachmentInput,
     this.contextTokens = 0,
     this.contextWindow,
@@ -1629,6 +1632,18 @@ class SessionComposer extends StatefulWidget {
   /// Report of an operation that failed, rendered above [hint].
   final Widget? failure;
 
+  /// Submission to restore after a pre-echo first-turn failure.
+  ///
+  /// The owning session pane supplies this once. Keeping restoration at the
+  /// composer boundary preserves both text and local attachment streams.
+  final ComposerSubmission? restoreSubmission;
+
+  /// Stable identity for one external restoration request.
+  final String? restoreKey;
+
+  /// Called after [restoreSubmission] has been applied and focused.
+  final VoidCallback? onRestoreConsumed;
+
   /// Rows offered for the token being completed; closed by default.
   final ComposerSuggestionsState suggestions;
 
@@ -1662,6 +1677,7 @@ class _SessionComposerState extends State<SessionComposer> {
   bool _focused = false;
   String? _attachmentError;
   ComposerTrigger? _trigger;
+  String? _restoredKey;
 
   /// Text for a failure the composer reports above the input.
   ///
@@ -1686,6 +1702,7 @@ class _SessionComposerState extends State<SessionComposer> {
     // programmatically, and that has to re-evaluate the token too.
     _controller.addListener(_handleTextChanged);
     _scheduleDropBinding();
+    _scheduleRestore();
   }
 
   @override
@@ -1697,6 +1714,28 @@ class _SessionComposerState extends State<SessionComposer> {
       );
     }
     _scheduleDropBinding();
+    if (oldWidget.restoreKey != widget.restoreKey) _scheduleRestore();
+  }
+
+  void _scheduleRestore() {
+    final submission = widget.restoreSubmission;
+    final key = widget.restoreKey;
+    if (submission == null || key == null || key == _restoredKey) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.restoreKey != key) return;
+      final current = widget.restoreSubmission;
+      if (current == null) return;
+      _controller.text = current.text;
+      setState(() {
+        _attachments
+          ..clear()
+          ..addAll(current.attachments);
+        _attachmentError = null;
+        _restoredKey = key;
+      });
+      _inputFocus.requestFocus();
+      widget.onRestoreConsumed?.call();
+    });
   }
 
   void _handleTextChanged() {

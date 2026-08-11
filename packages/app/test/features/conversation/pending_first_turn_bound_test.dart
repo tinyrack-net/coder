@@ -28,9 +28,9 @@ SessionDto _session(String id) => SessionDto(
 void main() {
   // `PendingFirstTurns` is a keepAlive map, so an entry nothing removes is
   // retained for the whole process. `markFailed` deliberately keeps the entry
-  // so a mounting conversation pane can turn it back into a queued turn — but
-  // if the user closes the tab without ever opening that pane, nothing else
-  // was reaching it. Closing the tab is the user saying they are done with it,
+  // so a mounting conversation pane can restore it in the composer — but if
+  // the user closes the tab without ever opening that pane, nothing else was
+  // reaching it. Closing the tab is the user saying they are done with it,
   // which makes it the bound this map was missing.
   test('closing a session tab forgets its pending first turn', () async {
     final api = FakeTinestApi(

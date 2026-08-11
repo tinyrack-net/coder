@@ -15,7 +15,7 @@ part of 'pending_turns_controller.dart';
 /// optimistic user bubble until the real timeline echoes it. A turn that
 /// failed to start is marked rather than dropped: the auto-disposed
 /// conversation state cannot yet hold it, so the mounted conversation pane
-/// converts the entry into a queued turn once its conversation is live.
+/// restores the entry in the composer once its conversation is live.
 
 @ProviderFor(PendingFirstTurns)
 final pendingFirstTurnsProvider = PendingFirstTurnsProvider._();
@@ -27,7 +27,7 @@ final pendingFirstTurnsProvider = PendingFirstTurnsProvider._();
 /// optimistic user bubble until the real timeline echoes it. A turn that
 /// failed to start is marked rather than dropped: the auto-disposed
 /// conversation state cannot yet hold it, so the mounted conversation pane
-/// converts the entry into a queued turn once its conversation is live.
+/// restores the entry in the composer once its conversation is live.
 final class PendingFirstTurnsProvider
     extends
         $NotifierProvider<PendingFirstTurns, Map<String, PendingFirstTurn>> {
@@ -38,7 +38,7 @@ final class PendingFirstTurnsProvider
   /// optimistic user bubble until the real timeline echoes it. A turn that
   /// failed to start is marked rather than dropped: the auto-disposed
   /// conversation state cannot yet hold it, so the mounted conversation pane
-  /// converts the entry into a queued turn once its conversation is live.
+  /// restores the entry in the composer once its conversation is live.
   PendingFirstTurnsProvider._()
     : super(
         from: null,
@@ -77,7 +77,7 @@ String _$pendingFirstTurnsHash() => r'aa440a78121721b3d1687e3018f3030202d578aa';
 /// optimistic user bubble until the real timeline echoes it. A turn that
 /// failed to start is marked rather than dropped: the auto-disposed
 /// conversation state cannot yet hold it, so the mounted conversation pane
-/// converts the entry into a queued turn once its conversation is live.
+/// restores the entry in the composer once its conversation is live.
 
 abstract class _$PendingFirstTurns
     extends $Notifier<Map<String, PendingFirstTurn>> {
