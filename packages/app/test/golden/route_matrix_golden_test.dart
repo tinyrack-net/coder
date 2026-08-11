@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/shared/presentation/tinest_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -197,7 +197,7 @@ class _RouteGoldenHostState extends State<_RouteGoldenHost> {
               padding: padding,
               viewPadding: padding,
             ),
-            child: TinestControlDensity(child: child!),
+            child: TinestUiDensity(child: child!),
           );
         },
       ),

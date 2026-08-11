@@ -6,13 +6,15 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 double chatFirstLineLeadingInset(
   BuildContext context, {
   required double leadingExtent,
-  TextStyle textStyle = TRTypography.body,
+  TextStyle? textStyle,
 }) {
+  final resolvedStyle =
+      textStyle ?? TRTypography.resolve(context, TRTextVariant.body);
   final lineExtent =
       MediaQuery.textScalerOf(context).scale(
-        textStyle.fontSize!,
+        resolvedStyle.fontSize!,
       ) *
-      textStyle.height!;
+      resolvedStyle.height!;
   return ((lineExtent - leadingExtent) / 2)
       .clamp(0, double.infinity)
       .toDouble();

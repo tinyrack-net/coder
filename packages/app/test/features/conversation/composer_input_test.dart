@@ -9,8 +9,8 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
-import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
@@ -482,9 +482,13 @@ void main() {
       ]) {
         expect(
           tester.getSize(find.byKey(ValueKey<String>(key))).height,
-          TRControlMetrics.heightOf(TRUiSize.lg),
+          TRControlMetrics.heightOf(TRUiSize.xl),
         );
       }
+      expect(
+        tester.widget<TRCard>(find.byType(TRCard).first).padding,
+        TRCardPadding.md,
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('session-composer-settings')),
@@ -818,7 +822,7 @@ void main() {
         expect(meter.variant, expected.$2, reason: '${expected.$1} tokens');
         expect(meter.max, 100);
         expect(meter.value, expected.$1 / 2000);
-        expect(meter.uiSize, TRUiSize.sm);
+        expect(meter.uiSize, isNull);
       }
     },
   );
@@ -1568,7 +1572,7 @@ Widget _harness({
       data: MediaQuery.of(
         context,
       ).copyWith(padding: mediaPadding, viewPadding: mediaPadding),
-      child: TinestControlDensity(child: child!),
+      child: TinestUiDensity(child: child!),
     ),
     home: Scaffold(
       body: Align(alignment: Alignment.bottomCenter, child: composer),

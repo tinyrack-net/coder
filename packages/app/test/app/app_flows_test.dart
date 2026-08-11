@@ -17,11 +17,11 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
-import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
@@ -91,7 +91,7 @@ Future<GoRouter> _pumpRoute(
     routerConfig: router,
     // Mirrors what TinestApp wraps every route in, so a screen under test can
     // report a result the same way it does when the app runs.
-    builder: (context, child) => TinestControlDensity(
+    builder: (context, child) => TinestUiDensity(
       child: TinestToastScope(child: child ?? const SizedBox.shrink()),
     ),
   );

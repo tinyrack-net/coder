@@ -2,7 +2,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/tinest_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,7 +62,7 @@ Future<GoRouter> pumpRoutedApp(
         routerConfig: router,
         // Mirrors what TinestApp wraps every route in, so a screen under test
         // can report a result the same way it does when the app runs.
-        builder: (context, child) => TinestControlDensity(
+        builder: (context, child) => TinestUiDensity(
           child: TinestToastScope(child: child ?? const SizedBox.shrink()),
         ),
       ),

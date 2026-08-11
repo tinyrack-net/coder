@@ -151,8 +151,7 @@ class _TinestListRowState extends State<TinestListRow> {
         : widget.hoverEnabled && _hovered
         ? colors.surfaceHover
         : colors.surface;
-    final comfortable =
-        TRControlDensityScope.of(context) == TRControlDensity.comfortable;
+    final comfortable = TRUiDensityScope.of(context) == TRUiDensity.comfortable;
     final verticalPadding = switch ((comfortable, widget.dense)) {
       (true, true) => TRSpacing.small,
       (true, false) => TRSpacing.medium,
@@ -177,13 +176,16 @@ class _TinestListRowState extends State<TinestListRow> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DefaultTextStyle.merge(
-                style: TRTypography.body,
+                style: TRTypography.resolve(context, TRTextVariant.body),
                 child: widget.title,
               ),
               if (widget.subtitle case final subtitle?) ...[
                 const SizedBox(height: TRSpacing.extraSmall),
                 DefaultTextStyle.merge(
-                  style: TRTypography.bodySm.copyWith(color: colors.textMuted),
+                  style: TRTypography.resolve(
+                    context,
+                    TRTextVariant.bodySm,
+                  ).copyWith(color: colors.textMuted),
                   maxLines: widget.unboundedSubtitle
                       ? null
                       : widget.subtitleMaxLines ?? (widget.isThreeLine ? 2 : 1),
