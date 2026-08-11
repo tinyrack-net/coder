@@ -16,6 +16,7 @@ import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_title_bar.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -1095,7 +1096,7 @@ void main() {
         columns: 1,
         children: <Widget>[
           GoldenTestScenario(
-            name: 'desktop light',
+            name: 'Windows custom chrome light',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -1103,7 +1104,18 @@ void main() {
             ),
           ),
           GoldenTestScenario(
-            name: 'desktop collapsed dark',
+            name: 'Linux native chrome menu light',
+            child: SizedBox(
+              width: 1000,
+              height: 620,
+              child: _shell(
+                ThemeMode.light,
+                chrome: DesktopWindowChrome.nativeWithMenuBar,
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'Windows custom chrome collapsed dark',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -1990,7 +2002,11 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
   Future<bool> open(Uri uri) async => true;
 }
 
-Widget _shell(ThemeMode mode, {bool collapsed = false}) {
+Widget _shell(
+  ThemeMode mode, {
+  bool collapsed = false,
+  DesktopWindowChrome chrome = DesktopWindowChrome.custom,
+}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -2030,8 +2046,8 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
       mode,
       Column(
         children: <Widget>[
-          DesktopTitleBar(
-            window: FakeDesktopWindow(supportsCustomTitleBar: true),
+          DesktopMenuBar(
+            window: FakeDesktopWindow(chrome: chrome),
             sidebarCollapsed: collapsed,
             onNewWorkspace: () {},
             onOpenSettings: () {},

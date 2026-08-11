@@ -508,7 +508,7 @@ final class _RecordingWindow implements DesktopWindow {
   ValueListenable<bool> get visible => _visible;
 
   @override
-  bool get supportsCustomTitleBar => false;
+  DesktopWindowChrome get chrome => DesktopWindowChrome.native;
 
   @override
   Future<void> hide() async {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -38,7 +39,9 @@ void main() {
     );
     final window = FakeDesktopWindow(
       visible: !startHidden,
-      supportsCustomTitleBar: customTitleBar,
+      chrome: customTitleBar
+          ? DesktopWindowChrome.custom
+          : DesktopWindowChrome.native,
     );
     final tray = FakeTrayIcon(installGate: installGate)..calls = window.calls;
     final terminator = FakeAppTerminator(calls: window.calls);
