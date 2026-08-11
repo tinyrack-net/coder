@@ -376,4 +376,146 @@ void main() {
 
     expect(api.terminalWrites.map((write) => write.data).join(), '한글 ');
   });
+
+  testWidgets(
+    'Windows Hangul typing commits each syllable once without resets',
+    (tester) async {
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[_workspace],
+        worktrees: <WorktreeDto>[_worktree],
+        terminals: const <TerminalDto>[_terminal],
+      );
+      final router = GoRouter(
+        initialLocation: TerminalRoute(
+          hostId: 'server',
+          workspaceId: _workspace.id,
+          worktreeId: _worktree.id,
+          terminalId: _terminal.id,
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp.router(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('tr-terminal-surface')),
+      );
+      await tester.pump(kDoubleTapTimeout);
+
+      final client = tester.allStates.whereType<DeltaTextInputClient>().single;
+      tester.testTextInput.log.clear();
+
+      TextEditingDeltaNonTextUpdate nonText(
+        String oldText,
+        int selection, {
+        TextRange composing = TextRange.empty,
+      }) => TextEditingDeltaNonTextUpdate(
+        oldText: oldText,
+        selection: TextSelection.collapsed(offset: selection),
+        composing: composing,
+      );
+      TextEditingDeltaInsertion insert(
+        String oldText,
+        String inserted,
+        int offset, {
+        TextRange composing = TextRange.empty,
+      }) => TextEditingDeltaInsertion(
+        oldText: oldText,
+        textInserted: inserted,
+        insertionOffset: offset,
+        selection: TextSelection.collapsed(offset: offset + inserted.length),
+        composing: composing,
+      );
+      TextEditingDeltaReplacement replace(
+        String oldText,
+        TextRange range,
+        String replacement, {
+        TextRange composing = TextRange.empty,
+      }) => TextEditingDeltaReplacement(
+        oldText: oldText,
+        replacementText: replacement,
+        replacedRange: range,
+        selection: TextSelection.collapsed(
+          offset: range.start + replacement.length,
+        ),
+        composing: composing,
+      );
+
+      // The Win32 embedder's delta stream for typing 안녕하세요. plus a
+      // space with Microsoft's Korean IME: every settled syllable commits
+      // and closes its composition (WM_IME_ENDCOMPOSITION) and the next
+      // jamo opens a fresh one. The engine-side model is never reset, so
+      // oldText accumulates across the whole phrase.
+      const compose01 = TextRange(start: 0, end: 1);
+      const compose12 = TextRange(start: 1, end: 2);
+      const compose23 = TextRange(start: 2, end: 3);
+      const compose34 = TextRange(start: 3, end: 4);
+      const compose45 = TextRange(start: 4, end: 5);
+      final deltas = <TextEditingDelta>[
+        nonText('', 0, composing: const TextRange.collapsed(0)),
+        insert('', 'ㅇ', 0, composing: compose01),
+        replace('ㅇ', compose01, '아', composing: compose01),
+        replace('아', compose01, '안', composing: compose01),
+        replace('안', compose01, '안', composing: compose01),
+        nonText('안', 1),
+        nonText('안', 1, composing: const TextRange.collapsed(1)),
+        insert('안', 'ㄴ', 1, composing: compose12),
+        replace('안ㄴ', compose12, '녀', composing: compose12),
+        replace('안녀', compose12, '녕', composing: compose12),
+        replace('안녕', compose12, '녕', composing: compose12),
+        nonText('안녕', 2),
+        nonText('안녕', 2, composing: const TextRange.collapsed(2)),
+        insert('안녕', 'ㅎ', 2, composing: compose23),
+        replace('안녕ㅎ', compose23, '하', composing: compose23),
+        replace('안녕하', compose23, '핫', composing: compose23),
+        replace('안녕핫', compose23, '하', composing: compose23),
+        nonText('안녕하', 3),
+        nonText('안녕하', 3, composing: const TextRange.collapsed(3)),
+        insert('안녕하', '세', 3, composing: compose34),
+        replace('안녕하세', compose34, '셍', composing: compose34),
+        replace('안녕하셍', compose34, '세', composing: compose34),
+        nonText('안녕하세', 4),
+        nonText('안녕하세', 4, composing: const TextRange.collapsed(4)),
+        insert('안녕하세', '요', 4, composing: compose45),
+        replace('안녕하세요', compose45, '요', composing: compose45),
+        nonText('안녕하세요', 5),
+        insert('안녕하세요', '.', 5),
+        insert('안녕하세요.', ' ', 6),
+      ];
+      for (final delta in deltas) {
+        client.updateEditingValueWithDeltas(<TextEditingDelta>[delta]);
+        await tester.pump();
+      }
+
+      expect(
+        api.terminalWrites.map((write) => write.data).join(),
+        '안녕하세요. ',
+      );
+      expect(
+        tester.testTextInput.log.where(
+          (call) => call.method == 'TextInput.setEditingState',
+        ),
+        isEmpty,
+        reason:
+            'the Win32 embedder applies setEditingState destructively to '
+            'its engine-side model; a mid-word reset corrupts the next '
+            'syllable and duplicates preedit states into the PTY',
+      );
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.windows),
+  );
 }
