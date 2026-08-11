@@ -1320,6 +1320,19 @@ final class FakeCoderApi
     );
   }
 
+  /// Resizes a terminal the way another client would, without an RPC.
+  void resizeTerminalDirectly(
+    String terminalId, {
+    required int columns,
+    required int rows,
+  }) {
+    final index = _terminals.indexWhere((item) => item.id == terminalId);
+    _terminals[index] = _terminals[index].copyWith(
+      columns: columns,
+      rows: rows,
+    );
+  }
+
   /// Sequence below which a terminal can no longer be resumed.
   ///
   /// Mirrors the daemon dropping retained output: a cursor at or under the

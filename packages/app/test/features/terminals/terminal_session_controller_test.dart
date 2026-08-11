@@ -238,6 +238,47 @@ void main() {
     );
   });
 
+  test('a reconnect carries the size the user last claimed', () async {
+    final harness = _harness();
+    final session = await _session(harness.container);
+
+    // A genuine viewport change is a claim; adopting the daemon's geometry on
+    // attach is not, which is why the first attach sent none.
+    session.terminal.resize(100, 30);
+    await _settle();
+    expect(harness.api.attachedTerminalRequests.single.viewport, isNull);
+
+    harness.container
+        .read(
+          terminalSessionControllerProvider('server', _terminal.id).notifier,
+        )
+        .retry();
+    await _settle();
+
+    final reattach = harness.api.attachedTerminalRequests.last;
+    expect(reattach.viewport?.columns, 100);
+    expect(reattach.viewport?.rows, 30);
+    // The claim travels with the attach instead of racing it, so the daemon
+    // has applied it before it builds anything.
+    expect(harness.api.terminalResizes, hasLength(1));
+  });
+
+  test('adopting the daemon geometry never claims it back', () async {
+    final harness = _harness();
+    // The daemon reports a size this session never asked for, the way it would
+    // after another client resized the same terminal.
+    harness.api.resizeTerminalDirectly(_terminal.id, columns: 132, rows: 43);
+    final session = await _session(harness.container);
+
+    expect(session.terminal.cols, 132);
+    expect(session.terminal.rows, 43);
+    expect(
+      harness.api.terminalResizes,
+      isEmpty,
+      reason: 'adopting a size is not claiming it',
+    );
+  });
+
   test('disposing the session stops writing into the emulator', () async {
     final harness = _harness();
     final session = await _session(harness.container);

@@ -1172,6 +1172,9 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         message: l10n.terminalConnecting,
       );
     }
+    // Input is dropped for the frames a rebuilt screen takes to paint, so the
+    // terminal says so rather than looking live and swallowing keystrokes.
+    final restoring = session.status == TerminalSessionStatus.restoring;
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) => CoderTerminalView(
@@ -1179,6 +1182,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
         terminal: session.terminal,
         controller: _controller,
         autofocus: true,
+        readOnly: restoring,
         contextMenuItems: _buildContextMenu,
         onCopy: _copySelection,
         onPaste: _pasteClipboard,
