@@ -173,6 +173,260 @@ void main() {
     );
   });
 
+  // A rule that never fires is indistinguishable from no rule, so each of the
+  // two below is pinned by a case that must fire and a case that must not.
+  test('an unlisted keepAlive provider must name who ends its lifetime', () {
+    final violations = verifier.verifySource(
+      package: 'app',
+      path:
+          'packages/app/lib/src/features/terminals/application/'
+          'terminal_session_controller.dart',
+      source:
+          '@Riverpod(keepAlive: true)\n'
+          '/// Doc comments sit between the annotation and the class here.\n'
+          'class TerminalSessionController '
+          r'extends _$TerminalSessionController {}',
+    );
+    expect(violations, hasLength(1));
+    expect(violations.single.rule, 'keepalive_provider_owner');
+    expect(violations.single.message, contains('TerminalSessionController'));
+  });
+
+  test('a keepAlive provider function is caught the same as a class', () {
+    // `activeHostId` is a plain annotated function rather than a notifier, and
+    // it is listed, so the shape must resolve to its name rather than to null.
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            'packages/app/lib/src/features/hosts/application/'
+            'host_controller.dart',
+        source:
+            '@Riverpod(keepAlive: true)\n'
+            '/// The daemon that host-scoped screens read and write.\n'
+            'String? activeHostId(Ref ref) => null;',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('an auto-disposed provider needs no ownership entry', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            'packages/app/lib/src/features/terminals/application/'
+            'terminal_session_leases.dart',
+        source:
+            '@riverpod\n'
+            r'class TerminalSessionLeases extends _$TerminalSessionLeases {}',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('application code cannot borrow a widget lifetime', () {
+    final violations = verifier.verifySource(
+      package: 'app',
+      path:
+          'packages/app/lib/src/features/providers/application/'
+          'model_picker_options.dart',
+      source: 'Future<void> load(WidgetRef ref) async {}',
+    );
+    expect(violations, hasLength(1));
+    expect(violations.single.rule, 'application_widget_ref');
+  });
+
+  test('application code may still hold a provider Ref', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            'packages/app/lib/src/features/providers/application/'
+            'model_picker_options.dart',
+        source:
+            "import 'package:riverpod_annotation/riverpod_annotation.dart';\n"
+            'Future<void> load(Ref ref) async {}',
+      ),
+      isEmpty,
+    );
+  });
+
+  // The four negatives below are the real shapes this tree uses. Each one sits
+  // inside a lifecycle method and each one is correct, which is exactly why the
+  // rule cannot be a line match.
+  test('invalidating through a private helper of a lifecycle method fires', () {
+    final violations = verifier.verifySource(
+      package: 'app',
+      path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+      source: '''
+class _WorkspacePageState extends ConsumerState<WorkspacePage> {
+  @override
+  void didUpdateWidget(WorkspacePage oldWidget) {
+    _releaseTerminals(oldWidget.selection);
+  }
+
+  void _releaseTerminals(WorkspaceSelection? selection) {
+    ref.invalidate(terminalSessionControllerProvider('a', 'b'));
+  }
+}
+''',
+    );
+    expect(violations, hasLength(1));
+    expect(violations.single.rule, 'lifecycle_provider_invalidation');
+    expect(violations.single.message, contains('didUpdateWidget'));
+  });
+
+  test('invalidating from a gesture closure inside build is allowed', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            'packages/app/lib/src/features/skills/presentation/'
+            'skill_settings_page.dart',
+        source: '''
+class _Page extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ErrorView(
+    onRetry: () => ref.invalidate(skillsControllerProvider('host')),
+  );
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('invalidating after the frame is allowed', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+        source: '''
+class _State extends ConsumerState<Page> {
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(someProvider);
+    });
+    return const SizedBox.shrink();
+  }
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('a tear-off handed to ref.listen is not a call', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+        source: '''
+class _State extends ConsumerState<Page> {
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(provider, _release);
+    return const SizedBox.shrink();
+  }
+
+  void _release(Object? previous, Object? next) => ref.invalidate(provider);
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('invalidating past an await in a lifecycle method is allowed', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+        source: '''
+class _State extends ConsumerState<Page> {
+  @override
+  void didChangeDependencies() {
+    unawaited(_refresh());
+  }
+
+  Future<void> _refresh() async {
+    await ref.read(controller.notifier).refreshHost('host');
+    ref.invalidate(provider);
+  }
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('invalidating from an ordinary method is not a lifecycle call', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path:
+            'packages/app/lib/src/features/relay/presentation/'
+            'relay_pairing_pages.dart',
+        source: '''
+class _State extends ConsumerState<Page> {
+  void retryPairing() => ref.invalidate(pairingProvider);
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
+  test('navigating straight from build is a violation', () {
+    final violations = verifier.verifySource(
+      package: 'app',
+      path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+      source: '''
+class _State extends ConsumerState<Page> {
+  @override
+  Widget build(BuildContext context) {
+    const WorkspaceHomeRoute().replace(context);
+    return const SizedBox.shrink();
+  }
+}
+''',
+    );
+    expect(violations, hasLength(1));
+    expect(violations.single.rule, 'lifecycle_navigation');
+  });
+
+  test('the post-frame restore WorkspacePage uses stays allowed', () {
+    expect(
+      verifier.verifySource(
+        package: 'app',
+        path: 'packages/app/lib/src/app/presentation/workspace_page.dart',
+        source: '''
+class _State extends ConsumerState<Page> {
+  @override
+  Widget build(BuildContext context) {
+    _restoreSelection();
+    return const SizedBox.shrink();
+  }
+
+  void _restoreSelection() {
+    if (_restoreScheduled) return;
+    _restoreScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      const WorktreeRoute(hostId: 'h').replace(context);
+    });
+  }
+}
+''',
+      ),
+      isEmpty,
+    );
+  });
+
   test('provider infrastructure and the composition root may name vendors', () {
     expect(
       verifier.verifySource(

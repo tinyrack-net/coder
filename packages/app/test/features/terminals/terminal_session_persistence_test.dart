@@ -101,6 +101,42 @@ void main() {
     expect(api.attachedTerminalIds, <String>['terminal-a', 'terminal-b']);
   });
 
+  // Characterization. `WorkspacePage` justifies keeping terminal sessions alive
+  // with "a trip to settings tears this page down, and coming back must not
+  // find every terminal wiped". Whether the page really is torn down decides
+  // where a session's lifetime may be rooted, so it is pinned rather than
+  // trusted: the pushed settings route is opaque, and the workspace page below
+  // it stays mounted.
+  testWidgets('the workspace page stays mounted behind pushed settings', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _api();
+    final router = await pumpRoutedApp(
+      tester,
+      api,
+      initialLocation: _location('terminal-a'),
+    );
+    addTearDown(router.dispose);
+
+    api.emitTerminalOutput('terminal-a', 'hello-before');
+    await _flush(tester);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('workspace-settings-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CoderTerminalView), findsNothing);
+    expect(find.byType(CoderTerminalView, skipOffstage: false), findsOneWidget);
+
+    router.pop();
+    await _flush(tester);
+
+    expect(_screen(tester), contains('hello-before'));
+  });
+
   testWidgets('output produced while the tab is hidden is not lost', (
     tester,
   ) async {

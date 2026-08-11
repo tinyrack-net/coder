@@ -591,7 +591,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
   Future<void> _chooseModel() async {
     final choice = await showModelPicker(
       context,
-      loadOptions: () => loadModelPickerOptions(ref, widget.hostId),
+      loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
       currentSelection: _modelId.text.isEmpty
           ? null
           : SessionModelSelectionDto(modelId: _modelId.text),

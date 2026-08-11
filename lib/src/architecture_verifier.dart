@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coder_workspace/src/lifecycle_phase_rules.dart';
 import 'package:path/path.dart' as p;
 
 /// A dependency or source-level architecture rule violation.
@@ -35,6 +36,48 @@ final class ArchitectureVerifier {
 
   /// The Pub workspace root to inspect.
   final String workspaceRoot;
+
+  /// Every `keepAlive` provider, and who is answerable for its lifetime.
+  ///
+  /// A `keepAlive` provider cannot be ended by Riverpod, so something else must
+  /// end it — and when that something is a widget, ending it means
+  /// `Ref.invalidate` from a lifecycle callback, which schedules a `setState`
+  /// during the build phase and crashes. Naming the owner and the bound here is
+  /// what keeps that precondition from being recreated by accident: a new
+  /// `keepAlive` provider fails this check until someone can write that
+  /// sentence.
+  static const Map<String, String> _keepAliveProviderOwners = <String, String>{
+    'HostRegistryController':
+        'Application-scoped and single-keyed. Lives for the process; the '
+        'registry it wraps is closed by the composition root.',
+    'activeHostId':
+        'Derived from HostRegistryController, single-keyed. No family, so no '
+        'growth.',
+    'SelectionRestoreController':
+        'Single-keyed launch-time latch. Consumed once per run by '
+        'WorkspacePage, reset only by the data reset in AdvancedSettingsPage.',
+    'WorkspaceCatalogController':
+        'Single-keyed catalog of every host. Refreshed in place; never '
+        'family-keyed, so it cannot grow.',
+    'modelPickerOptionsLoader':
+        'Keyed by hostId and stateless: it only closes over its own Ref so a '
+        'picker opened later still has one. Bounded by the number of '
+        'configured daemons, exactly like ProviderSettingsController.',
+    'ProviderSettingsController':
+        'Keyed by hostId, bounded by the number of configured daemons, which '
+        'the user manages explicitly in daemon settings.',
+    'PendingFirstTurns':
+        'Single-keyed. Holds a map keyed by session id whose entries are '
+        'cleared when a conversation pane mounts; a failure whose pane never '
+        'mounts is retained. Bounded work is tracked, not yet done.',
+    'SessionComposerDraftController':
+        'Keyed by (hostId, worktreeId, draftId) and NOT yet bounded: every '
+        'draft ever opened is retained for the process. Ends only via the '
+        'family-wide reset in AdvancedSettingsPage. Should move to the lease '
+        'shape in TerminalSessionLeases; deliberately not folded in with the '
+        'terminal work because a draft outlives its tab by design and losing '
+        'one loses typed input.',
+  };
 
   static const Map<String, Set<String>> _allowedInternalDependencies =
       <String, Set<String>>{
@@ -266,6 +309,9 @@ final class ArchitectureVerifier {
     final violations = <ArchitectureViolation>[];
     final lines = source.split('\n');
     final applicationLayer = _isApplicationLayer(package, path);
+    violations.addAll(
+      _verifyLifecyclePhase(package: package, path: path, source: source),
+    );
     for (var index = 0; index < lines.length; index += 1) {
       final line = lines[index];
       final importedPackage = RegExp(
@@ -275,6 +321,22 @@ final class ArchitectureVerifier {
         violations.addAll(
           _verifyCoderAppLayerImport(path: path, line: index + 1, source: line),
         );
+        if (_declaresKeepAliveProvider(lines, index)) {
+          final owner = _providerDeclarationName(lines, index);
+          if (owner == null || !_keepAliveProviderOwners.containsKey(owner)) {
+            violations.add(
+              ArchitectureViolation(
+                path: path,
+                line: index + 1,
+                rule: 'keepalive_provider_owner',
+                message:
+                    'A keepAlive provider (${owner ?? 'unnamed'}) must be '
+                    'listed in ArchitectureVerifier._keepAliveProviderOwners '
+                    'with who ends its lifetime and what bounds it.',
+              ),
+            );
+          }
+        }
         final terminalCaret =
             path.endsWith(
               '/features/terminals/presentation/coder_terminal_view.dart',
@@ -428,6 +490,23 @@ final class ArchitectureVerifier {
           );
         }
       }
+      // `Ref` itself stays allowed: application code legitimately holds a
+      // provider's own ref. What is banned is borrowing a *widget's* lifetime,
+      // which is how work outlives the thing that asked for it.
+      for (final borrowed in const <String>['WidgetRef', 'BuildContext']) {
+        if (line.contains(borrowed)) {
+          violations.add(
+            ArchitectureViolation(
+              path: path,
+              line: index + 1,
+              rule: 'application_widget_ref',
+              message:
+                  'Application code must not take a $borrowed. Take a Ref, or '
+                  'expose the work as a provider.',
+            ),
+          );
+        }
+      }
       for (final forbiddenCall in const <String>[
         'DateTime.now(',
         'Uuid(',
@@ -449,6 +528,90 @@ final class ArchitectureVerifier {
       }
     }
     return violations;
+  }
+
+  /// Reports provider invalidation reachable from a widget lifecycle method.
+  ///
+  /// A separate, AST-based pass because the rule turns on whether a call is
+  /// synchronous, not on which tokens a line contains. Matching lines here
+  /// would flag `onPressed: () => ref.invalidate(p)` and a tear-off handed to
+  /// `ref.listen`, both of which are correct and common in this tree — and a
+  /// rule that flags correct code teaches people to write exemptions.
+  ///
+  /// It sees one file at a time and has no element model, so a lifecycle
+  /// method calling a top-level function in *another* file that invalidates is
+  /// invisible to it. `BuildPhaseProviderGuard` covers that, which is why both
+  /// mechanisms exist.
+  Iterable<ArchitectureViolation> _verifyLifecyclePhase({
+    required String package,
+    required String path,
+    required String source,
+  }) sync* {
+    if (package != 'app' || !path.contains('/presentation/')) return;
+    for (final call in findLifecyclePhaseCalls(
+      source: source,
+      members: const <String>{'invalidate', 'refresh', 'invalidateSelf'},
+    )) {
+      yield ArchitectureViolation(
+        path: path,
+        line: _lineOf(source, call.offset),
+        rule: 'lifecycle_provider_invalidation',
+        message:
+            '${call.lifecycle} runs during the build phase, where '
+            'Ref.${call.member} schedules a setState the framework rejects. '
+            'Defer it, or let the provider auto-dispose instead.',
+      );
+    }
+    // Same defect shape, different victim: routing from a lifecycle method
+    // mutates the Navigator while the tree it belongs to is being built. The
+    // tree already does this correctly everywhere — post-frame with a latch, or
+    // from a gesture closure — so this rule only has to keep it that way.
+    for (final call in findLifecyclePhaseCalls(
+      source: source,
+      members: const <String>{'go', 'push', 'pushReplacement', 'replace'},
+    )) {
+      yield ArchitectureViolation(
+        path: path,
+        line: _lineOf(source, call.offset),
+        rule: 'lifecycle_navigation',
+        message:
+            '${call.lifecycle} runs during the build phase, so navigating with '
+            '${call.member} rebuilds the tree that is already building. Defer '
+            'it behind a post-frame callback with a latch, as WorkspacePage '
+            'does for its restore.',
+      );
+    }
+  }
+
+  static int _lineOf(String source, int offset) =>
+      '\n'.allMatches(source.substring(0, offset)).length + 1;
+
+  /// Whether the annotation at [index] asks for a `keepAlive` provider.
+  ///
+  /// The flag may sit on the same line or be wrapped onto the next few, so a
+  /// small window is read rather than the single line.
+  static bool _declaresKeepAliveProvider(List<String> lines, int index) {
+    if (!lines[index].contains('@Riverpod(')) return false;
+    final window = lines.skip(index).take(4).join(' ');
+    return window.contains('keepAlive: true');
+  }
+
+  /// Name of the declaration an annotation at [index] applies to.
+  ///
+  /// This repo puts the doc comment *between* the annotation and the thing it
+  /// annotates, and a provider may be a class or a plain function, so both the
+  /// interleaved comment and either shape are handled.
+  static String? _providerDeclarationName(List<String> lines, int index) {
+    for (var next = index + 1; next < lines.length; next += 1) {
+      final line = lines[next].trim();
+      if (line.isEmpty || line.startsWith('///') || line.startsWith('@')) {
+        continue;
+      }
+      final declared = RegExp(r'class\s+([A-Za-z_]\w*)').firstMatch(line);
+      if (declared != null) return declared.group(1);
+      return RegExp(r'([A-Za-z_]\w*)\s*\(').firstMatch(line)?.group(1);
+    }
+    return null;
   }
 
   bool _isApplicationLayer(String package, String path) {
