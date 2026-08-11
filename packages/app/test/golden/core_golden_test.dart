@@ -1195,7 +1195,7 @@ void main() {
         columns: 1,
         children: <Widget>[
           GoldenTestScenario(
-            name: 'Windows custom chrome light',
+            name: 'desktop custom chrome light',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -1203,18 +1203,7 @@ void main() {
             ),
           ),
           GoldenTestScenario(
-            name: 'Linux native chrome menu light',
-            child: SizedBox(
-              width: 1000,
-              height: 620,
-              child: _shell(
-                ThemeMode.light,
-                chrome: DesktopWindowChrome.nativeWithMenuBar,
-              ),
-            ),
-          ),
-          GoldenTestScenario(
-            name: 'Windows custom chrome collapsed dark',
+            name: 'desktop custom chrome collapsed dark',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -2197,7 +2186,6 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
 Widget _shell(
   ThemeMode mode, {
   bool collapsed = false,
-  DesktopWindowChrome chrome = DesktopWindowChrome.custom,
 }) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
@@ -2239,7 +2227,7 @@ Widget _shell(
       Column(
         children: <Widget>[
           DesktopMenuBar(
-            window: FakeDesktopWindow(chrome: chrome),
+            window: FakeDesktopWindow(chrome: DesktopWindowChrome.custom),
             sidebarCollapsed: collapsed,
             onNewWorkspace: () {},
             onOpenSettings: () {},

@@ -7,7 +7,7 @@ void main() {
   testWidgets('adds vertical breathing room in comfortable density', (
     tester,
   ) async {
-    await tester.pumpWidget(_host(TRControlDensity.standard));
+    await tester.pumpWidget(_host(TRUiDensity.standard));
     expect(
       _rowPadding(tester),
       const EdgeInsets.symmetric(
@@ -16,13 +16,19 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(_host(TRControlDensity.comfortable));
+    await tester.pumpWidget(_host(TRUiDensity.comfortable));
     expect(
       _rowPadding(tester),
       const EdgeInsets.symmetric(
         horizontal: TRSpacing.small,
         vertical: TRSpacing.medium,
       ),
+    );
+    expect(
+      DefaultTextStyle.of(
+        tester.element(find.byKey(const ValueKey('row-title'))),
+      ).style.fontSize,
+      18,
     );
   });
 
@@ -31,7 +37,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host(
-        TRControlDensity.comfortable,
+        TRUiDensity.comfortable,
         row: const TinestListRow(
           dense: true,
           title: TRText.inherit('Workspace'),
@@ -54,7 +60,7 @@ void main() {
     const padding = EdgeInsets.all(TRSpacing.extraSmall);
     await tester.pumpWidget(
       _host(
-        TRControlDensity.comfortable,
+        TRUiDensity.comfortable,
         row: const TinestListRow(
           contentPadding: padding,
           title: TRText.inherit('Workspace'),
@@ -67,12 +73,14 @@ void main() {
 }
 
 Widget _host(
-  TRControlDensity density, {
-  Widget row = const TinestListRow(title: TRText.inherit('Workspace')),
+  TRUiDensity density, {
+  Widget row = const TinestListRow(
+    title: Text('Workspace', key: ValueKey('row-title')),
+  ),
 }) => MaterialApp(
   theme: TinyrackTheme.light(),
   home: Scaffold(
-    body: TRControlDensityScope(density: density, child: row),
+    body: TRUiDensityScope(density: density, child: row),
   ),
 );
 

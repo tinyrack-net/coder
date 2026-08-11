@@ -76,7 +76,10 @@ class _PlanStepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.tinyrackTheme;
     final l10n = AppLocalizations.of(context);
-    final markerSize = TRTypography.bodySm.fontSize!;
+    final markerSize = TRTypography.resolve(
+      context,
+      TRTextVariant.bodySm,
+    ).fontSize!;
     final (IconData icon, Color color, String status) = switch (step.status) {
       ChatPlanStepStatus.completed => (
         TinestIcons.success,

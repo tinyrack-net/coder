@@ -1,5 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -57,7 +58,7 @@ class GoalStatusBar extends StatelessWidget {
       ),
       child: TRCard(
         key: const ValueKey<String>('goal-status-bar'),
-        padding: TRCardPadding.sm,
+        padding: TinestUiDensity.compactCardPadding(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,7 +70,6 @@ class GoalStatusBar extends StatelessWidget {
               children: <Widget>[
                 TRBadge(
                   variant: _variant(goal.status),
-                  uiSize: TRUiSize.sm,
                   child: TRText.inherit(_status(l10n, goal.status)),
                 ),
                 ConstrainedBox(
@@ -120,7 +120,6 @@ class GoalStatusBar extends StatelessWidget {
                 max: goal.tokenBudget!.toDouble(),
                 label: detail,
                 variant: _variant(goal.status),
-                uiSize: TRUiSize.sm,
               ),
             ],
           ],

@@ -11,6 +11,7 @@ import 'package:app/src/features/conversation/presentation/chat_reasoning_card.d
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +60,7 @@ void main() {
         supportedLocales: testSupportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-          child: child!,
+          child: TinestUiDensity(child: child!),
         ),
         home: Scaffold(
           body: ChatTimelineView(
@@ -1014,6 +1015,11 @@ void main() {
   testWidgets(
     'a settled response offers a copy action carrying its raw Markdown',
     (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final copied = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -1044,6 +1050,14 @@ void main() {
 
       final copy = find.byKey(const ValueKey<String>('chat-response-copy'));
       expect(copy, findsOneWidget);
+      final markdownContext = tester.element(find.byType(MarkdownBody));
+      final markdownStyle = chatMarkdownStyleSheet(markdownContext);
+      expect(markdownStyle.p?.fontSize, 18);
+      expect(markdownStyle.code?.fontSize, 16);
+      expect(
+        tester.getSize(copy).height,
+        TRControlMetrics.heightOf(TRUiSize.xl),
+      );
       await tester.tap(copy);
       await tester.pumpAndSettle();
 
@@ -1239,6 +1253,11 @@ Closing paragraph.
   testWidgets(
     'fenced code in a response scrolls, copies, and selects into the prose',
     (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final copied = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -1281,6 +1300,14 @@ Closing paragraph.
         matching: find.byIcon(TinestIcons.copy),
       );
       expect(copy, findsOneWidget);
+      expect(
+        tester
+            .getSize(
+              find.descendant(of: block, matching: find.byType(TRIconButton)),
+            )
+            .height,
+        TRControlMetrics.heightOf(TRUiSize.xl),
+      );
       await tester.tap(copy);
       await tester.pumpAndSettle();
       expect(copied, <String>[fenced]);

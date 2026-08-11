@@ -24,6 +24,7 @@ import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
@@ -34,13 +35,6 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 const double _composerSettingsBreakpoint =
     TRMeasurements.measureXl * 2 + TRMeasurements.measureLg;
-
-/// Keeps desktop composer chrome compact while giving narrow windows the
-/// control size selected by the comfortable density scope.
-TRUiSize? _composerControlSize(BuildContext context) =>
-    TRControlDensityScope.of(context) == TRControlDensity.comfortable
-    ? null
-    : TRUiSize.sm;
 
 /// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
@@ -211,7 +205,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       return TRIconButton(
         key: const ValueKey<String>('session-composer-settings'),
         appearance: TRAppearance.ghost,
-        uiSize: _composerControlSize(context),
+        uiSize: TinestUiDensity.compactControlSize(context),
         onPressed: () => unawaited(_showSettings()),
         icon: const Icon(TinestIcons.settings),
         label: l10n.composerMoreSettings,
@@ -1807,7 +1801,7 @@ class _SessionComposerState extends State<SessionComposer> {
         message: l10n.commonStop,
         child: TRIconButton(
           key: const ValueKey('session-composer-stop'),
-          uiSize: _composerControlSize(context),
+          uiSize: TinestUiDensity.compactControlSize(context),
           onPressed: () => unawaited(Future<void>.sync(onStop)),
           icon: const Icon(TinestIcons.stop),
           label: l10n.commonStop,
@@ -1819,7 +1813,7 @@ class _SessionComposerState extends State<SessionComposer> {
       child: TRIconButton(
         key: const ValueKey('session-composer-send'),
         intent: TRIntent.primary,
-        uiSize: _composerControlSize(context),
+        uiSize: TinestUiDensity.compactControlSize(context),
         loading: _submitting,
         onPressed: widget.enabled ? () => unawaited(_runDefaultAction()) : null,
         icon: const Icon(TinestIcons.send),
@@ -1866,7 +1860,7 @@ class _SessionComposerState extends State<SessionComposer> {
               // through once. The design system decides whether that raw
               // focus should be visible for the current input modality.
               focused: _focused,
-              padding: TRCardPadding.sm,
+              padding: TinestUiDensity.compactCardPadding(context),
               child: Focus(
                 canRequestFocus: false,
                 skipTraversal: true,
@@ -1949,7 +1943,7 @@ class _SessionComposerState extends State<SessionComposer> {
                         TRIconButton(
                           key: const ValueKey('session-composer-attach'),
                           appearance: TRAppearance.ghost,
-                          uiSize: _composerControlSize(context),
+                          uiSize: TinestUiDensity.compactControlSize(context),
                           onPressed: editable && widget.attachmentInput != null
                               ? _pickFiles
                               : null,
@@ -2286,7 +2280,7 @@ class _ContextMeterState extends State<_ContextMeter> {
         key: const ValueKey<String>('session-composer-context-trigger'),
         appearance: TRAppearance.ghost,
         focusNode: _triggerFocusNode,
-        uiSize: _composerControlSize(context),
+        uiSize: TinestUiDensity.compactControlSize(context),
         label: l10n.sessionContextMeter,
         onPressed: _openPreview,
         icon: ExcludeSemantics(
@@ -2294,7 +2288,6 @@ class _ContextMeterState extends State<_ContextMeter> {
             key: const ValueKey<String>('session-composer-context-meter'),
             value: percent.toDouble(),
             semanticLabel: l10n.sessionContextMeter,
-            uiSize: TRUiSize.sm,
             variant: variant,
           ),
         ),
@@ -2394,7 +2387,7 @@ class _ProviderUsageLoading extends StatelessWidget {
     spacing: TRSpacing.small,
     children: <Widget>[
       const TRSeparator(variant: TRSeparatorVariant.muted),
-      TRProgress(label: label, uiSize: TRUiSize.sm),
+      TRProgress(label: label),
     ],
   );
 }
@@ -2440,7 +2433,6 @@ class _ProviderUsageDetails extends StatelessWidget {
           ),
           TRProgress(
             value: quota.usedPercent,
-            uiSize: TRUiSize.sm,
             variant: quota.usedPercent > 90
                 ? TRStatusVariant.danger
                 : quota.usedPercent >= 70
@@ -2511,9 +2503,11 @@ class _QueuedTurnRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final queueIconSize = TRControlMetrics.iconSizeOf(TRUiSize.md);
+    final queueIconSize = TRControlMetrics.iconSizeOf(
+      TinestUiDensity.defaultControlSize(context),
+    );
     return TRCard(
-      padding: TRCardPadding.sm,
+      padding: TinestUiDensity.compactCardPadding(context),
       variant: TRCardVariant.elevated,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2598,7 +2592,7 @@ class _PendingAttachmentPill extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: TRMeasurements.measureMd),
       child: TRCard(
-        padding: TRCardPadding.sm,
+        padding: TinestUiDensity.compactCardPadding(context),
         variant: TRCardVariant.elevated,
         child: Row(
           mainAxisSize: MainAxisSize.min,

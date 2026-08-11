@@ -52,11 +52,17 @@ MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
   final colors = context.tinyrackTheme;
   final base = MarkdownStyleSheet.fromTheme(Theme.of(context));
   return base.copyWith(
-    p: TRTypography.body.copyWith(color: colors.text),
+    p: TRTypography.resolve(
+      context,
+      TRTextVariant.body,
+    ).copyWith(color: colors.text),
     // RenderParagraph paints the shared SelectionArea highlight before span
     // backgrounds. An opaque inline-code fill would therefore cover the
     // selection and make one continuous drag look fragmented.
-    code: TRTypography.code.copyWith(color: colors.text),
+    code: TRTypography.resolve(
+      context,
+      TRTextVariant.code,
+    ).copyWith(color: colors.text),
     codeblockDecoration: BoxDecoration(
       color: colors.surfaceMuted,
       borderRadius: const BorderRadius.all(TRRadii.medium),
@@ -66,7 +72,7 @@ MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
       color: colors.surfaceMuted,
       borderRadius: const BorderRadius.all(TRRadii.medium),
     ),
-    a: TRTypography.body.copyWith(
+    a: TRTypography.resolve(context, TRTextVariant.body).copyWith(
       color: colors.primary,
       decoration: TextDecoration.underline,
     ),

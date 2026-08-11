@@ -9,7 +9,7 @@ import 'package:window_manager/window_manager.dart';
 void main() {
   group('window adapter', () {
     test(
-      'Windows owns the frame while Linux keeps native chrome and app menus',
+      'Windows and Linux replace native chrome before the window is shown',
       () async {
         Future<(PluginDesktopWindow, List<bool>)> build(
           TargetPlatform platform,
@@ -33,10 +33,10 @@ void main() {
         final macos = await build(TargetPlatform.macOS);
 
         expect(windows.$1.chrome, DesktopWindowChrome.custom);
-        expect(linux.$1.chrome, DesktopWindowChrome.nativeWithMenuBar);
+        expect(linux.$1.chrome, DesktopWindowChrome.custom);
         expect(macos.$1.chrome, DesktopWindowChrome.native);
         expect(windows.$2, <bool>[true]);
-        expect(linux.$2, isEmpty);
+        expect(linux.$2, <bool>[true]);
         expect(macos.$2, isEmpty);
       },
       tags: const <String>['feature_test__desktop_window_chrome__unit'],

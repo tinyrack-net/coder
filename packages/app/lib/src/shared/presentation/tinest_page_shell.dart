@@ -29,7 +29,10 @@ class TinestPageShell extends StatelessWidget {
                   ?appBar!.leading,
                   Expanded(
                     child: DefaultTextStyle.merge(
-                      style: TRTypography.headingSm,
+                      style: TRTypography.resolve(
+                        context,
+                        TRTextVariant.headingSm,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       child: appBar!.title,

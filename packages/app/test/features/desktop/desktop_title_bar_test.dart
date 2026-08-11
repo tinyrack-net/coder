@@ -59,44 +59,12 @@ void main() {
   }
 
   testWidgets(
-    'Linux keeps application menus below native window chrome',
+    'Linux custom title bar drives window controls and close-to-tray',
     (tester) async {
-      final harness = build(chrome: DesktopWindowChrome.nativeWithMenuBar);
-      await tester.pumpWidget(harness.app);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DesktopMenuBar), findsOneWidget);
-      expect(find.text('File'), findsOneWidget);
-      expect(find.text('View'), findsOneWidget);
-      expect(find.text('Help'), findsOneWidget);
-      await tester.tap(find.text('File'));
-      await tester.pumpAndSettle();
-      expect(find.widgetWithText(TRMenuItem, 'New workspace'), findsOneWidget);
-      expect(find.widgetWithText(TRMenuItem, 'Quit'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey<String>('desktop-title-bar-drag-area')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('desktop-title-bar-minimize')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('desktop-title-bar-maximize')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('desktop-title-bar-close')),
-        findsNothing,
-      );
-    },
-    tags: const <String>['feature_test__desktop_window_chrome__widget'],
-  );
-
-  testWidgets(
-    'custom title bar drives drag, window controls, and close-to-tray',
-    (tester) async {
-      final harness = build();
+      final linuxChrome = PluginDesktopWindow(
+        platform: TargetPlatform.linux,
+      ).chrome;
+      final harness = build(chrome: linuxChrome);
       await tester.pumpWidget(harness.app);
       await tester.pumpAndSettle();
 

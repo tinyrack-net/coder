@@ -337,7 +337,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                           key: const ValueKey<String>('new-workspace-progress'),
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            const TRSpinner(uiSize: TRUiSize.sm),
+                            const TRSpinner(),
                             const SizedBox(width: TRSpacing.small),
                             TRText(
                               _stage == _NewWorkspaceStage.creatingWorktree
