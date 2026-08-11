@@ -1542,6 +1542,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatCopyResponse => 'Copy response';
+
+  @override
   String chatMoreLines(int count) {
     return '… $count more lines';
   }

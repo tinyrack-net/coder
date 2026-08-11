@@ -56,54 +56,58 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
         variant: TRCardVariant.elevated,
         child: Padding(
           padding: const EdgeInsets.all(TRSpacing.medium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TRText(
-                l10n.chatApprovalRequired(approval.toolName),
-                variant: TRTextVariant.headingSm,
-              ),
-              const SizedBox(height: TRSpacing.small),
-              _preview(context),
-              const SizedBox(height: TRSpacing.small),
-              if (_error case final error?) ...<Widget>[
-                TRText('$error', color: TRTextColor.danger),
+          // One host for the whole card, so the request can be dragged out in
+          // full rather than one preview block at a time.
+          child: SelectionArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                TRText(
+                  l10n.chatApprovalRequired(approval.toolName),
+                  variant: TRTextVariant.headingSm,
+                ),
                 const SizedBox(height: TRSpacing.small),
-              ],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  if (widget.interaction?.status ==
-                      ChatInteractionStatus.resolved)
-                    TRText(
-                      widget.interaction!.approved == true
-                          ? l10n.chatApprovalAllow
-                          : l10n.chatApprovalDeny,
-                      variant: TRTextVariant.label,
-                      color: widget.interaction!.approved == true
-                          ? TRTextColor.primary
-                          : TRTextColor.muted,
-                    )
-                  else ...<Widget>[
-                    TRButton(
-                      appearance: TRAppearance.ghost,
-                      onPressed: _submitting || widget.hostId == null
-                          ? null
-                          : () => _resolve(approved: false),
-                      child: TRText.inherit(l10n.chatApprovalDeny),
-                    ),
-                    const SizedBox(width: TRSpacing.small),
-                    TRButton(
-                      intent: TRIntent.primary,
-                      onPressed: _submitting || widget.hostId == null
-                          ? null
-                          : () => _resolve(approved: true),
-                      child: TRText.inherit(l10n.chatApprovalAllow),
-                    ),
-                  ],
+                _preview(context),
+                const SizedBox(height: TRSpacing.small),
+                if (_error case final error?) ...<Widget>[
+                  TRText('$error', color: TRTextColor.danger),
+                  const SizedBox(height: TRSpacing.small),
                 ],
-              ),
-            ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    if (widget.interaction?.status ==
+                        ChatInteractionStatus.resolved)
+                      TRText(
+                        widget.interaction!.approved == true
+                            ? l10n.chatApprovalAllow
+                            : l10n.chatApprovalDeny,
+                        variant: TRTextVariant.label,
+                        color: widget.interaction!.approved == true
+                            ? TRTextColor.primary
+                            : TRTextColor.muted,
+                      )
+                    else ...<Widget>[
+                      TRButton(
+                        appearance: TRAppearance.ghost,
+                        onPressed: _submitting || widget.hostId == null
+                            ? null
+                            : () => _resolve(approved: false),
+                        child: TRText.inherit(l10n.chatApprovalDeny),
+                      ),
+                      const SizedBox(width: TRSpacing.small),
+                      TRButton(
+                        intent: TRIntent.primary,
+                        onPressed: _submitting || widget.hostId == null
+                            ? null
+                            : () => _resolve(approved: true),
+                        child: TRText.inherit(l10n.chatApprovalAllow),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

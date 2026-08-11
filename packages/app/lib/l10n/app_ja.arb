@@ -452,6 +452,7 @@
   "chatEmptyExample": "例）テストを実行して、失敗した原因を直して",
   "chatNoticeCancelled": "停止しました",
   "chatNoticeFailed": "失敗 · {message}",
+  "chatCopyResponse": "応答をコピー",
   "chatMoreLines": "… 他 {count} 行",
   "chatApprovalRequired": "承認が必要 · {tool}",
   "chatApprovalDeny": "拒否",

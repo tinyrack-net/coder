@@ -74,6 +74,42 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     super.dispose();
   }
 
+  /// Folds or unfolds a row while holding it still on screen.
+  ///
+  /// The list is reversed, so a row that grows extends toward the top of the
+  /// viewport. Without this correction the header the user just clicked jumps
+  /// upward by the body's height and the body lands where the header was, which
+  /// reads as unfolding upward. Restoring the row's top edge pins the header
+  /// and lets the body claim the space below it instead.
+  void _toggle(String key, BuildContext rowContext) {
+    final before = _rowTop(rowContext);
+    setState(() {
+      if (!_expanded.remove(key)) _expanded.add(key);
+    });
+    if (before == null) return;
+    // One frame is enough: the disclosure swaps its body in without animating.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final after = _rowTop(rowContext);
+      if (after == null) return;
+      final position = _scrollController.position;
+      // A reversed offset grows upward, so adding the drop pushes the row back
+      // down to where the pointer left it.
+      final target = (position.pixels + (before - after)).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if (target != position.pixels) _scrollController.jumpTo(target);
+    });
+  }
+
+  double? _rowTop(BuildContext rowContext) {
+    if (!rowContext.mounted) return null;
+    final box = rowContext.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero).dy;
+  }
+
   Future<Uint8List> _load(ChatAttachment attachment) =>
       _attachmentCache.putIfAbsent(
         attachment.id,
@@ -137,16 +173,18 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           final item = items[items.length - itemIndex - 1];
           return KeyedSubtree(
             key: ValueKey<String>(item.key),
-            child: ChatItemView(
-              item: item,
-              expanded: _expanded.contains(item.key),
-              onToggle: () => setState(() {
-                if (!_expanded.remove(item.key)) _expanded.add(item.key);
-              }),
-              loadAttachment: widget.loadAttachment == null ? null : _load,
-              exportAttachment: widget.exportAttachment,
-              hostId: widget.hostId,
-              planActionBuilder: widget.planActionBuilder,
+            // The builder hands the toggle a context inside the row so the row
+            // can be measured before and after it changes height.
+            child: Builder(
+              builder: (rowContext) => ChatItemView(
+                item: item,
+                expanded: _expanded.contains(item.key),
+                onToggle: () => _toggle(item.key, rowContext),
+                loadAttachment: widget.loadAttachment == null ? null : _load,
+                exportAttachment: widget.exportAttachment,
+                hostId: widget.hostId,
+                planActionBuilder: widget.planActionBuilder,
+              ),
             ),
           );
         },

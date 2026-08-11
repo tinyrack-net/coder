@@ -118,41 +118,45 @@ class _ChatToolDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        _ChatToolDetailLabel(l10n.chatToolDetailsTool),
-        ChatCodeBlock(text: '${activity.toolName}\n${presentation.title}'),
-        const SizedBox(height: TRSpacing.small),
-        _ChatToolDetailLabel(l10n.chatToolDetailsRequest),
-        ChatCodeBlock(text: prettyJson(activity.arguments)),
-        if (presentation.argumentBody is! ChatToolEmptyBody) ...<Widget>[
-          const SizedBox(height: TRSpacing.extraSmall),
-          _ChatToolBodyView(body: presentation.argumentBody),
-        ],
-        if (presentation.body is! ChatToolEmptyBody ||
-            presentation.resultLine != null ||
-            activity.error != null) ...<Widget>[
+    // One host for the whole disclosure, so a drag runs from a label through
+    // the payload below it instead of stopping at each block.
+    return SelectionArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _ChatToolDetailLabel(l10n.chatToolDetailsTool),
+          ChatCodeBlock(text: '${activity.toolName}\n${presentation.title}'),
           const SizedBox(height: TRSpacing.small),
-          _ChatToolDetailLabel(l10n.chatToolDetailsResult),
-          if (presentation.resultLine != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: TRSpacing.extraSmall),
-              child: TRText(
-                presentation.resultLine!,
-                variant: TRTextVariant.bodySm,
-                color: presentation.isFailure
-                    ? TRTextColor.danger
-                    : TRTextColor.muted,
+          _ChatToolDetailLabel(l10n.chatToolDetailsRequest),
+          ChatCodeBlock(text: prettyJson(activity.arguments)),
+          if (presentation.argumentBody is! ChatToolEmptyBody) ...<Widget>[
+            const SizedBox(height: TRSpacing.extraSmall),
+            _ChatToolBodyView(body: presentation.argumentBody),
+          ],
+          if (presentation.body is! ChatToolEmptyBody ||
+              presentation.resultLine != null ||
+              activity.error != null) ...<Widget>[
+            const SizedBox(height: TRSpacing.small),
+            _ChatToolDetailLabel(l10n.chatToolDetailsResult),
+            if (presentation.resultLine != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: TRSpacing.extraSmall),
+                child: TRText(
+                  presentation.resultLine!,
+                  variant: TRTextVariant.bodySm,
+                  color: presentation.isFailure
+                      ? TRTextColor.danger
+                      : TRTextColor.muted,
+                ),
               ),
-            ),
-          _ChatToolBodyView(body: presentation.body),
-          if (presentation.body is ChatToolEmptyBody)
-            if (activity.error case final String error)
-              ChatCodeBlock(text: error),
+            _ChatToolBodyView(body: presentation.body),
+            if (presentation.body is ChatToolEmptyBody)
+              if (activity.error case final String error)
+                ChatCodeBlock(text: error),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

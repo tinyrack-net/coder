@@ -423,6 +423,29 @@ void main() {
   );
 
   test(
+    'a stopped turn keeps what it already said and marks itself cancelled',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('user.message', <String, dynamic>{'text': 'Explain it'}),
+        event('assistant.delta', <String, dynamic>{'text': 'half an '}),
+        event('assistant.delta', <String, dynamic>{'text': 'answer'}),
+        event('turn.cancelled', const <String, dynamic>{}),
+      ]);
+
+      // Stopping is not undoing: the partial answer stays in the transcript,
+      // stops streaming, and carries a cancellation notice.
+      final assistant = items.whereType<ChatAssistantMessage>().single;
+      expect(assistant.markdown, 'half an answer');
+      expect(assistant.isStreaming, isFalse);
+      expect(
+        items.whereType<ChatNotice>().single.kind,
+        ChatNoticeKind.turnCancelled,
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
     'empty assistant text and empty input produce no items',
     () {
       expect(projectChatTimeline(const <TimelineEventDto>[]), isEmpty);

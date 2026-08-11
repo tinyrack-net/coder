@@ -1772,6 +1772,10 @@
       }
     }
   },
+  "chatCopyResponse": "Copy response",
+  "@chatCopyResponse": {
+    "description": "Copies an assistant response to the clipboard as Markdown."
+  },
   "chatMoreLines": "… {count} more lines",
   "@chatMoreLines": {
     "description": "Marks the lines hidden by a collapsed code or diff block.",
