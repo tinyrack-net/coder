@@ -71,14 +71,16 @@ final class TerminalSessionState {
   );
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 /// Owns one terminal's emulator, its attachment, and its daemon wiring.
 ///
 /// The emulator outlives the pane that renders it, so switching tabs cannot
 /// reset the scrollback, and output produced while the tab is off screen is
-/// still written as it arrives. The provider is deliberately `keepAlive`: the
-/// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-/// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+/// still written as it arrives. The pane is therefore not what keeps this
+/// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+/// shows a tab for this terminal, and the session ends when that lease is
+/// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+/// `terminal_session_leases.dart` for why the distinction matters.
 class TerminalSessionController extends _$TerminalSessionController {
   Terminal? _terminal;
   StreamSubscription<TerminalOutputDto>? _output;

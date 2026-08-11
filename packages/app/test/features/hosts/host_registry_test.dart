@@ -237,6 +237,54 @@ void main() {
     tags: const <String>['feature_test__settings_reset__unit'],
   );
 
+  // Characterization of what makes `changes` safe to deliver synchronously.
+  //
+  // The controller bridging this stream assigns provider state straight from
+  // the listener, so an emit that lands on a caller's stack becomes a provider
+  // write on that stack. That is only harmless because no mutator emits before
+  // its first `await`: every settings mutator persists first, which yields, so
+  // the emit can never reach a caller that is mid-build. This pins that
+  // invariant — a mutator that starts emitting eagerly fails here rather than
+  // in whichever screen happens to call it during a build.
+  test('no settings mutator emits before it first yields', () async {
+    final store = MemoryAppStore(
+      settings: const AppSettings(embeddedDaemonEnabled: false),
+    );
+    final registry = HostRegistry(
+      store: store,
+      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      ids: const _Ids(),
+      clock: _Clock(now),
+      delay: const _NoDelay(),
+      clientKind: 'test',
+    );
+    addTearDown(registry.close);
+    await registry.load();
+    await _flush();
+
+    final emitted = <String>[];
+    final subscription = registry.changes.listen(
+      (_) => emitted.add('emit'),
+    );
+    addTearDown(subscription.cancel);
+
+    final mutations = <String, Future<void> Function()>{
+      'selectHost': () => registry.selectHost('embedded'),
+      'setThemeMode': () => registry.setThemeMode(AppThemeMode.dark),
+      'setSidebarCollapsed': () =>
+          registry.setSidebarCollapsed(collapsed: true),
+      'setLocaleTag': () => registry.setLocaleTag('ko'),
+      'setStartAtBoot': () => registry.setStartAtBoot(enabled: true),
+    };
+    for (final entry in mutations.entries) {
+      emitted.clear();
+      final pending = entry.value();
+      expect(emitted, isEmpty, reason: '${entry.key} emitted synchronously');
+      await pending;
+      await _flush();
+    }
+  });
+
   test('reset restarts on the store factory defaults it is given', () async {
     final store = MemoryAppStore(
       settings: const AppSettings(embeddedDaemonPort: 9100),

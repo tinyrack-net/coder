@@ -12,9 +12,11 @@ part of 'terminal_session_controller.dart';
 ///
 /// The emulator outlives the pane that renders it, so switching tabs cannot
 /// reset the scrollback, and output produced while the tab is off screen is
-/// still written as it arrives. The provider is deliberately `keepAlive`: the
-/// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-/// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+/// still written as it arrives. The pane is therefore not what keeps this
+/// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+/// shows a tab for this terminal, and the session ends when that lease is
+/// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+/// `terminal_session_leases.dart` for why the distinction matters.
 
 @ProviderFor(TerminalSessionController)
 final terminalSessionControllerProvider = TerminalSessionControllerFamily._();
@@ -23,25 +25,29 @@ final terminalSessionControllerProvider = TerminalSessionControllerFamily._();
 ///
 /// The emulator outlives the pane that renders it, so switching tabs cannot
 /// reset the scrollback, and output produced while the tab is off screen is
-/// still written as it arrives. The provider is deliberately `keepAlive`: the
-/// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-/// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+/// still written as it arrives. The pane is therefore not what keeps this
+/// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+/// shows a tab for this terminal, and the session ends when that lease is
+/// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+/// `terminal_session_leases.dart` for why the distinction matters.
 final class TerminalSessionControllerProvider
     extends $NotifierProvider<TerminalSessionController, TerminalSessionState> {
   /// Owns one terminal's emulator, its attachment, and its daemon wiring.
   ///
   /// The emulator outlives the pane that renders it, so switching tabs cannot
   /// reset the scrollback, and output produced while the tab is off screen is
-  /// still written as it arrives. The provider is deliberately `keepAlive`: the
-  /// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-  /// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+  /// still written as it arrives. The pane is therefore not what keeps this
+  /// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+  /// shows a tab for this terminal, and the session ends when that lease is
+  /// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+  /// `terminal_session_leases.dart` for why the distinction matters.
   TerminalSessionControllerProvider._({
     required TerminalSessionControllerFamily super.from,
     required (String, String) super.argument,
   }) : super(
          retry: null,
          name: r'terminalSessionControllerProvider',
-         isAutoDispose: false,
+         isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -81,15 +87,17 @@ final class TerminalSessionControllerProvider
 }
 
 String _$terminalSessionControllerHash() =>
-    r'1863ebf17d1bac54da92ba86e6e470e604bc76d5';
+    r'1ac6b8f17e04833a36510629f46276463b531d55';
 
 /// Owns one terminal's emulator, its attachment, and its daemon wiring.
 ///
 /// The emulator outlives the pane that renders it, so switching tabs cannot
 /// reset the scrollback, and output produced while the tab is off screen is
-/// still written as it arrives. The provider is deliberately `keepAlive`: the
-/// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-/// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+/// still written as it arrives. The pane is therefore not what keeps this
+/// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+/// shows a tab for this terminal, and the session ends when that lease is
+/// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+/// `terminal_session_leases.dart` for why the distinction matters.
 
 final class TerminalSessionControllerFamily extends $Family
     with
@@ -106,16 +114,18 @@ final class TerminalSessionControllerFamily extends $Family
         name: r'terminalSessionControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: false,
+        isAutoDispose: true,
       );
 
   /// Owns one terminal's emulator, its attachment, and its daemon wiring.
   ///
   /// The emulator outlives the pane that renders it, so switching tabs cannot
   /// reset the scrollback, and output produced while the tab is off screen is
-  /// still written as it arrives. The provider is deliberately `keepAlive`: the
-  /// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-  /// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+  /// still written as it arrives. The pane is therefore not what keeps this
+  /// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+  /// shows a tab for this terminal, and the session ends when that lease is
+  /// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+  /// `terminal_session_leases.dart` for why the distinction matters.
 
   TerminalSessionControllerProvider call(String hostId, String terminalId) =>
       TerminalSessionControllerProvider._(
@@ -131,9 +141,11 @@ final class TerminalSessionControllerFamily extends $Family
 ///
 /// The emulator outlives the pane that renders it, so switching tabs cannot
 /// reset the scrollback, and output produced while the tab is off screen is
-/// still written as it arrives. The provider is deliberately `keepAlive`: the
-/// pane unmounting is exactly the moment it must not be disposed. Its lifetime
-/// is bound to the tab instead, which `WorkspacePage` ends by invalidating it.
+/// still written as it arrives. The pane is therefore not what keeps this
+/// alive: `TerminalSessionLeases` holds a lease for as long as the checkout
+/// shows a tab for this terminal, and the session ends when that lease is
+/// dropped. Auto-disposal, rather than invalidation, is what ends it — see
+/// `terminal_session_leases.dart` for why the distinction matters.
 
 abstract class _$TerminalSessionController
     extends $Notifier<TerminalSessionState> {

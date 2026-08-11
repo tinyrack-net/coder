@@ -25,6 +25,7 @@ import 'package:app/src/features/providers/application/session_model_options.dar
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
 import 'package:app/src/features/terminals/application/terminal_session_controller.dart';
+import 'package:app/src/features/terminals/application/terminal_session_leases.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -101,27 +102,6 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     // selection change and each new checkout needs its own archived check.
     if (widget.selection != oldWidget.selection) {
       _missingSelectionScheduled = false;
-      _releaseTerminals(oldWidget.selection);
-    }
-  }
-
-  /// Ends the terminal sessions of a checkout the page has just left.
-  ///
-  /// Terminal sessions are `keepAlive` so a tab switch cannot reset them, which
-  /// means leaving a checkout is what bounds their number. The departing tab
-  /// state is read here, synchronously, while its own provider is still alive.
-  /// Deliberately not done in [dispose]: a trip to settings tears this page
-  /// down, and coming back must not find every terminal wiped.
-  void _releaseTerminals(WorkspaceSelection? selection) {
-    if (selection == null) return;
-    final tabs = ref.read(sessionTabsControllerProvider(selection)).value;
-    if (tabs == null) return;
-    for (final entry in tabs.tabs.values) {
-      if (entry.target case TerminalTabTarget(:final terminalId)) {
-        ref.invalidate(
-          terminalSessionControllerProvider(selection.hostId, terminalId),
-        );
-      }
     }
   }
 
@@ -420,7 +400,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   @override
   Widget build(BuildContext context) {
     final provider = sessionTabsControllerProvider(widget.selection);
-    ref.listen(provider, _releaseClosedTerminals);
+    // Roots this checkout's terminal sessions. A listener rather than a watch:
+    // it is a non-weak dependent, so it holds the leases, while leaving this
+    // widget to rebuild from the tab state it actually renders.
+    ref.listen(terminalSessionLeasesProvider(widget.selection), (_, _) {});
     final value = ref.watch(provider);
     final workspace = value.asData?.value;
     _openRequestedRoute(provider, workspace);
@@ -484,36 +467,6 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       });
     }
   }
-
-  /// Ends the sessions of terminals whose tab has just gone away.
-  ///
-  /// A terminal session is deliberately `keepAlive`, so something has to end
-  /// it. Diffing the tab set covers every way a tab can disappear — the close
-  /// button, the terminate confirmation, a discarded pending tab, the mobile
-  /// sheet — instead of asking each of those call sites to remember.
-  void _releaseClosedTerminals(
-    AsyncValue<SessionTabsState>? previous,
-    AsyncValue<SessionTabsState> next,
-  ) {
-    // A reload frame carries no value and must not read as "everything closed".
-    if (previous == null || !previous.hasValue || !next.hasValue) return;
-    final closed = _terminalIds(previous).difference(_terminalIds(next));
-    for (final terminalId in closed) {
-      ref.invalidate(
-        terminalSessionControllerProvider(
-          widget.selection.hostId,
-          terminalId,
-        ),
-      );
-    }
-  }
-
-  static Set<String> _terminalIds(
-    AsyncValue<SessionTabsState> tabs,
-  ) => <String>{
-    for (final entry in tabs.value?.tabs.values ?? const <WorkspaceTabEntry>[])
-      if (entry.target case TerminalTabTarget(:final terminalId)) terminalId,
-  };
 
   Widget _buildNode(
     BuildContext context,

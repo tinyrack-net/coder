@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 
+import 'build_phase_provider_guard.dart';
 import 'fake_coder_api.dart';
 import 'localization.dart';
 
@@ -25,10 +26,26 @@ Future<GoRouter> pumpRoutedApp(
   // A screen with a perpetual animation (a running subagent spinner, for
   // instance) never settles; such tests pump fixed frames instead.
   bool settle = true,
+  // Extra observers a test installs for its own assertions. The build-phase
+  // guard below is added on top of these, not instead of them.
+  List<ProviderObserver> observers = const <ProviderObserver>[],
+  // A non-null value opts this screen out of the build-phase guard, and the
+  // string is the reason. There is no bare boolean on purpose: an unexplained
+  // exemption is exactly how an enforcement gate rots into decoration.
+  String? allowsBuildPhaseMutation,
 }) async {
+  final guard = allowsBuildPhaseMutation == null
+      ? BuildPhaseProviderGuard()
+      : null;
+  if (guard != null) {
+    // Asserted after the test body rather than at the offending call, so a
+    // test that drains exceptions cannot swallow the failure.
+    addTearDown(() => expect(guard.violations, isEmpty, reason: guard.report));
+  }
   final router = GoRouter(initialLocation: initialLocation, routes: $appRoutes);
   await tester.pumpWidget(
     ProviderScope(
+      observers: <ProviderObserver>[...observers, ?guard],
       overrides: [
         appServicesProvider.overrideWithValue(
           fakeAppServices(api, store: store),
