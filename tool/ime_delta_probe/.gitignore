@@ -1,9 +1,0 @@
-build/
-.dart_tool/
-linux/
-traces/
-out-docker/
-*.iml
-pubspec.lock
-.metadata
-env.txt
