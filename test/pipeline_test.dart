@@ -201,7 +201,6 @@ void main() {
       'golden-linux',
       'debug-e2e-linux',
       'linux-ibus-terminal-e2e',
-      'linux-ibus-terminal-wayland-e2e',
       'web-build',
       'cli-verify',
       'mobile-debug-build',
@@ -235,7 +234,6 @@ void main() {
       'golden-linux',
       'debug-e2e-linux',
       'linux-ibus-terminal-e2e',
-      'linux-ibus-terminal-wayland-e2e',
       'mobile-debug-build',
       'web-build',
     ]) {
