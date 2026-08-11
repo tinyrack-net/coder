@@ -640,6 +640,29 @@ void main() {
     expect(luaHostBuilder, contains("'--build-directory'"));
   });
 
+  test('Windows refreshes a cached target-relative install prefix', () {
+    expect(
+      windowsCmake,
+      contains('CMAKE_INSTALL_PREFIX MATCHES'),
+      reason:
+          'A build directory configured before an executable rename keeps its '
+          r'$<TARGET_FILE_DIR:old_name> install prefix in CMakeCache.txt.',
+    );
+    expect(
+      windowsCmake,
+      contains(r'\\$<TARGET_FILE_DIR:[^>]+>$'),
+      reason:
+          'Only CMake-managed target-relative prefixes should be refreshed.',
+    );
+    expect(
+      windowsCmake,
+      contains(
+        r'set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" '
+        'CACHE PATH "..." FORCE)',
+      ),
+    );
+  });
+
   test('Windows release artifacts carry their app-local MSVC runtime', () {
     expect(
       windowsCmake,
