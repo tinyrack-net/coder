@@ -50,7 +50,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '고급 직접 연결'));
+      final directConnection = find.text('고급 직접 연결');
+      await tester.ensureVisible(directConnection);
+      await tester.pumpAndSettle();
+      await tester.tap(directConnection);
       await tester.pumpAndSettle();
       await tester.enterText(_field('remote-host-label'), 'Recovering daemon');
       await tester.enterText(

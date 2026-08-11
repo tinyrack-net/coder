@@ -15,3 +15,29 @@ bool shouldStartHidden({
   required List<String> arguments,
   required AppSettings settings,
 }) => settings.startMinimizedAtBoot && arguments.contains(startMinimizedFlag);
+
+/// Returns the canonical pairing route supplied by a desktop protocol launch.
+///
+/// Only a fragment capability is accepted. Query-string capabilities are
+/// rejected so operating-system and web-server request logs cannot retain the
+/// one-time secret.
+String? desktopPairingInitialLocation(List<String> arguments) {
+  for (final argument in arguments) {
+    final uri = Uri.tryParse(argument);
+    if (uri == null ||
+        uri.scheme != 'tinyrack-coder' ||
+        uri.host != 'pair' ||
+        uri.path.isNotEmpty ||
+        uri.query.isNotEmpty ||
+        !uri.fragment.startsWith('offer=')) {
+      continue;
+    }
+    return Uri(
+      scheme: 'https',
+      host: 'coder.tinyrack.net',
+      path: '/pair',
+      fragment: uri.fragment,
+    ).toString();
+  }
+  return null;
+}

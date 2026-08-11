@@ -204,7 +204,7 @@ class AppSettingsPage extends ConsumerWidget {
             key: const ValueKey<String>('app-settings-add-remote'),
             intent: TRIntent.primary,
             onPressed: () =>
-                unawaited(const NewHostRoute().push<void>(context)),
+                unawaited(const ConnectDaemonRoute().push<void>(context)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -507,7 +507,7 @@ class _RemoteHostCard extends ConsumerWidget {
                   TRButton(
                     appearance: TRAppearance.ghost,
                     onPressed: () => unawaited(
-                      DaemonDevicesRoute(
+                      DaemonConnectionsRoute(
                         hostId: profile.id,
                       ).push<void>(context),
                     ),
@@ -737,7 +737,11 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
         );
       }
       if (mounted) {
-        closeTask(context, () => const DaemonSettingsRoute().go(context));
+        if (existing == null) {
+          const DaemonSettingsRoute().go(context);
+        } else {
+          closeTask(context, () => const DaemonSettingsRoute().go(context));
+        }
       }
     } on HostConnectionFailure catch (failure) {
       if (!mounted) return;

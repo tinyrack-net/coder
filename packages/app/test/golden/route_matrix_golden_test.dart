@@ -101,7 +101,7 @@ void main() {
       name: 'advanced_settings',
       location: const AdvancedSettingsRoute().location,
     ),
-    (name: 'new_host', location: const NewHostRoute().location),
+    (name: 'connect_daemon', location: const ConnectDaemonRoute().location),
     (
       name: 'edit_host',
       location: const EditHostRoute(hostId: 'server').location,

@@ -114,7 +114,13 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       'relay.listRelayDevices',
       'relay.revokeRelayDevice',
     ],
-    routes: <String>['NewHostRoute', 'DaemonDevicesRoute'],
+    routes: <String>[
+      'ConnectDaemonRoute',
+      'PairingLinkRoute',
+      'PairingScanRoute',
+      'PairOfferRoute',
+      'DaemonConnectionsRoute',
+    ],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,

@@ -311,15 +311,57 @@ void main() {
   );
 
   testWidgets(
-    'NewHostRoute renders at desktop and mobile sizes',
+    'ConnectDaemonRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
-      const NewHostRoute().location,
-      find.text('기기 연결'),
+      const ConnectDaemonRoute().location,
+      find.byKey(const ValueKey<String>('connect-daemon-paste')),
     ),
     tags: const <String>[
-      'route_test__new_host_route__widget',
+      'route_test__connect_daemon_route__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
+    'PairingLinkRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const PairingLinkRoute().location,
+      find.byKey(const ValueKey<String>('relay-pair-link')),
+    ),
+    tags: const <String>[
+      'route_test__pairing_link_route__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
+    'PairingScanRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const PairingScanRoute().location,
+      find.text('QR 코드 스캔'),
+    ),
+    tags: const <String>[
+      'route_test__pairing_scan_route__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
+    'PairOfferRoute renders at desktop and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const PairOfferRoute().location,
+      find.text('Daemon 연결 확인'),
+    ),
+    tags: const <String>[
+      'route_test__pair_offer_route__widget',
       'feature_test__daemon_relay__widget',
     ],
   );
@@ -336,15 +378,15 @@ void main() {
   );
 
   testWidgets(
-    'DaemonDevicesRoute renders at desktop and mobile sizes',
+    'DaemonConnectionsRoute renders at desktop and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
-      const DaemonDevicesRoute(hostId: 'server').location,
-      find.text('연결된 기기'),
+      const DaemonConnectionsRoute(hostId: 'server').location,
+      find.text('연결'),
     ),
     tags: const <String>[
-      'route_test__daemon_devices_route__widget',
+      'route_test__daemon_connections_route__widget',
       'feature_test__daemon_relay__widget',
       'feature_test__daemon_relay__platformSmoke',
     ],

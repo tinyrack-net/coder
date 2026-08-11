@@ -231,7 +231,7 @@ void main() {
         find.byKey(const ValueKey<String>('app-settings-add-remote')),
       );
       await tester.pumpAndSettle();
-      expect(currentLocation(router), const NewHostRoute().location);
+      expect(currentLocation(router), const ConnectDaemonRoute().location);
       expect(router.canPop(), isTrue);
 
       await tester.tap(

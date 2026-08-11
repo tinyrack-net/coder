@@ -72,6 +72,7 @@ Future<void> runDesktopApp({
       },
       builder: (context, boot) => CoderApp(
         services: boot.services,
+        initialLocation: desktopPairingInitialLocation(arguments),
         attachmentInput: const NativeAttachmentInput(),
         directoryPicker: const NativeDirectoryPicker(),
         desktopWindow: boot.window,

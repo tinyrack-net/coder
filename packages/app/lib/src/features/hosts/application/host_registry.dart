@@ -226,28 +226,53 @@ final class HostRegistry {
         reason: HostFailureReason.relayPairingUnavailable,
       );
     }
-    final profileId = _ids.generate();
+    final proposedProfileId = _ids.generate();
     final connectionId = _ids.generate();
-    final credentialKey = 'host:$profileId:relay';
+    final proposedCredentialKey = 'host:$proposedProfileId:relay';
     final result = await pairer.pair(
       pairingUrl: pairingUrl,
       deviceId: _ids.generate(),
       deviceName: deviceName,
       connectionId: connectionId,
+      credentialKey: proposedCredentialKey,
+    );
+    final existing = value.profiles
+        .where((profile) => profile.serverId == result.connection.serverId)
+        .firstOrNull;
+    final profileId = existing?.id ?? proposedProfileId;
+    final credentialKey = 'host:$profileId:relay';
+    final relayConnection = RelayHostConnection(
+      id: result.connection.id,
       credentialKey: credentialKey,
+      serverId: result.connection.serverId,
+      relayUri: result.connection.relayUri,
+      daemonIdentityPublicKey: result.connection.daemonIdentityPublicKey,
     );
     final now = _clock.nowUtc();
-    final profile = RemoteDaemonProfile(
-      id: profileId,
-      label: label?.trim().isNotEmpty == true
-          ? label!.trim()
-          : deviceName.trim(),
-      connections: <HostConnection>[result.connection],
-      autoConnect: autoConnect,
-      serverId: result.connection.serverId,
-      createdAt: now,
-      updatedAt: now,
-    );
+    final previousRelay = existing?.relayConnections.firstOrNull;
+    final profile = existing == null
+        ? RemoteDaemonProfile(
+            id: profileId,
+            label: label?.trim().isNotEmpty == true
+                ? label!.trim()
+                : _defaultRelayLabel(result.connection.serverId),
+            connections: <HostConnection>[relayConnection],
+            autoConnect: autoConnect,
+            serverId: relayConnection.serverId,
+            createdAt: now,
+            updatedAt: now,
+          )
+        : existing.copyWith(
+            connections: <HostConnection>[
+              ...existing.connections.where(
+                (connection) => connection is! RelayHostConnection,
+              ),
+              relayConnection,
+            ],
+            autoConnect: autoConnect,
+            serverId: relayConnection.serverId,
+            updatedAt: now,
+          );
     await relayCredentials.writeRelayCredential(
       credentialKey,
       result.credential,
@@ -258,12 +283,19 @@ final class HostRegistry {
       await relayCredentials.deleteRelayCredential(credentialKey);
       rethrow;
     }
+    if (previousRelay != null && previousRelay.credentialKey != credentialKey) {
+      await relayCredentials.deleteRelayCredential(previousRelay.credentialKey);
+    }
+    if (existing != null) await _stopRuntime(profile.id);
+    final profiles = existing == null
+        ? <RemoteDaemonProfile>[...value.profiles, profile]
+        : <RemoteDaemonProfile>[
+            for (final item in value.profiles)
+              if (item.id == profile.id) profile else item,
+          ];
     _emit(
       value.copyWith(
-        profiles: List<RemoteDaemonProfile>.unmodifiable(<RemoteDaemonProfile>[
-          ...value.profiles,
-          profile,
-        ]),
+        profiles: List<RemoteDaemonProfile>.unmodifiable(profiles),
         runtimes: Map<String, HostRuntimeSnapshot>.unmodifiable(
           Map<String, HostRuntimeSnapshot>.of(value.runtimes)
             ..[profile.id] = HostRuntimeSnapshot(
@@ -273,6 +305,7 @@ final class HostRegistry {
               status: autoConnect
                   ? HostRuntimeStatus.connecting
                   : HostRuntimeStatus.idle,
+              endpoint: _directConnection(profile)?.endpoint,
             ),
         ),
       ),
@@ -1265,6 +1298,9 @@ final class HostRegistry {
 
 DirectHostConnection? _directConnection(RemoteDaemonProfile profile) =>
     profile.directConnections.firstOrNull;
+
+String _defaultRelayLabel(String serverId) =>
+    serverId.length <= 12 ? serverId : serverId.substring(0, 12);
 
 final class _ConnectedPath {
   const _ConnectedPath(this.connection, this.credential, this.api);

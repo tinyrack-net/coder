@@ -6,6 +6,25 @@ import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('offer inspection exposes metadata without capability material', () {
+    final offer = RelayPairingOffer(
+      serverId: 'daemon-1',
+      relayUri: Uri.parse('wss://relay.example/v1/ws'),
+      daemonPublicKey: List<int>.filled(32, 1),
+      offerId: 'offer-1',
+      secret: List<int>.filled(32, 2),
+      expiresAt: DateTime.utc(2026, 8, 8, 12, 10),
+    );
+
+    final metadata = inspectRelayPairingOffer(
+      offer.toUrl(Uri.parse('https://coder.tinyrack.net/pair')),
+    );
+
+    expect(metadata.serverId, offer.serverId);
+    expect(metadata.relayUri, offer.relayUri);
+    expect(metadata.expiresAt, offer.expiresAt);
+  });
+
   test('lost acknowledgement retries with the same device identity', () async {
     final offer = RelayPairingOffer(
       serverId: 'daemon-1',

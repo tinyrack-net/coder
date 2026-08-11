@@ -219,6 +219,9 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                   onOpenDaemonSettings: () => unawaited(
                     const DaemonSettingsRoute().push<void>(context),
                   ),
+                  onConnectDaemon: () => unawaited(
+                    const ConnectDaemonRoute().push<void>(context),
+                  ),
                   onArchivedSelection: () =>
                       const WorkspaceHomeRoute().replace(context),
                 );

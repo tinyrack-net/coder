@@ -720,6 +720,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relayPairTitle => 'Connect a device';
 
   @override
+  String get relayConnectDaemonTitle => 'Connect a daemon';
+
+  @override
+  String get relayConnectDaemonDescription =>
+      'Choose how to connect to a daemon. Relay links keep daemon traffic end-to-end encrypted.';
+
+  @override
+  String get relayConnectScanDescription =>
+      'Scan the one-time QR code shown by the daemon.';
+
+  @override
+  String get relayConnectPasteTitle => 'Paste connection link';
+
+  @override
+  String get relayConnectPasteDescription =>
+      'Paste the one-time link shown by the daemon.';
+
+  @override
+  String get relayConnectDirectDescription =>
+      'Connect with a WebSocket address and bearer token.';
+
+  @override
+  String get relayConfirmTitle => 'Review daemon connection';
+
+  @override
+  String get relayConfirmDescription =>
+      'Confirm the daemon and relay before registering this device.';
+
+  @override
+  String get relayConfirmDaemon => 'Daemon ID';
+
+  @override
+  String get relayConfirmRelay => 'Relay server';
+
+  @override
+  String get relayConfirmExpires => 'Link expires';
+
+  @override
+  String get relayShare => 'Share';
+
+  @override
+  String get relayRefreshLink => 'Create a new link';
+
+  @override
+  String get relayEnableTitle => 'Connect this daemon through the relay';
+
+  @override
+  String get relayEnableDescription =>
+      'The daemon will open an outbound encrypted connection to the separate Tinyrack relay server so your other devices can reach it.';
+
+  @override
+  String get relayEnableAction => 'Enable relay connection';
+
+  @override
+  String get settingsCategoryConnection => 'Connections';
+
+  @override
   String get relayPairDescription =>
       'Paste the one-time link shown by the daemon. Its code and files stay end-to-end encrypted through the relay.';
 
@@ -736,6 +793,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relayPairScan => 'Scan QR code';
 
   @override
+  String get relayPairCameraUnavailable =>
+      'QR scanning is available on Android and iOS. Paste the connection link on this device instead.';
+
+  @override
+  String relayPairCameraError(String appDisplayName) {
+    return '$appDisplayName could not open the camera. Allow camera access in system settings, then try again.';
+  }
+
+  @override
+  String get relayPairCameraRetry => 'Try camera again';
+
+  @override
   String get relayPairQrSemantics =>
       'QR code for the one-time device connection link';
 
@@ -747,6 +816,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get relayPairExpired =>
       'This pairing link expired or was already used. Create a new link on the daemon.';
+
+  @override
+  String get relayPairFailed =>
+      'Could not connect this daemon. Create a new link on the daemon and try again.';
 
   @override
   String get relayAdvancedDirect => 'Advanced direct connection';

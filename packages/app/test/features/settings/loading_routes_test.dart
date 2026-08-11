@@ -105,7 +105,7 @@ void main() {
       final router = await _pumpPendingRoute(
         tester,
         api,
-        const DaemonDevicesRoute(hostId: 'server').location,
+        const DaemonConnectionsRoute(hostId: 'server').location,
       );
       addTearDown(router.dispose);
 

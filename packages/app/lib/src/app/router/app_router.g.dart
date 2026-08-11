@@ -22,9 +22,12 @@ List<RouteBase> get $appRoutes => [
   $skillSettingsRoute,
   $daemonSettingsRoute,
   $advancedSettingsRoute,
-  $newHostRoute,
+  $connectDaemonRoute,
+  $pairingLinkRoute,
+  $pairingScanRoute,
+  $pairOfferRoute,
   $advancedNewHostRoute,
-  $daemonDevicesRoute,
+  $daemonConnectionsRoute,
   $editHostRoute,
 ];
 
@@ -531,17 +534,99 @@ mixin $AdvancedSettingsRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $newHostRoute => GoRouteData.$route(
-  path: '/settings/daemons/new',
+RouteBase get $connectDaemonRoute => GoRouteData.$route(
+  path: '/connect',
   hasOverriddenOnExit: false,
-  factory: $NewHostRoute._fromState,
+  factory: $ConnectDaemonRoute._fromState,
 );
 
-mixin $NewHostRoute on GoRouteData {
-  static NewHostRoute _fromState(GoRouterState state) => const NewHostRoute();
+mixin $ConnectDaemonRoute on GoRouteData {
+  static ConnectDaemonRoute _fromState(GoRouterState state) =>
+      const ConnectDaemonRoute();
 
   @override
-  String get location => GoRouteData.$location('/settings/daemons/new');
+  String get location => GoRouteData.$location('/connect');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $pairingLinkRoute => GoRouteData.$route(
+  path: '/connect/link',
+  hasOverriddenOnExit: false,
+  factory: $PairingLinkRoute._fromState,
+);
+
+mixin $PairingLinkRoute on GoRouteData {
+  static PairingLinkRoute _fromState(GoRouterState state) =>
+      const PairingLinkRoute();
+
+  @override
+  String get location => GoRouteData.$location('/connect/link');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $pairingScanRoute => GoRouteData.$route(
+  path: '/connect/scan',
+  hasOverriddenOnExit: false,
+  factory: $PairingScanRoute._fromState,
+);
+
+mixin $PairingScanRoute on GoRouteData {
+  static PairingScanRoute _fromState(GoRouterState state) =>
+      const PairingScanRoute();
+
+  @override
+  String get location => GoRouteData.$location('/connect/scan');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $pairOfferRoute => GoRouteData.$route(
+  path: '/pair',
+  hasOverriddenOnExit: false,
+  factory: $PairOfferRoute._fromState,
+);
+
+mixin $PairOfferRoute on GoRouteData {
+  static PairOfferRoute _fromState(GoRouterState state) =>
+      const PairOfferRoute();
+
+  @override
+  String get location => GoRouteData.$location('/pair');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -558,7 +643,7 @@ mixin $NewHostRoute on GoRouteData {
 }
 
 RouteBase get $advancedNewHostRoute => GoRouteData.$route(
-  path: '/settings/daemons/new/direct',
+  path: '/connect/direct',
   hasOverriddenOnExit: false,
   factory: $AdvancedNewHostRoute._fromState,
 );
@@ -568,7 +653,7 @@ mixin $AdvancedNewHostRoute on GoRouteData {
       const AdvancedNewHostRoute();
 
   @override
-  String get location => GoRouteData.$location('/settings/daemons/new/direct');
+  String get location => GoRouteData.$location('/connect/direct');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -584,21 +669,21 @@ mixin $AdvancedNewHostRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $daemonDevicesRoute => GoRouteData.$route(
-  path: '/settings/daemons/:hostId/devices',
+RouteBase get $daemonConnectionsRoute => GoRouteData.$route(
+  path: '/settings/daemons/:hostId/connections',
   hasOverriddenOnExit: false,
-  factory: $DaemonDevicesRoute._fromState,
+  factory: $DaemonConnectionsRoute._fromState,
 );
 
-mixin $DaemonDevicesRoute on GoRouteData {
-  static DaemonDevicesRoute _fromState(GoRouterState state) =>
-      DaemonDevicesRoute(hostId: state.pathParameters['hostId']!);
+mixin $DaemonConnectionsRoute on GoRouteData {
+  static DaemonConnectionsRoute _fromState(GoRouterState state) =>
+      DaemonConnectionsRoute(hostId: state.pathParameters['hostId']!);
 
-  DaemonDevicesRoute get _self => this as DaemonDevicesRoute;
+  DaemonConnectionsRoute get _self => this as DaemonConnectionsRoute;
 
   @override
   String get location => GoRouteData.$location(
-    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/devices',
+    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/connections',
   );
 
   @override
