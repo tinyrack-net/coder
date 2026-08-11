@@ -122,6 +122,7 @@ final class _TinestTerminalViewState extends State<TinestTerminalView> {
         colors.info,
         colors.text,
       ]);
+    final codeStyle = TRTypography.resolve(context, TRTextVariant.code);
     final terminal = TerminalView(
       terminal: widget.terminal,
       controller: widget.controller,
@@ -140,11 +141,11 @@ final class _TinestTerminalViewState extends State<TinestTerminalView> {
         palette: palette,
       ),
       style: TerminalStyle(
-        fontFamily: TRTypography.code.fontFamily!,
-        fontSize: TRTypography.code.fontSize!,
-        height: TRTypography.code.height!,
-        fontWeight: TRTypography.code.fontWeight!,
-        letterSpacing: TRTypography.code.letterSpacing!,
+        fontFamily: codeStyle.fontFamily!,
+        fontSize: codeStyle.fontSize!,
+        height: codeStyle.height!,
+        fontWeight: codeStyle.fontWeight!,
+        letterSpacing: codeStyle.letterSpacing!,
       ),
       padding: const EdgeInsets.all(TRSpacing.small),
     );

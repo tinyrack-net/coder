@@ -159,6 +159,7 @@ Future<void> _openTerminalMenu(WidgetTester tester) async {
 Future<FakeTinestApi> _pumpTerminal(
   WidgetTester tester, {
   required TRContextMenuPresenter presenter,
+  TRUiDensity density = TRUiDensity.standard,
 }) async {
   final api = FakeTinestApi(
     workspaces: <WorkspaceDto>[_workspace],
@@ -194,6 +195,10 @@ Future<FakeTinestApi> _pumpTerminal(
           locale: testLocale,
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
+          builder: (context, child) => TRUiDensityScope(
+            density: density,
+            child: child!,
+          ),
           routerConfig: router,
         ),
       ),
@@ -340,6 +345,25 @@ void main() {
       expect(resize.terminalId, _terminal.id);
       expect(resize.columns, greaterThan(0));
       expect(resize.rows, greaterThan(0));
+    },
+    tags: const <String>['feature_test__terminal_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'comfortable density enlarges terminal code typography',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _pumpTerminal(
+        tester,
+        presenter: _RecordingPresenter(),
+        density: TRUiDensity.comfortable,
+      );
+
+      expect(
+        tester.widget<TerminalView>(find.byType(TerminalView)).style!.fontSize,
+        16,
+      );
     },
     tags: const <String>['feature_test__terminal_lifecycle__widget'],
   );

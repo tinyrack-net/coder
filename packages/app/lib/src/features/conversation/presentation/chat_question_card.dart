@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -181,7 +182,9 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
                       leading: _isAnswered(question)
                           ? Icon(
                               TinestIcons.check,
-                              size: TRControlMetrics.iconSizeOf(TRUiSize.md),
+                              size: TRControlMetrics.iconSizeOf(
+                                TinestUiDensity.defaultControlSize(context),
+                              ),
                             )
                           : null,
                     ),
