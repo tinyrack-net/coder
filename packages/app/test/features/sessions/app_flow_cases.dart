@@ -434,7 +434,8 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsOneWidget);
+      final tabSheet = find.byKey(const ValueKey('workspace-tab-sheet'));
+      expect(tabSheet, findsOneWidget);
       expect(
         find.byKey(const ValueKey('workspace-tab-row-session:one')),
         findsOneWidget,
@@ -449,6 +450,35 @@ void _registerSessionsAppFlows() {
         ),
         findsWidgets,
       );
+      final initialSheetHeight = tester.getSize(tabSheet).height;
+      final availableSheetHeight = MediaQuery.sizeOf(
+        tester.element(tabSheet),
+      ).height;
+      expect(
+        MediaQuery.disableAnimationsOf(tester.element(tabSheet)),
+        isFalse,
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text(testL10n.workspaceSwitchTab)),
+      );
+      await gesture.moveBy(
+        const Offset(0, -(TRSpacing.fourExtraLarge + TRSpacing.large)),
+      );
+      await tester.pump();
+      final draggedSheetHeight = tester.getSize(tabSheet).height;
+      expect(draggedSheetHeight, greaterThan(initialSheetHeight));
+      await tester.pump(TRMotion.slow);
+      await gesture.up();
+      await tester.pump();
+      final releasedSheetHeight = tester.getSize(tabSheet).height;
+      expect(releasedSheetHeight, greaterThanOrEqualTo(draggedSheetHeight));
+      expect(releasedSheetHeight, lessThan(availableSheetHeight));
+      await tester.pump(TRMotion.normal ~/ 2);
+      final animatedSheetHeight = tester.getSize(tabSheet).height;
+      expect(animatedSheetHeight, greaterThan(releasedSheetHeight));
+      expect(animatedSheetHeight, lessThan(availableSheetHeight));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(tabSheet).height, availableSheetHeight);
       await tester.tap(
         find.byKey(const ValueKey('workspace-tab-row-session:one')),
       );
