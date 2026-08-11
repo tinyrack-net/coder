@@ -11,6 +11,15 @@ enum TinestListRowSelectionAppearance {
   navigation,
 }
 
+/// Selects where a list row places its trailing content.
+enum TinestListRowTrailingLayout {
+  /// Keeps trailing content opposite the leading copy.
+  inline,
+
+  /// Places trailing content below the leading copy at the full row width.
+  below,
+}
+
 /// A Tinest content row composed exclusively from Tinyrack tokens.
 ///
 /// The row rings itself only while it holds the primary focus. A row reports
@@ -37,6 +46,7 @@ class TinestListRow extends StatefulWidget {
     this.subtitle,
     this.subtitleMaxLines,
     this.trailing,
+    this.trailingLayout = TinestListRowTrailingLayout.inline,
     this.unboundedSubtitle = false,
     super.key,
   });
@@ -52,6 +62,9 @@ class TinestListRow extends StatefulWidget {
 
   /// Optional trailing visual or action.
   final Widget? trailing;
+
+  /// Where [trailing] is placed relative to the row copy.
+  final TinestListRowTrailingLayout trailingLayout;
 
   /// Invoked when the row is activated.
   final VoidCallback? onTap;
@@ -158,52 +171,76 @@ class _TinestListRowState extends State<TinestListRow> {
       (false, true) => TRSpacing.extraSmall,
       (false, false) => TRSpacing.small,
     };
-    final content = Row(
-      crossAxisAlignment: widget.isThreeLine
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.center,
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.leading case final leading?) ...[
-          IconTheme.merge(
-            data: IconThemeData(color: colors.textMuted),
-            child: leading,
-          ),
-          const SizedBox(width: TRSpacing.small),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DefaultTextStyle.merge(
-                style: TRTypography.resolve(context, TRTextVariant.body),
-                child: widget.title,
-              ),
-              if (widget.subtitle case final subtitle?) ...[
-                const SizedBox(height: TRSpacing.extraSmall),
-                DefaultTextStyle.merge(
-                  style: TRTypography.resolve(
-                    context,
-                    TRTextVariant.bodySm,
-                  ).copyWith(color: colors.textMuted),
-                  maxLines: widget.unboundedSubtitle
-                      ? null
-                      : widget.subtitleMaxLines ?? (widget.isThreeLine ? 2 : 1),
-                  overflow: widget.unboundedSubtitle
-                      ? TextOverflow.clip
-                      : TextOverflow.ellipsis,
-                  child: subtitle,
-                ),
-              ],
-            ],
-          ),
+        DefaultTextStyle.merge(
+          style: TRTypography.resolve(context, TRTextVariant.body),
+          child: widget.title,
         ),
-        if (widget.trailing case final trailing?) ...[
-          const SizedBox(width: TRSpacing.small),
-          trailing,
+        if (widget.subtitle case final subtitle?) ...[
+          const SizedBox(height: TRSpacing.extraSmall),
+          DefaultTextStyle.merge(
+            style: TRTypography.resolve(
+              context,
+              TRTextVariant.bodySm,
+            ).copyWith(color: colors.textMuted),
+            maxLines: widget.unboundedSubtitle
+                ? null
+                : widget.subtitleMaxLines ?? (widget.isThreeLine ? 2 : 1),
+            overflow: widget.unboundedSubtitle
+                ? TextOverflow.clip
+                : TextOverflow.ellipsis,
+            child: subtitle,
+          ),
         ],
       ],
     );
+    final content = switch ((widget.trailingLayout, widget.trailing)) {
+      (TinestListRowTrailingLayout.below, final trailing?) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: widget.isThreeLine
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              if (widget.leading case final leading?) ...[
+                IconTheme.merge(
+                  data: IconThemeData(color: colors.textMuted),
+                  child: leading,
+                ),
+                const SizedBox(width: TRSpacing.small),
+              ],
+              Expanded(child: copy),
+            ],
+          ),
+          const SizedBox(height: TRSpacing.medium),
+          trailing,
+        ],
+      ),
+      _ => Row(
+        crossAxisAlignment: widget.isThreeLine
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
+        children: [
+          if (widget.leading case final leading?) ...[
+            IconTheme.merge(
+              data: IconThemeData(color: colors.textMuted),
+              child: leading,
+            ),
+            const SizedBox(width: TRSpacing.small),
+          ],
+          Expanded(child: copy),
+          if (widget.trailing case final trailing?) ...[
+            const SizedBox(width: TRSpacing.small),
+            trailing,
+          ],
+        ],
+      ),
+    };
 
     return Semantics(
       // A row that hands its focus to its control is not a control itself, so
