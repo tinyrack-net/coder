@@ -25,6 +25,66 @@ const Duration _eventTimeout = Duration(minutes: 1);
 
 void main() {
   test(
+    'daemon stop cancels and drains an active turn before closing storage',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-turn-shutdown-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'tinest-turn-shutdown-workspace-',
+      );
+      final provider = _ShutdownProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'shutdown-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'shutdown-token-0123456789abcdef012345',
+        ),
+        clientId: 'turn-shutdown-test',
+        clientKind: 'test',
+      );
+      addTearDown(() async {
+        await client.close();
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      final catalog = await client.registerWorkspace(
+        workspaceId: 'shutdown-workspace',
+        checkoutId: 'shutdown-checkout',
+        rootPath: workspace.path,
+        name: 'Shutdown',
+      );
+      final session = await client.createSession(
+        id: 'shutdown-session',
+        worktreeId: catalog.worktrees.single.id,
+        title: 'Shutdown session',
+        agentDefinitionId: 'tinest',
+        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+      );
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'shutdown-turn',
+        prompt: 'Wait until shutdown.',
+      );
+      await provider.started.future.timeout(_eventTimeout);
+
+      await handle.stop().timeout(_eventTimeout);
+
+      await provider.cancelled.future.timeout(_eventTimeout);
+    },
+  );
+
+  test(
     'daemon permission default survives a restart',
     () async {
       final home = await Directory.systemTemp.createTemp(
@@ -3502,6 +3562,28 @@ final class _TextProvider implements ModelProvider {
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Done.'),
     );
+  }
+}
+
+/// Holds a provider request open until daemon shutdown cancels its turn.
+final class _ShutdownProvider implements ModelProvider {
+  final Completer<void> started = Completer<void>();
+  final Completer<void> cancelled = Completer<void>();
+
+  @override
+  String get id => 'shutdown-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (!started.isCompleted) started.complete();
+    cancellation.onCancel(() {
+      if (!cancelled.isCompleted) cancelled.complete();
+    });
+    await cancelled.future;
+    cancellation.throwIfCancelled();
   }
 }
 

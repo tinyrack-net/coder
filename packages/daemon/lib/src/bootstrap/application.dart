@@ -785,6 +785,7 @@ abstract final class DaemonApplication {
         token: token,
         http: http,
         rpc: rpc,
+        turns: service,
         database: database,
         events: events,
         agentDefinitions: agentDefinitions,
@@ -819,6 +820,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._token,
     required this._http,
     required this._rpc,
+    required this._turns,
     required this._database,
     required this._events,
     required this._agentDefinitions,
@@ -843,6 +845,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final String _token;
   final HttpServer _http;
   final DaemonRpcServer _rpc;
+  final SessionTurnCoordinator _turns;
   final TinestDatabase _database;
   final StreamController<OutboundNotification> _events;
   final AgentDefinitionService _agentDefinitions;
@@ -878,13 +881,14 @@ class _LocalDaemonHandle implements DaemonHandle {
     _attachmentCleanup.cancel();
     _execSweep.cancel();
     _luaSweep.cancel();
-    await _execSessions.close();
-    await _luaCodeMode.close();
     for (final subscription in _notificationSubscriptions) {
       await subscription.cancel();
     }
     await _http.close(force: true);
     await _rpc.close();
+    await _turns.close();
+    await _execSessions.close();
+    await _luaCodeMode.close();
     await _terminals.close();
     await _relayTransport.close();
     await _relay.close();

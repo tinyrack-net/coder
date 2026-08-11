@@ -83,6 +83,10 @@ class SessionTurnCoordinator implements SessionTurnPort {
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
       <String, Completer<AgentRunResult>>{};
   final Set<String> _startingTurns = <String>{};
+  final Set<Future<void>> _runningTurns = <Future<void>>{};
+  Completer<void>? _startsDrained;
+  Future<void>? _closeFuture;
+  bool _closing = false;
 
   /// The collaboration layer, bound once from the composition root.
   MultiAgentService? multiAgent;
@@ -103,6 +107,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
     bool trackCompletion = false,
     bool internal = false,
   }) async {
+    if (_closing) throw StateError('Turn coordinator is closing.');
     if (!_startingTurns.add(sessionId)) {
       throw StateError('Agent already has a turn starting.');
     }
@@ -157,6 +162,10 @@ class SessionTurnCoordinator implements SessionTurnPort {
       }
     } finally {
       _startingTurns.remove(sessionId);
+      if (_closing && _startingTurns.isEmpty) {
+        _startsDrained?.complete();
+        _startsDrained = null;
+      }
     }
   }
 
@@ -337,41 +346,62 @@ class SessionTurnCoordinator implements SessionTurnPort {
     // Read per turn rather than per session: the worktree is a live checkout,
     // so a turn that follows an edit to AGENTS.md must see the edit.
     final projectDoc = await _projectDocs.load(workspaceRoot: worktree.path);
-    unawaited(
-      _run(
-        runner,
-        AgentRunRequest(
-          sessionId: sessionId,
-          turnId: turnId,
-          workspaceRoot: worktree.path,
-          prompt: prompt,
-          model: resolvedModel.modelId,
-          modelControls: agentModelControls(modelControls),
-          history: history,
-          attachments: turnAttachments,
-          safetyIdentifier: _safetyIdentifier,
-          sessionMode: agentSessionMode(session.mode),
-          toolSurfaceMode: turnTools.nestedTools.isEmpty
-              ? AgentToolSurfaceMode.direct
-              : AgentToolSurfaceMode.luaCode,
-          customSystemPrompt: _composeCustomPrompt(
-            definition.promptEnabled ? definition.systemPrompt : null,
-            multiAgent?.usageHintFor(session, definition),
-          ),
-          projectDoc: projectDoc?.render(),
-          toolPrompts: turnTools.promptFragments,
-          contextWindowTokens: resolvedModel.limits?.context,
-          // What the live window already holds, so a turn that starts on a
-          // full window compacts before it samples rather than failing.
-          priorUsage: ModelUsage(totalTokens: session.contextTokens),
-          internal: internal,
-          internalInstructions: () async => goals?.instructionsFor(sessionId),
+    late final Future<void> running;
+    running = _run(
+      runner,
+      AgentRunRequest(
+        sessionId: sessionId,
+        turnId: turnId,
+        workspaceRoot: worktree.path,
+        prompt: prompt,
+        model: resolvedModel.modelId,
+        modelControls: agentModelControls(modelControls),
+        history: history,
+        attachments: turnAttachments,
+        safetyIdentifier: _safetyIdentifier,
+        sessionMode: agentSessionMode(session.mode),
+        toolSurfaceMode: turnTools.nestedTools.isEmpty
+            ? AgentToolSurfaceMode.direct
+            : AgentToolSurfaceMode.luaCode,
+        customSystemPrompt: _composeCustomPrompt(
+          definition.promptEnabled ? definition.systemPrompt : null,
+          multiAgent?.usageHintFor(session, definition),
         ),
-        cancellation,
+        projectDoc: projectDoc?.render(),
+        toolPrompts: turnTools.promptFragments,
+        contextWindowTokens: resolvedModel.limits?.context,
+        // What the live window already holds, so a turn that starts on a
+        // full window compacts before it samples rather than failing.
+        priorUsage: ModelUsage(totalTokens: session.contextTokens),
+        internal: internal,
+        internalInstructions: () async => goals?.instructionsFor(sessionId),
       ),
-    );
+      cancellation,
+    ).whenComplete(() => _runningTurns.remove(running));
+    _runningTurns.add(running);
+    unawaited(running);
     onLaunched();
     return true;
+  }
+
+  /// Cancels and drains every turn before its repositories are closed.
+  Future<void> close() => _closeFuture ??= _close();
+
+  Future<void> _close() async {
+    _closing = true;
+    for (final cancellation in _activeTurns.values.toList()) {
+      cancellation.cancel();
+    }
+    if (_startingTurns.isNotEmpty) {
+      _startsDrained ??= Completer<void>();
+      await _startsDrained!.future;
+    }
+    for (final cancellation in _activeTurns.values.toList()) {
+      cancellation.cancel();
+    }
+    while (_runningTurns.isNotEmpty) {
+      await Future.wait(_runningTurns.toList());
+    }
   }
 
   String? _composeCustomPrompt(String? definitionPrompt, String? collabHint) {
