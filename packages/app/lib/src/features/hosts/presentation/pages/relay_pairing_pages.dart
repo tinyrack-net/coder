@@ -10,6 +10,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/pairing_intent.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -525,6 +526,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                 title: TRText.inherit(runtime?.label ?? widget.hostId),
                 description: TRText.inherit(hostStatusText(l10n, runtime)),
                 wrapsDescription: true,
+                controlLayout: SettingsControlLayout.responsive,
                 control: pathLabel == null && profile == null
                     ? null
                     : Row(
@@ -668,6 +670,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
               child: SettingsRow(
                 leading: const Icon(TinestIcons.computer),
                 title: TRText.inherit(device.name),
+                controlLayout: SettingsControlLayout.responsive,
                 control: TRButton(
                   appearance: TRAppearance.ghost,
                   onPressed: _busy ? null : () => _revoke(device),
@@ -738,9 +741,9 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
     );
     if (MediaQuery.sizeOf(context).width <
         TinestLayoutMetrics.compactBreakpoint) {
-      await showTRDrawer<void>(
+      await showTinestBottomSheet<void>(
         context: context,
-        builder: (context) => TRDrawer(
+        builder: (context) => TinestBottomSheet(
           semanticLabel: l10n.relayAdvancedRelayEndpointChange,
           title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
           description: TRText.inherit(l10n.relayAdvancedRelayEndpointHelp),

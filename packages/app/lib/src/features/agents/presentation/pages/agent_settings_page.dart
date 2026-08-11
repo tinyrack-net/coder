@@ -445,6 +445,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                         description: TRText.inherit(
                           _modelId.text.isEmpty ? '—' : _modelId.text,
                         ),
+                        controlLayout: SettingsControlLayout.responsive,
                         control: modelBlocked
                             ? Icon(
                                 TinestIcons.lock,
@@ -475,6 +476,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                           : permissionModeDescription(l10n, _permissionMode!),
                     ),
                     unboundedDescription: true,
+                    controlLayout: SettingsControlLayout.responsive,
                     control: TRButton(
                       key: const ValueKey<String>('agent-permission-change'),
                       appearance: TRAppearance.outline,

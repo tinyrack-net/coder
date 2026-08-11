@@ -41,12 +41,12 @@ dependencies:
   termworld:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git
-      ref: 0367275a59b11762ad73efcc812b8daea0d34644
+      ref: 612f10d133999cd98a9de69c44743f2195c9dae3
       path: packages/termworld
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: 6ccdf88cacebddf1285c2d0aa602a489922e0886
+      ref: c7ae71ea2b6aee29d8eef76b3240d5f008088922
       path: packages/ui_flutter
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2

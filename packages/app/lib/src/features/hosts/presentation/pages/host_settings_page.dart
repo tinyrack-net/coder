@@ -171,6 +171,7 @@ class AppSettingsPage extends ConsumerWidget {
                 key: const ValueKey<String>('embedded-daemon-exposure'),
                 title: TRText.inherit(l10n.appSettingsExposure),
                 subtitle: TRText.inherit(l10n.appSettingsExposureSubtitle),
+                wrapsSubtitle: true,
                 value:
                     registry.settings.embeddedDaemonExposure ==
                     EmbeddedDaemonExposure.allInterfaces,
@@ -336,38 +337,43 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
       title: TRText.inherit(l10n.appSettingsEmbeddedPort),
       description: TRText.inherit(l10n.appSettingsEmbeddedPortHelp),
       unboundedDescription: true,
-      control: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: TRMeasurements.measureSm,
-            child: Semantics(
-              container: true,
-              label: l10n.appSettingsEmbeddedPort,
-              child: TRTextField(
-                key: const ValueKey<String>('embedded-daemon-port'),
-                controller: _draft,
-                enabled: enabled,
-                errorText: _invalid
-                    ? l10n.appSettingsEmbeddedPortInvalid
-                    : null,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) {
-                  if (changed && enabled) unawaited(_apply(port));
-                },
-              ),
+      controlLayout: SettingsControlLayout.responsive,
+      control: LayoutBuilder(
+        builder: (context, constraints) {
+          final field = Semantics(
+            container: true,
+            label: l10n.appSettingsEmbeddedPort,
+            child: TRTextField(
+              key: const ValueKey<String>('embedded-daemon-port'),
+              controller: _draft,
+              enabled: enabled,
+              errorText: _invalid ? l10n.appSettingsEmbeddedPortInvalid : null,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) {
+                if (changed && enabled) unawaited(_apply(port));
+              },
             ),
-          ),
-          const SizedBox(width: TRSpacing.small),
-          TRButton(
-            key: const ValueKey<String>('embedded-daemon-port-apply'),
-            intent: TRIntent.primary,
-            onPressed: changed && enabled ? () => _apply(port) : null,
-            child: TRText.inherit(l10n.appSettingsEmbeddedPortApply),
-          ),
-        ],
+          );
+          final bounded = constraints.hasBoundedWidth;
+          return Row(
+            mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (bounded)
+                Expanded(child: field)
+              else
+                SizedBox(width: TRMeasurements.measureSm, child: field),
+              const SizedBox(width: TRSpacing.small),
+              TRButton(
+                key: const ValueKey<String>('embedded-daemon-port-apply'),
+                intent: TRIntent.primary,
+                onPressed: changed && enabled ? () => _apply(port) : null,
+                child: TRText.inherit(l10n.appSettingsEmbeddedPortApply),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -421,6 +427,7 @@ class _RemoteHostCard extends ConsumerWidget {
             title: TRText.inherit(profile.label),
             description: TRText.inherit(hostStatusText(l10n, runtime)),
             wrapsDescription: true,
+            controlLayout: SettingsControlLayout.responsive,
             control: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
