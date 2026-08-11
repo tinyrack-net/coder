@@ -9,6 +9,13 @@ abstract final class CoderLayoutMetrics {
   /// Maximum width of a settings page's primary content column.
   static const double settingsContentMaxWidth = compactBreakpoint;
 
+  /// Maximum width of a session's conversation timeline and composer column.
+  ///
+  /// The timeline owns an [TRSpacing.extraLarge] inset on each side, leaving
+  /// two [TRMeasurements.measureXl] measures for the readable message body.
+  static const double conversationContentMaxWidth =
+      TRMeasurements.measureXl * 2 + TRSpacing.extraLarge * 2;
+
   /// Maximum width of a compact settings empty-state message.
   static const double settingsEmptyStateMaxWidth =
       TRMeasurements.measureXl +
