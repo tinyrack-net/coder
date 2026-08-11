@@ -123,7 +123,6 @@
   "workspaceSplitRight": "右に分割",
   "workspaceSplitDown": "下に分割",
   "workspaceResizePanes": "ペインのサイズを変更",
-  "workspaceSwitchTab": "タブを切り替え",
   "workspaceMoveTabToPane": "アクティブなタブを別のペインに移動",
   "workspaceCloseTab": "タブを閉じる",
   "workspaceNewWorkspace": "新しいワークスペース",

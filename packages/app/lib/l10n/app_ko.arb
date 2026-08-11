@@ -123,7 +123,6 @@
   "workspaceSplitRight": "오른쪽으로 분할",
   "workspaceSplitDown": "아래로 분할",
   "workspaceResizePanes": "Pane 크기 조절",
-  "workspaceSwitchTab": "탭 전환",
   "workspaceMoveTabToPane": "활성 탭을 다른 pane으로 이동",
   "workspaceCloseTab": "탭 닫기",
   "workspaceNewWorkspace": "New workspace",

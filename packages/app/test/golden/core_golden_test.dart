@@ -1287,21 +1287,14 @@ void main() {
 
   unawaited(
     goldenTest(
-      'mobile workspace presents all pane tabs in a sheet',
-      fileName: 'workspace_mobile_tab_sheet',
+      'mobile workspace presents all pane tabs in a scrolling strip',
+      fileName: 'workspace_mobile_tab_strip',
       constraints: const BoxConstraints.tightFor(width: 390, height: 760),
       builder: () => SizedBox(
         width: 390,
         height: 760,
         child: _sessionComposer(ThemeMode.dark, split: true),
       ),
-      whilePerforming: (tester) async {
-        await tester.tap(
-          find.byKey(const ValueKey<String>('workspace-mobile-tab-trigger')),
-        );
-        await tester.pumpAndSettle();
-        return null;
-      },
     ),
   );
 

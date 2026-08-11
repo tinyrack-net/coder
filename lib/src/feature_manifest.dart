@@ -579,7 +579,7 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'session.tabs',
     description:
         'Opens, closes, restores, and moves tabs through resizable desktop '
-        'pane trees and a mobile all-tabs sheet.',
+        'pane trees and a horizontally scrolling mobile tab strip.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
@@ -590,7 +590,7 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
         id: 'open_switch_close_restore',
         description:
             'Splits, resizes, moves, closes, restores, and switches tabs '
-            'through desktop panes and the mobile sheet.',
+            'through desktop panes and the mobile tab strip.',
         surfaces: _allSurfaces,
       ),
     ],

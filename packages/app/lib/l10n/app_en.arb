@@ -491,10 +491,6 @@
   "@workspaceResizePanes": {
     "description": "Accessible label for a draggable pane separator."
   },
-  "workspaceSwitchTab": "Switch tab",
-  "@workspaceSwitchTab": {
-    "description": "Title of the mobile sheet listing every open tab."
-  },
   "workspaceMoveTabToPane": "Move active tab to pane",
   "@workspaceMoveTabToPane": {
     "description": "Moves the active tab to another pane without dragging."
