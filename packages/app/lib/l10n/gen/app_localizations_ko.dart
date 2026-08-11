@@ -700,6 +700,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayPairTitle => '기기 연결';
 
   @override
+  String get relayPairDeviceDescription =>
+      'QR 코드를 스캔하거나 링크를 복사해 다른 기기를 이 daemon에 연결합니다.';
+
+  @override
+  String get relayPairDialogDescription =>
+      '다른 기기에서 QR 코드를 스캔하거나 아래 연결 링크를 복사하세요.';
+
+  @override
   String get relayConnectDaemonTitle => 'Daemon 연결';
 
   @override
@@ -798,7 +806,17 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 daemon을 연결하지 못했습니다. daemon에서 새 링크를 만든 뒤 다시 시도하세요.';
 
   @override
-  String get relayAdvancedDirect => '고급 직접 연결';
+  String get relayAdvancedDirect => '직접 연결';
+
+  @override
+  String get relayAdvancedRelayEndpoint => '릴레이 서버 주소';
+
+  @override
+  String get relayAdvancedRelayEndpointChange => '릴레이 서버 주소 변경';
+
+  @override
+  String get relayAdvancedRelayEndpointHelp =>
+      '기본으로 공식 릴레이를 사용하며, self-hosted WebSocket endpoint로 변경할 수 있습니다.';
 
   @override
   String get relayDevicesTitle => '연결된 기기';

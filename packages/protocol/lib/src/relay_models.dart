@@ -162,6 +162,22 @@ final class RelaySetEnabledParamsDto {
   Map<String, dynamic> toJson() => <String, dynamic>{'enabled': enabled};
 }
 
+/// Parameters for changing the daemon's relay endpoint.
+final class RelaySetEndpointParamsDto {
+  /// Creates relay endpoint parameters.
+  const RelaySetEndpointParamsDto({required this.endpoint});
+
+  /// Decodes relay endpoint parameters.
+  factory RelaySetEndpointParamsDto.fromJson(Map<String, dynamic> json) =>
+      RelaySetEndpointParamsDto(endpoint: json['endpoint']! as String);
+
+  /// Desired relay WebSocket endpoint.
+  final String endpoint;
+
+  /// Encodes relay endpoint parameters.
+  Map<String, dynamic> toJson() => <String, dynamic>{'endpoint': endpoint};
+}
+
 /// Parameters for revoking one approved device.
 final class RelayRevokeDeviceParamsDto {
   /// Creates device revocation parameters.

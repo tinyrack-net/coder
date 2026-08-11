@@ -14,6 +14,11 @@ List<RpcBindingDescriptor> relayRpcBindings(RelayControlService relay) =>
         (params, _) async =>
             relayStatusToDto(await relay.setEnabled(enabled: params.enabled)),
       ),
+      RpcBinding<RelaySetEndpointParamsDto, RelayStatusDto>(
+        relaySetEndpointProcedure,
+        (params, _) async =>
+            relayStatusToDto(await relay.setEndpoint(params.endpoint)),
+      ),
       RpcBinding<RelayEmptyParamsDto, RelayPairingOfferDto>(
         relayCreateOfferProcedure,
         (_, _) async {

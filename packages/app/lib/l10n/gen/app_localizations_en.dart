@@ -720,6 +720,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relayPairTitle => 'Connect a device';
 
   @override
+  String get relayPairDeviceDescription =>
+      'Scan a QR code or copy a link to connect your other device to this daemon.';
+
+  @override
+  String get relayPairDialogDescription =>
+      'Scan this QR code on your other device, or copy the connection link below.';
+
+  @override
   String get relayConnectDaemonTitle => 'Connect a daemon';
 
   @override
@@ -822,7 +830,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not connect this daemon. Create a new link on the daemon and try again.';
 
   @override
-  String get relayAdvancedDirect => 'Advanced direct connection';
+  String get relayAdvancedDirect => 'Direct connection';
+
+  @override
+  String get relayAdvancedRelayEndpoint => 'Relay server address';
+
+  @override
+  String get relayAdvancedRelayEndpointChange => 'Change relay server address';
+
+  @override
+  String get relayAdvancedRelayEndpointHelp =>
+      'Use the official relay by default, or enter a self-hosted WebSocket endpoint.';
 
   @override
   String get relayDevicesTitle => 'Connected devices';

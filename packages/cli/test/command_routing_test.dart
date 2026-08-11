@@ -471,7 +471,7 @@ final class _FakeClient
   RelayStatusDto get _relayStatus => RelayStatusDto(
     enabled: relayEnabled,
     connected: relayEnabled,
-    endpoint: 'wss://relay.tinyrack.net/v1/ws',
+    endpoint: 'wss://relay.coder.tinyrack.net/v1/ws',
     serverId: 'server-1',
   );
 

@@ -5,6 +5,13 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
+  test('relay defaults to the official Coder endpoint', () {
+    expect(
+      const RelayDaemonConfig().endpoint,
+      Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+    );
+  });
+
   test('config isolate serialization and copy preserve explicit values', () {
     final config = DaemonConfig(
       homeDirectory: '/state',

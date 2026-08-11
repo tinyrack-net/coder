@@ -486,6 +486,9 @@ abstract interface class RelayApi {
   /// Enables or disables outbound relay operation.
   Future<RelayStatusDto> setRelayEnabled({required bool enabled});
 
+  /// Changes the persisted relay endpoint and reconnects when enabled.
+  Future<RelayStatusDto> setRelayEndpoint(String endpoint);
+
   /// Creates a ten-minute, one-time pairing offer.
   Future<RelayPairingOfferDto> createRelayPairingOffer();
 

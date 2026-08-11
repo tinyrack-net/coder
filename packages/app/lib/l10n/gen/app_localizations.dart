@@ -1366,6 +1366,18 @@ abstract class AppLocalizations {
   /// **'Connect a device'**
   String get relayPairTitle;
 
+  /// No description provided for @relayPairDeviceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a QR code or copy a link to connect your other device to this daemon.'**
+  String get relayPairDeviceDescription;
+
+  /// No description provided for @relayPairDialogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code on your other device, or copy the connection link below.'**
+  String get relayPairDialogDescription;
+
   /// No description provided for @relayConnectDaemonTitle.
   ///
   /// In en, this message translates to:
@@ -1543,8 +1555,26 @@ abstract class AppLocalizations {
   /// No description provided for @relayAdvancedDirect.
   ///
   /// In en, this message translates to:
-  /// **'Advanced direct connection'**
+  /// **'Direct connection'**
   String get relayAdvancedDirect;
+
+  /// No description provided for @relayAdvancedRelayEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay server address'**
+  String get relayAdvancedRelayEndpoint;
+
+  /// No description provided for @relayAdvancedRelayEndpointChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change relay server address'**
+  String get relayAdvancedRelayEndpointChange;
+
+  /// No description provided for @relayAdvancedRelayEndpointHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the official relay by default, or enter a self-hosted WebSocket endpoint.'**
+  String get relayAdvancedRelayEndpointHelp;
 
   /// No description provided for @relayDevicesTitle.
   ///

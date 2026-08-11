@@ -11,6 +11,7 @@ void main() {
     'control service publishes activation and connectivity transitions',
     () async {
       final applied = <bool>[];
+      final endpoints = <Uri>[];
       final devices = MemoryRelayDeviceRepository();
       final pairing = RelayPairingService(
         serverId: 'daemon-1',
@@ -27,6 +28,7 @@ void main() {
         serverId: 'daemon-1',
         pairing: pairing,
         applyEnabled: ({required enabled}) async => applied.add(enabled),
+        applyEndpoint: (endpoint) async => endpoints.add(endpoint),
       );
       final updates = <RelayStatus>[];
       final subscription = service.updates.listen(updates.add);
@@ -42,6 +44,17 @@ void main() {
       expect(service.status.serverId, 'daemon-1');
       expect(applied, <bool>[true]);
       expect(updates, hasLength(2));
+
+      final endpointStatus = await service.setEndpoint(
+        'wss://self-hosted.example/v1/ws',
+      );
+      expect(endpointStatus.endpoint, 'wss://self-hosted.example/v1/ws');
+      expect(pairing.relayUri, Uri.parse(endpointStatus.endpoint));
+      expect(endpoints, <Uri>[Uri.parse(endpointStatus.endpoint)]);
+      await expectLater(
+        service.setEndpoint('https://not-a-websocket.example'),
+        throwsFormatException,
+      );
 
       final offer = service.createOffer();
       expect(offer.url, startsWith('https://coder.tinyrack.net/pair#offer='));
@@ -61,6 +74,17 @@ void main() {
       expect(listed.registeredAt, DateTime.utc(2026, 8, 7));
       expect(listed.lastConnectedAt, DateTime.utc(2026, 8, 8));
       final bindings = relayRpcBindings(service);
+      final endpointResult = await bindings
+          .singleWhere(
+            (item) => item.procedure.name == relaySetEndpointProcedure.name,
+          )
+          .invoke(
+            const <String, dynamic>{
+              'endpoint': 'wss://second-relay.example/v1/ws',
+            },
+            RpcConnectionContext(),
+          );
+      expect(endpointResult['endpoint'], 'wss://second-relay.example/v1/ws');
       final listResult = await bindings
           .singleWhere(
             (item) => item.procedure.name == relayListDevicesProcedure.name,
@@ -81,6 +105,7 @@ void main() {
       await subscription.cancel();
       await service.close();
     },
+    tags: const <String>['feature_test__daemon_relay__unit'],
   );
 }
 

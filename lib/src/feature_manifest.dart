@@ -110,6 +110,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     apiMethods: <String>[
       'relay.getRelayStatus',
       'relay.setRelayEnabled',
+      'relay.setRelayEndpoint',
       'relay.createRelayPairingOffer',
       'relay.listRelayDevices',
       'relay.revokeRelayDevice',

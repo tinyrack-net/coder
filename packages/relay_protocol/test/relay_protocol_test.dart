@@ -8,7 +8,7 @@ void main() {
     test('round-trips through a fragment without leaking into the query', () {
       final offer = RelayPairingOffer(
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
         daemonPublicKey: List<int>.generate(32, (index) => index),
         offerId: 'offer-1',
         secret: List<int>.generate(32, (index) => 255 - index),
@@ -26,7 +26,7 @@ void main() {
         () => RelayPairingOffer.fromJson(<String, Object?>{
           'v': 1,
           'serverId': 'daemon-1',
-          'relayUri': 'wss://relay.tinyrack.net/v1/ws',
+          'relayUri': 'wss://relay.coder.tinyrack.net/v1/ws',
           'daemonPublicKey': base64Url.encode(const <int>[1]),
           'offerId': 'offer-1',
           'secret': base64Url.encode(const <int>[2]),

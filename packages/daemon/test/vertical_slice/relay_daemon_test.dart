@@ -31,12 +31,22 @@ void main() {
           (await client.setRelayEnabled(enabled: true)).enabled,
           isTrue,
         );
+        final changed = await client.setRelayEndpoint(
+          'wss://self-hosted.example/v1/ws',
+        );
+        expect(changed.endpoint, 'wss://self-hosted.example/v1/ws');
 
         await client.close();
         await handle.stop();
         handle = await DaemonApplication.start(config);
         client = await _connect(handle);
-        expect((await client.getRelayStatus()).enabled, isTrue);
+        final restarted = await client.getRelayStatus();
+        expect(restarted.enabled, isTrue);
+        expect(restarted.endpoint, 'wss://self-hosted.example/v1/ws');
+        final restartedOffer = RelayPairingOffer.parseUrl(
+          Uri.parse((await client.createRelayPairingOffer()).url),
+        );
+        expect(restartedOffer.relayUri, Uri.parse(restarted.endpoint));
       } finally {
         await client.close();
         await handle.stop();

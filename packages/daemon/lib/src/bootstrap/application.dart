@@ -265,12 +265,20 @@ abstract final class DaemonApplication {
       final relayIdentity = await RelayIdentity.fromSeed(relayIdentitySeed);
       final storedRelayEnabled =
           await database.settingsDao.getValue('relay.enabled') == 'true';
+      final storedRelayEndpoint = await database.settingsDao.getValue(
+        'relay.endpoint',
+      );
+      final relayEndpoint =
+          config.relay.endpointOverride ??
+          (storedRelayEndpoint == null
+              ? config.relay.endpoint
+              : Uri.parse(storedRelayEndpoint));
       DaemonRpcServer? relayRpcSessions;
       DaemonRelayTransport? relayTransport;
       final relayPairing = RelayPairingService(
         ids: effectiveIds,
         serverId: serverId,
-        relayUri: config.relay.endpoint,
+        relayUri: relayEndpoint,
         daemonIdentityPublicKey: relayIdentity.publicKey,
         devices: SettingsRelayDeviceRepository(database.settingsDao),
         clock: effectiveClock,
@@ -281,7 +289,7 @@ abstract final class DaemonApplication {
       );
       final relay = RelayControlService(
         enabled: config.relay.enabled || storedRelayEnabled,
-        endpoint: config.relay.endpoint,
+        endpoint: relayEndpoint,
         serverId: serverId,
         pairing: relayPairing,
         applyEnabled: ({required enabled}) async {
@@ -294,6 +302,13 @@ abstract final class DaemonApplication {
           } else {
             await relayTransport?.stop();
           }
+        },
+        applyEndpoint: (endpoint) async {
+          await relayTransport?.setEndpoint(endpoint);
+          await database.settingsDao.setValue(
+            'relay.endpoint',
+            endpoint.toString(),
+          );
         },
       );
       final events = StreamController<OutboundNotification>.broadcast(
@@ -740,7 +755,7 @@ abstract final class DaemonApplication {
       relayRpcSessions = rpc;
       relayTransport = DaemonRelayTransport(
         serverId: serverId,
-        endpoint: config.relay.endpoint,
+        endpoint: relayEndpoint,
         tlsPolicy: config.relay.tlsPolicy,
         identity: relayIdentity,
         pairing: relayPairing,

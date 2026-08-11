@@ -1462,6 +1462,12 @@ class CoderClient
   );
 
   @override
+  Future<RelayStatusDto> setRelayEndpoint(String endpoint) => _call(
+    relaySetEndpointProcedure,
+    RelaySetEndpointParamsDto(endpoint: endpoint),
+  );
+
+  @override
   Future<RelayPairingOfferDto> createRelayPairingOffer() =>
       _call(relayCreateOfferProcedure, const RelayEmptyParamsDto());
 

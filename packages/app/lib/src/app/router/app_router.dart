@@ -418,7 +418,10 @@ class DaemonConnectionsRoute extends GoRouteData with $DaemonConnectionsRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      DaemonConnectionsPage(hostId: hostId);
+      UnifiedSettingsPage(
+        category: SettingsCategory.connection,
+        hostId: hostId,
+      );
 }
 
 @TypedGoRoute<EditHostRoute>(path: '/settings/daemons/:hostId')

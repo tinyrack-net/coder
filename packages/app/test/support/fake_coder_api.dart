@@ -143,6 +143,7 @@ final class FakeCoderApi
     this.relayPairingOffer,
     List<RelayDeviceDto>? relayDevices,
     this.relayEnabled = false,
+    this.relayEndpoint = 'wss://relay.coder.tinyrack.net/v1/ws',
     this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
@@ -218,6 +219,9 @@ final class FakeCoderApi
 
   /// Current relay activation state.
   bool relayEnabled;
+
+  /// Current relay endpoint state.
+  String relayEndpoint;
 
   /// Error thrown once by the next explicit provider catalog refresh.
   CoderClientException? catalogRefreshError;
@@ -735,7 +739,7 @@ final class FakeCoderApi
   Future<RelayStatusDto> getRelayStatus() async => RelayStatusDto(
     enabled: relayEnabled,
     connected: false,
-    endpoint: 'wss://relay.tinyrack.net/v1/ws',
+    endpoint: relayEndpoint,
     serverId: serverInfo.serverId,
   );
 
@@ -745,7 +749,18 @@ final class FakeCoderApi
     return RelayStatusDto(
       enabled: enabled,
       connected: false,
-      endpoint: 'wss://relay.tinyrack.net/v1/ws',
+      endpoint: relayEndpoint,
+      serverId: serverInfo.serverId,
+    );
+  }
+
+  @override
+  Future<RelayStatusDto> setRelayEndpoint(String endpoint) async {
+    relayEndpoint = endpoint;
+    return RelayStatusDto(
+      enabled: relayEnabled,
+      connected: false,
+      endpoint: endpoint,
       serverId: serverInfo.serverId,
     );
   }

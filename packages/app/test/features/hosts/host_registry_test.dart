@@ -1370,7 +1370,7 @@ void main() {
         id: 'relay',
         credentialKey: 'relay-secret',
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       );
       final profile = RemoteDaemonProfile(
@@ -1679,7 +1679,7 @@ final class _Pairer implements HostRelayPairer {
         id: connectionId,
         credentialKey: credentialKey,
         serverId: 'relay-daemon',
-        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       ),
       credential: RelayHostCredential(

@@ -12,7 +12,7 @@ void main() {
     id: 'relay',
     credentialKey: 'relay-secret',
     serverId: 'daemon-1',
-    relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+    relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
     daemonIdentityPublicKey: List<int>.filled(32, 1),
   );
 

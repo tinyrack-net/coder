@@ -71,6 +71,13 @@ void main() {
       expect(decodedStatus.connected, isFalse);
       expect(decodedStatus.endpoint, status.endpoint);
       expect(decodedStatus.serverId, status.serverId);
+      const endpoint = RelaySetEndpointParamsDto(
+        endpoint: 'wss://self-hosted.example/v1/ws',
+      );
+      expect(
+        RelaySetEndpointParamsDto.fromJson(endpoint.toJson()).endpoint,
+        endpoint.endpoint,
+      );
 
       final offer = RelayPairingOfferDto(
         url: 'https://coder.example/pair#offer=test',
@@ -116,6 +123,7 @@ void main() {
         throwsFormatException,
       );
     },
+    tags: const <String>['feature_test__daemon_relay__contract'],
   );
 
   test(

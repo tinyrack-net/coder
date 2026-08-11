@@ -50,7 +50,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
-      final directConnection = find.text('고급 직접 연결');
+      final directConnection = find.text('직접 연결');
       await tester.ensureVisible(directConnection);
       await tester.pumpAndSettle();
       await tester.tap(directConnection);
