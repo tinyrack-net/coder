@@ -22,6 +22,56 @@ import '../../support/localization.dart';
 
 void main() {
   testWidgets(
+    'daemon connection methods share one card beneath plain guidance',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(
+        TinestApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _PairClients(
+              FakeTinestApi(serverInfo: _serverInfo('relay-server')),
+            ),
+            clientKind: 'phone',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
+      await tester.pumpAndSettle();
+      debugDefaultTargetPlatformOverride = null;
+
+      const description =
+          'Daemon에 연결할 방법을 선택하세요. 릴레이 링크에서도 daemon 트래픽은 '
+          '종단 간 암호화됩니다.';
+      final section = find.byType(SettingsSection);
+      final guidance = tester.widget<TRText>(
+        find.widgetWithText(TRText, description),
+      );
+      expect(guidance.variant, TRTextVariant.bodySm);
+      expect(guidance.color, TRTextColor.muted);
+      expect(find.byType(TRAlert), findsNothing);
+      expect(
+        find.descendant(of: section, matching: find.byType(TRCard)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: section, matching: find.byType(TRSeparator)),
+        findsNWidgets(2),
+      );
+    },
+    tags: const <String>['feature_test__daemon_relay__widget'],
+  );
+
+  testWidgets(
     'QR pairing validates and reviews an offer before connecting',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
