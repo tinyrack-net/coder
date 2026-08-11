@@ -1528,6 +1528,7 @@ class SessionComposer extends StatefulWidget {
     this.onQueuedEdit,
     this.onQueuedSendNow,
     this.onSubmitAndInterrupt,
+    this.onStop,
     this.onModeToggled,
     this.header,
     this.hint,
@@ -1595,6 +1596,12 @@ class SessionComposer extends StatefulWidget {
   /// Stops the running turn and sends the composed prompt at once.
   final FutureOr<void> Function(ComposerSubmission submission)?
   onSubmitAndInterrupt;
+
+  /// Stops the running turn, keeping whatever it already produced.
+  ///
+  /// Null on a composer that owns no session, which is what the draft and
+  /// new-workspace composers are.
+  final FutureOr<void> Function()? onStop;
 
   /// Cycles the collaboration mode, mirroring the Shift+Tab shortcut.
   final VoidCallback? onModeToggled;
@@ -1771,6 +1778,45 @@ class _SessionComposerState extends State<SessionComposer> {
     return handler(invocation);
   }
 
+  /// The trailing action: stop a running turn, queue ahead of it, or send.
+  ///
+  /// Stopping is the default over a running turn because it is what an idle
+  /// composer is for at that moment. Once something is typed the prompt itself
+  /// becomes the intent, so the button goes back to queueing it — and keeps the
+  /// send glyph, since from the keyboard's point of view that is still sending.
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n,
+    TextEditingValue value,
+    bool queueing,
+  ) {
+    final composing = value.text.trim().isNotEmpty || _attachments.isNotEmpty;
+    final onStop = widget.onStop;
+    if (widget.busy && !composing && onStop != null) {
+      return TRTooltip(
+        message: l10n.commonStop,
+        child: TRIconButton(
+          key: const ValueKey('session-composer-stop'),
+          uiSize: TRUiSize.sm,
+          onPressed: () => unawaited(Future<void>.sync(onStop)),
+          icon: const Icon(CoderIcons.stop),
+          label: l10n.commonStop,
+        ),
+      );
+    }
+    return TRTooltip(
+      message: queueing ? l10n.composerQueueTooltip : l10n.composerSendLabel,
+      child: TRIconButton(
+        key: const ValueKey('session-composer-send'),
+        intent: TRIntent.primary,
+        uiSize: TRUiSize.sm,
+        loading: _submitting,
+        onPressed: widget.enabled ? () => unawaited(_runDefaultAction()) : null,
+        icon: const Icon(CoderIcons.send),
+        label: queueing ? l10n.composerQueueLabel : l10n.composerSendLabel,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => _buildContent(
@@ -1917,25 +1963,12 @@ class _SessionComposerState extends State<SessionComposer> {
                             onLoadProviderUsage: widget.onLoadProviderUsage,
                           ),
                         if (compactSettings) widget.bar.asCompact(),
-                        TRTooltip(
-                          message: queueing
-                              ? l10n.composerQueueTooltip
-                              : l10n.composerSendLabel,
-                          child: TRIconButton(
-                            key: const ValueKey('session-composer-send'),
-                            intent: TRIntent.primary,
-                            uiSize: TRUiSize.sm,
-                            loading: _submitting,
-                            onPressed: widget.enabled
-                                ? () => unawaited(_runDefaultAction())
-                                : null,
-                            icon: Icon(
-                              queueing ? CoderIcons.queue : CoderIcons.send,
-                            ),
-                            label: queueing
-                                ? l10n.composerQueueLabel
-                                : l10n.composerSendLabel,
-                          ),
+                        // Emptiness decides between stopping and queueing, and
+                        // plain typing does not rebuild the composer.
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _controller,
+                          builder: (context, value, _) =>
+                              _buildPrimaryAction(l10n, value, queueing),
                         ),
                       ],
                     ),

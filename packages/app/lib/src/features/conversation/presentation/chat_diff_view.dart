@@ -58,14 +58,12 @@ class ChatDiffView extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(TRSpacing.small),
-        // Selection spans the whole hunk rather than a single row, so a user
-        // can copy a run of diff lines in one drag.
-        child: SelectionArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: rows,
-          ),
+        // No selection host of its own: the enclosing card owns one, so a drag
+        // spans the whole hunk and the text around it rather than a single row.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: rows,
         ),
       ),
     );

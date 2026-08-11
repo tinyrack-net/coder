@@ -431,6 +431,7 @@
   "chatEmptyExample": "예) 테스트를 실행하고 실패 원인을 고쳐줘",
   "chatNoticeCancelled": "중지됨",
   "chatNoticeFailed": "실패 · {message}",
+  "chatCopyResponse": "응답 복사",
   "chatMoreLines": "… {count}줄 더",
   "chatApprovalRequired": "승인 필요 · {tool}",
   "chatApprovalDeny": "거부",

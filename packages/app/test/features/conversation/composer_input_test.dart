@@ -27,6 +27,7 @@ import '../../support/localization.dart';
 void main() {
   const inputKey = ValueKey<String>('session-composer-input');
   const sendKey = ValueKey<String>('session-composer-send');
+  const stopKey = ValueKey<String>('session-composer-stop');
 
   testWidgets(
     'Enter sends, Shift+Enter opens a line, and touch platforms only tap',
@@ -1332,6 +1333,79 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.home);
       await tester.pumpAndSettle();
       expect(isVisible('new'), isTrue);
+    },
+  );
+
+  testWidgets(
+    'a running turn is stopped from the composer, and typing still queues',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      var stops = 0;
+      final queued = <String>[];
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            busy: true,
+            onSubmit: (submission) => submitted.add(submission.text),
+            onQueue: (submission) => queued.add(submission.text),
+            onStop: () => stops += 1,
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // An empty composer over a running turn offers the one thing worth
+      // doing: stopping it.
+      expect(find.byKey(stopKey), findsOneWidget);
+      expect(find.byKey(sendKey), findsNothing);
+      await tester.tap(find.byKey(stopKey));
+      await tester.pumpAndSettle();
+      expect(stops, 1);
+      expect(submitted, isEmpty);
+
+      // Typing ahead still queues, and reads as sending rather than queueing
+      // so the primary action never changes meaning mid-sentence.
+      await tester.enterText(find.byKey(inputKey), 'follow up');
+      await tester.pumpAndSettle();
+      expect(find.byKey(stopKey), findsNothing);
+      final send = find.byKey(sendKey);
+      expect(send, findsOneWidget);
+      expect(
+        find.descendant(of: send, matching: find.byIcon(CoderIcons.send)),
+        findsOneWidget,
+      );
+      await tester.tap(send);
+      await tester.pumpAndSettle();
+      expect(queued, <String>['follow up']);
+      expect(stops, 1);
+    },
+  );
+
+  testWidgets(
+    'a composer with no running turn keeps sending',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      final submitted = <String>[];
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (submission) => submitted.add(submission.text),
+            onStop: () {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(stopKey), findsNothing);
+      await tester.enterText(find.byKey(inputKey), 'hello');
+      await tester.tap(find.byKey(sendKey));
+      await tester.pumpAndSettle();
+      expect(submitted, <String>['hello']);
     },
   );
 }

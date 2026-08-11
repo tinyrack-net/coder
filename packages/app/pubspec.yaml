@@ -29,6 +29,9 @@ dependencies:
   intl: any
   launch_at_startup: ^0.5.1
   lucide_flutter: ^1.25.0
+  # `MarkdownElementBuilder` hands out `markdown` AST nodes, so a custom block
+  # renderer has to name the package it is given.
+  markdown: ^7.3.1
   meta: ^1.17.0
   mobile_scanner: ^7.4.0
   protocol: ^0.1.0
@@ -43,7 +46,7 @@ dependencies:
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: 67c442391281fcb0b3249713bc8b8a67fac2e076
+      ref: f4fd88a10de88ca694c74557025e4abb5e63fe15
       path: packages/ui_flutter
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2

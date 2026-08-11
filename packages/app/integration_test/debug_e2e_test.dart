@@ -2641,8 +2641,10 @@ Future<void> _submitComposerPrompt(
   ValueKey<String> sendKey,
   String prompt,
 ) async {
-  await _waitForComposerReady(tester, sendKey);
+  // Typing first: over a running turn an empty composer offers stop rather
+  // than send, so the send button only exists once there is a prompt.
   await _typeComposerPrompt(tester, composerKey, prompt);
+  await _waitForComposerReady(tester, sendKey);
   // The send button and the toast stack share the bottom-trailing corner, so a
   // report still on screen from an earlier action takes the tap instead. A
   // reader waits it out or dismisses it; this waits.

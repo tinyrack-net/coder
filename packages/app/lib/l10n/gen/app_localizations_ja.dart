@@ -1427,6 +1427,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get chatCopyResponse => '応答をコピー';
+
+  @override
   String chatMoreLines(int count) {
     return '… 他 $count 行';
   }
