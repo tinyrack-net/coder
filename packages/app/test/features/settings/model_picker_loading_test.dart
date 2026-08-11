@@ -86,6 +86,47 @@ void main() {
     },
     tags: const <String>['feature_test__settings_async_loading__widget'],
   );
+
+  testWidgets(
+    'mobile model sheet keeps its surface edge to edge and content safe',
+    (tester) async {
+      const size = Size(390, 760);
+      const insets = EdgeInsets.fromLTRB(12, 24, 8, 34);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _host(
+          () async => const <ModelPickerOption>[_option],
+          size: size,
+          padding: insets,
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final drawer = find.byType(TRDrawer);
+      final safeArea = find.descendant(
+        of: drawer,
+        matching: find.byType(SafeArea),
+      );
+      final safeContent = find.descendant(
+        of: safeArea,
+        matching: find.byType(Padding),
+      );
+      expect(tester.getRect(drawer).bottom, size.height);
+      expect(tester.getRect(safeContent.at(1)).left, insets.left);
+      expect(
+        tester.getRect(safeContent.at(1)).right,
+        size.width - insets.right,
+      );
+      expect(
+        tester.getRect(safeContent.at(1)).bottom,
+        size.height - insets.bottom,
+      );
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
 }
 
 const _option = ModelPickerOption(
@@ -100,30 +141,39 @@ const _option = ModelPickerOption(
   ),
 );
 
-Widget _host(ModelPickerOptionsLoader loader, {required Size size}) =>
-    MaterialApp(
-      locale: testLocale,
-      localizationsDelegates: testLocalizationsDelegates,
-      supportedLocales: testSupportedLocales,
-      theme: testLightTheme,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
+Widget _host(
+  ModelPickerOptionsLoader loader, {
+  required Size size,
+  EdgeInsets padding = EdgeInsets.zero,
+}) => MaterialApp(
+  locale: testLocale,
+  localizationsDelegates: testLocalizationsDelegates,
+  supportedLocales: testSupportedLocales,
+  theme: testLightTheme,
+  builder: (context, child) => MediaQuery(
+    data:
+        MediaQuery.of(
           context,
-        ).copyWith(size: size, disableAnimations: true),
-        child: child!,
-      ),
-      home: Builder(
-        builder: (context) => Center(
-          child: TRButton(
-            onPressed: () => unawaited(
-              showModelPicker(
-                context,
-                loadOptions: loader,
-                currentSelection: null,
-              ),
-            ),
-            child: const TRText.inherit('Open'),
+        ).copyWith(
+          size: size,
+          padding: padding,
+          viewPadding: padding,
+          disableAnimations: true,
+        ),
+    child: child!,
+  ),
+  home: Builder(
+    builder: (context) => Center(
+      child: TRButton(
+        onPressed: () => unawaited(
+          showModelPicker(
+            context,
+            loadOptions: loader,
+            currentSelection: null,
           ),
         ),
+        child: const TRText.inherit('Open'),
       ),
-    );
+    ),
+  ),
+);

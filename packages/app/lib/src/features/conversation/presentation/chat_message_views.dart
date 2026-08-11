@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
@@ -8,6 +7,7 @@ import 'package:app/src/features/conversation/application/chat_tool_presentation
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -258,32 +258,45 @@ class ChatAssistantMessageView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return TRChatMessageRow(
       icon: CoderIcons.status,
       tone: TRChatMessageTone.primary,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          MarkdownBody(
-            data: message.markdown,
-            selectable: true,
-            styleSheet: chatMarkdownStyleSheet(context),
-            onTapLink: (text, href, title) => openChatLink(
-              ref.read(externalUrlOpenerProvider),
-              href,
-            ),
-          ),
-          if (message.isStreaming)
-            const Padding(
-              padding: EdgeInsets.only(top: TRSpacing.extraSmall),
-              child: TRText(
-                '▌',
-                variant: TRTextVariant.code,
-                color: TRTextColor.primary,
+      // One selection host for the whole answer. `MarkdownBody.selectable`
+      // would give every block its own `SelectableText`, so a drag could never
+      // leave the paragraph it started in.
+      child: SelectionArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            MarkdownBody(
+              data: message.markdown,
+              builders: chatMarkdownBuilders(),
+              styleSheet: chatMarkdownStyleSheet(context),
+              onTapLink: (text, href, title) => openChatLink(
+                ref.read(externalUrlOpenerProvider),
+                href,
               ),
             ),
-        ],
+            // A growing answer has nothing worth copying yet; a stopped one is
+            // no longer streaming, so it keeps the action.
+            if (!message.isStreaming)
+              TRTooltip(
+                message: l10n.chatCopyResponse,
+                child: TRIconButton(
+                  key: const ValueKey<String>('chat-response-copy'),
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.chatCopyResponse,
+                  icon: const Icon(CoderIcons.copy),
+                  onPressed: () => Clipboard.setData(
+                    ClipboardData(text: message.markdown),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

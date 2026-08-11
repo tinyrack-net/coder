@@ -185,6 +185,16 @@ class _RouteGoldenHostState extends State<_RouteGoldenHost> {
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: _router,
+        builder: (context, child) {
+          final media = MediaQuery.of(context);
+          final padding = widget.size.width < 600
+              ? const EdgeInsets.fromLTRB(0, 24, 0, 34)
+              : EdgeInsets.zero;
+          return MediaQuery(
+            data: media.copyWith(padding: padding, viewPadding: padding),
+            child: child!,
+          );
+        },
       ),
     ),
   );

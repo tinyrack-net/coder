@@ -390,6 +390,15 @@ void main() {
       createdAt: now,
       markdown: 'Assistant prose shares one leading rail with tools.',
     ),
+    // A growing answer carries no caret and no copy action; the busy row at the
+    // bottom of the timeline is the only sign that it is still being written.
+    ChatAssistantMessage(
+      key: 'assistant-streaming',
+      turnId: 'turn-all',
+      createdAt: now,
+      markdown: 'A streaming answer stops mid-',
+      isStreaming: true,
+    ),
     ChatAttachmentMessage(
       key: 'assistant-attachment',
       turnId: 'turn-all',
@@ -1210,7 +1219,7 @@ void main() {
     goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 1670),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 1910),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -1267,6 +1276,18 @@ void main() {
             ),
           ),
           GoldenTestScenario(
+            name: 'stoppable during a turn light',
+            child: SizedBox(
+              width: 900,
+              height: 200,
+              child: _composerState(
+                ThemeMode.light,
+                busy: true,
+                stoppable: true,
+              ),
+            ),
+          ),
+          GoldenTestScenario(
             name: 'queued during a turn dark',
             child: SizedBox(
               width: 900,
@@ -1274,6 +1295,7 @@ void main() {
               child: _composerState(
                 ThemeMode.dark,
                 busy: true,
+                stoppable: true,
                 queued: const <QueuedTurn>[
                   QueuedTurn(
                     id: 'queued',
@@ -1486,6 +1508,7 @@ Widget _composerState(
   bool enabled = true,
   String? hint,
   bool busy = false,
+  bool stoppable = false,
   List<QueuedTurn> queued = const <QueuedTurn>[],
   int contextTokens = 0,
   int? contextWindow,
@@ -1514,6 +1537,7 @@ Widget _composerState(
         onQueue: (_) {},
         onQueuedEdit: (_) => null,
         onQueuedSendNow: (_) {},
+        onStop: stoppable ? () {} : null,
         onSubmit: (_) {},
         bar: SessionComposerBar(
           hostId: 'server',

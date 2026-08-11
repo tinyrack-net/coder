@@ -322,6 +322,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+      // The catalog can finish loading after a pushed task such as Settings
+      // has covered this page. Replacing from this stale context would replace
+      // that task with a second workspace-shell page, duplicating its Page key
+      // in the root Navigator. Opening another task supersedes startup restore.
+      if (ModalRoute.of(context)?.isCurrent != true) return;
       _goWorktree(context, saved);
     });
   }
@@ -1422,21 +1427,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           '${l10n.subagentReadOnlyNotice}'
                     : '${current.agentDefinitionId} · ${current.origin.name}',
               ),
-              trailing: busy
-                  ? TRIconButton(
-                      appearance: TRAppearance.ghost,
-                      label: AppLocalizations.of(context).commonStop,
-                      onPressed: () => ref
-                          .read(
-                            conversationControllerProvider(
-                              widget.selection.hostId,
-                              current.id,
-                            ).notifier,
-                          )
-                          .cancelTurn(),
-                      icon: const Icon(CoderIcons.stop),
-                    )
-                  : null,
+              // Stopping lives on the composer's primary action, so the header
+              // does not offer a second button for the same thing.
             ),
             Expanded(
               child: ChatTimelineView(
@@ -1550,6 +1542,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           await _conversation(ref, current.id).cancelTurn();
                           await _send(current.id, submission);
                         },
+                        onStop: () =>
+                            _conversation(ref, current.id).cancelTurn(),
                         hint:
                             (agentsLoading ||
                                 providersLoading ||

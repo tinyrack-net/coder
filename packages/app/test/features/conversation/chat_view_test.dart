@@ -1,5 +1,6 @@
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
 import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
@@ -7,6 +8,7 @@ import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -926,6 +928,307 @@ void main() {
 
       expect(extentChange, lessThanOrEqualTo(0.12));
       expect(find.textContaining('long 0'), findsNothing);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'a settled response offers a copy action carrying its raw Markdown',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              ((call.arguments as Map<Object?, Object?>)['text'] as String?) ??
+                  '',
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': '**bold** answer\n\nsecond paragraph',
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      final copy = find.byKey(const ValueKey<String>('chat-response-copy'));
+      expect(copy, findsOneWidget);
+      await tester.tap(copy);
+      await tester.pumpAndSettle();
+
+      expect(copied, <String>['**bold** answer\n\nsecond paragraph']);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'a streaming response hides the copy action and paints no caret',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{'text': 'half an answer'}),
+      ], busy: true);
+      // The busy row spins forever, so this view can only be pumped.
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('chat-response-copy')),
+        findsNothing,
+      );
+      expect(find.textContaining('▌', findRichText: true), findsNothing);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'one drag selects across every Markdown block of a response',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              ((call.arguments as Map<Object?, Object?>)['text'] as String?) ??
+                  '',
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': 'first paragraph\n\nsecond paragraph',
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      // A per-block SelectableText traps the drag inside one paragraph, so the
+      // response must host exactly one selectable region and no islands.
+      final response = find.byType(ChatAssistantMessageView);
+      expect(
+        find.descendant(of: response, matching: find.byType(SelectableText)),
+        findsNothing,
+      );
+
+      final first = find.textContaining('first paragraph', findRichText: true);
+      final second = find.textContaining(
+        'second paragraph',
+        findRichText: true,
+      );
+      final gesture = await tester.startGesture(
+        tester.getTopLeft(first) + const Offset(1, 1),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getBottomRight(second) - const Offset(1, 1));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(copied, hasLength(1));
+      expect(copied.single, contains('first paragraph'));
+      expect(copied.single, contains('second paragraph'));
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'fenced code in a response scrolls, copies, and selects into the prose',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              ((call.arguments as Map<Object?, Object?>)['text'] as String?) ??
+                  '',
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      const fenced = 'var aVeryLongIdentifier = someOtherLongExpression + 1;';
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': 'before prose\n\n```dart\n$fenced\n```\n\nafter prose',
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      // The same surface tool payloads use, so a long line scrolls instead of
+      // wrapping and the block carries its own copy action.
+      final block = find.byType(ChatCodeBlock);
+      expect(block, findsOneWidget);
+      expect(
+        find.descendant(of: block, matching: find.byType(TRCodeBlock)),
+        findsOneWidget,
+      );
+      final copy = find.descendant(
+        of: block,
+        matching: find.byIcon(CoderIcons.copy),
+      );
+      expect(copy, findsOneWidget);
+      await tester.tap(copy);
+      await tester.pumpAndSettle();
+      expect(copied, <String>[fenced]);
+
+      // And it is not its own selection island: one drag covers prose and code.
+      copied.clear();
+      final first = find.textContaining('before prose', findRichText: true);
+      final last = find.textContaining('after prose', findRichText: true);
+      final gesture = await tester.startGesture(
+        tester.getTopLeft(first) + const Offset(1, 1),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getBottomRight(last) - const Offset(1, 1));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(copied.single, contains('before prose'));
+      expect(copied.single, contains('aVeryLongIdentifier'));
+      expect(copied.single, contains('after prose'));
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'an expanded tool call selects from its label through its payload',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              ((call.arguments as Map<Object?, Object?>)['text'] as String?) ??
+                  '',
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await pump(tester, <TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'arguments': <String, dynamic>{'path': 'a.dart'},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'output': 'result payload',
+          'isError': false,
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 1}),
+      ]);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ChatToolCard));
+      await tester.pumpAndSettle();
+
+      // One host for the whole card, so a drag runs from the request label into
+      // the payload rather than stopping at each block.
+      final request = find.textContaining('a.dart', findRichText: true).first;
+      final result = find.textContaining('result payload', findRichText: true);
+      final gesture = await tester.startGesture(
+        tester.getTopLeft(request) + const Offset(1, 1),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getBottomRight(result) - const Offset(1, 1));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(copied.single, contains('a.dart'));
+      expect(copied.single, contains('result payload'));
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'unfolding a tool call keeps its header pinned so the body grows downward',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final events = <TimelineEventDto>[
+        for (var index = 0; index < 12; index += 1)
+          event('user.message', <String, dynamic>{'text': 'filler $index'}),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'arguments': <String, dynamic>{'path': 'a.dart'},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'output': 'body line 1\nbody line 2\nbody line 3\nbody line 4',
+          'isError': false,
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 1}),
+      ];
+
+      await pump(tester, events);
+      await tester.pumpAndSettle();
+
+      final header = find.text('파일 읽기');
+      final before = tester.getTopLeft(header).dy;
+      await tester.tap(find.byType(ChatToolCard));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('body line 1'), findsOneWidget);
+      expect(tester.getTopLeft(header).dy, closeTo(before, 0.5));
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );

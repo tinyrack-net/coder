@@ -2818,6 +2818,12 @@ abstract class AppLocalizations {
   /// **'Failed · {message}'**
   String chatNoticeFailed(String message);
 
+  /// Copies an assistant response to the clipboard as Markdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy response'**
+  String get chatCopyResponse;
+
   /// Marks the lines hidden by a collapsed code or diff block.
   ///
   /// In en, this message translates to:

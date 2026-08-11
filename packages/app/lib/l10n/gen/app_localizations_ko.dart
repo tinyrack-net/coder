@@ -1503,6 +1503,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get chatCopyResponse => '응답 복사';
+
+  @override
   String chatMoreLines(int count) {
     return '… $count줄 더';
   }

@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +27,7 @@ void main() {
   build({
     String? localeTag,
     bool startHidden = false,
+    bool customTitleBar = false,
     Completer<void>? installGate,
     EmbeddedDaemonLauncher? embeddedLauncher,
   }) {
@@ -34,7 +37,12 @@ void main() {
         localeTag: localeTag,
       ),
     );
-    final window = FakeDesktopWindow(visible: !startHidden);
+    final window = FakeDesktopWindow(
+      visible: !startHidden,
+      chrome: customTitleBar
+          ? DesktopWindowChrome.custom
+          : DesktopWindowChrome.native,
+    );
     final tray = FakeTrayIcon(installGate: installGate)..calls = window.calls;
     final terminator = FakeAppTerminator(calls: window.calls);
     return (
@@ -228,6 +236,67 @@ void main() {
       expect(find.text(testL10n.generalStartupAtBootLabel), findsOneWidget);
     },
     tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
+    'custom desktop frame keeps one navigator across settings categories',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final harness = build(localeTag: 'ko', customTitleBar: true);
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(testL10n.settingsCategoryGeneral));
+      await tester.pumpAndSettle();
+      expect(find.text(testL10n.generalLanguageLabel), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(
+            const ValueKey<String>('general-settings-theme-mode'),
+          ),
+          matching: find.byType(TextButton),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(testL10n.generalAppearanceDark).last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(testL10n.settingsCategoryAdvanced));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('advanced-settings-reset-button')),
+        findsOneWidget,
+      );
+      expect(find.byType(Navigator), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+        findsOneWidget,
+      );
+      debugDefaultTargetPlatformOverride = null;
+    },
+    tags: const <String>[
+      'feature_test__app_navigation__widget',
+      'feature_test__desktop_residency__widget',
+    ],
   );
 
   testWidgets(

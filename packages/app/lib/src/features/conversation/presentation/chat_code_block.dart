@@ -12,6 +12,7 @@ class ChatCodeBlock extends StatelessWidget {
   /// Creates a code block.
   const ChatCodeBlock({
     required this.text,
+    this.language,
     this.maxLines = 24,
     this.maxCharacters = 20000,
     this.showCopy = true,
@@ -20,6 +21,9 @@ class ChatCodeBlock extends StatelessWidget {
 
   /// Raw text to render.
   final String text;
+
+  /// Language a highlighter can recognise, or null for plain text.
+  final String? language;
 
   /// Lines shown before the block is truncated.
   final int maxLines;
@@ -40,54 +44,40 @@ class ChatCodeBlock extends StatelessWidget {
         ? lines.take(maxLines).join('\n')
         : capped;
     final hidden = lines.length > maxLines ? lines.length - maxLines : 0;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.tinyrackTheme.surfaceMuted,
-        borderRadius: const BorderRadius.all(TRRadii.medium),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          TRSpacing.small,
-          TRSpacing.small,
-          TRSpacing.extraSmall,
-          TRSpacing.small,
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        // The block hosts no selection of its own: the enclosing card or
+        // response owns one, so a drag runs from the surrounding text through
+        // the code instead of stopping at its edge.
+        TRCodeBlock(
+          code: visible,
+          language: language,
+          trailing: showCopy
+              ? TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  uiSize: TRUiSize.sm,
+                  label: l10n.commonCopy,
+                  // The untruncated text, so a capped block still copies whole.
+                  onPressed: () => Clipboard.setData(ClipboardData(text: text)),
+                  icon: const Icon(CoderIcons.copy),
+                )
+              : null,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SelectionArea(
-                      child: TRText(
-                        visible,
-                        variant: TRTextVariant.code,
-                      ),
-                    ),
-                    if (hidden > 0)
-                      TRText(
-                        AppLocalizations.of(context).chatMoreLines(hidden),
-                        variant: TRTextVariant.bodySm,
-                        color: TRTextColor.muted,
-                      ),
-                  ],
-                ),
-              ),
+        // Outside the surface: a count of what was dropped is not code, and
+        // inside it the line would land in every selection of the block.
+        if (hidden > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: TRSpacing.extraSmall),
+            child: TRText(
+              l10n.chatMoreLines(hidden),
+              variant: TRTextVariant.bodySm,
+              color: TRTextColor.muted,
             ),
-            if (showCopy)
-              TRIconButton(
-                appearance: TRAppearance.ghost,
-                label: AppLocalizations.of(context).commonCopy,
-                onPressed: () => Clipboard.setData(ClipboardData(text: text)),
-                icon: const Icon(CoderIcons.copy),
-              ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }
