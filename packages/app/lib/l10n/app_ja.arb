@@ -454,6 +454,7 @@
   "subagentStatusCompleted": "完了",
   "subagentStatusInterrupted": "中断",
   "subagentStatusErrored": "失敗",
+  "subagentStatusWaitingForApproval": "承認待ち",
   "subagentReadOnlyNotice": "サブエージェントの会話 · 読み取り専用",
   "chatToolSubagentQueued": "順番待ちに追加しました",
   "chatToolSubagentCount": "エージェント {count} 個",

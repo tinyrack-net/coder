@@ -85,7 +85,10 @@ class _SubagentTrackState extends State<SubagentTrack> {
                       // Nested subagents indent by one spacing step per
                       // tree level.
                       SizedBox(width: TRSpacing.medium * row.depth),
-                      SubagentStatusIcon(lifecycle: row.session.lifecycle),
+                      SubagentStatusIcon(
+                        lifecycle: row.session.lifecycle,
+                        status: row.session.status,
+                      ),
                     ],
                   ),
                   title: TRText.inherit(

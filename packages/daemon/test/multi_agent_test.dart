@@ -600,8 +600,97 @@ void main() {
       final mail = await database.agentMailboxDao.undeliveredFor(root.id);
       expect(mail.single.message.type, InterAgentMessageType.finalAnswer);
       expect(mail.single.message.payload, 'All done.');
-      expect(mail.single.triggerTurn, isFalse);
+    });
+
+    test('the last child to finish wakes an idle parent', () async {
+      // Without this the parent's mailbox holds an undelivered FINAL_ANSWER
+      // forever whenever its own turn ended before the child's did, and the
+      // tree only resumes when the user types.
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'All done.',
+      );
+      final mail = await database.agentMailboxDao.undeliveredFor(root.id);
+      expect(mail.single.triggerTurn, isTrue);
+      expect(fakeRuntime.started.single.sessionId, root.id);
+    });
+
+    test('a failing child also wakes an idle parent', () async {
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.failed,
+        error: 'provider exploded',
+      );
+      expect(fakeRuntime.started.single.sessionId, root.id);
+    });
+
+    test('a parent mid-turn is left alone', () async {
+      fakeRuntime.active.add(root.id);
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'All done.',
+      );
+      // The running parent drains the mailbox at its next turn boundary.
       expect(fakeRuntime.started, isEmpty);
+    });
+
+    test('a parent with a sibling still running is left alone', () async {
+      final sibling = await database.sessionDao.create(
+        session(
+          'sibling',
+          parentSessionId: 'root',
+          taskName: 'task_b',
+          agentPath: '/root/task_b',
+          rootSessionId: 'root',
+          lifecycle: AgentLifecycle.running,
+        ),
+      );
+      service.acquireTurnSlot(sibling);
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'First one done.',
+      );
+      // Waking now would make the parent report on a half-finished tree; the
+      // sibling's own completion wakes it instead.
+      expect(fakeRuntime.started, isEmpty);
+      await service.onTurnFinished(
+        sessionId: sibling.id,
+        outcome: TurnStatus.completed,
+        finalText: 'Second one done.',
+      );
+      expect(fakeRuntime.started.single.sessionId, root.id);
+    });
+
+    test('a vanished session still releases its turn slot', () async {
+      final ghost = session(
+        'ghost',
+        parentSessionId: 'root',
+        taskName: 'task_ghost',
+        agentPath: '/root/task_ghost',
+        rootSessionId: 'root',
+      );
+      service.acquireTurnSlot(ghost);
+      // The row is gone, so onTurnFinished returns early. Releasing the slot
+      // only after that read leaks it, and four leaks wedge the whole tree.
+      await service.onTurnFinished(
+        sessionId: ghost.id,
+        outcome: TurnStatus.completed,
+        finalText: 'Never recorded.',
+      );
+      for (var index = 0; index < maxConcurrentSubagentTurnsPerTree; index++) {
+        service.acquireTurnSlot(
+          session(
+            'filler-$index',
+            parentSessionId: 'root',
+            taskName: 'filler_$index',
+            agentPath: '/root/filler_$index',
+            rootSessionId: 'root',
+          ),
+        );
+      }
     });
 
     test('failure mails an errored FINAL_ANSWER', () async {
@@ -647,7 +736,10 @@ void main() {
         outcome: TurnStatus.completed,
         finalText: 'First answer.',
       );
-      expect(fakeRuntime.started.single.sessionId, child.id);
+      expect(
+        fakeRuntime.started.map((call) => call.sessionId),
+        contains(child.id),
+      );
     });
 
     test('a freed slot pumps a parked trigger', () async {
@@ -1032,6 +1124,26 @@ void main() {
         service.usageHintFor(child, _reviewerDefinition),
         contains('subagent `/root/task_a`'),
       );
+    });
+
+    test('only the root is coached to orchestrate', () {
+      final root = session('root');
+      final child = session(
+        'child',
+        parentSessionId: 'root',
+        taskName: 'task_a',
+        agentPath: '/root/task_a',
+        rootSessionId: 'root',
+      );
+      final rootHint = service.usageHintFor(root, _coderDefinition)!;
+      final childHint = service.usageHintFor(child, _reviewerDefinition)!;
+      // The orchestrator prompt tells its reader to delegate rather than work.
+      // Handing it to a subagent makes every child spawn grandchildren and
+      // wait on them, so the tree expands instead of terminating.
+      expect(rootHint, contains(orchestratorPrompt));
+      expect(childHint, isNot(contains(orchestratorPrompt)));
+      expect(childHint, contains(subagentPrompt));
+      expect(rootHint, isNot(contains(subagentPrompt)));
     });
 
     test('lifecycle wire names are stable', () {

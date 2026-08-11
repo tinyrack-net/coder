@@ -46,6 +46,9 @@ abstract final class CoderIcons {
   static const IconData warning = LucideIcons.triangleAlert;
 
   /// Semantic Lucide glyph.
+  static const IconData approvalPending = LucideIcons.hand;
+
+  /// Semantic Lucide glyph.
   static const IconData sparkle = LucideIcons.sparkles;
 
   /// Semantic Lucide glyph.

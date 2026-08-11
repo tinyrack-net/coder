@@ -1921,6 +1921,10 @@
   "@subagentStatusErrored": {
     "description": "Semantics label of a failed subagent."
   },
+  "subagentStatusWaitingForApproval": "Waiting for approval",
+  "@subagentStatusWaitingForApproval": {
+    "description": "Semantics label of a subagent blocked on an approval."
+  },
   "subagentReadOnlyNotice": "Subagent conversation · read-only",
   "@subagentReadOnlyNotice": {
     "description": "Subtitle notice on the read-only subagent pane."

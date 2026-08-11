@@ -18,13 +18,14 @@ void main() {
     required AgentLifecycle lifecycle,
     String parentId = 'root',
     int second = 0,
+    SessionStatus status = SessionStatus.idle,
   }) => SessionDto(
     id: id,
     worktreeId: 'checkout',
     title: taskName,
     agentDefinitionId: 'coder',
     origin: SessionOrigin.delegated,
-    status: SessionStatus.idle,
+    status: status,
     parentSessionId: parentId,
     taskName: taskName,
     agentPath: agentPath,
@@ -35,7 +36,8 @@ void main() {
   );
 
   // Settled lifecycles only: a running row animates its spinner forever,
-  // which a golden frame cannot settle on.
+  // which a golden frame cannot settle on. Waiting-for-approval is the one
+  // in-flight state with a static icon, so it belongs here.
   final rows = buildSubagentTrackRows(<SessionDto>[
     subagent(
       'explore',
@@ -57,6 +59,14 @@ void main() {
       agentPath: '/root/run_tests',
       lifecycle: AgentLifecycle.interrupted,
       second: 2,
+    ),
+    subagent(
+      'patch',
+      taskName: 'apply_patch',
+      agentPath: '/root/apply_patch',
+      lifecycle: AgentLifecycle.running,
+      status: SessionStatus.waitingForApproval,
+      second: 3,
     ),
   ], 'root');
 

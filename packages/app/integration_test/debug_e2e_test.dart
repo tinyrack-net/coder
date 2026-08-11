@@ -939,8 +939,8 @@ void main() {
       // create the second OverlayPortal show/hide cycle that triggers
       // flutter/flutter#189902 on Flutter 3.44.
       await contextMouse.removePointer();
-      // The child works asynchronously; wait for its FINAL_ANSWER so the
-      // track rows below render settled icons instead of live spinners.
+      // The child works asynchronously and parks on an approval only a human
+      // can answer; the track has to surface it or the agent never finishes.
       late SessionDto spawnedChild;
       await pumpUntilCondition(
         tester,
@@ -952,14 +952,14 @@ void main() {
               .where(
                 (session) =>
                     session.origin == SessionOrigin.delegated &&
-                    session.lifecycle == AgentLifecycle.completed,
+                    session.status == SessionStatus.waitingForApproval,
               )
               .firstOrNull;
           if (child == null) return false;
           spawnedChild = child;
           return true;
         },
-        'the spawned subagent to complete',
+        'the spawned subagent to block on an approval',
         budget: e2eTurnBudget,
       );
       expect(spawnedChild.taskName, 'review_task');
@@ -971,8 +971,8 @@ void main() {
         contains(spawnedChild.id),
       );
 
-      // The collapsed track summarizes; expanding it reveals the child row,
-      // and opening the row shows a live read-only transcript.
+      // The collapsed track summarizes; expanding it reveals the child row
+      // flagged as waiting on the user rather than as an ordinary spinner.
       final trackHeader = find.text('서브 에이전트 1개');
       await pumpUntil(tester, trackHeader);
       await tester.tap(trackHeader);
@@ -980,11 +980,39 @@ void main() {
         ValueKey<String>('subagent-row-${spawnedChild.id}'),
       );
       await pumpUntil(tester, childRow);
+      await pumpUntil(
+        tester,
+        find.descendant(
+          of: childRow,
+          matching: find.byIcon(CoderIcons.approvalPending),
+        ),
+      );
+
+      // Opening the row shows a live transcript with no composer, but its
+      // approval stays actionable: answering it is what ends the child's turn.
       await tester.tap(childRow);
       await pumpUntil(tester, find.textContaining('읽기 전용'));
+      expect(find.byKey(composer), findsNothing);
+      final allowSubagentPatch = find.widgetWithText(TRButton, '승인');
+      await pumpUntil(tester, allowSubagentPatch);
+      await tester.tap(allowSubagentPatch.last);
       await pumpUntil(
         tester,
         find.text('Review completed.', findRichText: true),
+      );
+      await pumpUntilCondition(
+        tester,
+        () async {
+          final sessions = await setupClient.sessions.listSessions(
+            worktreeId: 'checkout-e2e',
+          );
+          final child = sessions.singleWhere(
+            (session) => session.id == spawnedChild.id,
+          );
+          return child.lifecycle == AgentLifecycle.completed;
+        },
+        'the approved subagent to complete',
+        budget: e2eTurnBudget,
       );
       expect(find.byKey(composer), findsNothing);
       // Subagents never surface in the all-sessions menu.
@@ -3019,6 +3047,36 @@ final class _AgentE2eProvider implements ModelProvider {
         .whereType<UserConversationItem>()
         .any((item) => item.text.startsWith('Message Type: NEW_TASK'));
     if (isSubagentTurn) {
+      final hasReviewPatchResult = request.history
+          .whereType<ToolResultConversationItem>()
+          .any((item) => item.callId == 'review-patch-call');
+      // The child writes before it answers, which parks its turn on an
+      // approval only the user can resolve from the subagent tab.
+      if (!hasReviewPatchResult) {
+        const patch =
+            '*** Begin Patch\n'
+            '*** Add File: review.txt\n'
+            '+reviewed\n'
+            '*** End Patch';
+        yield const ModelFreeformCall(
+          callId: 'review-patch-call',
+          name: 'apply_patch',
+          rawInput: patch,
+        );
+        yield const ModelResponseCompleted(
+          assistant: AssistantConversationItem(
+            text: '',
+            toolCalls: <ConversationToolCall>[
+              ConversationToolCall.freeform(
+                callId: 'review-patch-call',
+                name: 'apply_patch',
+                input: patch,
+              ),
+            ],
+          ),
+        );
+        return;
+      }
       yield const ModelTextDelta('Review completed.');
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(text: 'Review completed.'),

@@ -1542,6 +1542,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subagentStatusErrored => '실패';
 
   @override
+  String get subagentStatusWaitingForApproval => '승인 대기 중';
+
+  @override
   String get subagentReadOnlyNotice => '서브 에이전트 대화 · 읽기 전용';
 
   @override
