@@ -3,6 +3,7 @@ import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,13 @@ Finder get _primaryFocus => find.byElementPredicate(
 
 Color _focusColor(WidgetTester tester) =>
     tester.element(find.byType(TinestListRow)).tinyrackTheme.focus;
+
+BorderSide _selectPaintedSide(WidgetTester tester) {
+  final button = tester.widget<TextButton>(find.byType(TextButton).first);
+  return button.style!.side!.resolve(<WidgetState>{
+    if (button.focusNode?.hasFocus ?? false) WidgetState.focused,
+  })!;
+}
 
 Future<void> _requestFocusFromKeyboard(
   WidgetTester tester,
@@ -161,6 +169,43 @@ void main() {
       // A ring added to the layout shrinks the content box and re-lays-out the
       // trailing control, which destroys its focus node mid-traversal.
       expect(tester.getRect(find.byType(Icon)), before);
+    });
+  });
+
+  group('TRSelect focus policy', () {
+    testWidgets('uses a border only for keyboard-originated focus', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const TRSelect<String>(
+            defaultValue: 'beta',
+            items: <TRSelectItem<String>>[
+              TRSelectItem<String>(value: 'stable', label: 'Stable'),
+              TRSelectItem<String>(value: 'beta', label: 'Beta'),
+            ],
+          ),
+        ),
+      );
+
+      final trigger = find.byType(TextButton).first;
+      final focus = tester.element(trigger).tinyrackTheme.focus;
+
+      await tester.tap(trigger, kind: PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      expect(_selectPaintedSide(tester).color, isNot(focus));
+
+      await tester.tapAt(
+        const Offset(1000, 600),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pumpAndSettle();
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      TRFocusSource.instance.debugSetKeyboardModality(true);
+      tester.widget<TextButton>(trigger).focusNode!.requestFocus();
+      await tester.pumpAndSettle();
+
+      expect(_selectPaintedSide(tester).color, focus);
     });
   });
 
