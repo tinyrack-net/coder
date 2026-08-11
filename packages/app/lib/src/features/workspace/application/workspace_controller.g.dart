@@ -235,19 +235,19 @@ final class GitBranchesFamily extends $Family
   String toString() => r'gitBranchesProvider';
 }
 
-/// Loads and edits the `coder.json` worktree hooks of one project.
+/// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 
 @ProviderFor(ProjectSettingsController)
 final projectSettingsControllerProvider = ProjectSettingsControllerFamily._();
 
-/// Loads and edits the `coder.json` worktree hooks of one project.
+/// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 final class ProjectSettingsControllerProvider
     extends
         $AsyncNotifierProvider<
           ProjectSettingsController,
           ProjectSettingsResultDto
         > {
-  /// Loads and edits the `coder.json` worktree hooks of one project.
+  /// Loads and edits the `.tinest/config.json` worktree hooks of one project.
   ProjectSettingsControllerProvider._({
     required ProjectSettingsControllerFamily super.from,
     required (String, String) super.argument,
@@ -288,7 +288,7 @@ final class ProjectSettingsControllerProvider
 String _$projectSettingsControllerHash() =>
     r'57aefc95e9654f24e44c23a7b60b937483358455';
 
-/// Loads and edits the `coder.json` worktree hooks of one project.
+/// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 
 final class ProjectSettingsControllerFamily extends $Family
     with
@@ -308,7 +308,7 @@ final class ProjectSettingsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Loads and edits the `coder.json` worktree hooks of one project.
+  /// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 
   ProjectSettingsControllerProvider call(String hostId, String workspaceId) =>
       ProjectSettingsControllerProvider._(
@@ -320,7 +320,7 @@ final class ProjectSettingsControllerFamily extends $Family
   String toString() => r'projectSettingsControllerProvider';
 }
 
-/// Loads and edits the `coder.json` worktree hooks of one project.
+/// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 
 abstract class _$ProjectSettingsController
     extends $AsyncNotifier<ProjectSettingsResultDto> {

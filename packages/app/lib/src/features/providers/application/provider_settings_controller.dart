@@ -84,7 +84,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
   /// providers are connected. Awaiting it inside [build] means the composer
   /// never observes a frame where connections are known but models are not.
   Future<Map<String, List<ProviderModelDto>>> _resolutionModels(
-    CoderApi api,
+    TinestApi api,
     List<ProviderConnectionDto> connections,
     SessionModelSelectionDto? defaultModel,
   ) async {
@@ -283,9 +283,9 @@ class ProviderSettingsController extends _$ProviderSettingsController {
     await _reload(api);
   }
 
-  Future<CoderApi> _requireConnection() => requireHostApi(ref, hostId);
+  Future<TinestApi> _requireConnection() => requireHostApi(ref, hostId);
 
-  Future<void> _reload(CoderApi api) async {
+  Future<void> _reload(TinestApi api) async {
     final current = state.asData?.value;
     final ProviderCatalogDto catalog;
     final List<ProviderConnectionDto> connections;
@@ -301,7 +301,7 @@ class ProviderSettingsController extends _$ProviderSettingsController {
         connections,
         defaultModel,
       );
-    } on CoderClientException catch (error, stackTrace) {
+    } on TinestClientException catch (error, stackTrace) {
       // A refresh that loses its daemon must not escape as an unhandled error.
       if (ref.mounted) {
         state = AsyncError<ProviderSettingsState?>(error, stackTrace);

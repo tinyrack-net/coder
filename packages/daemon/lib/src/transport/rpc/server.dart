@@ -90,7 +90,7 @@ final class DaemonRpcServer implements RpcSessionHost {
     if (isAttachmentRequest) return attachments.call(request, cors);
     return webSocketHandler(
       _openSession,
-      protocols: const <String>[coderWebSocketProtocol],
+      protocols: const <String>[tinestWebSocketProtocol],
     )(request);
   }
 
@@ -248,8 +248,8 @@ final class _ClientSession {
     } on Object catch (error, stackTrace) {
       throw _internalFailure(systemHelloProcedure.name, error, stackTrace);
     }
-    if (payload.protocolMajor != coderProtocolMajor ||
-        payload.protocolRevision != coderProtocolRevision) {
+    if (payload.protocolMajor != tinestProtocolMajor ||
+        payload.protocolRevision != tinestProtocolRevision) {
       throw json_rpc.RpcException(
         1001,
         'Unsupported protocol version.',

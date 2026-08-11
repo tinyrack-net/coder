@@ -2,21 +2,21 @@
 library;
 
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
 import '../../support/build_phase_provider_guard.dart';
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 final _now = DateTime.utc(2026, 8, 11);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -25,11 +25,11 @@ WorktreeDto _worktree(String id, String branch) => WorktreeDto(
   id: id,
   workspaceId: _workspace.id,
   name: branch,
-  path: '/repos/coder-$id',
+  path: '/repos/tinest-$id',
   branch: branch,
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 
@@ -57,7 +57,7 @@ String _worktreeLocation(String worktreeId) => WorktreeRoute(
   worktreeId: worktreeId,
 ).location;
 
-FakeCoderApi _api() => FakeCoderApi(
+FakeTinestApi _api() => FakeTinestApi(
   workspaces: <WorkspaceDto>[_workspace],
   worktrees: <WorktreeDto>[
     _worktree('checkout-a', 'main'),
@@ -71,7 +71,9 @@ FakeCoderApi _api() => FakeCoderApi(
 
 /// Everything the on-screen emulator currently holds, scrollback included.
 String _screen(WidgetTester tester) {
-  final view = tester.widget<CoderTerminalView>(find.byType(CoderTerminalView));
+  final view = tester.widget<TinestTerminalView>(
+    find.byType(TinestTerminalView),
+  );
   final buffer = view.terminal.buffer.active;
   return <String>[
     for (var line = 0; line < buffer.length; line += 1)

@@ -1,6 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -124,7 +124,7 @@ class _SettingsListDetailSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      if (constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint) {
+      if (constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint) {
         return const _SettingsSkeletonListPane(
           key: ValueKey<String>('settings-skeleton-list-pane'),
         );
@@ -132,7 +132,7 @@ class _SettingsListDetailSkeleton extends StatelessWidget {
       return const Row(
         children: <Widget>[
           SizedBox(
-            width: CoderLayoutMetrics.settingsCollectionWidth,
+            width: TinestLayoutMetrics.settingsCollectionWidth,
             child: _SettingsSkeletonListPane(
               key: ValueKey<String>('settings-skeleton-list-pane'),
             ),
@@ -472,7 +472,7 @@ class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final compact =
-          constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+          constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
       _navigation = SettingsPaneNavigationScope.maybeOf(context);
       syncSettingsPaneBackHandler(
         context,
@@ -494,7 +494,7 @@ class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           SizedBox(
-            width: CoderLayoutMetrics.settingsCollectionWidth,
+            width: TinestLayoutMetrics.settingsCollectionWidth,
             child: widget.collection,
           ),
           const TRSeparator(
@@ -540,7 +540,7 @@ class SettingsScaffold extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: CoderLayoutMetrics.settingsContentMaxWidth,
+                maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
               ),
               child: child,
             ),
@@ -718,7 +718,7 @@ class SettingsRow extends StatelessWidget {
   /// Whether [control] is the row's only tab stop.
   ///
   /// Set this whenever [onTap] only repeats what [control] already does, so
-  /// one setting costs one Tab press. See [CoderListRow.controlOwnsFocus].
+  /// one setting costs one Tab press. See [TinestListRow.controlOwnsFocus].
   final bool controlOwnsFocus;
 
   /// Invoked when the row is activated.
@@ -765,7 +765,7 @@ class SettingsRow extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => CoderListRow(
+  Widget build(BuildContext context) => TinestListRow(
     contentPadding: _collection
         ? collectionContentPadding
         : flush
@@ -780,8 +780,8 @@ class SettingsRow extends StatelessWidget {
     onTap: onTap,
     selected: selected,
     selectionAppearance: _collection
-        ? CoderListRowSelectionAppearance.navigation
-        : CoderListRowSelectionAppearance.standard,
+        ? TinestListRowSelectionAppearance.navigation
+        : TinestListRowSelectionAppearance.standard,
     subtitle: description,
     title: title,
     trailing: control,
@@ -933,7 +933,7 @@ class SettingsEmptyState extends StatelessWidget {
       padding: const EdgeInsets.all(TRSpacing.extraLarge),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: CoderLayoutMetrics.settingsEmptyStateMaxWidth,
+          maxWidth: TinestLayoutMetrics.settingsEmptyStateMaxWidth,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

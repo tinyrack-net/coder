@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/coverage_verifier.dart';
 import 'package:path/path.dart' as p;
+import 'package:tinest_workspace/src/coverage_verifier.dart';
 
 /// Enforces line and branch coverage for every workspace package.
 void main(List<String> arguments) {

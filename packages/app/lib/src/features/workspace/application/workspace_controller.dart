@@ -203,7 +203,7 @@ List<HomeSessionEntry> sortedHomeSessions(List<HomeSessionEntry> entries) =>
       ..sort((a, b) => b.session.updatedAt.compareTo(a.session.updatedAt));
 
 @Riverpod(retry: noAutomaticRetry)
-/// Loads and edits the `coder.json` worktree hooks of one project.
+/// Loads and edits the `.tinest/config.json` worktree hooks of one project.
 class ProjectSettingsController extends _$ProjectSettingsController {
   @override
   Future<ProjectSettingsResultDto> build(

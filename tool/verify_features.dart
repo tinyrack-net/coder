@@ -1,16 +1,16 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/feature_manifest.dart';
-import 'package:coder_workspace/src/feature_verifier.dart';
+import 'package:tinest_workspace/src/feature_manifest.dart';
+import 'package:tinest_workspace/src/feature_verifier.dart';
 
 void main() {
   final violations = FeatureVerifier(
     Directory.current.path,
-    contracts: coderFeatureManifest,
+    contracts: tinestFeatureManifest,
   ).verify();
   if (violations.isEmpty) {
     stdout.writeln(
-      'Feature verification passed (${coderFeatureManifest.length} features).',
+      'Feature verification passed (${tinestFeatureManifest.length} features).',
     );
     return;
   }

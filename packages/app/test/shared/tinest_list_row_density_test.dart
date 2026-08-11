@@ -1,4 +1,4 @@
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -32,7 +32,7 @@ void main() {
     await tester.pumpWidget(
       _host(
         TRControlDensity.comfortable,
-        row: const CoderListRow(
+        row: const TinestListRow(
           dense: true,
           title: TRText.inherit('Workspace'),
         ),
@@ -55,7 +55,7 @@ void main() {
     await tester.pumpWidget(
       _host(
         TRControlDensity.comfortable,
-        row: const CoderListRow(
+        row: const TinestListRow(
           contentPadding: padding,
           title: TRText.inherit('Workspace'),
         ),
@@ -68,7 +68,7 @@ void main() {
 
 Widget _host(
   TRControlDensity density, {
-  Widget row = const CoderListRow(title: TRText.inherit('Workspace')),
+  Widget row = const TinestListRow(title: TRText.inherit('Workspace')),
 }) => MaterialApp(
   theme: TinyrackTheme.light(),
   home: Scaffold(
@@ -79,7 +79,7 @@ Widget _host(
 EdgeInsetsGeometry? _rowPadding(WidgetTester tester) => tester
     .widget<AnimatedContainer>(
       find.descendant(
-        of: find.byType(CoderListRow),
+        of: find.byType(TinestListRow),
         matching: find.byWidgetPredicate(
           (widget) => widget is AnimatedContainer && widget.padding != null,
         ),

@@ -11,7 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 
 void main() {
   setUp(() {
@@ -141,7 +141,7 @@ void main() {
     'real embedded launcher starts in loopback and all-interface modes',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-exposure-vertical-slice-',
+        'tinest-exposure-vertical-slice-',
       );
       addTearDown(() {
         if (home.existsSync()) home.deleteSync(recursive: true);
@@ -157,7 +157,7 @@ void main() {
 
       for (final exposure in EmbeddedDaemonExposure.values) {
         final session = await launcher.start(exposure: exposure, port: 0);
-        final client = await CoderClient.connect(
+        final client = await TinestClient.connect(
           endpoint: session.endpoint,
           credentials: session.credentials,
           clientId: 'exposure-${exposure.name}',
@@ -175,7 +175,7 @@ void main() {
   );
 
   test('WebSocket factory classifies typed connection failures', () async {
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     final endpoint = HostEndpoint.parse('wss://daemon.example/ws');
     const credentials = DaemonCredentials(bearerToken: 'token');
     final connection = DirectHostConnection(
@@ -203,7 +203,7 @@ void main() {
       same(api),
     );
 
-    Future<CoderApi> connectWith(Object error) =>
+    Future<TinestApi> connectWith(Object error) =>
         WebSocketHostClientFactory(
           openClient:
               ({
@@ -211,7 +211,7 @@ void main() {
                 required credentials,
                 required clientId,
                 required clientKind,
-              }) => Future<CoderApi>.error(error),
+              }) => Future<TinestApi>.error(error),
         ).connect(
           connection: connection,
           credential: credential,
@@ -221,7 +221,7 @@ void main() {
 
     await expectLater(
       connectWith(
-        const CoderClientException(
+        const TinestClientException(
           'wrong protocol',
           code: 'protocol_mismatch',
         ),
@@ -261,7 +261,7 @@ final class _UnusedClients implements HostClientFactory {
   const _UnusedClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

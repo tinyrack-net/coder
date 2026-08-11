@@ -148,7 +148,7 @@ void main() {
     expect(chunk.output, endsWith('2'));
   });
 
-  test('sessions are isolated between coder sessions', () async {
+  test('sessions are isolated between tinest sessions', () async {
     final mine = await service.start(
       owner: 'session-1',
       command: 'sh',

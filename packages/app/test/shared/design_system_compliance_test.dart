@@ -12,13 +12,13 @@ void main() {
   test('production UI uses Tinyrack components and Lucide icons', () {
     final sourceDirectory = Directory('lib/src');
     final forbidden = <RegExp, String>{
-      RegExp(r'\bIcons\.'): 'Material icon; use CoderIcons',
-      RegExp(r'\bCupertinoIcons\.'): 'Cupertino icon; use CoderIcons',
+      RegExp(r'\bIcons\.'): 'Material icon; use TinestIcons',
+      RegExp(r'\bCupertinoIcons\.'): 'Cupertino icon; use TinestIcons',
       // Every glyph goes through the semantic map, so a screen never names a
       // Lucide constant and the app has one place to retheme.
-      RegExp(r'\bLucideIcons\.'): 'raw Lucide glyph; use CoderIcons',
-      RegExp(r'\bIconData\('): 'icon code point literal; use CoderIcons',
-      RegExp(r'\bImageIcon\b'): 'bitmap icon; use CoderIcons',
+      RegExp(r'\bLucideIcons\.'): 'raw Lucide glyph; use TinestIcons',
+      RegExp(r'\bIconData\('): 'icon code point literal; use TinestIcons',
+      RegExp(r'\bImageIcon\b'): 'bitmap icon; use TinestIcons',
       // The theme sizes icons from a token. A literal here is either redundant
       // or an off-scale glyph.
       RegExp(r'size: \d'): 'icon size literal; use a Tinyrack measurement',
@@ -61,8 +61,8 @@ void main() {
     // The semantic icon map is where raw Lucide glyphs are allowed to appear;
     // naming them anywhere else is what the rule above forbids.
     final exempt = <String, Set<String>>{
-      'lib/src/shared/presentation/coder_icons.dart': {
-        'raw Lucide glyph; use CoderIcons',
+      'lib/src/shared/presentation/tinest_icons.dart': {
+        'raw Lucide glyph; use TinestIcons',
       },
     };
     final violations = <String>[];
@@ -92,12 +92,12 @@ void main() {
 
   test('exemptions match on every platform separator', () {
     expect(
-      scannedPathKey(r'lib\src\shared\presentation\coder_icons.dart'),
-      'lib/src/shared/presentation/coder_icons.dart',
+      scannedPathKey(r'lib\src\shared\presentation\tinest_icons.dart'),
+      'lib/src/shared/presentation/tinest_icons.dart',
     );
     expect(
-      scannedPathKey('lib/src/shared/presentation/coder_icons.dart'),
-      'lib/src/shared/presentation/coder_icons.dart',
+      scannedPathKey('lib/src/shared/presentation/tinest_icons.dart'),
+      'lib/src/shared/presentation/tinest_icons.dart',
     );
   });
 }

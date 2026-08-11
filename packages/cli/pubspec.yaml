@@ -1,5 +1,5 @@
 name: cli
-description: Standalone command-line client for the Tinyrack Coder daemon.
+description: Standalone command-line client for the Tinest daemon.
 version: 0.1.0
 publish_to: none
 resolution: workspace

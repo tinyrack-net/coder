@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -416,7 +416,7 @@ void main() {
               ),
             ],
           ),
-          width: CoderLayoutMetrics.settingsCollectionWidth,
+          width: TinestLayoutMetrics.settingsCollectionWidth,
         ),
       );
 
@@ -434,18 +434,18 @@ void main() {
         ),
       );
 
-      final first = tester.getRect(find.widgetWithText(CoderListRow, 'First'));
+      final first = tester.getRect(find.widgetWithText(TinestListRow, 'First'));
       final second = tester.getRect(
-        find.widgetWithText(CoderListRow, 'Second'),
+        find.widgetWithText(TinestListRow, 'Second'),
       );
       expect(first.left, TRSpacing.medium);
       expect(
         first.right,
-        CoderLayoutMetrics.settingsCollectionWidth - TRSpacing.medium,
+        TinestLayoutMetrics.settingsCollectionWidth - TRSpacing.medium,
       );
       expect(
         tester
-            .widget<CoderListRow>(find.widgetWithText(CoderListRow, 'First'))
+            .widget<TinestListRow>(find.widgetWithText(TinestListRow, 'First'))
             .contentPadding,
         const EdgeInsets.symmetric(
           horizontal: TRSpacing.medium,
@@ -457,7 +457,7 @@ void main() {
       expect(first.top - separator.bottom, TRSpacing.medium);
       final firstSurface = tester.widget<AnimatedContainer>(
         find.descendant(
-          of: find.widgetWithText(CoderListRow, 'First'),
+          of: find.widgetWithText(TinestListRow, 'First'),
           matching: find.byType(AnimatedContainer),
         ),
       );
@@ -488,7 +488,7 @@ void main() {
                 child: SettingsCollectionList(
                   children: <Widget>[
                     SettingsRow.collection(
-                      title: TRText.inherit('Coder'),
+                      title: TRText.inherit('Tinest'),
                       selected: true,
                     ),
                   ],
@@ -504,18 +504,18 @@ void main() {
       ),
     );
 
-    final row = tester.getRect(find.widgetWithText(CoderListRow, 'Coder'));
+    final row = tester.getRect(find.widgetWithText(TinestListRow, 'Tinest'));
     expect(row.left, TRSpacing.medium);
     expect(row.right, 390 - TRSpacing.medium);
     expect(
-      tester.getRect(find.text('Coder')).left,
+      tester.getRect(find.text('Tinest')).left,
       moreOrLessEquals(
         tester.getRect(find.text('Projects')).left,
         epsilon: 0.5,
       ),
     );
     expect(
-      tester.widget<CoderListRow>(find.byType(CoderListRow)).contentPadding,
+      tester.widget<TinestListRow>(find.byType(TinestListRow)).contentPadding,
       const EdgeInsets.symmetric(
         horizontal: TRSpacing.medium,
         vertical: TRSpacing.medium,
@@ -534,7 +534,7 @@ void main() {
 
     final surface = tester.widget<AnimatedContainer>(
       find.descendant(
-        of: find.byType(CoderListRow),
+        of: find.byType(TinestListRow),
         matching: find.byType(AnimatedContainer),
       ),
     );
@@ -557,7 +557,7 @@ void main() {
                 children: <Widget>[
                   SettingsRow.collection(
                     leading: Icon(Icons.folder),
-                    title: TRText.inherit('Coder'),
+                    title: TRText.inherit('Tinest'),
                     selected: true,
                   ),
                 ],
@@ -565,12 +565,12 @@ void main() {
             ),
           ],
         ),
-        width: CoderLayoutMetrics.settingsCollectionWidth,
+        width: TinestLayoutMetrics.settingsCollectionWidth,
       ),
     );
 
     final header = tester.getRect(find.text('Projects'));
-    final row = tester.getRect(find.byType(CoderListRow));
+    final row = tester.getRect(find.byType(TinestListRow));
     expect(
       header.left,
       moreOrLessEquals(row.left + TRSpacing.medium, epsilon: 0.5),
@@ -650,12 +650,12 @@ void main() {
       final card = tester.getRect(find.byType(TRCard));
       expect(
         card.width,
-        lessThanOrEqualTo(CoderLayoutMetrics.settingsContentMaxWidth),
+        lessThanOrEqualTo(TinestLayoutMetrics.settingsContentMaxWidth),
       );
 
       // Centred, so a wide window does not strand the column against one
       // edge with a growing void beside it.
-      expect(card.width, CoderLayoutMetrics.settingsContentMaxWidth);
+      expect(card.width, TinestLayoutMetrics.settingsContentMaxWidth);
       expect(card.left, moreOrLessEquals(1400 - card.right, epsilon: 0.5));
     });
 
@@ -900,7 +900,7 @@ void main() {
       // Two rows in one card drew their content at different insets, so the
       // card had no single alignment line down its leading edge.
       final rows = tester
-          .widgetList<CoderListRow>(find.byType(CoderListRow))
+          .widgetList<TinestListRow>(find.byType(TinestListRow))
           .toList();
       expect(rows, hasLength(2));
       expect(rows.first.contentPadding, rows.last.contentPadding);
@@ -1022,7 +1022,7 @@ void main() {
     testWidgets('keeps hover for non-settings list rows', (tester) async {
       await tester.pumpWidget(
         _host(
-          CoderListRow(
+          TinestListRow(
             contentPadding: SettingsRow.contentPadding,
             title: const TRText.inherit('Open'),
             onTap: () {},
@@ -1030,7 +1030,7 @@ void main() {
         ),
       );
 
-      final row = find.byType(CoderListRow);
+      final row = find.byType(TinestListRow);
       final theme = tester.element(row).tinyrackTheme;
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       addTearDown(mouse.removePointer);
@@ -1074,7 +1074,7 @@ void main() {
       );
       // The vertical rhythm is unchanged, so a flush row is not a third inset.
       expect(
-        tester.widget<CoderListRow>(find.byType(CoderListRow)).contentPadding,
+        tester.widget<TinestListRow>(find.byType(TinestListRow)).contentPadding,
         SettingsRow.flushPadding,
       );
     });
@@ -1089,16 +1089,19 @@ void main() {
           const Column(
             children: <Widget>[
               SettingsPaneHeader.list(title: 'Projects'),
-              SettingsRow(title: TRText.inherit('Coder')),
+              SettingsRow(title: TRText.inherit('Tinest')),
             ],
           ),
-          width: CoderLayoutMetrics.settingsCollectionWidth,
+          width: TinestLayoutMetrics.settingsCollectionWidth,
         ),
       );
 
       expect(
         tester.getRect(find.text('Projects')).left,
-        moreOrLessEquals(tester.getRect(find.text('Coder')).left, epsilon: 0.5),
+        moreOrLessEquals(
+          tester.getRect(find.text('Tinest')).left,
+          epsilon: 0.5,
+        ),
       );
     });
 
@@ -1109,7 +1112,7 @@ void main() {
         _host(
           const Column(
             children: <Widget>[
-              SettingsPaneHeader.detail(title: 'Coder'),
+              SettingsPaneHeader.detail(title: 'Tinest'),
               Expanded(
                 child: SettingsScaffold(
                   children: <Widget>[
@@ -1128,7 +1131,7 @@ void main() {
       // A detail header inset less than its own body left the pane with two
       // competing leading edges.
       expect(
-        tester.getRect(find.text('Coder')).left,
+        tester.getRect(find.text('Tinest')).left,
         moreOrLessEquals(tester.getRect(find.text('Hooks')).left, epsilon: 0.5),
       );
     });

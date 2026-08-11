@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
 
@@ -35,7 +35,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         workspaceCatalogGate: gate.future,
@@ -71,7 +71,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final router = await pumpRoutedApp(
         tester,
         api,

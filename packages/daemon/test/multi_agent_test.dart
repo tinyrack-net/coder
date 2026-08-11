@@ -61,9 +61,9 @@ final class _FakeRuntime implements SessionTurnPort {
       steer.putIfAbsent(sessionId, Completer<void>.new).future;
 }
 
-const AgentDefinitionDto _coderDefinition = AgentDefinitionDto(
-  id: 'coder',
-  name: 'Coder',
+const AgentDefinitionDto _tinestDefinition = AgentDefinitionDto(
+  id: 'tinest',
+  name: 'Tinest',
   description: 'Primary agent.',
   mode: AgentMode.primary,
   promptEnabled: false,
@@ -76,7 +76,7 @@ const AgentDefinitionDto _coderDefinition = AgentDefinitionDto(
   toolIds: <String>[collaborationCapabilityId],
   callableAgentIds: <String>['reviewer'],
   contentHash: 'hash',
-  sourcePath: '/config/agents/coder.md',
+  sourcePath: '/config/agents/tinest.md',
 );
 
 const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
@@ -99,7 +99,7 @@ const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
 
 void main() {
   final now = DateTime.utc(2026, 8, 6);
-  late CoderDatabase database;
+  late TinestDatabase database;
   late _FakeRuntime fakeRuntime;
   late MultiAgentService service;
   late List<OutboundNotification> emitted;
@@ -113,7 +113,7 @@ void main() {
     String? rootSessionId,
     AgentLifecycle? lifecycle,
     SessionModelSelectionDto? model,
-    String agentDefinitionId = 'coder',
+    String agentDefinitionId = 'tinest',
   }) => SessionDto(
     id: id,
     worktreeId: 'worktree',
@@ -138,7 +138,7 @@ void main() {
   );
 
   setUp(() async {
-    database = CoderDatabase.forTesting(
+    database = TinestDatabase.forTesting(
       NativeDatabase.memory(),
       clock: _FixedClock(now),
     );
@@ -158,7 +158,7 @@ void main() {
         name: 'Workspace',
         path: '/workspace',
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       ),
     );
@@ -170,7 +170,7 @@ void main() {
       mailbox: database.agentMailboxDao,
       timeline: database.timelineDao,
       getDefinition: (id) async => switch (id) {
-        'coder' => _coderDefinition,
+        'tinest' => _tinestDefinition,
         'reviewer' => _reviewerDefinition,
         _ => throw const FormatException('Unknown agent definition.'),
       },
@@ -222,7 +222,7 @@ void main() {
       final root = await database.sessionDao.create(session('root'));
       final path = await service.spawn(
         caller: root,
-        callerDefinition: _coderDefinition,
+        callerDefinition: _tinestDefinition,
         turnId: 'turn-1',
         taskName: 'review_task',
         message: 'Review the code.',
@@ -265,7 +265,7 @@ void main() {
       Future<String> spawn(String name, {String fork = 'none'}) =>
           service.spawn(
             caller: root,
-            callerDefinition: _coderDefinition,
+            callerDefinition: _tinestDefinition,
             turnId: 'turn-1',
             taskName: name,
             message: 'Work.',
@@ -302,7 +302,7 @@ void main() {
       await expectLater(
         service.spawn(
           caller: root,
-          callerDefinition: _coderDefinition,
+          callerDefinition: _tinestDefinition,
           turnId: 'turn-1',
           taskName: 'forked',
           message: 'Continue.',
@@ -317,7 +317,7 @@ void main() {
       final root = await database.sessionDao.create(session('root'));
       await service.spawn(
         caller: root,
-        callerDefinition: _coderDefinition,
+        callerDefinition: _tinestDefinition,
         turnId: 'turn-1',
         taskName: 'controlled',
         message: 'Work.',
@@ -346,7 +346,7 @@ void main() {
       await expectLater(
         service.spawn(
           caller: root,
-          callerDefinition: _coderDefinition,
+          callerDefinition: _tinestDefinition,
           turnId: 'turn-1',
           taskName: 'stranger_task',
           message: 'Work.',
@@ -366,7 +366,7 @@ void main() {
       final root = await database.sessionDao.create(session('root'));
       await service.spawn(
         caller: root,
-        callerDefinition: _coderDefinition,
+        callerDefinition: _tinestDefinition,
         turnId: 'turn-1',
         taskName: 'fast_task',
         message: 'Work.',
@@ -381,7 +381,7 @@ void main() {
       await expectLater(
         service.spawn(
           caller: root,
-          callerDefinition: _coderDefinition,
+          callerDefinition: _tinestDefinition,
           turnId: 'turn-1',
           taskName: 'bad_model',
           message: 'Work.',
@@ -411,7 +411,7 @@ void main() {
       await expectLater(
         service.spawn(
           caller: root,
-          callerDefinition: _coderDefinition,
+          callerDefinition: _tinestDefinition,
           turnId: 'turn-1',
           taskName: 'one_too_many',
           message: 'Work.',
@@ -967,7 +967,7 @@ void main() {
       );
       final path = await service.spawn(
         caller: root,
-        callerDefinition: _coderDefinition,
+        callerDefinition: _tinestDefinition,
         turnId: 'turn-1',
         taskName: 'fork_task',
         message: 'Continue.',
@@ -1007,7 +1007,7 @@ void main() {
   group('tools', () {
     test('v2 schemas require only canonical mandatory fields', () async {
       final root = await database.sessionDao.create(session('root'));
-      final spawn = SpawnAgentTool(service, root, _coderDefinition, 'turn-1');
+      final spawn = SpawnAgentTool(service, root, _tinestDefinition, 'turn-1');
       expect(spawn.strictJsonSchema['required'], <String>[
         'task_name',
         'message',
@@ -1053,7 +1053,7 @@ void main() {
 
     test('surface collaboration failures as error results', () async {
       final root = await database.sessionDao.create(session('root'));
-      final tool = SpawnAgentTool(service, root, _coderDefinition, 'turn-1');
+      final tool = SpawnAgentTool(service, root, _tinestDefinition, 'turn-1');
       final context = ToolExecutionContext(
         workspaceRoot: '/workspace',
         cancellation: CancellationToken(),
@@ -1078,7 +1078,7 @@ void main() {
       final root = session('root');
       expect(
         service
-            .collaborationToolsFor(root, _coderDefinition, 'turn')
+            .collaborationToolsFor(root, _tinestDefinition, 'turn')
             .map((tool) => tool.name),
         <String>[
           'spawn_agent',
@@ -1109,7 +1109,7 @@ void main() {
     test('usage hints identify root and subagent roles', () {
       final root = session('root');
       expect(
-        service.usageHintFor(root, _coderDefinition),
+        service.usageHintFor(root, _tinestDefinition),
         contains('root agent at path `/root`'),
       );
       expect(service.usageHintFor(root, _reviewerDefinition), isNull);
@@ -1135,7 +1135,7 @@ void main() {
         agentPath: '/root/task_a',
         rootSessionId: 'root',
       );
-      final rootHint = service.usageHintFor(root, _coderDefinition)!;
+      final rootHint = service.usageHintFor(root, _tinestDefinition)!;
       final childHint = service.usageHintFor(child, _reviewerDefinition)!;
       // The orchestrator prompt tells its reader to delegate rather than work.
       // Handing it to a subagent makes every child spawn grandchildren and

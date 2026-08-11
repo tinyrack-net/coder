@@ -12,7 +12,7 @@ void main() {
     'stores provider and daemon credentials atomically in one protected file',
     () async {
       final directory = await Directory.systemTemp.createTemp(
-        'coder-credential-test-',
+        'tinest-credential-test-',
       );
       addTearDown(() => directory.delete(recursive: true));
       final expiresAt = DateTime.utc(2026, 8, 2, 12);
@@ -110,7 +110,7 @@ void main() {
 
   test('rejects obsolete dual-token credential documents explicitly', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'coder-obsolete-credential-test-',
+      'tinest-obsolete-credential-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
     final file = File('${directory.path}/secrets.json');
@@ -139,7 +139,7 @@ void main() {
 
   test('MCP secrets live beside provider credentials', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'coder-credential-mcp-test-',
+      'tinest-credential-mcp-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
     final store = CredentialStore(directory.path);
@@ -166,7 +166,7 @@ void main() {
 
   test('a file carrying a malformed MCP secret is rejected', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'coder-credential-mcp-invalid-',
+      'tinest-credential-mcp-invalid-',
     );
     addTearDown(() => directory.delete(recursive: true));
     await File('${directory.path}/secrets.json').writeAsString(
@@ -185,7 +185,7 @@ void main() {
 
   test('a rewrite leaves the credentials file in place throughout', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'coder-credential-rewrite-test-',
+      'tinest-credential-rewrite-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
     final store = CredentialStore(directory.path);
@@ -226,7 +226,7 @@ void main() {
 
   test('removing one credential preserves the remaining credentials', () async {
     final directory = await Directory.systemTemp.createTemp(
-      'coder-credential-remove-test-',
+      'tinest-credential-remove-test-',
     );
     addTearDown(() => directory.delete(recursive: true));
     final store = CredentialStore(directory.path);

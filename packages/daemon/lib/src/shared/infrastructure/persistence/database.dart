@@ -51,8 +51,8 @@ class Worktrees extends Table {
   /// Worktree ownership and lifecycle kind.
   TextColumn get kind => text()();
 
-  /// Whether Coder created and may remove the checkout directory.
-  BoolColumn get isCoderOwned => boolean()();
+  /// Whether Tinest created and may remove the checkout directory.
+  BoolColumn get isTinestOwned => boolean()();
 
   /// Archive instant; null while visible in the workspace catalog.
   DateTimeColumn get archivedAt => dateTime().nullable()();
@@ -532,15 +532,15 @@ class ProviderModels extends Table {
     RuntimeDao,
   ],
 )
-/// CoderDatabase defines a public contract.
-class CoderDatabase extends _$CoderDatabase {
-  /// Creates a [CoderDatabase].
-  CoderDatabase(String path, {this.clock = const SystemClock()})
+/// TinestDatabase defines a public contract.
+class TinestDatabase extends _$TinestDatabase {
+  /// Creates a [TinestDatabase].
+  TinestDatabase(String path, {this.clock = const SystemClock()})
     : databasePath = path,
       super(NativeDatabase.createInBackground(File(path)));
 
-  /// The CoderDatabaseforTesting public API member.
-  CoderDatabase.forTesting(super.e, {this.clock = const SystemClock()})
+  /// The TinestDatabaseforTesting public API member.
+  TinestDatabase.forTesting(super.e, {this.clock = const SystemClock()})
     : databasePath = '<memory>';
 
   /// The clock public API member.

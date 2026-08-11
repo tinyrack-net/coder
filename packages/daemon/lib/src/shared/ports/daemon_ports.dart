@@ -382,7 +382,7 @@ abstract interface class CommandRunner {
 /// Runs project-configured worktree lifecycle commands.
 ///
 /// Unlike [CommandRunner], hook commands are authored by the user in
-/// `coder.json` and are expected to use shell syntax such as pipes and
+/// `.tinest/config.json` and are expected to use shell syntax such as pipes and
 /// environment expansion, so they are handed to the platform shell verbatim.
 abstract interface class WorktreeHookRunner {
   /// Runs one hook command and reports its outcome.

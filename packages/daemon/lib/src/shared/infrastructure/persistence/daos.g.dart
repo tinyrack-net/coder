@@ -3,7 +3,7 @@
 part of 'daos.dart';
 
 // ignore_for_file: type=lint
-mixin _$SettingsDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$SettingsDaoMixin on DatabaseAccessor<TinestDatabase> {
   $SettingsTable get settings => attachedDatabase.settings;
   SettingsDaoManager get managers => SettingsDaoManager(this);
 }
@@ -15,7 +15,7 @@ class SettingsDaoManager {
       $$SettingsTableTableManager(_db.attachedDatabase, _db.settings);
 }
 
-mixin _$WorkspaceDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$WorkspaceDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   WorkspaceDaoManager get managers => WorkspaceDaoManager(this);
@@ -30,7 +30,7 @@ class WorkspaceDaoManager {
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
 }
 
-mixin _$WorktreeDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$WorktreeDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   WorktreeDaoManager get managers => WorktreeDaoManager(this);
@@ -45,7 +45,7 @@ class WorktreeDaoManager {
       $$WorktreesTableTableManager(_db.attachedDatabase, _db.worktrees);
 }
 
-mixin _$SessionDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$SessionDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;
@@ -75,7 +75,7 @@ class SessionDaoManager {
       );
 }
 
-mixin _$GoalDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$GoalDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;
@@ -96,7 +96,7 @@ class GoalDaoManager {
       $$GoalsTableTableManager(_db.attachedDatabase, _db.goals);
 }
 
-mixin _$AgentMailboxDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$AgentMailboxDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;
@@ -121,7 +121,7 @@ class AgentMailboxDaoManager {
       );
 }
 
-mixin _$AttachmentDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$AttachmentDaoMixin on DatabaseAccessor<TinestDatabase> {
   $AttachmentsTable get attachments => attachedDatabase.attachments;
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
@@ -151,7 +151,7 @@ class AttachmentDaoManager {
       );
 }
 
-mixin _$TimelineDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$TimelineDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;
@@ -194,7 +194,7 @@ class TimelineDaoManager {
       );
 }
 
-mixin _$ProviderDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$ProviderDaoMixin on DatabaseAccessor<TinestDatabase> {
   $ProviderConnectionsTable get providerConnections =>
       attachedDatabase.providerConnections;
   $ProviderModelsTable get providerModels => attachedDatabase.providerModels;
@@ -216,7 +216,7 @@ class ProviderDaoManager {
       );
 }
 
-mixin _$RuntimeDaoMixin on DatabaseAccessor<CoderDatabase> {
+mixin _$RuntimeDaoMixin on DatabaseAccessor<TinestDatabase> {
   $WorkspacesTable get workspaces => attachedDatabase.workspaces;
   $WorktreesTable get worktrees => attachedDatabase.worktrees;
   $SessionsTable get sessions => attachedDatabase.sessions;

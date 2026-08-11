@@ -29,19 +29,19 @@ Future<void> processShutdownSignal() async {
   }
 }
 
-final Command<CoderCliContext>
-_startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
+final Command<TinestCliContext>
+_startCommand = buildLazyCommand<TinestCliContext, DaemonStartFlags, NoArgs>(
   docs: const CommandDocs(
     brief: 'Run the daemon in this process',
     fullDescription:
         'Serves plain HTTP and WebSocket. For a remote host keep it on '
-        'loopback behind an operator-managed TLS proxy. The TINYRACK_CODER_* '
+        'loopback behind an operator-managed TLS proxy. The TINYRACK_TINEST_* '
         'environment variables set the same options.',
   ),
   parameters: CommandParameters(
     flags:
         FlagSet.one(
-              ParsedFlag.optional<String, CoderCliContext>(
+              ParsedFlag.optional<String, TinestCliContext>(
                 name: 'home',
                 brief: 'Directory holding daemon state and credentials',
                 parse: stringParser,
@@ -49,7 +49,7 @@ _startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
               ),
             )
             .and(
-              ParsedFlag.optional<String, CoderCliContext>(
+              ParsedFlag.optional<String, TinestCliContext>(
                 name: 'listen',
                 brief: 'Address to bind as host:port',
                 parse: stringParser,
@@ -57,7 +57,7 @@ _startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
               ),
             )
             .and(
-              ParsedFlag.optional<String, CoderCliContext>(
+              ParsedFlag.optional<String, TinestCliContext>(
                 name: 'token',
                 brief: 'Bearer token to require, at least 32 bytes',
                 parse: stringParser,
@@ -65,7 +65,7 @@ _startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
               ),
             )
             .and(
-              ParsedFlag.variadic<String, CoderCliContext>(
+              ParsedFlag.variadic<String, TinestCliContext>(
                 name: 'allowed-origin',
                 brief: 'Browser origin permitted to call this daemon',
                 parse: stringParser,
@@ -81,13 +81,13 @@ _startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
               ),
             )
             .and(
-              BooleanFlag.optional<CoderCliContext>(
+              BooleanFlag.optional<TinestCliContext>(
                 name: 'relay',
                 brief: 'Enable or disable the outbound relay connection',
               ),
             )
             .and(
-              ParsedFlag.optional<String, CoderCliContext>(
+              ParsedFlag.optional<String, TinestCliContext>(
                 name: 'relay-endpoint',
                 brief: 'Advanced self-hosted relay WebSocket endpoint',
                 parse: stringParser,
@@ -111,7 +111,7 @@ _startCommand = buildLazyCommand<CoderCliContext, DaemonStartFlags, NoArgs>(
   loader: () async => _startDaemon,
 );
 
-/// Options accepted by `coder-cli daemon start`.
+/// Options accepted by `tinest-cli daemon start`.
 typedef DaemonStartFlags = ({
   String? home,
   String? listen,
@@ -122,7 +122,7 @@ typedef DaemonStartFlags = ({
 });
 
 Future<void> _startDaemon(
-  CoderCliContext context,
+  TinestCliContext context,
   DaemonStartFlags flags,
   NoArgs args,
 ) async {
@@ -144,10 +144,10 @@ Future<void> _startDaemon(
   );
 }
 
-FlagSet<({DaemonConnectionFlags daemon, bool json}), CoderCliContext>
+FlagSet<({DaemonConnectionFlags daemon, bool json}), TinestCliContext>
 _daemonJsonFlags() => daemonConnectionFlagSet()
     .and(
-      BooleanFlag.required<CoderCliContext>(
+      BooleanFlag.required<TinestCliContext>(
         name: 'json',
         brief: 'Print machine-readable JSON',
         withNegated: false,
@@ -155,7 +155,7 @@ _daemonJsonFlags() => daemonConnectionFlagSet()
     )
     .map((values) => (daemon: values.$1, json: values.$2));
 
-final Command<CoderCliContext> _relayStatusCommand = buildCommand(
+final Command<TinestCliContext> _relayStatusCommand = buildCommand(
   docs: const CommandDocs(brief: 'Show outbound relay status'),
   parameters: CommandParameters(
     flags: _daemonJsonFlags(),
@@ -172,7 +172,7 @@ final Command<CoderCliContext> _relayStatusCommand = buildCommand(
   ),
 );
 
-Command<CoderCliContext> _relayToggleCommand(bool enabled) => buildCommand(
+Command<TinestCliContext> _relayToggleCommand(bool enabled) => buildCommand(
   docs: CommandDocs(brief: enabled ? 'Enable the relay' : 'Disable the relay'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
@@ -189,12 +189,12 @@ Command<CoderCliContext> _relayToggleCommand(bool enabled) => buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _pairCommand = buildCommand(
+final Command<TinestCliContext> _pairCommand = buildCommand(
   docs: const CommandDocs(brief: 'Create a ten-minute device pairing link'),
   parameters: CommandParameters(
     flags: _daemonJsonFlags()
         .and(
-          BooleanFlag.required<CoderCliContext>(
+          BooleanFlag.required<TinestCliContext>(
             name: 'relay',
             brief: 'Enable relay when currently disabled',
             withNegated: false,
@@ -221,7 +221,7 @@ final Command<CoderCliContext> _pairCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _devicesListCommand = buildCommand(
+final Command<TinestCliContext> _devicesListCommand = buildCommand(
   docs: const CommandDocs(brief: 'List approved relay devices'),
   parameters: CommandParameters(
     flags: _daemonJsonFlags(),
@@ -238,12 +238,12 @@ final Command<CoderCliContext> _devicesListCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _deviceRevokeCommand = buildCommand(
+final Command<TinestCliContext> _deviceRevokeCommand = buildCommand(
   docs: const CommandDocs(brief: 'Revoke an approved relay device'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Approved device ID',
         parse: stringParser,
         placeholder: 'device-id',
@@ -261,15 +261,15 @@ final Command<CoderCliContext> _deviceRevokeCommand = buildCommand(
   ),
 );
 
-/// The `coder-cli daemon` route map.
-RouteMap<CoderCliContext> buildDaemonRoutes() => buildRouteMap(
-  docs: const RouteMapDocs(brief: 'Host a Tinyrack Coder daemon'),
-  routes: <String, RoutingTarget<CoderCliContext>>{
+/// The `tinest-cli daemon` route map.
+RouteMap<TinestCliContext> buildDaemonRoutes() => buildRouteMap(
+  docs: const RouteMapDocs(brief: 'Host a Tinest daemon'),
+  routes: <String, RoutingTarget<TinestCliContext>>{
     'start': _startCommand,
     'pair': _pairCommand,
     'relay': buildRouteMap(
       docs: const RouteMapDocs(brief: 'Manage outbound relay operation'),
-      routes: <String, RoutingTarget<CoderCliContext>>{
+      routes: <String, RoutingTarget<TinestCliContext>>{
         'status': _relayStatusCommand,
         'enable': _relayToggleCommand(true),
         'disable': _relayToggleCommand(false),
@@ -277,7 +277,7 @@ RouteMap<CoderCliContext> buildDaemonRoutes() => buildRouteMap(
     ),
     'devices': buildRouteMap(
       docs: const RouteMapDocs(brief: 'Manage approved relay devices'),
-      routes: <String, RoutingTarget<CoderCliContext>>{
+      routes: <String, RoutingTarget<TinestCliContext>>{
         'list': _devicesListCommand,
         'revoke': _deviceRevokeCommand,
       },

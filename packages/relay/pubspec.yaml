@@ -1,5 +1,5 @@
 name: relay
-description: Opaque WebSocket relay server for Tinyrack Coder.
+description: Opaque WebSocket relay server for Tinest.
 version: 0.2.0
 publish_to: none
 resolution: workspace

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,13 +69,13 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         if (projects.isEmpty) {
           return SettingsEmptyState(
             title: AppLocalizations.of(context).projectSettingsNoProjects,
-            icon: const Icon(CoderIcons.folder),
+            icon: const Icon(TinestIcons.folder),
           );
         }
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact =
-                constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+                constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
             if (!compact &&
                 !projects.any((project) => project.id == _selectedId)) {
               _selectedId = projects.first.id;
@@ -93,7 +93,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                     title: AppLocalizations.of(
                       context,
                     ).projectSettingsSelectProject,
-                    icon: const Icon(CoderIcons.folder),
+                    icon: const Icon(TinestIcons.folder),
                   )
                 : _ProjectEditor(
                     key: ValueKey<String>(
@@ -152,13 +152,13 @@ class _ProjectList extends StatelessWidget {
                   selected: project.id == selectedId,
                   leading: Icon(
                     project.kind == WorkspaceKind.git
-                        ? CoderIcons.worktree
-                        : CoderIcons.folder,
+                        ? TinestIcons.worktree
+                        : TinestIcons.folder,
                   ),
                   title: TRText.inherit(project.name),
                   // The row already caps and ellipsizes its description.
                   description: TRText.inherit(project.rootPath),
-                  control: const Icon(CoderIcons.chevronRight),
+                  control: const Icon(TinestIcons.chevronRight),
                   onTap: () => onSelected(project.id),
                 ),
             ],
@@ -265,7 +265,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                           id: 'project-settings-copy-path',
                         ),
                   ),
-                  icon: const Icon(CoderIcons.copy),
+                  icon: const Icon(TinestIcons.copy),
                 ),
                 TRButton(
                   intent: TRIntent.primary,

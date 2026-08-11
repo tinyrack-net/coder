@@ -34,7 +34,7 @@ List<RpcBindingDescriptor> agentRpcBindings({
     } on AgentFileConflict catch (error) {
       throw RpcFailureException(
         code: 'agent_file_conflict',
-        message: 'Agent file changed outside Coder.',
+        message: 'Agent file changed outside Tinest.',
         details: <String, dynamic>{
           'currentContentHash': error.currentContentHash,
         },

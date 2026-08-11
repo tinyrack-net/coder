@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ import 'package:protocol/protocol.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -30,13 +30,13 @@ void main() {
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
             credentials: store,
             clients: _PairClients(
-              FakeCoderApi(serverInfo: _serverInfo('relay-server')),
+              FakeTinestApi(serverInfo: _serverInfo('relay-server')),
             ),
             clientKind: 'phone',
           ),
@@ -81,13 +81,13 @@ void main() {
       );
       final pairer = _Pairer();
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
             credentials: store,
             clients: _PairClients(
-              FakeCoderApi(serverInfo: _serverInfo('relay-server')),
+              FakeTinestApi(serverInfo: _serverInfo('relay-server')),
             ),
             clientKind: 'phone',
             relayPairer: pairer,
@@ -140,13 +140,13 @@ void main() {
       );
       final pairer = _Pairer();
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
             credentials: store,
             clients: _PairClients(
-              FakeCoderApi(serverInfo: _serverInfo('relay-server')),
+              FakeTinestApi(serverInfo: _serverInfo('relay-server')),
             ),
             clientKind: 'phone',
             relayPairer: pairer,
@@ -173,7 +173,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey<String>('relay-pair-review')));
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('올바른 Tinyrack Coder 연결 링크'),
+        find.textContaining('올바른 Tinest 연결 링크'),
         findsOneWidget,
       );
       await tester.enterText(
@@ -218,7 +218,7 @@ void main() {
       tokens: const <String, String>{'offline': 'token'},
     );
     await tester.pumpWidget(
-      CoderApp(
+      TinestApp(
         services: AppServices(
           settings: store,
           profiles: store,
@@ -261,7 +261,7 @@ void main() {
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -293,10 +293,10 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
       final now = DateTime.utc(2026, 8, 8);
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         serverInfo: _serverInfo('device-server'),
         relayPairingOffer: RelayPairingOfferDto(
-          url: 'https://coder.tinyrack.net/pair#offer=test-offer',
+          url: 'https://tinest.tinyrack.net/pair#offer=test-offer',
           expiresAt: now.add(const Duration(minutes: 10)),
         ),
         relayDevices: <RelayDeviceDto>[
@@ -326,7 +326,7 @@ void main() {
         tokens: const <String, String>{'remote': 'token'},
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -424,7 +424,7 @@ void main() {
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -496,7 +496,7 @@ void main() {
       final store = MemoryAppStore();
       final launcher = _FailingLauncher();
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -516,16 +516,16 @@ void main() {
       expect(find.text('네트워크 접근 허용'), findsOneWidget);
       expect(find.textContaining('not running'), findsOneWidget);
       final embeddedToggle = find.widgetWithText(
-        CoderSwitchRow,
+        TinestSwitchRow,
         '내장 daemon',
       );
       final exposureToggle = find.widgetWithText(
-        CoderSwitchRow,
+        TinestSwitchRow,
         '네트워크 접근 허용',
       );
-      final toggle = tester.widget<CoderSwitchRow>(embeddedToggle);
+      final toggle = tester.widget<TinestSwitchRow>(embeddedToggle);
       expect(toggle.value, isTrue);
-      expect(tester.widget<CoderSwitchRow>(exposureToggle).value, isFalse);
+      expect(tester.widget<TinestSwitchRow>(exposureToggle).value, isFalse);
 
       // The port is a setting like any other, so it uses the same leading
       // description / trailing control rail its sibling switches use instead
@@ -616,7 +616,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -675,7 +675,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -734,7 +734,7 @@ void main() {
         tokens: const <String, String>{'remote': 'token'},
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -771,13 +771,13 @@ void main() {
           createdAt: now,
           updatedAt: now,
         );
-    final onlineApi = FakeCoderApi(
+    final onlineApi = FakeTinestApi(
       serverInfo: _serverInfo('shared-server'),
     );
-    final duplicateApi = FakeCoderApi(
+    final duplicateApi = FakeTinestApi(
       serverInfo: _serverInfo('shared-server'),
     );
-    final pending = Completer<CoderApi>();
+    final pending = Completer<TinestApi>();
     final store = MemoryAppStore(
       settings: const AppSettings(embeddedDaemonEnabled: false),
       profiles: <RemoteDaemonProfile>[
@@ -796,15 +796,15 @@ void main() {
       },
     );
     await tester.pumpWidget(
-      CoderApp(
+      TinestApp(
         services: AppServices(
           settings: store,
           profiles: store,
           credentials: store,
-          clients: _ProfileClients(<String, Future<CoderApi> Function()>{
+          clients: _ProfileClients(<String, Future<TinestApi> Function()>{
             'online.test': () async => onlineApi,
             'duplicate.test': () async => duplicateApi,
-            'error.test': () => Future<CoderApi>.error(
+            'error.test': () => Future<TinestApi>.error(
               const HostConnectionFailure.authentication('bad token'),
             ),
             'pending.test': () => pending.future,
@@ -835,7 +835,7 @@ void main() {
     expect(find.textContaining('자동 연결 꺼짐'), findsWidgets);
 
     pending.complete(
-      FakeCoderApi(serverInfo: _serverInfo('pending-server')),
+      FakeTinestApi(serverInfo: _serverInfo('pending-server')),
     );
   });
 }
@@ -843,7 +843,7 @@ void main() {
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(
   serverId: id,
   version: 'test',
-  protocolVersion: coderProtocolMajor,
+  protocolVersion: tinestProtocolMajor,
   features: const <String, bool>{},
 );
 
@@ -851,12 +851,12 @@ final class _OfflineClients implements HostClientFactory {
   const _OfflineClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(
+  }) => Future<TinestApi>.error(
     const HostConnectionFailure.network('offline'),
   );
 }
@@ -878,7 +878,7 @@ final class _Pairer implements HostRelayPairer {
         id: connectionId,
         credentialKey: credentialKey,
         serverId: 'relay-server',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       ),
       credential: RelayHostCredential(
@@ -892,10 +892,10 @@ final class _Pairer implements HostRelayPairer {
 final class _PairClients implements HostClientFactory {
   const _PairClients(this.api);
 
-  final CoderApi api;
+  final TinestApi api;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -909,13 +909,13 @@ final class _LocalNetworkUnreachableClients implements HostClientFactory {
   const _LocalNetworkUnreachableClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(
-    const CoderClientException(
+  }) => Future<TinestApi>.error(
+    const TinestClientException(
       'Could not reach a daemon at 127.0.0.1:7337.',
       code: localNetworkUnreachableCode,
       retryable: true,
@@ -946,10 +946,10 @@ final class _FailingLauncher implements EmbeddedDaemonLauncher {
 final class _ProfileClients implements HostClientFactory {
   const _ProfileClients(this.connections);
 
-  final Map<String, Future<CoderApi> Function()> connections;
+  final Map<String, Future<TinestApi> Function()> connections;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -963,12 +963,12 @@ final class _ProfileClients implements HostClientFactory {
 
 Uri _pairingUrl() => RelayPairingOffer(
   serverId: 'relay-server',
-  relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+  relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
   daemonPublicKey: List<int>.filled(32, 1),
   offerId: 'test-offer',
   secret: List<int>.filled(32, 2),
   expiresAt: DateTime.utc(2100),
-).toUrl(Uri.parse('https://coder.tinyrack.net/pair'));
+).toUrl(Uri.parse('https://tinest.tinyrack.net/pair'));
 
 Finder _field(String label) => find.descendant(
   of: find.byWidgetPredicate(

@@ -15,14 +15,14 @@ void _registerConversationControllerTests() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -51,7 +51,7 @@ void _registerConversationControllerTests() {
   test(
     'conversation notifier deduplicates timeline and resolves approvals',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         agents: <SessionDto>[agent],
         timelines: <String, List<TimelineEventDto>>{
           agent.id: <TimelineEventDto>[approvalEvent],
@@ -127,7 +127,7 @@ void _registerConversationControllerTests() {
   test(
     'queued prompts start one per turn and survive a failed send',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       final container = ProviderContainer(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -204,7 +204,7 @@ void _registerConversationControllerTests() {
   test(
     'a queued prompt whose send fails is retried without a new session event',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..startTurnFailures = 1;
       final container = _queueContainer(api);
       addTearDown(container.dispose);
@@ -236,7 +236,7 @@ void _registerConversationControllerTests() {
   test(
     'a queued prompt still starts when the pending-input notice fails',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..notePendingInputError = Exception('offline');
       final container = _queueContainer(api);
       addTearDown(container.dispose);
@@ -257,7 +257,7 @@ void _registerConversationControllerTests() {
   test(
     'a queued prompt still starts when the settled check fails',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..listSessionsFailures = 1;
       final container = _queueContainer(api);
       addTearDown(container.dispose);
@@ -275,7 +275,7 @@ void _registerConversationControllerTests() {
   test(
     'a queued prompt that never sends stops retrying and reports the failure',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..startTurnError = Exception('offline');
       final container = _queueContainer(api);
       addTearDown(container.dispose);
@@ -315,7 +315,7 @@ void _registerConversationControllerTests() {
     'a drain requested while one is in flight is not dropped',
     () async {
       final gate = Completer<void>();
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..startTurnGate = gate;
       final container = _queueContainer(api);
       addTearDown(container.dispose);
@@ -353,7 +353,7 @@ void _registerConversationControllerTests() {
     'a queue release that fails after disposal is dropped, not retried',
     () async {
       final gate = Completer<void>();
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..startTurnGate = gate
         ..startTurnError = Exception('offline');
       final container = _queueContainer(api);
@@ -393,7 +393,7 @@ void _registerConversationControllerTests() {
   test(
     'a prompt queued after the turn already settled still starts',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       final container = ProviderContainer(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -423,7 +423,7 @@ void _registerConversationControllerTests() {
   test(
     'a prompt the daemon rejects as busy is queued, not handed back',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       final container = ProviderContainer(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -473,7 +473,7 @@ void _registerConversationControllerTests() {
   test(
     'a start failure that is not a running turn still surfaces',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent])
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
         ..startTurnError = Exception('offline');
       final container = ProviderContainer(
         overrides: [
@@ -502,7 +502,7 @@ void _registerConversationControllerTests() {
   test(
     'a queued prompt can be taken back or promoted past the active turn',
     () async {
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       final container = ProviderContainer(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -551,7 +551,7 @@ void _registerConversationControllerTests() {
   test(
     'a turn setting shows before the daemon confirms it and rolls back',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],
       );
@@ -586,7 +586,7 @@ void _registerConversationControllerTests() {
     'conversation ignores a transport event delivered after disposal',
     () async {
       final lateEvents = _LateClientEventStream();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         agents: <SessionDto>[agent],
         eventStream: lateEvents,
       );
@@ -621,7 +621,7 @@ void _registerConversationControllerTests() {
   test(
     'agent commands load once and reload when the daemon reports a change',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         commands: <AgentCommandDto>[_agentCommand('review')],
       );
       final container = _container(api);
@@ -654,7 +654,7 @@ void _registerConversationControllerTests() {
   test(
     'a file search waits out its debounce and re-ranks what it receives',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         files: <String, List<String>>{
           'worktree': <String>['docs/composer.md', 'lib/composer.dart'],
         },
@@ -690,7 +690,7 @@ void _registerConversationControllerTests() {
   test(
     'a file search abandoned inside its debounce never reaches the daemon',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         files: <String, List<String>>{
           'worktree': <String>['lib/composer.dart'],
         },

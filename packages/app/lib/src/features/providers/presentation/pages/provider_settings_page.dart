@@ -4,11 +4,11 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -64,13 +64,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           : _body(state),
     );
     if (widget.embedded) return body;
-    return CoderPageShell(
-      appBar: CoderPageHeader(
+    return TinestPageShell(
+      appBar: TinestPageHeader(
         leading: TRIconButton(
           appearance: TRAppearance.ghost,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: context.pop,
-          icon: const Icon(CoderIcons.back),
+          icon: const Icon(TinestIcons.back),
         ),
         title: TRText.inherit(l10n.providerSettingsTitle),
       ),
@@ -108,7 +108,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final detail = switch (_pane) {
       _ProviderPane.empty => SettingsEmptyState(
         title: AppLocalizations.of(context).providerSettingsSelectConnection,
-        icon: const Icon(CoderIcons.network),
+        icon: const Icon(TinestIcons.network),
       ),
       _ProviderPane.catalog => _ProviderCatalogPane(
         hostId: widget.hostId,
@@ -212,7 +212,7 @@ class _ProviderCollection extends StatelessWidget {
               appearance: TRAppearance.ghost,
               label: l10n.providerSettingsAdd,
               onPressed: onAdd,
-              icon: const Icon(CoderIcons.add),
+              icon: const Icon(TinestIcons.add),
             ),
           ],
         ),
@@ -308,20 +308,20 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
                   for (final definition in catalog.definitions)
                     SettingsRow(
                       key: ValueKey<String>('provider-add-${definition.id}'),
-                      leading: const Icon(CoderIcons.network),
+                      leading: const Icon(TinestIcons.network),
                       title: TRText.inherit(definition.name),
                       description: TRText.inherit(definition.description),
-                      control: const Icon(CoderIcons.chevronRight),
+                      control: const Icon(TinestIcons.chevronRight),
                       onTap: () => widget.onPreset(definition),
                     ),
                   SettingsRow(
                     key: const ValueKey<String>('provider-add-custom'),
-                    leading: const Icon(CoderIcons.tune),
+                    leading: const Icon(TinestIcons.tune),
                     title: TRText.inherit(l10n.providerSettingsCustomName),
                     description: TRText.inherit(
                       l10n.providerSettingsCustomSubtitle,
                     ),
-                    control: const Icon(CoderIcons.chevronRight),
+                    control: const Icon(TinestIcons.chevronRight),
                     onTap: widget.onCustom,
                   ),
                 ],
@@ -456,7 +456,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                       key: const ValueKey<String>('provider-auth-method'),
                       initialValue: _method.id,
                       label: l10n.providerSettingsActions,
-                      width: CoderLayoutMetrics.settingsContentMaxWidth,
+                      width: TinestLayoutMetrics.settingsContentMaxWidth,
                       items: <TRSelectItem<String>>[
                         for (final method in widget.definition.authMethods)
                           TRSelectItem<String>(
@@ -565,7 +565,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                             onPressed: () => Clipboard.setData(
                               ClipboardData(text: url),
                             ),
-                            icon: const Icon(CoderIcons.copy),
+                            icon: const Icon(TinestIcons.copy),
                           ),
                           TRIconButton(
                             key: const ValueKey<String>(
@@ -574,7 +574,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                             appearance: TRAppearance.ghost,
                             label: l10n.providerSettingsOpenBrowser,
                             onPressed: () => _openUrl(url),
-                            icon: const Icon(CoderIcons.network),
+                            icon: const Icon(TinestIcons.network),
                           ),
                         ],
                       ),
@@ -588,12 +588,12 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                         onPressed: () => Clipboard.setData(
                           ClipboardData(text: code),
                         ),
-                        icon: const Icon(CoderIcons.copy),
+                        icon: const Icon(TinestIcons.copy),
                       ),
                     ),
                   if (_openError case final error?)
                     SettingsRow(
-                      leading: const Icon(CoderIcons.warning),
+                      leading: const Icon(TinestIcons.warning),
                       title: TRText('$error', color: TRTextColor.danger),
                     ),
                 ],
@@ -617,8 +617,8 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
 
   String? _prefixError(AppLocalizations l10n) {
     if (_prefix.text.isEmpty || _validPrefix) {
-      return _error is CoderClientException &&
-              (_error! as CoderClientException).code == 'model_prefix_conflict'
+      return _error is TinestClientException &&
+              (_error! as TinestClientException).code == 'model_prefix_conflict'
           ? l10n.providerSettingsModelPrefixConflict
           : null;
     }
@@ -697,7 +697,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
       if (mounted) {
         setState(() {
           _error = error;
-          if (error is CoderClientException &&
+          if (error is TinestClientException &&
               error.code == 'model_prefix_conflict') {
             _rejectedPrefixes.add(_prefix.text.trim().toLowerCase());
             _prefix.text = _suggestPrefix();
@@ -1123,7 +1123,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   TRSelectFormField<String>(
                     initialValue: _wireFormatId,
                     label: l10n.providerSettingsApiFormat,
-                    width: CoderLayoutMetrics.settingsContentMaxWidth,
+                    width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: <TRSelectItem<String>>[
                       for (final format in widget.state.catalog.wireFormats)
                         TRSelectItem<String>(
@@ -1141,7 +1141,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       });
                     },
                   ),
-                  CoderSwitchRow(
+                  TinestSwitchRow(
                     flush: true,
                     title: TRText.inherit(
                       l10n.providerSettingsRequiresApiKey,
@@ -1165,7 +1165,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                     placeholder: 'model-a, model-b',
                   ),
                   for (final control in _selectedWire.controls)
-                    CoderCheckboxRow(
+                    TinestCheckboxRow(
                       value: _controlIds.contains(control.id),
                       onChanged: (selected) => setState(() {
                         selected == true
@@ -1400,12 +1400,12 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
 }
 
 IconData _statusIcon(ProviderConnectionStatus status) => switch (status) {
-  ProviderConnectionStatus.connected => CoderIcons.status,
-  ProviderConnectionStatus.connecting => CoderIcons.refresh,
+  ProviderConnectionStatus.connected => TinestIcons.status,
+  ProviderConnectionStatus.connecting => TinestIcons.refresh,
   ProviderConnectionStatus.degraded ||
-  ProviderConnectionStatus.reauthRequired => CoderIcons.warning,
-  ProviderConnectionStatus.error => CoderIcons.error,
-  ProviderConnectionStatus.disconnected => CoderIcons.stop,
+  ProviderConnectionStatus.reauthRequired => TinestIcons.warning,
+  ProviderConnectionStatus.error => TinestIcons.error,
+  ProviderConnectionStatus.disconnected => TinestIcons.stop,
 };
 
 String _statusLabel(

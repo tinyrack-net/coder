@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 final _now = DateTime.utc(2026, 8, 11);
 
@@ -33,12 +33,12 @@ void main() {
   // was reaching it. Closing the tab is the user saying they are done with it,
   // which makes it the bound this map was missing.
   test('closing a session tab forgets its pending first turn', () async {
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[
         WorkspaceDto(
           id: 'workspace',
-          name: 'Coder',
-          rootPath: '/repos/coder',
+          name: 'Tinest',
+          rootPath: '/repos/tinest',
           kind: WorkspaceKind.git,
           createdAt: _now,
         ),
@@ -48,11 +48,11 @@ void main() {
           id: 'checkout',
           workspaceId: 'workspace',
           name: 'main',
-          path: '/repos/coder',
+          path: '/repos/tinest',
           branch: 'main',
           head: 'abc',
           kind: WorktreeKind.checkout,
-          isCoderOwned: false,
+          isTinestOwned: false,
           createdAt: _now,
         ),
       ],

@@ -10,14 +10,14 @@ void main() {
     final store = FileAgentDefinitionStore.withFiles(files);
     addTearDown(store.close);
     await store.initialize();
-    final coder = (await store.get('coder'))!;
+    final tinest = (await store.get('tinest'))!;
 
     files.pauseNextActiveScan();
     final staleReload = store.reload();
     await files.scanStarted;
     final create = store.create(
       'reviewer',
-      coder.copyWith(
+      tinest.copyWith(
         id: 'reviewer',
         name: 'Reviewer',
         description: '',
@@ -70,9 +70,9 @@ void main() {
     final store = FileAgentDefinitionStore.withFiles(files);
     addTearDown(store.close);
     await store.initialize();
-    final coder = (await store.get('coder'))!;
-    await store.create('active', _fixedAgent(coder, 'active'));
-    await store.create('archived', _fixedAgent(coder, 'archived'));
+    final tinest = (await store.get('tinest'))!;
+    await store.create('active', _fixedAgent(tinest, 'active'));
+    await store.create('archived', _fixedAgent(tinest, 'archived'));
     await store.archive('archived');
 
     await store.rewriteModelPrefix('openai', 'openai-new');
@@ -94,9 +94,9 @@ void main() {
       final store = FileAgentDefinitionStore.withFiles(files);
       addTearDown(store.close);
       await store.initialize();
-      final coder = (await store.get('coder'))!;
-      await store.create('active', _fixedAgent(coder, 'active'));
-      await store.create('archived', _fixedAgent(coder, 'archived'));
+      final tinest = (await store.get('tinest'))!;
+      await store.create('active', _fixedAgent(tinest, 'active'));
+      await store.create('archived', _fixedAgent(tinest, 'archived'));
       await store.archive('archived');
       final activeBefore = files.activeSource('active');
       final archivedBefore = files.archivedSource('archived');
@@ -119,8 +119,8 @@ void main() {
   );
 }
 
-AgentDefinitionDto _fixedAgent(AgentDefinitionDto coder, String id) =>
-    coder.copyWith(
+AgentDefinitionDto _fixedAgent(AgentDefinitionDto tinest, String id) =>
+    tinest.copyWith(
       id: id,
       name: id,
       description: '',

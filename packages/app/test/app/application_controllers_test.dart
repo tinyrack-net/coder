@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 
 part '../features/conversation/controller_test_cases.dart';
 part '../features/providers/controller_test_cases.dart';
@@ -41,14 +41,14 @@ AgentCommandDto _agentCommand(String name) => AgentCommandDto(
   body: 'Run $name.',
 );
 
-ProviderContainer _container(FakeCoderApi api) => ProviderContainer(
+ProviderContainer _container(FakeTinestApi api) => ProviderContainer(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(api)),
     appIdGeneratorProvider.overrideWithValue(const _FixedIdGenerator()),
   ],
 );
 
-ProviderContainer _queueContainer(FakeCoderApi api) => ProviderContainer(
+ProviderContainer _queueContainer(FakeTinestApi api) => ProviderContainer(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(api)),
     appIdGeneratorProvider.overrideWithValue(_SequentialIdGenerator()),
@@ -92,17 +92,17 @@ RemoteDaemonProfile _profile(String id, DateTime now) => RemoteDaemonProfile(
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(
   serverId: id,
   version: 'test',
-  protocolVersion: coderProtocolMajor,
+  protocolVersion: tinestProtocolMajor,
   features: const <String, bool>{},
 );
 
 final class _HostClients implements HostClientFactory {
   const _HostClients(this.apis);
 
-  final Map<String, CoderApi> apis;
+  final Map<String, TinestApi> apis;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

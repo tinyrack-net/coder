@@ -28,7 +28,7 @@ final class RealDaemonFixture {
     ProviderOAuthGateway? oauthGateway,
     ProviderCatalogMetadataSource? providerCatalogMetadataSource,
   }) async {
-    final home = await Directory.systemTemp.createTemp('coder-$id-e2e-');
+    final home = await Directory.systemTemp.createTemp('tinest-$id-e2e-');
     final token = '$id-e2e-token-0123456789abcdef0123456789';
     final ids = SequenceE2eIds(id);
     final daemon = await DaemonApplication.start(
@@ -92,8 +92,8 @@ final class RealDaemonFixture {
   );
 
   /// Opens an assertion client against the same daemon.
-  Future<CoderApi> connect({String clientId = 'e2e-assertions'}) =>
-      CoderClient.connect(
+  Future<TinestApi> connect({String clientId = 'e2e-assertions'}) =>
+      TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: daemon.boundEndpoint),
         credentials: DaemonCredentials(bearerToken: token),
         clientId: clientId,

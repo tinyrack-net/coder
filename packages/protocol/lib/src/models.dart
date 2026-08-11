@@ -319,10 +319,10 @@ enum WorktreeKind {
   /// The workspace's original checkout.
   checkout,
 
-  /// A Git worktree created and owned by Tinyrack Coder.
+  /// A Git worktree created and owned by Tinest.
   managed,
 
-  /// A Git worktree discovered on disk but not owned by Tinyrack Coder.
+  /// A Git worktree discovered on disk but not owned by Tinest.
   external,
 
   /// The sole checkout for a non-Git directory workspace.
@@ -587,7 +587,7 @@ abstract class WorktreeDto with _$WorktreeDto {
     required String name,
     required String path,
     required WorktreeKind kind,
-    required bool isCoderOwned,
+    required bool isTinestOwned,
     required DateTime createdAt,
     String? branch,
     String? head,
@@ -631,7 +631,7 @@ abstract class WorktreeArchivePreviewDto with _$WorktreeArchivePreviewDto {
 }
 
 @freezed
-/// Project-scoped configuration stored in the repository root `coder.json`.
+/// Project-scoped configuration stored in the repository root `.tinest/config.json`.
 abstract class ProjectSettingsDto with _$ProjectSettingsDto {
   /// Creates project settings.
   const factory ProjectSettingsDto({
@@ -804,7 +804,7 @@ enum McpConfigScope {
   /// The daemon's own `mcp.json`, owned and edited by the user.
   user,
 
-  /// A worktree's `.coder/config.json`, committed with the code it serves.
+  /// A worktree's `.tinest/config.json`, committed with the code it serves.
   project,
 }
 
@@ -1438,7 +1438,7 @@ abstract class ProviderUsageWindowDto with _$ProviderUsageWindowDto {
 }
 
 @freezed
-/// Subscription usage available for one Coder-managed provider connection.
+/// Subscription usage available for one Tinest-managed provider connection.
 abstract class ProviderUsageDto with _$ProviderUsageDto {
   /// Creates a provider usage snapshot.
   const factory ProviderUsageDto({

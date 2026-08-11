@@ -5,10 +5,10 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  test('relay defaults to the official Coder endpoint', () {
+  test('relay defaults to the official Tinest endpoint', () {
     expect(
       const RelayDaemonConfig().endpoint,
-      Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+      Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
     );
   });
 
@@ -78,11 +78,11 @@ void main() {
     );
     expect(
       defaults.configDirectory,
-      p.posix.join('/xdg/config', 'tinyrack-coder'),
+      p.posix.join('/xdg/config', 'tinyrack-tinest'),
     );
     expect(
       defaults.homeDirectory,
-      p.posix.join('/xdg/state', 'tinyrack-coder'),
+      p.posix.join('/xdg/state', 'tinyrack-tinest'),
     );
     expect(defaults.userHomeDirectory, '/home/test');
     expect(defaults.host, '127.0.0.1');
@@ -91,12 +91,12 @@ void main() {
     final override = DaemonConfig.fromEnvironment(
       environment: const _Environment(
         values: <String, String>{
-          'TINYRACK_CODER_HOME': '/override',
-          'TINYRACK_CODER_LISTEN': '0.0.0.0:9001',
-          'TINYRACK_CODER_TOKEN': 'token',
-          'TINYRACK_CODER_RELAY': 'true',
-          'TINYRACK_CODER_RELAY_ENDPOINT': 'wss://relay.example.test/v1/ws',
-          'TINYRACK_CODER_RELAY_TLS': 'allow-invalid-certificate',
+          'TINYRACK_TINEST_HOME': '/override',
+          'TINYRACK_TINEST_LISTEN': '0.0.0.0:9001',
+          'TINYRACK_TINEST_TOKEN': 'token',
+          'TINYRACK_TINEST_RELAY': 'true',
+          'TINYRACK_TINEST_RELAY_ENDPOINT': 'wss://relay.example.test/v1/ws',
+          'TINYRACK_TINEST_RELAY_TLS': 'allow-invalid-certificate',
           'HOME': '/unused',
         },
         linux: true,
@@ -104,7 +104,7 @@ void main() {
     );
     expect(override.homeDirectory, '/override');
     expect(override.configDirectory, '/override');
-    // TINYRACK_CODER_HOME relocates daemon-owned state only. The shared
+    // TINYRACK_TINEST_HOME relocates daemon-owned state only. The shared
     // `~/.agents` tree still belongs to the real user home.
     expect(override.userHomeDirectory, '/unused');
     expect(override.host, '0.0.0.0');
@@ -123,7 +123,7 @@ void main() {
       environment: const _Environment(
         values: <String, String>{
           'HOME': '/home/test',
-          'TINYRACK_CODER_AGENTS_HOME': '/tmp/agents-home',
+          'TINYRACK_TINEST_AGENTS_HOME': '/tmp/agents-home',
         },
         linux: true,
       ),
@@ -160,7 +160,7 @@ void main() {
         '/Users/test',
         'Library',
         'Application Support',
-        'Tinyrack Coder',
+        'Tinest',
       ),
     );
     expect(macOS.configDirectory, macOS.homeDirectory);
@@ -185,11 +185,11 @@ void main() {
     );
     expect(
       fallback.configDirectory,
-      p.posix.join('/home/test', '.config', 'tinyrack-coder'),
+      p.posix.join('/home/test', '.config', 'tinyrack-tinest'),
     );
     expect(
       fallback.homeDirectory,
-      p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+      p.posix.join('/home/test', '.local', 'state', 'tinyrack-tinest'),
     );
   });
 
@@ -197,7 +197,7 @@ void main() {
     expect(
       () => DaemonConfig.fromEnvironment(
         environment: const _Environment(
-          values: <String, String>{'TINYRACK_CODER_LISTEN': 'invalid'},
+          values: <String, String>{'TINYRACK_TINEST_LISTEN': 'invalid'},
           linux: true,
         ),
       ),

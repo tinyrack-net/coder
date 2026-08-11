@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/desktop_host.dart';
-import 'package:coder_workspace/src/verification_runner.dart';
-import 'package:coder_workspace/src/windows_build_environment.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
+import 'package:tinest_workspace/src/verification_runner.dart';
+import 'package:tinest_workspace/src/windows_build_environment.dart';
 
 import 'support/windows_build_environment.dart';
 

@@ -104,7 +104,7 @@ abstract final class PromptAssets {
 
   /// Contents of `base_instructions/default.md`.
   static const String baseInstructionsDefault =
-      'You are a coding agent running in Tinyrack Coder, a coding assistant that drives a real workspace. You are expected to be precise, safe, and helpful.\n'
+      'You are a coding agent running in Tinest, a coding assistant that drives a real workspace. You are expected to be precise, safe, and helpful.\n'
       '\n'
       'Your capabilities:\n'
       '\n'

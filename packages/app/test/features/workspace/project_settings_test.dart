@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -77,8 +77,8 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(
-        workspaces: <WorkspaceDto>[workspace('workspace', 'coder')],
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace('workspace', 'tinest')],
         terminalShellGate: gate.future,
       )..projectSettings['workspace'] = const ProjectSettingsDto();
       final router = await _pumpRoute(
@@ -124,12 +124,12 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[
           workspace('design', 'design'),
-          workspace('workspace', 'coder'),
+          workspace('workspace', 'tinest'),
         ],
-      )..projectSettings['coder'] = const ProjectSettingsDto();
+      )..projectSettings['tinest'] = const ProjectSettingsDto();
       final router = await _pumpRoute(
         tester,
         api,
@@ -137,10 +137,17 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      // Projects are sorted by name, so `coder` is selected by default.
+      // Select the product workspace explicitly: the new brand sorts after
+      // `design`, unlike the previous product name.
+      await tester.tap(find.text('tinest'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Projects'), findsWidgets);
       expect(find.text('design'), findsOneWidget);
-      expect(find.text('/projects/workspace/coder.json'), findsOneWidget);
+      expect(
+        find.text('/projects/workspace/.tinest/config.json'),
+        findsOneWidget,
+      );
 
       await tester.enterText(
         _textInput('Setup (worktree 생성 후)'),
@@ -210,10 +217,10 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final api =
-        FakeCoderApi(
+        FakeTinestApi(
             workspaces: <WorkspaceDto>[
               workspace('design', 'design'),
-              workspace('workspace', 'coder'),
+              workspace('workspace', 'tinest'),
             ],
           )
           ..projectSettings['design'] = const ProjectSettingsDto(
@@ -226,10 +233,12 @@ void main() {
     );
     addTearDown(router.dispose);
 
+    await tester.tap(find.text('tinest'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('design'));
     await tester.pumpAndSettle();
 
-    expect(find.text('/projects/design/coder.json'), findsOneWidget);
+    expect(find.text('/projects/design/.tinest/config.json'), findsOneWidget);
     expect(find.text('bundle install'), findsOneWidget);
   });
 
@@ -238,7 +247,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final router = await _pumpRoute(
       tester,
-      FakeCoderApi(),
+      FakeTinestApi(),
       const ProjectSettingsRoute(hostId: 'server').location,
     );
     addTearDown(router.dispose);
@@ -251,8 +260,8 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
-      workspaces: <WorkspaceDto>[workspace('workspace', 'coder')],
+    final api = FakeTinestApi(
+      workspaces: <WorkspaceDto>[workspace('workspace', 'tinest')],
       projectSettingsError: Exception('invalid_project_settings'),
     );
     final router = await _pumpRoute(
@@ -278,8 +287,8 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
-      workspaces: <WorkspaceDto>[workspace('workspace', 'coder')],
+    final api = FakeTinestApi(
+      workspaces: <WorkspaceDto>[workspace('workspace', 'tinest')],
     );
     final router = await _pumpRoute(
       tester,
@@ -288,17 +297,20 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    expect(find.text('/projects/workspace/coder.json'), findsNothing);
-    await tester.tap(find.text('coder'));
+    expect(find.text('/projects/workspace/.tinest/config.json'), findsNothing);
+    await tester.tap(find.text('tinest'));
     await tester.pumpAndSettle();
-    expect(find.text('/projects/workspace/coder.json'), findsOneWidget);
+    expect(
+      find.text('/projects/workspace/.tinest/config.json'),
+      findsOneWidget,
+    );
 
     expect(findAccessibleAction('Project 목록'), findsNothing);
     await tester.tap(
       find.byKey(const ValueKey<String>('settings-back-button')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('/projects/workspace/coder.json'), findsNothing);
+    expect(find.text('/projects/workspace/.tinest/config.json'), findsNothing);
   });
 }
 
@@ -316,7 +328,7 @@ Finder _keyedTextInput(String key) => find.descendant(
 
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
-  FakeCoderApi api,
+  FakeTinestApi api,
   String location, {
   bool settle = true,
 }) async {

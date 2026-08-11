@@ -3,21 +3,21 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -29,14 +29,14 @@ void main() {
     branch: 'main',
     head: 'abc123',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final session = SessionDto(
     id: 'session',
     worktreeId: worktree.id,
     title: 'Route session',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -123,7 +123,7 @@ void main() {
               location: route.location,
               mode: mode,
               size: viewport.size,
-              api: FakeCoderApi(
+              api: FakeTinestApi(
                 workspaces: <WorkspaceDto>[workspace],
                 worktrees: <WorktreeDto>[worktree],
                 agents: <SessionDto>[session],
@@ -152,7 +152,7 @@ class _RouteGoldenHost extends StatefulWidget {
   final String location;
   final ThemeMode mode;
   final Size size;
-  final FakeCoderApi api;
+  final FakeTinestApi api;
 
   @override
   State<_RouteGoldenHost> createState() => _RouteGoldenHostState();
@@ -197,7 +197,7 @@ class _RouteGoldenHostState extends State<_RouteGoldenHost> {
               padding: padding,
               viewPadding: padding,
             ),
-            child: CoderControlDensity(child: child!),
+            child: TinestControlDensity(child: child!),
           );
         },
       ),

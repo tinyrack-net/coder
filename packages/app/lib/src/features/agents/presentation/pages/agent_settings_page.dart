@@ -4,12 +4,12 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/agents/application/agent_definitions_controller.dart';
 import 'package:app/src/features/agents/presentation/tool_groups.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,7 +59,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact =
-                constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+                constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
             if (!_creating &&
                 !compact &&
                 !value.definitions.any(
@@ -89,7 +89,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                     onCancel: _showAgentList,
                     onCreate: (input) {
                       final template = value.definitions
-                          .where((definition) => definition.id == 'coder')
+                          .where((definition) => definition.id == 'tinest')
                           .first;
                       final definition = template.copyWith(
                         id: input.id,
@@ -125,7 +125,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
                     title: AppLocalizations.of(
                       context,
                     ).agentSettingsSelectAgent,
-                    icon: const Icon(CoderIcons.agent),
+                    icon: const Icon(TinestIcons.agent),
                   )
                 : _AgentEditor(
                     key: ValueKey<String>(selected.contentHash),
@@ -184,7 +184,7 @@ class _AgentDefinitionList extends StatelessWidget {
               appearance: TRAppearance.ghost,
               label: l10n.agentSettingsAdd,
               onPressed: onCreate,
-              icon: const Icon(CoderIcons.add),
+              icon: const Icon(TinestIcons.add),
             ),
           ],
         ),
@@ -196,8 +196,8 @@ class _AgentDefinitionList extends StatelessWidget {
                   selected: definition.id == selectedId,
                   leading: Icon(
                     definition.mode == AgentMode.primary
-                        ? CoderIcons.agent
-                        : CoderIcons.branch,
+                        ? TinestIcons.agent
+                        : TinestIcons.branch,
                   ),
                   title: TRText.inherit(definition.name),
                   description: TRText.inherit(
@@ -207,7 +207,7 @@ class _AgentDefinitionList extends StatelessWidget {
                   ),
                   control: definition.diagnostics.isEmpty
                       ? null
-                      : const Icon(CoderIcons.warning),
+                      : const Icon(TinestIcons.warning),
                   onTap: () => onSelected(definition.id),
                 ),
             ],
@@ -302,7 +302,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
               label: l10n.agentSettingsCopyPath,
               onPressed: () =>
                   Clipboard.setData(ClipboardData(text: definition.sourcePath)),
-              icon: const Icon(CoderIcons.copy),
+              icon: const Icon(TinestIcons.copy),
             ),
             if (definition.isBuiltIn)
               TRIconButton(
@@ -310,7 +310,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                 appearance: TRAppearance.ghost,
                 label: l10n.agentSettingsReset,
                 onPressed: editable ? _reset : null,
-                icon: const Icon(CoderIcons.restore),
+                icon: const Icon(TinestIcons.restore),
               )
             else
               TRIconButton(
@@ -318,7 +318,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                 appearance: TRAppearance.ghost,
                 label: l10n.workspaceArchive,
                 onPressed: editable ? _archive : null,
-                icon: const Icon(CoderIcons.archive),
+                icon: const Icon(TinestIcons.archive),
               ),
             TRButton(
               intent: TRIntent.primary,
@@ -345,7 +345,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                               .map((diagnostic) => diagnostic.message)
                               .join('\n'),
                         ),
-                        icon: const Icon(CoderIcons.warning),
+                        icon: const Icon(TinestIcons.warning),
                         variant: TRStatusVariant.warning,
                       ),
                 children: <Widget>[
@@ -373,7 +373,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                   // decision, so they share a heading. The toggle goes flush
                   // to line up with the editor rather than sitting in a card
                   // that steps in from it.
-                  CoderSwitchRow(
+                  TinestSwitchRow(
                     flush: true,
                     value: _promptEnabled,
                     onChanged: editable
@@ -461,7 +461,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                     _toolGroupHeader(l10n, view, editable: editable),
                     if (_expandedGroups.contains(view.group))
                       for (final tool in view.tools)
-                        CoderCheckboxRow(
+                        TinestCheckboxRow(
                           key: ValueKey<String>('agent-tool-tile-${tool.id}'),
                           value: tool.alwaysOn || _tools.contains(tool.id),
                           // An always-on tool has no toggle to offer, so the
@@ -476,7 +476,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                               : null,
                           secondary: tool.alwaysOn
                               ? Icon(
-                                  CoderIcons.lock,
+                                  TinestIcons.lock,
                                   key: ValueKey<String>(
                                     'agent-tool-lock-${tool.id}',
                                   ),
@@ -502,7 +502,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                         title: TRText.inherit(l10n.agentSettingsNoSubagents),
                       ),
                     for (final subagent in subagents)
-                      CoderCheckboxRow(
+                      TinestCheckboxRow(
                         value: _callableAgents.contains(subagent.id),
                         onChanged: editable
                             ? (enabled) => setState(() {
@@ -535,7 +535,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
   }) {
     final expanded = _expandedGroups.contains(view.group);
     final enabled = view.enabledCount(_tools);
-    return CoderCheckboxRow(
+    return TinestCheckboxRow(
       key: ValueKey<String>('agent-tool-group-${view.group.name}'),
       value: view.allEnabled(_tools),
       indeterminate: view.partiallyEnabled(_tools),
@@ -557,7 +557,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
       // lock here would say it does not. That a group is always on is already
       // said by its disabled checkbox and its subtitle, and each tool inside
       // still carries its own lock.
-      secondary: Icon(expanded ? CoderIcons.collapse : CoderIcons.expand),
+      secondary: Icon(expanded ? TinestIcons.collapse : TinestIcons.expand),
       title: TRText.inherit(toolGroupLabel(l10n, view.group)),
       subtitle: TRText.inherit(
         view.locked
@@ -728,7 +728,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
         .run(
           () => container
               .read(agentDefinitionsControllerProvider(widget.hostId).notifier)
-              .resetCoder(),
+              .resetTinest(),
           failure: l10n.agentSettingsResetFailed,
           success: l10n.agentSettingsResetDone,
           id: 'agent-reset',
@@ -850,7 +850,7 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
                   TRSelectFormField<AgentMode>(
                     initialValue: _mode,
                     label: l10n.commonKind,
-                    width: CoderLayoutMetrics.settingsContentMaxWidth,
+                    width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: AgentMode.values
                         .map(
                           (value) => TRSelectItem<AgentMode>(

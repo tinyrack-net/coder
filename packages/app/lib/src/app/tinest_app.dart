@@ -10,17 +10,17 @@ import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Tinyrack Coder application composition.
-class CoderApp extends StatelessWidget {
+/// Tinest application composition.
+class TinestApp extends StatelessWidget {
   /// Creates the application.
-  CoderApp({
+  TinestApp({
     required this.services,
     this.attachmentInput,
     this.directoryPicker,
@@ -77,7 +77,7 @@ class CoderApp extends StatelessWidget {
       appTerminatorProvider.overrideWithValue(terminator),
       autostartProvider.overrideWithValue(autostart),
     ],
-    child: _CoderAppView(
+    child: _TinestAppView(
       router: _router,
       resident: desktopWindow != null || trayIcon != null,
     ),
@@ -85,8 +85,8 @@ class CoderApp extends StatelessWidget {
 }
 
 /// Builds the app shell below [ProviderScope] so it can watch settings.
-class _CoderAppView extends ConsumerWidget {
-  const _CoderAppView({required this.router, required this.resident});
+class _TinestAppView extends ConsumerWidget {
+  const _TinestAppView({required this.router, required this.resident});
 
   final GoRouter router;
 
@@ -111,11 +111,11 @@ class _CoderAppView extends ConsumerWidget {
     return MaterialApp.router(
       title: AppIdentity.displayName,
       debugShowCheckedModeBanner: false,
-      theme: coderTheme(Brightness.light),
-      darkTheme: coderTheme(Brightness.dark),
+      theme: tinestTheme(Brightness.light),
+      darkTheme: tinestTheme(Brightness.dark),
       // Settings that have not loaded yet follow the platform, which is also
       // the stored default, so the first frame never flips brightness.
-      themeMode: coderThemeMode(themeMode ?? AppThemeMode.system),
+      themeMode: tinestThemeMode(themeMode ?? AppThemeMode.system),
       // A null locale lets Flutter resolve the system locale against
       // [AppLocalizations.supportedLocales], which falls back to English.
       locale: localeTag == null ? null : Locale(localeTag),
@@ -124,7 +124,7 @@ class _CoderAppView extends ConsumerWidget {
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
       // follow the selected language and a tray row can navigate.
-      builder: (context, child) => CoderControlDensity(
+      builder: (context, child) => TinestControlDensity(
         child: TRContextMenuPresenterScope(
           // The one place a concrete presenter is named. A widget test that
           // omits this scope gets the deterministic Flutter presentation
@@ -134,7 +134,7 @@ class _CoderAppView extends ConsumerWidget {
             // Outside the desktop shell rather than inside it: that shell only
             // builds where the platform has a window to dress, so a report
             // placed within it would never reach mobile or the web.
-            child: CoderToastScope(
+            child: TinestToastScope(
               child: !resident
                   ? child ?? const SizedBox.shrink()
                   : DesktopShellScope(
@@ -150,12 +150,12 @@ class _CoderAppView extends ConsumerWidget {
 }
 
 /// Builds the shared Material theme for one brightness.
-ThemeData coderTheme(Brightness brightness) => brightness == Brightness.light
+ThemeData tinestTheme(Brightness brightness) => brightness == Brightness.light
     ? TinyrackTheme.light()
     : TinyrackTheme.dark();
 
 /// Translates the stored appearance choice into the widget-layer mode.
-ThemeMode coderThemeMode(AppThemeMode mode) => switch (mode) {
+ThemeMode tinestThemeMode(AppThemeMode mode) => switch (mode) {
   AppThemeMode.system => ThemeMode.system,
   AppThemeMode.light => ThemeMode.light,
   AppThemeMode.dark => ThemeMode.dark,

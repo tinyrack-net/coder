@@ -10,7 +10,7 @@ import 'package:protocol/protocol.dart';
 import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 void main() {
@@ -28,7 +28,7 @@ void main() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final location = WorktreeRoute(
@@ -43,7 +43,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -84,7 +84,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       )..terminalCreateGate = Completer<void>();
@@ -124,7 +124,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api =
-          FakeCoderApi(
+          FakeTinestApi(
               workspaces: <WorkspaceDto>[workspace],
               worktrees: <WorktreeDto>[checkout],
             )

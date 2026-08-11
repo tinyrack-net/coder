@@ -1,7 +1,7 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
@@ -15,15 +15,15 @@ import 'package:protocol/protocol.dart';
 import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
 import '../../support/fake_desktop_ports.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 final _now = DateTime.utc(2026, 8, 3);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -31,11 +31,11 @@ final _worktree = WorktreeDto(
   id: 'checkout',
   workspaceId: 'workspace',
   name: 'main',
-  path: '/repos/coder',
+  path: '/repos/tinest',
   branch: 'main',
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 const _terminal = TerminalDto(
@@ -156,11 +156,11 @@ Future<void> _openTerminalMenu(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<FakeCoderApi> _pumpTerminal(
+Future<FakeTinestApi> _pumpTerminal(
   WidgetTester tester, {
   required TRContextMenuPresenter presenter,
 }) async {
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     workspaces: <WorkspaceDto>[_workspace],
     worktrees: <WorktreeDto>[_worktree],
     terminals: const <TerminalDto>[_terminal],
@@ -212,7 +212,7 @@ void main() {
       );
       late TRContextMenuPresenter resolved;
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -485,10 +485,10 @@ final class _OfflineClients implements HostClientFactory {
   const _OfflineClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
+  }) => Future<TinestApi>.error(const HostConnectionFailure.network('offline'));
 }

@@ -24,13 +24,13 @@ void main() {
     const hello = HelloParamsDto(
       clientId: 'client',
       clientKind: 'test',
-      protocolMajor: coderProtocolMajor,
+      protocolMajor: tinestProtocolMajor,
       capabilities: <String, bool>{},
     );
     const server = ServerInfoDto(
       serverId: 'server',
       version: 'test',
-      protocolVersion: coderProtocolMajor,
+      protocolVersion: tinestProtocolMajor,
       features: <String, bool>{},
     );
     const changed = EmptyResultDto();

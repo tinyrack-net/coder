@@ -4,9 +4,9 @@ import 'package:alchemist/alchemist.dart';
 // Alchemist's public golden API captures a subtree. This test needs its
 // adapter hook so a root-overlay menu is included in the captured scene.
 import 'package:alchemist/src/golden_test_adapter.dart' as alchemist_adapter;
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/application/composer_suggestions.dart';
 import 'package:app/src/features/conversation/presentation/composer_trigger.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
@@ -14,7 +14,7 @@ import 'package:app/src/features/conversation/presentation/widgets/session_compo
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
@@ -32,8 +32,8 @@ import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/src/internal/focus_source.dart' as focus_source;
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
@@ -103,7 +103,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('도움말'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Tinyrack Coder 정보'));
+        await tester.tap(find.text('Tinest 정보'));
         await tester.pumpAndSettle();
         return () async {
           await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -185,8 +185,8 @@ void main() {
       fileName: 'terminal_context_menu_open',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
       whilePerforming: (tester) async {
-        final terminalView = tester.widget<CoderTerminalView>(
-          find.byType(CoderTerminalView),
+        final terminalView = tester.widget<TinestTerminalView>(
+          find.byType(TinestTerminalView),
         );
         await _waitForTerminalText(
           tester,
@@ -258,8 +258,8 @@ void main() {
       fileName: 'terminal_ime_preedit',
       constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
       whilePerforming: (tester) async {
-        final terminalView = tester.widget<CoderTerminalView>(
-          find.byType(CoderTerminalView),
+        final terminalView = tester.widget<TinestTerminalView>(
+          find.byType(TinestTerminalView),
         );
         await _waitForTerminalText(tester, terminalView.terminal, 'input: ');
         final surface = find.byKey(
@@ -426,7 +426,7 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
     overrides: [
       appServicesProvider.overrideWithValue(
         fakeAppServices(
-          FakeCoderApi(agentDefinitions: _definitions),
+          FakeTinestApi(agentDefinitions: _definitions),
         ),
       ),
     ],
@@ -458,7 +458,7 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
             bar: SessionComposerBar(
               hostId: 'server',
               definitions: _definitions,
-              agentDefinitionId: 'coder',
+              agentDefinitionId: 'tinest',
               selection: null,
               onAgentChanged: (_) {},
               onModelChanged: (_, _) {},
@@ -476,8 +476,8 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
 
   static const _definitions = <AgentDefinitionDto>[
     AgentDefinitionDto(
-      id: 'coder',
-      name: 'Coder',
+      id: 'tinest',
+      name: 'Tinest',
       description: 'General-purpose coding agent',
       mode: AgentMode.primary,
       promptEnabled: true,
@@ -485,8 +485,8 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
       model: AgentModelSelectionDto(source: AgentModelSource.session),
       toolIds: <String>[],
       callableAgentIds: <String>[],
-      contentHash: 'coder-hash',
-      sourcePath: '/agents/coder.md',
+      contentHash: 'tinest-hash',
+      sourcePath: '/agents/tinest.md',
       isBuiltIn: true,
     ),
     AgentDefinitionDto(
@@ -516,9 +516,9 @@ Widget _settingsSkeleton(ThemeMode mode, Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
-Widget _desktopApp() => CoderApp(
+Widget _desktopApp() => TinestApp(
   services: fakeAppServices(
-    FakeCoderApi(),
+    FakeTinestApi(),
     connected: false,
     store: MemoryAppStore(
       settings: const AppSettings(
@@ -534,15 +534,15 @@ Widget _desktopApp() => CoderApp(
 
 /// Pins the terminal's own context menu, which no other golden reaches.
 ///
-/// The menu is built by Coder's token-backed termworld composite, because the
+/// The menu is built by Tinest's token-backed termworld composite, because the
 /// terminal owns secondary taps, so only a real right-click on the terminal
 /// surface opens it.
 Widget _terminalApp() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -554,7 +554,7 @@ Widget _terminalApp() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   const terminal = TerminalDto(
@@ -568,7 +568,7 @@ Widget _terminalApp() {
     lastSequence: 0,
   );
   return _TerminalGoldenHost(
-    api: FakeCoderApi(
+    api: FakeTinestApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[worktree],
       terminals: const <TerminalDto>[terminal],
@@ -593,8 +593,8 @@ Widget _terminalFailureApp() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -606,14 +606,14 @@ Widget _terminalFailureApp() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   return _TerminalGoldenHost(
-    api: FakeCoderApi(
+    api: FakeTinestApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[worktree],
-      terminalCreateError: const CoderClientException(
+      terminalCreateError: const TinestClientException(
         'The worktree directory is no longer available.',
         code: 'worktree_unavailable',
       ),
@@ -629,7 +629,7 @@ Widget _terminalFailureApp() {
 class _TerminalGoldenHost extends StatefulWidget {
   const _TerminalGoldenHost({required this.api, required this.location});
 
-  final FakeCoderApi api;
+  final FakeTinestApi api;
   final String location;
 
   @override
@@ -706,7 +706,7 @@ class _TerminalImeGoldenAppState extends State<_TerminalImeGoldenApp> {
     darkTheme: testDarkTheme,
     themeMode: ThemeMode.dark,
     home: Scaffold(
-      body: CoderTerminalView(
+      body: TinestTerminalView(
         terminal: _terminal,
         controller: _controller,
         autofocus: true,
@@ -745,10 +745,10 @@ class _ComposerChipGoldenAppState extends State<_ComposerChipGoldenApp> {
             key: ValueKey<int>(_layoutGeneration),
             valueKey: const ValueKey('golden-project-chip'),
             icon: Icons.folder_outlined,
-            label: 'Coder',
+            label: 'Tinest',
             tooltip: '프로젝트 선택',
             menuChildren: <Widget>[
-              TRMenuItem(onPressed: () {}, child: const Text('Coder · test')),
+              TRMenuItem(onPressed: () {}, child: const Text('Tinest · test')),
               TRMenuItem(onPressed: () {}, child: const Text('추가')),
             ],
           ),
@@ -942,7 +942,7 @@ class _ComposerSuggestionsGoldenHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+      appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,

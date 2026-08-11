@@ -47,12 +47,12 @@ LocalDaemonDirectories resolveLocalDaemonDirectories({
 }) {
   final values = environment.values;
   final defaults = _defaultDirectories(values, environment);
-  final override = values['TINYRACK_CODER_HOME'];
+  final override = values['TINYRACK_TINEST_HOME'];
   return LocalDaemonDirectories(
     configDirectory: override ?? defaults.configDirectory,
     stateDirectory: override ?? defaults.stateDirectory,
     userHomeDirectory:
-        values['TINYRACK_CODER_AGENTS_HOME'] ?? defaults.userHomeDirectory,
+        values['TINYRACK_TINEST_AGENTS_HOME'] ?? defaults.userHomeDirectory,
     osHomeDirectory: defaults.osHomeDirectory,
   );
 }
@@ -83,8 +83,8 @@ LocalDaemonDirectories _defaultDirectories(
         environment['XDG_STATE_HOME'] ??
         p.posix.join(userHome, '.local', 'state');
     return LocalDaemonDirectories(
-      configDirectory: p.posix.join(config, 'tinyrack-coder'),
-      stateDirectory: p.posix.join(state, 'tinyrack-coder'),
+      configDirectory: p.posix.join(config, 'tinyrack-tinest'),
+      stateDirectory: p.posix.join(state, 'tinyrack-tinest'),
       userHomeDirectory: userHome,
       osHomeDirectory: userHome,
     );
@@ -94,7 +94,7 @@ LocalDaemonDirectories _defaultDirectories(
       userHome,
       'Library',
       'Application Support',
-      'Tinyrack Coder',
+      'Tinest',
     );
     return LocalDaemonDirectories(
       configDirectory: support,
@@ -107,19 +107,19 @@ LocalDaemonDirectories _defaultDirectories(
     final config = environment['APPDATA'] ?? userHome;
     final state = environment['LOCALAPPDATA'] ?? config;
     return LocalDaemonDirectories(
-      configDirectory: p.windows.join(config, 'Tinyrack Coder'),
-      stateDirectory: p.windows.join(state, 'Tinyrack Coder'),
+      configDirectory: p.windows.join(config, 'Tinest'),
+      stateDirectory: p.windows.join(state, 'Tinest'),
       userHomeDirectory: userHome,
       osHomeDirectory: userHome,
     );
   }
   return LocalDaemonDirectories(
-    configDirectory: p.posix.join(userHome, '.config', 'tinyrack-coder'),
+    configDirectory: p.posix.join(userHome, '.config', 'tinyrack-tinest'),
     stateDirectory: p.posix.join(
       userHome,
       '.local',
       'state',
-      'tinyrack-coder',
+      'tinyrack-tinest',
     ),
     userHomeDirectory: userHome,
     osHomeDirectory: userHome,

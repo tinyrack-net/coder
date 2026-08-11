@@ -4,8 +4,8 @@ void _registerWorkspaceAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -17,14 +17,14 @@ void _registerWorkspaceAppFlows() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   SessionDto session(String id) => SessionDto(
     id: id,
     worktreeId: checkout.id,
     title: 'Session $id',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -39,7 +39,7 @@ void _registerWorkspaceAppFlows() {
       (tester) async {
         await tester.binding.setSurfaceSize(testCase.size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
-        final api = FakeCoderApi(
+        final api = FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
           worktrees: const <WorktreeDto>[],
         );
@@ -67,7 +67,7 @@ void _registerWorkspaceAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         workspaceCatalogResponses: <WorkspaceCatalogDto>[
@@ -104,7 +104,7 @@ void _registerWorkspaceAppFlows() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
       final second = session('two');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[first, second],
@@ -162,11 +162,11 @@ void _registerWorkspaceAppFlows() {
         path: '/worktrees/feature-settings',
         branch: 'feature/settings',
         kind: WorktreeKind.managed,
-        isCoderOwned: true,
+        isTinestOwned: true,
         createdAt: now,
       );
       final api =
-          FakeCoderApi(
+          FakeTinestApi(
               workspaces: <WorkspaceDto>[workspace],
               worktrees: <WorktreeDto>[checkout, managed],
             )
@@ -226,11 +226,11 @@ void _registerWorkspaceAppFlows() {
         path: '/worktrees/feature-settings',
         branch: 'feature/settings',
         kind: WorktreeKind.managed,
-        isCoderOwned: true,
+        isTinestOwned: true,
         createdAt: now,
       );
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout, managed],
       )..archiveWorktreeGate = gate;
@@ -269,7 +269,7 @@ void _registerWorkspaceAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         directories: const <String, List<String>>{
           '/': <String>['/srv'],
           '/srv': <String>['/srv/repositories'],
@@ -313,7 +313,7 @@ void _registerWorkspaceAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -352,7 +352,7 @@ void _registerWorkspaceAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -397,7 +397,7 @@ void _registerWorkspaceAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -428,7 +428,7 @@ void _registerWorkspaceAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final semantics = tester.ensureSemantics();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -482,7 +482,7 @@ void _registerWorkspaceAppFlows() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 780));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[checkout],
     );
@@ -502,7 +502,7 @@ void _registerWorkspaceAppFlows() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey<String>('session-tab-strip')),
-        matching: find.byIcon(CoderIcons.back),
+        matching: find.byIcon(TinestIcons.back),
       ),
       findsNothing,
     );
@@ -520,7 +520,7 @@ void _registerWorkspaceAppFlows() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final router = await _pumpRoute(
       tester,
-      FakeCoderApi(),
+      FakeTinestApi(),
       const WorkspaceHomeRoute(compose: true).location,
     );
     addTearDown(router.dispose);
@@ -540,7 +540,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets('workspace shell is visible before any daemon exists', (
     tester,
   ) async {
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     final router = GoRouter(
       initialLocation: const WorkspaceHomeRoute().location,
       routes: $appRoutes,

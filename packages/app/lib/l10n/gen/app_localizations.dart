@@ -1141,7 +1141,7 @@ abstract class AppLocalizations {
   /// A project settings file failed to parse.
   ///
   /// In en, this message translates to:
-  /// **'The project\'s coder.json could not be read. Fix the file and try again.'**
+  /// **'The project\'s .tinest/config.json could not be read. Fix the file and try again.'**
   String get errorInvalidProjectSettings;
 
   /// A request exceeded the client deadline.
@@ -1786,7 +1786,7 @@ abstract class AppLocalizations {
   /// **'{count} projects'**
   String projectSettingsCount(int count);
 
-  /// Tooltip that copies the coder.json path.
+  /// Tooltip that copies the .tinest/config.json path.
   ///
   /// In en, this message translates to:
   /// **'Copy file location'**

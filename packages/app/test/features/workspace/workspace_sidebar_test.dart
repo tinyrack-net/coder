@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -33,11 +33,11 @@ void main() {
         branch: branch,
         head: 'abc',
         kind: WorktreeKind.checkout,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
 
-  /// A Coder-owned checkout, which is the only kind a row menu can archive.
+  /// A Tinest-owned checkout, which is the only kind a row menu can archive.
   WorktreeDto managedWorktree(String id, String workspaceId, String branch) =>
       WorktreeDto(
         id: id,
@@ -47,7 +47,7 @@ void main() {
         branch: branch,
         head: 'def',
         kind: WorktreeKind.managed,
-        isCoderOwned: true,
+        isTinestOwned: true,
         createdAt: now,
       );
 
@@ -55,7 +55,7 @@ void main() {
     String id,
     String label, {
     HostRuntimeStatus status = HostRuntimeStatus.online,
-    CoderApi? api,
+    TinestApi? api,
   }) => HostRuntimeSnapshot(
     id: id,
     label: label,
@@ -65,7 +65,7 @@ void main() {
       websocketUri: Uri.parse('ws://127.0.0.1:7337/ws'),
     ),
     // `connected` requires an API, so only online hosts get one.
-    api: status == HostRuntimeStatus.online ? api ?? FakeCoderApi() : null,
+    api: status == HostRuntimeStatus.online ? api ?? FakeTinestApi() : null,
   );
 
   Future<void> pump(
@@ -323,7 +323,7 @@ void main() {
                 name: home.name,
                 path: home.rootPath,
                 kind: WorktreeKind.directory,
-                isCoderOwned: false,
+                isTinestOwned: false,
                 createdAt: now,
               ),
             ],
@@ -336,7 +336,7 @@ void main() {
               id: 'loose-session',
               worktreeId: 'home-checkout',
               title: 'Scratch work',
-              agentDefinitionId: 'coder',
+              agentDefinitionId: 'tinest',
               origin: SessionOrigin.manual,
               status: SessionStatus.idle,
               createdAt: now,
@@ -397,7 +397,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(400, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final project = workspace('project', 'Project');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[project],
         worktrees: <WorktreeDto>[
           worktree('project-main', project.id, 'main'),

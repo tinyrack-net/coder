@@ -4,19 +4,19 @@ library;
 import 'dart:async';
 
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 final _now = DateTime.utc(2026, 8, 10);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -24,11 +24,11 @@ final _worktree = WorktreeDto(
   id: 'checkout',
   workspaceId: 'workspace',
   name: 'main',
-  path: '/repos/coder',
+  path: '/repos/tinest',
   branch: 'main',
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 
@@ -50,7 +50,7 @@ String _location(String terminalId) => TerminalRoute(
   terminalId: terminalId,
 ).location;
 
-FakeCoderApi _api() => FakeCoderApi(
+FakeTinestApi _api() => FakeTinestApi(
   workspaces: <WorkspaceDto>[_workspace],
   worktrees: <WorktreeDto>[_worktree],
   terminals: <TerminalDto>[_terminal('terminal-a'), _terminal('terminal-b')],
@@ -58,7 +58,9 @@ FakeCoderApi _api() => FakeCoderApi(
 
 /// Everything the on-screen emulator currently holds, scrollback included.
 String _screen(WidgetTester tester) {
-  final view = tester.widget<CoderTerminalView>(find.byType(CoderTerminalView));
+  final view = tester.widget<TinestTerminalView>(
+    find.byType(TinestTerminalView),
+  );
   final buffer = view.terminal.buffer.active;
   return <String>[
     for (var line = 0; line < buffer.length; line += 1)
@@ -128,8 +130,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(CoderTerminalView), findsNothing);
-    expect(find.byType(CoderTerminalView, skipOffstage: false), findsOneWidget);
+    expect(find.byType(TinestTerminalView), findsNothing);
+    expect(
+      find.byType(TinestTerminalView, skipOffstage: false),
+      findsOneWidget,
+    );
 
     router.pop();
     await _flush(tester);
@@ -213,7 +218,9 @@ void main() {
     // The barrier has lifted by the time the paint finished, so the terminal
     // is live again and the user is not left with a dead prompt.
     expect(
-      tester.widget<CoderTerminalView>(find.byType(CoderTerminalView)).readOnly,
+      tester
+          .widget<TinestTerminalView>(find.byType(TinestTerminalView))
+          .readOnly,
       isFalse,
     );
   });

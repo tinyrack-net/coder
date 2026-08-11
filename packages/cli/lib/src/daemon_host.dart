@@ -59,7 +59,7 @@ Future<int> runDaemonHost({
   DaemonStarter start = DaemonApplication.start,
 }) async {
   final handle = await start(config);
-  output.writeln('Tinyrack Coder daemon listening on ${handle.boundEndpoint}');
+  output.writeln('Tinest daemon listening on ${handle.boundEndpoint}');
   if (printToken) {
     output.writeln('Connection token: ${handle.bearerToken}');
   }

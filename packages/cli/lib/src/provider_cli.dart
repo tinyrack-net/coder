@@ -49,11 +49,11 @@ abstract interface class ProviderCliBackend {
 }
 
 /// Adapts the full daemon client to the CLI's narrow administration port.
-final class CoderApiProviderCliBackend implements ProviderCliBackend {
+final class TinestApiProviderCliBackend implements ProviderCliBackend {
   /// Creates a provider CLI adapter.
-  const CoderApiProviderCliBackend(this._api);
+  const TinestApiProviderCliBackend(this._api);
 
-  final CoderApi _api;
+  final TinestApi _api;
 
   @override
   Future<ProviderCatalogDto> catalog() => _api.providers.listProviderCatalog();

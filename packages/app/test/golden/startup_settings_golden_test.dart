@@ -7,13 +7,13 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
@@ -63,7 +63,7 @@ class _StartupSettingsGoldenHostState
     ),
   );
   late final AppServices _services = fakeAppServices(
-    FakeCoderApi(),
+    FakeTinestApi(),
     store: _store,
   );
   late final _autostart = FakeAutostartRegistration();
@@ -93,7 +93,7 @@ class _StartupSettingsGoldenHostState
         routerConfig: _router,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(size: widget.size),
-          child: CoderControlDensity(
+          child: TinestControlDensity(
             child: child ?? const SizedBox.shrink(),
           ),
         ),

@@ -37,7 +37,7 @@ final class ComposerSuggestionsState {
 
 /// The composer's completion list, wrapping the design system's overlay.
 ///
-/// Everything Coder-specific stays here: which strings label the empty and
+/// Everything Tinest-specific stays here: which strings label the empty and
 /// failed rows, and which badge names a command's source. The list, its
 /// highlight, and its keyboard contract belong to `TRInlineSuggestions`.
 class ComposerSuggestionsOverlay extends StatelessWidget {

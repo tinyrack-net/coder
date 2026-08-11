@@ -1,13 +1,13 @@
 ---
-name: tinyrack-coder-design-guidelines
-description: Enforce Tinyrack's Flutter design system in Coder using the public tinyrack_ui Git source pinned to an exact commit. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in packages/app, including deciding whether a missing reusable primitive, token, or variant belongs upstream.
+name: tinyrack-tinest-design-guidelines
+description: Enforce Tinyrack's Flutter design system in Tinest using the public tinyrack_ui Git source pinned to an exact commit. Use for any Flutter UI implementation, modification, refactor, review, styling, layout, component selection, theme work, or pixel-changing test update in packages/app, including deciding whether a missing reusable primitive, token, or variant belongs upstream.
 ---
 
-# Tinyrack Coder Design Guidelines
+# Tinest Design Guidelines
 
-Build every Coder interface from the public `tinyrack_ui` package pinned to an
+Build every Tinest interface from the public `tinyrack_ui` package pinned to an
 exact commit in `tinyrack-net/design`. Keep product-specific composition in
-Coder and reusable visual contracts in the Tinyrack design system.
+Tinest and reusable visual contracts in the Tinyrack design system.
 
 ## Inspect Before Editing
 
@@ -56,7 +56,7 @@ Coder and reusable visual contracts in the Tinyrack design system.
 
 ## Decide Ownership
 
-Keep a product-specific composite widget in Coder when its API expresses Coder
+Keep a product-specific composite widget in Tinest when its API expresses Tinest
 domain concepts and it can be assembled entirely from public TR components and
 tokens.
 
@@ -64,10 +64,10 @@ Move a capability upstream before continuing when any of these is true:
 
 - a reusable visual or interaction primitive is missing;
 - a general accessibility, focus, keyboard, overlay, or state contract would
-  otherwise be implemented in Coder;
+  otherwise be implemented in Tinest;
 - an existing TR component needs a generally useful variant or behavior;
 - a visual decision has no suitable public token; or
-- the component has a credible use outside Coder and does not expose Coder
+- the component has a credible use outside Tinest and does not expose Tinest
   domain concepts.
 
 Do not upstream a one-off product workflow merely to avoid a local composite.
@@ -100,7 +100,7 @@ through merge, release, and reintegration; do not request another approval.
    by its `AGENTS.md`, including `$tinyrack-component-development` and
    `$tinyrack-package-release` for a released component change.
 3. Add a failing test for the missing contract before production code. Define a
-   typed public API that is independent of Coder terminology. Implement it under
+   typed public API that is independent of Tinest terminology. Implement it under
    `packages/ui_flutter/lib/src/`, export it through `lib/tinyrack_ui.dart`, and
    update examples and English, Korean, and Japanese documentation when
    user-facing behavior changes. Generate tokens through the repository
@@ -127,8 +127,8 @@ through merge, release, and reintegration; do not request another approval.
    required check is pending or failing.
 8. Record the exact squash-merge commit and verify it is reachable from the
    public `tinyrack-net/design` repository. Tags and pub.dev publishing may
-   continue for other consumers, but Coder does not wait for publication.
-9. Remove the completed upstream worktree, update Coder's `tinyrack_ui` Git
+   continue for other consumers, but Tinest does not wait for publication.
+9. Remove the completed upstream worktree, update Tinest's `tinyrack_ui` Git
    `ref` to that exact merge commit, run `flutter pub get`, and resume the
    original consumer change.
 
@@ -143,7 +143,7 @@ failure would require an unrelated product decision.
   whenever pixels change.
 - Verify relevant light/dark, English/Korean/Japanese, text-scale, keyboard,
   pointer, focus, semantics, loading, error, and constrained-layout states.
-- Follow `AGENTS.md`, `docs/testing.md`, and `$verify-coder-workspace` for the
-  complete Coder gates. Do not report completion while token literals, private
+- Follow `AGENTS.md`, `docs/testing.md`, and `$verify-tinest-workspace` for the
+  complete Tinest gates. Do not report completion while token literals, private
   package imports, or local recreations of public TR components remain in the
   changed surface.

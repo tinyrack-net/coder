@@ -5,10 +5,10 @@ import 'package:stream_channel/stream_channel.dart';
 
 export 'package:protocol/protocol.dart'
     show
-        coderWebSocketProtocol,
-        coderWebSocketTokenPrefix,
         decodeWebSocketTokenProtocol,
-        encodeWebSocketTokenProtocol;
+        encodeWebSocketTokenProtocol,
+        tinestWebSocketProtocol,
+        tinestWebSocketTokenPrefix;
 
 /// Public API exposed by this library.
 abstract interface class WebSocketConnector {

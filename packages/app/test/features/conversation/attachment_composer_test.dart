@@ -14,7 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -38,7 +38,7 @@ void main() {
           ProviderScope(
             overrides: [
               appServicesProvider.overrideWithValue(
-                fakeAppServices(FakeCoderApi()),
+                fakeAppServices(FakeTinestApi()),
               ),
             ],
             child: MaterialApp(
@@ -128,7 +128,7 @@ void main() {
         ProviderScope(
           overrides: [
             appServicesProvider.overrideWithValue(
-              fakeAppServices(FakeCoderApi()),
+              fakeAppServices(FakeTinestApi()),
             ),
           ],
           child: MaterialApp(
@@ -177,7 +177,7 @@ void main() {
         ProviderScope(
           overrides: [
             appServicesProvider.overrideWithValue(
-              fakeAppServices(FakeCoderApi()),
+              fakeAppServices(FakeTinestApi()),
             ),
           ],
           child: MaterialApp(
@@ -249,8 +249,8 @@ void main() {
       );
       final workspace = WorkspaceDto(
         id: 'workspace',
-        name: 'Coder',
-        rootPath: '/repos/coder',
+        name: 'Tinest',
+        rootPath: '/repos/tinest',
         kind: WorkspaceKind.git,
         createdAt: now,
       );
@@ -260,7 +260,7 @@ void main() {
         name: home.name,
         path: home.rootPath,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
       final checkout = WorktreeDto(
@@ -270,29 +270,29 @@ void main() {
         path: workspace.rootPath,
         branch: 'main',
         kind: WorktreeKind.checkout,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
       final session = SessionDto(
         id: 'session',
         worktreeId: checkout.id,
         title: 'Focus migration',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
       );
-      final cases = <({FakeCoderApi api, String location})>[
+      final cases = <({FakeTinestApi api, String location})>[
         (
-          api: FakeCoderApi(
+          api: FakeTinestApi(
             workspaces: <WorkspaceDto>[home],
             worktrees: <WorktreeDto>[homeCheckout],
           ),
           location: const WorkspaceHomeRoute(compose: true).location,
         ),
         (
-          api: FakeCoderApi(
+          api: FakeTinestApi(
             workspaces: <WorkspaceDto>[workspace],
             worktrees: <WorktreeDto>[checkout],
           ),
@@ -303,7 +303,7 @@ void main() {
           ).location,
         ),
         (
-          api: FakeCoderApi(
+          api: FakeTinestApi(
             workspaces: <WorkspaceDto>[workspace],
             worktrees: <WorktreeDto>[checkout],
             agents: <SessionDto>[session],

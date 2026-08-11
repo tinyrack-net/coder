@@ -1,10 +1,10 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/mcp/application/mcp_servers_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +94,7 @@ class _McpSettingsPageState extends ConsumerState<McpSettingsPage> {
         : selected == null
         ? SettingsEmptyState(
             title: l10n.mcpSettingsSelectServer,
-            icon: const Icon(CoderIcons.extension),
+            icon: const Icon(TinestIcons.extension),
           )
         : _ServerEditor(
             key: ValueKey<String>('mcp-server-editor-${selected.config.id}'),
@@ -149,7 +149,7 @@ class _ServerList extends StatelessWidget {
               key: const ValueKey<String>('mcp-server-add'),
               label: l10n.mcpSettingsAdd,
               onPressed: onAdd,
-              icon: const Icon(CoderIcons.add),
+              icon: const Icon(TinestIcons.add),
             ),
           ],
         ),
@@ -240,7 +240,7 @@ class _ServerTile extends StatelessWidget {
                   '${server.resources.length}',
       ),
       control: server.scope == McpConfigScope.project
-          ? const Icon(CoderIcons.lock)
+          ? const Icon(TinestIcons.lock)
           : null,
     );
   }
@@ -267,7 +267,7 @@ class _StatusDot extends StatelessWidget {
       McpServerStatus.connecting => colors.textMuted,
     };
     return Icon(
-      CoderIcons.status,
+      TinestIcons.status,
       key: ValueKey<String>('mcp-server-status-${server.config.id}'),
       // An inline status dot, deliberately smaller than a control glyph.
       size: TRSpacing.medium,
@@ -382,7 +382,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                             'mcp-server-source-${server.config.id}',
                           ),
                         ),
-                        icon: const Icon(CoderIcons.lock),
+                        icon: const Icon(TinestIcons.lock),
                       ),
                     if (_readOnly && server.shadowed)
                       const SizedBox(height: TRSpacing.small),
@@ -392,7 +392,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                           'mcp-server-shadowed-${server.config.id}',
                         ),
                         title: TRText.inherit(l10n.mcpSettingsShadowed),
-                        icon: const Icon(CoderIcons.warning),
+                        icon: const Icon(TinestIcons.warning),
                         variant: TRStatusVariant.warning,
                       ),
                   ],
@@ -477,19 +477,19 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
             (final String error, _) => TRAlert(
               key: const ValueKey<String>('mcp-editor-error'),
               title: TRText.inherit(error),
-              icon: const Icon(CoderIcons.error),
+              icon: const Icon(TinestIcons.error),
               variant: TRStatusVariant.danger,
             ),
             (_, final String notice) => TRAlert(
               key: const ValueKey<String>('mcp-editor-notice'),
               title: TRText.inherit(notice),
-              icon: const Icon(CoderIcons.success),
+              icon: const Icon(TinestIcons.success),
               variant: TRStatusVariant.success,
             ),
             _ => null,
           },
           children: <Widget>[
-            CoderSwitchRow(
+            TinestSwitchRow(
               key: const ValueKey<String>('mcp-field-enabled'),
               value: _enabled,
               onChanged: _readOnly
@@ -548,7 +548,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                       'mcp-server-error-${server.config.id}',
                     ),
                     title: TRText.inherit(server.error!),
-                    icon: const Icon(CoderIcons.error),
+                    icon: const Icon(TinestIcons.error),
                     variant: TRStatusVariant.danger,
                   ),
             children: <Widget>[
@@ -565,7 +565,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                       TRText(l10n.mcpSettingsNoTools)
                     else
                       for (final tool in server.tools)
-                        CoderListRow(
+                        TinestListRow(
                           key: ValueKey<String>('mcp-tool-tile-${tool.toolId}'),
                           contentPadding: SettingsRow.flushPadding,
                           dense: true,
@@ -585,7 +585,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                             TRText(l10n.mcpSettingsNoResources)
                           else
                             for (final resource in server.resources)
-                              CoderListRow(
+                              TinestListRow(
                                 key: ValueKey<String>(
                                   'mcp-resource-tile-${resource.uri}',
                                 ),
@@ -614,7 +614,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                             TRText(l10n.mcpSettingsNoResourceTemplates)
                           else
                             for (final template in server.resourceTemplates)
-                              CoderListRow(
+                              TinestListRow(
                                 key: ValueKey<String>(
                                   'mcp-resource-template-tile-'
                                   '${template.uriTemplate}',
@@ -637,7 +637,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                         content: Column(
                           children: <Widget>[
                             for (final line in server.diagnostics)
-                              CoderListRow(
+                              TinestListRow(
                                 contentPadding: SettingsRow.flushPadding,
                                 dense: true,
                                 title: TRText.inherit(line),

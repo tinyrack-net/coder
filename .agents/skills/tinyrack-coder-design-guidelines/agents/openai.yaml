@@ -1,4 +1,0 @@
-interface:
-  display_name: "Tinyrack Coder Design Guidelines"
-  short_description: "Enforce Tinyrack UI components and design tokens"
-  default_prompt: "Use $tinyrack-coder-design-guidelines to implement or review this Flutter UI change with Tinyrack components and tokens."

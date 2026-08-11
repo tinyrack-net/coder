@@ -1,16 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// The standard Coder page shell backed by [TRAppShell].
-class CoderPageShell extends StatelessWidget {
+/// The standard Tinest page shell backed by [TRAppShell].
+class TinestPageShell extends StatelessWidget {
   /// Creates a page with optional top chrome.
-  const CoderPageShell({required this.body, this.appBar, super.key});
+  const TinestPageShell({required this.body, this.appBar, super.key});
 
   /// Page content.
   final Widget body;
 
   /// Optional page header.
-  final CoderPageHeader? appBar;
+  final TinestPageHeader? appBar;
 
   @override
   Widget build(BuildContext context) => ColoredBox(
@@ -44,10 +44,10 @@ class CoderPageShell extends StatelessWidget {
   );
 }
 
-/// Declarative content for a [CoderPageShell] header.
-class CoderPageHeader {
+/// Declarative content for a [TinestPageShell] header.
+class TinestPageHeader {
   /// Creates a page header.
-  const CoderPageHeader({
+  const TinestPageHeader({
     required this.title,
     this.actions = const [],
     this.leading,

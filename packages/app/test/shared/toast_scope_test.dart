@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 import '../support/router_harness.dart';
 
-/// Pumps [CoderToastScope] over a page and returns the messenger behind it.
+/// Pumps [TinestToastScope] over a page and returns the messenger behind it.
 Future<ToastMessenger> _pumpScope(WidgetTester tester) async {
   late ToastMessenger messenger;
   await tester.pumpWidget(
@@ -22,7 +22,7 @@ Future<ToastMessenger> _pumpScope(WidgetTester tester) async {
         home: Consumer(
           builder: (context, ref, _) {
             messenger = ref.read(toastMessengerProvider);
-            return const CoderToastScope(
+            return const TinestToastScope(
               child: Scaffold(body: Center(child: Text('Page'))),
             );
           },
@@ -129,7 +129,7 @@ void main() {
   testWidgets(
     'the running app mounts the region above its routes',
     (tester) async {
-      await pumpRoutedApp(tester, FakeCoderApi(), initialLocation: '/');
+      await pumpRoutedApp(tester, FakeTinestApi(), initialLocation: '/');
 
       expect(find.byType(TRToastRegion), findsOneWidget);
     },

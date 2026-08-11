@@ -6,7 +6,7 @@ void _registerAgentsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final router = await _pumpRoute(
         tester,
         api,
@@ -15,13 +15,13 @@ void _registerAgentsAppFlows() {
       addTearDown(router.dispose);
 
       expect(find.text('Agents'), findsOneWidget);
-      expect(find.text('Coder'), findsWidgets);
+      expect(find.text('Tinest'), findsWidgets);
       final prompt = _textInput('시스템 프롬프트 (Markdown)');
       await tester.enterText(prompt, 'Always run focused tests.');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('coder')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
         'Always run focused tests.',
       );
       await tester.scrollUntilVisible(
@@ -38,7 +38,7 @@ void _registerAgentsAppFlows() {
       );
       // A group of nothing but always-on tools is checked and locked, and it
       // still opens: the lock is on the tools, not on the disclosure.
-      final lockedGroup = tester.widget<CoderCheckboxRow>(
+      final lockedGroup = tester.widget<TinestCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
       );
       expect(lockedGroup.value, isTrue);
@@ -49,7 +49,7 @@ void _registerAgentsAppFlows() {
       );
       await tester.pumpAndSettle();
       // An always-on tool is shown checked and locked once its group is open.
-      final alwaysOn = tester.widget<CoderCheckboxRow>(
+      final alwaysOn = tester.widget<TinestCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
       );
       expect(alwaysOn.value, isTrue);
@@ -68,7 +68,7 @@ void _registerAgentsAppFlows() {
         find.byKey(const ValueKey<String>('agent-tool-group-execution')),
       );
       await tester.pumpAndSettle();
-      final toggleable = tester.widget<CoderCheckboxRow>(
+      final toggleable = tester.widget<TinestCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
       );
       expect(toggleable.onChanged, isNotNull);
@@ -99,7 +99,7 @@ void _registerAgentsAppFlows() {
       final created = await api.agents.getAgentDefinition('reviewer');
       expect(created.mode, AgentMode.subagent);
       // A new agent starts with an empty prompt, so the override stays off
-      // even though the Coder template it is cloned from has it enabled.
+      // even though the Tinest template it is cloned from has it enabled.
       expect(created.systemPrompt, isEmpty);
       expect(created.promptEnabled, isFalse);
     },
@@ -113,7 +113,7 @@ void _registerAgentsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(failNextAgentCreate: true);
+      final api = FakeTinestApi(failNextAgentCreate: true);
       final router = await _pumpRoute(
         tester,
         api,
@@ -141,7 +141,7 @@ void _registerAgentsAppFlows() {
 
       await tester.enterText(
         _textInput('ID (파일명)'),
-        'coder',
+        'tinest',
       );
       await tester.pumpAndSettle();
       expect(find.text('이미 존재하는 Agent ID입니다.'), findsOneWidget);
@@ -172,7 +172,7 @@ void _registerAgentsAppFlows() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 780));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     final router = await _pumpRoute(
       tester,
       api,
@@ -182,7 +182,7 @@ void _registerAgentsAppFlows() {
 
     expect(find.text('Agents'), findsOneWidget);
     expect(_textField('시스템 프롬프트 (Markdown)'), findsNothing);
-    await tester.tap(find.text('Coder').first);
+    await tester.tap(find.text('Tinest').first);
     await tester.pumpAndSettle();
     expect(_textField('시스템 프롬프트 (Markdown)'), findsOneWidget);
     expect(find.byKey(const ValueKey('agent-list-button')), findsNothing);
@@ -198,9 +198,9 @@ void _registerAgentsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      const coder = AgentDefinitionDto(
-        id: 'coder',
-        name: 'Coder',
+      const tinest = AgentDefinitionDto(
+        id: 'tinest',
+        name: 'Tinest',
         description: 'General coding',
         mode: AgentMode.primary,
         promptEnabled: true,
@@ -214,8 +214,8 @@ void _registerAgentsAppFlows() {
         permissionMode: PermissionMode.ask,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
-        contentHash: 'coder-hash',
-        sourcePath: '/config/agents/coder.md',
+        contentHash: 'tinest-hash',
+        sourcePath: '/config/agents/tinest.md',
         isBuiltIn: true,
         diagnostics: <AgentDefinitionDiagnosticDto>[
           AgentDefinitionDiagnosticDto(
@@ -243,8 +243,8 @@ void _registerAgentsAppFlows() {
         contentHash: 'reviewer-hash',
         sourcePath: '/config/agents/reviewer.md',
       );
-      final api = FakeCoderApi(
-        agentDefinitions: const <AgentDefinitionDto>[coder, reviewer],
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[tinest, reviewer],
         failNextAgentUpdate: true,
       );
       final router = await _pumpRoute(
@@ -280,7 +280,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, 'Overwrite'));
       await tester.pumpAndSettle();
 
-      final updated = await api.agents.getAgentDefinition('coder');
+      final updated = await api.agents.getAgentDefinition('tinest');
       expect(updated.promptEnabled, isFalse);
       expect(updated.model.modelId, 'openai/gpt-5.6-sol');
       expect(updated.toolIds, isEmpty);
@@ -293,7 +293,7 @@ void _registerAgentsAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('coder')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
         'Code carefully.',
       );
       await tester.tap(find.text('Reviewer').first);
@@ -322,19 +322,19 @@ void _registerAgentsAppFlows() {
     const remoteInfo = ServerInfoDto(
       serverId: 'server',
       version: 'test',
-      protocolVersion: coderProtocolMajor,
+      protocolVersion: tinestProtocolMajor,
       features: <String, bool>{},
     );
     final remoteRouter = await _pumpRoute(
       tester,
-      FakeCoderApi(serverInfo: remoteInfo),
+      FakeTinestApi(serverInfo: remoteInfo),
       const AgentSettingsRoute(hostId: 'server').location,
     );
     expect(find.textContaining('읽기만'), findsNothing);
     expect(
       tester
           .widget<TRIconButton>(
-            find.widgetWithIcon(TRIconButton, CoderIcons.add),
+            find.widgetWithIcon(TRIconButton, TinestIcons.add),
           )
           .onPressed,
       isNotNull,
@@ -345,7 +345,7 @@ void _registerAgentsAppFlows() {
     await tester.pumpAndSettle();
     final errorRouter = await _pumpRoute(
       tester,
-      FakeCoderApi(agentListError: Exception('definition load failed')),
+      FakeTinestApi(agentListError: Exception('definition load failed')),
       const AgentSettingsRoute(hostId: 'server').location,
     );
     addTearDown(errorRouter.dispose);
@@ -360,7 +360,7 @@ void _registerAgentsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final router = await _pumpRoute(
         tester,
         api,
@@ -383,7 +383,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('coder')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
         'Always run focused tests.',
         reason: 'declining the question must not discard the edit',
       );
@@ -409,7 +409,7 @@ void _registerAgentsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final router = await _pumpRoute(
         tester,
         api,
@@ -428,8 +428,8 @@ void _registerAgentsAppFlows() {
         await tester.pumpAndSettle();
       }
 
-      CoderCheckboxRow rowFor(String key) =>
-          tester.widget<CoderCheckboxRow>(find.byKey(ValueKey<String>(key)));
+      TinestCheckboxRow rowFor(String key) =>
+          tester.widget<TinestCheckboxRow>(find.byKey(ValueKey<String>(key)));
 
       await reveal('agent-tool-group-mcp');
       final initial = rowFor('agent-tool-group-mcp');
@@ -449,7 +449,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('coder')).toolIds,
+        (await api.agents.getAgentDefinition('tinest')).toolIds,
         <String>[
           'list_mcp_resource_templates',
           'list_mcp_resources',

@@ -15,7 +15,7 @@ void main() {
     tags: const <String>['feature_test__daemon_relay__unit'],
     () async {
       final root = await Directory.systemTemp.createTemp(
-        'coder-relay-attachment-',
+        'tinest-relay-attachment-',
       );
       addTearDown(() => root.delete(recursive: true));
       final service = AttachmentService(
@@ -52,7 +52,7 @@ void main() {
     tags: const <String>['feature_test__conversation_attachments__unit'],
     () async {
       final root = await Directory.systemTemp.createTemp(
-        'coder-attachment-store-',
+        'tinest-attachment-store-',
       );
       addTearDown(() => root.delete(recursive: true));
       final repository = _MemoryAttachmentRepository();
@@ -100,7 +100,7 @@ void main() {
     tags: const <String>['feature_test__conversation_attachments__unit'],
     () async {
       final root = await Directory.systemTemp.createTemp(
-        'coder-attachment-invalid-',
+        'tinest-attachment-invalid-',
       );
       addTearDown(() => root.delete(recursive: true));
       final service = AttachmentService(

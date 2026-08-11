@@ -1,8 +1,8 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,16 +11,16 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 
 import 'build_phase_provider_guard.dart';
-import 'fake_coder_api.dart';
+import 'fake_tinest_api.dart';
 import 'localization.dart';
 
 /// Pumps the routed app at [initialLocation] and returns its router.
 ///
 /// Tests that assert navigation behaviour need the router itself, so this
-/// builds one explicitly rather than going through [CoderApp].
+/// builds one explicitly rather than going through [TinestApp].
 Future<GoRouter> pumpRoutedApp(
   WidgetTester tester,
-  FakeCoderApi api, {
+  FakeTinestApi api, {
   required String initialLocation,
   MemoryAppStore? store,
   List<Override> overrides = const <Override>[],
@@ -60,10 +60,10 @@ Future<GoRouter> pumpRoutedApp(
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
-        // Mirrors what CoderApp wraps every route in, so a screen under test
+        // Mirrors what TinestApp wraps every route in, so a screen under test
         // can report a result the same way it does when the app runs.
-        builder: (context, child) => CoderControlDensity(
-          child: CoderToastScope(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => TinestControlDensity(
+          child: TinestToastScope(child: child ?? const SizedBox.shrink()),
         ),
       ),
     ),

@@ -573,7 +573,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get errorInvalidProjectSettings =>
-      'プロジェクトのcoder.jsonを読み込めませんでした。ファイルを修正して再試行してください。';
+      'プロジェクトの.tinest/config.jsonを読み込めませんでした。ファイルを修正して再試行してください。';
 
   @override
   String get errorRequestTimeout => 'Daemonが時間内に応答しませんでした。もう一度お試しください。';

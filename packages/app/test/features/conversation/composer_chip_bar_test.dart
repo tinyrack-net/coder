@@ -1,5 +1,5 @@
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -65,7 +65,7 @@ const _modeKey = ValueKey<String>('composer-chip-mode');
 List<ComposerChipSpec> _chips({required String model}) => <ComposerChipSpec>[
   ComposerChipSpec(
     valueKey: _agentKey,
-    icon: CoderIcons.agent,
+    icon: TinestIcons.agent,
     label: 'Agent',
     tooltip: 'Select agent',
     menuChildren: <Widget>[
@@ -74,7 +74,7 @@ List<ComposerChipSpec> _chips({required String model}) => <ComposerChipSpec>[
   ),
   ComposerChipSpec(
     valueKey: _modelKey,
-    icon: CoderIcons.memory,
+    icon: TinestIcons.memory,
     label: model,
     tooltip: 'Select model',
     menuChildren: <Widget>[
@@ -83,7 +83,7 @@ List<ComposerChipSpec> _chips({required String model}) => <ComposerChipSpec>[
   ),
   ComposerChipSpec(
     valueKey: _modeKey,
-    icon: CoderIcons.checklist,
+    icon: TinestIcons.checklist,
     label: 'Plan',
     tooltip: 'Toggle plan mode',
     onPressed: (_) {},

@@ -15,7 +15,7 @@ final class PairingIntent {
   /// Parses the canonical HTTPS pairing URL and rejects expired capabilities.
   factory PairingIntent.parse(Uri uri, {required DateTime nowUtc}) {
     if (uri.scheme != 'https' ||
-        uri.host != 'coder.tinyrack.net' ||
+        uri.host != 'tinest.tinyrack.net' ||
         uri.path != '/pair' ||
         uri.hasPort ||
         uri.userInfo.isNotEmpty ||

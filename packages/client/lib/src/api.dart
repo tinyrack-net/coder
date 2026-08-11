@@ -500,7 +500,7 @@ abstract interface class RelayApi {
 }
 
 /// Root client API for connection lifecycle and feature-scoped operations.
-abstract interface class CoderApi {
+abstract interface class TinestApi {
   /// Workspace-scoped operations.
   WorkspacesApi get workspaces;
 

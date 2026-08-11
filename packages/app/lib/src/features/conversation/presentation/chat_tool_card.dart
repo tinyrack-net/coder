@@ -3,26 +3,26 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
 import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Maps a tool glyph to its semantic Lucide icon.
 IconData chatToolIcon(ChatToolGlyph glyph) => switch (glyph) {
-  ChatToolGlyph.read => CoderIcons.document,
-  ChatToolGlyph.list => CoderIcons.folderOpen,
-  ChatToolGlyph.search => CoderIcons.search,
-  ChatToolGlyph.edit => CoderIcons.edit,
-  ChatToolGlyph.run => CoderIcons.terminal,
-  ChatToolGlyph.delegate => CoderIcons.network,
-  ChatToolGlyph.plan => CoderIcons.checklist,
-  ChatToolGlyph.ask => CoderIcons.chat,
-  ChatToolGlyph.resource => CoderIcons.extension,
-  ChatToolGlyph.tools => CoderIcons.tool,
-  ChatToolGlyph.clock => CoderIcons.time,
-  ChatToolGlyph.context => CoderIcons.gauge,
-  ChatToolGlyph.image => CoderIcons.image,
-  ChatToolGlyph.generic => CoderIcons.tool,
+  ChatToolGlyph.read => TinestIcons.document,
+  ChatToolGlyph.list => TinestIcons.folderOpen,
+  ChatToolGlyph.search => TinestIcons.search,
+  ChatToolGlyph.edit => TinestIcons.edit,
+  ChatToolGlyph.run => TinestIcons.terminal,
+  ChatToolGlyph.delegate => TinestIcons.network,
+  ChatToolGlyph.plan => TinestIcons.checklist,
+  ChatToolGlyph.ask => TinestIcons.chat,
+  ChatToolGlyph.resource => TinestIcons.extension,
+  ChatToolGlyph.tools => TinestIcons.tool,
+  ChatToolGlyph.clock => TinestIcons.time,
+  ChatToolGlyph.context => TinestIcons.gauge,
+  ChatToolGlyph.image => TinestIcons.image,
+  ChatToolGlyph.generic => TinestIcons.tool,
 };
 
 /// One tool call rendered as a collapsed CLI-style line.

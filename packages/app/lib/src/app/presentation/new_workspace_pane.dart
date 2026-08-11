@@ -24,7 +24,7 @@ import 'package:app/src/features/workspace/domain/branch_name.dart';
 import 'package:app/src/features/workspace/presentation/widgets/directory_browser.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
 import 'package:app/src/shared/presentation/client_error_alert.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -124,7 +124,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   // through one red line made a daemon error indistinguishable from a prompt
   // to pick a project.
   String? _guidance;
-  CoderClientException? _failure;
+  TinestClientException? _failure;
 
   @override
   void dispose() {
@@ -422,7 +422,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       children: <Widget>[
         ComposerChip(
           valueKey: const ValueKey('new-workspace-project'),
-          icon: CoderIcons.folder,
+          icon: TinestIcons.folder,
           // Without a home workspace the daemon cannot run a project-less
           // session, so the chip must not offer or advertise one.
           label:
@@ -452,7 +452,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                     ),
                   TRMenuItem(
                     key: const ValueKey('new-workspace-project-add'),
-                    leadingIcon: const Icon(CoderIcons.addCircle),
+                    leadingIcon: const Icon(TinestIcons.addCircle),
                     onPressed: () => unawaited(_addProject()),
                     child: TRText.inherit(
                       AppLocalizations.of(context).workspaceProjectAdd,
@@ -464,7 +464,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           const SizedBox(width: TRSpacing.small),
           ComposerChip(
             valueKey: const ValueKey('new-workspace-worktree'),
-            icon: CoderIcons.branch,
+            icon: TinestIcons.branch,
             label: worktree == null
                 ? AppLocalizations.of(context).workspaceWorktreeNew
                 : (worktree.branch ?? worktree.name),
@@ -490,7 +490,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           const SizedBox(width: TRSpacing.small),
           ComposerChip(
             valueKey: const ValueKey('new-workspace-branch'),
-            icon: CoderIcons.check,
+            icon: TinestIcons.check,
             label:
                 baseBranch ??
                 AppLocalizations.of(context).workspaceBaseBranchChip,
@@ -582,7 +582,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         _baseBranch = null;
         _failure = null;
       });
-    } on CoderClientException catch (error) {
+    } on TinestClientException catch (error) {
       if (!mounted) return;
       setState(() => _failure = error);
     }
@@ -671,7 +671,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         submission,
         seed,
       );
-    } on CoderClientException catch (error) {
+    } on TinestClientException catch (error) {
       if (mounted) setState(() => _failure = error);
     } finally {
       // Every exit releases the composer. Without this a failure the typed
@@ -731,7 +731,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     return checkouts.length == 1 ? checkouts.single : null;
   }
 
-  CoderApi? _hostApi(String hostId) {
+  TinestApi? _hostApi(String hostId) {
     final runtime = ref
         .read(hostRegistryControllerProvider)
         .value

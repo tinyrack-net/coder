@@ -18,7 +18,7 @@ void main() {
   late Directory home;
 
   setUp(() async {
-    home = await Directory.systemTemp.createTemp('coder-browser-');
+    home = await Directory.systemTemp.createTemp('tinest-browser-');
     handle = await DaemonApplication.start(
       DaemonConfig(
         homeDirectory: home.path,
@@ -81,7 +81,7 @@ void main() {
         handshake(
           headers: <String, String>{'origin': _allowed},
           protocols: <String>[
-            coderWebSocketProtocol,
+            tinestWebSocketProtocol,
             encodeWebSocketTokenProtocol(_token),
           ],
         ),
@@ -94,7 +94,7 @@ void main() {
         handshake(
           headers: <String, String>{'origin': _allowed},
           protocols: <String>[
-            coderWebSocketProtocol,
+            tinestWebSocketProtocol,
             encodeWebSocketTokenProtocol('not-the-token'),
           ],
         ),
@@ -104,7 +104,7 @@ void main() {
 
     test('no credential at all is rejected', () async {
       await expectLater(
-        handshake(protocols: <String>[coderWebSocketProtocol]),
+        handshake(protocols: <String>[tinestWebSocketProtocol]),
         throwsA(isA<Object>()),
       );
     });
@@ -202,8 +202,8 @@ void main() {
     });
 
     test('a protocol that carries no token decodes to null', () async {
-      expect(decodeWebSocketTokenProtocol(coderWebSocketProtocol), isNull);
-      expect(decodeWebSocketTokenProtocol(coderWebSocketTokenPrefix), isNull);
+      expect(decodeWebSocketTokenProtocol(tinestWebSocketProtocol), isNull);
+      expect(decodeWebSocketTokenProtocol(tinestWebSocketTokenPrefix), isNull);
     });
   });
 }

@@ -15,7 +15,7 @@ void main() {
   late Directory home;
 
   setUp(() async {
-    home = await Directory.systemTemp.createTemp('coder-daemon-lock-');
+    home = await Directory.systemTemp.createTemp('tinest-daemon-lock-');
     await Directory(p.join(home.path, 'v4')).create();
   });
 

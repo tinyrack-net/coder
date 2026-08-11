@@ -8,8 +8,8 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,8 +28,8 @@ class AdvancedSettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     const body = SettingsScaffold(children: <Widget>[_ResetSection()]);
     if (embedded) return body;
-    return CoderPageShell(
-      appBar: CoderPageHeader(
+    return TinestPageShell(
+      appBar: TinestPageHeader(
         title: TRText.inherit(l10n.settingsCategoryAdvanced),
       ),
       body: body,

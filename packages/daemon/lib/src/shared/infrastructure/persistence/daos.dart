@@ -10,7 +10,7 @@ part 'daos.g.dart';
 
 @DriftAccessor(tables: <Type>[Settings])
 /// SettingsDao defines a public contract.
-class SettingsDao extends DatabaseAccessor<CoderDatabase>
+class SettingsDao extends DatabaseAccessor<TinestDatabase>
     with _$SettingsDaoMixin
     implements SettingsRepository {
   /// Creates a [SettingsDao].
@@ -29,7 +29,7 @@ class SettingsDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Workspaces, Worktrees])
 /// WorkspaceDao defines a public contract.
-class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
+class WorkspaceDao extends DatabaseAccessor<TinestDatabase>
     with _$WorkspaceDaoMixin
     implements WorkspaceRepository {
   /// Creates a [WorkspaceDao].
@@ -110,7 +110,7 @@ class WorkspaceDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Worktrees])
 /// Drift adapter for worktree persistence.
-class WorktreeDao extends DatabaseAccessor<CoderDatabase>
+class WorktreeDao extends DatabaseAccessor<TinestDatabase>
     with _$WorktreeDaoMixin
     implements WorktreeRepository {
   /// Creates a [WorktreeDao].
@@ -165,7 +165,7 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
         branch: Value<String?>(worktree.branch),
         head: Value<String?>(worktree.head),
         kind: worktree.kind.name,
-        isCoderOwned: worktree.isCoderOwned,
+        isTinestOwned: worktree.isTinestOwned,
         archivedAt: Value<DateTime?>(worktree.archivedAt),
         createdAt: worktree.createdAt,
       ),
@@ -187,7 +187,7 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
     branch: row.branch,
     head: row.head,
     kind: WorktreeKind.values.byName(row.kind),
-    isCoderOwned: row.isCoderOwned,
+    isTinestOwned: row.isTinestOwned,
     archivedAt: row.archivedAt,
     createdAt: row.createdAt,
   );
@@ -195,7 +195,7 @@ class WorktreeDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Sessions, Turns, Attachments, TurnAttachments])
 /// SessionDao defines a public contract.
-class SessionDao extends DatabaseAccessor<CoderDatabase>
+class SessionDao extends DatabaseAccessor<TinestDatabase>
     with _$SessionDaoMixin
     implements SessionRepository {
   /// Creates a [SessionDao].
@@ -556,7 +556,7 @@ class SessionDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Goals])
 /// Drift adapter for persistent session goals.
-class GoalDao extends DatabaseAccessor<CoderDatabase>
+class GoalDao extends DatabaseAccessor<TinestDatabase>
     with _$GoalDaoMixin
     implements GoalRepository {
   /// Creates a goal DAO.
@@ -684,7 +684,7 @@ class GoalDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[AgentMailboxMessages])
 /// Drift inter-agent mailbox repository.
-class AgentMailboxDao extends DatabaseAccessor<CoderDatabase>
+class AgentMailboxDao extends DatabaseAccessor<TinestDatabase>
     with _$AgentMailboxDaoMixin
     implements AgentMailboxRepository {
   /// Creates an agent mailbox DAO.
@@ -769,7 +769,7 @@ class AgentMailboxDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Attachments, TurnAttachments, Turns])
 /// Drift attachment metadata repository.
-class AttachmentDao extends DatabaseAccessor<CoderDatabase>
+class AttachmentDao extends DatabaseAccessor<TinestDatabase>
     with _$AttachmentDaoMixin
     implements AttachmentRepository {
   /// Creates an attachment DAO.
@@ -885,7 +885,7 @@ class AttachmentDao extends DatabaseAccessor<CoderDatabase>
   ],
 )
 /// TimelineDao defines a public contract.
-class TimelineDao extends DatabaseAccessor<CoderDatabase>
+class TimelineDao extends DatabaseAccessor<TinestDatabase>
     with _$TimelineDaoMixin
     implements TimelineRepository {
   /// Creates a [TimelineDao].
@@ -1161,7 +1161,7 @@ class TimelineDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[ProviderConnections, ProviderModels])
 /// ProviderDao defines a public contract.
-class ProviderDao extends DatabaseAccessor<CoderDatabase>
+class ProviderDao extends DatabaseAccessor<TinestDatabase>
     with _$ProviderDaoMixin
     implements ProviderRepository {
   /// Creates a [ProviderDao].
@@ -1348,7 +1348,7 @@ class ProviderDao extends DatabaseAccessor<CoderDatabase>
 
 @DriftAccessor(tables: <Type>[Sessions, Turns, ApprovalRequests, UserQuestions])
 /// RuntimeDao defines a public contract.
-class RuntimeDao extends DatabaseAccessor<CoderDatabase>
+class RuntimeDao extends DatabaseAccessor<TinestDatabase>
     with _$RuntimeDaoMixin
     implements RecoveryRepository {
   /// Creates a [RuntimeDao].

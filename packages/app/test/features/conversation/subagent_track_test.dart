@@ -4,21 +4,21 @@ library;
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -30,7 +30,7 @@ void main() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
 
@@ -38,7 +38,7 @@ void main() {
     id: id,
     worktreeId: checkout.id,
     title: 'Session $id',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -57,7 +57,7 @@ void main() {
     id: id,
     worktreeId: checkout.id,
     title: taskName,
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.delegated,
     status: SessionStatus.running,
     parentSessionId: parentId,
@@ -81,7 +81,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[
@@ -180,7 +180,7 @@ void main() {
         taskName: 'explore_auth',
         agentPath: '/root/explore_auth',
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[root('main-session'), child],
@@ -249,7 +249,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(TRSpinner), findsNothing);
-      expect(find.byIcon(CoderIcons.success), findsWidgets);
+      expect(find.byIcon(TinestIcons.success), findsWidgets);
     },
   );
 
@@ -264,7 +264,7 @@ void main() {
         taskName: 'explore_auth',
         agentPath: '/root/explore_auth',
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[root('main-session'), child],
@@ -301,7 +301,7 @@ void main() {
       expect(
         find.descendant(
           of: row,
-          matching: find.byIcon(CoderIcons.approvalPending),
+          matching: find.byIcon(TinestIcons.approvalPending),
         ),
         findsOneWidget,
       );
@@ -311,7 +311,7 @@ void main() {
   testWidgets('a session without subagents shows no track', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[workspace],
       worktrees: <WorktreeDto>[checkout],
       agents: <SessionDto>[root('main-session')],

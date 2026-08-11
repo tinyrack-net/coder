@@ -13,11 +13,11 @@ void main() {
     () {
       final android = packageFile('android/app/src/main/AndroidManifest.xml');
       expect(android, contains('android:autoVerify="true"'));
-      expect(android, contains('android:host="coder.tinyrack.net"'));
+      expect(android, contains('android:host="tinest.tinyrack.net"'));
       expect(android, contains('android:path="/pair"'));
 
       final ios = packageFile('ios/Runner/Runner.entitlements');
-      expect(ios, contains('applinks:coder.tinyrack.net'));
+      expect(ios, contains('applinks:tinest.tinyrack.net'));
     },
     tags: const <String>['feature_test__daemon_relay__platformSmoke'],
   );
@@ -28,11 +28,11 @@ void main() {
       for (final file in <String>[
         'ios/Runner/Info.plist',
         'macos/Runner/Info.plist',
-        'windows/installer/coder.iss',
-        'linux/net.tinyrack.coder.desktop',
+        'windows/installer/tinest.iss',
+        'linux/net.tinyrack.tinest.desktop',
       ]) {
         final contents = packageFile(file);
-        expect(contents, contains('tinyrack-coder'), reason: file);
+        expect(contents, contains('tinyrack-tinest'), reason: file);
         expect(contents, isNot(contains('?offer=')), reason: file);
       }
     },
@@ -43,7 +43,7 @@ void main() {
     'web deployment falls back to the Flutter pair route',
     () {
       final wrangler = packageFile('wrangler.jsonc');
-      expect(wrangler, contains('coder.tinyrack.net'));
+      expect(wrangler, contains('tinest.tinyrack.net'));
       expect(
         wrangler,
         contains('"not_found_handling": "single-page-application"'),

@@ -104,7 +104,7 @@ void main() {
 
 AgentToolScope _scope(LuaCodeModeHost host) => AgentToolScope(
   session: const AgentSessionContext(id: 'session'),
-  definition: const AgentDefinitionContext(id: 'coder'),
+  definition: const AgentDefinitionContext(id: 'tinest'),
   selectedToolIds: const <String>{},
   workspaceRoot: '/workspace',
   turnId: 'turn',

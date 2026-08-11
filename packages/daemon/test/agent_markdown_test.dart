@@ -145,7 +145,7 @@ Review the requested code without modifying it.
       source.replaceFirst('mode: subagent', 'mode: unknown'),
       source
           .replaceFirst('mode: subagent', 'mode: subagent')
-          .replaceFirst('callableAgents: []', 'callableAgents: [coder]'),
+          .replaceFirst('callableAgents: []', 'callableAgents: [tinest]'),
       source.replaceFirst(
         'model:\n  source: session',
         'model: invalid',
@@ -184,19 +184,19 @@ Review the requested code without modifying it.
   });
 
   test(
-    'file store creates coder, detects conflicts, and archives custom agents',
+    'file store creates tinest, detects conflicts, and archives custom agents',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       addTearDown(store.close);
 
       await store.initialize();
-      final coder = await store.get('coder');
-      expect(coder, isNotNull);
-      expect(coder!.isBuiltIn, isTrue);
+      final tinest = await store.get('tinest');
+      expect(tinest, isNotNull);
+      expect(tinest!.isBuiltIn, isTrue);
 
-      final reviewer = coder.copyWith(
+      final reviewer = tinest.copyWith(
         id: 'reviewer',
         name: 'Reviewer',
         mode: AgentMode.subagent,
@@ -241,30 +241,30 @@ Review the requested code without modifying it.
   test(
     'reload retains the last valid definition after malformed external edit',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       addTearDown(store.close);
       await store.initialize();
-      final coder = (await store.get('coder'))!;
+      final tinest = (await store.get('tinest'))!;
 
-      await File(coder.sourcePath).writeAsString('---\ninvalid: [\n---\n');
+      await File(tinest.sourcePath).writeAsString('---\ninvalid: [\n---\n');
       await store.reload();
 
-      final stale = (await store.get('coder'))!;
+      final stale = (await store.get('tinest'))!;
       expect(stale.isStale, isTrue);
       expect(stale.diagnostics, isNotEmpty);
       expect(stale.diagnostics.single.line, isNotNull);
       expect(stale.diagnostics.single.column, isNotNull);
-      expect(stale.name, coder.name);
+      expect(stale.name, tinest.name);
     },
   );
 
   test(
     'valid external edits reload while symlinked definitions are ignored',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
-      final outside = await Directory.systemTemp.createTemp('coder-outside-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
+      final outside = await Directory.systemTemp.createTemp('tinest-outside-');
       addTearDown(() async {
         await directory.delete(recursive: true);
         await outside.delete(recursive: true);
@@ -272,11 +272,11 @@ Review the requested code without modifying it.
       final store = FileAgentDefinitionStore(directory.path);
       addTearDown(store.close);
       await store.initialize();
-      final coder = (await store.get('coder'))!;
-      final sourceFile = File(coder.sourcePath);
+      final tinest = (await store.get('tinest'))!;
+      final sourceFile = File(tinest.sourcePath);
       await sourceFile.writeAsString(
         (await sourceFile.readAsString()).replaceFirst(
-          'name: Coder',
+          'name: Tinest',
           'name: Dev',
         ),
       );
@@ -290,7 +290,7 @@ Review the requested code without modifying it.
 
       await store.reload();
 
-      expect((await store.get('coder'))!.name, 'Dev');
+      expect((await store.get('tinest'))!.name, 'Dev');
       expect(await store.get('evil'), isNull);
       if (!Platform.isWindows) {
         expect(
@@ -305,7 +305,7 @@ Review the requested code without modifying it.
   test(
     'domain service validates callable subagents and decorates unknown tools',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
@@ -323,10 +323,10 @@ Review the requested code without modifying it.
       );
       addTearDown(service.close);
       await service.initialize();
-      final coder = await service.get('coder');
+      final tinest = await service.get('tinest');
       final reviewer = await service.create(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
@@ -342,8 +342,8 @@ Review the requested code without modifying it.
         contains('unavailable_tool'),
       );
       final callable = await service.update(
-        coder.copyWith(callableAgentIds: const <String>['reviewer']),
-        expectedContentHash: coder.contentHash,
+        tinest.copyWith(callableAgentIds: const <String>['reviewer']),
+        expectedContentHash: tinest.contentHash,
       );
       expect(callable.callableAgentIds, const <String>['reviewer']);
       await expectLater(
@@ -355,23 +355,23 @@ Review the requested code without modifying it.
       );
 
       await service.archive('reviewer');
-      expect((await service.get('coder')).callableAgentIds, isEmpty);
-      await expectLater(service.archive('coder'), throwsA(isA<StateError>()));
+      expect((await service.get('tinest')).callableAgentIds, isEmpty);
+      await expectLater(service.archive('tinest'), throwsA(isA<StateError>()));
     },
     tags: const <String>['feature_test__agent_collaboration__unit'],
   );
 
   test(
-    'file store protects immutable IDs, supports force, and restores coder',
+    'file store protects immutable IDs, supports force, and restores tinest',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       addTearDown(store.close);
       await store.initialize();
       await store.initialize();
-      final coder = (await store.get('coder'))!;
-      expect(coder.toolIds, <String>[
+      final tinest = (await store.get('tinest'))!;
+      expect(tinest.toolIds, <String>[
         'apply_patch',
         'list_mcp_resources',
         'list_mcp_resource_templates',
@@ -381,16 +381,16 @@ Review the requested code without modifying it.
       ]);
 
       await expectLater(
-        store.create('other', coder),
+        store.create('other', tinest),
         throwsA(isA<FormatException>()),
       );
       await expectLater(
-        store.create('coder', coder),
+        store.create('tinest', tinest),
         throwsA(isA<StateError>()),
       );
       final reviewer = await store.create(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
@@ -423,15 +423,15 @@ Review the requested code without modifying it.
       );
       expect(
         (await store.list()).map((definition) => definition.id),
-        <String>['coder', 'auditor', 'reviewer'],
+        <String>['tinest', 'auditor', 'reviewer'],
       );
       await expectLater(store.archive('missing'), throwsA(isA<StateError>()));
 
-      await File(coder.sourcePath).delete();
+      await File(tinest.sourcePath).delete();
       await store.reload();
-      final reseeded = (await store.get('coder'))!;
-      expect(reseeded.name, 'Coder');
-      // The built-in prompt is the shipped behaviour: a freshly seeded Coder
+      final reseeded = (await store.get('tinest'))!;
+      expect(reseeded.name, 'Tinest');
+      // The built-in prompt is the shipped behaviour: a freshly seeded Tinest
       // keeps the custom system prompt switched off.
       expect(reseeded.promptEnabled, isFalse);
       expect(await store.list(), hasLength(3));
@@ -440,10 +440,10 @@ Review the requested code without modifying it.
       await File((await store.resolve('reviewer'))!.sourcePath).delete();
       await store.reload();
       expect(await store.listArchived(), isEmpty);
-      final reset = await store.resetCoder();
+      final reset = await store.resetTinest();
       expect(reset.promptEnabled, isFalse);
       expect(reset.systemPrompt, contains('Read relevant code'));
-      expect(reset.toolIds, coder.toolIds);
+      expect(reset.toolIds, tinest.toolIds);
     },
     tags: const <String>['feature_test__agent_definition_management__unit'],
   );
@@ -451,7 +451,7 @@ Review the requested code without modifying it.
   test(
     'domain service covers lookup, validation, catalog, and fixed refs',
     () async {
-      final directory = await Directory.systemTemp.createTemp('coder-agents-');
+      final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
@@ -497,10 +497,10 @@ Review the requested code without modifying it.
       );
       await expectLater(service.reset('reviewer'), throwsA(isA<StateError>()));
 
-      final coder = await service.get('coder');
+      final tinest = await service.get('tinest');
       final fixed = await service.create(
         'fixed',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'fixed',
           name: 'Fixed',
           mode: AgentMode.subagent,
@@ -530,7 +530,7 @@ Review the requested code without modifying it.
       await expectLater(
         service.create(
           'invalid-subagent',
-          coder.copyWith(
+          tinest.copyWith(
             id: 'invalid-subagent',
             mode: AgentMode.subagent,
             callableAgentIds: const <String>['fixed'],
@@ -541,7 +541,7 @@ Review the requested code without modifying it.
         ),
         throwsA(isA<FormatException>()),
       );
-      expect((await service.reset('coder')).isBuiltIn, isTrue);
+      expect((await service.reset('tinest')).isBuiltIn, isTrue);
     },
   );
 }

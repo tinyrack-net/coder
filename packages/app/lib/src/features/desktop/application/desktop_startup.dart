@@ -25,7 +25,7 @@ String? desktopPairingInitialLocation(List<String> arguments) {
   for (final argument in arguments) {
     final uri = Uri.tryParse(argument);
     if (uri == null ||
-        uri.scheme != 'tinyrack-coder' ||
+        uri.scheme != 'tinyrack-tinest' ||
         uri.host != 'pair' ||
         uri.path.isNotEmpty ||
         uri.query.isNotEmpty ||
@@ -34,7 +34,7 @@ String? desktopPairingInitialLocation(List<String> arguments) {
     }
     return Uri(
       scheme: 'https',
-      host: 'coder.tinyrack.net',
+      host: 'tinest.tinyrack.net',
       path: '/pair',
       fragment: uri.fragment,
     ).toString();

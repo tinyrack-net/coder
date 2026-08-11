@@ -315,7 +315,7 @@ void main() {
 
       setUp(() async {
         clock = _MutableClock();
-        root = await Directory.systemTemp.createTemp('coder-file-index-');
+        root = await Directory.systemTemp.createTemp('tinest-file-index-');
         gateway = GitAwareFileIndexGateway(_FailingCommandRunner(), clock);
       });
 

@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
@@ -16,12 +16,12 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
@@ -34,7 +34,7 @@ import 'package:protocol/protocol.dart';
 import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 part '../features/agents/app_flow_cases.dart';
@@ -75,7 +75,7 @@ void main() {
 
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
-  FakeCoderApi api,
+  FakeTinestApi api,
   String location, {
   MemoryAppStore? store,
   bool disableAnimations = false,
@@ -89,10 +89,10 @@ Future<GoRouter> _pumpRoute(
     localizationsDelegates: testLocalizationsDelegates,
     supportedLocales: testSupportedLocales,
     routerConfig: router,
-    // Mirrors what CoderApp wraps every route in, so a screen under test can
+    // Mirrors what TinestApp wraps every route in, so a screen under test can
     // report a result the same way it does when the app runs.
-    builder: (context, child) => CoderControlDensity(
-      child: CoderToastScope(child: child ?? const SizedBox.shrink()),
+    builder: (context, child) => TinestControlDensity(
+      child: TinestToastScope(child: child ?? const SizedBox.shrink()),
     ),
   );
   await tester.pumpWidget(
@@ -190,10 +190,10 @@ Future<void> _selectComposerMode(
 final class _MappedClients implements HostClientFactory {
   const _MappedClients(this.apis);
 
-  final Map<String, CoderApi> apis;
+  final Map<String, TinestApi> apis;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

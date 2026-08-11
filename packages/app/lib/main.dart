@@ -10,7 +10,7 @@ Future<void> runPlatformApp({
   required Future<void> Function() runMobile,
 }) => isMobile ? runMobile() : runDesktop();
 
-/// Starts Tinyrack Coder for the current operating system.
+/// Starts Tinest for the current operating system.
 Future<void> main(List<String> arguments) => runPlatformApp(
   isMobile: Platform.isAndroid || Platform.isIOS,
   // Only the desktop runner is launched by a login item, so only it needs

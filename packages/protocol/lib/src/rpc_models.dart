@@ -14,7 +14,7 @@ abstract class HelloParamsDto with _$HelloParamsDto {
     required String clientKind,
     required int protocolMajor,
     required Map<String, bool> capabilities,
-    @Default(coderProtocolRevision) int protocolRevision,
+    @Default(tinestProtocolRevision) int protocolRevision,
     @Default('unknown') String clientVersion,
   }) = _HelloParamsDto;
 
@@ -785,7 +785,7 @@ abstract class WorktreeResultDto with _$WorktreeResultDto {
 }
 
 @freezed
-/// Requests the `coder.json` settings of one registered workspace.
+/// Requests the `.tinest/config.json` settings of one registered workspace.
 abstract class ProjectSettingsGetParamsDto with _$ProjectSettingsGetParamsDto {
   /// Creates project settings read parameters.
   const factory ProjectSettingsGetParamsDto({required String workspaceId}) =
@@ -797,7 +797,7 @@ abstract class ProjectSettingsGetParamsDto with _$ProjectSettingsGetParamsDto {
 }
 
 @freezed
-/// Replaces the worktree hook section of one workspace's `coder.json`.
+/// Replaces the worktree hook section of one workspace's `.tinest/config.json`.
 abstract class ProjectSettingsSaveParamsDto
     with _$ProjectSettingsSaveParamsDto {
   /// Creates project settings write parameters.

@@ -73,13 +73,13 @@ void main() {
       final config = resolveDaemonConfig(
         defaults: defaults,
         allowedOrigins: const <String>[
-          'https://coder.tinyrack.net',
+          'https://tinest.tinyrack.net',
           'http://localhost:8080',
         ],
       );
 
       expect(config.allowedOrigins, <String>{
-        'https://coder.tinyrack.net',
+        'https://tinest.tinyrack.net',
         'http://localhost:8080',
       });
     });

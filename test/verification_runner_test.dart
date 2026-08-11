@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:coder_workspace/src/desktop_host.dart';
-import 'package:coder_workspace/src/verification_runner.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
+import 'package:tinest_workspace/src/verification_runner.dart';
 
 void main() {
   test('runs phases in order and tasks within a phase concurrently', () async {

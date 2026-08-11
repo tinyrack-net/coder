@@ -3,7 +3,7 @@
 
 #include <windows.h>
 
-// Coder is single-instance per logon session.
+// Tinest is single-instance per logon session.
 //
 // The embedded daemon takes an exclusive lock on `daemon.lock` in the user's
 // %LOCALAPPDATA%, and on Windows that lock is owned per handle, so a second

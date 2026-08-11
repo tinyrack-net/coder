@@ -24,6 +24,6 @@ gsettings list-recursively org.freedesktop.ibus.engine.hangul 2>/dev/null || tru
 echo "current engine: $(ibus engine 2>/dev/null || echo '?')"
 
 echo "== XWayland check =="
-echo "Start the Coder app (and/or the probe) FIRST, then run this script."
+echo "Start the Tinest app (and/or the probe) FIRST, then run this script."
 echo "Anything listed below runs on XWayland, not native Wayland:"
 xlsclients 2>/dev/null || echo "(xlsclients missing — sudo apt install x11-utils)"

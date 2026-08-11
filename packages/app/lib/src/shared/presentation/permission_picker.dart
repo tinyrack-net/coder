@@ -1,6 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -62,7 +62,7 @@ class PermissionPickerDrawer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (inheritLabel != null)
-            CoderListRow(
+            TinestListRow(
               key: const ValueKey<String>('permission-option-inherit'),
               selected: currentMode == null,
               title: TRText.inherit(inheritLabel),
@@ -70,7 +70,7 @@ class PermissionPickerDrawer extends StatelessWidget {
                   ? null
                   : TRText.inherit(permissionModeLabel(l10n, inheritedMode)),
               trailing: currentMode == null
-                  ? const Icon(CoderIcons.check)
+                  ? const Icon(TinestIcons.check)
                   : null,
               onTap: () => Navigator.pop(
                 context,
@@ -78,14 +78,14 @@ class PermissionPickerDrawer extends StatelessWidget {
               ),
             ),
           for (final mode in PermissionMode.values)
-            CoderListRow(
+            TinestListRow(
               key: ValueKey<String>('permission-option-${mode.name}'),
               selected: currentMode == mode,
               title: TRText.inherit(permissionModeLabel(l10n, mode)),
               subtitle: TRText.inherit(permissionModeDescription(l10n, mode)),
               unboundedSubtitle: true,
               trailing: currentMode == mode
-                  ? const Icon(CoderIcons.check)
+                  ? const Icon(TinestIcons.check)
                   : null,
               onTap: () => Navigator.pop(
                 context,

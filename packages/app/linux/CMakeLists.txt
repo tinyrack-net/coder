@@ -4,11 +4,11 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(APP_DISPLAY_NAME "Coder")
-set(BINARY_NAME "coder")
+set(APP_DISPLAY_NAME "Tinest")
+set(BINARY_NAME "tinest")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "net.tinyrack.coder")
+set(APPLICATION_ID "net.tinyrack.tinest")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

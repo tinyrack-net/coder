@@ -132,18 +132,18 @@ final class RelayService {
 
   String _metrics() =>
       '''
-# TYPE coder_relay_connections gauge
-coder_relay_connections ${_peers.length}
-# TYPE coder_relay_connections_accepted_total counter
-coder_relay_connections_accepted_total $_acceptedConnections
-# TYPE coder_relay_connections_rejected_total counter
-coder_relay_connections_rejected_total $_rejectedConnections
-# TYPE coder_relay_received_bytes_total counter
-coder_relay_received_bytes_total $_receivedBytes
-# TYPE coder_relay_sent_bytes_total counter
-coder_relay_sent_bytes_total $_sentBytes
-# TYPE coder_relay_reconnections_total counter
-coder_relay_reconnections_total $_reconnections
+# TYPE tinest_relay_connections gauge
+tinest_relay_connections ${_peers.length}
+# TYPE tinest_relay_connections_accepted_total counter
+tinest_relay_connections_accepted_total $_acceptedConnections
+# TYPE tinest_relay_connections_rejected_total counter
+tinest_relay_connections_rejected_total $_rejectedConnections
+# TYPE tinest_relay_received_bytes_total counter
+tinest_relay_received_bytes_total $_receivedBytes
+# TYPE tinest_relay_sent_bytes_total counter
+tinest_relay_sent_bytes_total $_sentBytes
+# TYPE tinest_relay_reconnections_total counter
+tinest_relay_reconnections_total $_reconnections
 ''';
 }
 

@@ -31,7 +31,7 @@ final class IoDaemonEnvironment implements DaemonEnvironment {
 /// bound by this list, which is what keeps an arbitrary web page from probing
 /// a daemon on the visitor's own machine.
 const Set<String> defaultAllowedOrigins = <String>{
-  'https://coder.tinyrack.net',
+  'https://tinest.tinyrack.net',
 };
 
 /// Certificate validation mode for a daemon's outbound relay connection.
@@ -63,7 +63,7 @@ final class RelayDaemonConfig {
 
   /// Effective outbound WebSocket URI.
   Uri get endpoint =>
-      endpointOverride ?? Uri.parse('wss://relay.coder.tinyrack.net/v1/ws');
+      endpointOverride ?? Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws');
 }
 
 /// DaemonConfig defines a public contract.
@@ -116,7 +116,7 @@ class DaemonConfig {
     final values = environment.values;
     final directories = resolveLocalDaemonDirectories(environment: environment);
     final (host, port) = parseLocalDaemonListen(
-      values['TINYRACK_CODER_LISTEN'] ?? defaultLocalDaemonListen,
+      values['TINYRACK_TINEST_LISTEN'] ?? defaultLocalDaemonListen,
     );
     return DaemonConfig(
       homeDirectory: directories.stateDirectory,
@@ -125,9 +125,9 @@ class DaemonConfig {
       osHomeDirectory: directories.osHomeDirectory,
       host: host,
       port: port,
-      bearerToken: values['TINYRACK_CODER_TOKEN'],
+      bearerToken: values['TINYRACK_TINEST_TOKEN'],
       allowedOrigins: parseAllowedOrigins(
-        values['TINYRACK_CODER_ALLOWED_ORIGINS'],
+        values['TINYRACK_TINEST_ALLOWED_ORIGINS'],
       ),
       relay: _relayConfigFromEnvironment(values),
     );
@@ -218,24 +218,26 @@ class DaemonConfig {
 }
 
 RelayDaemonConfig _relayConfigFromEnvironment(Map<String, String> values) {
-  final enabledValue = values['TINYRACK_CODER_RELAY']?.trim().toLowerCase();
+  final enabledValue = values['TINYRACK_TINEST_RELAY']?.trim().toLowerCase();
   if (enabledValue != null &&
       enabledValue != 'true' &&
       enabledValue != 'false') {
-    throw const FormatException('TINYRACK_CODER_RELAY must be true or false.');
+    throw const FormatException('TINYRACK_TINEST_RELAY must be true or false.');
   }
-  final endpointValue = values['TINYRACK_CODER_RELAY_ENDPOINT']?.trim();
+  final endpointValue = values['TINYRACK_TINEST_RELAY_ENDPOINT']?.trim();
   final endpoint = endpointValue == null || endpointValue.isEmpty
       ? null
       : Uri.parse(endpointValue);
   if (endpoint != null && endpoint.scheme != 'wss' && endpoint.scheme != 'ws') {
     throw const FormatException('Relay endpoint must use ws or wss.');
   }
-  final tlsValue = values['TINYRACK_CODER_RELAY_TLS']?.trim();
+  final tlsValue = values['TINYRACK_TINEST_RELAY_TLS']?.trim();
   final tlsPolicy = switch (tlsValue) {
     null || '' || 'system-trust' => RelayTlsPolicy.systemTrust,
     'allow-invalid-certificate' => RelayTlsPolicy.allowInvalidCertificate,
-    _ => throw const FormatException('Invalid TINYRACK_CODER_RELAY_TLS value.'),
+    _ => throw const FormatException(
+      'Invalid TINYRACK_TINEST_RELAY_TLS value.',
+    ),
   };
   return RelayDaemonConfig(
     enabled: enabledValue == 'true',

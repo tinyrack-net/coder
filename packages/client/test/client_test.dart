@@ -25,14 +25,14 @@ void main() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -49,8 +49,8 @@ void main() {
     isEditable: true,
   );
   const agentDefinition = AgentDefinitionDto(
-    id: 'coder',
-    name: 'Coder',
+    id: 'tinest',
+    name: 'Tinest',
     description: 'Coding agent',
     mode: AgentMode.primary,
     promptEnabled: true,
@@ -65,7 +65,7 @@ void main() {
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
     contentHash: 'hash',
-    sourcePath: '/config/agents/coder.md',
+    sourcePath: '/config/agents/tinest.md',
     isBuiltIn: true,
   );
   const agentTool = AgentToolDefinitionDto(
@@ -236,7 +236,7 @@ void main() {
       });
 
       final connector = _TestConnector(onConfigure: _registerHello);
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint.parse('ws://127.0.0.1:${server.port}/ws'),
         credentials: const DaemonCredentials(bearerToken: 'attachment-token'),
         clientId: 'attachment-client',
@@ -313,7 +313,7 @@ void main() {
           bytes: Stream<List<int>>.value(<int>[9]),
         ),
         throwsA(
-          isA<CoderClientException>()
+          isA<TinestClientException>()
               .having((error) => error.code, 'code', 'attachment_upload_failed')
               .having((error) => error.message, 'message', 'rejected upload'),
         ),
@@ -321,7 +321,7 @@ void main() {
       expect(
         client.downloadAttachment('missing'),
         throwsA(
-          isA<CoderClientException>()
+          isA<TinestClientException>()
               .having(
                 (error) => error.code,
                 'code',
@@ -363,7 +363,7 @@ void main() {
         },
       );
       final states = <ClientConnectionState>[];
-      final clientFuture = CoderClient.connect(
+      final clientFuture = TinestClient.connect(
         endpoint: HostEndpoint.parse('127.0.0.1:7337'),
         credentials: const DaemonCredentials(bearerToken: 'secret-token'),
         clientId: 'client',
@@ -376,7 +376,7 @@ void main() {
       addTearDown(subscription.cancel);
       addTearDown(client.close);
 
-      expect(client.serverInfo.protocolVersion, coderProtocolMajor);
+      expect(client.serverInfo.protocolVersion, tinestProtocolMajor);
       expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v4/ws'));
       expect(
         connector.lastHeaders,
@@ -460,7 +460,7 @@ void main() {
         await client.getProjectSettings(workspace.id),
         const ProjectSettingsResultDto(
           settings: ProjectSettingsDto(setup: <String>['npm ci']),
-          sourcePath: '/workspace/coder.json',
+          sourcePath: '/workspace/.tinest/config.json',
         ),
       );
       expect(
@@ -631,9 +631,9 @@ void main() {
       expect(await client.listAgentDefinitions(), <AgentDefinitionDto>[
         agentDefinition,
       ]);
-      expect(await client.getAgentDefinition('coder'), agentDefinition);
+      expect(await client.getAgentDefinition('tinest'), agentDefinition);
       expect(
-        await client.createAgentDefinition('coder', agentDefinition),
+        await client.createAgentDefinition('tinest', agentDefinition),
         agentDefinition,
       );
       expect(
@@ -644,9 +644,9 @@ void main() {
         agentDefinition,
       );
       await client.archiveAgentDefinition('custom');
-      expect(await client.resetAgentDefinition('coder'), agentDefinition);
+      expect(await client.resetAgentDefinition('tinest'), agentDefinition);
       expect(
-        await client.validateAgentDefinition('coder', 'markdown'),
+        await client.validateAgentDefinition('tinest', 'markdown'),
         agentDefinition,
       );
       expect(await client.listAgentTools(), <AgentToolDefinitionDto>[
@@ -1004,7 +1004,7 @@ void main() {
 
   test('requests in flight when the peer closes fail as retryable', () async {
     final connector = _TestConnector(onConfigure: _registerHello);
-    final clientFuture = CoderClient.connect(
+    final clientFuture = TinestClient.connect(
       endpoint: HostEndpoint.parse('127.0.0.1:7337'),
       credentials: const DaemonCredentials(bearerToken: 'secret-token'),
       clientId: 'client',
@@ -1018,7 +1018,7 @@ void main() {
     await expectLater(
       client.getWorkspaceCatalog(),
       throwsA(
-        isA<CoderClientException>().having(
+        isA<TinestClientException>().having(
           (error) => error.retryable,
           'retryable',
           isTrue,
@@ -1044,7 +1044,7 @@ void main() {
         });
       },
     );
-    final client = await CoderClient.connect(
+    final client = await TinestClient.connect(
       endpoint: HostEndpoint.parse('ws://localhost/ws'),
       credentials: const DaemonCredentials(bearerToken: 'token'),
       clientId: 'client',
@@ -1056,7 +1056,7 @@ void main() {
     await expectLater(
       client.getWorkspaceCatalog(),
       throwsA(
-        isA<CoderClientException>()
+        isA<TinestClientException>()
             .having((error) => error.code, 'code', 'workspace_unavailable')
             .having((error) => error.retryable, 'retryable', isTrue)
             .having(
@@ -1078,7 +1078,7 @@ void main() {
         );
       },
     );
-    final client = await CoderClient.connect(
+    final client = await TinestClient.connect(
       endpoint: HostEndpoint.parse('ws://localhost/ws'),
       credentials: const DaemonCredentials(bearerToken: 'token'),
       clientId: 'client',
@@ -1086,13 +1086,13 @@ void main() {
       connector: connector,
       requestTimeout: const Duration(milliseconds: 10),
     );
-    // A raw TimeoutException escapes every `on CoderClientException` handler
+    // A raw TimeoutException escapes every `on TinestClientException` handler
     // in the app, which leaves the submitting UI stuck mid-flight; the
     // deadline has to arrive as an ordinary retryable client failure.
     await expectLater(
       client.getWorkspaceCatalog(),
       throwsA(
-        isA<CoderClientException>()
+        isA<TinestClientException>()
             .having(
               (error) => error.code,
               'code',
@@ -1127,7 +1127,7 @@ void main() {
           });
         },
       );
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint.parse('ws://localhost/ws'),
         credentials: const DaemonCredentials(bearerToken: 'token'),
         clientId: 'client',
@@ -1185,7 +1185,7 @@ void main() {
           );
         },
       );
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint.parse('ws://localhost/ws'),
         credentials: const DaemonCredentials(bearerToken: 'token'),
         clientId: 'client',
@@ -1261,7 +1261,7 @@ void main() {
           );
         },
       );
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint.parse('ws://localhost/ws'),
         credentials: const DaemonCredentials(bearerToken: 'token'),
         clientId: 'client',
@@ -1329,7 +1329,7 @@ void main() {
           });
         },
       );
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint.parse('ws://localhost/ws'),
         credentials: const DaemonCredentials(bearerToken: 'token'),
         clientId: 'client',
@@ -1447,7 +1447,7 @@ void _registerHello(json_rpc.Peer peer, List<_Request> requests) {
     return const ServerInfoDto(
       serverId: 'server',
       version: 'test',
-      protocolVersion: coderProtocolMajor,
+      protocolVersion: tinestProtocolMajor,
       features: <String, bool>{},
     ).toJson();
   });
@@ -1570,11 +1570,11 @@ void _registerFixtureMethods(
     ).toJson(),
     workspacesGetProjectSettingsProcedure.name: const ProjectSettingsResultDto(
       settings: ProjectSettingsDto(setup: <String>['npm ci']),
-      sourcePath: '/workspace/coder.json',
+      sourcePath: '/workspace/.tinest/config.json',
     ).toJson(),
     workspacesSaveProjectSettingsProcedure.name: const ProjectSettingsResultDto(
       settings: ProjectSettingsDto(setup: <String>['npm ci']),
-      sourcePath: '/workspace/coder.json',
+      sourcePath: '/workspace/.tinest/config.json',
     ).toJson(),
     sessionsListProcedure.name: SessionListResultDto(
       sessions: <SessionDto>[agent],

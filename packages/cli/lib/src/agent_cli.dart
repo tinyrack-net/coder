@@ -23,12 +23,12 @@ abstract interface class AgentCliBackend {
   Future<AgentDefinitionDto> reset(String id);
 }
 
-/// Adapts [CoderApi] to the standalone agent administration commands.
-final class CoderApiAgentCliBackend implements AgentCliBackend {
+/// Adapts [TinestApi] to the standalone agent administration commands.
+final class TinestApiAgentCliBackend implements AgentCliBackend {
   /// Creates the client adapter.
-  const CoderApiAgentCliBackend(this._api);
+  const TinestApiAgentCliBackend(this._api);
 
-  final CoderApi _api;
+  final TinestApi _api;
 
   @override
   Future<List<AgentDefinitionDto>> list() => _api.agents.listAgentDefinitions();
@@ -130,13 +130,13 @@ Future<int> agentReset({
   required StringSink output,
   required String id,
 }) async {
-  // `coder` is the only built-in definition, so resetting anything else would
+  // `tinest` is the only built-in definition, so resetting anything else would
   // silently do nothing rather than fail.
-  if (id != 'coder') {
-    throw const FormatException('agent reset only supports coder.');
+  if (id != 'tinest') {
+    throw const FormatException('agent reset only supports tinest.');
   }
-  await backend.reset('coder');
-  output.writeln('Reset coder.');
+  await backend.reset('tinest');
+  output.writeln('Reset tinest.');
   return 0;
 }
 

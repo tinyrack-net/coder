@@ -56,7 +56,7 @@ class EmbeddedDaemonHandle implements DaemonHandle {
       receive.sendPort,
       config.toIsolateMessage(),
       provider,
-    ], debugName: 'tinyrack-coder-daemon');
+    ], debugName: 'tinyrack-tinest-daemon');
     final message = await receive.first.timeout(const Duration(seconds: 30));
     receive.close();
     if (message is! Map) {

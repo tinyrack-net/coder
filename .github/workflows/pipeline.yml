@@ -344,7 +344,7 @@ jobs:
           integration_test/${{ matrix.test }} -d linux
         working-directory: packages/app
         env:
-          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
 
   linux-ibus-terminal-e2e:
     name: Linux IBus Terminal E2E
@@ -368,10 +368,10 @@ jobs:
           GTK_IM_MODULE: ibus
           IBUS_USE_PORTAL: '0'
           XMODIFIERS: '@im=ibus'
-          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
         run: |
-          export XDG_CONFIG_HOME="$RUNNER_TEMP/coder-ibus-config"
-          export XDG_RUNTIME_DIR="$RUNNER_TEMP/coder-ibus-runtime"
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/tinest-ibus-config"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/tinest-ibus-runtime"
           mkdir -p "$XDG_CONFIG_HOME" "$XDG_RUNTIME_DIR" \
             "$GITHUB_WORKSPACE/ibus-terminal-artifacts"
           chmod 700 "$XDG_RUNTIME_DIR"
@@ -408,10 +408,10 @@ jobs:
           GDK_BACKEND: wayland
           GTK_IM_MODULE: ibus
           IBUS_USE_PORTAL: '0'
-          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
         run: |
-          export XDG_CONFIG_HOME="$RUNNER_TEMP/coder-ibus-wl-config"
-          export XDG_RUNTIME_DIR="$RUNNER_TEMP/coder-ibus-wl-runtime"
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/tinest-ibus-wl-config"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/tinest-ibus-wl-runtime"
           mkdir -p "$XDG_CONFIG_HOME" "$XDG_RUNTIME_DIR" \
             "$GITHUB_WORKSPACE/ibus-terminal-wayland-artifacts"
           chmod 700 "$XDG_RUNTIME_DIR"
@@ -635,24 +635,24 @@ jobs:
         env:
           BUNDLE: packages/app/build/linux/x64/release/bundle
         run: |
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage coder --input "$BUNDLE" \
-            --output dist/Coder-linux-x64.AppImage --arch x86_64 \
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage tinest --input "$BUNDLE" \
+            --output dist/Tinest-linux-x64.AppImage --arch x86_64 \
             --tool "${GITHUB_WORKSPACE}/appimagetool"
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux deb coder --input "$BUNDLE" \
-            --output dist/coder-linux-x64.deb --arch amd64
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux rpm coder --input "$BUNDLE" \
-            --output dist/coder-linux-x64.rpm --arch x86_64
-          tar -czf dist/Coder-linux-x64.tar.gz -C "$BUNDLE" .
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux deb tinest --input "$BUNDLE" \
+            --output dist/tinest-linux-x64.deb --arch amd64
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux rpm tinest --input "$BUNDLE" \
+            --output dist/tinest-linux-x64.rpm --arch x86_64
+          tar -czf dist/Tinest-linux-x64.tar.gz -C "$BUNDLE" .
       - name: Verify the Linux packages install
         if: matrix.platform == 'linux'
         run: |
-          dpkg-deb --contents dist/coder-linux-x64.deb | grep 'usr/bin/coder ->'
-          rpm -qpl dist/coder-linux-x64.rpm | grep '/usr/lib/coder/coder'
+          dpkg-deb --contents dist/tinest-linux-x64.deb | grep 'usr/bin/tinest ->'
+          rpm -qpl dist/tinest-linux-x64.rpm | grep '/usr/lib/tinest/tinest'
           # A package that builds but cannot install is the failure the
           # rendering tests cannot see.
-          sudo dpkg -i dist/coder-linux-x64.deb
-          test -x /usr/bin/coder
-          sudo dpkg -r coder
+          sudo dpkg -i dist/tinest-linux-x64.deb
+          test -x /usr/bin/tinest
+          sudo dpkg -r tinest
 
       # --- macOS ---------------------------------------------------------
       - name: Sign and archive the macOS app
@@ -664,12 +664,12 @@ jobs:
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
-          APP: packages/app/build/macos/Build/Products/Release/Coder.app
+          APP: packages/app/build/macos/Build/Products/Release/Tinest.app
         run: |
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder --input "$APP" --app-bundle \
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign tinest --input "$APP" --app-bundle \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos archive coder --input "$APP" \
-            --output dist/Coder-${{ matrix.target }}.zip
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos archive tinest --input "$APP" \
+            --output dist/Tinest-${{ matrix.target }}.zip
           codesign --verify --deep --strict "$APP"
       - name: Report the signing identities that were available
         if: failure() && matrix.platform == 'macos'
@@ -703,10 +703,10 @@ jobs:
             "/DAppArch=${{ matrix.arch }}" `
             "/DSourceDir=$bundle" `
             "/DOutputDir=$PWD\dist" `
-            "$PWD\packages\app\windows\installer\coder.iss"
+            "$PWD\packages\app\windows\installer\tinest.iss"
 
-          $installer = "$PWD\dist\Coder-setup-win-${{ matrix.arch }}.exe"
-          $installRoot = Join-Path $env:RUNNER_TEMP 'coder-installer-smoke'
+          $installer = "$PWD\dist\Tinest-setup-win-${{ matrix.arch }}.exe"
+          $installRoot = Join-Path $env:RUNNER_TEMP 'tinest-installer-smoke'
           $installProcess = Start-Process -FilePath $installer -ArgumentList @(
             '/VERYSILENT',
             '/SUPPRESSMSGBOXES',
@@ -717,7 +717,7 @@ jobs:
           if ($installProcess.ExitCode -ne 0) {
             throw "Windows installer smoke test failed with exit code $($installProcess.ExitCode)"
           }
-          foreach ($installedFile in @('coder.exe') + $runtimeDlls) {
+          foreach ($installedFile in @('tinest.exe') + $runtimeDlls) {
             $installedPath = Join-Path $installRoot $installedFile
             if (-not (Test-Path -LiteralPath $installedPath)) {
               throw "Windows installer omitted required file: $installedFile"
@@ -735,22 +735,22 @@ jobs:
           # there is no useful default to fall back to.
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
-        run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package windows msix coder
+        run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package windows msix tinest
           --input packages/app/build/windows/${{ matrix.arch }}/runner/Release
-          --launcher coder.exe --arch ${{ matrix.arch }}
-          --output dist/Coder-win-${{ matrix.arch }}.msix
+          --launcher tinest.exe --arch ${{ matrix.arch }}
+          --output dist/Tinest-win-${{ matrix.arch }}.msix
           --package-root dist/msix/${{ matrix.arch }}
       - name: Archive the Windows release directory
         if: matrix.platform == 'windows'
         shell: pwsh
         run: Compress-Archive
           -Path packages/app/build/windows/${{ matrix.arch }}/runner/Release/*
-          -DestinationPath dist/Coder-${{ matrix.target }}.zip
+          -DestinationPath dist/Tinest-${{ matrix.target }}.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: coder-${{ matrix.target }}
+          name: tinest-${{ matrix.target }}
           retention-days: 7
           path: |
             dist/*.AppImage
@@ -790,7 +790,7 @@ jobs:
               exit 1
             fi
           done
-          keystore="$RUNNER_TEMP/coder-release.jks"
+          keystore="$RUNNER_TEMP/tinest-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
           {
             printf 'storeFile=%s\n' "$keystore"
@@ -810,17 +810,17 @@ jobs:
           apk="packages/app/build/app/outputs/flutter-apk/app-release.apk"
           "$apksigner" verify --verbose --print-certs "$apk"
           mkdir -p dist
-          cp "$apk" dist/Coder-android-universal.apk
+          cp "$apk" dist/Tinest-android-universal.apk
       - name: Remove Android signing material
         if: always()
         run: rm -f packages/app/android/key.properties
-          "$RUNNER_TEMP/coder-release.jks"
+          "$RUNNER_TEMP/tinest-release.jks"
       - name: Upload Android release artifact
         uses: actions/upload-artifact@v7
         with:
-          name: coder-android-universal
+          name: tinest-android-universal
           retention-days: 7
-          path: dist/Coder-android-universal.apk
+          path: dist/Tinest-android-universal.apk
           if-no-files-found: error
 
   deploy-web:
@@ -918,17 +918,17 @@ jobs:
         # Every bundled dylib is signed before the executable that loads them;
         # signing the executable first would invalidate it.
         run: |
-          bundle="dist/coder-cli-${{ matrix.target }}"
+          bundle="dist/tinest-cli-${{ matrix.target }}"
           for library in "$bundle"/lib/*; do
-            dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
+            dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign tinest-cli \
               --input "$library" --skip-notarize
           done
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign tinest-cli \
             --input "$bundle/bin/lua-tool-runtime-host" --skip-notarize
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign coder-cli \
-            --input "$bundle/bin/coder-cli" \
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign tinest-cli \
+            --input "$bundle/bin/tinest-cli" \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
-          codesign --verify --strict "$bundle/bin/coder-cli"
+          codesign --verify --strict "$bundle/bin/tinest-cli"
           codesign --verify --strict "$bundle/bin/lua-tool-runtime-host"
 
       # After signing, so what runs here is the artifact that ships.
@@ -944,21 +944,21 @@ jobs:
         run: |
           cd dist
           if [ "${{ matrix.platform }}" = "windows" ]; then
-            7z a "coder-cli-${{ matrix.target }}.zip" \
-              "coder-cli-${{ matrix.target }}/*"
+            7z a "tinest-cli-${{ matrix.target }}.zip" \
+              "tinest-cli-${{ matrix.target }}/*"
           else
-            tar -czf "coder-cli-${{ matrix.target }}.tar.gz" \
-              "coder-cli-${{ matrix.target }}"
+            tar -czf "tinest-cli-${{ matrix.target }}.tar.gz" \
+              "tinest-cli-${{ matrix.target }}"
           fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: coder-cli-${{ matrix.target }}
+          name: tinest-cli-${{ matrix.target }}
           retention-days: 7
           path: |
-            dist/coder-cli-${{ matrix.target }}.tar.gz
-            dist/coder-cli-${{ matrix.target }}.zip
+            dist/tinest-cli-${{ matrix.target }}.tar.gz
+            dist/tinest-cli-${{ matrix.target }}.zip
           if-no-files-found: error
 
   publish-release:
@@ -988,7 +988,7 @@ jobs:
       - run: dart pub get --directory .dart_tool/tinyrack-dart-packages
 
       - name: Verify the tag matches the app version
-        run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart release verify coder
+        run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart release verify tinest
 
       - name: Create the GitHub Release
         env:
@@ -1002,7 +1002,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: coder-*
+          pattern: tinest-*
           path: release-assets
           merge-multiple: true
 
@@ -1033,29 +1033,29 @@ jobs:
       - run: dart pub get --directory .dart_tool/tinyrack-dart-packages
       - uses: actions/download-artifact@v8
         with:
-          name: coder-macos-arm64
+          name: tinest-macos-arm64
           path: release-assets
       - uses: actions/download-artifact@v8
         with:
-          pattern: coder-cli-*
+          pattern: tinest-cli-*
           path: cli-assets
           merge-multiple: true
 
       - name: Generate the Homebrew Cask
         run: |
           url="https://github.com/${{ github.repository }}/releases/download"
-          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package homebrew cask coder \
-            --archive release-assets/Coder-macos-arm64.zip \
-            --url "${url}/${GITHUB_REF_NAME}/Coder-macos-arm64.zip" \
-            --output release-assets/coder.rb
+          dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package homebrew cask tinest \
+            --archive release-assets/Tinest-macos-arm64.zip \
+            --url "${url}/${GITHUB_REF_NAME}/Tinest-macos-arm64.zip" \
+            --output release-assets/tinest.rb
 
       - name: Generate the Homebrew Formula
-        # `coder-cli` declares a directory payload, so shipworld reads the four
+        # `tinest-cli` declares a directory payload, so shipworld reads the four
         # `.tar.gz` bundles already attached to this release and renders a
         # Formula that installs them into `libexec` and symlinks the launcher.
         run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package homebrew formula
-          coder-cli --artifacts-dir cli-assets
-          --output release-assets/coder-cli.rb
+          tinest-cli --artifacts-dir cli-assets
+          --output release-assets/tinest-cli.rb
 
       - name: Checkout the Homebrew tap
         uses: actions/checkout@v5
@@ -1067,14 +1067,14 @@ jobs:
       - name: Update the Homebrew tap
         run: |
           mkdir -p homebrew-tap/Casks homebrew-tap/Formula
-          cp release-assets/coder.rb homebrew-tap/Casks/coder.rb
-          cp release-assets/coder-cli.rb homebrew-tap/Formula/coder-cli.rb
+          cp release-assets/tinest.rb homebrew-tap/Casks/tinest.rb
+          cp release-assets/tinest-cli.rb homebrew-tap/Formula/tinest-cli.rb
           cd homebrew-tap
           git config user.name "github-actions[bot]"
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/coder.rb Formula/coder-cli.rb
-          git commit -m "Update coder and coder-cli to ${GITHUB_REF_NAME}" ||
+          git add Casks/tinest.rb Formula/tinest-cli.rb
+          git commit -m "Update tinest and tinest-cli to ${GITHUB_REF_NAME}" ||
             echo "No changes to commit"
           git push
 
@@ -1100,18 +1100,18 @@ jobs:
           $releaseNotesUrl = "https://github.com/${{ github.repository }}/releases/tag/$env:GITHUB_REF_NAME"
 
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          .\wingetcreate.exe update tinyrack.coder `
+          .\wingetcreate.exe update tinyrack.tinest `
             --version $version `
-            --urls "$downloadUrl/Coder-setup-win-x64.exe|x64" `
+            --urls "$downloadUrl/Tinest-setup-win-x64.exe|x64" `
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open
 
           # The CLI ships as a portable zip rather than an installer, so it is
           # a separate winget package from the desktop app.
-          .\wingetcreate.exe update tinyrack.coder-cli `
+          .\wingetcreate.exe update tinyrack.tinest-cli `
             --version $version `
-            --urls "$downloadUrl/coder-cli-windows-x64.zip|x64" `
+            --urls "$downloadUrl/tinest-cli-windows-x64.zip|x64" `
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open
@@ -1144,7 +1144,7 @@ jobs:
           -d ${{ matrix.platform.device }}
         working-directory: packages/app
         env:
-          TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES: '1'
+          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
 
   nightly-android-smoke:
     name: Nightly Android Remote E2E

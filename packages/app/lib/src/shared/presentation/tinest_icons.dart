@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
-/// Semantic Lucide icon map shared by every Coder screen.
-abstract final class CoderIcons {
+/// Semantic Lucide icon map shared by every Tinest screen.
+abstract final class TinestIcons {
   /// Semantic Lucide glyph.
   static const IconData add = LucideIcons.plus;
 

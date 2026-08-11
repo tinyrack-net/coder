@@ -84,7 +84,7 @@ final class TerminalSessionState {
 class TerminalSessionController extends _$TerminalSessionController {
   Terminal? _terminal;
   StreamSubscription<TerminalOutputDto>? _output;
-  CoderApi? _api;
+  TinestApi? _api;
   int _sequence = 0;
   bool _started = false;
   bool _restoring = false;
@@ -151,7 +151,7 @@ class TerminalSessionController extends _$TerminalSessionController {
     unawaited(_attach(api));
   }
 
-  void _onApiChanged(CoderApi? api) {
+  void _onApiChanged(TinestApi? api) {
     if (api == null) {
       _api = null;
       // Never clear the emulator here: a dropped socket must not cost the user
@@ -168,7 +168,7 @@ class TerminalSessionController extends _$TerminalSessionController {
     unawaited(_attach(api));
   }
 
-  Future<void> _attach(CoderApi api) async {
+  Future<void> _attach(TinestApi api) async {
     // Not awaited: a cancel that never completes must not strand the terminal,
     // and a stale chunk slipping through is dropped by the sequence gate.
     unawaited(_output?.cancel());

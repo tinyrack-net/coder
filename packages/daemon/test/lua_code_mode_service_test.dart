@@ -49,10 +49,10 @@ void main() {
   });
 
   test('macOS discovery reads bootstrap from app resources', () {
-    final bundle = Directory.systemTemp.createTempSync('coder-lua-bundle-');
+    final bundle = Directory.systemTemp.createTempSync('tinest-lua-bundle-');
     addTearDown(() => bundle.deleteSync(recursive: true));
     final executableDirectory = Directory(
-      p.join(bundle.path, 'Coder.app', 'Contents', 'MacOS'),
+      p.join(bundle.path, 'Tinest.app', 'Contents', 'MacOS'),
     )..createSync(recursive: true);
     final helper = File(
       p.join(
@@ -65,7 +65,7 @@ void main() {
     final bootstrap = File(
       p.join(
         bundle.path,
-        'Coder.app',
+        'Tinest.app',
         'Contents',
         'Resources',
         'lua_tool_runtime',
@@ -75,7 +75,7 @@ void main() {
 
     final command = discoverLuaHostCommand(
       sourceRoot: bundle.path,
-      resolvedExecutable: p.join(executableDirectory.path, 'Coder'),
+      resolvedExecutable: p.join(executableDirectory.path, 'Tinest'),
       isMacOS: true,
     );
 
@@ -240,7 +240,7 @@ void main() {
     }
   });
 
-  test('forwards Coder cancellation to the shared runtime process', () async {
+  test('forwards Tinest cancellation to the shared runtime process', () async {
     final cancellation = CancellationToken();
     final execute = service.execute(
       owner: 'session-1',

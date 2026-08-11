@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:coder_workspace/src/desktop_host.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
 
 /// One Melos script executed as part of workspace verification.
 final class VerificationTask {

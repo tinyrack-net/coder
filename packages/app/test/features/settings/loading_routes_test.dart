@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -21,38 +21,38 @@ void main() {
         ({
           String name,
           String location,
-          FakeCoderApi Function(Future<void> gate) api,
+          FakeTinestApi Function(Future<void> gate) api,
         })
       >[
         (
           name: 'project catalog',
           location: const ProjectSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(workspaceCatalogGate: gate),
+          api: (gate) => FakeTinestApi(workspaceCatalogGate: gate),
         ),
         (
           name: 'agent definitions',
           location: const AgentSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(agentDefinitionsGate: gate),
+          api: (gate) => FakeTinestApi(agentDefinitionsGate: gate),
         ),
         (
           name: 'MCP servers',
           location: const McpSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(mcpListGate: gate),
+          api: (gate) => FakeTinestApi(mcpListGate: gate),
         ),
         (
           name: 'skills',
           location: const SkillSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(skillListGate: gate),
+          api: (gate) => FakeTinestApi(skillListGate: gate),
         ),
         (
           name: 'providers',
           location: const ProviderSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(providerConnectionsGate: gate),
+          api: (gate) => FakeTinestApi(providerConnectionsGate: gate),
         ),
         (
           name: 'permissions',
           location: const PermissionSettingsRoute(hostId: 'server').location,
-          api: (gate) => FakeCoderApi(permissionSettingsGate: gate),
+          api: (gate) => FakeTinestApi(permissionSettingsGate: gate),
         ),
       ];
 
@@ -92,7 +92,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         relayDevices: <RelayDeviceDto>[
           RelayDeviceDto(
             id: 'phone',
@@ -149,7 +149,7 @@ void main() {
           ProviderScope(
             overrides: [
               appServicesProvider.overrideWithValue(
-                fakeAppServices(FakeCoderApi()),
+                fakeAppServices(FakeTinestApi()),
               ),
               hostRegistryControllerProvider.overrideWith(
                 () => _GateHostRegistryController(gate.future),
@@ -196,7 +196,7 @@ final class _GateHostRegistryController extends HostRegistryController {
 
 Future<GoRouter> _pumpPendingRoute(
   WidgetTester tester,
-  FakeCoderApi api,
+  FakeTinestApi api,
   String location,
 ) async {
   final router = GoRouter(initialLocation: location, routes: $appRoutes);

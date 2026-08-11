@@ -1,9 +1,9 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -232,8 +232,8 @@ void main() {
         const ValueKey<String>('general-settings-start-minimized'),
       );
       expect(
-        tester.widget<CoderSwitchRow>(startMinimized),
-        isA<CoderSwitchRow>()
+        tester.widget<TinestSwitchRow>(startMinimized),
+        isA<TinestSwitchRow>()
             .having((row) => row.onChanged, 'onChanged', isNull)
             .having((row) => row.value, 'value', isTrue),
       );
@@ -286,12 +286,12 @@ void main() {
       // The row reports the stored preference either way, so it must not
       // report a stored off as on any more than it forced a stored on to off.
       expect(
-        tester.widget<CoderSwitchRow>(
+        tester.widget<TinestSwitchRow>(
           find.byKey(
             const ValueKey<String>('general-settings-start-minimized'),
           ),
         ),
-        isA<CoderSwitchRow>()
+        isA<TinestSwitchRow>()
             .having((row) => row.onChanged, 'onChanged', isNull)
             .having((row) => row.value, 'value', isFalse),
       );
@@ -338,7 +338,7 @@ Brightness _renderedBrightness(WidgetTester tester) =>
     Theme.of(tester.element(find.byType(Navigator).last)).brightness;
 
 Widget _app(MemoryAppStore store, {AutostartRegistration? autostart}) =>
-    CoderApp(
+    TinestApp(
       services: AppServices(
         settings: store,
         profiles: store,
@@ -353,10 +353,10 @@ final class _OfflineClients implements HostClientFactory {
   const _OfflineClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
+  }) => Future<TinestApi>.error(const HostConnectionFailure.network('offline'));
 }

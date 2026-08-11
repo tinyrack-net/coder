@@ -27,14 +27,14 @@ import 'package:app/src/features/sessions/application/sessions_controller.dart';
 import 'package:app/src/features/terminals/application/terminal_session_controller.dart';
 import 'package:app/src/features/terminals/application/terminal_session_leases.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:app/src/shared/presentation/client_error_alert.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
@@ -136,7 +136,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     return LayoutBuilder(
       builder: (context, pageConstraints) {
         final compact =
-            pageConstraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+            pageConstraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
         final showsCompactDetail =
             compact && (widget.selection != null || widget.compose);
         return PopScope<Object?>(
@@ -146,8 +146,8 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
               const WorkspaceHomeRoute().replace(context);
             }
           },
-          child: CoderPageShell(
-            appBar: CoderPageHeader(
+          child: TinestPageShell(
+            appBar: TinestPageHeader(
               // Compact Back and the desktop toggle share the one stable
               // navigation position at the very top left.
               leading: showsCompactDetail
@@ -159,7 +159,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                       ).backButtonTooltip,
                       onPressed: () =>
                           const WorkspaceHomeRoute().replace(context),
-                      icon: const Icon(CoderIcons.back),
+                      icon: const Icon(TinestIcons.back),
                     )
                   : compact
                   ? null
@@ -174,7 +174,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                       onPressed: () =>
                           unawaited(_setSidebarCollapsed(!collapsed)),
                       icon: Icon(
-                        collapsed ? CoderIcons.menu : CoderIcons.menuOpen,
+                        collapsed ? TinestIcons.menu : TinestIcons.menuOpen,
                       ),
                     ),
               title: TRText.inherit(
@@ -199,7 +199,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                             ).push<void>(context),
                     );
                   },
-                  icon: const Icon(CoderIcons.settings),
+                  icon: const Icon(TinestIcons.settings),
                 ),
               ],
             ),
@@ -240,10 +240,10 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                         requestedTerminalId: widget.requestedTerminalId,
                         mobile:
                             constraints.maxWidth <
-                            CoderLayoutMetrics.compactBreakpoint,
+                            TinestLayoutMetrics.compactBreakpoint,
                       );
                 if (constraints.maxWidth <
-                    CoderLayoutMetrics.compactBreakpoint) {
+                    TinestLayoutMetrics.compactBreakpoint) {
                   return widget.selection == null && !widget.compose
                       ? sidebar
                       : detail;
@@ -355,7 +355,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       await ref
           .read(workspaceCatalogControllerProvider.notifier)
           .refreshHost(selection.hostId);
-    } on CoderClientException {
+    } on TinestClientException {
       _missingSelectionScheduled = false;
       return;
     }
@@ -403,7 +403,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   // a local tab is not immediately undone while the route is being replaced.
   String? _openedAgentId;
   String? _openedTerminalId;
-  CoderClientException? _terminalCreationError;
+  TinestClientException? _terminalCreationError;
 
   @override
   Widget build(BuildContext context) {
@@ -559,7 +559,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                           _split(pane.id, WorkspaceSplitAxis.horizontal),
                         )
                       : null,
-                  icon: const Icon(CoderIcons.splitRight),
+                  icon: const Icon(TinestIcons.splitRight),
                 ),
                 TRIconButton(
                   key: ValueKey<String>(
@@ -574,7 +574,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
                           _split(pane.id, WorkspaceSplitAxis.vertical),
                         )
                       : null,
-                  icon: const Icon(CoderIcons.splitDown),
+                  icon: const Icon(TinestIcons.splitDown),
                 ),
                 _allTabsMenu(context, workspace, pane, firstPane),
               ],
@@ -646,21 +646,21 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       label: workspace.terminals
           .firstWhere((item) => item.id == terminalId)
           .title,
-      leading: const Icon(CoderIcons.terminal),
+      leading: const Icon(TinestIcons.terminal),
       onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
       closeLabel: AppLocalizations.of(context).workspaceCloseTab,
     ),
     DraftTabTarget() => TRTabsTab(
       value: _controlValue(entry),
       label: AppLocalizations.of(context).workspaceNewTab,
-      leading: const Icon(CoderIcons.chat),
+      leading: const Icon(TinestIcons.chat),
       onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
       closeLabel: AppLocalizations.of(context).workspaceCloseTab,
     ),
     PendingTerminalTabTarget() => TRTabsTab(
       value: _controlValue(entry),
       label: AppLocalizations.of(context).workspaceTerminalStarting,
-      leading: const Icon(CoderIcons.terminal),
+      leading: const Icon(TinestIcons.terminal),
       onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
       closeLabel: AppLocalizations.of(context).workspaceCloseTab,
     ),
@@ -707,13 +707,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     key: ValueKey<String>(
       primary ? 'workspace-new-tab-menu' : 'workspace-new-tab-menu-$paneId',
     ),
-    icon: const Icon(CoderIcons.add),
+    icon: const Icon(TinestIcons.add),
     label: AppLocalizations.of(context).workspaceNewTab,
     menuChildren: <Widget>[
       TRMenuItem(
         key: primary ? const ValueKey<String>('workspace-new-session') : null,
         onPressed: () => unawaited(_startDraft(paneId)),
-        leadingIcon: const Icon(CoderIcons.chat),
+        leadingIcon: const Icon(TinestIcons.chat),
         child: TRText.inherit(
           AppLocalizations.of(context).workspaceNewSession,
         ),
@@ -721,7 +721,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
       TRMenuItem(
         key: primary ? const ValueKey<String>('workspace-new-terminal') : null,
         onPressed: () => unawaited(_createTerminal(paneId)),
-        leadingIcon: const Icon(CoderIcons.terminal),
+        leadingIcon: const Icon(TinestIcons.terminal),
         child: TRText.inherit(
           AppLocalizations.of(context).workspaceNewTerminal,
         ),
@@ -738,7 +738,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
     key: ValueKey<String>(
       primary ? 'workspace-all-sessions-menu' : 'workspace-tabs-${pane.id}',
     ),
-    icon: const Icon(CoderIcons.more),
+    icon: const Icon(TinestIcons.more),
     label: AppLocalizations.of(context).workspaceAllSessions,
     menuChildren: <Widget>[
       for (final session in workspace.sessions.where(
@@ -750,13 +750,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         ),
       for (final terminal in workspace.terminals)
         TRMenuItem(
-          leadingIcon: const Icon(CoderIcons.terminal),
+          leadingIcon: const Icon(TinestIcons.terminal),
           onPressed: () => unawaited(_openTerminal(terminal.id)),
           child: TRText.inherit(terminal.title),
         ),
       for (final target in workspace.panes.where((item) => item.id != pane.id))
         TRMenuItem(
-          leadingIcon: const Icon(CoderIcons.movePane),
+          leadingIcon: const Icon(TinestIcons.movePane),
           onPressed: () => unawaited(
             _moveTab(
               tabId: pane.activeTabId,
@@ -808,7 +808,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   ) {
     final entry = workspace.tabs[tabId]!;
     final tab = _tab(context, workspace, entry, closable: false);
-    return CoderListRow(
+    return TinestListRow(
       key: ValueKey<String>('workspace-tab-row-${entry.id}'),
       leading: tab.leading,
       title: TRText.inherit(tab.label),
@@ -821,12 +821,12 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (pane.id == workspace.focusedPaneId && pane.activeTabId == tabId)
-            const Icon(CoderIcons.check),
+            const Icon(TinestIcons.check),
           TRIconButton(
             appearance: TRAppearance.ghost,
             label: AppLocalizations.of(context).workspaceCloseTab,
             onPressed: () => unawaited(_closeEntry(entry)),
-            icon: const Icon(CoderIcons.close),
+            icon: const Icon(TinestIcons.close),
           ),
         ],
       ),
@@ -927,7 +927,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             ).notifier,
           )
           .create(buildTitle: l10n.terminalTabTitle);
-    } on CoderClientException catch (error) {
+    } on TinestClientException catch (error) {
       await tabs.removePendingTerminal(pendingTabId);
       if (mounted) setState(() => _terminalCreationError = error);
       if (error.code == 'worktree_unavailable') {
@@ -1142,7 +1142,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
     final restoring = session.status == TerminalSessionStatus.restoring;
     return ListenableBuilder(
       listenable: _controller,
-      builder: (context, _) => CoderTerminalView(
+      builder: (context, _) => TinestTerminalView(
         key: ValueKey<String>('terminal-view-${widget.terminal.id}'),
         terminal: session.terminal,
         controller: _controller,
@@ -1166,27 +1166,27 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       TRMenuActionElement(
         id: 'terminal-menu-copy',
         title: l10n.terminalMenuCopy,
-        icon: CoderIcons.copy,
+        icon: TinestIcons.copy,
         enabled: hasSelection,
         onPressed: _copySelection,
       ),
       TRMenuActionElement(
         id: 'terminal-menu-paste',
         title: l10n.terminalMenuPaste,
-        icon: CoderIcons.paste,
+        icon: TinestIcons.paste,
         onPressed: _pasteClipboard,
       ),
       const TRMenuSeparatorElement(),
       TRMenuActionElement(
         id: 'terminal-menu-select-all',
         title: l10n.terminalMenuSelectAll,
-        icon: CoderIcons.selectAll,
+        icon: TinestIcons.selectAll,
         onPressed: _controller.selectAll,
       ),
       TRMenuActionElement(
         id: 'terminal-menu-clear-selection',
         title: l10n.terminalMenuClearSelection,
-        icon: CoderIcons.clearSelection,
+        icon: TinestIcons.clearSelection,
         enabled: hasSelection,
         onPressed: _controller.clearSelection,
       ),
@@ -1194,7 +1194,7 @@ class _TerminalPaneState extends ConsumerState<_TerminalPane> {
       TRMenuActionElement(
         id: 'terminal-menu-clear-screen',
         title: l10n.terminalMenuClearScreen,
-        icon: CoderIcons.erase,
+        icon: TinestIcons.erase,
         onPressed: _clearScreen,
       ),
     ];
@@ -1272,7 +1272,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     // would go back to being silent.
     on Object catch (error) {
       messenger.failure(
-        error is CoderClientException
+        error is TinestClientException
             ? clientErrorText(l10n, error)
             : l10n.errorSessionSettingFailed,
         id: 'session-setting',
@@ -1411,7 +1411,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
       child: LayoutBuilder(
         builder: (context, constraints) => Column(
           children: <Widget>[
-            CoderListRow(
+            TinestListRow(
               leading: readOnly
                   ? SubagentStatusIcon(
                       lifecycle: current.lifecycle,
@@ -1498,7 +1498,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         builder: (context, completion) => SessionComposer(
                           controller: _dropController,
                           settingsBreakpoint:
-                              CoderLayoutMetrics.conversationContentMaxWidth,
+                              TinestLayoutMetrics.conversationContentMaxWidth,
                           header: subagentRows.isEmpty
                               ? null
                               : SubagentTrack(
@@ -1840,7 +1840,7 @@ class _ConversationContentColumn extends StatelessWidget {
     alignment: Alignment.topCenter,
     child: ConstrainedBox(
       constraints: const BoxConstraints(
-        maxWidth: CoderLayoutMetrics.conversationContentMaxWidth,
+        maxWidth: TinestLayoutMetrics.conversationContentMaxWidth,
       ),
       child: SizedBox(width: double.infinity, child: child),
     ),

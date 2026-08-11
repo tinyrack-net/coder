@@ -19,7 +19,7 @@ void main() {
     id: id,
     worktreeId: 'worktree',
     title: 'Session $id',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: parentSessionId == null
         ? SessionOrigin.manual
         : SessionOrigin.delegated,

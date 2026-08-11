@@ -220,7 +220,7 @@ class ConversationController extends _$ConversationController {
     }
   }
 
-  Future<bool> _hasRunningTurn(CoderApi api, String sessionId) async {
+  Future<bool> _hasRunningTurn(TinestApi api, String sessionId) async {
     try {
       final session = (await api.sessions.listSessions())
           .where((session) => session.id == sessionId)
@@ -270,7 +270,7 @@ class ConversationController extends _$ConversationController {
   Future<void> _notePendingInput() async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
-    final CoderApi api;
+    final TinestApi api;
     try {
       api = await requireHostApi(ref, hostId);
     } on Object {
@@ -340,7 +340,7 @@ class ConversationController extends _$ConversationController {
   /// that trails the daemon by one event, so a prompt can land in the queue
   /// after the session settled. [drainQueue] otherwise runs only from a later
   /// session update, and no such update is coming, which strands the prompt.
-  Future<void> _drainIfAlreadySettled(CoderApi api, String sessionId) async {
+  Future<void> _drainIfAlreadySettled(TinestApi api, String sessionId) async {
     if (state.asData?.value.queued.isEmpty ?? true) return;
     final session = (await api.sessions.listSessions())
         .where((session) => session.id == sessionId)

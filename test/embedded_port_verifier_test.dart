@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/embedded_port_verifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/embedded_port_verifier.dart';
 
 void main() {
   const verifier = EmbeddedPortVerifier('/workspace');

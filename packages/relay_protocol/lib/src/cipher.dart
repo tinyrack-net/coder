@@ -53,7 +53,7 @@ final class RelayCipherState {
           secretKey: SecretKey(sharedSecret),
           nonce: transcript,
           info: <int>[
-            ...utf8.encode('tinyrack-coder-relay-v1:'),
+            ...utf8.encode('tinyrack-tinest-relay-v1:'),
             ...directionBytes,
           ],
         );

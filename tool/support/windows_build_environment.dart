@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/windows_build_environment.dart';
 import 'package:path/path.dart' as p;
+import 'package:tinest_workspace/src/windows_build_environment.dart';
 
 /// Resolves native build-tool environment overrides for workspace commands.
 Future<Map<String, String>> resolveWindowsBuildEnvironment() =>

@@ -431,7 +431,7 @@ final class McpRuntime implements AgentToolCatalog {
         ..sourcePath = document.sourcePath
         ..error = null;
     } on Object catch (failure) {
-      // A repository with a broken .coder/config.json still has to be
+      // A repository with a broken .tinest/config.json still has to be
       // workable, so the
       // failure is recorded against the worktree instead of thrown at a turn.
       project

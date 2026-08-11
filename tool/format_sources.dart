@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/source_inventory.dart';
+import 'package:tinest_workspace/src/source_inventory.dart';
 
 /// Formats every Dart source Git tracks or does not ignore.
 ///

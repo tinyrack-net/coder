@@ -1,8 +1,8 @@
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,15 +10,15 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 4);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -27,7 +27,7 @@ void main() {
     name: 'migrate',
     description: 'Runs the migration.',
     source: SkillSource.project,
-    sourcePath: '/repos/coder/.agents/skills/migrate/SKILL.md',
+    sourcePath: '/repos/tinest/.agents/skills/migrate/SKILL.md',
     contentHash: 'migrate-hash',
     body: 'Run the migration script.',
     isEditable: true,
@@ -38,7 +38,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -50,11 +50,11 @@ void main() {
 
       // The mandatory built-in cannot be turned off.
       final mandatory = find.descendant(
-        of: find.widgetWithText(CoderListRow, 'coding-conventions'),
+        of: find.widgetWithText(TinestListRow, 'coding-conventions'),
         matching: find.byType(TRSwitch),
       );
       final toggleable = find.descendant(
-        of: find.widgetWithText(CoderListRow, 'commit'),
+        of: find.widgetWithText(TinestListRow, 'commit'),
         matching: find.byType(TRSwitch),
       );
       expect(tester.widget<TRSwitch>(mandatory).onCheckedChange, isNull);
@@ -75,7 +75,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -86,7 +86,7 @@ void main() {
       expect(selector, findsOneWidget);
       expect(
         tester.getSize(selector).width,
-        CoderLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.large,
+        TinestLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.large,
       );
       expect(
         tester.getTopLeft(selector).dx,
@@ -102,7 +102,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -134,7 +134,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         failNextSkillUpdate: true,
       );
@@ -160,7 +160,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         projectSkills: <SkillDto>[projectSkill],
       );
@@ -176,7 +176,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Coder').last);
+      await tester.tap(find.text('Tinest').last);
       await tester.pumpAndSettle();
 
       expect(find.text('migrate'), findsWidgets);
@@ -212,7 +212,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -240,7 +240,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         skillListError: Exception('daemon offline'),
       );
@@ -261,7 +261,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(390, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[workspace]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -285,7 +285,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       _sizeViewport(tester, const Size(1200, 900));
-      final api = FakeCoderApi(workspaces: _manyWorkspaces(now));
+      final api = FakeTinestApi(workspaces: _manyWorkspaces(now));
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -313,7 +313,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(390, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       _sizeViewport(tester, const Size(390, 760));
-      final api = FakeCoderApi(workspaces: _manyWorkspaces(now));
+      final api = FakeTinestApi(workspaces: _manyWorkspaces(now));
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
@@ -363,7 +363,7 @@ void _sizeViewport(WidgetTester tester, Size size) {
 /// Enough projects that the selector is worth filtering.
 List<WorkspaceDto> _manyWorkspaces(DateTime now) => <WorkspaceDto>[
   for (final name in const <String>[
-    'Coder',
+    'Tinest',
     'Dropwell',
     'Termworld',
     'Shipworld',
@@ -385,7 +385,7 @@ Finder _textInput(String label) => find.descendant(
   matching: find.byType(EditableText),
 );
 
-Future<GoRouter> _pumpSkills(WidgetTester tester, FakeCoderApi api) async {
+Future<GoRouter> _pumpSkills(WidgetTester tester, FakeTinestApi api) async {
   final router = GoRouter(
     initialLocation: const SkillSettingsRoute(hostId: 'server').location,
     routes: $appRoutes,

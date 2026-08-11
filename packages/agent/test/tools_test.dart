@@ -10,8 +10,10 @@ void main() {
   late Directory outside;
 
   setUp(() async {
-    workspace = await Directory.systemTemp.createTemp('coder-tools-workspace-');
-    outside = await Directory.systemTemp.createTemp('coder-tools-outside-');
+    workspace = await Directory.systemTemp.createTemp(
+      'tinest-tools-workspace-',
+    );
+    outside = await Directory.systemTemp.createTemp('tinest-tools-outside-');
     await File(
       '${outside.path}${Platform.pathSeparator}secret.txt',
     ).writeAsString('secret');

@@ -20,8 +20,8 @@ void main() {
         request,
         // Mirrors the daemon: only the versioned protocol is offered back.
         protocolSelector: (protocols) =>
-            protocols.contains(coderWebSocketProtocol)
-            ? coderWebSocketProtocol
+            protocols.contains(tinestWebSocketProtocol)
+            ? tinestWebSocketProtocol
             : null,
       );
       await socket.close();
@@ -53,7 +53,7 @@ void main() {
 
     expect(header('authorization'), isNull);
     final protocols = header('sec-websocket-protocol')!;
-    expect(protocols, contains(coderWebSocketProtocol));
+    expect(protocols, contains(tinestWebSocketProtocol));
     final token = protocols
         .split(',')
         .map((value) => decodeWebSocketTokenProtocol(value.trim()))
@@ -69,7 +69,10 @@ void main() {
     );
     await channel.sink.close();
 
-    expect(header('sec-websocket-protocol'), contains('tinyrack.coder.token.'));
+    expect(
+      header('sec-websocket-protocol'),
+      contains('tinyrack.tinest.token.'),
+    );
   });
 
   test('the web connector omits the token when there is none', () async {
@@ -79,7 +82,7 @@ void main() {
     );
     await channel.sink.close();
 
-    expect(header('sec-websocket-protocol'), coderWebSocketProtocol);
+    expect(header('sec-websocket-protocol'), tinestWebSocketProtocol);
   });
 
   test(
@@ -91,7 +94,7 @@ void main() {
       );
       await channel.sink.close();
 
-      expect(header('sec-websocket-protocol'), coderWebSocketProtocol);
+      expect(header('sec-websocket-protocol'), tinestWebSocketProtocol);
     },
   );
 
@@ -111,7 +114,7 @@ void main() {
         headers: const <String, String>{},
       ),
       throwsA(
-        isA<CoderClientException>()
+        isA<TinestClientException>()
             .having((e) => e.code, 'code', localNetworkUnreachableCode)
             .having((e) => e.retryable, 'retryable', isTrue),
       ),
@@ -133,7 +136,7 @@ void main() {
       'ws://172.31.255.254:7337/ws',
       'ws://192.168.1.10:7337/ws',
       'ws://169.254.10.20:7337/ws',
-      'ws://coder.local:7337/ws',
+      'ws://tinest.local:7337/ws',
       'ws://[fe80::1]:7337/ws',
       'ws://[fd12:3456::1]:7337/ws',
     ];
@@ -146,7 +149,7 @@ void main() {
     // 172.15 and 172.32 sit just outside 172.16/12, and a host merely
     // containing "local" is not a `.local` name.
     const public = <String>[
-      'wss://coder.tinyrack.net/ws',
+      'wss://tinest.tinyrack.net/ws',
       'ws://172.15.0.1:7337/ws',
       'ws://172.32.0.1:7337/ws',
       'ws://11.0.0.1:7337/ws',

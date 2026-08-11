@@ -8,7 +8,7 @@ void main() {
   final now = DateTime.utc(2026, 8, 2);
 
   test('protocol v4 exposes permission defaults and typed contracts', () {
-    expect(coderProtocolMajor, 4);
+    expect(tinestProtocolMajor, 4);
     expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
     expect(workspacesRefreshProcedure.name, 'workspaces.refresh');
     expect(workspacesUnregisterProcedure.name, 'workspaces.unregister');
@@ -80,7 +80,7 @@ void main() {
       );
 
       final offer = RelayPairingOfferDto(
-        url: 'https://coder.example/pair#offer=test',
+        url: 'https://tinest.example/pair#offer=test',
         expiresAt: now,
       );
       final decodedOffer = RelayPairingOfferDto.fromJson(offer.toJson());
@@ -146,7 +146,7 @@ void main() {
       id: 'session',
       worktreeId: 'worktree',
       title: 'Plan the migration',
-      agentDefinitionId: 'coder',
+      agentDefinitionId: 'tinest',
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
       createdAt: now,
@@ -159,7 +159,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Default',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,
@@ -173,7 +173,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Plan the migration',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         mode: SessionMode.plan,
       ),
       (value) => value.toJson(),
@@ -203,7 +203,7 @@ void main() {
       id: 'session',
       worktreeId: 'worktree',
       title: 'Run the tests',
-      agentDefinitionId: 'coder',
+      agentDefinitionId: 'tinest',
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
       createdAt: now,
@@ -222,7 +222,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Run the tests',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: selection,
       ),
       (value) => value.toJson(),
@@ -301,7 +301,7 @@ void main() {
       id: 'session',
       worktreeId: 'worktree',
       title: 'Typed controls',
-      agentDefinitionId: 'coder',
+      agentDefinitionId: 'tinest',
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
       createdAt: now,
@@ -358,7 +358,7 @@ void main() {
         id: 'root',
         worktreeId: 'worktree',
         title: 'Root',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,
@@ -550,7 +550,7 @@ void main() {
   test('workspace and worktree contracts round-trip', () {
     final workspace = WorkspaceDto(
       id: 'workspace',
-      name: 'Coder',
+      name: 'Tinest',
       rootPath: '/workspace',
       kind: WorkspaceKind.git,
       createdAt: now,
@@ -563,7 +563,7 @@ void main() {
       kind: WorktreeKind.managed,
       branch: 'feature/settings',
       head: 'abc123',
-      isCoderOwned: true,
+      isTinestOwned: true,
       createdAt: now,
     );
     final catalog = WorkspaceCatalogDto(
@@ -654,7 +654,7 @@ void main() {
         name: 'Home',
         path: home.rootPath,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
       _roundTrip(checkout, (value) => value.toJson(), WorktreeDto.fromJson);
@@ -664,7 +664,7 @@ void main() {
 
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
+    name: 'Tinest',
     rootPath: '/workspace',
     kind: WorkspaceKind.git,
     createdAt: now,
@@ -677,7 +677,7 @@ void main() {
     kind: WorktreeKind.checkout,
     branch: 'main',
     head: 'abc123',
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   const capabilities = ModelCapabilitiesDto(
@@ -773,7 +773,7 @@ void main() {
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.waitingForApproval,
     createdAt: now,
@@ -847,7 +847,7 @@ void main() {
     _roundTrip(
       const ProjectSettingsResultDto(
         settings: settings,
-        sourcePath: '/workspace/coder.json',
+        sourcePath: '/workspace/.tinest/config.json',
       ),
       (value) => value.toJson(),
       ProjectSettingsResultDto.fromJson,
@@ -864,7 +864,7 @@ void main() {
           name: 'main',
           path: '/workspace',
           kind: WorktreeKind.checkout,
-          isCoderOwned: false,
+          isTinestOwned: false,
           createdAt: now,
         ).toJson(),
       }).hookRuns,
@@ -873,7 +873,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(coderProtocolMajor, 4);
+    expect(tinestProtocolMajor, 4);
     expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
     expect(sessionsCreateProcedure.name, 'sessions.create');
     expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
@@ -1064,7 +1064,7 @@ void main() {
       const ServerInfoDto(
         serverId: 'server',
         version: '1.0.0',
-        protocolVersion: coderProtocolMajor,
+        protocolVersion: tinestProtocolMajor,
         features: <String, bool>{},
         homeDirectory: '/home/test',
       ),
@@ -1077,7 +1077,7 @@ void main() {
       const ServerInfoDto(
         serverId: 'server',
         version: '1.0.0',
-        protocolVersion: coderProtocolMajor,
+        protocolVersion: tinestProtocolMajor,
         features: <String, bool>{},
       ),
       (value) => value.toJson(),
@@ -1100,7 +1100,7 @@ void main() {
       const HelloParamsDto(
         clientId: 'client',
         clientKind: 'desktop',
-        protocolMajor: coderProtocolMajor,
+        protocolMajor: tinestProtocolMajor,
         capabilities: <String, bool>{'timelineCatchup': true},
       ),
       (value) => value.toJson(),
@@ -1174,7 +1174,7 @@ void main() {
         id: 'agent',
         worktreeId: 'worktree',
         title: 'Agent',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
       ),
       (value) => value.toJson(),
       SessionCreateParamsDto.fromJson,
@@ -1542,7 +1542,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Budgeted',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,
@@ -1558,7 +1558,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Unknown',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,
@@ -1665,7 +1665,7 @@ void main() {
         id: 'session',
         worktreeId: 'worktree',
         title: 'Priced',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,

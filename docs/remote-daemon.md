@@ -1,6 +1,6 @@
 # Remote daemon, browsers, and TLS proxy
 
-Tinyrack Coder's daemon serves plain HTTP/WebSocket only. For a remote host,
+Tinest's daemon serves plain HTTP/WebSocket only. For a remote host,
 keep the daemon on loopback and let an operator-managed reverse proxy provide
 DNS, certificates, TLS policy, firewalling, and public reachability. The app
 uses the operating system trust store for `wss://`; it does not offer a
@@ -10,17 +10,17 @@ Start a standalone daemon with an explicit 256-bit access token when
 reproducible deployment credentials are required:
 
 ```sh
-TINYRACK_CODER_LISTEN=127.0.0.1:7337 \
-TINYRACK_CODER_TOKEN='<at-least-32-byte-bearer-secret>' \
-coder-cli daemon start
+TINYRACK_TINEST_LISTEN=127.0.0.1:7337 \
+TINYRACK_TINEST_TOKEN='<at-least-32-byte-bearer-secret>' \
+tinest-cli daemon start
 ```
 
-The same options are available as flags: `coder-cli daemon start --listen
+The same options are available as flags: `tinest-cli daemon start --listen
 127.0.0.1:7337 --token '<secret>'`. From a checkout, `dart run melos
 run:daemon` builds the CLI and runs the same command.
 
 The bearer token grants the complete daemon API, including Provider credentials
-and Markdown Agent settings. Tinyrack Coder does not implement user roles or
+and Markdown Agent settings. Tinest does not implement user roles or
 location-based permissions. Anyone who possesses this token can fully control
 the daemon.
 
@@ -32,7 +32,7 @@ prevent clients from bypassing the TLS proxy through the plain daemon port.
 
 ## Browser clients
 
-The web build at `https://coder.tinyrack.net` is a static client with no
+The web build at `https://tinest.tinyrack.net` is a static client with no
 server of its own: it connects to a daemon the user runs, exactly as the
 desktop and mobile apps do.
 
@@ -44,10 +44,10 @@ instead, base64url encoded because a subprotocol may only contain RFC 7230
 token characters:
 
 ```
-Sec-WebSocket-Protocol: tinyrack.coder.v4, tinyrack.coder.token.<base64url>
+Sec-WebSocket-Protocol: tinyrack.tinest.v4, tinyrack.tinest.token.<base64url>
 ```
 
-The daemon accepts either credential and echoes back only `tinyrack.coder.v4`,
+The daemon accepts either credential and echoes back only `tinyrack.tinest.v4`,
 so the token never appears in a response. This is the same secret with the
 same complete access; a subprotocol is a transport detail, not a weaker
 credential.
@@ -57,14 +57,14 @@ otherwise probe a daemon running on a visitor's own machine. The daemon
 therefore checks `Origin` against an allowlist before authenticating:
 
 ```sh
-TINYRACK_CODER_ALLOWED_ORIGINS='https://coder.tinyrack.net,http://localhost:8080' \
-  coder-cli daemon start
-# or: coder-cli daemon start --allowed-origin https://coder.tinyrack.net
+TINYRACK_TINEST_ALLOWED_ORIGINS='https://tinest.tinyrack.net,http://localhost:8080' \
+  tinest-cli daemon start
+# or: tinest-cli daemon start --allowed-origin https://tinest.tinyrack.net
 ```
 
 The default allows the official web app only. Setting the variable to `none`
 turns browser access off entirely. **Requests without an `Origin` header are
-unaffected**, which is every native client and `coder-cli`, so this gate never
+unaffected**, which is every native client and `tinest-cli`, so this gate never
 changes their behaviour. The same allowlist drives the CORS headers on
 `/v4/health` and `/v4/attachments`.
 
@@ -119,12 +119,12 @@ Three arrangements avoid needing the permission at all:
 Caddy forwards WebSocket upgrades and `Authorization` by default:
 
 ```caddyfile
-coder.example.com {
+tinest.example.com {
   reverse_proxy 127.0.0.1:7337
 }
 ```
 
-Register `wss://coder.example.com/v4/ws` in the app and enter the bearer token.
+Register `wss://tinest.example.com/v4/ws` in the app and enter the bearer token.
 
 ## Nginx
 
@@ -136,7 +136,7 @@ map $http_upgrade $tinyrack_connection_upgrade {
 
 server {
   listen 443 ssl;
-  server_name coder.example.com;
+  server_name tinest.example.com;
 
   # ssl_certificate and TLS policy are operator-managed.
 

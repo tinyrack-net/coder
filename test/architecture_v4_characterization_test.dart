@@ -1,5 +1,5 @@
-import 'package:coder_workspace/src/architecture_verifier.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/architecture_verifier.dart';
 
 void main() {
   const verifier = ArchitectureVerifier('/workspace');

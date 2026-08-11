@@ -11,20 +11,20 @@ void main() {
   late Directory root;
 
   setUp(() async {
-    root = await Directory.systemTemp.createTemp('coder-project-settings-');
-    await Directory(p.join(root.path, '.coder')).create();
+    root = await Directory.systemTemp.createTemp('tinest-project-settings-');
+    await Directory(p.join(root.path, '.tinest')).create();
   });
 
   tearDown(() => root.delete(recursive: true));
 
-  File settingsFile() => File(p.join(root.path, '.coder', 'config.json'));
+  File settingsFile() => File(p.join(root.path, '.tinest', 'config.json'));
 
   test('reports the workspace-root settings path', () {
     expect(
       const FileProjectSettingsStore().sourcePath(root.path),
       settingsFile().path,
     );
-    expect(projectSettingsFileName, '.coder/config.json');
+    expect(projectSettingsFileName, '.tinest/config.json');
   });
 
   test('treats a missing or blank file as empty settings', () async {

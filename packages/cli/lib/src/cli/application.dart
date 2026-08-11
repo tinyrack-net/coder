@@ -49,7 +49,7 @@ int resolveExitCode(Object? error) => switch (error) {
   FormatException() => usageExitCode,
   WebSocketChannelException() => unavailableExitCode,
   io.SocketException() => unavailableExitCode,
-  CoderClientException() => unavailableExitCode,
+  TinestClientException() => unavailableExitCode,
   DaemonConnectionException() => unavailableExitCode,
   _ => 1,
 };
@@ -60,13 +60,13 @@ String _describe(Object? error) => switch (error) {
     'Cannot connect to the daemon: $message',
   io.SocketException(:final message) =>
     'Cannot connect to the daemon: $message',
-  CoderClientException(:final message) => message,
+  TinestClientException(:final message) => message,
   DaemonConnectionException(:final message) => message,
   _ => '$error',
 };
 
 /// Routes framework errors through the logger instead of raw stderr writes.
-ApplicationText _coderText(CliLogger errorLogger) {
+ApplicationText _tinestText(CliLogger errorLogger) {
   String report(Object? error, Object? _) {
     errorLogger.error(_describe(error));
     return '';
@@ -80,16 +80,16 @@ ApplicationText _coderText(CliLogger errorLogger) {
   );
 }
 
-/// Builds the `coder-cli` routing tree.
-RouteMap<CoderCliContext> buildRootRoutes() => buildRouteMap(
+/// Builds the `tinest-cli` routing tree.
+RouteMap<TinestCliContext> buildRootRoutes() => buildRouteMap(
   docs: const RouteMapDocs(
-    brief: 'Tinyrack Coder command line',
+    brief: 'Tinest command line',
     fullDescription:
         'Hosts a daemon and administers the providers and Markdown agents of '
         'a running one.',
     hideRoute: <String, bool>{'__complete': true},
   ),
-  routes: <String, RoutingTarget<CoderCliContext>>{
+  routes: <String, RoutingTarget<TinestCliContext>>{
     'daemon': buildDaemonRoutes(),
     'provider': buildProviderRoutes(),
     'agent': buildAgentRoutes(),
@@ -99,11 +99,11 @@ RouteMap<CoderCliContext> buildRootRoutes() => buildRouteMap(
 );
 
 /// Builds the application for [text].
-Application<CoderCliContext> buildCoderCliApplication(ApplicationText text) {
+Application<TinestCliContext> buildTinestCliApplication(ApplicationText text) {
   return buildApplication(
     buildRootRoutes(),
     ApplicationConfiguration(
-      name: 'coder-cli',
+      name: 'tinest-cli',
       determineExitCode: resolveExitCode,
       documentation: const DocumentationConfiguration(
         caseStyle: DisplayCaseStyle.convertCamelToKebab,
@@ -120,7 +120,7 @@ Application<CoderCliContext> buildCoderCliApplication(ApplicationText text) {
   );
 }
 
-/// Runs `coder-cli` with [inputs] and returns the process exit code.
+/// Runs `tinest-cli` with [inputs] and returns the process exit code.
 ///
 /// Every side effect is an injectable parameter so that a test drives the real
 /// router without a socket, a terminal, or the user's home directory.
@@ -144,10 +144,10 @@ Future<int> runCli(
     stderr: stderrStream,
   );
   final resolvedEnvironment = environment ?? io.Platform.environment;
-  final context = CoderCliContext(
+  final context = TinestCliContext(
     process: RunProcess(stdout: stdoutStream, stderr: stderrStream),
     logger: logger,
-    connectClient: connectClient ?? _connectCoderClient,
+    connectClient: connectClient ?? _connectTinestClient,
     readSecret: readSecret ?? _promptForSecret,
     readFile: readFile ?? _readFile,
     environment: resolvedEnvironment,
@@ -159,19 +159,19 @@ Future<int> runCli(
           environment: _MapLocalDaemonEnvironment(resolvedEnvironment),
         ),
   );
-  final application = buildCoderCliApplication(_coderText(errorLogger));
+  final application = buildTinestCliApplication(_tinestText(errorLogger));
   context.application = application;
   await run(application, inputs, RunContext.direct(context));
   return normalizeExitCode(context.process.exitCode);
 }
 
-Future<CoderClient> _connectCoderClient({
+Future<TinestClient> _connectTinestClient({
   required String host,
   required int port,
   required String bearerToken,
   required String clientId,
 }) {
-  return CoderClient.connect(
+  return TinestClient.connect(
     endpoint: HostEndpoint(
       websocketUri: Uri(
         scheme: 'ws',

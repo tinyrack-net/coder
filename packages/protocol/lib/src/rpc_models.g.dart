@@ -13,7 +13,7 @@ _HelloParamsDto _$HelloParamsDtoFromJson(Map<String, dynamic> json) =>
       protocolMajor: (json['protocolMajor'] as num).toInt(),
       capabilities: Map<String, bool>.from(json['capabilities'] as Map),
       protocolRevision:
-          (json['protocolRevision'] as num?)?.toInt() ?? coderProtocolRevision,
+          (json['protocolRevision'] as num?)?.toInt() ?? tinestProtocolRevision,
       clientVersion: json['clientVersion'] as String? ?? 'unknown',
     );
 

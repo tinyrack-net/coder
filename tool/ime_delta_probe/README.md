@@ -12,7 +12,7 @@ cd ime_delta_probe
 flutter create --platforms=linux --project-name ime_delta_probe .
 flutter pub get
 
-# 1) 환경 사실 수집 — 먼저 Coder 앱(또는 프로브)을 띄워둔 상태에서:
+# 1) 환경 사실 수집 — 먼저 Tinest 앱(또는 프로브)을 띄워둔 상태에서:
 bash capture_env.sh > env.txt 2>&1
 
 # 2) 세 가지 경로로 각각 실행, 매 실행마다:

@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -81,7 +81,8 @@ Future<ModelPickerChoice?> showModelPicker(
     inheritLabel: inheritLabel,
   );
   if (surface == ModelPickerSurface.sheet ||
-      MediaQuery.sizeOf(context).width < CoderLayoutMetrics.compactBreakpoint) {
+      MediaQuery.sizeOf(context).width <
+          TinestLayoutMetrics.compactBreakpoint) {
     return showTRDrawer<ModelPickerChoice>(
       context: context,
       useRootNavigator: useRootNavigator,
@@ -251,7 +252,7 @@ class _ModelPickerState extends State<ModelPicker> {
               appearance: TRAppearance.ghost,
               label: l10n.commonClose,
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(CoderIcons.close),
+              icon: const Icon(TinestIcons.close),
             ),
           ],
         ),
@@ -264,11 +265,11 @@ class _ModelPickerState extends State<ModelPicker> {
         ),
         const SizedBox(height: TRSpacing.medium),
         if (inheritLabel != null && query.isEmpty)
-          CoderListRow(
+          TinestListRow(
             key: const ValueKey('model-option-inherit'),
             title: TRText.inherit(inheritLabel),
             trailing: widget.currentSelection == null
-                ? const Icon(CoderIcons.check)
+                ? const Icon(TinestIcons.check)
                 : null,
             onTap: () => Navigator.pop(
               context,
@@ -286,7 +287,7 @@ class _ModelPickerState extends State<ModelPicker> {
                     final providerModelId = model.providerModelId.isEmpty
                         ? model.id
                         : model.providerModelId;
-                    return CoderListRow(
+                    return TinestListRow(
                       key: ValueKey(
                         'model-option-${model.connectionId}-'
                         '$providerModelId',
@@ -305,7 +306,7 @@ class _ModelPickerState extends State<ModelPicker> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       trailing: _isSelected(option)
-                          ? const Icon(CoderIcons.check)
+                          ? const Icon(TinestIcons.check)
                           : null,
                       onTap: () => Navigator.pop(
                         context,

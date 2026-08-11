@@ -19,7 +19,7 @@ void main() {
       for (final code in RpcErrorCodes.all) {
         final text = clientErrorText(
           testL10n,
-          const CoderClientException(daemonSentence).copyWithCode(code),
+          const TinestClientException(daemonSentence).copyWithCode(code),
         );
         expect(
           text,
@@ -39,12 +39,12 @@ void main() {
       expect(
         clientErrorText(
           testL10n,
-          const CoderClientException('Something specific.', code: 'from_v5'),
+          const TinestClientException('Something specific.', code: 'from_v5'),
         ),
         'Something specific.',
       );
       expect(
-        clientErrorText(testL10n, const CoderClientException('No code.')),
+        clientErrorText(testL10n, const TinestClientException('No code.')),
         'No code.',
       );
     },
@@ -56,7 +56,7 @@ void main() {
     () {
       expect(
         clientErrorDiagnostics(
-          const CoderClientException(
+          const TinestClientException(
             'Internal daemon error.',
             code: RpcErrorCodes.gitCommandFailed,
             details: <String, dynamic>{
@@ -80,7 +80,7 @@ void main() {
       // An empty stderr adds a blank line rather than information.
       expect(
         clientErrorDiagnostics(
-          const CoderClientException(
+          const TinestClientException(
             'Failed.',
             code: RpcErrorCodes.gitCommandFailed,
             details: <String, dynamic>{'stderr': ''},
@@ -89,7 +89,7 @@ void main() {
         'code: ${RpcErrorCodes.gitCommandFailed}',
       );
       expect(
-        clientErrorDiagnostics(const CoderClientException('Failed.')),
+        clientErrorDiagnostics(const TinestClientException('Failed.')),
         isNull,
       );
     },
@@ -127,7 +127,7 @@ void main() {
           supportedLocales: testSupportedLocales,
           home: Scaffold(
             body: ClientErrorAlert(
-              error: const CoderClientException(
+              error: const TinestClientException(
                 'Internal daemon error.',
                 code: RpcErrorCodes.internalError,
                 details: <String, dynamic>{'traceId': 'trace-7'},
@@ -174,7 +174,7 @@ void main() {
           supportedLocales: testSupportedLocales,
           home: const Scaffold(
             body: ClientErrorAlert(
-              error: CoderClientException('Plain failure.'),
+              error: TinestClientException('Plain failure.'),
               title: 'Start failed',
             ),
           ),
@@ -192,8 +192,8 @@ void main() {
   );
 }
 
-extension on CoderClientException {
+extension on TinestClientException {
   /// Rebuilds this failure under a different code.
-  CoderClientException copyWithCode(String code) =>
-      CoderClientException(message, code: code, retryable: retryable);
+  TinestClientException copyWithCode(String code) =>
+      TinestClientException(message, code: code, retryable: retryable);
 }

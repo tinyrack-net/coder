@@ -1,30 +1,30 @@
 import 'dart:convert';
 
 /// Breaking wire protocol major.
-const int coderProtocolMajor = 4;
+const int tinestProtocolMajor = 4;
 
 /// Exact revision supported by this implementation.
 ///
 /// Revision 1 added the required `group` on `AgentToolDefinitionDto`. A
 /// revision-0 peer cannot decode the tool catalog, so the handshake rejects the
 /// pairing rather than letting it fail later at an arbitrary RPC.
-const int coderProtocolRevision = 1;
+const int tinestProtocolRevision = 1;
 
 /// WebSocket subprotocol offered by v4 clients and servers.
-const String coderWebSocketProtocol = 'tinyrack.coder.v4';
+const String tinestWebSocketProtocol = 'tinyrack.tinest.v4';
 
 /// Prefix for browser-compatible bearer-token subprotocols.
-const String coderWebSocketTokenPrefix = 'tinyrack.coder.token.';
+const String tinestWebSocketTokenPrefix = 'tinyrack.tinest.token.';
 
 /// Encodes a bearer token into a WebSocket subprotocol value.
 String encodeWebSocketTokenProtocol(String token) =>
-    '$coderWebSocketTokenPrefix'
+    '$tinestWebSocketTokenPrefix'
     '${base64Url.encode(utf8.encode(token)).replaceAll('=', '')}';
 
 /// Decodes a bearer token subprotocol, returning null for malformed input.
 String? decodeWebSocketTokenProtocol(String protocol) {
-  if (!protocol.startsWith(coderWebSocketTokenPrefix)) return null;
-  final encoded = protocol.substring(coderWebSocketTokenPrefix.length);
+  if (!protocol.startsWith(tinestWebSocketTokenPrefix)) return null;
+  final encoded = protocol.substring(tinestWebSocketTokenPrefix.length);
   if (encoded.isEmpty) return null;
   try {
     return utf8.decode(base64Url.decode(base64Url.normalize(encoded)));

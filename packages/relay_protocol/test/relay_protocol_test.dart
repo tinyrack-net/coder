@@ -8,14 +8,14 @@ void main() {
     test('round-trips through a fragment without leaking into the query', () {
       final offer = RelayPairingOffer(
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonPublicKey: List<int>.generate(32, (index) => index),
         offerId: 'offer-1',
         secret: List<int>.generate(32, (index) => 255 - index),
         expiresAt: DateTime.utc(2026, 8, 8, 12, 10),
       );
 
-      final url = offer.toUrl(Uri.parse('https://coder.tinyrack.net/pair'));
+      final url = offer.toUrl(Uri.parse('https://tinest.tinyrack.net/pair'));
       expect(url.query, isEmpty);
       expect(url.fragment, startsWith('offer='));
       expect(RelayPairingOffer.parseUrl(url), offer);
@@ -26,7 +26,7 @@ void main() {
         () => RelayPairingOffer.fromJson(<String, Object?>{
           'v': 1,
           'serverId': 'daemon-1',
-          'relayUri': 'wss://relay.coder.tinyrack.net/v1/ws',
+          'relayUri': 'wss://relay.tinest.tinyrack.net/v1/ws',
           'daemonPublicKey': base64Url.encode(const <int>[1]),
           'offerId': 'offer-1',
           'secret': base64Url.encode(const <int>[2]),
@@ -55,7 +55,7 @@ void main() {
         final first = await sender.encrypt(utf8.encode('first'));
         expect(
           base64UrlEncode(first),
-          'AAAAAAAAAABMOFz6JhMHTgiv09dmJBO3stQ3Qsk=',
+          'AAAAAAAAAAC5wBJUh84j4qXwMQksRqmBBlAUxFQ=',
         );
         final second = await sender.encrypt(utf8.encode('second'));
         expect(utf8.decode(await receiver.decrypt(first)), 'first');

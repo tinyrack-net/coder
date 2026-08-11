@@ -37,7 +37,7 @@ void main() {
   }
 
   test('an empty line proposes every top-level route', () async {
-    final proposals = await complete(<String>['coder-cli', '']);
+    final proposals = await complete(<String>['tinest-cli', '']);
 
     expect(proposals, contains('daemon'));
     expect(proposals, contains('provider'));
@@ -46,14 +46,14 @@ void main() {
   });
 
   test('a partial route narrows the proposals', () async {
-    final proposals = await complete(<String>['coder-cli', 'prov']);
+    final proposals = await complete(<String>['tinest-cli', 'prov']);
 
     expect(proposals, contains('provider'));
     expect(proposals, isNot(contains('agent')));
   });
 
   test('a route map proposes its subcommands', () async {
-    final proposals = await complete(<String>['coder-cli', 'provider', '']);
+    final proposals = await complete(<String>['tinest-cli', 'provider', '']);
 
     expect(proposals, contains('list'));
     expect(proposals, contains('connect'));
@@ -63,7 +63,7 @@ void main() {
 
   test('a command proposes its own flags', () async {
     final proposals = await complete(<String>[
-      'coder-cli',
+      'tinest-cli',
       'provider',
       'list',
       '--',
@@ -76,7 +76,7 @@ void main() {
 
   test('the hidden --api-key flag is never proposed', () async {
     final proposals = await complete(<String>[
-      'coder-cli',
+      'tinest-cli',
       'provider',
       'connect',
       '--',
@@ -104,7 +104,7 @@ void main() {
 
   test('daemon start proposes its own options', () async {
     final proposals = await complete(<String>[
-      'coder-cli',
+      'tinest-cli',
       'daemon',
       'start',
       '--',
@@ -123,13 +123,13 @@ void main() {
     ];
 
     for (final script in scripts) {
-      expect(script, contains('coder-cli'));
+      expect(script, contains('tinest-cli'));
       expect(script, contains('__complete'));
       // A shell function name cannot contain a hyphen, so the executable name
       // is sanitized rather than interpolated verbatim.
-      expect(script, isNot(contains('__coder-cli_complete')));
+      expect(script, isNot(contains('__tinest-cli_complete')));
     }
-    expect(completionScripts.bash, contains('__coder_cli_complete'));
+    expect(completionScripts.bash, contains('__tinest_cli_complete'));
   });
 
   test('each shell gets its own script through a command', () async {

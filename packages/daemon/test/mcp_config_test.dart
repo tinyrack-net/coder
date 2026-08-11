@@ -14,7 +14,7 @@ void main() {
   late FileMcpConfigStore store;
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('coder-mcp-config-');
+    directory = await Directory.systemTemp.createTemp('tinest-mcp-config-');
     store = FileMcpConfigStore(directory.path);
   });
 
@@ -46,7 +46,7 @@ void main() {
     expect(p.basename(userPath()), 'config.json');
     expect(
       store.sourcePath(McpConfigScope.project, rootPath: '/repo'),
-      p.join('/repo', '.coder', 'config.json'),
+      p.join('/repo', '.tinest', 'config.json'),
     );
     expect(
       () => store.sourcePath(McpConfigScope.project),

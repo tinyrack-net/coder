@@ -11,7 +11,7 @@ import 'package:protocol/protocol.dart';
 /// How long an untouched pseudo-terminal is kept before it is reclaimed.
 const Duration execSessionIdleTimeout = Duration(minutes: 30);
 
-/// How many pseudo-terminals one coder session may hold at once.
+/// How many pseudo-terminals one tinest session may hold at once.
 const int maxExecSessionsPerSession = 8;
 
 /// Owns every agent-driven pseudo-terminal on this daemon.
@@ -44,7 +44,7 @@ class ExecSessionService {
       _sessions.values.where((session) => session.owner == owner).toList()
         ..sort((left, right) => left.lastUsed.compareTo(right.lastUsed));
 
-  /// Starts [command] for the coder session [owner].
+  /// Starts [command] for the tinest session [owner].
   ///
   /// [tty] chooses between a pseudo-terminal and plain pipes. Pipes are the
   /// ordinary case; a terminal is what a REPL or a full-screen tool needs.
@@ -120,7 +120,7 @@ class ExecSessionService {
     }
   }
 
-  /// Terminates every session owned by one coder session.
+  /// Terminates every session owned by one tinest session.
   Future<void> closeOwner(String owner) async {
     await Future.wait(_ownedBy(owner).map(_terminate));
   }
@@ -141,9 +141,9 @@ class ExecSessionService {
   }
 }
 
-/// A coder-session-scoped view of [ExecSessionService].
+/// A tinest-session-scoped view of [ExecSessionService].
 ///
-/// The tools only ever see this, so one coder session can never reach another
+/// The tools only ever see this, so one tinest session can never reach another
 /// session's pseudo-terminals.
 class SessionExecHost implements ExecSessionHost {
   /// Creates a [SessionExecHost].
@@ -204,7 +204,7 @@ class _LiveExecSession implements ExecSession {
   @override
   final int id;
 
-  /// Coder session that owns this pseudo-terminal.
+  /// Tinest session that owns this pseudo-terminal.
   final String owner;
 
   final ExecProcess _process;

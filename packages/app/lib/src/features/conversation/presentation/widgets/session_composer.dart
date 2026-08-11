@@ -20,10 +20,10 @@ import 'package:app/src/features/providers/application/model_picker_options.dart
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
@@ -213,7 +213,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         appearance: TRAppearance.ghost,
         uiSize: _composerControlSize(context),
         onPressed: () => unawaited(_showSettings()),
-        icon: const Icon(CoderIcons.settings),
+        icon: const Icon(TinestIcons.settings),
         label: l10n.composerMoreSettings,
       );
     }
@@ -224,7 +224,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       chips: <ComposerChipSpec>[
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-agent'),
-          icon: CoderIcons.agent,
+          icon: TinestIcons.agent,
           label: agent?.name ?? 'Agent',
           tooltip: agentEnabled
               ? l10n.composerSelectAgent
@@ -242,7 +242,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ),
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-model'),
-          icon: CoderIcons.memory,
+          icon: TinestIcons.memory,
           label: selection?.modelId ?? modelLabel ?? l10n.composerModel,
           tooltip: l10n.composerSelectModel,
           onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
@@ -251,7 +251,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           _controlChip(control, enabled),
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-permission'),
-          icon: CoderIcons.permission,
+          icon: TinestIcons.permission,
           label: permissionModeLabel(
             l10n,
             widget.permissionMode ?? inheritedPermission,
@@ -265,7 +265,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ),
         ComposerChipSpec(
           valueKey: const ValueKey('session-composer-mode'),
-          icon: CoderIcons.checklist,
+          icon: TinestIcons.checklist,
           label: planning ? l10n.composerPlan : l10n.composerRun,
           tooltip: planning
               ? l10n.composerPlanTooltip
@@ -289,7 +289,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           key: const ValueKey<String>('session-composer-permission-error'),
           title: TRText.inherit(l10n.permissionChangeFailed),
           description: TRText.inherit(permissionError),
-          icon: const Icon(CoderIcons.error),
+          icon: const Icon(TinestIcons.error),
           variant: TRStatusVariant.danger,
         ),
         bar,
@@ -319,14 +319,14 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     ),
                     title: TRText.inherit(l10n.permissionChangeFailed),
                     description: TRText.inherit(error),
-                    icon: const Icon(CoderIcons.error),
+                    icon: const Icon(TinestIcons.error),
                     variant: TRStatusVariant.danger,
                   ),
                 _settingsRow(
                   key: const ValueKey<String>(
                     'session-composer-settings-agent',
                   ),
-                  icon: CoderIcons.agent,
+                  icon: TinestIcons.agent,
                   title: l10n.composerAgent,
                   value: snapshot.agent?.name ?? l10n.composerAgent,
                   enabled:
@@ -368,7 +368,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   key: const ValueKey<String>(
                     'session-composer-settings-model',
                   ),
-                  icon: CoderIcons.memory,
+                  icon: TinestIcons.memory,
                   title: l10n.composerModel,
                   value:
                       widget.selection?.modelId ??
@@ -402,7 +402,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   key: const ValueKey<String>(
                     'session-composer-settings-permission',
                   ),
-                  icon: CoderIcons.permission,
+                  icon: TinestIcons.permission,
                   title: l10n.composerPermissionMode,
                   value: permissionModeLabel(
                     l10n,
@@ -423,7 +423,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   key: const ValueKey<String>(
                     'session-composer-settings-mode',
                   ),
-                  icon: CoderIcons.checklist,
+                  icon: TinestIcons.checklist,
                   title: l10n.composerMode,
                   value: widget.mode == SessionMode.plan
                       ? l10n.composerPlan
@@ -480,7 +480,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     bool locked = false,
     String? lockedHint,
   }) {
-    final row = CoderListRow(
+    final row = TinestListRow(
       key: key,
       enabled: enabled,
       leading: Icon(icon),
@@ -490,7 +490,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       ),
       subtitle: TRText.inherit(value),
       trailing: Icon(
-        locked ? CoderIcons.lock : CoderIcons.expand,
+        locked ? TinestIcons.lock : TinestIcons.expand,
         color: locked ? context.tinyrackTheme.textMuted : null,
       ),
       onTap: onTap,
@@ -553,7 +553,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         shrinkWrap: true,
         children: <Widget>[
           for (final choice in choices)
-            CoderListRow(
+            TinestListRow(
               key: choice.key,
               enabled: choice.enabled,
               selected: choice.selected,
@@ -562,7 +562,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   ? null
                   : TRText.inherit(choice.description!),
               unboundedSubtitle: choice.description != null,
-              trailing: choice.selected ? const Icon(CoderIcons.check) : null,
+              trailing: choice.selected ? const Icon(TinestIcons.check) : null,
               onTap: () => Navigator.pop(
                 context,
                 _ComposerSheetChoice<T>(choice.value),
@@ -750,11 +750,11 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   }
 
   IconData _controlIcon(String id) => switch (id) {
-    'fast_mode' => CoderIcons.fast,
+    'fast_mode' => TinestIcons.fast,
     'reasoning_effort' ||
     'reasoning_mode' ||
-    'thinking_budget' => CoderIcons.reasoning,
-    _ => CoderIcons.settings,
+    'thinking_budget' => TinestIcons.reasoning,
+    _ => TinestIcons.settings,
   };
 
   void _setControl(
@@ -950,14 +950,14 @@ class _IntegerControlDrawerState extends State<_IntegerControlDrawer> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: TRSpacing.small,
         children: <Widget>[
-          CoderListRow(
+          TinestListRow(
             key: ValueKey<String>(
               'session-composer-control-${widget.descriptor.id}-default-sheet',
             ),
             selected: widget.initialValue == null,
             title: TRText.inherit(l10n.composerUseDefault),
             trailing: widget.initialValue == null
-                ? const Icon(CoderIcons.check)
+                ? const Icon(TinestIcons.check)
                 : null,
             onTap: () => Navigator.pop(
               context,
@@ -1201,7 +1201,7 @@ class ComposerChip extends StatelessWidget {
         Icon(icon, size: TRControlMetrics.iconSizeOf(uiSize)),
         Flexible(child: TRText.inherit(label, truncate: true)),
         if (menuChildren != null)
-          Icon(CoderIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
+          Icon(TinestIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
       ],
     );
     // Every chip sits inside the composer card, so the toolbar reads as one
@@ -1809,7 +1809,7 @@ class _SessionComposerState extends State<SessionComposer> {
           key: const ValueKey('session-composer-stop'),
           uiSize: _composerControlSize(context),
           onPressed: () => unawaited(Future<void>.sync(onStop)),
-          icon: const Icon(CoderIcons.stop),
+          icon: const Icon(TinestIcons.stop),
           label: l10n.commonStop,
         ),
       );
@@ -1822,7 +1822,7 @@ class _SessionComposerState extends State<SessionComposer> {
         uiSize: _composerControlSize(context),
         loading: _submitting,
         onPressed: widget.enabled ? () => unawaited(_runDefaultAction()) : null,
-        icon: const Icon(CoderIcons.send),
+        icon: const Icon(TinestIcons.send),
         label: queueing ? l10n.composerQueueLabel : l10n.composerSendLabel,
       ),
     );
@@ -1953,7 +1953,7 @@ class _SessionComposerState extends State<SessionComposer> {
                           onPressed: editable && widget.attachmentInput != null
                               ? _pickFiles
                               : null,
-                          icon: const Icon(CoderIcons.paperclip),
+                          icon: const Icon(TinestIcons.paperclip),
                           label: l10n.composerAttachLabel,
                         ),
                         Expanded(
@@ -2526,7 +2526,7 @@ class _QueuedTurnRow extends StatelessWidget {
                 leadingExtent: queueIconSize,
               ),
             ),
-            child: Icon(CoderIcons.queue, size: queueIconSize),
+            child: Icon(TinestIcons.queue, size: queueIconSize),
           ),
           Expanded(
             child: Column(
@@ -2560,7 +2560,7 @@ class _QueuedTurnRow extends StatelessWidget {
               key: ValueKey('${slotKey.value}-edit'),
               appearance: TRAppearance.ghost,
               onPressed: onEdit,
-              icon: const Icon(CoderIcons.edit),
+              icon: const Icon(TinestIcons.edit),
               label: l10n.composerQueuedEdit,
             ),
           ),
@@ -2570,7 +2570,7 @@ class _QueuedTurnRow extends StatelessWidget {
               key: ValueKey('${slotKey.value}-send'),
               appearance: TRAppearance.ghost,
               onPressed: onSendNow,
-              icon: const Icon(CoderIcons.send),
+              icon: const Icon(TinestIcons.send),
               label: l10n.composerQueuedSendNow,
             ),
           ),
@@ -2619,7 +2619,7 @@ class _PendingAttachmentPill extends StatelessWidget {
               key: ValueKey('remove-${attachment.fileName}'),
               appearance: TRAppearance.ghost,
               onPressed: onRemove,
-              icon: const Icon(CoderIcons.close),
+              icon: const Icon(TinestIcons.close),
               label: l10n.composerRemoveAttachment(attachment.fileName),
             ),
           ],
@@ -2657,7 +2657,7 @@ class _PendingAttachmentPreviewState extends State<_PendingAttachmentPreview> {
   @override
   Widget build(BuildContext context) {
     final bytes = _bytes;
-    if (bytes == null) return const Icon(CoderIcons.file);
+    if (bytes == null) return const Icon(TinestIcons.file);
     return FutureBuilder<Uint8List>(
       future: bytes,
       builder: (context, snapshot) => snapshot.hasData
@@ -2670,7 +2670,7 @@ class _PendingAttachmentPreviewState extends State<_PendingAttachmentPreview> {
                 width: IconTheme.of(context).size,
                 height: IconTheme.of(context).size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(CoderIcons.image),
+                errorBuilder: (_, _, _) => const Icon(TinestIcons.image),
               ),
             )
           : const TRSpinner(),

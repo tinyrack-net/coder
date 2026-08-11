@@ -20,11 +20,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.posix.join('/xdg/config', 'tinyrack-coder'),
+        p.posix.join('/xdg/config', 'tinyrack-tinest'),
       );
       expect(
         directories.stateDirectory,
-        p.posix.join('/xdg/state', 'tinyrack-coder'),
+        p.posix.join('/xdg/state', 'tinyrack-tinest'),
       );
       expect(directories.userHomeDirectory, '/home/test');
     });
@@ -38,11 +38,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.posix.join('/home/test', '.config', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.config', 'tinyrack-tinest'),
       );
       expect(
         directories.stateDirectory,
-        p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.local', 'state', 'tinyrack-tinest'),
       );
     });
 
@@ -61,7 +61,7 @@ void main() {
             '/Users/test',
             'Library',
             'Application Support',
-            'Tinyrack Coder',
+            'Tinest',
           ),
         );
         expect(directories.stateDirectory, directories.configDirectory);
@@ -103,11 +103,11 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.posix.join('/home/test', '.config', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.config', 'tinyrack-tinest'),
       );
       expect(
         directories.stateDirectory,
-        p.posix.join('/home/test', '.local', 'state', 'tinyrack-coder'),
+        p.posix.join('/home/test', '.local', 'state', 'tinyrack-tinest'),
       );
     });
 
@@ -120,16 +120,16 @@ void main() {
       );
       expect(
         directories.configDirectory,
-        p.posix.join('.', '.config', 'tinyrack-coder'),
+        p.posix.join('.', '.config', 'tinyrack-tinest'),
       );
       expect(directories.userHomeDirectory, '.');
     });
 
-    test('TINYRACK_CODER_HOME collapses configuration and state', () {
+    test('TINYRACK_TINEST_HOME collapses configuration and state', () {
       final directories = resolveLocalDaemonDirectories(
         environment: const _Environment(
           values: <String, String>{
-            'TINYRACK_CODER_HOME': '/override',
+            'TINYRACK_TINEST_HOME': '/override',
             'HOME': '/home/test',
           },
           linux: true,
@@ -142,12 +142,12 @@ void main() {
       expect(directories.userHomeDirectory, '/home/test');
     });
 
-    test('TINYRACK_CODER_AGENTS_HOME wins over the platform user home', () {
+    test('TINYRACK_TINEST_AGENTS_HOME wins over the platform user home', () {
       final directories = resolveLocalDaemonDirectories(
         environment: const _Environment(
           values: <String, String>{
             'HOME': '/home/test',
-            'TINYRACK_CODER_AGENTS_HOME': '/tmp/agents-home',
+            'TINYRACK_TINEST_AGENTS_HOME': '/tmp/agents-home',
           },
           linux: true,
         ),
@@ -179,7 +179,7 @@ void main() {
       expect(
         resolveLocalDaemonDirectories(
           environment: const _Environment(
-            values: <String, String>{'TINYRACK_CODER_HOME': '/override'},
+            values: <String, String>{'TINYRACK_TINEST_HOME': '/override'},
             linux: true,
           ),
         ).osHomeDirectory,
@@ -235,7 +235,9 @@ void main() {
   group('bearer token discovery', () {
     late Directory directory;
 
-    setUp(() => directory = Directory.systemTemp.createTempSync('coder-token'));
+    setUp(
+      () => directory = Directory.systemTemp.createTempSync('tinest-token'),
+    );
     tearDown(() => directory.deleteSync(recursive: true));
 
     void write(Object? value) {

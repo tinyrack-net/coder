@@ -224,7 +224,7 @@ class _PlannedChange {
       // Written beside the target and renamed over it, so a reader never sees
       // a half-written file.
       final temporary = fileSystem.file(
-        '$path.coder-tmp-${temporarySuffix()}',
+        '$path.tinest-tmp-${temporarySuffix()}',
       );
       await temporary.writeAsString(targetContents ?? '', flush: true);
       await temporary.rename(path);

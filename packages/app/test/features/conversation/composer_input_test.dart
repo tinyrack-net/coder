@@ -9,8 +9,8 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
@@ -22,7 +22,7 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/src/internal/focus_source.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -261,7 +261,7 @@ void main() {
       final queuedCard = find.byKey(const ValueKey('queued-turn-0'));
       final queueIcon = find.descendant(
         of: queuedCard,
-        matching: find.byIcon(CoderIcons.queue),
+        matching: find.byIcon(TinestIcons.queue),
       );
       final prompt = find.descendant(
         of: queuedCard,
@@ -469,7 +469,7 @@ void main() {
       tester.view.physicalSize = surfaceSize;
       await tester.pumpWidget(
         _harness(
-          api: FakeCoderApi(agentDefinitions: _compactAgentDefinitions),
+          api: FakeTinestApi(agentDefinitions: _compactAgentDefinitions),
           composer: const _CompactSettingsHost(),
         ),
       );
@@ -506,7 +506,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(900, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final hostKey = GlobalKey<_CompactSettingsHostState>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         agentDefinitions: _compactAgentDefinitions,
         models: const <String, List<ProviderModelDto>>{
           'openai': <ProviderModelDto>[_compactSettingsModel],
@@ -697,7 +697,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         _harness(
-          api: FakeCoderApi(agentDefinitions: _compactAgentDefinitions),
+          api: FakeTinestApi(agentDefinitions: _compactAgentDefinitions),
           composer: const _CompactSettingsHost(agentEnabled: false),
         ),
       );
@@ -713,7 +713,7 @@ void main() {
       expect(
         find.descendant(
           of: agentRow,
-          matching: find.byIcon(CoderIcons.lock),
+          matching: find.byIcon(TinestIcons.lock),
         ),
         findsOneWidget,
       );
@@ -1404,7 +1404,7 @@ void main() {
       final send = find.byKey(sendKey);
       expect(send, findsOneWidget);
       expect(
-        find.descendant(of: send, matching: find.byIcon(CoderIcons.send)),
+        find.descendant(of: send, matching: find.byIcon(TinestIcons.send)),
         findsOneWidget,
       );
       await tester.tap(send);
@@ -1442,8 +1442,8 @@ void main() {
 
 const _compactAgentDefinitions = <AgentDefinitionDto>[
   AgentDefinitionDto(
-    id: 'coder',
-    name: 'Coder',
+    id: 'tinest',
+    name: 'Tinest',
     description: 'Codes',
     mode: AgentMode.primary,
     promptEnabled: true,
@@ -1451,8 +1451,8 @@ const _compactAgentDefinitions = <AgentDefinitionDto>[
     model: AgentModelSelectionDto(source: AgentModelSource.session),
     toolIds: <String>[],
     callableAgentIds: <String>[],
-    contentHash: 'coder-hash',
-    sourcePath: '/agents/coder.md',
+    contentHash: 'tinest-hash',
+    sourcePath: '/agents/tinest.md',
     isBuiltIn: true,
   ),
   AgentDefinitionDto(
@@ -1517,7 +1517,7 @@ class _CompactSettingsHost extends StatefulWidget {
 }
 
 class _CompactSettingsHostState extends State<_CompactSettingsHost> {
-  String agentId = 'coder';
+  String agentId = 'tinest';
   SessionMode mode = SessionMode.normal;
   PermissionMode? permissionMode;
   Map<String, ModelControlValueDto> controls = <String, ModelControlValueDto>{};
@@ -1551,12 +1551,12 @@ class _CompactSettingsHostState extends State<_CompactSettingsHost> {
 Widget _harness({
   required Widget composer,
   TargetPlatform platform = TargetPlatform.linux,
-  FakeCoderApi? api,
+  FakeTinestApi? api,
   EdgeInsets mediaPadding = EdgeInsets.zero,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(
-      fakeAppServices(api ?? FakeCoderApi()),
+      fakeAppServices(api ?? FakeTinestApi()),
     ),
   ],
   child: MaterialApp(
@@ -1568,7 +1568,7 @@ Widget _harness({
       data: MediaQuery.of(
         context,
       ).copyWith(padding: mediaPadding, viewPadding: mediaPadding),
-      child: CoderControlDensity(child: child!),
+      child: TinestControlDensity(child: child!),
     ),
     home: Scaffold(
       body: Align(alignment: Alignment.bottomCenter, child: composer),

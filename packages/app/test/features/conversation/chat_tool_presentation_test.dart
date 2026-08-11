@@ -1,7 +1,7 @@
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/localization.dart';
@@ -646,7 +646,7 @@ void main() {
         ),
       );
       expect(viewed.glyph, ChatToolGlyph.image);
-      expect(chatToolIcon(viewed.glyph), CoderIcons.image);
+      expect(chatToolIcon(viewed.glyph), TinestIcons.image);
       expect(viewed.title, '이미지 보기(design/mock.png)');
       expect(viewed.resultLine, contains('2048'));
       expect(viewed.isFailure, isFalse);
@@ -697,7 +697,7 @@ void main() {
         ),
       );
       expect(asked.glyph, ChatToolGlyph.ask);
-      expect(chatToolIcon(asked.glyph), CoderIcons.chat);
+      expect(chatToolIcon(asked.glyph), TinestIcons.chat);
       expect(asked.title, '질문(Storage, Cache)');
       // The transcript records what the user actually chose.
       expect(asked.resultLine, 'SQLite, Redis');
@@ -717,7 +717,7 @@ void main() {
         ),
       );
       expect(now.glyph, ChatToolGlyph.clock);
-      expect(chatToolIcon(now.glyph), CoderIcons.time);
+      expect(chatToolIcon(now.glyph), TinestIcons.time);
       expect(now.title, '현재 시각()');
       expect(now.resultLine, '2026-08-05T14:23:01.000Z');
 
@@ -760,7 +760,7 @@ void main() {
         ),
       );
       expect(remaining.glyph, ChatToolGlyph.context);
-      expect(chatToolIcon(remaining.glyph), CoderIcons.gauge);
+      expect(chatToolIcon(remaining.glyph), TinestIcons.gauge);
       expect(remaining.title, '컨텍스트()');
       expect(remaining.resultLine, '토큰 168000/200000 남음');
 
@@ -809,7 +809,7 @@ void main() {
       );
 
       expect(searched.glyph, ChatToolGlyph.tools);
-      expect(chatToolIcon(searched.glyph), CoderIcons.tool);
+      expect(chatToolIcon(searched.glyph), TinestIcons.tool);
       expect(searched.title, '도구(open a pull request)');
       expect(searched.resultLine, contains('11'));
       // The body lists names, not the schemas the model needs.
@@ -846,7 +846,7 @@ void main() {
         ),
       );
       expect(listed.glyph, ChatToolGlyph.resource);
-      expect(chatToolIcon(listed.glyph), CoderIcons.extension);
+      expect(chatToolIcon(listed.glyph), TinestIcons.extension);
       expect(listed.title, '리소스(github)');
       expect(listed.resultLine, contains('1'));
       expect(listed.isFailure, isFalse);

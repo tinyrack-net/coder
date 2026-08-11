@@ -1,6 +1,6 @@
-import 'package:coder_workspace/src/desktop_e2e_runner.dart';
-import 'package:coder_workspace/src/desktop_host.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/desktop_e2e_runner.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
 
 void main() {
   test('desktop hosts map to Flutter devices and Linux alone uses Xvfb', () {
@@ -68,11 +68,11 @@ void main() {
       expect(command.workingDirectory, 'packages/app');
       expect(command.environment, <String, String>{
         'PATH': 'build-tools',
-        'TINYRACK_CODER_HOME': r'C:\temp\coder-e2e',
-        'TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES': '1',
+        'TINYRACK_TINEST_HOME': r'C:\temp\tinest-e2e',
+        'TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES': '1',
       });
     }
-    expect(runtime.deletedHomes, <String>[r'C:\temp\coder-e2e']);
+    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
   });
 
   test('runner stops at the first failed shard and still cleans up', () async {
@@ -83,7 +83,7 @@ void main() {
 
     expect(result, 69);
     expect(runtime.commands, hasLength(2));
-    expect(runtime.deletedHomes, <String>[r'C:\temp\coder-e2e']);
+    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
   });
 
   test('runner cleans up when process execution throws', () async {
@@ -95,7 +95,7 @@ void main() {
       ),
       throwsStateError,
     );
-    expect(runtime.deletedHomes, <String>[r'C:\temp\coder-e2e']);
+    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
   });
 }
 
@@ -108,7 +108,7 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
   final List<String> deletedHomes = <String>[];
 
   @override
-  Future<String> createTemporaryHome() async => r'C:\temp\coder-e2e';
+  Future<String> createTemporaryHome() async => r'C:\temp\tinest-e2e';
 
   @override
   Future<void> deleteTemporaryHome(String path) async {

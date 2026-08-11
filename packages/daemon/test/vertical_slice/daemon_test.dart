@@ -25,10 +25,70 @@ const Duration _eventTimeout = Duration(minutes: 1);
 
 void main() {
   test(
+    'daemon stop cancels and drains an active turn before closing storage',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-turn-shutdown-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'tinest-turn-shutdown-workspace-',
+      );
+      final provider = _ShutdownProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'shutdown-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'shutdown-token-0123456789abcdef012345',
+        ),
+        clientId: 'turn-shutdown-test',
+        clientKind: 'test',
+      );
+      addTearDown(() async {
+        await client.close();
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+
+      final catalog = await client.registerWorkspace(
+        workspaceId: 'shutdown-workspace',
+        checkoutId: 'shutdown-checkout',
+        rootPath: workspace.path,
+        name: 'Shutdown',
+      );
+      final session = await client.createSession(
+        id: 'shutdown-session',
+        worktreeId: catalog.worktrees.single.id,
+        title: 'Shutdown session',
+        agentDefinitionId: 'tinest',
+        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+      );
+      await client.startTurn(
+        sessionId: session.id,
+        turnId: 'shutdown-turn',
+        prompt: 'Wait until shutdown.',
+      );
+      await provider.started.future.timeout(_eventTimeout);
+
+      await handle.stop().timeout(_eventTimeout);
+
+      await provider.cancelled.future.timeout(_eventTimeout);
+    },
+  );
+
+  test(
     'daemon permission default survives a restart',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-permission-home-',
+        'tinest-permission-home-',
       );
       const token = 'permission-token-0123456789abcdef012345';
       final config = DaemonConfig(
@@ -39,7 +99,7 @@ void main() {
       );
       try {
         final firstHandle = await DaemonApplication.start(config);
-        final firstClient = await CoderClient.connect(
+        final firstClient = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: firstHandle.boundEndpoint),
           credentials: const DaemonCredentials(bearerToken: token),
           clientId: 'permission-first',
@@ -54,7 +114,7 @@ void main() {
         await firstHandle.stop();
 
         final secondHandle = await DaemonApplication.start(config);
-        final secondClient = await CoderClient.connect(
+        final secondClient = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: secondHandle.boundEndpoint),
           credentials: const DaemonCredentials(bearerToken: token),
           clientId: 'permission-second',
@@ -76,9 +136,9 @@ void main() {
   test(
     'standalone application serves authenticated workspace and agent RPCs',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-daemon-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-daemon-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-workspace-',
+        'tinest-workspace-',
       );
       final modelServer = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
@@ -116,7 +176,7 @@ void main() {
         await modelServer.close(force: true);
       });
 
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'test-token-0123456789abcdef0123456789',
@@ -259,7 +319,7 @@ void main() {
         mode: TerminalRestoreMode.snapshot,
       );
       expect(attached.terminal.id, terminal.id);
-      const marker = 'coder-terminal-ready';
+      const marker = 'tinest-terminal-ready';
       final output = client.terminals.output
           .where((output) => output.terminalId == terminal.id)
           .map((output) => output.data)
@@ -277,7 +337,7 @@ void main() {
       // daemon hands back has to carry the alternate buffer, or reattaching
       // to a running editor comes back to the shell behind it.
       if (!Platform.isWindows) {
-        const altMarker = 'coder-alt-screen';
+        const altMarker = 'tinest-alt-screen';
         // Waiting for the marker alone matches the shell echoing the command
         // back, which happens before printf runs. The alternate-screen entry
         // appears as a real escape byte only in the program's own output; the
@@ -333,7 +393,7 @@ void main() {
         id: 'model-inherited',
         worktreeId: checkout.id,
         title: 'Model inherited',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
       );
       expect(inherited.model, isNull);
       await client.setDefaultModel(null);
@@ -343,13 +403,13 @@ void main() {
           id: 'agent-rejected',
           worktreeId: checkout.id,
           title: 'Rejected',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           model: const SessionModelSelectionDto(
             modelId: 'missing-connection/test-model',
           ),
         ),
         throwsA(
-          isA<CoderClientException>().having(
+          isA<TinestClientException>().having(
             (error) => error.code,
             'code',
             'provider_not_connected',
@@ -360,7 +420,7 @@ void main() {
         id: 'agent-1',
         worktreeId: checkout.id,
         title: 'Session',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         mode: SessionMode.plan,
         model: const SessionModelSelectionDto(
           modelId: 'local-test/test-model',
@@ -397,16 +457,16 @@ void main() {
         )).singleWhere((session) => session.id == agent.id).mode,
         SessionMode.normal,
       );
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
-        coder.copyWith(
+        tinest.copyWith(
           model: const AgentModelSelectionDto(
             source: AgentModelSource.fixed,
             modelId: 'local-test/test-model',
           ),
           modelControls: const <String, ModelControlValueDto>{},
         ),
-        expectedContentHash: coder.contentHash,
+        expectedContentHash: tinest.contentHash,
       );
       expect(configuredDefinition.model.source, AgentModelSource.fixed);
       expect(
@@ -486,7 +546,7 @@ void main() {
             ),
           ),
         ),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
 
       // Model controls are persisted atomically with other session settings.
@@ -550,7 +610,7 @@ void main() {
           prompt: 'This must not run.',
         ),
         throwsA(
-          isA<CoderClientException>().having(
+          isA<TinestClientException>().having(
             (error) => error.code,
             'code',
             'provider_not_connected',
@@ -583,9 +643,9 @@ void main() {
   test(
     'spawn_agent runs a subagent asynchronously and mails back a final answer',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-spawn-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-spawn-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-spawn-workspace-',
+        'tinest-spawn-workspace-',
       );
       final provider = _CollaboratingProvider();
       final handle = await DaemonApplication.start(
@@ -602,7 +662,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'spawn-token-0123456789abcdef01234567',
@@ -611,10 +671,10 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       final reviewer = await client.createAgentDefinition(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
@@ -627,11 +687,11 @@ void main() {
         ),
       );
       await client.updateAgentDefinition(
-        coder.copyWith(
+        tinest.copyWith(
           permissionMode: PermissionMode.workspaceWrite,
           callableAgentIds: <String>[reviewer.id],
         ),
-        expectedContentHash: coder.contentHash,
+        expectedContentHash: tinest.contentHash,
       );
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -643,7 +703,7 @@ void main() {
         id: 'parent',
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           // Collaboration is the subject of this slice. Lua orchestration has
           // its own vertical slice and must not add a native cold start here.
@@ -747,10 +807,10 @@ void main() {
     'a subagent blocked on an approval finishes once the user answers',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-child-approval-home-',
+        'tinest-child-approval-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-child-approval-workspace-',
+        'tinest-child-approval-workspace-',
       );
       final handle = await DaemonApplication.start(
         DaemonConfig(
@@ -766,7 +826,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'childapv-token-0123456789abcdef012345',
@@ -775,12 +835,12 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       // `ask` is what a spawned child inherits by default, and it is the mode
       // that parks the child's turn on an approval only a human can answer.
       final reviewer = await client.createAgentDefinition(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
@@ -793,11 +853,11 @@ void main() {
         ),
       );
       await client.updateAgentDefinition(
-        coder.copyWith(
+        tinest.copyWith(
           permissionMode: PermissionMode.fullAccess,
           callableAgentIds: <String>[reviewer.id],
         ),
-        expectedContentHash: coder.contentHash,
+        expectedContentHash: tinest.contentHash,
       );
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -809,7 +869,7 @@ void main() {
         id: 'parent',
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
       );
       final finalAnswerMailed = client.sessions.timelineEvents
@@ -882,9 +942,9 @@ void main() {
   test(
     'spawn_agent rejects an agent_type outside the caller allowlist',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-reject-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-reject-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-reject-workspace-',
+        'tinest-reject-workspace-',
       );
       final handle = await DaemonApplication.start(
         DaemonConfig(
@@ -900,7 +960,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'reject-token-0123456789abcdef0123456',
@@ -909,10 +969,10 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
-        coder,
-        expectedContentHash: coder.contentHash,
+        tinest,
+        expectedContentHash: tinest.contentHash,
       );
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -924,7 +984,7 @@ void main() {
         id: 'parent',
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -963,9 +1023,9 @@ void main() {
   test(
     'MCP servers publish tools a real turn can call',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-mcp-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-mcp-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-mcp-workspace-',
+        'tinest-mcp-workspace-',
       );
       const bearerToken = 'mcp-token-0123456789abcdef0123456789';
       final handle = await DaemonApplication.start(
@@ -982,7 +1042,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'mcp-test',
@@ -1029,13 +1089,13 @@ void main() {
         containsAll(<String>['list_directory', 'read_file', 'search_text']),
       );
 
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
-        coder.copyWith(
+        tinest.copyWith(
           permissionMode: PermissionMode.workspaceWrite,
-          toolIds: <String>[...coder.toolIds, 'mcp__fake__echo'],
+          toolIds: <String>[...tinest.toolIds, 'mcp__fake__echo'],
         ),
-        expectedContentHash: coder.contentHash,
+        expectedContentHash: tinest.contentHash,
       );
 
       final registered = await client.registerWorkspace(
@@ -1048,7 +1108,7 @@ void main() {
         id: 'mcp-session',
         worktreeId: registered.worktrees.single.id,
         title: 'MCP',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1113,17 +1173,17 @@ void main() {
   );
 
   test(
-    'a project .coder/config.json publishes tools only in its worktree',
+    'a project .tinest/config.json publishes tools only in its worktree',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-mcp-project-home-',
+        'tinest-mcp-project-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-mcp-project-',
+        'tinest-mcp-project-',
       );
       const bearerToken = 'mcp-project-token-0123456789abcdef0123';
       final projectConfig = File(
-        p.join(workspace.path, '.coder', 'config.json'),
+        p.join(workspace.path, '.tinest', 'config.json'),
       );
       await projectConfig.parent.create(recursive: true);
       await projectConfig.writeAsString(
@@ -1153,7 +1213,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'mcp-project-test',
@@ -1182,7 +1242,7 @@ void main() {
       // registration actually recorded.
       expect(
         ready.sourcePath,
-        p.join(registered.worktrees.single.path, '.coder', 'config.json'),
+        p.join(registered.worktrees.single.path, '.tinest', 'config.json'),
       );
       expect(ready.shadowed, isFalse);
 
@@ -1213,9 +1273,9 @@ void main() {
     test(
       'exec_command drives a real $transport across two tool calls',
       () async {
-        final home = await Directory.systemTemp.createTemp('coder-exec-home-');
+        final home = await Directory.systemTemp.createTemp('tinest-exec-home-');
         final workspace = await Directory.systemTemp.createTemp(
-          'coder-exec-workspace-',
+          'tinest-exec-workspace-',
         );
         const bearerToken = 'exec-command-token-0123456789abcdef012';
         final provider = _ExecProvider(tty: tty);
@@ -1233,7 +1293,7 @@ void main() {
           await home.delete(recursive: true);
           await workspace.delete(recursive: true);
         });
-        final client = await CoderClient.connect(
+        final client = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
           credentials: const DaemonCredentials(bearerToken: bearerToken),
           clientId: 'exec-command-test',
@@ -1247,18 +1307,18 @@ void main() {
           rootPath: workspace.path,
           name: 'Workspace',
         );
-        final coder = (await client.listAgentDefinitions()).single;
+        final tinest = (await client.listAgentDefinitions()).single;
         await client.updateAgentDefinition(
-          coder.copyWith(
+          tinest.copyWith(
             permissionMode: PermissionMode.workspaceWrite,
           ),
-          expectedContentHash: coder.contentHash,
+          expectedContentHash: tinest.contentHash,
         );
         final session = await client.createSession(
           id: 'exec-session',
           worktreeId: registered.worktrees.single.id,
           title: 'Exec',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           model: const SessionModelSelectionDto(
             modelId: 'openai/gpt-5.2',
           ),
@@ -1309,9 +1369,9 @@ void main() {
   test(
     'view_image puts a hydrated workspace image into the model context',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-image-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-image-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-image-workspace-',
+        'tinest-image-workspace-',
       );
       // A one-pixel PNG, valid down to its magic bytes.
       await File(p.join(workspace.path, 'shot.png')).writeAsBytes(<int>[
@@ -1334,7 +1394,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'view-image-test',
@@ -1352,7 +1412,7 @@ void main() {
         id: 'image-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Image',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1388,9 +1448,9 @@ void main() {
   test(
     'a sleeping agent wakes early when the client queues input',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-sleep-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-sleep-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-sleep-workspace-',
+        'tinest-sleep-workspace-',
       );
       const bearerToken = 'sleep-tool-token-0123456789abcdef01234';
       final provider = _SleepProvider();
@@ -1408,7 +1468,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'sleep-tool-test',
@@ -1426,7 +1486,7 @@ void main() {
         id: 'sleep-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Sleep',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1463,9 +1523,9 @@ void main() {
       // StateError: the transport turned it into `internal_error`, which the
       // protocol reserves for defects and the app shows as an unexplained
       // daemon failure with a trace id.
-      final home = await Directory.systemTemp.createTemp('coder-busy-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-busy-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-busy-workspace-',
+        'tinest-busy-workspace-',
       );
       const bearerToken = 'busy-settings-token-0123456789abcdef012';
       final provider = _SleepProvider();
@@ -1483,7 +1543,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'busy-settings-test',
@@ -1501,7 +1561,7 @@ void main() {
         id: 'busy-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Busy',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
       );
       await client.subscribeTimeline(session.id);
@@ -1518,7 +1578,7 @@ void main() {
           const SessionSettingsPatchDto(mode: SessionMode.plan),
         ),
         throwsA(
-          isA<CoderClientException>()
+          isA<TinestClientException>()
               .having(
                 (error) => error.code,
                 'code',
@@ -1554,9 +1614,9 @@ void main() {
   test(
     'new_context discards the stored history but keeps the timeline',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-reset-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-reset-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-reset-workspace-',
+        'tinest-reset-workspace-',
       );
       const bearerToken = 'reset-tool-token-0123456789abcdef01234';
       final provider = _ContextResetProvider();
@@ -1574,7 +1634,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'reset-tool-test',
@@ -1593,7 +1653,7 @@ void main() {
         id: 'reset-session',
         worktreeId: worktreeId,
         title: 'Reset',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1668,9 +1728,11 @@ void main() {
   test(
     'compacting a session replaces its window with a summary',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-compact-home-');
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-compact-home-',
+      );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-compact-workspace-',
+        'tinest-compact-workspace-',
       );
       const bearerToken = 'compact-token-0123456789abcdef0123456';
       final provider = _CompactingProvider();
@@ -1688,7 +1750,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'compact-test',
@@ -1707,7 +1769,7 @@ void main() {
         id: 'compact-session',
         worktreeId: worktreeId,
         title: 'Compact',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1771,9 +1833,9 @@ void main() {
   test(
     'search_text and glob honour a real .gitignore in a real workspace',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-search-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-search-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-search-workspace-',
+        'tinest-search-workspace-',
       );
       await Directory(p.join(workspace.path, 'generated')).create();
       await File(
@@ -1807,7 +1869,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'search-tool-test',
@@ -1825,7 +1887,7 @@ void main() {
         id: 'search-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Search',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1859,9 +1921,9 @@ void main() {
   test(
     'an agent question blocks the turn until the user answers it',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-ask-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-ask-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-ask-workspace-',
+        'tinest-ask-workspace-',
       );
       const bearerToken = 'ask-user-token-0123456789abcdef0123456';
       final handle = await DaemonApplication.start(
@@ -1878,7 +1940,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'ask-user-test',
@@ -1896,7 +1958,7 @@ void main() {
         id: 'ask-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Ask',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -1939,7 +2001,7 @@ void main() {
           requestId: question.id,
           answers: const <UserQuestionAnswerDto>[],
         ),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
 
       const answers = <UserQuestionAnswerDto>[
@@ -1959,7 +2021,7 @@ void main() {
       // The same question cannot be answered twice.
       await expectLater(
         client.answerUserQuestion(requestId: question.id, answers: answers),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
 
       await completedFuture;
@@ -1993,10 +2055,10 @@ void main() {
     'a server that cannot start leaves the daemon and its turns working',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-mcp-broken-home-',
+        'tinest-mcp-broken-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-mcp-broken-workspace-',
+        'tinest-mcp-broken-workspace-',
       );
       const bearerToken = 'mcp-broken-token-0123456789abcdef01234';
       await Directory(p.join(home.path, 'v4')).create();
@@ -2027,7 +2089,7 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'mcp-broken-test',
@@ -2041,18 +2103,18 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
-        coder.copyWith(
+        tinest.copyWith(
           permissionMode: PermissionMode.workspaceWrite,
         ),
-        expectedContentHash: coder.contentHash,
+        expectedContentHash: tinest.contentHash,
       );
       final session = await client.createSession(
         id: 'broken-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Broken',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -2095,12 +2157,12 @@ void main() {
   test(
     'skills merge across sources, drive a turn, and stay editable over RPC',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-skill-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-skill-home-');
       final agentsHome = await Directory.systemTemp.createTemp(
-        'coder-skill-agents-home-',
+        'tinest-skill-agents-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-skill-workspace-',
+        'tinest-skill-workspace-',
       );
       const bearerToken = 'skill-token-0123456789abcdef0123456789';
       addTearDown(() async {
@@ -2133,7 +2195,7 @@ void main() {
         provider: _SkillProvider(),
       );
       addTearDown(handle.stop);
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'skill-test',
@@ -2206,7 +2268,7 @@ void main() {
         id: 'skill-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Skills',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
@@ -2245,7 +2307,7 @@ void main() {
     'agent create survives watcher reload and daemon restart',
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-agent-create-home-',
+        'tinest-agent-create-home-',
       );
       const bearerToken = 'agent-create-token-0123456789abcdef012345';
       final config = DaemonConfig(
@@ -2259,14 +2321,14 @@ void main() {
       });
 
       final firstHandle = await DaemonApplication.start(config);
-      final firstClient = await CoderClient.connect(
+      final firstClient = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: firstHandle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'agent-create-first',
         clientKind: 'test',
       );
-      final coder = (await firstClient.listAgentDefinitions()).single;
-      expect(coder.toolIds, <String>[
+      final tinest = (await firstClient.listAgentDefinitions()).single;
+      expect(tinest.toolIds, <String>[
         'apply_patch',
         'list_mcp_resources',
         'list_mcp_resource_templates',
@@ -2274,12 +2336,12 @@ void main() {
         'exec_command',
         'collaboration',
       ]);
-      // What the user reads in the agent editor: a freshly seeded Coder is
+      // What the user reads in the agent editor: a freshly seeded Tinest is
       // clean, with no unavailable_tool warning against the real catalog.
-      expect(coder.diagnostics, isEmpty);
+      expect(tinest.diagnostics, isEmpty);
       await firstClient.createAgentDefinition(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           description: '',
@@ -2307,7 +2369,7 @@ void main() {
       await firstHandle.stop();
 
       final secondHandle = await DaemonApplication.start(config);
-      final secondClient = await CoderClient.connect(
+      final secondClient = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: secondHandle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'agent-create-second',
@@ -2315,9 +2377,9 @@ void main() {
       );
       expect(
         (await secondClient.listAgentDefinitions())
-            .singleWhere((item) => item.id == 'coder')
+            .singleWhere((item) => item.id == 'tinest')
             .toolIds,
-        coder.toolIds,
+        tinest.toolIds,
       );
       expect(
         (await secondClient.listAgentDefinitions()).map((item) => item.id),
@@ -2334,7 +2396,7 @@ void main() {
   test(
     'bearer-only clients can mutate provider and Agent settings',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-remote-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-remote-home-');
       final handle = await DaemonApplication.start(
         DaemonConfig(
           homeDirectory: home.path,
@@ -2402,7 +2464,7 @@ void main() {
         const HelloParamsDto(
           clientId: 'raw-client',
           clientKind: 'test',
-          protocolMajor: coderProtocolMajor,
+          protocolMajor: tinestProtocolMajor,
           capabilities: <String, bool>{},
         ).toJson(),
       );
@@ -2417,7 +2479,7 @@ void main() {
         ),
       );
       await rawPeer.close();
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'remote-token-0123456789abcdef0123456789',
@@ -2437,12 +2499,12 @@ void main() {
         ),
       );
       expect(connection.id, isNot('denied'));
-      final coder = (await client.listAgentDefinitions()).single;
+      final tinest = (await client.listAgentDefinitions()).single;
       final updated = await client.updateAgentDefinition(
-        coder.copyWith(name: 'Bearer managed Coder'),
-        expectedContentHash: coder.contentHash,
+        tinest.copyWith(name: 'Bearer managed Tinest'),
+        expectedContentHash: tinest.contentHash,
       );
-      expect(updated.name, 'Bearer managed Coder');
+      expect(updated.name, 'Bearer managed Tinest');
     },
     tags: const <String>[
       'feature_test__daemon_authentication__verticalSlice',
@@ -2452,13 +2514,13 @@ void main() {
   test(
     'real daemon runs a session that belongs to no project in the user home',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-home-state-');
+      final home = await Directory.systemTemp.createTemp('tinest-home-state-');
       // The daemon canonicalizes every workspace path, and macOS reaches its
       // temporary directory through a /var symlink, so the fixture starts from
       // the resolved path the daemon will report back.
       final userHome = Directory(
         await (await Directory.systemTemp.createTemp(
-          'coder-user-home-',
+          'tinest-user-home-',
         )).resolveSymbolicLinks(),
       );
       final modelServer = await HttpServer.bind(
@@ -2494,8 +2556,8 @@ void main() {
         await userHome.delete(recursive: true);
         await modelServer.close(force: true);
       });
-      Future<CoderClient> connect() async {
-        final client = await CoderClient.connect(
+      Future<TinestClient> connect() async {
+        final client = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
           credentials: DaemonCredentials(bearerToken: handle.bearerToken),
           clientId: 'home-vertical-slice',
@@ -2516,17 +2578,17 @@ void main() {
       );
       expect(homeCheckout.kind, WorktreeKind.directory);
       expect(homeCheckout.path, userHome.path);
-      expect(homeCheckout.isCoderOwned, isFalse);
+      expect(homeCheckout.isTinestOwned, isFalse);
 
       // The daemon owns this workspace, so clients must not be able to drop it
       // and orphan every session that belongs to no project.
       await expectLater(
         client.unregisterWorkspace(homeWorkspace.id),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
       await expectLater(
         client.archiveWorktree(homeCheckout.id, force: true),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
       await expectLater(
         client.registerWorkspace(
@@ -2535,7 +2597,7 @@ void main() {
           rootPath: userHome.path,
           name: 'Home again',
         ),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
 
       await client.createCustomProvider(
@@ -2554,7 +2616,7 @@ void main() {
         id: 'home-session',
         worktreeId: homeCheckout.id,
         title: 'No project',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: const SessionModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
@@ -2595,13 +2657,13 @@ void main() {
   test(
     'real daemon creates and archives a Git worktree over WebSocket',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-git-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-git-home-');
       // The daemon canonicalizes every workspace path, and macOS reaches its
       // temporary directory through a /var symlink to /private/var, so the
       // fixture starts from the resolved path the daemon will report back.
       final repository = Directory(
         await (await Directory.systemTemp.createTemp(
-          'coder-git-repository-',
+          'tinest-git-repository-',
         )).resolveSymbolicLinks(),
       );
       await _runGit(repository.path, <String>['init', '-b', 'main']);
@@ -2609,9 +2671,9 @@ void main() {
       await _runGit(repository.path, <String>['add', 'README.md']);
       await _runGit(repository.path, <String>[
         '-c',
-        'user.name=Coder Test',
+        'user.name=Tinest Test',
         '-c',
-        'user.email=coder@example.invalid',
+        'user.email=tinest@example.invalid',
         'commit',
         '-m',
         'Initial fixture',
@@ -2629,7 +2691,7 @@ void main() {
         await home.delete(recursive: true);
         await repository.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'git-vertical-slice',
@@ -2650,7 +2712,7 @@ void main() {
       // only hide the project from the catalog.
       await expectLater(
         client.archiveWorktree('main-checkout', force: true),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
       expect(
         (await client.getWorkspaceCatalog()).worktrees.single.id,
@@ -2683,7 +2745,7 @@ void main() {
       );
       expect(
         saved.sourcePath,
-        p.join(repository.path, '.coder', 'config.json'),
+        p.join(repository.path, '.tinest', 'config.json'),
       );
       expect(File(saved.sourcePath).existsSync(), isTrue);
 
@@ -2723,7 +2785,7 @@ void main() {
           rows: 24,
         ),
         throwsA(
-          isA<CoderClientException>().having(
+          isA<TinestClientException>().having(
             (error) => error.code,
             'code',
             RpcErrorCodes.worktreeUnavailable,
@@ -2783,7 +2845,7 @@ void main() {
           baseBranch: 'main',
         ),
         throwsA(
-          isA<CoderClientException>().having(
+          isA<TinestClientException>().having(
             (error) => error.code,
             'code',
             RpcErrorCodes.branchAlreadyExists,
@@ -2813,7 +2875,7 @@ void main() {
           baseBranch: 'refs/heads/definitely-missing',
         ),
         throwsA(
-          isA<CoderClientException>()
+          isA<TinestClientException>()
               .having(
                 (error) => error.code,
                 'code',
@@ -2840,7 +2902,7 @@ void main() {
   test(
     'real daemon completes and cancels OAuth attempts over WebSocket',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-oauth-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-oauth-home-');
       final gateway = _IntegrationOAuthGateway();
       final handle = await DaemonApplication.start(
         DaemonConfig(
@@ -2856,7 +2918,7 @@ void main() {
         await handle.stop();
         await home.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'oauth-vertical-slice',
@@ -2954,10 +3016,10 @@ void main() {
     ],
     () async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-attachment-home-',
+        'tinest-attachment-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-attachment-workspace-',
+        'tinest-attachment-workspace-',
       );
       await File(p.join(workspace.path, 'agent-result.txt')).writeAsString(
         'agent bytes',
@@ -2971,7 +3033,7 @@ void main() {
         useEnvironmentCredentials: false,
       );
       var handle = await DaemonApplication.start(config, provider: provider);
-      var client = await CoderClient.connect(
+      var client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: token),
         clientId: 'attachment-integration',
@@ -3034,7 +3096,7 @@ void main() {
         id: 'attachment-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Attachment session',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: SessionModelSelectionDto(
           modelId: runnableModel.id,
         ),
@@ -3091,7 +3153,7 @@ void main() {
         config,
         provider: _AttachmentProvider(),
       );
-      client = await CoderClient.connect(
+      client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: token),
         clientId: 'attachment-reconnect',
@@ -3116,9 +3178,9 @@ void main() {
   );
 
   test('secrets are not persisted in daemon files', () async {
-    final home = await Directory.systemTemp.createTemp('coder-secret-home-');
+    final home = await Directory.systemTemp.createTemp('tinest-secret-home-');
     final config = await Directory.systemTemp.createTemp(
-      'coder-secret-config-',
+      'tinest-secret-config-',
     );
     const token = 'plaintext-token-that-must-not-be-stored';
     final handle = await DaemonApplication.start(
@@ -3155,7 +3217,7 @@ void main() {
   });
 
   test('embedded daemon starts in an isolate and shuts down cleanly', () async {
-    final home = await Directory.systemTemp.createTemp('coder-embedded-home-');
+    final home = await Directory.systemTemp.createTemp('tinest-embedded-home-');
     final handle = await EmbeddedDaemonHandle.start(
       DaemonConfig(
         homeDirectory: home.path,
@@ -3173,7 +3235,7 @@ void main() {
     final occupied = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(occupied.close);
     final home = await Directory.systemTemp.createTemp(
-      'coder-embedded-conflict-',
+      'tinest-embedded-conflict-',
     );
     addTearDown(() => home.delete(recursive: true));
 
@@ -3208,9 +3270,9 @@ void main() {
       'feature_test__conversation_turn_queue__verticalSlice',
     ],
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-queue-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-queue-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-queue-workspace-',
+        'tinest-queue-workspace-',
       );
       const token = 'queue-token-0123456789abcdef0123456789';
       final handle = await DaemonApplication.start(
@@ -3222,7 +3284,7 @@ void main() {
         ),
         provider: _TextProvider(),
       );
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: token),
         clientId: 'queue-integration',
@@ -3251,7 +3313,7 @@ void main() {
         id: 'queue-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Queue session',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         model: SessionModelSelectionDto(
           modelId: runnableModel.id,
         ),
@@ -3301,10 +3363,12 @@ void main() {
   test(
     'composer file search honours gitignore over a real daemon',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-mention-home-');
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-mention-home-',
+      );
       final repository = Directory(
         await (await Directory.systemTemp.createTemp(
-          'coder-mention-repository-',
+          'tinest-mention-repository-',
         )).resolveSymbolicLinks(),
       );
       await _runGit(repository.path, <String>['init', '-b', 'main']);
@@ -3332,7 +3396,7 @@ void main() {
         await home.delete(recursive: true);
         await repository.delete(recursive: true);
       });
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'mention-vertical-slice',
@@ -3382,12 +3446,14 @@ void main() {
   test(
     'agent commands merge across sources and follow disk changes',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-command-home-');
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-command-home-',
+      );
       final agentsHome = await Directory.systemTemp.createTemp(
-        'coder-command-agents-home-',
+        'tinest-command-agents-home-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-command-workspace-',
+        'tinest-command-workspace-',
       );
       const bearerToken = 'command-token-0123456789abcdef0123456789';
       addTearDown(() async {
@@ -3420,7 +3486,7 @@ void main() {
         ),
       );
       addTearDown(handle.stop);
-      final client = await CoderClient.connect(
+      final client = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
         credentials: const DaemonCredentials(bearerToken: bearerToken),
         clientId: 'command-vertical-slice',
@@ -3499,13 +3565,35 @@ final class _TextProvider implements ModelProvider {
   }
 }
 
+/// Holds a provider request open until daemon shutdown cancels its turn.
+final class _ShutdownProvider implements ModelProvider {
+  final Completer<void> started = Completer<void>();
+  final Completer<void> cancelled = Completer<void>();
+
+  @override
+  String get id => 'shutdown-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    if (!started.isCompleted) started.complete();
+    cancellation.onCancel(() {
+      if (!cancelled.isCompleted) cancelled.complete();
+    });
+    await cancelled.future;
+    cancellation.throwIfCancelled();
+  }
+}
+
 /// Waits until a session reports idle.
 ///
 /// The `turn.completed` timeline event is broadcast before the session row
 /// leaves the running state, so a mutation issued immediately after it can
 /// still be rejected.
 Future<SessionDto> _waitForSubagentStatus(
-  CoderApi client,
+  TinestApi client,
   String parentId,
   SessionStatus status, {
   int attempts = 100,
@@ -3527,7 +3615,7 @@ Future<SessionDto> _waitForSubagentStatus(
 /// A session's status and its timeline are written separately, so a status that
 /// implies an event has happened does not prove the event is readable yet.
 Future<TimelineEventDto> _waitForTimelineEvent(
-  CoderApi client,
+  TinestApi client,
   String sessionId,
   String type, {
   int attempts = 100,
@@ -3543,7 +3631,7 @@ Future<TimelineEventDto> _waitForTimelineEvent(
 }
 
 Future<void> _waitForIdleSession(
-  CoderApi client,
+  TinestApi client,
   String worktreeId,
   String sessionId, {
   int attempts = 50,
@@ -3570,7 +3658,7 @@ Future<void> _runGit(String workingDirectory, List<String> arguments) async {
 }
 
 Future<void> _waitForAuthStatus(
-  CoderApi client,
+  TinestApi client,
   String attemptId,
   ProviderAuthAttemptStatus status,
 ) async {
@@ -3676,7 +3764,7 @@ String _fakeMcpServerPath() {
 
 /// Polls until [serverId] reports itself ready, or the event budget expires.
 Future<McpServerStateDto> _awaitReadyMcpServer(
-  CoderApi client,
+  TinestApi client,
   String serverId, {
   String? worktreeId,
 }) async {

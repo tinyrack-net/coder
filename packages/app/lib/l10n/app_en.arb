@@ -717,7 +717,7 @@
   "@errorProtocolMismatch": {
     "description": "The daemon rejected a request as unknown or malformed, which means version skew."
   },
-  "errorInvalidProjectSettings": "The project's coder.json could not be read. Fix the file and try again.",
+  "errorInvalidProjectSettings": "The project's .tinest/config.json could not be read. Fix the file and try again.",
   "@errorInvalidProjectSettings": {
     "description": "A project settings file failed to parse."
   },
@@ -1055,7 +1055,7 @@
   },
   "projectSettingsCopyPath": "Copy file location",
   "@projectSettingsCopyPath": {
-    "description": "Tooltip that copies the coder.json path."
+    "description": "Tooltip that copies the .tinest/config.json path."
   },
   "projectSettingsHookHelp": "Write one command per line; they run in order in the daemon host's shell. The CODER_WORKTREE_PATH, CODER_PROJECT_PATH, and CODER_BRANCH environment variables are available.",
   "@projectSettingsHookHelp": {

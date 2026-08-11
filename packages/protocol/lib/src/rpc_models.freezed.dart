@@ -214,7 +214,7 @@ return $default(_that.clientId,_that.clientKind,_that.protocolMajor,_that.capabi
 @JsonSerializable()
 
 class _HelloParamsDto implements HelloParamsDto {
-  const _HelloParamsDto({required this.clientId, required this.clientKind, required this.protocolMajor, required final  Map<String, bool> capabilities, this.protocolRevision = coderProtocolRevision, this.clientVersion = 'unknown'}): _capabilities = capabilities;
+  const _HelloParamsDto({required this.clientId, required this.clientKind, required this.protocolMajor, required final  Map<String, bool> capabilities, this.protocolRevision = tinestProtocolRevision, this.clientVersion = 'unknown'}): _capabilities = capabilities;
   factory _HelloParamsDto.fromJson(Map<String, dynamic> json) => _$HelloParamsDtoFromJson(json);
 
 @override final  String clientId;

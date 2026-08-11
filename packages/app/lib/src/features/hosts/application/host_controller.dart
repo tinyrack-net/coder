@@ -11,7 +11,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'host_controller.g.dart';
 
 /// Resolves a connected host API without subscribing to registry changes.
-Future<CoderApi> requireHostApi(Ref ref, String hostId) async {
+Future<TinestApi> requireHostApi(Ref ref, String hostId) async {
   final runtime = (await ref.read(
     hostRegistryControllerProvider.future,
   )).runtimes[hostId];
@@ -61,7 +61,7 @@ HostApiConnection watchHostConnection(Ref ref, String hostId) => ref.watch(
 /// One host's connection as observed by [watchHostConnection].
 typedef HostApiConnection = ({
   bool loaded,
-  CoderApi? api,
+  TinestApi? api,
   Object? error,
   StackTrace? stackTrace,
 });
@@ -75,7 +75,7 @@ typedef HostApiConnection = ({
 void listenHostApi(
   Ref ref,
   String hostId,
-  void Function(CoderApi? api) onChanged,
+  void Function(TinestApi? api) onChanged,
 ) => ref.listen(
   hostRegistryControllerProvider.select((value) {
     final runtime = value.value?.runtimes[hostId];
@@ -89,18 +89,18 @@ void listenHostApi(
 ///
 /// Stays loading while the registry has yet to answer and rethrows a registry
 /// failure, so a caller only has to decide what an offline host means for it.
-Future<CoderApi?> watchConnectedHostApi(Ref ref, String hostId) {
+Future<TinestApi?> watchConnectedHostApi(Ref ref, String hostId) {
   final connection = watchHostConnection(ref, hostId);
   if (connection.error case final error?) {
     Error.throwWithStackTrace(error, connection.stackTrace ?? StackTrace.empty);
   }
   // The selector re-runs this build as soon as the registry answers.
-  if (!connection.loaded) return Completer<CoderApi?>().future;
-  return Future<CoderApi?>.value(connection.api);
+  if (!connection.loaded) return Completer<TinestApi?>().future;
+  return Future<TinestApi?>.value(connection.api);
 }
 
 /// Resolves the API inside a build, re-running once the daemon connects.
-Future<CoderApi> watchHostApi(Ref ref, String hostId) async {
+Future<TinestApi> watchHostApi(Ref ref, String hostId) async {
   final api = await watchConnectedHostApi(ref, hostId);
   // Internal invariant, not user copy: every caller gates on a connected
   // daemon, so this only fires on a bug. Left in English for the report.
@@ -109,7 +109,7 @@ Future<CoderApi> watchHostApi(Ref ref, String hostId) async {
 }
 
 /// Returns the connected API or reports that an online daemon is required.
-CoderApi connectedHostApi(HostRuntimeSnapshot? runtime) {
+TinestApi connectedHostApi(HostRuntimeSnapshot? runtime) {
   final api = runtime?.api;
   if (api == null || runtime?.connected != true) {
     throw StateError('Online daemon connection required.');

@@ -1,5 +1,5 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +14,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// daemon's own text, since only the daemon knows what it means.
 String clientErrorText(
   AppLocalizations l10n,
-  CoderClientException error,
+  TinestClientException error,
 ) => switch (error.code) {
   RpcErrorCodes.branchAlreadyExists => l10n.errorBranchAlreadyExists,
   RpcErrorCodes.worktreePathInUse => l10n.errorWorktreePathInUse,
@@ -47,7 +47,7 @@ String clientErrorText(
 /// Kept separate from [clientErrorText] so the guidance stays readable while
 /// the machine-facing context is still one copy away. Git's stderr is included
 /// verbatim: for a failed command it is the only real explanation.
-String? clientErrorDiagnostics(CoderClientException error) {
+String? clientErrorDiagnostics(TinestClientException error) {
   final lines = <String>[
     if (error.details['stderr'] case final String stderr when stderr.isNotEmpty)
       stderr,
@@ -75,7 +75,7 @@ class ClientErrorAlert extends StatelessWidget {
   });
 
   /// Failure to report.
-  final CoderClientException error;
+  final TinestClientException error;
 
   /// Localized headline describing what did not happen.
   final String title;
@@ -90,7 +90,7 @@ class ClientErrorAlert extends StatelessWidget {
     final diagnostics = clientErrorDiagnostics(error);
     return TRAlert(
       variant: TRStatusVariant.danger,
-      icon: const Icon(CoderIcons.error),
+      icon: const Icon(TinestIcons.error),
       title: TRText.inherit(title),
       description: SelectionArea(
         child: Column(
@@ -125,7 +125,7 @@ class ClientErrorAlert extends StatelessWidget {
               text: <String>[title, guidance, ?diagnostics].join('\n'),
             ),
           ),
-          icon: const Icon(CoderIcons.copy),
+          icon: const Icon(TinestIcons.copy),
         ),
       ],
     );

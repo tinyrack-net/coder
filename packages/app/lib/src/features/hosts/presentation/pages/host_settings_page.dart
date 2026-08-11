@@ -6,10 +6,10 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -46,15 +46,15 @@ class AppSettingsPage extends ConsumerWidget {
       ),
     );
     if (embedded) return body;
-    return CoderPageShell(
-      appBar: CoderPageHeader(
+    return TinestPageShell(
+      appBar: TinestPageHeader(
         leading: TRIconButton(
           key: const ValueKey<String>('app-settings-back-button'),
           appearance: TRAppearance.ghost,
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () =>
               closeTask(context, () => const WorkspaceHomeRoute().go(context)),
-          icon: const Icon(CoderIcons.back),
+          icon: const Icon(TinestIcons.back),
         ),
         title: TRText.inherit(l10n.appSettingsTitle),
       ),
@@ -85,7 +85,7 @@ class AppSettingsPage extends ConsumerWidget {
       key: const ValueKey<String>('embedded-daemon-error'),
       title: TRText.inherit(title),
       description: SelectionArea(child: TRText.inherit(guidance)),
-      icon: const Icon(CoderIcons.error),
+      icon: const Icon(TinestIcons.error),
       variant: TRStatusVariant.danger,
       actions: <Widget>[
         TRButton(
@@ -118,7 +118,7 @@ class AppSettingsPage extends ConsumerWidget {
                   id: 'host-copy-diagnostic',
                 ),
           ),
-          icon: const Icon(CoderIcons.copy),
+          icon: const Icon(TinestIcons.copy),
         ),
       ],
     );
@@ -148,7 +148,7 @@ class AppSettingsPage extends ConsumerWidget {
                   )
                 : null,
             children: <Widget>[
-              CoderSwitchRow(
+              TinestSwitchRow(
                 title: TRText.inherit(l10n.embeddedDaemonName),
                 subtitle: TRText.inherit(
                   <String>[
@@ -167,7 +167,7 @@ class AppSettingsPage extends ConsumerWidget {
                   enabled: enabled,
                 ),
               ),
-              CoderSwitchRow(
+              TinestSwitchRow(
                 key: const ValueKey<String>('embedded-daemon-exposure'),
                 title: TRText.inherit(l10n.appSettingsExposure),
                 subtitle: TRText.inherit(l10n.appSettingsExposureSubtitle),
@@ -208,7 +208,7 @@ class AppSettingsPage extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Icon(CoderIcons.add),
+                const Icon(TinestIcons.add),
                 const SizedBox(width: TRSpacing.extraSmall),
                 TRText(l10n.relayPairTitle),
               ],
@@ -435,7 +435,7 @@ class _RemoteHostCard extends ConsumerWidget {
                   onPressed: () => unawaited(
                     EditHostRoute(hostId: profile.id).push<void>(context),
                   ),
-                  icon: const Icon(CoderIcons.edit),
+                  icon: const Icon(TinestIcons.edit),
                 ),
               ],
             ),
@@ -454,7 +454,7 @@ class _RemoteHostCard extends ConsumerWidget {
               ),
             ),
           ),
-          CoderSwitchRow(
+          TinestSwitchRow(
             title: TRText.inherit(l10n.appSettingsAutoConnect),
             value: profile.autoConnect,
             onChanged: (enabled) => unawaited(
@@ -497,7 +497,7 @@ class _RemoteHostCard extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const Icon(CoderIcons.refresh),
+                      const Icon(TinestIcons.refresh),
                       const SizedBox(width: TRSpacing.extraSmall),
                       TRText(l10n.appSettingsReconnect),
                     ],
@@ -514,7 +514,7 @@ class _RemoteHostCard extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        const Icon(CoderIcons.computer),
+                        const Icon(TinestIcons.computer),
                         const SizedBox(width: TRSpacing.extraSmall),
                         TRText(l10n.relayApprovedDevices),
                       ],
@@ -529,7 +529,7 @@ class _RemoteHostCard extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        const Icon(CoderIcons.network),
+                        const Icon(TinestIcons.network),
                         const SizedBox(width: TRSpacing.extraSmall),
                         TRText(l10n.appSettingsProviderSettings),
                       ],
@@ -628,7 +628,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                           l10n.appSettingsConnectionFailed,
                         ),
                         description: TRText.inherit(_error!),
-                        icon: const Icon(CoderIcons.error),
+                        icon: const Icon(TinestIcons.error),
                         variant: TRStatusVariant.danger,
                       ),
                 children: <Widget>[
@@ -645,7 +645,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                     label: l10n.appSettingsAddress,
                     // A URL is not prose; the example is the same in every
                     // language.
-                    placeholder: 'wss://coder.example.com/ws',
+                    placeholder: 'wss://tinest.example.com/ws',
                   ),
                   TRTextField(
                     key: const ValueKey<String>('remote-host-token'),
@@ -660,7 +660,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               SettingsSection(
                 title: l10n.appSettingsConnectionBehaviour,
                 children: <Widget>[
-                  CoderSwitchRow(
+                  TinestSwitchRow(
                     title: TRText.inherit(l10n.appSettingsAutoConnect),
                     value: _autoConnect,
                     onChanged: (value) => setState(() => _autoConnect = value),
@@ -689,8 +689,8 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               ),
             ],
           );
-    return CoderPageShell(
-      appBar: CoderPageHeader(
+    return TinestPageShell(
+      appBar: TinestPageHeader(
         leading: TRIconButton(
           key: const ValueKey<String>('remote-host-back-button'),
           appearance: TRAppearance.ghost,
@@ -699,7 +699,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
             context,
             () => const DaemonSettingsRoute().go(context),
           ),
-          icon: const Icon(CoderIcons.back),
+          icon: const Icon(TinestIcons.back),
         ),
         title: TRText.inherit(
           widget.hostId == null

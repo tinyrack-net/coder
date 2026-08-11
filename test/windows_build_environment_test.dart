@@ -1,5 +1,5 @@
-import 'package:coder_workspace/src/windows_build_environment.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/windows_build_environment.dart';
 
 void main() {
   test('non-Windows hosts need no build-tool environment', () async {

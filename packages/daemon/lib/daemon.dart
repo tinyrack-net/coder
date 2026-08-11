@@ -1,4 +1,4 @@
-/// Public lifecycle surface for hosting the Coder daemon.
+/// Public lifecycle surface for hosting the Tinest daemon.
 library;
 
 export 'package:agent/agent.dart'

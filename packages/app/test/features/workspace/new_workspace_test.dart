@@ -15,7 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 /// The implicit home workspace a daemon provisions for project-less sessions.
@@ -33,7 +33,7 @@ final _homeCheckout = WorktreeDto(
   name: _home.name,
   path: _home.rootPath,
   kind: WorktreeKind.directory,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: DateTime.utc(2026, 8, 3),
 );
 
@@ -41,8 +41,8 @@ void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -53,7 +53,7 @@ void main() {
     path: workspace.rootPath,
     branch: 'main',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
 
@@ -88,7 +88,7 @@ void main() {
         <String>[
           'Alpha daemon/Alpha',
           'Alpha daemon/Zulu',
-          'Beta daemon/Coder',
+          'Beta daemon/Tinest',
         ],
       );
       expect(projects.first.worktrees.single.id, 'alpha-main');
@@ -112,16 +112,16 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
 
       expect(find.text('New workspace'), findsWidgets);
-      expect(find.text('Coder'), findsWidgets);
+      expect(find.text('Tinest'), findsWidgets);
       expect(find.byKey(const ValueKey('new-workspace-worktree')), findsOne);
       await _selectModel(tester);
 
@@ -157,13 +157,13 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
 
       await tester.tap(find.byKey(const ValueKey('new-workspace-worktree')));
       await tester.pumpAndSettle();
@@ -192,13 +192,13 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       )..createWorktreeGate = Completer<void>();
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -231,17 +231,17 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
-        createWorktreeError: const CoderClientException(
+        createWorktreeError: const TinestClientException(
           'A worktree already uses the generated path.',
           code: 'request_failed',
         ),
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -271,10 +271,10 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
-        createWorktreeError: const CoderClientException(
+        createWorktreeError: const TinestClientException(
           'Internal daemon error.',
           code: RpcErrorCodes.internalError,
           details: <String, dynamic>{
@@ -286,7 +286,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -336,7 +336,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api =
-          FakeCoderApi(
+          FakeTinestApi(
               workspaces: <WorkspaceDto>[workspace],
               worktrees: <WorktreeDto>[checkout],
             )
@@ -351,7 +351,7 @@ void main() {
             ];
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -377,13 +377,13 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
 
       expect(find.text('origin/main'), findsOneWidget);
 
@@ -420,7 +420,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -447,7 +447,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -483,7 +483,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final router = await _pump(tester, FakeCoderApi());
+      final router = await _pump(tester, FakeTinestApi());
       addTearDown(router.dispose);
 
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsOneWidget);
@@ -510,7 +510,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_home],
         worktrees: <WorktreeDto>[_homeCheckout],
       );
@@ -543,7 +543,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace, _home],
         worktrees: <WorktreeDto>[checkout, _homeCheckout],
       );
@@ -560,10 +560,10 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Coder ·').last);
+      await tester.tap(find.textContaining('Tinest ·').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Coder'), findsWidgets);
+      expect(find.text('Tinest'), findsWidgets);
       expect(find.byKey(const ValueKey('new-workspace-worktree')), findsOne);
     },
     tags: const <String>['feature_test__session_home__widget'],
@@ -588,7 +588,7 @@ void main() {
         branch: null,
         kind: WorktreeKind.directory,
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[directory],
         worktrees: <WorktreeDto>[directoryCheckout],
       );
@@ -644,7 +644,7 @@ void main() {
         rootPath: '/repos/incomplete',
         kind: WorkspaceKind.directory,
       );
-      final api = FakeCoderApi(workspaces: <WorkspaceDto>[directory]);
+      final api = FakeTinestApi(workspaces: <WorkspaceDto>[directory]);
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
       await _selectProject(tester, 'Incomplete folder');
@@ -668,7 +668,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -690,7 +690,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(workspaceCatalogGate: gate.future);
+      final api = FakeTinestApi(workspaceCatalogGate: gate.future);
       final router = await _pump(tester, api, settle: false);
       addTearDown(router.dispose);
       await tester.pump();
@@ -711,7 +711,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_home],
         worktrees: <WorktreeDto>[_homeCheckout],
         commands: const <AgentCommandDto>[
@@ -753,7 +753,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_home],
         worktrees: <WorktreeDto>[_homeCheckout],
       );
@@ -792,7 +792,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_home],
         worktrees: <WorktreeDto>[_homeCheckout],
       );
@@ -824,7 +824,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_home],
         worktrees: <WorktreeDto>[_homeCheckout],
         files: <String, List<String>>{
@@ -864,7 +864,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         files: <String, List<String>>{
@@ -873,7 +873,7 @@ void main() {
       );
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
-      await _selectProject(tester, 'Coder');
+      await _selectProject(tester, 'Tinest');
       await _selectModel(tester);
 
       await tester.enterText(
@@ -907,7 +907,7 @@ HostRuntimeSnapshot _host(String id, String label) => HostRuntimeSnapshot(
 
 Future<GoRouter> _pump(
   WidgetTester tester,
-  FakeCoderApi api, {
+  FakeTinestApi api, {
   bool connected = true,
   bool settle = true,
 }) async {

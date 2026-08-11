@@ -114,7 +114,7 @@ final class FeatureVerifier {
   /// Complete declared feature catalog.
   final List<FeatureContract> contracts;
 
-  /// Source containing the `CoderApi` interface.
+  /// Source containing the `TinestApi` interface.
   final String apiPath;
 
   /// Source containing typed route annotations.
@@ -193,7 +193,7 @@ final class FeatureVerifier {
         if (previous != null) {
           violations.add(
             FeatureViolation(
-              'CoderApi method $method belongs to both $previous and '
+              'TinestApi method $method belongs to both $previous and '
               '${contract.id}.',
             ),
           );
@@ -217,10 +217,12 @@ final class FeatureVerifier {
       File(p.join(workspaceRoot, apiPath)).readAsStringSync(),
     );
     for (final method in apiMethods.difference(methodOwners.keys.toSet())) {
-      violations.add(FeatureViolation('Unregistered CoderApi method: $method'));
+      violations.add(
+        FeatureViolation('Unregistered TinestApi method: $method'),
+      );
     }
     for (final method in methodOwners.keys.toSet().difference(apiMethods)) {
-      violations.add(FeatureViolation('Missing CoderApi method: $method'));
+      violations.add(FeatureViolation('Missing TinestApi method: $method'));
     }
 
     final routes = _routes(
@@ -379,8 +381,8 @@ final class FeatureVerifier {
       forbiddenProductionTerms.isEmpty
       ? <String>[
           <String>['admin', 'Token'].join(),
-          <String>['X-Tinyrack-Coder-', 'Admin'].join(),
-          <String>['TINYRACK_CODER_', 'ADMIN_TOKEN'].join(),
+          <String>['X-Tinyrack-Tinest-', 'Admin'].join(),
+          <String>['TINYRACK_TINEST_', 'ADMIN_TOKEN'].join(),
           <String>['local_admin_', 'required'].join(),
         ]
       : forbiddenProductionTerms;
@@ -428,7 +430,7 @@ final class FeatureVerifier {
   }
 
   Set<String> _apiMethods(String source) {
-    final methods = _interfaceMethods(source, 'CoderApi');
+    final methods = _interfaceMethods(source, 'TinestApi');
     const features = <String, String>{
       'WorkspacesApi': 'workspaces',
       'SessionsApi': 'sessions',

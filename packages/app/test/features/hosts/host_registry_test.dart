@@ -8,7 +8,7 @@ import 'package:client/client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
@@ -38,13 +38,13 @@ void main() {
         profiles: <RemoteDaemonProfile>[first, second],
         tokens: const <String, String>{'first': 'one', 'second': 'two'},
       );
-      final firstConnect = Completer<CoderApi>();
-      final secondApi = FakeCoderApi(
+      final firstConnect = Completer<TinestApi>();
+      final secondApi = FakeTinestApi(
         serverInfo: _serverInfo('server-two'),
       );
-      final factory = _ClientFactory(<String, Future<CoderApi>>{
+      final factory = _ClientFactory(<String, Future<TinestApi>>{
         'first.test': firstConnect.future,
-        'second.test': Future<CoderApi>.value(secondApi),
+        'second.test': Future<TinestApi>.value(secondApi),
       });
       final registry = HostRegistry(
         store: store,
@@ -70,7 +70,7 @@ void main() {
       );
 
       firstConnect.complete(
-        FakeCoderApi(serverInfo: _serverInfo('server-one')),
+        FakeTinestApi(serverInfo: _serverInfo('server-one')),
       );
       await _flush();
       expect(
@@ -91,7 +91,7 @@ void main() {
       final store = MemoryAppStore(
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
-      final factory = _ClientFactory(const <String, Future<CoderApi>>{});
+      final factory = _ClientFactory(const <String, Future<TinestApi>>{});
       final registry = HostRegistry(
         store: store,
         clientFactory: factory,
@@ -128,14 +128,14 @@ void main() {
     'embedded daemon is optional and remote selection never stops it',
     () async {
       final store = MemoryAppStore();
-      final embeddedApi = FakeCoderApi(
+      final embeddedApi = FakeTinestApi(
         serverInfo: _serverInfo('embedded-server'),
       );
       final launcher = _EmbeddedLauncher();
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(embeddedApi),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(embeddedApi),
         }),
         embeddedLauncher: launcher,
         ids: const _Ids(),
@@ -188,12 +188,12 @@ void main() {
       final eraser = _DataEraser(calls: calls);
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(
-            FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(
+            FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
           ),
-          'remote.test': Future<CoderApi>.value(
-            FakeCoderApi(serverInfo: _serverInfo('remote-server')),
+          'remote.test': Future<TinestApi>.value(
+            FakeTinestApi(serverInfo: _serverInfo('remote-server')),
           ),
         }),
         embeddedLauncher: launcher,
@@ -252,7 +252,7 @@ void main() {
     );
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
       ids: const _Ids(),
       clock: _Clock(now),
       delay: const _NoDelay(),
@@ -294,9 +294,9 @@ void main() {
     final launcher = _EmbeddedLauncher(calls: calls);
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-        'embedded.test': Future<CoderApi>.value(
-          FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+      clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+        'embedded.test': Future<TinestApi>.value(
+          FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
         ),
       }),
       embeddedLauncher: launcher,
@@ -345,9 +345,9 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(
-            FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(
+            FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
           ),
         }),
         embeddedLauncher: launcher,
@@ -398,7 +398,7 @@ void main() {
       final eraser = _DataEraser(calls: calls);
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         embeddedLauncher: _EmbeddedLauncher(calls: calls),
         embeddedDataEraser: eraser,
         ids: const _Ids(),
@@ -447,7 +447,7 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now),
         delay: const _NoDelay(),
@@ -490,12 +490,12 @@ void main() {
     );
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-        'first.test': Future<CoderApi>.value(
-          FakeCoderApi(serverInfo: _serverInfo('same')),
+      clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+        'first.test': Future<TinestApi>.value(
+          FakeTinestApi(serverInfo: _serverInfo('same')),
         ),
-        'second.test': Future<CoderApi>.value(
-          FakeCoderApi(serverInfo: _serverInfo('same')),
+        'second.test': Future<TinestApi>.value(
+          FakeTinestApi(serverInfo: _serverInfo('same')),
         ),
       }),
       ids: const _Ids(),
@@ -531,16 +531,16 @@ void main() {
         profiles: <RemoteDaemonProfile>[profile],
         tokens: const <String, String>{'remote': 'token'},
       );
-      final api = FakeCoderApi(serverInfo: _serverInfo('remote-server'));
+      final api = FakeTinestApi(serverInfo: _serverInfo('remote-server'));
       final delay = _RecordingDelay();
-      final factory = _SequenceClientFactory(<Future<CoderApi> Function()>[
-        () => Future<CoderApi>.error(
+      final factory = _SequenceClientFactory(<Future<TinestApi> Function()>[
+        () => Future<TinestApi>.error(
           const HostConnectionFailure.network('temporary outage'),
         ),
-        () => Future<CoderApi>.error(
+        () => Future<TinestApi>.error(
           const HostConnectionFailure.authentication('bad token'),
         ),
-        () => Future<CoderApi>.value(api),
+        () => Future<TinestApi>.value(api),
       ]);
       final registry = HostRegistry(
         store: store,
@@ -589,13 +589,13 @@ void main() {
         profiles: <RemoteDaemonProfile>[profile],
         tokens: const <String, String>{'remote': 'old-token'},
       );
-      final beforeApi = FakeCoderApi(serverInfo: _serverInfo('before'));
-      final afterApi = FakeCoderApi(serverInfo: _serverInfo('before'));
+      final beforeApi = FakeTinestApi(serverInfo: _serverInfo('before'));
+      final afterApi = FakeTinestApi(serverInfo: _serverInfo('before'));
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'before.test': Future<CoderApi>.value(beforeApi),
-          'after.test': Future<CoderApi>.value(afterApi),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'before.test': Future<TinestApi>.value(beforeApi),
+          'after.test': Future<TinestApi>.value(afterApi),
         }),
         ids: const _Ids(),
         clock: _Clock(now),
@@ -634,7 +634,7 @@ void main() {
     );
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
       ids: const _Ids(),
       clock: _Clock(now),
       delay: const _NoDelay(),
@@ -671,7 +671,7 @@ void main() {
         store: store,
         profiles: const _FailingProfiles(),
         credentials: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now),
         delay: const _NoDelay(),
@@ -728,7 +728,7 @@ void main() {
         createdAt: now,
         updatedAt: now,
       );
-      final api = FakeCoderApi(serverInfo: _serverInfo('remote-server'));
+      final api = FakeTinestApi(serverInfo: _serverInfo('remote-server'));
       final store = MemoryAppStore(
         settings: const AppSettings(embeddedDaemonEnabled: false),
         profiles: <RemoteDaemonProfile>[profile, missing],
@@ -736,8 +736,8 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'remote.test': Future<CoderApi>.value(api),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'remote.test': Future<TinestApi>.value(api),
         }),
         ids: const _Ids(),
         clock: _Clock(now),
@@ -784,9 +784,9 @@ void main() {
       final launcher = _EmbeddedLauncher();
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(
-            FakeCoderApi(serverInfo: _serverInfo('embedded-server')),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(
+            FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
           ),
         }),
         embeddedLauncher: launcher,
@@ -809,7 +809,7 @@ void main() {
         store: MemoryAppStore(
           settings: const AppSettings(embeddedDaemonEnabled: false),
         ),
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now),
         delay: const _NoDelay(),
@@ -824,7 +824,7 @@ void main() {
       final failingStore = MemoryAppStore();
       final failing = HostRegistry(
         store: failingStore,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         embeddedLauncher: const _FailingEmbeddedLauncher(),
         ids: const _Ids(),
         clock: _Clock(now),
@@ -844,8 +844,8 @@ void main() {
   test(
     'embedded exposure restarts only the app-owned daemon and persists mode',
     () async {
-      final remote = FakeCoderApi(serverInfo: _serverInfo('remote-server'));
-      final embedded = FakeCoderApi(
+      final remote = FakeTinestApi(serverInfo: _serverInfo('remote-server'));
+      final embedded = FakeTinestApi(
         serverInfo: _serverInfo('embedded-server'),
       );
       final profile = RemoteDaemonProfile(
@@ -863,9 +863,9 @@ void main() {
       final launcher = _EmbeddedLauncher();
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(embedded),
-          'remote.test': Future<CoderApi>.value(remote),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(embedded),
+          'remote.test': Future<TinestApi>.value(remote),
         }),
         embeddedLauncher: launcher,
         ids: const _Ids(),
@@ -929,10 +929,10 @@ void main() {
       final registry = HostRegistry(
         store: store,
         clientFactory: _SequenceClientFactory(
-          List<Future<CoderApi> Function()>.generate(
+          List<Future<TinestApi> Function()>.generate(
             2,
             (index) =>
-                () async => FakeCoderApi(
+                () async => FakeTinestApi(
                   serverInfo: _serverInfo('embedded-server'),
                 ),
           ),
@@ -986,10 +986,10 @@ void main() {
       final registry = HostRegistry(
         store: MemoryAppStore(),
         clientFactory: _SequenceClientFactory(
-          List<Future<CoderApi> Function()>.generate(
+          List<Future<TinestApi> Function()>.generate(
             3,
             (index) =>
-                () async => FakeCoderApi(
+                () async => FakeTinestApi(
                   serverInfo: _serverInfo('embedded-server'),
                 ),
           ),
@@ -1059,9 +1059,9 @@ void main() {
       );
       final mismatch = HostRegistry(
         store: store,
-        clientFactory: _SequenceClientFactory(<Future<CoderApi> Function()>[
-          () => Future<CoderApi>.error(
-            const CoderClientException(
+        clientFactory: _SequenceClientFactory(<Future<TinestApi> Function()>[
+          () => Future<TinestApi>.error(
+            const TinestClientException(
               'wrong version',
               code: 'protocol_mismatch',
             ),
@@ -1077,11 +1077,11 @@ void main() {
       expect(mismatch.value.runtimes['remote']!.error, 'wrong version');
       await mismatch.close();
 
-      final lateApi = FakeCoderApi(serverInfo: _serverInfo('late'));
-      final pending = Completer<CoderApi>();
+      final lateApi = FakeTinestApi(serverInfo: _serverInfo('late'));
+      final pending = Completer<TinestApi>();
       final late = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
           'remote.test': pending.future,
         }),
         ids: const _Ids(),
@@ -1117,9 +1117,9 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _SequenceClientFactory(<Future<CoderApi> Function()>[
-          () => Future<CoderApi>.error(
-            const CoderClientException(
+        clientFactory: _SequenceClientFactory(<Future<TinestApi> Function()>[
+          () => Future<TinestApi>.error(
+            const TinestClientException(
               'Could not reach a daemon at 127.0.0.1:7337.',
               code: localNetworkUnreachableCode,
               retryable: true,
@@ -1150,7 +1150,7 @@ void main() {
     );
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
       ids: const _Ids(),
       clock: _Clock(now),
       delay: const _NoDelay(),
@@ -1175,7 +1175,7 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now),
         delay: const _NoDelay(),
@@ -1210,7 +1210,7 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now),
         delay: const _NoDelay(),
@@ -1242,14 +1242,14 @@ void main() {
     'shutdown stops every client and the app-owned daemon exactly once',
     () async {
       final store = MemoryAppStore();
-      final embeddedApi = FakeCoderApi(
+      final embeddedApi = FakeTinestApi(
         serverInfo: _serverInfo('embedded-server'),
       );
       final launcher = _EmbeddedLauncher();
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(<String, Future<CoderApi>>{
-          'embedded.test': Future<CoderApi>.value(embeddedApi),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(embeddedApi),
         }),
         embeddedLauncher: launcher,
         ids: const _Ids(),
@@ -1281,7 +1281,7 @@ void main() {
     final pairer = _Pairer();
     final registry = HostRegistry(
       store: store,
-      clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+      clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
       ids: const _Ids(),
       clock: _Clock(now),
       delay: const _NoDelay(),
@@ -1292,7 +1292,7 @@ void main() {
     await registry.load();
 
     final profile = await registry.pairRemote(
-      pairingUrl: Uri.parse('https://coder.tinyrack.net/pair#offer=test'),
+      pairingUrl: Uri.parse('https://tinest.tinyrack.net/pair#offer=test'),
       deviceName: 'My phone',
       autoConnect: false,
     );
@@ -1332,7 +1332,7 @@ void main() {
       );
       final registry = HostRegistry(
         store: store,
-        clientFactory: _ClientFactory(const <String, Future<CoderApi>>{}),
+        clientFactory: _ClientFactory(const <String, Future<TinestApi>>{}),
         ids: const _Ids(),
         clock: _Clock(now.add(const Duration(minutes: 1))),
         delay: const _NoDelay(),
@@ -1343,7 +1343,7 @@ void main() {
       await registry.load();
 
       final paired = await registry.pairRemote(
-        pairingUrl: Uri.parse('https://coder.tinyrack.net/pair#offer=test'),
+        pairingUrl: Uri.parse('https://tinest.tinyrack.net/pair#offer=test'),
         deviceName: 'My phone',
         autoConnect: false,
       );
@@ -1370,7 +1370,7 @@ void main() {
         id: 'relay',
         credentialKey: 'relay-secret',
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       );
       final profile = RemoteDaemonProfile(
@@ -1391,22 +1391,22 @@ void main() {
         deviceId: 'phone',
         privateKey: List<int>.filled(32, 2),
       );
-      final directApi = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
-      final lateRelay = Completer<CoderApi>();
-      final relayProbe = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
-      final relayApi = FakeCoderApi(serverInfo: _serverInfo('daemon-1'));
+      final directApi = FakeTinestApi(serverInfo: _serverInfo('daemon-1'));
+      final lateRelay = Completer<TinestApi>();
+      final relayProbe = FakeTinestApi(serverInfo: _serverInfo('daemon-1'));
+      final relayApi = FakeTinestApi(serverInfo: _serverInfo('daemon-1'));
       final factory = _PathClientFactory(
-        <String, List<Future<CoderApi> Function()>>{
-          'direct': <Future<CoderApi> Function()>[
-            () => Future<CoderApi>.value(directApi),
-            () => Future<CoderApi>.error(
+        <String, List<Future<TinestApi> Function()>>{
+          'direct': <Future<TinestApi> Function()>[
+            () => Future<TinestApi>.value(directApi),
+            () => Future<TinestApi>.error(
               const HostConnectionFailure.network('direct path lost'),
             ),
           ],
-          'relay': <Future<CoderApi> Function()>[
+          'relay': <Future<TinestApi> Function()>[
             () => lateRelay.future,
-            () => Future<CoderApi>.value(relayProbe),
-            () => Future<CoderApi>.value(relayApi),
+            () => Future<TinestApi>.value(relayProbe),
+            () => Future<TinestApi>.value(relayApi),
           ],
         },
       );
@@ -1426,7 +1426,7 @@ void main() {
       await _flush();
       expect(registry.value.runtimes['remote']!.activeConnectionId, 'direct');
       expect(scheduler.interval, activeHostPathProbeInterval);
-      lateRelay.complete(FakeCoderApi(serverInfo: _serverInfo('daemon-1')));
+      lateRelay.complete(FakeTinestApi(serverInfo: _serverInfo('daemon-1')));
       await _flush();
 
       directApi.emitState(ClientConnectionState.disconnected);
@@ -1453,7 +1453,7 @@ void main() {
 ServerInfoDto _serverInfo(String id) => ServerInfoDto(
   serverId: id,
   version: 'test',
-  protocolVersion: coderProtocolMajor,
+  protocolVersion: tinestProtocolMajor,
   features: const <String, bool>{},
 );
 
@@ -1466,11 +1466,11 @@ Future<void> _flush() async {
 final class _ClientFactory implements HostClientFactory {
   _ClientFactory(this.clients);
 
-  final Map<String, Future<CoderApi>> clients;
+  final Map<String, Future<TinestApi>> clients;
   final List<String> connectedHosts = <String>[];
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -1480,18 +1480,18 @@ final class _ClientFactory implements HostClientFactory {
       (connection as DirectHostConnection).endpoint.websocketUri.host,
     );
     return clients[connection.endpoint.websocketUri.host] ??
-        Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
+        Future<TinestApi>.error(const HostConnectionFailure.network('offline'));
   }
 }
 
 final class _SequenceClientFactory implements HostClientFactory {
   _SequenceClientFactory(this.results);
 
-  final List<Future<CoderApi> Function()> results;
+  final List<Future<TinestApi> Function()> results;
   int attempts = 0;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -1505,19 +1505,19 @@ final class _SequenceClientFactory implements HostClientFactory {
 
 final class _PathClientFactory implements HostClientFactory {
   _PathClientFactory(
-    Map<String, List<Future<CoderApi> Function()>> results,
+    Map<String, List<Future<TinestApi> Function()>> results,
   ) : _results = results.map(
         (key, value) => MapEntry(
           key,
-          List<Future<CoderApi> Function()>.of(value),
+          List<Future<TinestApi> Function()>.of(value),
         ),
       );
 
-  final Map<String, List<Future<CoderApi> Function()>> _results;
+  final Map<String, List<Future<TinestApi> Function()>> _results;
   final List<String> connectionIds = <String>[];
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -1526,7 +1526,7 @@ final class _PathClientFactory implements HostClientFactory {
     connectionIds.add(connection.id);
     final results = _results[connection.id];
     if (results == null || results.isEmpty) {
-      return Future<CoderApi>.error(
+      return Future<TinestApi>.error(
         const HostConnectionFailure.network('unexpected connection'),
       );
     }
@@ -1679,7 +1679,7 @@ final class _Pairer implements HostRelayPairer {
         id: connectionId,
         credentialKey: credentialKey,
         serverId: 'relay-daemon',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       ),
       credential: RelayHostCredential(

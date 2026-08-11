@@ -1,4 +1,4 @@
-import 'package:coder_workspace/src/feature_verifier.dart';
+import 'package:tinest_workspace/src/feature_verifier.dart';
 
 const Set<FeatureSurface> _desktop = <FeatureSurface>{
   FeatureSurface.desktop,
@@ -11,8 +11,8 @@ const Set<FeatureSurface> _allSurfaces = <FeatureSurface>{
   FeatureSurface.web,
 };
 
-/// Complete traceability manifest for user-visible Coder capabilities.
-const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
+/// Complete traceability manifest for user-visible Tinest capabilities.
+const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'daemon.management',
     description: 'Starts, connects, edits, and removes daemon hosts.',
@@ -406,7 +406,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
     id: 'project.settings',
     description:
         'Edits per-project worktree lifecycle hooks stored in the repository '
-        "root's coder.json.",
+        "root's .tinest/config.json.",
     apiMethods: <String>[
       'workspaces.getProjectSettings',
       'workspaces.saveProjectSettings',
@@ -732,7 +732,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'tool.harness.parity',
     description:
-        'Pins the modern Codex v2 tool contract, distinguishes Coder '
+        'Pins the modern Codex v2 tool contract, distinguishes Tinest '
         'extensions and exclusions, and verifies typed wire declarations.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1148,7 +1148,7 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'provider.usage',
     description:
-        'Lazily reads safe subscription quota for Coder-managed provider '
+        'Lazily reads safe subscription quota for Tinest-managed provider '
         'connections and presents it with context and session cost.',
     apiMethods: <String>['providers.listProviderUsage'],
     requiredLayers: <FeatureVerificationLayer>{

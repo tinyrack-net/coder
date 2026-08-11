@@ -181,8 +181,8 @@ void main() {
     await run(
       <String>['provider', 'list'],
       environment: const <String, String>{
-        'TINYRACK_CODER_LISTEN': '127.0.0.1:9100',
-        'TINYRACK_CODER_TOKEN': 'from-environment',
+        'TINYRACK_TINEST_LISTEN': '127.0.0.1:9100',
+        'TINYRACK_TINEST_TOKEN': 'from-environment',
       },
       connectClient:
           ({
@@ -207,7 +207,7 @@ void main() {
     await run(
       <String>['agent', 'list', '--token', 'from-flag'],
       environment: const <String, String>{
-        'TINYRACK_CODER_TOKEN': 'from-environment',
+        'TINYRACK_TINEST_TOKEN': 'from-environment',
       },
       connectClient:
           ({

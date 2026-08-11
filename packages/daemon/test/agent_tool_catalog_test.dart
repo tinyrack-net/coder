@@ -266,7 +266,7 @@ void main() {
     late AgentDefinitionService service;
 
     setUp(() async {
-      directory = await Directory.systemTemp.createTemp('coder-mcp-catalog-');
+      directory = await Directory.systemTemp.createTemp('tinest-mcp-catalog-');
       dynamicCatalog = _FakeCatalog();
       service = AgentDefinitionService(
         store: FileAgentDefinitionStore(directory.path),
@@ -307,10 +307,10 @@ void main() {
     });
 
     test('a tool that appears later is no longer unavailable', () async {
-      final coder = await service.get('coder');
+      final tinest = await service.get('tinest');
       final reviewer = await service.create(
         'reviewer',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
@@ -347,10 +347,10 @@ void main() {
       addTearDown(bare.close);
       await bare.initialize();
 
-      final coder = await bare.get('coder');
+      final tinest = await bare.get('tinest');
       final legacy = await bare.create(
         'legacy',
-        coder.copyWith(
+        tinest.copyWith(
           id: 'legacy',
           name: 'Legacy',
           mode: AgentMode.subagent,
@@ -368,9 +368,9 @@ void main() {
     test(
       'the built-in agent enables every selectable built-in tool',
       () async {
-        final coder = await service.get('coder');
+        final tinest = await service.get('tinest');
 
-        expect(coder.toolIds, <String>[
+        expect(tinest.toolIds, <String>[
           'apply_patch',
           'list_mcp_resources',
           'list_mcp_resource_templates',
@@ -379,7 +379,7 @@ void main() {
           'collaboration',
         ]);
         expect(
-          registry.resolveIds(coder.toolIds),
+          registry.resolveIds(tinest.toolIds),
           <String>[
             'list_directory',
             'read_file',
@@ -422,7 +422,7 @@ void main() {
         addTearDown(real.close);
         await real.initialize();
 
-        expect((await real.get('coder')).diagnostics, isEmpty);
+        expect((await real.get('tinest')).diagnostics, isEmpty);
       },
       tags: const <String>['feature_test__agent_definition_management__unit'],
     );

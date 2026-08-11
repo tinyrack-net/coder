@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/router_harness.dart';
 
 /// Navigation-verb behaviour: pushed tasks pop back, lateral moves do not
@@ -17,8 +17,8 @@ void main() {
   final now = DateTime.utc(2026, 8, 5);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -29,14 +29,14 @@ void main() {
     path: workspace.rootPath,
     branch: 'main',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   SessionDto session(String id, String title) => SessionDto(
     id: id,
     worktreeId: worktree.id,
     title: title,
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -48,7 +48,7 @@ void main() {
     worktreeId: worktree.id,
   ).location;
 
-  FakeCoderApi apiWith(List<SessionDto> sessions) => FakeCoderApi(
+  FakeTinestApi apiWith(List<SessionDto> sessions) => FakeTinestApi(
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[worktree],
     agents: sessions,
@@ -279,7 +279,7 @@ void main() {
     (tester) async {
       await useDesktop(tester);
       final catalogGate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         workspaceCatalogGate: catalogGate.future,

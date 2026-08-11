@@ -223,8 +223,8 @@ abstract final class DaemonApplication {
       rethrow;
     }
 
-    final database = CoderDatabase(
-      p.join(home.path, 'coder.sqlite'),
+    final database = TinestDatabase(
+      p.join(home.path, 'tinest.sqlite'),
       clock: effectiveClock,
     );
     try {
@@ -473,8 +473,8 @@ abstract final class DaemonApplication {
         lua.LuaToolRuntime<ConversationAttachment>(
           host: discoverLuaHostCommand(sourceRoot: Directory.current.path),
           processLauncher: const lua.IoLuaHostProcessLauncher(),
-          clock: _CoderLuaClock(effectiveClock),
-          ids: _CoderLuaIds(effectiveIds),
+          clock: _TinestLuaClock(effectiveClock),
+          ids: _TinestLuaIds(effectiveIds),
         ),
       );
       final luaSweep = Timer.periodic(
@@ -611,7 +611,7 @@ abstract final class DaemonApplication {
       final info = ServerInfoDto(
         serverId: serverId,
         version: config.version,
-        protocolVersion: coderProtocolMajor,
+        protocolVersion: tinestProtocolMajor,
         homeDirectory: config.osHomeDirectory,
         features: <String, bool>{
           'timelineCatchup': true,
@@ -785,6 +785,7 @@ abstract final class DaemonApplication {
         token: token,
         http: http,
         rpc: rpc,
+        turns: service,
         database: database,
         events: events,
         agentDefinitions: agentDefinitions,
@@ -819,6 +820,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._token,
     required this._http,
     required this._rpc,
+    required this._turns,
     required this._database,
     required this._events,
     required this._agentDefinitions,
@@ -843,7 +845,8 @@ class _LocalDaemonHandle implements DaemonHandle {
   final String _token;
   final HttpServer _http;
   final DaemonRpcServer _rpc;
-  final CoderDatabase _database;
+  final SessionTurnCoordinator _turns;
+  final TinestDatabase _database;
   final StreamController<OutboundNotification> _events;
   final AgentDefinitionService _agentDefinitions;
   final McpRuntime _mcp;
@@ -878,13 +881,14 @@ class _LocalDaemonHandle implements DaemonHandle {
     _attachmentCleanup.cancel();
     _execSweep.cancel();
     _luaSweep.cancel();
-    await _execSessions.close();
-    await _luaCodeMode.close();
     for (final subscription in _notificationSubscriptions) {
       await subscription.cancel();
     }
     await _http.close(force: true);
     await _rpc.close();
+    await _turns.close();
+    await _execSessions.close();
+    await _luaCodeMode.close();
     await _terminals.close();
     await _relayTransport.close();
     await _relay.close();
@@ -944,8 +948,8 @@ final class _McpToolSource implements ExternalToolSource {
   }
 }
 
-final class _CoderLuaClock implements lua.LuaClock {
-  const _CoderLuaClock(this._clock);
+final class _TinestLuaClock implements lua.LuaClock {
+  const _TinestLuaClock(this._clock);
 
   final Clock _clock;
 
@@ -953,8 +957,8 @@ final class _CoderLuaClock implements lua.LuaClock {
   DateTime nowUtc() => _clock.nowUtc();
 }
 
-final class _CoderLuaIds implements lua.LuaIdGenerator {
-  const _CoderLuaIds(this._ids);
+final class _TinestLuaIds implements lua.LuaIdGenerator {
+  const _TinestLuaIds(this._ids);
 
   final IdGenerator _ids;
 

@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -39,13 +39,13 @@ void main() {
     'real IBus Hangul on Wayland reaches the embedded PTY in typed order',
     (tester) async {
       final daemonHome = await Directory.systemTemp.createTemp(
-        'coder-ibus-wl-daemon-',
+        'tinest-ibus-wl-daemon-',
       );
       final userHome = await Directory.systemTemp.createTemp(
-        'coder-ibus-wl-user-',
+        'tinest-ibus-wl-user-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-ibus-wl-workspace-',
+        'tinest-ibus-wl-workspace-',
       );
       await _initializeGitRepository(workspace.path);
       final port = await reserveEphemeralPort();
@@ -87,7 +87,7 @@ void main() {
         settings: AppSettings(embeddedDaemonPort: port),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -138,7 +138,7 @@ void main() {
       await _waitUntil(
         () async =>
             (await setupClient.terminals.listTerminals(checkout.id)).isNotEmpty,
-        'Coder to create the terminal through its real daemon',
+        'Tinest to create the terminal through its real daemon',
       );
       final terminal = (await setupClient.terminals.listTerminals(
         checkout.id,
@@ -221,12 +221,12 @@ void main() {
   );
 }
 
-Future<CoderApi> _connectToDaemon(int port, String token) async {
+Future<TinestApi> _connectToDaemon(int port, String token) async {
   Object? lastError;
   final deadline = DateTime.now().add(const Duration(seconds: 30));
   while (DateTime.now().isBefore(deadline)) {
     try {
-      return await CoderClient.connect(
+      return await TinestClient.connect(
         endpoint: HostEndpoint.parse('127.0.0.1:$port'),
         credentials: DaemonCredentials(bearerToken: token),
         clientId: 'ibus-wayland-e2e-setup',
@@ -391,9 +391,9 @@ Future<void> _initializeGitRepository(String path) async {
     '-C',
     path,
     '-c',
-    'user.name=Coder IBus Wayland E2E',
+    'user.name=Tinest IBus Wayland E2E',
     '-c',
-    'user.email=coder-ibus-wayland-e2e@example.invalid',
+    'user.email=tinest-ibus-wayland-e2e@example.invalid',
     'commit',
     '-m',
     'Initial fixture',

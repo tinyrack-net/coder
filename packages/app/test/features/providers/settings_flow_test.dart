@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await _pumpSettings(tester, FakeCoderApi());
+      await _pumpSettings(tester, FakeTinestApi());
 
       expect(
         find.byKey(const ValueKey<String>('provider-connection-openai')),
@@ -46,7 +46,7 @@ void main() {
     (
       tester,
     ) async {
-      final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
+      final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
       await _pumpSettings(tester, api);
 
       await _openCatalog(tester);
@@ -78,7 +78,7 @@ void main() {
     (
       tester,
     ) async {
-      final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
+      final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
       final opener = _ExternalUrlOpener();
       await _pumpSettings(tester, api, externalUrlOpener: opener);
 
@@ -122,7 +122,7 @@ void main() {
     ) async {
       await _pumpSettings(
         tester,
-        FakeCoderApi(connections: <ProviderConnectionDto>[]),
+        FakeTinestApi(connections: <ProviderConnectionDto>[]),
       );
 
       await _openCatalog(tester);
@@ -144,7 +144,7 @@ void main() {
     (
       tester,
     ) async {
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       await _pumpSettings(tester, api);
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-connection-openai')),
@@ -175,13 +175,13 @@ void main() {
   );
 
   testWidgets('catalog and prefix failures recover inline', (tester) async {
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       connections: <ProviderConnectionDto>[],
-      catalogRefreshError: const CoderClientException(
+      catalogRefreshError: const TinestClientException(
         'planned catalog outage',
         code: 'provider_unavailable',
       ),
-      providerConnectError: const CoderClientException(
+      providerConnectError: const TinestClientException(
         'prefix conflict',
         code: 'model_prefix_conflict',
       ),
@@ -225,7 +225,7 @@ void main() {
   testWidgets('existing connection reauthenticates without duplication', (
     tester,
   ) async {
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     await _pumpSettings(tester, api);
     await tester.tap(
       find.byKey(const ValueKey<String>('provider-connection-openai')),
@@ -267,7 +267,7 @@ void main() {
   ) async {
     final events = StreamController<ClientEvent>.broadcast(sync: true);
     addTearDown(events.close);
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       connections: <ProviderConnectionDto>[],
       eventStream: events.stream,
     );
@@ -305,7 +305,7 @@ void main() {
   testWidgets('custom provider creates, edits, disconnects, and deletes', (
     tester,
   ) async {
-    final api = FakeCoderApi(connections: <ProviderConnectionDto>[]);
+    final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
     await _pumpSettings(tester, api);
     await _openCatalog(tester);
     await tester.tap(find.byKey(const ValueKey('provider-add-custom')));
@@ -358,7 +358,7 @@ void main() {
     const statuses = ProviderConnectionStatus.values;
     await _pumpSettings(
       tester,
-      FakeCoderApi(
+      FakeTinestApi(
         connections: <ProviderConnectionDto>[
           for (var index = 0; index < statuses.length; index += 1)
             ProviderConnectionDto(
@@ -391,7 +391,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(390, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await _pumpSettings(tester, FakeCoderApi());
+      await _pumpSettings(tester, FakeTinestApi());
 
       expect(
         find.byKey(const ValueKey<String>('provider-connection-openai')),
@@ -409,7 +409,7 @@ void main() {
   testWidgets(
     'settings renders disconnected and bootstrap error states',
     (tester) async {
-      await _pumpSettings(tester, FakeCoderApi(), autoConnectEnabled: false);
+      await _pumpSettings(tester, FakeTinestApi(), autoConnectEnabled: false);
       expect(find.text('Daemon 연결이 필요합니다.'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -458,7 +458,7 @@ Future<void> _openCatalog(WidgetTester tester) async {
 
 Future<void> _pumpSettings(
   WidgetTester tester,
-  FakeCoderApi api, {
+  FakeTinestApi api, {
   bool autoConnectEnabled = true,
   ExternalUrlOpener? externalUrlOpener,
 }) async {
@@ -544,10 +544,10 @@ final class _FailingStore
   Future<void> clear() async {}
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(StateError('connection failed'));
+  }) => Future<TinestApi>.error(StateError('connection failed'));
 }

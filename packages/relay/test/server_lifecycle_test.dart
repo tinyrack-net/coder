@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:relay_protocol/relay_protocol.dart';
 import 'package:test/test.dart';
 
-import '../bin/coder_relay.dart' as relay_server;
+import '../bin/tinest_relay.dart' as relay_server;
 
 void main() {
   test(

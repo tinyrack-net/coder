@@ -9,7 +9,7 @@ void main() {
   final now = DateTime.utc(2026, 8, 3);
 
   AgentDefinitionDto definition({
-    String id = 'coder',
+    String id = 'tinest',
     AgentMode mode = AgentMode.primary,
     bool isArchived = false,
     bool isStale = false,
@@ -95,7 +95,7 @@ void main() {
 
       expect(
         selectableAgentDefinitions(definitions).map((item) => item.id),
-        <String>['coder', 'broken'],
+        <String>['tinest', 'broken'],
       );
       expect(
         usableConnections(<ProviderConnectionDto>[

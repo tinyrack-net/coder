@@ -438,18 +438,18 @@ class $WorktreesTable extends Worktrees
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isCoderOwnedMeta = const VerificationMeta(
-    'isCoderOwned',
+  static const VerificationMeta _isTinestOwnedMeta = const VerificationMeta(
+    'isTinestOwned',
   );
   @override
-  late final GeneratedColumn<bool> isCoderOwned = GeneratedColumn<bool>(
-    'is_coder_owned',
+  late final GeneratedColumn<bool> isTinestOwned = GeneratedColumn<bool>(
+    'is_tinest_owned',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_coder_owned" IN (0, 1))',
+      'CHECK ("is_tinest_owned" IN (0, 1))',
     ),
   );
   static const VerificationMeta _archivedAtMeta = const VerificationMeta(
@@ -483,7 +483,7 @@ class $WorktreesTable extends Worktrees
     branch,
     head,
     kind,
-    isCoderOwned,
+    isTinestOwned,
     archivedAt,
     createdAt,
   ];
@@ -551,16 +551,16 @@ class $WorktreesTable extends Worktrees
     } else if (isInserting) {
       context.missing(_kindMeta);
     }
-    if (data.containsKey('is_coder_owned')) {
+    if (data.containsKey('is_tinest_owned')) {
       context.handle(
-        _isCoderOwnedMeta,
-        isCoderOwned.isAcceptableOrUnknown(
-          data['is_coder_owned']!,
-          _isCoderOwnedMeta,
+        _isTinestOwnedMeta,
+        isTinestOwned.isAcceptableOrUnknown(
+          data['is_tinest_owned']!,
+          _isTinestOwnedMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_isCoderOwnedMeta);
+      context.missing(_isTinestOwnedMeta);
     }
     if (data.containsKey('archived_at')) {
       context.handle(
@@ -613,9 +613,9 @@ class $WorktreesTable extends Worktrees
         DriftSqlType.string,
         data['${effectivePrefix}kind'],
       )!,
-      isCoderOwned: attachedDatabase.typeMapping.read(
+      isTinestOwned: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}is_coder_owned'],
+        data['${effectivePrefix}is_tinest_owned'],
       )!,
       archivedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -656,8 +656,8 @@ class Worktree extends DataClass implements Insertable<Worktree> {
   /// Worktree ownership and lifecycle kind.
   final String kind;
 
-  /// Whether Coder created and may remove the checkout directory.
-  final bool isCoderOwned;
+  /// Whether Tinest created and may remove the checkout directory.
+  final bool isTinestOwned;
 
   /// Archive instant; null while visible in the workspace catalog.
   final DateTime? archivedAt;
@@ -672,7 +672,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
     this.branch,
     this.head,
     required this.kind,
-    required this.isCoderOwned,
+    required this.isTinestOwned,
     this.archivedAt,
     required this.createdAt,
   });
@@ -690,7 +690,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
       map['head'] = Variable<String>(head);
     }
     map['kind'] = Variable<String>(kind);
-    map['is_coder_owned'] = Variable<bool>(isCoderOwned);
+    map['is_tinest_owned'] = Variable<bool>(isTinestOwned);
     if (!nullToAbsent || archivedAt != null) {
       map['archived_at'] = Variable<DateTime>(archivedAt);
     }
@@ -709,7 +709,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
           : Value(branch),
       head: head == null && nullToAbsent ? const Value.absent() : Value(head),
       kind: Value(kind),
-      isCoderOwned: Value(isCoderOwned),
+      isTinestOwned: Value(isTinestOwned),
       archivedAt: archivedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(archivedAt),
@@ -730,7 +730,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
       branch: serializer.fromJson<String?>(json['branch']),
       head: serializer.fromJson<String?>(json['head']),
       kind: serializer.fromJson<String>(json['kind']),
-      isCoderOwned: serializer.fromJson<bool>(json['isCoderOwned']),
+      isTinestOwned: serializer.fromJson<bool>(json['isTinestOwned']),
       archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -746,7 +746,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
       'branch': serializer.toJson<String?>(branch),
       'head': serializer.toJson<String?>(head),
       'kind': serializer.toJson<String>(kind),
-      'isCoderOwned': serializer.toJson<bool>(isCoderOwned),
+      'isTinestOwned': serializer.toJson<bool>(isTinestOwned),
       'archivedAt': serializer.toJson<DateTime?>(archivedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -760,7 +760,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
     Value<String?> branch = const Value.absent(),
     Value<String?> head = const Value.absent(),
     String? kind,
-    bool? isCoderOwned,
+    bool? isTinestOwned,
     Value<DateTime?> archivedAt = const Value.absent(),
     DateTime? createdAt,
   }) => Worktree(
@@ -771,7 +771,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
     branch: branch.present ? branch.value : this.branch,
     head: head.present ? head.value : this.head,
     kind: kind ?? this.kind,
-    isCoderOwned: isCoderOwned ?? this.isCoderOwned,
+    isTinestOwned: isTinestOwned ?? this.isTinestOwned,
     archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -786,9 +786,9 @@ class Worktree extends DataClass implements Insertable<Worktree> {
       branch: data.branch.present ? data.branch.value : this.branch,
       head: data.head.present ? data.head.value : this.head,
       kind: data.kind.present ? data.kind.value : this.kind,
-      isCoderOwned: data.isCoderOwned.present
-          ? data.isCoderOwned.value
-          : this.isCoderOwned,
+      isTinestOwned: data.isTinestOwned.present
+          ? data.isTinestOwned.value
+          : this.isTinestOwned,
       archivedAt: data.archivedAt.present
           ? data.archivedAt.value
           : this.archivedAt,
@@ -806,7 +806,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
           ..write('branch: $branch, ')
           ..write('head: $head, ')
           ..write('kind: $kind, ')
-          ..write('isCoderOwned: $isCoderOwned, ')
+          ..write('isTinestOwned: $isTinestOwned, ')
           ..write('archivedAt: $archivedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -822,7 +822,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
     branch,
     head,
     kind,
-    isCoderOwned,
+    isTinestOwned,
     archivedAt,
     createdAt,
   );
@@ -837,7 +837,7 @@ class Worktree extends DataClass implements Insertable<Worktree> {
           other.branch == this.branch &&
           other.head == this.head &&
           other.kind == this.kind &&
-          other.isCoderOwned == this.isCoderOwned &&
+          other.isTinestOwned == this.isTinestOwned &&
           other.archivedAt == this.archivedAt &&
           other.createdAt == this.createdAt);
 }
@@ -850,7 +850,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
   final Value<String?> branch;
   final Value<String?> head;
   final Value<String> kind;
-  final Value<bool> isCoderOwned;
+  final Value<bool> isTinestOwned;
   final Value<DateTime?> archivedAt;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -862,7 +862,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
     this.branch = const Value.absent(),
     this.head = const Value.absent(),
     this.kind = const Value.absent(),
-    this.isCoderOwned = const Value.absent(),
+    this.isTinestOwned = const Value.absent(),
     this.archivedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -875,7 +875,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
     this.branch = const Value.absent(),
     this.head = const Value.absent(),
     required String kind,
-    required bool isCoderOwned,
+    required bool isTinestOwned,
     this.archivedAt = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
@@ -884,7 +884,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
        name = Value(name),
        path = Value(path),
        kind = Value(kind),
-       isCoderOwned = Value(isCoderOwned),
+       isTinestOwned = Value(isTinestOwned),
        createdAt = Value(createdAt);
   static Insertable<Worktree> custom({
     Expression<String>? id,
@@ -894,7 +894,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
     Expression<String>? branch,
     Expression<String>? head,
     Expression<String>? kind,
-    Expression<bool>? isCoderOwned,
+    Expression<bool>? isTinestOwned,
     Expression<DateTime>? archivedAt,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -907,7 +907,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
       if (branch != null) 'branch': branch,
       if (head != null) 'head': head,
       if (kind != null) 'kind': kind,
-      if (isCoderOwned != null) 'is_coder_owned': isCoderOwned,
+      if (isTinestOwned != null) 'is_tinest_owned': isTinestOwned,
       if (archivedAt != null) 'archived_at': archivedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -922,7 +922,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
     Value<String?>? branch,
     Value<String?>? head,
     Value<String>? kind,
-    Value<bool>? isCoderOwned,
+    Value<bool>? isTinestOwned,
     Value<DateTime?>? archivedAt,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -935,7 +935,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
       branch: branch ?? this.branch,
       head: head ?? this.head,
       kind: kind ?? this.kind,
-      isCoderOwned: isCoderOwned ?? this.isCoderOwned,
+      isTinestOwned: isTinestOwned ?? this.isTinestOwned,
       archivedAt: archivedAt ?? this.archivedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -966,8 +966,8 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
     if (kind.present) {
       map['kind'] = Variable<String>(kind.value);
     }
-    if (isCoderOwned.present) {
-      map['is_coder_owned'] = Variable<bool>(isCoderOwned.value);
+    if (isTinestOwned.present) {
+      map['is_tinest_owned'] = Variable<bool>(isTinestOwned.value);
     }
     if (archivedAt.present) {
       map['archived_at'] = Variable<DateTime>(archivedAt.value);
@@ -991,7 +991,7 @@ class WorktreesCompanion extends UpdateCompanion<Worktree> {
           ..write('branch: $branch, ')
           ..write('head: $head, ')
           ..write('kind: $kind, ')
-          ..write('isCoderOwned: $isCoderOwned, ')
+          ..write('isTinestOwned: $isTinestOwned, ')
           ..write('archivedAt: $archivedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -8548,9 +8548,9 @@ class ProviderModelsCompanion extends UpdateCompanion<ProviderModel> {
   }
 }
 
-abstract class _$CoderDatabase extends GeneratedDatabase {
-  _$CoderDatabase(QueryExecutor e) : super(e);
-  $CoderDatabaseManager get managers => $CoderDatabaseManager(this);
+abstract class _$TinestDatabase extends GeneratedDatabase {
+  _$TinestDatabase(QueryExecutor e) : super(e);
+  $TinestDatabaseManager get managers => $TinestDatabaseManager(this);
   late final $WorkspacesTable workspaces = $WorkspacesTable(this);
   late final $WorktreesTable worktrees = $WorktreesTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
@@ -8572,18 +8572,20 @@ abstract class _$CoderDatabase extends GeneratedDatabase {
   late final $ProviderConnectionsTable providerConnections =
       $ProviderConnectionsTable(this);
   late final $ProviderModelsTable providerModels = $ProviderModelsTable(this);
-  late final SettingsDao settingsDao = SettingsDao(this as CoderDatabase);
-  late final WorkspaceDao workspaceDao = WorkspaceDao(this as CoderDatabase);
-  late final WorktreeDao worktreeDao = WorktreeDao(this as CoderDatabase);
-  late final SessionDao sessionDao = SessionDao(this as CoderDatabase);
-  late final GoalDao goalDao = GoalDao(this as CoderDatabase);
+  late final SettingsDao settingsDao = SettingsDao(this as TinestDatabase);
+  late final WorkspaceDao workspaceDao = WorkspaceDao(this as TinestDatabase);
+  late final WorktreeDao worktreeDao = WorktreeDao(this as TinestDatabase);
+  late final SessionDao sessionDao = SessionDao(this as TinestDatabase);
+  late final GoalDao goalDao = GoalDao(this as TinestDatabase);
   late final AgentMailboxDao agentMailboxDao = AgentMailboxDao(
-    this as CoderDatabase,
+    this as TinestDatabase,
   );
-  late final AttachmentDao attachmentDao = AttachmentDao(this as CoderDatabase);
-  late final TimelineDao timelineDao = TimelineDao(this as CoderDatabase);
-  late final ProviderDao providerDao = ProviderDao(this as CoderDatabase);
-  late final RuntimeDao runtimeDao = RuntimeDao(this as CoderDatabase);
+  late final AttachmentDao attachmentDao = AttachmentDao(
+    this as TinestDatabase,
+  );
+  late final TimelineDao timelineDao = TimelineDao(this as TinestDatabase);
+  late final ProviderDao providerDao = ProviderDao(this as TinestDatabase);
+  late final RuntimeDao runtimeDao = RuntimeDao(this as TinestDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8637,11 +8639,11 @@ typedef $$WorkspacesTableUpdateCompanionBuilder =
     });
 
 final class $$WorkspacesTableReferences
-    extends BaseReferences<_$CoderDatabase, $WorkspacesTable, Workspace> {
+    extends BaseReferences<_$TinestDatabase, $WorkspacesTable, Workspace> {
   $$WorkspacesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$WorktreesTable, List<Worktree>>
-  _worktreesRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+  _worktreesRefsTable(_$TinestDatabase db) => MultiTypedResultKey.fromTable(
     db.worktrees,
     aliasName: 'workspaces__id__worktrees__workspace_id',
   );
@@ -8660,7 +8662,7 @@ final class $$WorkspacesTableReferences
 }
 
 class $$WorkspacesTableFilterComposer
-    extends Composer<_$CoderDatabase, $WorkspacesTable> {
+    extends Composer<_$TinestDatabase, $WorkspacesTable> {
   $$WorkspacesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -8720,7 +8722,7 @@ class $$WorkspacesTableFilterComposer
 }
 
 class $$WorkspacesTableOrderingComposer
-    extends Composer<_$CoderDatabase, $WorkspacesTable> {
+    extends Composer<_$TinestDatabase, $WorkspacesTable> {
   $$WorkspacesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -8755,7 +8757,7 @@ class $$WorkspacesTableOrderingComposer
 }
 
 class $$WorkspacesTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $WorkspacesTable> {
+    extends Composer<_$TinestDatabase, $WorkspacesTable> {
   $$WorkspacesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -8807,7 +8809,7 @@ class $$WorkspacesTableAnnotationComposer
 class $$WorkspacesTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $WorkspacesTable,
           Workspace,
           $$WorkspacesTableFilterComposer,
@@ -8819,7 +8821,7 @@ class $$WorkspacesTableTableManager
           Workspace,
           PrefetchHooks Function({bool worktreesRefs})
         > {
-  $$WorkspacesTableTableManager(_$CoderDatabase db, $WorkspacesTable table)
+  $$WorkspacesTableTableManager(_$TinestDatabase db, $WorkspacesTable table)
     : super(
         TableManagerState(
           db: db,
@@ -8908,7 +8910,7 @@ class $$WorkspacesTableTableManager
 
 typedef $$WorkspacesTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $WorkspacesTable,
       Workspace,
       $$WorkspacesTableFilterComposer,
@@ -8929,7 +8931,7 @@ typedef $$WorktreesTableCreateCompanionBuilder =
       Value<String?> branch,
       Value<String?> head,
       required String kind,
-      required bool isCoderOwned,
+      required bool isTinestOwned,
       Value<DateTime?> archivedAt,
       required DateTime createdAt,
       Value<int> rowid,
@@ -8943,17 +8945,17 @@ typedef $$WorktreesTableUpdateCompanionBuilder =
       Value<String?> branch,
       Value<String?> head,
       Value<String> kind,
-      Value<bool> isCoderOwned,
+      Value<bool> isTinestOwned,
       Value<DateTime?> archivedAt,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
 
 final class $$WorktreesTableReferences
-    extends BaseReferences<_$CoderDatabase, $WorktreesTable, Worktree> {
+    extends BaseReferences<_$TinestDatabase, $WorktreesTable, Worktree> {
   $$WorktreesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $WorkspacesTable _workspaceIdTable(_$CoderDatabase db) =>
+  static $WorkspacesTable _workspaceIdTable(_$TinestDatabase db) =>
       db.workspaces.createAlias('worktrees__workspace_id__workspaces__id');
 
   $$WorkspacesTableProcessedTableManager get workspaceId {
@@ -8971,7 +8973,7 @@ final class $$WorktreesTableReferences
   }
 
   static MultiTypedResultKey<$SessionsTable, List<Session>> _sessionsRefsTable(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.sessions,
     aliasName: 'worktrees__id__sessions__worktree_id',
@@ -8991,7 +8993,7 @@ final class $$WorktreesTableReferences
 }
 
 class $$WorktreesTableFilterComposer
-    extends Composer<_$CoderDatabase, $WorktreesTable> {
+    extends Composer<_$TinestDatabase, $WorktreesTable> {
   $$WorktreesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -9029,8 +9031,8 @@ class $$WorktreesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isCoderOwned => $composableBuilder(
-    column: $table.isCoderOwned,
+  ColumnFilters<bool> get isTinestOwned => $composableBuilder(
+    column: $table.isTinestOwned,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9094,7 +9096,7 @@ class $$WorktreesTableFilterComposer
 }
 
 class $$WorktreesTableOrderingComposer
-    extends Composer<_$CoderDatabase, $WorktreesTable> {
+    extends Composer<_$TinestDatabase, $WorktreesTable> {
   $$WorktreesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -9132,8 +9134,8 @@ class $$WorktreesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isCoderOwned => $composableBuilder(
-    column: $table.isCoderOwned,
+  ColumnOrderings<bool> get isTinestOwned => $composableBuilder(
+    column: $table.isTinestOwned,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9172,7 +9174,7 @@ class $$WorktreesTableOrderingComposer
 }
 
 class $$WorktreesTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $WorktreesTable> {
+    extends Composer<_$TinestDatabase, $WorktreesTable> {
   $$WorktreesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -9198,8 +9200,8 @@ class $$WorktreesTableAnnotationComposer
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
 
-  GeneratedColumn<bool> get isCoderOwned => $composableBuilder(
-    column: $table.isCoderOwned,
+  GeneratedColumn<bool> get isTinestOwned => $composableBuilder(
+    column: $table.isTinestOwned,
     builder: (column) => column,
   );
 
@@ -9263,7 +9265,7 @@ class $$WorktreesTableAnnotationComposer
 class $$WorktreesTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $WorktreesTable,
           Worktree,
           $$WorktreesTableFilterComposer,
@@ -9275,7 +9277,7 @@ class $$WorktreesTableTableManager
           Worktree,
           PrefetchHooks Function({bool workspaceId, bool sessionsRefs})
         > {
-  $$WorktreesTableTableManager(_$CoderDatabase db, $WorktreesTable table)
+  $$WorktreesTableTableManager(_$TinestDatabase db, $WorktreesTable table)
     : super(
         TableManagerState(
           db: db,
@@ -9295,7 +9297,7 @@ class $$WorktreesTableTableManager
                 Value<String?> branch = const Value.absent(),
                 Value<String?> head = const Value.absent(),
                 Value<String> kind = const Value.absent(),
-                Value<bool> isCoderOwned = const Value.absent(),
+                Value<bool> isTinestOwned = const Value.absent(),
                 Value<DateTime?> archivedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -9307,7 +9309,7 @@ class $$WorktreesTableTableManager
                 branch: branch,
                 head: head,
                 kind: kind,
-                isCoderOwned: isCoderOwned,
+                isTinestOwned: isTinestOwned,
                 archivedAt: archivedAt,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -9321,7 +9323,7 @@ class $$WorktreesTableTableManager
                 Value<String?> branch = const Value.absent(),
                 Value<String?> head = const Value.absent(),
                 required String kind,
-                required bool isCoderOwned,
+                required bool isTinestOwned,
                 Value<DateTime?> archivedAt = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
@@ -9333,7 +9335,7 @@ class $$WorktreesTableTableManager
                 branch: branch,
                 head: head,
                 kind: kind,
-                isCoderOwned: isCoderOwned,
+                isTinestOwned: isTinestOwned,
                 archivedAt: archivedAt,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -9413,7 +9415,7 @@ class $$WorktreesTableTableManager
 
 typedef $$WorktreesTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $WorktreesTable,
       Worktree,
       $$WorktreesTableFilterComposer,
@@ -9483,10 +9485,10 @@ typedef $$SessionsTableUpdateCompanionBuilder =
     });
 
 final class $$SessionsTableReferences
-    extends BaseReferences<_$CoderDatabase, $SessionsTable, Session> {
+    extends BaseReferences<_$TinestDatabase, $SessionsTable, Session> {
   $$SessionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $WorktreesTable _worktreeIdTable(_$CoderDatabase db) =>
+  static $WorktreesTable _worktreeIdTable(_$TinestDatabase db) =>
       db.worktrees.createAlias('sessions__worktree_id__worktrees__id');
 
   $$WorktreesTableProcessedTableManager get worktreeId {
@@ -9503,7 +9505,7 @@ final class $$SessionsTableReferences
     );
   }
 
-  static $SessionsTable _parentSessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _parentSessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('sessions__parent_session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager? get parentSessionId {
@@ -9520,7 +9522,7 @@ final class $$SessionsTableReferences
     );
   }
 
-  static $SessionsTable _rootSessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _rootSessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('sessions__root_session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager? get rootSessionId {
@@ -9538,7 +9540,7 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$TurnsTable, List<Turn>> _turnsRefsTable(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.turns,
     aliasName: 'sessions__id__turns__session_id',
@@ -9557,7 +9559,7 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$GoalsTable, List<Goal>> _goalsRefsTable(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.goals,
     aliasName: 'sessions__id__goals__session_id',
@@ -9579,7 +9581,7 @@ final class $$SessionsTableReferences
     $AgentMailboxMessagesTable,
     List<AgentMailboxMessage>
   >
-  _agentMailboxMessagesRefsTable(_$CoderDatabase db) =>
+  _agentMailboxMessagesRefsTable(_$TinestDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.agentMailboxMessages,
         aliasName: 'sessions__id__agent_mailbox_messages__session_id',
@@ -9601,10 +9603,11 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$TimelineEventsTable, List<TimelineEvent>>
-  _timelineEventsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
-    db.timelineEvents,
-    aliasName: 'sessions__id__timeline_events__session_id',
-  );
+  _timelineEventsRefsTable(_$TinestDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.timelineEvents,
+        aliasName: 'sessions__id__timeline_events__session_id',
+      );
 
   $$TimelineEventsTableProcessedTableManager get timelineEventsRefs {
     final manager = $$TimelineEventsTableTableManager(
@@ -9619,7 +9622,7 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$ApprovalRequestsTable, List<ApprovalRequest>>
-  _approvalRequestsRefsTable(_$CoderDatabase db) =>
+  _approvalRequestsRefsTable(_$TinestDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.approvalRequests,
         aliasName: 'sessions__id__approval_requests__session_id',
@@ -9640,7 +9643,7 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$UserQuestionsTable, List<UserQuestionRow>>
-  _userQuestionsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+  _userQuestionsRefsTable(_$TinestDatabase db) => MultiTypedResultKey.fromTable(
     db.userQuestions,
     aliasName: 'sessions__id__user_questions__session_id',
   );
@@ -9658,10 +9661,11 @@ final class $$SessionsTableReferences
   }
 
   static MultiTypedResultKey<$ProviderStatesTable, List<ProviderState>>
-  _providerStatesRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
-    db.providerStates,
-    aliasName: 'sessions__id__provider_states__session_id',
-  );
+  _providerStatesRefsTable(_$TinestDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.providerStates,
+        aliasName: 'sessions__id__provider_states__session_id',
+      );
 
   $$ProviderStatesTableProcessedTableManager get providerStatesRefs {
     final manager = $$ProviderStatesTableTableManager(
@@ -9677,7 +9681,7 @@ final class $$SessionsTableReferences
 }
 
 class $$SessionsTableFilterComposer
-    extends Composer<_$CoderDatabase, $SessionsTable> {
+    extends Composer<_$TinestDatabase, $SessionsTable> {
   $$SessionsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -10036,7 +10040,7 @@ class $$SessionsTableFilterComposer
 }
 
 class $$SessionsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $SessionsTable> {
+    extends Composer<_$TinestDatabase, $SessionsTable> {
   $$SessionsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -10220,7 +10224,7 @@ class $$SessionsTableOrderingComposer
 }
 
 class $$SessionsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $SessionsTable> {
+    extends Composer<_$TinestDatabase, $SessionsTable> {
   $$SessionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -10558,7 +10562,7 @@ class $$SessionsTableAnnotationComposer
 class $$SessionsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $SessionsTable,
           Session,
           $$SessionsTableFilterComposer,
@@ -10581,7 +10585,7 @@ class $$SessionsTableTableManager
             bool providerStatesRefs,
           })
         > {
-  $$SessionsTableTableManager(_$CoderDatabase db, $SessionsTable table)
+  $$SessionsTableTableManager(_$TinestDatabase db, $SessionsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -10949,7 +10953,7 @@ class $$SessionsTableTableManager
 
 typedef $$SessionsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $SessionsTable,
       Session,
       $$SessionsTableFilterComposer,
@@ -10996,10 +11000,10 @@ typedef $$TurnsTableUpdateCompanionBuilder =
     });
 
 final class $$TurnsTableReferences
-    extends BaseReferences<_$CoderDatabase, $TurnsTable, Turn> {
+    extends BaseReferences<_$TinestDatabase, $TurnsTable, Turn> {
   $$TurnsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('turns__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -11017,7 +11021,7 @@ final class $$TurnsTableReferences
   }
 
   static MultiTypedResultKey<$TurnAttachmentsTable, List<TurnAttachment>>
-  _turnAttachmentsRefsTable(_$CoderDatabase db) =>
+  _turnAttachmentsRefsTable(_$TinestDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.turnAttachments,
         aliasName: 'turns__id__turn_attachments__turn_id',
@@ -11038,7 +11042,7 @@ final class $$TurnsTableReferences
   }
 
   static MultiTypedResultKey<$ApprovalRequestsTable, List<ApprovalRequest>>
-  _approvalRequestsRefsTable(_$CoderDatabase db) =>
+  _approvalRequestsRefsTable(_$TinestDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.approvalRequests,
         aliasName: 'turns__id__approval_requests__turn_id',
@@ -11059,7 +11063,7 @@ final class $$TurnsTableReferences
   }
 
   static MultiTypedResultKey<$UserQuestionsTable, List<UserQuestionRow>>
-  _userQuestionsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
+  _userQuestionsRefsTable(_$TinestDatabase db) => MultiTypedResultKey.fromTable(
     db.userQuestions,
     aliasName: 'turns__id__user_questions__turn_id',
   );
@@ -11078,7 +11082,7 @@ final class $$TurnsTableReferences
 }
 
 class $$TurnsTableFilterComposer
-    extends Composer<_$CoderDatabase, $TurnsTable> {
+    extends Composer<_$TinestDatabase, $TurnsTable> {
   $$TurnsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -11216,7 +11220,7 @@ class $$TurnsTableFilterComposer
 }
 
 class $$TurnsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $TurnsTable> {
+    extends Composer<_$TinestDatabase, $TurnsTable> {
   $$TurnsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -11279,7 +11283,7 @@ class $$TurnsTableOrderingComposer
 }
 
 class $$TurnsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $TurnsTable> {
+    extends Composer<_$TinestDatabase, $TurnsTable> {
   $$TurnsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -11407,7 +11411,7 @@ class $$TurnsTableAnnotationComposer
 class $$TurnsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $TurnsTable,
           Turn,
           $$TurnsTableFilterComposer,
@@ -11424,7 +11428,7 @@ class $$TurnsTableTableManager
             bool userQuestionsRefs,
           })
         > {
-  $$TurnsTableTableManager(_$CoderDatabase db, $TurnsTable table)
+  $$TurnsTableTableManager(_$TinestDatabase db, $TurnsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -11602,7 +11606,7 @@ class $$TurnsTableTableManager
 
 typedef $$TurnsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $TurnsTable,
       Turn,
       $$TurnsTableFilterComposer,
@@ -11647,10 +11651,10 @@ typedef $$GoalsTableUpdateCompanionBuilder =
     });
 
 final class $$GoalsTableReferences
-    extends BaseReferences<_$CoderDatabase, $GoalsTable, Goal> {
+    extends BaseReferences<_$TinestDatabase, $GoalsTable, Goal> {
   $$GoalsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('goals__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -11669,7 +11673,7 @@ final class $$GoalsTableReferences
 }
 
 class $$GoalsTableFilterComposer
-    extends Composer<_$CoderDatabase, $GoalsTable> {
+    extends Composer<_$TinestDatabase, $GoalsTable> {
   $$GoalsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -11742,7 +11746,7 @@ class $$GoalsTableFilterComposer
 }
 
 class $$GoalsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $GoalsTable> {
+    extends Composer<_$TinestDatabase, $GoalsTable> {
   $$GoalsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -11815,7 +11819,7 @@ class $$GoalsTableOrderingComposer
 }
 
 class $$GoalsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $GoalsTable> {
+    extends Composer<_$TinestDatabase, $GoalsTable> {
   $$GoalsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -11880,7 +11884,7 @@ class $$GoalsTableAnnotationComposer
 class $$GoalsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $GoalsTable,
           Goal,
           $$GoalsTableFilterComposer,
@@ -11892,7 +11896,7 @@ class $$GoalsTableTableManager
           Goal,
           PrefetchHooks Function({bool sessionId})
         > {
-  $$GoalsTableTableManager(_$CoderDatabase db, $GoalsTable table)
+  $$GoalsTableTableManager(_$TinestDatabase db, $GoalsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -12004,7 +12008,7 @@ class $$GoalsTableTableManager
 
 typedef $$GoalsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $GoalsTable,
       Goal,
       $$GoalsTableFilterComposer,
@@ -12048,7 +12052,7 @@ typedef $$AgentMailboxMessagesTableUpdateCompanionBuilder =
 final class $$AgentMailboxMessagesTableReferences
     extends
         BaseReferences<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $AgentMailboxMessagesTable,
           AgentMailboxMessage
         > {
@@ -12058,7 +12062,7 @@ final class $$AgentMailboxMessagesTableReferences
     super.$_typedResult,
   );
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) => db.sessions
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) => db.sessions
       .createAlias('agent_mailbox_messages__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -12077,7 +12081,7 @@ final class $$AgentMailboxMessagesTableReferences
 }
 
 class $$AgentMailboxMessagesTableFilterComposer
-    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+    extends Composer<_$TinestDatabase, $AgentMailboxMessagesTable> {
   $$AgentMailboxMessagesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -12155,7 +12159,7 @@ class $$AgentMailboxMessagesTableFilterComposer
 }
 
 class $$AgentMailboxMessagesTableOrderingComposer
-    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+    extends Composer<_$TinestDatabase, $AgentMailboxMessagesTable> {
   $$AgentMailboxMessagesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -12233,7 +12237,7 @@ class $$AgentMailboxMessagesTableOrderingComposer
 }
 
 class $$AgentMailboxMessagesTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $AgentMailboxMessagesTable> {
+    extends Composer<_$TinestDatabase, $AgentMailboxMessagesTable> {
   $$AgentMailboxMessagesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -12307,7 +12311,7 @@ class $$AgentMailboxMessagesTableAnnotationComposer
 class $$AgentMailboxMessagesTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $AgentMailboxMessagesTable,
           AgentMailboxMessage,
           $$AgentMailboxMessagesTableFilterComposer,
@@ -12320,7 +12324,7 @@ class $$AgentMailboxMessagesTableTableManager
           PrefetchHooks Function({bool sessionId})
         > {
   $$AgentMailboxMessagesTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $AgentMailboxMessagesTable table,
   ) : super(
         TableManagerState(
@@ -12447,7 +12451,7 @@ class $$AgentMailboxMessagesTableTableManager
 
 typedef $$AgentMailboxMessagesTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $AgentMailboxMessagesTable,
       AgentMailboxMessage,
       $$AgentMailboxMessagesTableFilterComposer,
@@ -12483,11 +12487,11 @@ typedef $$AttachmentsTableUpdateCompanionBuilder =
     });
 
 final class $$AttachmentsTableReferences
-    extends BaseReferences<_$CoderDatabase, $AttachmentsTable, Attachment> {
+    extends BaseReferences<_$TinestDatabase, $AttachmentsTable, Attachment> {
   $$AttachmentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$TurnAttachmentsTable, List<TurnAttachment>>
-  _turnAttachmentsRefsTable(_$CoderDatabase db) =>
+  _turnAttachmentsRefsTable(_$TinestDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.turnAttachments,
         aliasName: 'attachments__id__turn_attachments__attachment_id',
@@ -12509,7 +12513,7 @@ final class $$AttachmentsTableReferences
 }
 
 class $$AttachmentsTableFilterComposer
-    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+    extends Composer<_$TinestDatabase, $AttachmentsTable> {
   $$AttachmentsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -12579,7 +12583,7 @@ class $$AttachmentsTableFilterComposer
 }
 
 class $$AttachmentsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+    extends Composer<_$TinestDatabase, $AttachmentsTable> {
   $$AttachmentsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -12624,7 +12628,7 @@ class $$AttachmentsTableOrderingComposer
 }
 
 class $$AttachmentsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $AttachmentsTable> {
+    extends Composer<_$TinestDatabase, $AttachmentsTable> {
   $$AttachmentsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -12682,7 +12686,7 @@ class $$AttachmentsTableAnnotationComposer
 class $$AttachmentsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $AttachmentsTable,
           Attachment,
           $$AttachmentsTableFilterComposer,
@@ -12694,7 +12698,7 @@ class $$AttachmentsTableTableManager
           Attachment,
           PrefetchHooks Function({bool turnAttachmentsRefs})
         > {
-  $$AttachmentsTableTableManager(_$CoderDatabase db, $AttachmentsTable table)
+  $$AttachmentsTableTableManager(_$TinestDatabase db, $AttachmentsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -12793,7 +12797,7 @@ class $$AttachmentsTableTableManager
 
 typedef $$AttachmentsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $AttachmentsTable,
       Attachment,
       $$AttachmentsTableFilterComposer,
@@ -12824,14 +12828,18 @@ typedef $$TurnAttachmentsTableUpdateCompanionBuilder =
 
 final class $$TurnAttachmentsTableReferences
     extends
-        BaseReferences<_$CoderDatabase, $TurnAttachmentsTable, TurnAttachment> {
+        BaseReferences<
+          _$TinestDatabase,
+          $TurnAttachmentsTable,
+          TurnAttachment
+        > {
   $$TurnAttachmentsTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static $TurnsTable _turnIdTable(_$CoderDatabase db) =>
+  static $TurnsTable _turnIdTable(_$TinestDatabase db) =>
       db.turns.createAlias('turn_attachments__turn_id__turns__id');
 
   $$TurnsTableProcessedTableManager get turnId {
@@ -12848,7 +12856,7 @@ final class $$TurnAttachmentsTableReferences
     );
   }
 
-  static $AttachmentsTable _attachmentIdTable(_$CoderDatabase db) => db
+  static $AttachmentsTable _attachmentIdTable(_$TinestDatabase db) => db
       .attachments
       .createAlias('turn_attachments__attachment_id__attachments__id');
 
@@ -12868,7 +12876,7 @@ final class $$TurnAttachmentsTableReferences
 }
 
 class $$TurnAttachmentsTableFilterComposer
-    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+    extends Composer<_$TinestDatabase, $TurnAttachmentsTable> {
   $$TurnAttachmentsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -12934,7 +12942,7 @@ class $$TurnAttachmentsTableFilterComposer
 }
 
 class $$TurnAttachmentsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+    extends Composer<_$TinestDatabase, $TurnAttachmentsTable> {
   $$TurnAttachmentsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -13000,7 +13008,7 @@ class $$TurnAttachmentsTableOrderingComposer
 }
 
 class $$TurnAttachmentsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $TurnAttachmentsTable> {
+    extends Composer<_$TinestDatabase, $TurnAttachmentsTable> {
   $$TurnAttachmentsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -13064,7 +13072,7 @@ class $$TurnAttachmentsTableAnnotationComposer
 class $$TurnAttachmentsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $TurnAttachmentsTable,
           TurnAttachment,
           $$TurnAttachmentsTableFilterComposer,
@@ -13077,7 +13085,7 @@ class $$TurnAttachmentsTableTableManager
           PrefetchHooks Function({bool turnId, bool attachmentId})
         > {
   $$TurnAttachmentsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $TurnAttachmentsTable table,
   ) : super(
         TableManagerState(
@@ -13189,7 +13197,7 @@ class $$TurnAttachmentsTableTableManager
 
 typedef $$TurnAttachmentsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $TurnAttachmentsTable,
       TurnAttachment,
       $$TurnAttachmentsTableFilterComposer,
@@ -13224,14 +13232,14 @@ typedef $$TimelineEventsTableUpdateCompanionBuilder =
 
 final class $$TimelineEventsTableReferences
     extends
-        BaseReferences<_$CoderDatabase, $TimelineEventsTable, TimelineEvent> {
+        BaseReferences<_$TinestDatabase, $TimelineEventsTable, TimelineEvent> {
   $$TimelineEventsTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('timeline_events__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -13250,7 +13258,7 @@ final class $$TimelineEventsTableReferences
 }
 
 class $$TimelineEventsTableFilterComposer
-    extends Composer<_$CoderDatabase, $TimelineEventsTable> {
+    extends Composer<_$TinestDatabase, $TimelineEventsTable> {
   $$TimelineEventsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -13308,7 +13316,7 @@ class $$TimelineEventsTableFilterComposer
 }
 
 class $$TimelineEventsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $TimelineEventsTable> {
+    extends Composer<_$TinestDatabase, $TimelineEventsTable> {
   $$TimelineEventsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -13366,7 +13374,7 @@ class $$TimelineEventsTableOrderingComposer
 }
 
 class $$TimelineEventsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $TimelineEventsTable> {
+    extends Composer<_$TinestDatabase, $TimelineEventsTable> {
   $$TimelineEventsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -13416,7 +13424,7 @@ class $$TimelineEventsTableAnnotationComposer
 class $$TimelineEventsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $TimelineEventsTable,
           TimelineEvent,
           $$TimelineEventsTableFilterComposer,
@@ -13429,7 +13437,7 @@ class $$TimelineEventsTableTableManager
           PrefetchHooks Function({bool sessionId})
         > {
   $$TimelineEventsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $TimelineEventsTable table,
   ) : super(
         TableManagerState(
@@ -13533,7 +13541,7 @@ class $$TimelineEventsTableTableManager
 
 typedef $$TimelineEventsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $TimelineEventsTable,
       TimelineEvent,
       $$TimelineEventsTableFilterComposer,
@@ -13577,7 +13585,7 @@ typedef $$ApprovalRequestsTableUpdateCompanionBuilder =
 final class $$ApprovalRequestsTableReferences
     extends
         BaseReferences<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ApprovalRequestsTable,
           ApprovalRequest
         > {
@@ -13587,7 +13595,7 @@ final class $$ApprovalRequestsTableReferences
     super.$_typedResult,
   );
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('approval_requests__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -13604,7 +13612,7 @@ final class $$ApprovalRequestsTableReferences
     );
   }
 
-  static $TurnsTable _turnIdTable(_$CoderDatabase db) =>
+  static $TurnsTable _turnIdTable(_$TinestDatabase db) =>
       db.turns.createAlias('approval_requests__turn_id__turns__id');
 
   $$TurnsTableProcessedTableManager get turnId {
@@ -13623,7 +13631,7 @@ final class $$ApprovalRequestsTableReferences
 }
 
 class $$ApprovalRequestsTableFilterComposer
-    extends Composer<_$CoderDatabase, $ApprovalRequestsTable> {
+    extends Composer<_$TinestDatabase, $ApprovalRequestsTable> {
   $$ApprovalRequestsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -13719,7 +13727,7 @@ class $$ApprovalRequestsTableFilterComposer
 }
 
 class $$ApprovalRequestsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $ApprovalRequestsTable> {
+    extends Composer<_$TinestDatabase, $ApprovalRequestsTable> {
   $$ApprovalRequestsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -13815,7 +13823,7 @@ class $$ApprovalRequestsTableOrderingComposer
 }
 
 class $$ApprovalRequestsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $ApprovalRequestsTable> {
+    extends Composer<_$TinestDatabase, $ApprovalRequestsTable> {
   $$ApprovalRequestsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -13901,7 +13909,7 @@ class $$ApprovalRequestsTableAnnotationComposer
 class $$ApprovalRequestsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ApprovalRequestsTable,
           ApprovalRequest,
           $$ApprovalRequestsTableFilterComposer,
@@ -13914,7 +13922,7 @@ class $$ApprovalRequestsTableTableManager
           PrefetchHooks Function({bool sessionId, bool turnId})
         > {
   $$ApprovalRequestsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $ApprovalRequestsTable table,
   ) : super(
         TableManagerState(
@@ -14050,7 +14058,7 @@ class $$ApprovalRequestsTableTableManager
 
 typedef $$ApprovalRequestsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $ApprovalRequestsTable,
       ApprovalRequest,
       $$ApprovalRequestsTableFilterComposer,
@@ -14089,14 +14097,14 @@ typedef $$UserQuestionsTableUpdateCompanionBuilder =
 
 final class $$UserQuestionsTableReferences
     extends
-        BaseReferences<_$CoderDatabase, $UserQuestionsTable, UserQuestionRow> {
+        BaseReferences<_$TinestDatabase, $UserQuestionsTable, UserQuestionRow> {
   $$UserQuestionsTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('user_questions__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -14113,7 +14121,7 @@ final class $$UserQuestionsTableReferences
     );
   }
 
-  static $TurnsTable _turnIdTable(_$CoderDatabase db) =>
+  static $TurnsTable _turnIdTable(_$TinestDatabase db) =>
       db.turns.createAlias('user_questions__turn_id__turns__id');
 
   $$TurnsTableProcessedTableManager get turnId {
@@ -14132,7 +14140,7 @@ final class $$UserQuestionsTableReferences
 }
 
 class $$UserQuestionsTableFilterComposer
-    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+    extends Composer<_$TinestDatabase, $UserQuestionsTable> {
   $$UserQuestionsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -14218,7 +14226,7 @@ class $$UserQuestionsTableFilterComposer
 }
 
 class $$UserQuestionsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+    extends Composer<_$TinestDatabase, $UserQuestionsTable> {
   $$UserQuestionsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -14304,7 +14312,7 @@ class $$UserQuestionsTableOrderingComposer
 }
 
 class $$UserQuestionsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $UserQuestionsTable> {
+    extends Composer<_$TinestDatabase, $UserQuestionsTable> {
   $$UserQuestionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -14386,7 +14394,7 @@ class $$UserQuestionsTableAnnotationComposer
 class $$UserQuestionsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $UserQuestionsTable,
           UserQuestionRow,
           $$UserQuestionsTableFilterComposer,
@@ -14399,7 +14407,7 @@ class $$UserQuestionsTableTableManager
           PrefetchHooks Function({bool sessionId, bool turnId})
         > {
   $$UserQuestionsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $UserQuestionsTable table,
   ) : super(
         TableManagerState(
@@ -14523,7 +14531,7 @@ class $$UserQuestionsTableTableManager
 
 typedef $$UserQuestionsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $UserQuestionsTable,
       UserQuestionRow,
       $$UserQuestionsTableFilterComposer,
@@ -14556,14 +14564,14 @@ typedef $$ProviderStatesTableUpdateCompanionBuilder =
 
 final class $$ProviderStatesTableReferences
     extends
-        BaseReferences<_$CoderDatabase, $ProviderStatesTable, ProviderState> {
+        BaseReferences<_$TinestDatabase, $ProviderStatesTable, ProviderState> {
   $$ProviderStatesTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static $SessionsTable _sessionIdTable(_$CoderDatabase db) =>
+  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
       db.sessions.createAlias('provider_states__session_id__sessions__id');
 
   $$SessionsTableProcessedTableManager get sessionId {
@@ -14582,7 +14590,7 @@ final class $$ProviderStatesTableReferences
 }
 
 class $$ProviderStatesTableFilterComposer
-    extends Composer<_$CoderDatabase, $ProviderStatesTable> {
+    extends Composer<_$TinestDatabase, $ProviderStatesTable> {
   $$ProviderStatesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -14635,7 +14643,7 @@ class $$ProviderStatesTableFilterComposer
 }
 
 class $$ProviderStatesTableOrderingComposer
-    extends Composer<_$CoderDatabase, $ProviderStatesTable> {
+    extends Composer<_$TinestDatabase, $ProviderStatesTable> {
   $$ProviderStatesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -14688,7 +14696,7 @@ class $$ProviderStatesTableOrderingComposer
 }
 
 class $$ProviderStatesTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $ProviderStatesTable> {
+    extends Composer<_$TinestDatabase, $ProviderStatesTable> {
   $$ProviderStatesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -14737,7 +14745,7 @@ class $$ProviderStatesTableAnnotationComposer
 class $$ProviderStatesTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ProviderStatesTable,
           ProviderState,
           $$ProviderStatesTableFilterComposer,
@@ -14750,7 +14758,7 @@ class $$ProviderStatesTableTableManager
           PrefetchHooks Function({bool sessionId})
         > {
   $$ProviderStatesTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $ProviderStatesTable table,
   ) : super(
         TableManagerState(
@@ -14850,7 +14858,7 @@ class $$ProviderStatesTableTableManager
 
 typedef $$ProviderStatesTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $ProviderStatesTable,
       ProviderState,
       $$ProviderStatesTableFilterComposer,
@@ -14876,7 +14884,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
     });
 
 class $$SettingsTableFilterComposer
-    extends Composer<_$CoderDatabase, $SettingsTable> {
+    extends Composer<_$TinestDatabase, $SettingsTable> {
   $$SettingsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -14896,7 +14904,7 @@ class $$SettingsTableFilterComposer
 }
 
 class $$SettingsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $SettingsTable> {
+    extends Composer<_$TinestDatabase, $SettingsTable> {
   $$SettingsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -14916,7 +14924,7 @@ class $$SettingsTableOrderingComposer
 }
 
 class $$SettingsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $SettingsTable> {
+    extends Composer<_$TinestDatabase, $SettingsTable> {
   $$SettingsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -14934,7 +14942,7 @@ class $$SettingsTableAnnotationComposer
 class $$SettingsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $SettingsTable,
           Setting,
           $$SettingsTableFilterComposer,
@@ -14942,11 +14950,11 @@ class $$SettingsTableTableManager
           $$SettingsTableAnnotationComposer,
           $$SettingsTableCreateCompanionBuilder,
           $$SettingsTableUpdateCompanionBuilder,
-          (Setting, BaseReferences<_$CoderDatabase, $SettingsTable, Setting>),
+          (Setting, BaseReferences<_$TinestDatabase, $SettingsTable, Setting>),
           Setting,
           PrefetchHooks Function()
         > {
-  $$SettingsTableTableManager(_$CoderDatabase db, $SettingsTable table)
+  $$SettingsTableTableManager(_$TinestDatabase db, $SettingsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -14983,7 +14991,7 @@ class $$SettingsTableTableManager
 
 typedef $$SettingsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $SettingsTable,
       Setting,
       $$SettingsTableFilterComposer,
@@ -14991,7 +14999,7 @@ typedef $$SettingsTableProcessedTableManager =
       $$SettingsTableAnnotationComposer,
       $$SettingsTableCreateCompanionBuilder,
       $$SettingsTableUpdateCompanionBuilder,
-      (Setting, BaseReferences<_$CoderDatabase, $SettingsTable, Setting>),
+      (Setting, BaseReferences<_$TinestDatabase, $SettingsTable, Setting>),
       Setting,
       PrefetchHooks Function()
     >;
@@ -15029,7 +15037,7 @@ typedef $$ProviderConnectionsTableUpdateCompanionBuilder =
 final class $$ProviderConnectionsTableReferences
     extends
         BaseReferences<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ProviderConnectionsTable,
           ProviderConnection
         > {
@@ -15040,10 +15048,11 @@ final class $$ProviderConnectionsTableReferences
   );
 
   static MultiTypedResultKey<$ProviderModelsTable, List<ProviderModel>>
-  _providerModelsRefsTable(_$CoderDatabase db) => MultiTypedResultKey.fromTable(
-    db.providerModels,
-    aliasName: 'provider_connections__id__provider_models__connection_id',
-  );
+  _providerModelsRefsTable(_$TinestDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.providerModels,
+        aliasName: 'provider_connections__id__provider_models__connection_id',
+      );
 
   $$ProviderModelsTableProcessedTableManager get providerModelsRefs {
     final manager = $$ProviderModelsTableTableManager(
@@ -15059,7 +15068,7 @@ final class $$ProviderConnectionsTableReferences
 }
 
 class $$ProviderConnectionsTableFilterComposer
-    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+    extends Composer<_$TinestDatabase, $ProviderConnectionsTable> {
   $$ProviderConnectionsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -15149,7 +15158,7 @@ class $$ProviderConnectionsTableFilterComposer
 }
 
 class $$ProviderConnectionsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+    extends Composer<_$TinestDatabase, $ProviderConnectionsTable> {
   $$ProviderConnectionsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -15214,7 +15223,7 @@ class $$ProviderConnectionsTableOrderingComposer
 }
 
 class $$ProviderConnectionsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $ProviderConnectionsTable> {
+    extends Composer<_$TinestDatabase, $ProviderConnectionsTable> {
   $$ProviderConnectionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -15294,7 +15303,7 @@ class $$ProviderConnectionsTableAnnotationComposer
 class $$ProviderConnectionsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ProviderConnectionsTable,
           ProviderConnection,
           $$ProviderConnectionsTableFilterComposer,
@@ -15307,7 +15316,7 @@ class $$ProviderConnectionsTableTableManager
           PrefetchHooks Function({bool providerModelsRefs})
         > {
   $$ProviderConnectionsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $ProviderConnectionsTable table,
   ) : super(
         TableManagerState(
@@ -15429,7 +15438,7 @@ class $$ProviderConnectionsTableTableManager
 
 typedef $$ProviderConnectionsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $ProviderConnectionsTable,
       ProviderConnection,
       $$ProviderConnectionsTableFilterComposer,
@@ -15474,14 +15483,14 @@ typedef $$ProviderModelsTableUpdateCompanionBuilder =
 
 final class $$ProviderModelsTableReferences
     extends
-        BaseReferences<_$CoderDatabase, $ProviderModelsTable, ProviderModel> {
+        BaseReferences<_$TinestDatabase, $ProviderModelsTable, ProviderModel> {
   $$ProviderModelsTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static $ProviderConnectionsTable _connectionIdTable(_$CoderDatabase db) => db
+  static $ProviderConnectionsTable _connectionIdTable(_$TinestDatabase db) => db
       .providerConnections
       .createAlias('provider_models__connection_id__provider_connections__id');
 
@@ -15501,7 +15510,7 @@ final class $$ProviderModelsTableReferences
 }
 
 class $$ProviderModelsTableFilterComposer
-    extends Composer<_$CoderDatabase, $ProviderModelsTable> {
+    extends Composer<_$TinestDatabase, $ProviderModelsTable> {
   $$ProviderModelsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -15584,7 +15593,7 @@ class $$ProviderModelsTableFilterComposer
 }
 
 class $$ProviderModelsTableOrderingComposer
-    extends Composer<_$CoderDatabase, $ProviderModelsTable> {
+    extends Composer<_$TinestDatabase, $ProviderModelsTable> {
   $$ProviderModelsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -15668,7 +15677,7 @@ class $$ProviderModelsTableOrderingComposer
 }
 
 class $$ProviderModelsTableAnnotationComposer
-    extends Composer<_$CoderDatabase, $ProviderModelsTable> {
+    extends Composer<_$TinestDatabase, $ProviderModelsTable> {
   $$ProviderModelsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -15748,7 +15757,7 @@ class $$ProviderModelsTableAnnotationComposer
 class $$ProviderModelsTableTableManager
     extends
         RootTableManager<
-          _$CoderDatabase,
+          _$TinestDatabase,
           $ProviderModelsTable,
           ProviderModel,
           $$ProviderModelsTableFilterComposer,
@@ -15761,7 +15770,7 @@ class $$ProviderModelsTableTableManager
           PrefetchHooks Function({bool connectionId})
         > {
   $$ProviderModelsTableTableManager(
-    _$CoderDatabase db,
+    _$TinestDatabase db,
     $ProviderModelsTable table,
   ) : super(
         TableManagerState(
@@ -15885,7 +15894,7 @@ class $$ProviderModelsTableTableManager
 
 typedef $$ProviderModelsTableProcessedTableManager =
     ProcessedTableManager<
-      _$CoderDatabase,
+      _$TinestDatabase,
       $ProviderModelsTable,
       ProviderModel,
       $$ProviderModelsTableFilterComposer,
@@ -15898,9 +15907,9 @@ typedef $$ProviderModelsTableProcessedTableManager =
       PrefetchHooks Function({bool connectionId})
     >;
 
-class $CoderDatabaseManager {
-  final _$CoderDatabase _db;
-  $CoderDatabaseManager(this._db);
+class $TinestDatabaseManager {
+  final _$TinestDatabase _db;
+  $TinestDatabaseManager(this._db);
   $$WorkspacesTableTableManager get workspaces =>
       $$WorkspacesTableTableManager(_db, _db.workspaces);
   $$WorktreesTableTableManager get worktrees =>

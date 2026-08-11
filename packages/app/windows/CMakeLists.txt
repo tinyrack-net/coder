@@ -1,6 +1,6 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(coder LANGUAGES CXX)
+project(tinest LANGUAGES CXX)
 
 # Flutter's Windows runner uses the dynamic MSVC runtime. Discover the
 # redistributable DLLs from the active Visual Studio toolchain, but install
@@ -11,8 +11,8 @@ include(InstallRequiredSystemLibraries)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(APP_DISPLAY_NAME "Coder")
-set(BINARY_NAME "coder")
+set(APP_DISPLAY_NAME "Tinest")
+set(BINARY_NAME "tinest")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

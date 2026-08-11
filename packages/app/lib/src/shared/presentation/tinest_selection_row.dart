@@ -6,9 +6,9 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 ///
 /// The inset comes from [SettingsRow] and cannot be overridden. A caller that
 /// could set its own was how one card ended up drawing two alignment lines.
-class CoderSwitchRow extends StatelessWidget {
+class TinestSwitchRow extends StatelessWidget {
   /// Creates a binary setting row.
-  const CoderSwitchRow({
+  const TinestSwitchRow({
     required this.title,
     required this.value,
     this.onChanged,
@@ -55,9 +55,9 @@ class CoderSwitchRow extends StatelessWidget {
 }
 
 /// A labeled multi-selection setting backed by [TRCheckbox].
-class CoderCheckboxRow extends StatelessWidget {
+class TinestCheckboxRow extends StatelessWidget {
   /// Creates a checkbox setting row.
-  const CoderCheckboxRow({
+  const TinestCheckboxRow({
     required this.title,
     required this.value,
     this.onChanged,

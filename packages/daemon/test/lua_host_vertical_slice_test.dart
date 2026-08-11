@@ -18,10 +18,10 @@ void main() {
     () async {
       final root = _repositoryRoot();
       final staging = await Directory.systemTemp.createTemp(
-        'coder-lua-tool-runtime-',
+        'tinest-lua-tool-runtime-',
       );
       final buildDirectory = await Directory.systemTemp.createTemp(
-        'coder-lua-tool-runtime-build-',
+        'tinest-lua-tool-runtime-build-',
       );
       addTearDown(() => staging.delete(recursive: true));
       addTearDown(() => buildDirectory.delete(recursive: true));

@@ -3,8 +3,8 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 
 /// Opens and handshakes one daemon client.
-typedef CoderClientOpener =
-    Future<CoderApi> Function({
+typedef TinestClientOpener =
+    Future<TinestApi> Function({
       required HostEndpoint endpoint,
       required DaemonCredentials credentials,
       required String clientId,
@@ -12,8 +12,8 @@ typedef CoderClientOpener =
     });
 
 /// Injectable relay client opener used by the production composition root.
-typedef RelayCoderClientOpener =
-    Future<CoderApi> Function({
+typedef RelayTinestClientOpener =
+    Future<TinestApi> Function({
       required RelayHostConnection connection,
       required RelayHostCredential credential,
       required String clientId,
@@ -33,7 +33,7 @@ final class AppServices {
     this.embeddedDataEraser,
     this.delay = const SystemAppDelay(),
     this.pathProbeScheduler = const SystemHostPathProbeScheduler(),
-    this.relayPairer = const CoderHostRelayPairer(),
+    this.relayPairer = const TinestHostRelayPairer(),
   });
 
   /// Device-local app settings repository.
@@ -74,9 +74,9 @@ final class AppServices {
 }
 
 /// Production pairing adapter backed by the E2E relay client package.
-final class CoderHostRelayPairer implements HostRelayPairer {
+final class TinestHostRelayPairer implements HostRelayPairer {
   /// Creates the stateless pairing adapter.
-  const CoderHostRelayPairer();
+  const TinestHostRelayPairer();
 
   @override
   Future<RelayPairingResult> pair({
@@ -98,18 +98,18 @@ final class CoderHostRelayPairer implements HostRelayPairer {
 final class WebSocketHostClientFactory implements HostClientFactory {
   /// Creates the production host client factory.
   const WebSocketHostClientFactory({
-    this.openClient = _openCoderClient,
-    this.openRelayClient = _openRelayCoderClient,
+    this.openClient = _openTinestClient,
+    this.openRelayClient = _openRelayTinestClient,
   });
 
   /// Injected typed client opener.
-  final CoderClientOpener openClient;
+  final TinestClientOpener openClient;
 
   /// Injected encrypted relay client opener.
-  final RelayCoderClientOpener openRelayClient;
+  final RelayTinestClientOpener openRelayClient;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
@@ -142,7 +142,7 @@ final class WebSocketHostClientFactory implements HostClientFactory {
           reason: HostFailureReason.credentialPathMismatch,
         ),
       };
-    } on CoderClientException catch (error) {
+    } on TinestClientException catch (error) {
       if (error.code == 'protocol_mismatch') {
         throw HostConnectionFailure.protocolMismatch(error.message);
       }
@@ -160,25 +160,25 @@ final class WebSocketHostClientFactory implements HostClientFactory {
   }
 }
 
-Future<CoderApi> _openCoderClient({
+Future<TinestApi> _openTinestClient({
   required HostEndpoint endpoint,
   required DaemonCredentials credentials,
   required String clientId,
   required String clientKind,
-}) => CoderClient.connect(
+}) => TinestClient.connect(
   endpoint: endpoint,
   credentials: credentials,
   clientId: clientId,
   clientKind: clientKind,
 );
 
-Future<CoderApi> _openRelayCoderClient({
+Future<TinestApi> _openRelayTinestClient({
   required RelayHostConnection connection,
   required RelayHostCredential credential,
   required String clientId,
   required String clientKind,
 }) async {
-  final client = await CoderClient.connect(
+  final client = await TinestClient.connect(
     endpoint: HostEndpoint(websocketUri: connection.relayUri),
     credentials: const DaemonCredentials(
       bearerToken: 'relay-device-authentication-is-e2e',

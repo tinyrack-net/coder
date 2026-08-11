@@ -51,7 +51,7 @@ void main() {
         id: 'relay',
         credentialKey: 'relay-key',
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       );
       final selected =
@@ -147,7 +147,7 @@ RelayPairingService _pairingService({
   Future<void> Function(String deviceId)? terminate,
 }) => RelayPairingService(
   serverId: 'daemon-1',
-  relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+  relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
   daemonIdentityPublicKey: List<int>.filled(32, 3),
   devices: MemoryRelayDeviceRepository(),
   clock: const _Clock(),

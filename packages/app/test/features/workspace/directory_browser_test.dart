@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 import '../../support/localization.dart';
 
@@ -18,7 +18,7 @@ void main() {
     '/srv/repositories/project': <String>[],
   };
 
-  Future<String?> pump(WidgetTester tester, FakeCoderApi api) async {
+  Future<String?> pump(WidgetTester tester, FakeTinestApi api) async {
     String? chosen;
     await tester.pumpWidget(
       MaterialApp(
@@ -49,7 +49,7 @@ void main() {
   testWidgets(
     'the browser lists children and walks into and out of directories',
     (tester) async {
-      final api = FakeCoderApi(directories: tree);
+      final api = FakeTinestApi(directories: tree);
       await pump(tester, api);
 
       expect(find.text('repositories'), findsOneWidget);
@@ -80,7 +80,7 @@ void main() {
     'the first listing renders row skeletons and later ones keep stale rows',
     (tester) async {
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         directories: tree,
         suggestDirectoriesGate: gate.future,
       );
@@ -130,7 +130,7 @@ void main() {
   testWidgets(
     'typing a path is debounced into a single daemon request',
     (tester) async {
-      final api = FakeCoderApi(directories: tree);
+      final api = FakeTinestApi(directories: tree);
       await pump(tester, api);
       final before = api.suggestedQueries.length;
 
@@ -155,7 +155,7 @@ void main() {
     'a slow earlier listing never overwrites a newer one',
     (tester) async {
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         directories: tree,
         suggestDirectoriesGate: gate.future,
       );
@@ -192,9 +192,9 @@ void main() {
   testWidgets(
     'daemon failures surface without clearing the dialog',
     (tester) async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         directories: tree,
-        suggestDirectoriesError: const CoderClientException(
+        suggestDirectoriesError: const TinestClientException(
           'Permission denied',
           code: 'request_failed',
         ),

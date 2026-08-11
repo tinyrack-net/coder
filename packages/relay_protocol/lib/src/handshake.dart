@@ -321,7 +321,7 @@ Uint8List _clientTranscript(
   List<int> identity,
   List<int> ephemeral,
 ) => _encodeFields(<List<int>>[
-  utf8.encode('tinyrack-coder-relay-client-v1'),
+  utf8.encode('tinyrack-tinest-relay-client-v1'),
   utf8.encode(serverId),
   utf8.encode(sessionId),
   utf8.encode(deviceId),

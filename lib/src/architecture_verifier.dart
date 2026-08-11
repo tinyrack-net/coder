@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/lifecycle_phase_rules.dart';
 import 'package:path/path.dart' as p;
+import 'package:tinest_workspace/src/lifecycle_phase_rules.dart';
 
 /// A dependency or source-level architecture rule violation.
 final class ArchitectureViolation {
@@ -86,7 +86,7 @@ final class ArchitectureVerifier {
         'relay': <String>{'relay_protocol'},
         'agent': <String>{},
         'client': <String>{'protocol', 'relay_protocol'},
-        // The CLI hosts the daemon through `coder-cli daemon start`, so it
+        // The CLI hosts the daemon through `tinest-cli daemon start`, so it
         // reaches the daemon's composition root and everything the daemon
         // itself is allowed to use.
         'cli': <String>{
@@ -319,7 +319,11 @@ final class ArchitectureVerifier {
       ).firstMatch(line)?.group(1);
       if (package == 'app') {
         violations.addAll(
-          _verifyCoderAppLayerImport(path: path, line: index + 1, source: line),
+          _verifyTinestAppLayerImport(
+            path: path,
+            line: index + 1,
+            source: line,
+          ),
         );
         if (_declaresKeepAliveProvider(lines, index)) {
           final owner = _providerDeclarationName(lines, index);
@@ -339,7 +343,7 @@ final class ArchitectureVerifier {
         }
         final terminalCaret =
             path.endsWith(
-              '/features/terminals/presentation/coder_terminal_view.dart',
+              '/features/terminals/presentation/tinest_terminal_view.dart',
             ) &&
             line.contains('cursor: colors.focus');
         if (!terminalCaret &&
@@ -511,8 +515,8 @@ final class ArchitectureVerifier {
         'DateTime.now(',
         'Uuid(',
         'Dio(',
-        'CoderDatabase(',
-        'CoderClient.connect(',
+        'TinestDatabase(',
+        'TinestClient.connect(',
         'Process.',
       ]) {
         if (line.contains(forbiddenCall)) {
@@ -631,7 +635,7 @@ final class ArchitectureVerifier {
     return package == 'agent' && path.endsWith('/runtime.dart');
   }
 
-  Iterable<ArchitectureViolation> _verifyCoderAppLayerImport({
+  Iterable<ArchitectureViolation> _verifyTinestAppLayerImport({
     required String path,
     required int line,
     required String source,

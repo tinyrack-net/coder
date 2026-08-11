@@ -151,7 +151,7 @@ final class WorkspaceOperations {
         name: workspace.name,
         path: rootPath,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: checkout?.createdAt ?? _clock.nowUtc(),
       ),
     );
@@ -200,7 +200,7 @@ final class WorkspaceOperations {
           name: request.name,
           path: selectedPath,
           kind: WorktreeKind.directory,
-          isCoderOwned: false,
+          isTinestOwned: false,
           createdAt: _clock.nowUtc(),
         ),
       );
@@ -313,7 +313,7 @@ final class WorkspaceOperations {
     return _git.listBranches(workspace.rootPath);
   }
 
-  /// Returns the `coder.json` settings of one registered workspace.
+  /// Returns the `.tinest/config.json` settings of one registered workspace.
   Future<ProjectSettingsResultDto> getProjectSettings(
     String workspaceId,
   ) async {
@@ -324,7 +324,7 @@ final class WorkspaceOperations {
     );
   }
 
-  /// Replaces the worktree hook section of one workspace's `coder.json`.
+  /// Replaces the worktree hook section of one workspace's `.tinest/config.json`.
   Future<ProjectSettingsResultDto> saveProjectSettings(
     ProjectSettingsSaveParamsDto request,
   ) async {
@@ -404,7 +404,7 @@ final class WorkspaceOperations {
           branch: snapshot?.branch ?? branch,
           head: snapshot?.head,
           kind: WorktreeKind.managed,
-          isCoderOwned: true,
+          isTinestOwned: true,
           createdAt: _clock.nowUtc(),
         ),
       );
@@ -423,7 +423,7 @@ final class WorkspaceOperations {
     );
     if (hookRuns.any((run) => run.exitCode != 0)) {
       // A setup failure means the checkout is not safe to use. Remove the
-      // Coder-owned path before hiding it from the active catalog so a failed
+      // Tinest-owned path before hiding it from the active catalog so a failed
       // bootstrap cannot leave an apparently usable worktree behind.
       await _git.removeWorktree(
         workspace.rootPath,
@@ -530,11 +530,11 @@ final class WorkspaceOperations {
       dirty: state.dirty,
       unpushedCommitCount: state.unpushedCommitCount,
       runningSessionCount: await _agents.countActive(worktree.id),
-      removesDirectory: worktree.isCoderOwned,
+      removesDirectory: worktree.isTinestOwned,
     );
   }
 
-  /// Archives one worktree and removes only Coder-owned managed checkouts.
+  /// Archives one worktree and removes only Tinest-owned managed checkouts.
   Future<WorktreeResultDto> archive(
     String worktreeId, {
     required bool force,
@@ -548,9 +548,9 @@ final class WorkspaceOperations {
       );
     }
     if (!isArchivableWorktreeKind(worktree.kind)) {
-      // The workspace root is never Coder-owned, so archiving it would keep the
-      // directory, hide the project, and let the next refresh rediscover the
-      // same path under a new id that no existing session references.
+      // The workspace root is never Tinest-owned, so archiving it would keep
+      // the directory, hide the project, and let the next refresh rediscover
+      // the same path under a new id that no existing session references.
       throw const WorktreeFailure(
         WorktreeFailureReason.archiveBlocked,
         'The project checkout cannot be archived.',
@@ -575,7 +575,7 @@ final class WorkspaceOperations {
       workspace: workspace,
       worktree: worktree,
     );
-    if (worktree.isCoderOwned) {
+    if (worktree.isTinestOwned) {
       await _git.removeWorktree(
         workspace.rootPath,
         worktree.path,
@@ -715,7 +715,7 @@ final class WorkspaceOperations {
           kind:
               existing?.kind ??
               (isCheckout ? WorktreeKind.checkout : WorktreeKind.external),
-          isCoderOwned: existing?.isCoderOwned ?? false,
+          isTinestOwned: existing?.isTinestOwned ?? false,
           createdAt: existing?.createdAt ?? _clock.nowUtc(),
         ),
       );

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -180,7 +180,7 @@ class _ChatQuestionCardState extends ConsumerState<ChatQuestionCard> {
                       disabled: _submitting,
                       leading: _isAnswered(question)
                           ? Icon(
-                              CoderIcons.check,
+                              TinestIcons.check,
                               size: TRControlMetrics.iconSizeOf(TRUiSize.md),
                             )
                           : null,

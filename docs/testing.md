@@ -1,6 +1,6 @@
 # Testing and verification
 
-Tinyrack Coder uses layered tests so most behavior is verified without launching
+Tinest uses layered tests so most behavior is verified without launching
 the desktop application, followed by a real Debug runner gate for the complete
 embedded-daemon path.
 
@@ -15,7 +15,7 @@ embedded-daemon path.
   homes, deterministic provider/OAuth ports, and local Git repositories. They
   cover every command that changes user state without launching Flutter.
 - Widget tests cover loading, data, empty, error, responsive, navigation, approval,
-  conversation, and provider settings states through `CoderApi` overrides.
+  conversation, and provider settings states through `TinestApi` overrides.
 - Linux canonical golden tests cover light/dark and desktop/mobile presentation.
 - Debug E2E is split into daemon/workspace, project/worktree, cross-domain
   session/turn/Agent/skill/MCP, provider, and settings/desktop runner shards.
@@ -26,7 +26,7 @@ embedded-daemon path.
 ## Feature traceability
 
 `lib/src/feature_manifest.dart` owns the stable feature catalog. Every public
-`CoderApi` method and every `@TypedGoRoute` must belong to exactly one feature.
+`TinestApi` method and every `@TypedGoRoute` must belong to exactly one feature.
 Each feature declares the layers required to prove it.
 
 Every feature that requires E2E evidence also declares typed scenarios and the
@@ -129,11 +129,11 @@ temporary home so no run reaches the real daemon home or its exclusive
 
 The Linux runner is a unique `GApplication`, and Windows uses a named mutex, so
 a normal second launch can be redirected to or rejected by the running app.
-Desktop E2E therefore sets `TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES=1`, which
+Desktop E2E therefore sets `TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES=1`, which
 keeps the test process to itself. It is safe precisely because the run already
 owns an isolated daemon home.
 
-`test:e2e:desktop` points `TINYRACK_CODER_HOME` at a per-run temporary directory
+`test:e2e:desktop` points `TINYRACK_TINEST_HOME` at a per-run temporary directory
 on every supported host. Together these let two checkouts verify at the same
 time and let `verify:debug` pass while a developer's own `melos run:daemon` holds
 the product port. On Linux the entrypoint also gives each run its own display via

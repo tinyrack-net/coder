@@ -1,4 +1,4 @@
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -20,9 +20,9 @@ class BootSplash extends StatelessWidget {
         color: context.tinyrackTheme.surface,
         child: Center(
           child: Image.asset(
-            'assets/brand/coder-256.png',
-            width: CoderLayoutMetrics.bootBrandMarkSize,
-            height: CoderLayoutMetrics.bootBrandMarkSize,
+            'assets/brand/tinest-256.png',
+            width: TinestLayoutMetrics.bootBrandMarkSize,
+            height: TinestLayoutMetrics.bootBrandMarkSize,
           ),
         ),
       ),

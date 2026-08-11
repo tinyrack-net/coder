@@ -9,7 +9,9 @@ void main() {
   test(
     'relay status, pairing offer, and activation cross the real daemon',
     () async {
-      final state = await Directory.systemTemp.createTemp('coder-relay-state-');
+      final state = await Directory.systemTemp.createTemp(
+        'tinest-relay-state-',
+      );
       final config = DaemonConfig(
         homeDirectory: state.path,
         configDirectory: state.path,
@@ -57,7 +59,7 @@ void main() {
   );
 }
 
-Future<CoderClient> _connect(DaemonHandle handle) => CoderClient.connect(
+Future<TinestClient> _connect(DaemonHandle handle) => TinestClient.connect(
   endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
   credentials: const DaemonCredentials(
     bearerToken: 'relay-test-token-0123456789abcdef012345',
