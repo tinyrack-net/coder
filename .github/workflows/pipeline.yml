@@ -58,11 +58,15 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      scope: ${{ steps.scope.outputs.scope }}
       docs_only: ${{ steps.scope.outputs.docs_only }}
       cli_matrix: ${{ steps.scope.outputs.cli_matrix }}
       mobile_matrix: ${{ steps.scope.outputs.mobile_matrix }}
     steps:
       - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.12.2
       - id: scope
         env:
           GH_TOKEN: ${{ github.token }}
@@ -78,28 +82,33 @@ jobs:
 
           # Anything that is not a pull request keeps the full matrix, so it
           # never has to be decided from a diff.
-          docs_only=false
+          verification_scope=full
           if [ -n "${PR_NUMBER}" ]; then
-            files="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
-              --paginate --jq '.[].filename')"
-            # An empty file list means the diff could not be read, not that
-            # nothing changed, so it stays `false`: a code change must never
-            # merge because a listing came back blank.
-            if [ -n "$files" ] &&
-              ! grep -qvE '^docs/|(^|/)[^/]+\.md$' <<< "$files"; then
-              docs_only=true
+            if files="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
+              --paginate --jq '.[].filename')"; then
+              verification_scope="$(
+                printf '%s\n' "$files" | dart run tool/resolve_ci_scope.dart
+              )"
+            else
+              echo "::warning::Could not read the PR file list; using full scope"
             fi
           fi
 
-          scope='.host'
+          docs_only=false
+          if [ "$verification_scope" = "docs-only" ]; then
+            docs_only=true
+          fi
+
+          matrix_scope='.host'
           if [ "${CROSS_PLATFORM}" = "true" ]; then
-            scope='.host, .cross'
+            matrix_scope='.host, .cross'
           fi
           matrices=.github/ci-matrices.json
           {
+            echo "scope=$verification_scope"
             echo "docs_only=$docs_only"
-            echo "cli_matrix=$(jq -c "[.cli | $scope] | add" "$matrices")"
-            echo "mobile_matrix=$(jq -c "[.mobile | $scope] | add" "$matrices")"
+            echo "cli_matrix=$(jq -c "[.cli | $matrix_scope] | add" "$matrices")"
+            echo "mobile_matrix=$(jq -c "[.mobile | $matrix_scope] | add" "$matrices")"
           } >> "$GITHUB_OUTPUT"
 
   static-linux:
@@ -127,7 +136,8 @@ jobs:
     name: Generated sources
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -190,7 +200,8 @@ jobs:
     name: Dart coverage
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope == 'full'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -206,12 +217,15 @@ jobs:
           --scope=client
           --scope=daemon
           --scope=protocol
+          --scope=relay
+          --scope=relay_protocol
 
   coverage-flutter-linux:
     name: Flutter coverage
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -221,11 +235,72 @@ jobs:
       - run: dart run melos test:coverage:flutter
       - run: dart run tool/verify_coverage.dart --scope=app
 
+  relay-coverage-linux:
+    name: Relay coverage
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope == 'relay-only'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - run: dart run melos test:coverage:relay
+      - run: dart run tool/verify_coverage.dart --scope=relay
+
+  relay-smoke-linux:
+    name: Relay image smoke
+    needs: changes
+    if: github.event_name != 'schedule' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope == 'relay-only'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - run: docker build --file packages/relay/Dockerfile --tag coder-relay:smoke .
+      - name: Smoke the built relay and graceful shutdown
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker rm --force coder-relay-smoke >/dev/null 2>&1 || true
+            rm -f relay-smoke.ready relay-smoke.log
+          }
+          trap cleanup EXIT
+          docker run --detach --name coder-relay-smoke \
+            --publish 127.0.0.1:18080:8080 coder-relay:smoke
+          for _ in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:18080/health/ready \
+              >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          dart run packages/relay/tool/smoke_relay.dart \
+            http://127.0.0.1:18080 relay-smoke.ready \
+            >relay-smoke.log 2>&1 &
+          smoke_pid=$!
+          for _ in $(seq 1 40); do
+            test -f relay-smoke.ready && break
+            sleep 0.25
+          done
+          test -f relay-smoke.ready
+          docker stop --time 5 coder-relay-smoke >/dev/null
+          wait "$smoke_pid"
+          test "$(docker inspect --format '{{.State.ExitCode}}' \
+            coder-relay-smoke)" = "0"
+
   golden-linux:
     name: Linux goldens
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -238,7 +313,8 @@ jobs:
     name: Linux Debug E2E (${{ matrix.shard }})
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
       matrix:
@@ -273,7 +349,8 @@ jobs:
     name: Linux IBus Terminal E2E
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -310,7 +387,8 @@ jobs:
     name: Linux IBus Terminal Wayland E2E
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     # Regression gate for the Wayland-only Hangul reorder (안녕하세요. →
@@ -349,7 +427,8 @@ jobs:
     name: Mobile Debug Build (${{ matrix.os }})
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
       # Android on a pull request, plus iOS everywhere else. The entries live
@@ -400,7 +479,8 @@ jobs:
     name: Web Build
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -421,7 +501,8 @@ jobs:
     name: CLI Verify (${{ matrix.target }})
     needs: changes
     if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope == 'full'
     # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
     # build the CLI on a pull request. Two release-path breakages reached main
     # that way: a workspace resolution failure that made the job fail on every
@@ -462,6 +543,8 @@ jobs:
       - flutter-tests
       - coverage-dart-linux
       - coverage-flutter-linux
+      - relay-coverage-linux
+      - relay-smoke-linux
       - golden-linux
       - debug-e2e-linux
       - linux-ibus-terminal-e2e

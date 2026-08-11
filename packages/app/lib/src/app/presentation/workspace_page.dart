@@ -1431,188 +1431,202 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               // does not offer a second button for the same thing.
             ),
             Expanded(
-              child: ChatTimelineView(
-                items: visibleItems,
-                busy: busy || optimistic,
-                loading: conversation.isLoading && !conversation.hasValue,
-                hostId: widget.selection.hostId,
-                planActionBuilder: pendingPlan == null
-                    ? null
-                    : (proposal) => proposal.key != pendingPlan.key
-                          ? null
-                          : ChatPlanActions(
-                              selection: widget.selection,
-                              session: current,
-                              proposal: proposal,
-                              embedded: true,
-                              onDismiss: () => setState(
-                                () => _dismissedPlans.add(proposal.key),
+              child: _ConversationContentColumn(
+                child: ChatTimelineView(
+                  items: visibleItems,
+                  busy: busy || optimistic,
+                  loading: conversation.isLoading && !conversation.hasValue,
+                  hostId: widget.selection.hostId,
+                  planActionBuilder: pendingPlan == null
+                      ? null
+                      : (proposal) => proposal.key != pendingPlan.key
+                            ? null
+                            : ChatPlanActions(
+                                selection: widget.selection,
+                                session: current,
+                                proposal: proposal,
+                                embedded: true,
+                                onDismiss: () => setState(
+                                  () => _dismissedPlans.add(proposal.key),
+                                ),
+                                onSessionCreated: (session) => _goSession(
+                                  context,
+                                  widget.selection,
+                                  session.id,
+                                ),
                               ),
-                              onSessionCreated: (session) => _goSession(
-                                context,
-                                widget.selection,
-                                session.id,
-                              ),
-                            ),
-                loadAttachment: _loadAttachment,
-                exportAttachment: _exportAttachment,
+                  loadAttachment: _loadAttachment,
+                  exportAttachment: _exportAttachment,
+                ),
               ),
             ),
             if (value?.goal case final GoalDto goal)
               if (!readOnly)
-                GoalStatusBar(
-                  goal: goal,
-                  sessionMode: current.mode,
-                  onEdit: () => unawaited(_editGoal(current.id, goal)),
-                  onStatusChanged: (status) => unawaited(
-                    _conversation(ref, current.id).updateGoal(
-                      GoalUpdateDto(
-                        expectedGoalId: goal.goalId,
-                        status: status,
+                _ConversationContentColumn(
+                  child: GoalStatusBar(
+                    goal: goal,
+                    sessionMode: current.mode,
+                    onEdit: () => unawaited(_editGoal(current.id, goal)),
+                    onStatusChanged: (status) => unawaited(
+                      _conversation(ref, current.id).updateGoal(
+                        GoalUpdateDto(
+                          expectedGoalId: goal.goalId,
+                          status: status,
+                        ),
                       ),
                     ),
-                  ),
-                  onClear: () => unawaited(
-                    _conversation(ref, current.id).clearGoal(),
+                    onClear: () => unawaited(
+                      _conversation(ref, current.id).clearGoal(),
+                    ),
                   ),
                 ),
             // Keep the auxiliary subagent track bounded so the composer retains
             // its natural height and the timeline receives the remaining space.
             if (!readOnly)
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: constraints.maxHeight / 2,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (subagentRows.isNotEmpty)
-                      SubagentTrack(
-                        rows: subagentRows,
-                        // Viewport-derived cap: the expanded list never
-                        // squeezes the composer out of the bottom group.
-                        maxListHeight: constraints.maxHeight / 4,
-                        onOpenSubagent: (sessionId) =>
-                            _goSession(context, widget.selection, sessionId),
-                      ),
-                    ComposerCompletionScope(
-                      hostId: widget.selection.hostId,
-                      workspaceId: widget.selection.workspaceId,
-                      worktreeId: widget.selection.worktreeId,
-                      builder: (context, completion) => SessionComposer(
-                        controller: _dropController,
-                        // A running turn never takes the keyboard away; the
-                        // prompt queues instead.
-                        enabled: effective != null,
-                        busy: busy,
-                        contextTokens: current.contextTokens,
-                        contextWindow: current.contextWindow,
-                        totalCostUsd: current.totalCostUsd,
-                        providerConnectionId: effective == null
-                            ? null
-                            : connections
-                                  .where(
-                                    (connection) =>
-                                        effective.qualifiedModelId.startsWith(
-                                          '${connection.modelPrefix}/',
-                                        ),
-                                  )
-                                  .firstOrNull
-                                  ?.id,
-                        onLoadProviderUsage: () => ref
-                            .read(
-                              providerSettingsControllerProvider(
-                                widget.selection.hostId,
-                              ).notifier,
-                            )
-                            .loadUsage(),
-                        queued: value?.queued ?? const <QueuedTurn>[],
-                        onQueue: (submission) =>
-                            _conversation(ref, current.id).enqueueTurn(
-                              submission.text,
-                              attachments: submission.attachments,
-                            ),
-                        onQueuedEdit: (id) =>
-                            _conversation(ref, current.id).takeQueuedTurn(id),
-                        onQueuedSendNow: (id) => _conversation(
-                          ref,
-                          current.id,
-                        ).sendQueuedTurnNow(id),
-                        onSubmitAndInterrupt: (submission) async {
-                          await _conversation(ref, current.id).cancelTurn();
-                          await _send(current.id, submission);
-                        },
-                        onStop: () =>
-                            _conversation(ref, current.id).cancelTurn(),
-                        hint:
-                            (agentsLoading ||
-                                providersLoading ||
-                                effective != null)
-                            ? null
-                            : AppLocalizations.of(
-                                context,
-                              ).composerConnectProviderFirst,
-                        bar: SessionComposerBar(
-                          hostId: widget.selection.hostId,
-                          definitions: definitions,
-                          agentDefinitionId: current.agentDefinitionId,
-                          selection: effective,
-                          mode: current.mode,
-                          onModeChanged: (mode) => unawaited(
-                            _applySessionSetting(
-                              () => _sessions(ref).setMode(current.id, mode),
-                            ),
-                          ),
-                          // Turn settings apply to the next turn, so they stay
-                          // reachable while one is running.
-                          agentEnabled: false,
-                          onAgentChanged: (_) {},
-                          onModelChanged: (model, controls) => unawaited(
-                            _applySessionSetting(
-                              () => _sessions(
-                                ref,
-                              ).setModel(current.id, model, controls),
-                            ),
-                          ),
-                          modelControls: current.modelControls,
-                          onModelControlsChanged: (controls) => unawaited(
-                            _applySessionSetting(
-                              () => _sessions(
-                                ref,
-                              ).setModelControls(current.id, controls),
-                            ),
-                          ),
-                          permissionMode: current.permissionMode,
-                          // Not routed through [_applySessionSetting]: the
-                          // permission mode is not read at turn start, so the
-                          // daemon never refuses it, and the composer already
-                          // reports a save failure on the control itself.
-                          onPermissionModeChanged: (mode) async {
-                            await _sessions(
-                              ref,
-                            ).setPermissionMode(current.id, mode);
+              _ConversationContentColumn(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight / 2,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      ComposerCompletionScope(
+                        hostId: widget.selection.hostId,
+                        workspaceId: widget.selection.workspaceId,
+                        worktreeId: widget.selection.worktreeId,
+                        builder: (context, completion) => SessionComposer(
+                          controller: _dropController,
+                          settingsBreakpoint:
+                              TinestLayoutMetrics.conversationContentMaxWidth,
+                          header: subagentRows.isEmpty
+                              ? null
+                              : SubagentTrack(
+                                  rows: subagentRows,
+                                  // Viewport-derived cap: the expanded list
+                                  // never squeezes the input out of the bottom
+                                  // group.
+                                  maxListHeight: constraints.maxHeight / 4,
+                                  onOpenSubagent: (sessionId) => _goSession(
+                                    context,
+                                    widget.selection,
+                                    sessionId,
+                                  ),
+                                ),
+                          // A running turn never takes the keyboard away; the
+                          // prompt queues instead.
+                          enabled: effective != null,
+                          busy: busy,
+                          contextTokens: current.contextTokens,
+                          contextWindow: current.contextWindow,
+                          totalCostUsd: current.totalCostUsd,
+                          providerConnectionId: effective == null
+                              ? null
+                              : connections
+                                    .where(
+                                      (connection) =>
+                                          effective.qualifiedModelId.startsWith(
+                                            '${connection.modelPrefix}/',
+                                          ),
+                                    )
+                                    .firstOrNull
+                                    ?.id,
+                          onLoadProviderUsage: () => ref
+                              .read(
+                                providerSettingsControllerProvider(
+                                  widget.selection.hostId,
+                                ).notifier,
+                              )
+                              .loadUsage(),
+                          queued: value?.queued ?? const <QueuedTurn>[],
+                          onQueue: (submission) =>
+                              _conversation(ref, current.id).enqueueTurn(
+                                submission.text,
+                                attachments: submission.attachments,
+                              ),
+                          onQueuedEdit: (id) =>
+                              _conversation(ref, current.id).takeQueuedTurn(id),
+                          onQueuedSendNow: (id) => _conversation(
+                            ref,
+                            current.id,
+                          ).sendQueuedTurnNow(id),
+                          onSubmitAndInterrupt: (submission) async {
+                            await _conversation(ref, current.id).cancelTurn();
+                            await _send(current.id, submission);
                           },
-                        ),
-                        onModeToggled: () => unawaited(
-                          _applySessionSetting(
-                            () => _sessions(ref).setMode(
-                              current.id,
-                              current.mode == SessionMode.plan
-                                  ? SessionMode.normal
-                                  : SessionMode.plan,
+                          onStop: () =>
+                              _conversation(ref, current.id).cancelTurn(),
+                          hint:
+                              (agentsLoading ||
+                                  providersLoading ||
+                                  effective != null)
+                              ? null
+                              : AppLocalizations.of(
+                                  context,
+                                ).composerConnectProviderFirst,
+                          bar: SessionComposerBar(
+                            hostId: widget.selection.hostId,
+                            definitions: definitions,
+                            agentDefinitionId: current.agentDefinitionId,
+                            selection: effective,
+                            mode: current.mode,
+                            onModeChanged: (mode) => unawaited(
+                              _applySessionSetting(
+                                () => _sessions(ref).setMode(current.id, mode),
+                              ),
+                            ),
+                            // Turn settings apply to the next turn, so they
+                            // stay reachable while one is running.
+                            agentEnabled: false,
+                            onAgentChanged: (_) {},
+                            onModelChanged: (model, controls) => unawaited(
+                              _applySessionSetting(
+                                () => _sessions(
+                                  ref,
+                                ).setModel(current.id, model, controls),
+                              ),
+                            ),
+                            modelControls: current.modelControls,
+                            onModelControlsChanged: (controls) => unawaited(
+                              _applySessionSetting(
+                                () => _sessions(
+                                  ref,
+                                ).setModelControls(current.id, controls),
+                              ),
+                            ),
+                            permissionMode: current.permissionMode,
+                            // Not routed through [_applySessionSetting]: the
+                            // permission mode is not read at turn start, so the
+                            // daemon never refuses it, and the composer already
+                            // reports a save failure on the control itself.
+                            onPermissionModeChanged: (mode) async {
+                              await _sessions(
+                                ref,
+                              ).setPermissionMode(current.id, mode);
+                            },
+                          ),
+                          onModeToggled: () => unawaited(
+                            _applySessionSetting(
+                              () => _sessions(ref).setMode(
+                                current.id,
+                                current.mode == SessionMode.plan
+                                    ? SessionMode.normal
+                                    : SessionMode.plan,
+                              ),
                             ),
                           ),
+                          attachmentInput: ref.read(attachmentInputProvider),
+                          commands: completion.commands,
+                          suggestions: completion.suggestions,
+                          onCompletionQueryChanged: completion.onQueryChanged,
+                          onClientCommand: (invocation) =>
+                              _runClientCommand(invocation, current),
+                          onSubmit: (submission) =>
+                              _send(current.id, submission),
                         ),
-                        attachmentInput: ref.read(attachmentInputProvider),
-                        commands: completion.commands,
-                        suggestions: completion.suggestions,
-                        onCompletionQueryChanged: completion.onQueryChanged,
-                        onClientCommand: (invocation) =>
-                            _runClientCommand(invocation, current),
-                        onSubmit: (submission) => _send(current.id, submission),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
           ],
@@ -1813,6 +1827,24 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           bytes: bytes,
         );
   }
+}
+
+/// Keeps every session-owned conversation surface on one readable centerline.
+class _ConversationContentColumn extends StatelessWidget {
+  const _ConversationContentColumn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: TinestLayoutMetrics.conversationContentMaxWidth,
+      ),
+      child: SizedBox(width: double.infinity, child: child),
+    ),
+  );
 }
 
 /// Selects [selection] within the workspace surface.

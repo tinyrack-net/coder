@@ -31,6 +31,103 @@ void _registerConversationAppFlows() {
     updatedAt: now,
   );
   testWidgets(
+    'conversation content is capped and centered while its header stays wide',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1500, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final root = session('layout');
+      final child = session('layout-child').copyWith(
+        parentSessionId: root.id,
+        taskName: 'Layout child',
+      );
+      final goal = GoalDto(
+        sessionId: root.id,
+        goalId: 'layout-goal',
+        objective: 'Keep the conversation column aligned',
+        status: GoalStatus.active,
+        tokensUsed: 0,
+        timeUsedSeconds: 0,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[root, child],
+        goals: <String, GoalDto>{root.id: goal},
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: root.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final pane = find.byKey(
+        ValueKey<String>('conversation-pane-session:${root.id}'),
+      );
+      final timeline = find.byType(ChatTimelineView);
+      final composer = find.byType(SessionComposer);
+      final goalBar = find.byType(GoalStatusBar);
+      final subagents = find.byType(SubagentTrack);
+      final header = find
+          .ancestor(
+            of: find.text(root.title).last,
+            matching: find.byType(TinestListRow),
+          )
+          .first;
+
+      final paneRect = tester.getRect(pane);
+      for (final content in <Finder>[timeline, composer, goalBar]) {
+        final rect = tester.getRect(content);
+        expect(
+          rect.width,
+          TRMeasurements.measureXl * 2 + TRSpacing.extraLarge * 2,
+        );
+        expect(rect.center.dx, closeTo(paneRect.center.dx, 0.5));
+      }
+      final subagentRect = tester.getRect(subagents);
+      expect(
+        subagentRect.width,
+        TinestLayoutMetrics.conversationContentMaxWidth - TRSpacing.medium * 2,
+      );
+      expect(subagentRect.center.dx, closeTo(paneRect.center.dx, 0.5));
+      expect(tester.getRect(header).width, paneRect.width);
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-model')),
+        findsOneWidget,
+      );
+
+      await tester.binding.setSurfaceSize(const Size(700, 900));
+      await tester.pumpAndSettle();
+      final narrowPane = tester.getRect(pane);
+      for (final content in <Finder>[timeline, composer, goalBar]) {
+        final rect = tester.getRect(content);
+        expect(rect.width, narrowPane.width);
+        expect(rect.center.dx, closeTo(narrowPane.center.dx, 0.5));
+      }
+      final narrowSubagents = tester.getRect(subagents);
+      expect(
+        narrowSubagents.width,
+        narrowPane.width - TRSpacing.medium * 2,
+      );
+      expect(narrowSubagents.center.dx, closeTo(narrowPane.center.dx, 0.5));
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
     'a running chat restores permission and reports a daemon save failure',
     (tester) async {
       final running = session('running').copyWith(
