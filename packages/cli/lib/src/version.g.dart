@@ -1,2 +1,2 @@
 // Generated from pubspec.yaml by the release tool. Do not edit by hand.
-const String packageVersion = '0.4.1+5';
+const String packageVersion = '0.5.0+6';

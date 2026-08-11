@@ -9,7 +9,7 @@ import 'package:window_manager/window_manager.dart';
 void main() {
   group('window adapter', () {
     test(
-      'custom title bars are enabled only on Windows and Linux',
+      'Windows owns the frame while Linux keeps native chrome and app menus',
       () async {
         Future<(PluginDesktopWindow, List<bool>)> build(
           TargetPlatform platform,
@@ -32,11 +32,11 @@ void main() {
         final linux = await build(TargetPlatform.linux);
         final macos = await build(TargetPlatform.macOS);
 
-        expect(windows.$1.supportsCustomTitleBar, isTrue);
-        expect(linux.$1.supportsCustomTitleBar, isTrue);
-        expect(macos.$1.supportsCustomTitleBar, isFalse);
+        expect(windows.$1.chrome, DesktopWindowChrome.custom);
+        expect(linux.$1.chrome, DesktopWindowChrome.nativeWithMenuBar);
+        expect(macos.$1.chrome, DesktopWindowChrome.native);
         expect(windows.$2, <bool>[true]);
-        expect(linux.$2, <bool>[true]);
+        expect(linux.$2, isEmpty);
         expect(macos.$2, isEmpty);
       },
       tags: const <String>['feature_test__desktop_window_chrome__unit'],

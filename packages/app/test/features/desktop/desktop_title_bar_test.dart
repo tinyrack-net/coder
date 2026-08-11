@@ -2,6 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/version.g.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_title_bar.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -24,8 +25,12 @@ void main() {
     FakeAppTerminator terminator,
     MemoryAppStore store,
   })
-  build({FakeCoderApi? api, bool connected = false}) {
-    final window = FakeDesktopWindow(supportsCustomTitleBar: true);
+  build({
+    FakeCoderApi? api,
+    bool connected = false,
+    DesktopWindowChrome chrome = DesktopWindowChrome.custom,
+  }) {
+    final window = FakeDesktopWindow(chrome: chrome);
     final tray = FakeTrayIcon()..calls = window.calls;
     final terminator = FakeAppTerminator(calls: window.calls);
     final store = MemoryAppStore(
@@ -54,13 +59,48 @@ void main() {
   }
 
   testWidgets(
+    'Linux keeps application menus below native window chrome',
+    (tester) async {
+      final harness = build(chrome: DesktopWindowChrome.nativeWithMenuBar);
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DesktopMenuBar), findsOneWidget);
+      expect(find.text('File'), findsOneWidget);
+      expect(find.text('View'), findsOneWidget);
+      expect(find.text('Help'), findsOneWidget);
+      await tester.tap(find.text('File'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TRMenuItem, 'New workspace'), findsOneWidget);
+      expect(find.widgetWithText(TRMenuItem, 'Quit'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('desktop-title-bar-drag-area')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('desktop-title-bar-minimize')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('desktop-title-bar-maximize')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('desktop-title-bar-close')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__desktop_window_chrome__widget'],
+  );
+
+  testWidgets(
     'custom title bar drives drag, window controls, and close-to-tray',
     (tester) async {
       final harness = build();
       await tester.pumpWidget(harness.app);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DesktopTitleBar), findsOneWidget);
+      expect(find.byType(DesktopMenuBar), findsOneWidget);
       final borderFinder = find.byKey(
         const ValueKey<String>('desktop-title-bar-border'),
       );
@@ -268,12 +308,12 @@ void main() {
       // The row is one compact control plus the menubar's own inset, so the
       // menubar fills it exactly instead of being clipped by a taller frame.
       expect(
-        desktopTitleBarHeight,
+        desktopMenuBarHeight,
         TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2,
       );
       expect(
         tester.getSize(find.byType(TRMenubar)).height,
-        desktopTitleBarHeight,
+        desktopMenuBarHeight,
       );
       // Close is not tinted apart from its siblings, so the group reads as
       // quiet chrome rather than three competing controls.
@@ -306,7 +346,7 @@ void main() {
       // The trigger label is a menubar slot, so it must render at the control
       // size the bar resolves rather than naming a typography role of its own.
       final menubar = tester.widget<TRMenubar>(find.byType(TRMenubar));
-      final expected = TRControlMetrics.fontSizeOf(menubar.uiSize);
+      final expected = TRControlMetrics.fontSizeOf(menubar.uiSize!);
       for (final label in <String>['File', 'View', 'Help']) {
         final paragraph = tester.renderObject<RenderParagraph>(
           find.text(label),

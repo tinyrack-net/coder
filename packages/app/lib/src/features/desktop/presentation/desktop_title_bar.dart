@@ -8,11 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Height of the compact Windows and Linux application frame.
+/// Height of the compact Windows frame and Linux application menu row.
 ///
 /// One compact control plus the inset `TRMenubar` draws around its triggers,
 /// so the menubar fills the row instead of being clipped by a taller frame.
-final double desktopTitleBarHeight =
+final double desktopMenuBarHeight =
     TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2;
 
 /// Window command a title-bar caption button issues.
@@ -30,10 +30,10 @@ enum DesktopCaptionAction {
   close,
 }
 
-/// Flutter-owned title bar for Windows and Linux desktop runners.
-class DesktopTitleBar extends StatelessWidget {
-  /// Creates a title bar connected to typed application and window commands.
-  const DesktopTitleBar({
+/// Localized application menus with optional Flutter-owned window controls.
+class DesktopMenuBar extends StatelessWidget {
+  /// Creates a menu row connected to typed application and window commands.
+  const DesktopMenuBar({
     required this.window,
     required this.sidebarCollapsed,
     required this.onNewWorkspace,
@@ -76,7 +76,7 @@ class DesktopTitleBar extends StatelessWidget {
     return ColoredBox(
       color: colors.surface,
       child: SizedBox(
-        height: desktopTitleBarHeight,
+        height: desktopMenuBarHeight,
         child: DecoratedBox(
           key: const ValueKey<String>('desktop-title-bar-border'),
           position: DecorationPosition.foreground,
@@ -93,44 +93,47 @@ class DesktopTitleBar extends StatelessWidget {
                 onShowAbout: onShowAbout,
                 onQuit: onQuit,
               ),
-              Expanded(
-                child: GestureDetector(
-                  key: const ValueKey<String>('desktop-title-bar-drag-area'),
-                  behavior: HitTestBehavior.translucent,
-                  onPanStart: (_) => unawaited(window.startDragging()),
-                  onDoubleTap: () => unawaited(window.toggleMaximized()),
-                  child: const SizedBox.expand(),
-                ),
-              ),
-              _CaptionButton(
-                key: const ValueKey<String>('desktop-title-bar-minimize'),
-                tooltip: l10n.desktopWindowMinimize,
-                action: DesktopCaptionAction.minimize,
-                onPressed: () => unawaited(window.minimize()),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: window.maximized,
-                builder: (context, maximized, _) => _CaptionButton(
-                  key: ValueKey<String>(
-                    maximized
-                        ? 'desktop-title-bar-restore'
-                        : 'desktop-title-bar-maximize',
+              if (window.chrome.usesCustomTitleBar) ...<Widget>[
+                Expanded(
+                  child: GestureDetector(
+                    key: const ValueKey<String>('desktop-title-bar-drag-area'),
+                    behavior: HitTestBehavior.translucent,
+                    onPanStart: (_) => unawaited(window.startDragging()),
+                    onDoubleTap: () => unawaited(window.toggleMaximized()),
+                    child: const SizedBox.expand(),
                   ),
-                  tooltip: maximized
-                      ? l10n.desktopWindowRestore
-                      : l10n.desktopWindowMaximize,
-                  action: maximized
-                      ? DesktopCaptionAction.restore
-                      : DesktopCaptionAction.maximize,
-                  onPressed: () => unawaited(window.toggleMaximized()),
                 ),
-              ),
-              _CaptionButton(
-                key: const ValueKey<String>('desktop-title-bar-close'),
-                tooltip: l10n.desktopWindowClose,
-                action: DesktopCaptionAction.close,
-                onPressed: onClose,
-              ),
+                _CaptionButton(
+                  key: const ValueKey<String>('desktop-title-bar-minimize'),
+                  tooltip: l10n.desktopWindowMinimize,
+                  action: DesktopCaptionAction.minimize,
+                  onPressed: () => unawaited(window.minimize()),
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: window.maximized,
+                  builder: (context, maximized, _) => _CaptionButton(
+                    key: ValueKey<String>(
+                      maximized
+                          ? 'desktop-title-bar-restore'
+                          : 'desktop-title-bar-maximize',
+                    ),
+                    tooltip: maximized
+                        ? l10n.desktopWindowRestore
+                        : l10n.desktopWindowMaximize,
+                    action: maximized
+                        ? DesktopCaptionAction.restore
+                        : DesktopCaptionAction.maximize,
+                    onPressed: () => unawaited(window.toggleMaximized()),
+                  ),
+                ),
+                _CaptionButton(
+                  key: const ValueKey<String>('desktop-title-bar-close'),
+                  tooltip: l10n.desktopWindowClose,
+                  action: DesktopCaptionAction.close,
+                  onPressed: onClose,
+                ),
+              ] else
+                const Spacer(),
             ],
           ),
         ),

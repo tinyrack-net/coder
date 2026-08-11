@@ -16,6 +16,7 @@ import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_title_bar.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -398,6 +399,15 @@ void main() {
       markdown: 'A streaming answer stops mid-',
       isStreaming: true,
     ),
+    ChatReasoningActivity(
+      key: 'reasoning-complete',
+      turnId: 'turn-all',
+      createdAt: now,
+      markdown:
+          'I will inspect the parser, update the smallest safe surface, and '
+          'verify the focused behavior.',
+      isStreaming: false,
+    ),
     ChatAttachmentMessage(
       key: 'assistant-attachment',
       turnId: 'turn-all',
@@ -586,11 +596,63 @@ void main() {
     ),
   );
 
+  for (final variant in <({String name, ThemeMode mode})>[
+    (name: 'light', mode: ThemeMode.light),
+    (name: 'dark', mode: ThemeMode.dark),
+  ]) {
+    unawaited(
+      goldenTest(
+        'Markdown selection stays continuous through inline code '
+        '${variant.name}',
+        fileName: 'chat_markdown_selection_${variant.name}',
+        constraints: const BoxConstraints.tightFor(width: 560, height: 260),
+        whilePerforming: (tester) async {
+          final first = find.textContaining(
+            'Drag from prose',
+            findRichText: true,
+          );
+          final last = find.textContaining(
+            'highlight continuous.',
+            findRichText: true,
+          );
+          final selection = await tester.startGesture(
+            tester.getTopLeft(first) + const Offset(1, 1),
+            kind: PointerDeviceKind.mouse,
+          );
+          await tester.pump();
+          await selection.moveTo(
+            tester.getBottomRight(last) - const Offset(1, 1),
+          );
+          await tester.pump();
+          await selection.up();
+          await tester.pumpAndSettle();
+          return null;
+        },
+        builder: () => SizedBox(
+          width: 500,
+          height: 180,
+          child: _chatItem(
+            variant.mode,
+            ChatAssistantMessage(
+              key: 'selection-${variant.name}',
+              turnId: 'turn-selection',
+              createdAt: now,
+              markdown:
+                  'Drag from prose through `inline_code` and keep the '
+                  'highlight continuous.',
+              isStreaming: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   unawaited(
     goldenTest(
       'chat timeline and approval cards render in light and dark themes',
       fileName: 'core_cards',
-      constraints: const BoxConstraints.tightFor(width: 1000, height: 2560),
+      constraints: const BoxConstraints.tightFor(width: 1000, height: 2880),
       builder: () => GoldenTestGroup(
         columns: 2,
         children: <Widget>[
@@ -624,6 +686,44 @@ void main() {
               width: 460,
               height: 260,
               child: _chatItem(ThemeMode.dark, diffActivity),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'reasoning light',
+            child: SizedBox(
+              width: 460,
+              height: 280,
+              child: _chatItem(
+                ThemeMode.light,
+                ChatReasoningActivity(
+                  key: 'reasoning-expanded-light',
+                  turnId: 'turn-reasoning',
+                  createdAt: now,
+                  markdown:
+                      'First inspect the **provider event**, then preserve it '
+                      'through the timeline and render the summary.',
+                  isStreaming: false,
+                ),
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'reasoning dark',
+            child: SizedBox(
+              width: 460,
+              height: 280,
+              child: _chatItem(
+                ThemeMode.dark,
+                ChatReasoningActivity(
+                  key: 'reasoning-expanded-dark',
+                  turnId: 'turn-reasoning',
+                  createdAt: now,
+                  markdown:
+                      'First inspect the **provider event**, then preserve it '
+                      'through the timeline and render the summary.',
+                  isStreaming: false,
+                ),
+              ),
             ),
           ),
           GoldenTestScenario(
@@ -1095,7 +1195,7 @@ void main() {
         columns: 1,
         children: <Widget>[
           GoldenTestScenario(
-            name: 'desktop light',
+            name: 'Windows custom chrome light',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -1103,7 +1203,18 @@ void main() {
             ),
           ),
           GoldenTestScenario(
-            name: 'desktop collapsed dark',
+            name: 'Linux native chrome menu light',
+            child: SizedBox(
+              width: 1000,
+              height: 620,
+              child: _shell(
+                ThemeMode.light,
+                chrome: DesktopWindowChrome.nativeWithMenuBar,
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'Windows custom chrome collapsed dark',
             child: SizedBox(
               width: 1000,
               height: 620,
@@ -1990,7 +2101,11 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
   Future<bool> open(Uri uri) async => true;
 }
 
-Widget _shell(ThemeMode mode, {bool collapsed = false}) {
+Widget _shell(
+  ThemeMode mode, {
+  bool collapsed = false,
+  DesktopWindowChrome chrome = DesktopWindowChrome.custom,
+}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -2030,8 +2145,8 @@ Widget _shell(ThemeMode mode, {bool collapsed = false}) {
       mode,
       Column(
         children: <Widget>[
-          DesktopTitleBar(
-            window: FakeDesktopWindow(supportsCustomTitleBar: true),
+          DesktopMenuBar(
+            window: FakeDesktopWindow(chrome: chrome),
             sidebarCollapsed: collapsed,
             onNewWorkspace: () {},
             onOpenSettings: () {},

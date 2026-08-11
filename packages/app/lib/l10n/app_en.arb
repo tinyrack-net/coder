@@ -3304,6 +3304,18 @@
   "chatToolActionContext": "Manage context",
   "chatToolActionImage": "View image",
   "chatToolActionGeneric": "Use tool",
+  "chatReasoningThinking": "Thinking…",
+  "@chatReasoningThinking": {
+    "description": "Label of a live expandable reasoning row."
+  },
+  "chatReasoningThought": "Thought",
+  "@chatReasoningThought": {
+    "description": "Label of a completed expandable reasoning row."
+  },
+  "chatReasoningWaiting": "Waiting for reasoning details…",
+  "@chatReasoningWaiting": {
+    "description": "Placeholder inside reasoning opened before text arrives."
+  },
   "chatToolStatusFailed": "Failed",
   "chatToolStatusDenied": "Denied",
   "chatToolDetailsTool": "Tool",

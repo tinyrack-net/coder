@@ -162,8 +162,8 @@ void main() {
     sessionId: agent.id,
     sequence: 2,
     turnId: 'turn',
-    type: 'assistant.delta',
-    data: const <String, dynamic>{'text': 'hello'},
+    type: 'assistant.reasoning.delta',
+    data: const <String, dynamic>{'text': 'Plan the response.'},
     createdAt: now,
   );
   final goal = GoalDto(

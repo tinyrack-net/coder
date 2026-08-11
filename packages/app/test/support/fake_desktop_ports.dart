@@ -7,11 +7,13 @@ import 'package:flutter/foundation.dart';
 /// Records window control without opening a native window.
 final class FakeDesktopWindow implements DesktopWindow {
   /// Creates a fake window that starts visible unless told otherwise.
-  FakeDesktopWindow({bool visible = true, this.supportsCustomTitleBar = false})
-    : _visible = ValueNotifier<bool>(visible);
+  FakeDesktopWindow({
+    bool visible = true,
+    this.chrome = DesktopWindowChrome.native,
+  }) : _visible = ValueNotifier<bool>(visible);
 
   @override
-  final bool supportsCustomTitleBar;
+  final DesktopWindowChrome chrome;
 
   final ValueNotifier<bool> _maximized = ValueNotifier<bool>(false);
 

@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
@@ -436,6 +437,10 @@ void main() {
       expect(find.byKey(overflowKey), findsNothing);
       expect(find.byKey(settingsKey), findsOneWidget);
       expect(
+        tester.getSize(find.byKey(settingsKey)).height,
+        TRControlMetrics.heightOf(TRUiSize.sm),
+      );
+      expect(
         find.byKey(
           const ValueKey<String>('session-composer-context-meter'),
         ),
@@ -458,8 +463,10 @@ void main() {
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
       const surfaceSize = Size(390, 760);
-      await tester.binding.setSurfaceSize(surfaceSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = surfaceSize;
       await tester.pumpWidget(
         _harness(
           api: FakeCoderApi(agentDefinitions: _compactAgentDefinitions),
@@ -467,6 +474,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      for (final key in <String>[
+        'session-composer-settings',
+        'session-composer-attach',
+        'session-composer-send',
+      ]) {
+        expect(
+          tester.getSize(find.byKey(ValueKey<String>(key))).height,
+          TRControlMetrics.heightOf(TRUiSize.lg),
+        );
+      }
 
       await tester.tap(
         find.byKey(const ValueKey<String>('session-composer-settings')),
@@ -1550,7 +1568,7 @@ Widget _harness({
       data: MediaQuery.of(
         context,
       ).copyWith(padding: mediaPadding, viewPadding: mediaPadding),
-      child: child!,
+      child: CoderControlDensity(child: child!),
     ),
     home: Scaffold(
       body: Align(alignment: Alignment.bottomCenter, child: composer),

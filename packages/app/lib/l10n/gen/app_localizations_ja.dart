@@ -2578,6 +2578,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get chatToolActionGeneric => 'ツールを使用';
 
   @override
+  String get chatReasoningThinking => '思考中…';
+
+  @override
+  String get chatReasoningThought => '思考済み';
+
+  @override
+  String get chatReasoningWaiting => '思考内容を待っています…';
+
+  @override
   String get chatToolStatusFailed => '失敗';
 
   @override

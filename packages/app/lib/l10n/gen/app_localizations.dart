@@ -4618,6 +4618,24 @@ abstract class AppLocalizations {
   /// **'Use tool'**
   String get chatToolActionGeneric;
 
+  /// Label of a live expandable reasoning row.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get chatReasoningThinking;
+
+  /// Label of a completed expandable reasoning row.
+  ///
+  /// In en, this message translates to:
+  /// **'Thought'**
+  String get chatReasoningThought;
+
+  /// Placeholder inside reasoning opened before text arrives.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for reasoning details…'**
+  String get chatReasoningWaiting;
+
   /// No description provided for @chatToolStatusFailed.
   ///
   /// In en, this message translates to:

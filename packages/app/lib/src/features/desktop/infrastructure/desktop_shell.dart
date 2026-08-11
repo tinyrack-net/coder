@@ -10,10 +10,28 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+/// How the application composes its desktop window chrome.
+enum DesktopWindowChrome {
+  /// The operating system owns both the window frame and application menus.
+  native,
+
+  /// The operating system owns the frame while Flutter renders app menus.
+  nativeWithMenuBar,
+
+  /// Flutter owns the frame, application menus, and caption controls.
+  custom;
+
+  /// Whether Flutter renders the localized application menu row.
+  bool get showsApplicationMenuBar => this != native;
+
+  /// Whether Flutter replaces the native title bar and caption controls.
+  bool get usesCustomTitleBar => this == custom;
+}
+
 /// Controls the single desktop window from outside the widget tree.
 abstract interface class DesktopWindow {
-  /// Whether this platform replaces the native title bar with Flutter chrome.
-  bool get supportsCustomTitleBar;
+  /// Platform-specific ownership of the frame and application menus.
+  DesktopWindowChrome get chrome;
 
   /// Current maximize state, including changes initiated by the OS.
   ValueListenable<bool> get maximized;
@@ -150,8 +168,11 @@ final class PluginDesktopWindow implements DesktopWindow {
   final TargetPlatform platform;
 
   @override
-  bool get supportsCustomTitleBar =>
-      platform == TargetPlatform.windows || platform == TargetPlatform.linux;
+  DesktopWindowChrome get chrome => switch (platform) {
+    TargetPlatform.windows => DesktopWindowChrome.custom,
+    TargetPlatform.linux => DesktopWindowChrome.nativeWithMenuBar,
+    _ => DesktopWindowChrome.native,
+  };
 
   final ValueNotifier<bool> _maximized = ValueNotifier<bool>(false);
 
@@ -207,7 +228,7 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   Future<void> prepare({required bool startHidden}) async {
     await initialize();
-    if (supportsCustomTitleBar) {
+    if (chrome.usesCustomTitleBar) {
       // Configure while the native window is still hidden so its system title
       // bar cannot flash before Flutter paints the first frame.
       await configureCustomTitleBar(enabled: true);

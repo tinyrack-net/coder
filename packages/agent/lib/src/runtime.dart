@@ -366,18 +366,40 @@ class AgentRunner {
             tools: _advertisedTools(),
           );
 
+          var reasoningOpen = true;
+          await _onEvent(
+            'assistant.reasoning.started',
+            const <String, dynamic>{},
+          );
+          Future<void> closeReasoning() async {
+            if (!reasoningOpen) return;
+            reasoningOpen = false;
+            await _onEvent(
+              'assistant.reasoning.completed',
+              const <String, dynamic>{},
+            );
+          }
+
           try {
             await for (final event in _provider.stream(
               modelRequest,
               cancellation,
             )) {
               switch (event) {
+                case ModelReasoningDelta(:final delta):
+                  firstTokenAt ??= _clock.nowUtc();
+                  await _onEvent(
+                    'assistant.reasoning.delta',
+                    <String, dynamic>{'text': delta},
+                  );
                 case ModelTextDelta(:final delta):
+                  await closeReasoning();
                   firstTokenAt ??= _clock.nowUtc();
                   await _onEvent('assistant.delta', <String, dynamic>{
                     'text': delta,
                   });
                 case ModelToolCall():
+                  await closeReasoning();
                   firstTokenAt ??= _clock.nowUtc();
                   toolCalls.add(event);
                   await _onEvent('tool.requested', <String, dynamic>{
@@ -386,6 +408,7 @@ class AgentRunner {
                     'input': event.input.toJson(),
                   });
                 case ModelResponseCompleted():
+                  await closeReasoning();
                   completed = event;
                   // Measured from the first token rather than the request, so
                   // the rate reports generation speed and not the wait for it.
@@ -408,6 +431,8 @@ class AgentRunner {
               cancellation,
               'overflow',
             );
+          } finally {
+            await closeReasoning();
           }
 
           if (completed == null && !recovered) {

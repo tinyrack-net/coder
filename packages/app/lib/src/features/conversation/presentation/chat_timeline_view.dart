@@ -6,6 +6,7 @@ import 'package:app/src/features/conversation/presentation/chat_approval_card.da
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
@@ -120,6 +121,11 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   Widget build(BuildContext context) {
     final items = widget.items;
     final busy = widget.busy;
+    final reasoningActive =
+        items.isNotEmpty &&
+        items.last is ChatReasoningActivity &&
+        (items.last as ChatReasoningActivity).isStreaming;
+    final showRunning = busy && !reasoningActive;
     if (widget.loading && items.isEmpty) {
       return ChatTimelineSkeleton(
         semanticLabel: AppLocalizations.of(context).conversationLoading,
@@ -149,7 +155,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           TRSpacing.extraLarge,
           TRSpacing.large,
         ),
-        itemCount: items.length + (busy ? 1 : 0),
+        itemCount: items.length + (showRunning ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
         // Every new event shifts the reversed indices, so keys are mapped
         // back to their slot; without this an expanded card would leak its
@@ -160,16 +166,16 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             (item) => item.key == key.value,
           );
           if (position < 0) return null;
-          return items.length - position - 1 + (busy ? 1 : 0);
+          return items.length - position - 1 + (showRunning ? 1 : 0);
         },
         itemBuilder: (context, index) {
-          if (busy && index == 0) {
+          if (showRunning && index == 0) {
             return const KeyedSubtree(
               key: ValueKey<String>('chat-running'),
               child: ChatRunningIndicator(),
             );
           }
-          final itemIndex = index - (busy ? 1 : 0);
+          final itemIndex = index - (showRunning ? 1 : 0);
           final item = items[items.length - itemIndex - 1];
           return KeyedSubtree(
             key: ValueKey<String>(item.key),
@@ -243,6 +249,11 @@ class ChatItemView extends StatelessWidget {
         exportAttachment: exportAttachment,
       ),
       ChatAssistantMessage() => ChatAssistantMessageView(message: value),
+      ChatReasoningActivity() => ChatReasoningCard(
+        activity: value,
+        expanded: expanded,
+        onToggle: onToggle,
+      ),
       ChatPlanProposal() => ChatPlanCard(
         proposal: value,
         actions: planActionBuilder?.call(value),

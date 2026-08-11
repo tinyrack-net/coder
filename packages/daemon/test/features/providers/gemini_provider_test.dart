@@ -17,6 +17,9 @@ data: {"event_type":"step.start","index":0,"step":{"type":"thought"}}
 event: step.delta
 data: {"event_type":"step.delta","index":0,"delta":{"type":"thought_signature","signature":"signed"}}
 
+event: step.delta
+data: {"event_type":"step.delta","index":0,"delta":{"type":"thought_summary","text":"plan"}}
+
 event: step.stop
 data: {"event_type":"step.stop","index":0}
 
@@ -66,6 +69,10 @@ data: [DONE]
 
       expect(events.whereType<ModelTextDelta>().single.delta, 'hello');
       expect(
+        events.whereType<ModelReasoningDelta>().single.delta,
+        'plan',
+      );
+      expect(
         events.whereType<ModelFunctionCall>().single.arguments['path'],
         'README.md',
       );
@@ -76,6 +83,7 @@ data: [DONE]
         'step': <String, dynamic>{
           'type': 'thought',
           'signature': 'signed',
+          'summary': 'plan',
         },
       });
       final body = Map<String, dynamic>.from(adapter.options!.data as Map);

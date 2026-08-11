@@ -11,6 +11,7 @@ import 'package:app/src/features/conversation/application/composer_suggestions.d
 import 'package:app/src/features/conversation/presentation/composer_trigger.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
+import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
@@ -526,7 +527,7 @@ Widget _desktopApp() => CoderApp(
       ),
     ),
   ),
-  desktopWindow: FakeDesktopWindow(supportsCustomTitleBar: true),
+  desktopWindow: FakeDesktopWindow(chrome: DesktopWindowChrome.custom),
   trayIcon: FakeTrayIcon(),
   autostart: FakeAutostartRegistration(),
 );

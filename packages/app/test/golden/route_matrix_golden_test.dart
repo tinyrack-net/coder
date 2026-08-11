@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -191,8 +192,12 @@ class _RouteGoldenHostState extends State<_RouteGoldenHost> {
               ? const EdgeInsets.fromLTRB(0, 24, 0, 34)
               : EdgeInsets.zero;
           return MediaQuery(
-            data: media.copyWith(padding: padding, viewPadding: padding),
-            child: child!,
+            data: media.copyWith(
+              size: widget.size,
+              padding: padding,
+              viewPadding: padding,
+            ),
+            child: CoderControlDensity(child: child!),
           );
         },
       ),

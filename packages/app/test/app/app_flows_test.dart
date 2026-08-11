@@ -13,6 +13,7 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
@@ -85,8 +86,9 @@ Future<GoRouter> _pumpRoute(
     routerConfig: router,
     // Mirrors what CoderApp wraps every route in, so a screen under test can
     // report a result the same way it does when the app runs.
-    builder: (context, child) =>
-        CoderToastScope(child: child ?? const SizedBox.shrink()),
+    builder: (context, child) => CoderControlDensity(
+      child: CoderToastScope(child: child ?? const SizedBox.shrink()),
+    ),
   );
   await tester.pumpWidget(
     ProviderScope(

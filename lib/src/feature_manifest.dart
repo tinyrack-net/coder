@@ -381,8 +381,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'desktop.window.chrome',
     description:
-        'Replaces Windows and Linux native title bars with localized menus, '
-        'window controls, and a draggable application frame.',
+        'Uses a custom Windows frame and native Linux frame with localized '
+        'application menus and platform-appropriate window controls.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
@@ -656,7 +656,9 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
   ),
   FeatureContract(
     id: 'turn.execution',
-    description: 'Streams, cancels, approves, rejects, and restores turns.',
+    description:
+        'Streams visible reasoning and responses, cancels, approves, rejects, '
+        'and restores turns.',
     apiMethods: <String>[
       'sessions.startTurn',
       'sessions.cancelTurn',
