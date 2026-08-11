@@ -12,6 +12,10 @@ import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+const double _directoryBrowserWidth =
+    TRMeasurements.overlayWidthMd + TRSpacing.threeExtraLarge;
+const double _directoryBrowserHeight = _directoryBrowserWidth * 3 / 4;
+
 /// Debounce applied to free-text path edits before querying the daemon.
 const Duration directoryBrowserDebounce = Duration(milliseconds: 200);
 
@@ -78,8 +82,8 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
     return TRAlertDialog(
       title: TRText.inherit(l10n.directoryBrowserTitle),
       content: SizedBox(
-        width: 560,
-        height: 420,
+        width: _directoryBrowserWidth,
+        height: _directoryBrowserHeight,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -97,7 +101,9 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
             if (_loading && _loadedOnce) const TRProgress(),
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: TRSpacing.small,
+                ),
                 child: TRText(
                   _error!,
                   color: TRTextColor.danger,

@@ -24,7 +24,10 @@ class ChatDiffView extends StatelessWidget {
       if (file.path.isNotEmpty) {
         rows.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2, top: 4),
+            padding: const EdgeInsets.only(
+              bottom: TRSpacing.extraSmall / 2,
+              top: TRSpacing.extraSmall,
+            ),
             child: TRText(
               '${file.path}  +${file.added} -${file.removed}',
               variant: TRTextVariant.label,
