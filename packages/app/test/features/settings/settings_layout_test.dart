@@ -722,6 +722,33 @@ void main() {
       }
     });
 
+    testWidgets('uses the medium gap between a heading and its description', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const SettingsScaffold(
+            children: <Widget>[
+              SettingsSection(
+                title: 'Section',
+                description: 'Description',
+                children: <Widget>[],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final heading = tester.getRect(find.widgetWithText(TRText, 'Section'));
+      final description = tester.getRect(
+        find.widgetWithText(TRText, 'Description'),
+      );
+      expect(
+        description.top - heading.bottom,
+        moreOrLessEquals(TRSpacing.medium, epsilon: 0.5),
+      );
+    });
+
     testWidgets('boxes rows and leaves form controls unboxed', (tester) async {
       await tester.pumpWidget(
         _host(
