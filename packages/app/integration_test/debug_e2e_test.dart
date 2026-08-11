@@ -2275,7 +2275,7 @@ void main() {
       addTearDown(window.releaseClose);
 
       await window.prepare(startHidden: false);
-      expect(window.chrome, DesktopWindowChrome.nativeWithMenuBar);
+      expect(window.chrome, DesktopWindowChrome.custom);
       expect(await window.isVisible(), isTrue);
 
       await window.toggleMaximized();
