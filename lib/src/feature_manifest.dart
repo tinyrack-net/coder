@@ -1093,8 +1093,8 @@ const List<FeatureContract> coderFeatureManifest = <FeatureContract>[
       FeatureScenario(
         id: 'spawn_child_final_answer',
         description:
-            'Spawns a subagent asynchronously, opens its read-only tab from '
-            'the subagent track, and receives its final answer as mail.',
+            'Spawns a subagent asynchronously, answers its approval from the '
+            'subagent tab, and wakes the idle parent with its final answer.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(

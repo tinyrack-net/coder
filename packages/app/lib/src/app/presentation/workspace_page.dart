@@ -624,7 +624,10 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         value: _controlValue(entry),
         label: subagent ? session.taskName ?? session.title : session.title,
         leading: subagent
-            ? SubagentStatusIcon(lifecycle: session.lifecycle)
+            ? SubagentStatusIcon(
+                lifecycle: session.lifecycle,
+                status: session.status,
+              )
             : null,
         onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
         closeLabel: AppLocalizations.of(context).workspaceCloseTab,
@@ -1293,8 +1296,10 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final current =
         sessions.where((item) => item.id == widget.agent.id).firstOrNull ??
         widget.agent;
-    // A spawned subagent's conversation is watched live but never driven
-    // from here: no composer, approvals, questions, or plan actions.
+    // A spawned subagent's conversation is watched live but never driven from
+    // here: no composer or plan actions. Its approvals are the exception —
+    // only a human can answer them, and the daemon parks the subagent's turn
+    // on an unbounded wait until one does, so hiding them hangs the agent.
     final readOnly = isSubagentSession(current);
     final subagentRows = readOnly
         ? const <SubagentTrackRow>[]
@@ -1310,13 +1315,11 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final items = ref.watch(
       conversationTimelineProvider(widget.selection.hostId, current.id),
     );
+    // `request_user_input` is refused for non-root agents, so a question here
+    // would be unanswerable; approvals stay so the user can unblock the turn.
     var visibleItems = readOnly
         ? items
-              .where(
-                (item) =>
-                    item is! ChatApprovalInteraction &&
-                    item is! ChatQuestionInteraction,
-              )
+              .where((item) => item is! ChatQuestionInteraction)
               .toList(growable: false)
         : items;
     // A freshly created session navigates before its first turn is accepted.
@@ -1402,7 +1405,10 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           children: <Widget>[
             CoderListRow(
               leading: readOnly
-                  ? SubagentStatusIcon(lifecycle: current.lifecycle)
+                  ? SubagentStatusIcon(
+                      lifecycle: current.lifecycle,
+                      status: current.status,
+                    )
                   : null,
               title: TRText.inherit(
                 readOnly ? current.taskName ?? current.title : current.title,

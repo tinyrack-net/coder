@@ -14,6 +14,9 @@ const String goalBudgetLimitPrompt = PromptAssets.goalsBudgetLimit;
 /// How an agent that owns subagents should coordinate them.
 const String orchestratorPrompt = PromptAssets.agentsOrchestrator;
 
+/// How a spawned subagent should carry out the task it was delegated.
+const String subagentPrompt = PromptAssets.agentsSubagent;
+
 /// How to write a patch the `apply_patch` tool will accept.
 const String applyPatchToolInstructions =
     PromptAssets.applyPatchToolInstructions;

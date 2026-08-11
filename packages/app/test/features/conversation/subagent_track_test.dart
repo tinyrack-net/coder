@@ -203,7 +203,9 @@ void main() {
       expect(find.byKey(const ValueKey('subagent-track')), findsNothing);
       expect(find.byType(TRSpinner), findsWidgets);
 
-      // A pending approval on the subagent never surfaces a card here.
+      // Read-only means the user cannot talk to the subagent, not that the
+      // subagent is unreachable. Its approvals are the one thing only a human
+      // can answer, and hiding them parks the child's turn forever.
       api.emit(
         ApprovalRequestedClientEvent(
           ApprovalRequestDto(
@@ -220,7 +222,14 @@ void main() {
         ),
       );
       await tester.pump(const Duration(seconds: 1));
-      expect(find.byType(ApprovalCard), findsNothing);
+      expect(find.byType(ApprovalCard), findsOneWidget);
+      expect(find.byType(SessionComposer), findsNothing);
+      await tester.tap(find.widgetWithText(TRButton, '승인'));
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        api.approvalDecisions,
+        <({String id, bool approved})>[(id: 'approval', approved: true)],
+      );
 
       // The transcript streams live timeline events.
       api.emitTimeline('child-a', 'assistant.delta', <String, dynamic>{
@@ -241,6 +250,61 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TRSpinner), findsNothing);
       expect(find.byIcon(CoderIcons.success), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'a subagent waiting for approval is distinguishable from a working one',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final child = subagent(
+        'child-a',
+        parentId: 'main-session',
+        taskName: 'explore_auth',
+        agentPath: '/root/explore_auth',
+      );
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[root('main-session'), child],
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        api,
+        initialLocation: sessionLocation('main-session'),
+        settle: false,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.text('서브 에이전트 1개'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final row = find.byKey(const ValueKey('subagent-row-child-a'));
+      expect(
+        find.descendant(of: row, matching: find.byType(TRSpinner)),
+        findsOneWidget,
+      );
+
+      // A child blocked on an approval is not making progress; rendering it
+      // as a plain spinner hides the one row the user has to act on.
+      api.emit(
+        SessionUpdatedClientEvent(
+          child.copyWith(status: SessionStatus.waitingForApproval),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.descendant(of: row, matching: find.byType(TRSpinner)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byIcon(CoderIcons.approvalPending),
+        ),
+        findsOneWidget,
+      );
     },
   );
 

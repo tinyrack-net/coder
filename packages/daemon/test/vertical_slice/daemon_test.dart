@@ -642,11 +642,15 @@ void main() {
         ),
       );
       final timelineEvents = client.sessions.timelineEvents;
-      final parentCompleted = timelineEvents
-          .firstWhere(
-            (event) =>
-                event.sessionId == parent.id && event.type == 'turn.completed',
-          )
+      final parentTurns = timelineEvents.where(
+        (event) =>
+            event.sessionId == parent.id && event.type == 'turn.completed',
+      );
+      final parentCompleted = parentTurns.first.timeout(_eventTimeout);
+      // The parent's own turn, then the one the finishing child wakes.
+      final parentWokenAgain = parentTurns
+          .take(2)
+          .toList()
           .timeout(_eventTimeout);
       // The child session ID is unknown before the spawn, so completion is
       // detected through the parent's FINAL_ANSWER mail event.
@@ -703,20 +707,11 @@ void main() {
         '/root/review_task',
       );
 
-      // The parent's next turn folds the FINAL_ANSWER envelope into the
-      // model request at its first message boundary.
-      final secondCompleted = timelineEvents
-          .firstWhere(
-            (event) =>
-                event.sessionId == parent.id && event.type == 'turn.completed',
-          )
-          .timeout(_eventTimeout);
-      await client.startTurn(
-        sessionId: parent.id,
-        turnId: 'parent-turn-2',
-        prompt: 'What did the reviewer say?',
-      );
-      await secondCompleted;
+      // The last child to finish wakes the idle parent by itself, and that
+      // turn folds the FINAL_ANSWER envelope into the model request at its
+      // first message boundary. Without the wake the mail would sit
+      // undelivered until the user typed again.
+      expect(await parentWokenAgain, hasLength(2));
       expect(
         provider.requests.any(
           (request) => request.history.whereType<UserConversationItem>().any(
@@ -731,6 +726,138 @@ void main() {
       // `turn.completed` is emitted before the runner reports the idle
       // status, so the tree has to be observed at rest before teardown
       // closes the database under a turn that is still writing.
+      final worktreeId = registered.worktrees.single.id;
+      await _waitForIdleSession(client, worktreeId, parent.id);
+      await _waitForIdleSession(client, worktreeId, child.id);
+    },
+    tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'a subagent blocked on an approval finishes once the user answers',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'coder-child-approval-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'coder-child-approval-workspace-',
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'childapv-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+        provider: _CollaboratingProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await CoderClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'childapv-token-0123456789abcdef012345',
+        ),
+        clientId: 'child-approval-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+      final coder = (await client.listAgentDefinitions()).single;
+      // `ask` is what a spawned child inherits by default, and it is the mode
+      // that parks the child's turn on an approval only a human can answer.
+      final reviewer = await client.createAgentDefinition(
+        'reviewer',
+        coder.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          mode: AgentMode.subagent,
+          permissionMode: PermissionMode.ask,
+          toolIds: const <String>['apply_patch'],
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      await client.updateAgentDefinition(
+        coder.copyWith(
+          permissionMode: PermissionMode.fullAccess,
+          callableAgentIds: <String>[reviewer.id],
+        ),
+        expectedContentHash: coder.contentHash,
+      );
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final parent = await client.createSession(
+        id: 'parent',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Parent',
+        agentDefinitionId: 'coder',
+        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+      );
+      final finalAnswerMailed = client.sessions.timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id &&
+                event.type == 'agent.mail' &&
+                ((event.data['mail'] as Map<String, dynamic>?)?['type']
+                        as String?) ==
+                    'finalAnswer',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(parent.id);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn',
+        prompt: 'Review this workspace.',
+      );
+
+      // The parent's own turn ends immediately; the child then parks on an
+      // approval that only a human can answer.
+      final blocked = await _waitForSubagentStatus(
+        client,
+        parent.id,
+        SessionStatus.waitingForApproval,
+      );
+      expect(blocked.lifecycle, AgentLifecycle.running);
+
+      // Opening the subagent's tab replays its timeline, which is where the
+      // pending approval surfaces. Approvals only reach clients subscribed to
+      // that session, so this subscribe is what the tab does on open.
+      final childTimeline = await client.subscribeTimeline(blocked.id);
+      final requested = childTimeline
+          .where((event) => event.type == 'approval.requested')
+          .single;
+      final approval = ApprovalRequestDto.fromJson(
+        Map<String, dynamic>.from(
+          requested.data['approval'] as Map<dynamic, dynamic>,
+        ),
+      );
+      expect(approval.toolName, 'apply_patch');
+      expect(approval.sessionId, blocked.id);
+      expect(approval.status, ApprovalStatus.pending);
+
+      // Answering it is the only thing that can end the child's turn: the
+      // daemon waits on an unbounded completer until someone does.
+      await client.resolveApproval(approvalId: approval.id, approved: true);
+      await finalAnswerMailed;
+      final child = (await client.listSubagents(parent.id)).singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.lifecycle, AgentLifecycle.completed);
+      expect(
+        File(p.join(workspace.path, 'forbidden.txt')).existsSync(),
+        isTrue,
+      );
+
       final worktreeId = registered.worktrees.single.id;
       await _waitForIdleSession(client, worktreeId, parent.id);
       await _waitForIdleSession(client, worktreeId, child.id);
@@ -3364,6 +3491,24 @@ final class _TextProvider implements ModelProvider {
 /// The `turn.completed` timeline event is broadcast before the session row
 /// leaves the running state, so a mutation issued immediately after it can
 /// still be rejected.
+Future<SessionDto> _waitForSubagentStatus(
+  CoderApi client,
+  String parentId,
+  SessionStatus status, {
+  int attempts = 100,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    final delegated = (await client.sessions.listSubagents(parentId)).where(
+      (session) => session.origin == SessionOrigin.delegated,
+    );
+    for (final session in delegated) {
+      if (session.status == status) return session;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError('Timed out waiting for a subagent of $parentId at $status.');
+}
+
 Future<void> _waitForIdleSession(
   CoderApi client,
   String worktreeId,

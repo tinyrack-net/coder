@@ -151,6 +151,10 @@ class MultiAgentService {
   /// Sessions whose trigger mail is parked until a slot frees, per root.
   final Map<String, List<String>> _parkedTriggers = <String, List<String>>{};
 
+  /// Tree root of every session holding a slot, so a slot can be released
+  /// without first reading the session row back.
+  final Map<String, String> _rootBySlotHolder = <String, String>{};
+
   /// Waiters blocked in `wait_agent`, per waiting session.
   final Map<String, List<Completer<void>>> _mailWaiters =
       <String, List<Completer<void>>>{};
@@ -194,11 +198,16 @@ class MultiAgentService {
   String? usageHintFor(SessionDto session, AgentDefinitionDto definition) {
     if (!_collaborationEnabled(session, definition)) return null;
     final path = pathOf(session);
-    final identity = session.parentSessionId == null
+    final isRoot = session.parentSessionId == null;
+    final identity = isRoot
         ? 'You are the root agent at path `$path` of a collaboration tree.'
         : 'You are subagent `$path`. Your final response of each turn is '
               'delivered to your parent as a FINAL_ANSWER message; make it '
               'self-contained.';
+    // Only the root is coached to delegate. Handing the orchestrator prompt to
+    // a subagent tells every child to spawn grandchildren and wait on them, so
+    // the tree expands and times out instead of terminating.
+    final role = isRoot ? orchestratorPrompt : subagentPrompt;
     return '''
 ## Multi-agent collaboration
 $identity
@@ -218,7 +227,7 @@ subagent's result.
 At most $maxConcurrentSubagentTurnsPerTree subagent turns run concurrently
 per tree.
 
-$orchestratorPrompt''';
+$role''';
   }
 
   /// The mailbox drain handed to the runner of one session's turns.
@@ -239,10 +248,8 @@ $orchestratorPrompt''';
   /// Root turns are free. Throws when the tree is at capacity.
   void acquireTurnSlot(SessionDto session) {
     if (session.agentPath == null) return;
-    final running = _runningByRoot.putIfAbsent(
-      rootIdOf(session),
-      () => <String>{},
-    );
+    final rootId = rootIdOf(session);
+    final running = _runningByRoot.putIfAbsent(rootId, () => <String>{});
     if (running.contains(session.id)) return;
     if (running.length >= maxConcurrentSubagentTurnsPerTree) {
       throw const CollaborationException(
@@ -251,12 +258,25 @@ $orchestratorPrompt''';
       );
     }
     running.add(session.id);
+    _rootBySlotHolder[session.id] = rootId;
   }
 
   /// Releases a concurrency slot; safe to call twice.
   void releaseTurnSlot(SessionDto session) {
     if (session.agentPath == null) return;
-    _runningByRoot[rootIdOf(session)]?.remove(session.id);
+    releaseTurnSlotOf(session.id);
+  }
+
+  /// Releases the slot held by [sessionId] without reading its session row.
+  ///
+  /// A slot outlives the row it was taken for: the session can be deleted, or
+  /// the read that would recover its root can fail. Either way the slot has to
+  /// come back, because a tree that leaks all of its slots refuses every
+  /// further spawn.
+  void releaseTurnSlotOf(String sessionId) {
+    final rootId = _rootBySlotHolder.remove(sessionId);
+    if (rootId == null) return;
+    _runningByRoot[rootId]?.remove(sessionId);
   }
 
   /// Settles collaboration state after a turn of [sessionId] ended.
@@ -266,11 +286,17 @@ $orchestratorPrompt''';
     String? finalText,
     String? error,
   }) async {
+    // The slot comes back before anything that can fail or return early.
+    final slotRoot = _rootBySlotHolder[sessionId];
+    releaseTurnSlotOf(sessionId);
     final session = await _sessions.getById(sessionId);
-    if (session == null) return;
+    if (session == null) {
+      if (slotRoot != null) await _pumpParked(slotRoot);
+      return;
+    }
     if (session.parentSessionId != null) {
-      releaseTurnSlot(session);
       final parent = await _sessions.getById(session.parentSessionId!);
+      final wake = parent != null && _treeWentQuiet(session, parent);
       switch (outcome) {
         case TurnStatus.completed:
           _emitSession(
@@ -286,7 +312,7 @@ $orchestratorPrompt''';
               senderPath: pathOf(session),
               senderSessionId: session.id,
               payload: finalText ?? '',
-              triggerTurn: false,
+              triggerTurn: wake,
             );
           }
         case TurnStatus.failed:
@@ -300,7 +326,7 @@ $orchestratorPrompt''';
               senderPath: pathOf(session),
               senderSessionId: session.id,
               payload: 'Status: errored\n${error ?? 'unknown error'}',
-              triggerTurn: false,
+              triggerTurn: wake,
             );
           }
         // Interrupted is not final: no completion mail, the agent stays
@@ -327,6 +353,21 @@ $orchestratorPrompt''';
       await _tryStartDeliveryTurn(sessionId);
     }
     await _pumpParked(rootIdOf(session));
+  }
+
+  /// Whether [finished]'s FINAL_ANSWER should start a turn on [parent].
+  ///
+  /// A parent that is mid-turn drains its mailbox at the next turn boundary on
+  /// its own, and a parent with siblings still working would report on a
+  /// half-finished tree. Only the last agent to go quiet wakes it, so N
+  /// children finishing together produce one parent turn rather than N.
+  bool _treeWentQuiet(SessionDto finished, SessionDto parent) {
+    if (runtime.hasActiveTurn(parent.id)) return false;
+    final rootId = rootIdOf(finished);
+    final running = _runningByRoot[rootId];
+    if (running != null && running.isNotEmpty) return false;
+    final parked = _parkedTriggers[rootId];
+    return parked == null || parked.isEmpty;
   }
 
   /// Persists and routes one inter-agent message.

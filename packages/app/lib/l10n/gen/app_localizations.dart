@@ -2806,6 +2806,12 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get subagentStatusErrored;
 
+  /// Semantics label of a subagent blocked on an approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get subagentStatusWaitingForApproval;
+
   /// Subtitle notice on the read-only subagent pane.
   ///
   /// In en, this message translates to:
