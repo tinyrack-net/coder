@@ -154,6 +154,10 @@ abstract final class WorkspaceVerificationPlans {
       name: 'embedded daemon ports',
       script: 'embedded-ports:check',
     ),
+    VerificationTask(
+      name: 'Tinyrack design system',
+      script: 'design-system:check',
+    ),
   ];
 
   static const _coverageTasks = <VerificationTask>[

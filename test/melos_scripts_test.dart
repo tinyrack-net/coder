@@ -85,6 +85,25 @@ void main() {
       contains('embedded-ports:check'),
     );
   });
+
+  test('the Tinyrack design-system checker is a registered static check', () {
+    expect(
+      _script(pubspec, 'design-system:check'),
+      contains('tinyrack_ui:tinyrack_ui_check'),
+    );
+    expect(
+      _scripts(WorkspaceVerificationPlans.fast()),
+      contains('design-system:check'),
+    );
+    expect(
+      _scripts(
+        WorkspaceVerificationPlans.full(
+          hostPlatform: DesktopHost.linux,
+        ),
+      ),
+      contains('design-system:check'),
+    );
+  });
 }
 
 List<String> _scripts(VerificationPlan plan) => <String>[

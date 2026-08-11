@@ -88,6 +88,13 @@ void main() {
     }
   });
 
+  test('static checks enforce the Tinyrack design system', () {
+    expect(
+      _job(workflow, 'static-linux'),
+      contains('dart run melos design-system:check'),
+    );
+  });
+
   test('the cross-platform suites stay in separate parallel jobs', () {
     // Merging them to pay `setup-flutter` once was tried and measured: on
     // Windows the suites take 7.6 and 4.4 minutes, so one job serialises them

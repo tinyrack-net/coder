@@ -297,14 +297,19 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           Expanded(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
+                constraints: const BoxConstraints(
+                  maxWidth: TRBreakpoints.small * 9 / 8,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Padding(
-                      padding: const EdgeInsets.only(left: 20, bottom: 4),
+                      padding: const EdgeInsets.only(
+                        left: TRSpacing.large + TRSpacing.extraSmall,
+                        bottom: TRSpacing.extraSmall,
+                      ),
                       child: TRText(
                         AppLocalizations.of(context).workspaceNewWorkspace,
                         variant: TRTextVariant.headingLg,

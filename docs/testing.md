@@ -74,6 +74,7 @@ dart run melos test:contract
 dart run melos test:vertical-slice
 dart run melos test:golden
 dart run melos test:coverage
+dart run melos design-system:check
 dart run melos test:e2e:desktop
 dart run melos verify:fast
 dart run melos verify
@@ -92,9 +93,10 @@ need to be added to the machine-wide `PATH`. If the component is missing, the
 entrypoint stops with an installation-oriented error before starting the suite.
 
 `verify:fast` checks formatting, strict analysis, dependency declarations,
-architecture and feature contracts, generated-code drift, and
-all Dart and Flutter tests. Generated-code drift is checked first; once it is
-clean, independent checks run concurrently with a maximum of four tasks.
+Tinyrack design-system compliance, architecture and feature contracts,
+generated-code drift, and all Dart and Flutter tests. Generated-code drift is
+checked first; once it is clean, independent checks run concurrently with a
+maximum of four tasks.
 `verify` uses the coverage runs as the canonical test execution instead of
 running the same tests once normally and again with instrumentation. Dart and
 Flutter coverage run concurrently, followed by the per-package coverage
