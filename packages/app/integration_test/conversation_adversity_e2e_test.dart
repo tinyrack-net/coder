@@ -179,8 +179,12 @@ Future<void> _pumpConversation(
 ) async {
   await tester.pumpWidget(CoderApp(services: fixture.services));
   await pumpUntil(tester, find.text('Adversity Workspace'));
-  await pumpUntil(tester, find.text(worktreeLabel));
-  await tester.tap(find.text(worktreeLabel).last);
+  // The catalog can render behind the startup transition before that layer
+  // stops absorbing pointers on a slower Debug runner. Text presence alone is
+  // therefore not sufficient evidence that navigation is interactive.
+  final worktree = find.text(worktreeLabel).hitTestable();
+  await pumpUntil(tester, worktree);
+  await tester.tap(worktree.last);
   await pumpUntil(
     tester,
     find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
@@ -188,8 +192,9 @@ Future<void> _pumpConversation(
   await tester.tap(
     find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
   );
-  await pumpUntil(tester, find.text('Adversity conversation'));
-  await tester.tap(find.text('Adversity conversation').last);
+  final conversation = find.text('Adversity conversation').hitTestable();
+  await pumpUntil(tester, conversation);
+  await tester.tap(conversation.last);
   await pumpUntil(
     tester,
     find.byKey(const ValueKey<String>('session-composer-input')),
