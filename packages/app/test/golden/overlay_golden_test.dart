@@ -436,19 +436,46 @@ void main() {
       builder: () => const _ComposerSettingsGoldenHost(agentEnabled: false),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'compact composer settings locked model without a provider',
+      fileName: 'composer_settings_locked_model',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-settings')),
+        );
+        await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
+      },
+      builder: () => const _ComposerSettingsGoldenHost(noProvider: true),
+    ),
+  );
 }
 
 class _ComposerSettingsGoldenHost extends StatelessWidget {
-  const _ComposerSettingsGoldenHost({this.agentEnabled = true});
+  const _ComposerSettingsGoldenHost({
+    this.agentEnabled = true,
+    this.noProvider = false,
+  });
 
   final bool agentEnabled;
+  final bool noProvider;
 
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(
         fakeAppServices(
-          FakeTinestApi(agentDefinitions: _definitions),
+          FakeTinestApi(
+            agentDefinitions: _definitions,
+            connections: noProvider ? const <ProviderConnectionDto>[] : null,
+          ),
         ),
       ),
     ],
