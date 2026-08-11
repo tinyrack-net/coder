@@ -95,7 +95,10 @@ include(flutter/generated_plugins.cmake)
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+# Refresh a target-relative prefix cached before an executable rename. Preserve
+# an explicit path supplied by a developer or packaging environment.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR
+    CMAKE_INSTALL_PREFIX MATCHES "\\$<TARGET_FILE_DIR:[^>]+>$")
   set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
 endif()
 
