@@ -35,6 +35,13 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 const double _composerSettingsBreakpoint =
     TRMeasurements.measureXl * 2 + TRMeasurements.measureLg;
 
+/// Keeps desktop composer chrome compact while giving narrow windows the
+/// control size selected by the comfortable density scope.
+TRUiSize? _composerControlSize(BuildContext context) =>
+    TRControlDensityScope.of(context) == TRControlDensity.comfortable
+    ? null
+    : TRUiSize.sm;
+
 /// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
   /// Creates a [SessionComposerBar].
@@ -204,7 +211,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       return TRIconButton(
         key: const ValueKey<String>('session-composer-settings'),
         appearance: TRAppearance.ghost,
-        uiSize: TRUiSize.sm,
+        uiSize: _composerControlSize(context),
         onPressed: () => unawaited(_showSettings()),
         icon: const Icon(CoderIcons.settings),
         label: l10n.composerMoreSettings,
@@ -1796,7 +1803,7 @@ class _SessionComposerState extends State<SessionComposer> {
         message: l10n.commonStop,
         child: TRIconButton(
           key: const ValueKey('session-composer-stop'),
-          uiSize: TRUiSize.sm,
+          uiSize: _composerControlSize(context),
           onPressed: () => unawaited(Future<void>.sync(onStop)),
           icon: const Icon(CoderIcons.stop),
           label: l10n.commonStop,
@@ -1808,7 +1815,7 @@ class _SessionComposerState extends State<SessionComposer> {
       child: TRIconButton(
         key: const ValueKey('session-composer-send'),
         intent: TRIntent.primary,
-        uiSize: TRUiSize.sm,
+        uiSize: _composerControlSize(context),
         loading: _submitting,
         onPressed: widget.enabled ? () => unawaited(_runDefaultAction()) : null,
         icon: const Icon(CoderIcons.send),
@@ -1938,7 +1945,7 @@ class _SessionComposerState extends State<SessionComposer> {
                         TRIconButton(
                           key: const ValueKey('session-composer-attach'),
                           appearance: TRAppearance.ghost,
-                          uiSize: TRUiSize.sm,
+                          uiSize: _composerControlSize(context),
                           onPressed: editable && widget.attachmentInput != null
                               ? _pickFiles
                               : null,
@@ -2275,7 +2282,7 @@ class _ContextMeterState extends State<_ContextMeter> {
         key: const ValueKey<String>('session-composer-context-trigger'),
         appearance: TRAppearance.ghost,
         focusNode: _triggerFocusNode,
-        uiSize: TRUiSize.sm,
+        uiSize: _composerControlSize(context),
         label: l10n.sessionContextMeter,
         onPressed: _openPreview,
         icon: ExcludeSemantics(

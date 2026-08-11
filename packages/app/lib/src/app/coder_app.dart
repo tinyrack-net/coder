@@ -10,6 +10,7 @@ import 'package:app/src/features/desktop/presentation/desktop_shell_scope.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
+import 'package:app/src/shared/presentation/coder_control_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,22 +124,24 @@ class _CoderAppView extends ConsumerWidget {
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
       // follow the selected language and a tray row can navigate.
-      builder: (context, child) => TRContextMenuPresenterScope(
-        // The one place a concrete presenter is named. A widget test that omits
-        // this scope gets the deterministic Flutter presentation instead of a
-        // menu the operating system would draw outside the tree.
-        presenter: const TRNativeContextMenuPresenter(),
-        child: TRTooltipProvider(
-          // Outside the desktop shell rather than inside it: that shell only
-          // builds where the platform has a window to dress, so a report placed
-          // within it would never reach mobile or the web.
-          child: CoderToastScope(
-            child: !resident
-                ? child ?? const SizedBox.shrink()
-                : DesktopShellScope(
-                    router: router,
-                    child: child ?? const SizedBox.shrink(),
-                  ),
+      builder: (context, child) => CoderControlDensity(
+        child: TRContextMenuPresenterScope(
+          // The one place a concrete presenter is named. A widget test that
+          // omits this scope gets the deterministic Flutter presentation
+          // instead of a menu the operating system would draw outside the tree.
+          presenter: const TRNativeContextMenuPresenter(),
+          child: TRTooltipProvider(
+            // Outside the desktop shell rather than inside it: that shell only
+            // builds where the platform has a window to dress, so a report
+            // placed within it would never reach mobile or the web.
+            child: CoderToastScope(
+              child: !resident
+                  ? child ?? const SizedBox.shrink()
+                  : DesktopShellScope(
+                      router: router,
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+            ),
           ),
         ),
       ),

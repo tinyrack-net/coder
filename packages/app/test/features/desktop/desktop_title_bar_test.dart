@@ -346,7 +346,7 @@ void main() {
       // The trigger label is a menubar slot, so it must render at the control
       // size the bar resolves rather than naming a typography role of its own.
       final menubar = tester.widget<TRMenubar>(find.byType(TRMenubar));
-      final expected = TRControlMetrics.fontSizeOf(menubar.uiSize);
+      final expected = TRControlMetrics.fontSizeOf(menubar.uiSize!);
       for (final label in <String>['File', 'View', 'Help']) {
         final paragraph = tester.renderObject<RenderParagraph>(
           find.text(label),
