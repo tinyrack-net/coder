@@ -167,6 +167,186 @@ void main() {
     );
   });
 
+  group('SettingsCompactPaneTransition', () {
+    testWidgets('uses the Tinyrack fade and scale motion for a new pane', (
+      tester,
+    ) async {
+      var pane = 'collection';
+      late StateSetter update;
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return SettingsCompactPaneTransition(
+                paneKey: ValueKey<String>(pane),
+                child: Text(pane),
+              );
+            },
+          ),
+          width: 390,
+        ),
+      );
+
+      update(() => pane = 'detail');
+      await tester.pump();
+
+      final switcher = tester.widget<AnimatedSwitcher>(
+        find.byType(AnimatedSwitcher),
+      );
+      expect(switcher.duration, TRMotion.slow);
+      expect(switcher.reverseDuration, TRMotion.slow);
+      expect(switcher.switchInCurve, TRMotion.easeOut);
+      expect(switcher.switchOutCurve, TRMotion.standard);
+      final enteringFade = tester.widget<FadeTransition>(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(FadeTransition),
+        ),
+      );
+      final enteringScale = tester.widget<ScaleTransition>(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(ScaleTransition),
+        ),
+      );
+      expect(enteringFade.opacity.value, 0);
+      expect(
+        enteringScale.scale.value,
+        TRMeasurements.overlayClosedScale,
+      );
+
+      await tester.pump(TRMotion.slow ~/ 2);
+      expect(enteringFade.opacity.value, inExclusiveRange(0, 1));
+      expect(
+        enteringScale.scale.value,
+        inExclusiveRange(TRMeasurements.overlayClosedScale, 1),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.text('collection'), findsNothing);
+      expect(find.text('detail'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(FadeTransition),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(ScaleTransition),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('only the entering pane owns input and semantics', (
+      tester,
+    ) async {
+      var pane = 'collection';
+      var collectionTaps = 0;
+      var detailTaps = 0;
+      late StateSetter update;
+      await tester.pumpWidget(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              final collection = pane == 'collection';
+              return SettingsCompactPaneTransition(
+                paneKey: ValueKey<String>(pane),
+                child: Semantics(
+                  label: '$pane semantics',
+                  button: true,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (collection) {
+                        collectionTaps += 1;
+                      } else {
+                        detailTaps += 1;
+                      }
+                    },
+                    child: Center(child: Text(pane)),
+                  ),
+                ),
+              );
+            },
+          ),
+          width: 390,
+        ),
+      );
+
+      update(() => pane = 'detail');
+      await tester.pump();
+
+      final departingSemantics = tester.widget<ExcludeSemantics>(
+        find.ancestor(
+          of: find.text('collection'),
+          matching: find.byType(ExcludeSemantics),
+        ),
+      );
+      final enteringSemantics = tester.widget<ExcludeSemantics>(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(ExcludeSemantics),
+        ),
+      );
+      final departingPointers = tester.widgetList<IgnorePointer>(
+        find.ancestor(
+          of: find.text('collection'),
+          matching: find.byType(IgnorePointer),
+        ),
+      );
+      final enteringPointers = tester.widgetList<IgnorePointer>(
+        find.ancestor(
+          of: find.text('detail'),
+          matching: find.byType(IgnorePointer),
+        ),
+      );
+      expect(departingSemantics.excluding, isTrue);
+      expect(enteringSemantics.excluding, isFalse);
+      expect(departingPointers.any((widget) => widget.ignoring), isTrue);
+      expect(enteringPointers.any((widget) => !widget.ignoring), isTrue);
+      await tester.tapAt(tester.getCenter(find.text('detail')));
+      expect(collectionTaps, 0);
+      expect(detailTaps, 1);
+    });
+
+    testWidgets('replaces the pane immediately when animations are disabled', (
+      tester,
+    ) async {
+      var pane = 'collection';
+      late StateSetter update;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: _host(
+            StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return SettingsCompactPaneTransition(
+                  paneKey: ValueKey<String>(pane),
+                  child: Text(pane),
+                );
+              },
+            ),
+            width: 390,
+          ),
+        ),
+      );
+
+      update(() => pane = 'detail');
+      await tester.pump();
+
+      expect(find.text('collection'), findsNothing);
+      expect(find.text('detail'), findsOneWidget);
+      expect(find.byType(AnimatedSwitcher), findsNothing);
+    });
+  });
+
   testWidgets('SettingsListDetailLayout shares desktop and compact Back', (
     tester,
   ) async {
@@ -197,15 +377,17 @@ void main() {
     expect(find.text('Collection'), findsOneWidget);
     expect(find.text('Detail'), findsOneWidget);
     expect(navigation.canGoBack, isFalse);
+    expect(find.byType(SettingsCompactPaneTransition), findsNothing);
 
     await tester.pumpWidget(surface(390));
     await tester.pump();
     expect(find.text('Collection'), findsNothing);
     expect(find.text('Detail'), findsOneWidget);
     expect(navigation.canGoBack, isTrue);
+    expect(find.byType(SettingsCompactPaneTransition), findsOneWidget);
 
     navigation.goBack();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Collection'), findsOneWidget);
     expect(find.text('Detail'), findsNothing);
   });

@@ -367,6 +367,66 @@ void syncSettingsPaneBackHandler(
   });
 }
 
+/// Animates one compact settings pane into the next.
+///
+/// Settings navigation replaces routes and swaps collection-detail children
+/// without pushing a new page. This product-owned boundary gives both paths
+/// the same fade-and-scale motion as a routed Tinyrack page while preserving
+/// the shared settings shell and its state.
+class SettingsCompactPaneTransition extends StatelessWidget {
+  /// Creates a transition whose child identity is [paneKey].
+  const SettingsCompactPaneTransition({
+    required this.paneKey,
+    required this.child,
+    super.key,
+  });
+
+  /// Stable identity for the current logical settings pane.
+  final Key paneKey;
+
+  /// Current pane content.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyedChild = KeyedSubtree(key: paneKey, child: child);
+    if (MediaQuery.disableAnimationsOf(context)) return keyedChild;
+    return AnimatedSwitcher(
+      duration: TRMotion.slow,
+      reverseDuration: TRMotion.slow,
+      switchInCurve: TRMotion.easeOut,
+      switchOutCurve: TRMotion.standard,
+      transitionBuilder: _buildTransition,
+      child: keyedChild,
+    );
+  }
+
+  Widget _buildTransition(Widget child, Animation<double> animation) {
+    final transition = FadeTransition(
+      opacity: animation,
+      alwaysIncludeSemantics: true,
+      child: ScaleTransition(
+        scale: Tween<double>(
+          begin: TRMeasurements.overlayClosedScale,
+          end: 1,
+        ).animate(animation),
+        child: child,
+      ),
+    );
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        if (animation.isCompleted) return child;
+        final departing = animation.status == AnimationStatus.reverse;
+        return ExcludeSemantics(
+          excluding: departing,
+          child: IgnorePointer(ignoring: departing, child: transition),
+        );
+      },
+    );
+  }
+}
+
 /// The responsive collection-and-detail structure used by list settings.
 ///
 /// On a wide surface both panes remain visible. On a compact surface the
@@ -421,7 +481,14 @@ class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
         onBack: widget.onBack,
       );
       if (compact) {
-        return widget.detailVisible ? widget.detail : widget.collection;
+        return SettingsCompactPaneTransition(
+          paneKey: ValueKey<String>(
+            widget.detailVisible
+                ? 'settings-list-detail-pane'
+                : 'settings-list-collection-pane',
+          ),
+          child: widget.detailVisible ? widget.detail : widget.collection,
+        );
       }
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,

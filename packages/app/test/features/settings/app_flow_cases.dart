@@ -334,6 +334,18 @@ void _registerSettingsAppFlows() {
       expect(find.text('Test daemon'), findsOneWidget);
 
       await tester.tap(find.text('Test daemon'));
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey<String>('settings-home-pane')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-daemon-categories-pane'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.path,
@@ -342,12 +354,35 @@ void _registerSettingsAppFlows() {
       expect(find.text('MCP'), findsOneWidget);
 
       await tester.tap(find.text('MCP'));
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-daemon-categories-pane'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-mcp')),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, '/settings/mcp');
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('mcp-server-add')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-list-collection-pane'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-list-detail-pane')),
+        findsOneWidget,
       );
       await tester.pumpAndSettle();
       expect(
@@ -360,11 +395,34 @@ void _registerSettingsAppFlows() {
         const ValueKey<String>('settings-back-button'),
       );
       await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey<String>('settings-list-detail-pane')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-list-collection-pane'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
       expect(find.byKey(const ValueKey<String>('mcp-field-id')), findsNothing);
 
       await tester.tap(back);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-mcp')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-daemon-categories-pane'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.text('MCP'), findsOneWidget);
       expect(
@@ -373,6 +431,18 @@ void _registerSettingsAppFlows() {
       );
 
       await tester.tap(back);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-daemon-categories-pane'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-home-pane')),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.text('General'), findsOneWidget);
       expect(router.routeInformationProvider.value.uri.path, '/settings');
