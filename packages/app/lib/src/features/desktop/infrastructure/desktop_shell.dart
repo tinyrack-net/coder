@@ -18,6 +18,13 @@ abstract interface class DesktopWindow {
   /// Current maximize state, including changes initiated by the OS.
   ValueListenable<bool> get maximized;
 
+  /// Whether the window is on screen, including changes initiated by the OS.
+  ///
+  /// A hidden window makes the Linux and Windows embedders report
+  /// `AppLifecycleState.hidden`, which disables frames, so anything that has to
+  /// react to hiding must listen here rather than rebuild.
+  ValueListenable<bool> get visible;
+
   /// Prepares the native window and decides whether it becomes visible.
   Future<void> prepare({required bool startHidden});
 
@@ -151,6 +158,11 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   ValueListenable<bool> get maximized => _maximized;
 
+  final ValueNotifier<bool> _visible = ValueNotifier<bool>(true);
+
+  @override
+  ValueListenable<bool> get visible => _visible;
+
   /// Injected `windowManager.ensureInitialized`.
   final Future<void> Function() initialize;
 
@@ -207,13 +219,20 @@ final class PluginDesktopWindow implements DesktopWindow {
     // owns a visible window. Enforce the requested state after readiness so
     // both compositions have the same observable behavior.
     if (startHidden) await hideWindow();
+    _setVisible(!startHidden);
   }
 
   @override
-  Future<void> show() => showWindow();
+  Future<void> show() async {
+    await showWindow();
+    _setVisible(true);
+  }
 
   @override
-  Future<void> hide() => hideWindow();
+  Future<void> hide() async {
+    await hideWindow();
+    _setVisible(false);
+  }
 
   @override
   Future<bool> isVisible() => windowIsVisible();
@@ -237,7 +256,7 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   Future<void> interceptClose(void Function() onClose) async {
     await releaseClose();
-    final relay = _WindowCloseRelay(onClose, _setMaximized);
+    final relay = _WindowCloseRelay(onClose, _setMaximized, _setVisible);
     _relay = relay;
     addWindowListener(relay);
     await preventClose(prevent: true);
@@ -255,13 +274,22 @@ final class PluginDesktopWindow implements DesktopWindow {
   void _setMaximized(bool value) {
     if (_maximized.value != value) _maximized.value = value;
   }
+
+  void _setVisible(bool value) {
+    if (_visible.value != value) _visible.value = value;
+  }
 }
 
 final class _WindowCloseRelay with WindowListener {
-  _WindowCloseRelay(this.onClose, this.onMaximizedChanged);
+  _WindowCloseRelay(
+    this.onClose,
+    this.onMaximizedChanged,
+    this.onVisibleChanged,
+  );
 
   final void Function() onClose;
   final ValueChanged<bool> onMaximizedChanged;
+  final ValueChanged<bool> onVisibleChanged;
 
   @override
   void onWindowClose() => onClose();
@@ -271,6 +299,21 @@ final class _WindowCloseRelay with WindowListener {
 
   @override
   void onWindowUnmaximize() => onMaximizedChanged(false);
+
+  /// Reports a hide or show the app did not ask for.
+  ///
+  /// The plugin has no typed callback for either, but both the Linux
+  /// (`linux/window_manager_plugin.cc`, the GTK `show` and `hide` signals) and
+  /// the Windows implementation emit them as raw events.
+  @override
+  void onWindowEvent(String eventName) {
+    switch (eventName) {
+      case 'show':
+        onVisibleChanged(true);
+      case 'hide':
+        onVisibleChanged(false);
+    }
+  }
 }
 
 /// Production tray adapter backed by `tray_manager`.

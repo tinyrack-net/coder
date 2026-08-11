@@ -33,7 +33,6 @@ class DesktopShellScope extends ConsumerStatefulWidget {
   const DesktopShellScope({
     required this.child,
     required this.router,
-    this.startHidden = false,
     super.key,
   });
 
@@ -43,17 +42,19 @@ class DesktopShellScope extends ConsumerStatefulWidget {
   /// Router used by the tray, which sits above the router's own context.
   final GoRouter router;
 
-  /// Whether this launch started without showing a window.
-  final bool startHidden;
-
   @override
   ConsumerState<DesktopShellScope> createState() => _DesktopShellScopeState();
 }
 
 class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
-  late bool _windowVisible = !widget.startHidden;
   TrayMenuModel? _installed;
   bool _quitting = false;
+
+  // The tray is published outside the build, so the inputs a build resolves
+  // are kept here for the times the menu changes without one.
+  AppLocalizations? _l10n;
+  HostRuntimeSnapshot? _embeddedDaemon;
+  bool _supportsEmbeddedDaemon = false;
 
   // Held in fields because `dispose` runs after `ref` is no longer safe.
   DesktopWindow? _window;
@@ -64,11 +65,15 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     super.initState();
     _window = ref.read(desktopWindowProvider);
     _tray = ref.read(trayIconProvider);
+    // A hidden window disables frames, so the show/hide row has to be
+    // republished from the window's own state rather than from a rebuild.
+    _window?.visible.addListener(_republish);
     unawaited(_window?.interceptClose(_onCloseGesture));
   }
 
   @override
   void dispose() {
+    _window?.visible.removeListener(_republish);
     unawaited(_tray?.destroy());
     unawaited(_window?.releaseClose());
     super.dispose();
@@ -78,25 +83,16 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
   Widget build(BuildContext context) {
     // The tray only reflects the app-owned daemon, so selecting it keeps
     // unrelated settings writes from rebuilding every page below this scope.
-    final embeddedDaemon = ref.watch(
+    _embeddedDaemon = ref.watch(
       hostRegistryControllerProvider.select(
         (value) => value.asData?.value.runtimes[embeddedHostId],
       ),
     );
-    final menu = buildTrayMenu(
-      l10n: AppLocalizations.of(context),
-      windowVisible: _windowVisible,
-      embeddedDaemon: embeddedDaemon,
-      supportsEmbeddedDaemon: ref
-          .watch(appServicesProvider)
-          .supportsEmbeddedDaemon,
-    );
-    // A rebuild that did not change anything the user can see must not churn
-    // the native menu, which is what the model's value equality is for.
-    if (menu != _installed) {
-      _installed = menu;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _publish(menu));
-    }
+    _supportsEmbeddedDaemon = ref
+        .watch(appServicesProvider)
+        .supportsEmbeddedDaemon;
+    _l10n = AppLocalizations.of(context);
+    _republish();
     final window = _window;
     if (window == null || !window.supportsCustomTitleBar) return widget.child;
     // MaterialApp's builder sits above the router's Navigator, so its Overlay
@@ -206,6 +202,27 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     );
   }
 
+  /// Recomputes the tray menu and applies it without waiting for a frame.
+  ///
+  /// Called from `build` and from every window state change. A hidden window
+  /// stops the embedder from producing frames, so a menu that waited for the
+  /// next build would keep offering to hide a window that is already gone.
+  void _republish() {
+    final l10n = _l10n;
+    if (l10n == null) return;
+    final menu = buildTrayMenu(
+      l10n: l10n,
+      windowVisible: _window?.visible.value ?? true,
+      embeddedDaemon: _embeddedDaemon,
+      supportsEmbeddedDaemon: _supportsEmbeddedDaemon,
+    );
+    // A change that did not alter anything the user can see must not churn the
+    // native menu, which is what the model's value equality is for.
+    if (menu == _installed) return;
+    _installed = menu;
+    unawaited(_publish(menu));
+  }
+
   /// Applies [menu] to the native tray, one call at a time.
   ///
   /// Two frames can each schedule a publish before the first finishes, and the
@@ -242,10 +259,7 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
     unawaited(_hide());
   }
 
-  Future<void> _hide() async {
-    await _window?.hide();
-    if (mounted) setState(() => _windowVisible = false);
-  }
+  Future<void> _hide() => _window?.hide() ?? Future<void>.value();
 
   void _onSelected(String itemKey) {
     switch (_installed?.actionFor(itemKey)) {
@@ -270,20 +284,15 @@ class _DesktopShellScopeState extends ConsumerState<DesktopShellScope> {
   /// Deliberately not a toggle: Windows reports a double click on the icon as
   /// two clicks, and a toggle would show and then hide, reading as nothing
   /// happening at all. The menu's Show/Hide row is where toggling belongs.
-  Future<void> _reveal() async {
-    await _window?.show();
-    if (mounted) setState(() => _windowVisible = true);
-  }
+  Future<void> _reveal() => _window?.show() ?? Future<void>.value();
 
   Future<void> _toggleWindow() async {
     final window = _window;
     if (window == null) return;
-    if (await window.isVisible()) {
-      await _hide();
-      return;
-    }
-    await window.show();
-    if (mounted) setState(() => _windowVisible = true);
+    // The notifier is authoritative for the same reason `maximized` is: it is
+    // written by this app's own calls and by the native show and hide events,
+    // while the plugin's query can lag a call that just completed.
+    await (window.visible.value ? window.hide() : window.show());
   }
 
   Future<void> _openSettings() async {

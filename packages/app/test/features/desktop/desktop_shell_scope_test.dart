@@ -8,6 +8,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_desktop_ports.dart';
@@ -33,7 +34,7 @@ void main() {
         localeTag: localeTag,
       ),
     );
-    final window = FakeDesktopWindow();
+    final window = FakeDesktopWindow(visible: !startHidden);
     final tray = FakeTrayIcon(installGate: installGate)..calls = window.calls;
     final terminator = FakeAppTerminator(calls: window.calls);
     return (
@@ -50,7 +51,6 @@ void main() {
         trayIcon: tray,
         terminator: terminator,
         autostart: FakeAutostartRegistration(),
-        startHidden: startHidden,
       ),
       window: window,
       tray: tray,
@@ -80,8 +80,66 @@ void main() {
 
       expect(harness.window.hides, 1);
       expect(harness.terminator.terminations, 0);
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
       // The tray now offers to bring the window back.
+      expect(
+        harness.tray.menu.entries
+            .firstWhere((entry) => entry.key == trayItemToggleWindow)
+            .label,
+        testL10n.trayShowWindow,
+      );
+    },
+    tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
+    'the tray label flips even though a hidden window stops frames',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+      final settled = harness.tray.menus.length;
+
+      // Hiding the window makes the Linux and Windows embedders report
+      // AppLifecycleState.hidden, and `scheduleFrame` is a no-op while frames
+      // are disabled. Anything that waits for a build or a post-frame callback
+      // to reach the tray is therefore never going to run again.
+      addTearDown(tester.binding.resetInternalState);
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.lifecycle.name,
+        const StringCodec().encodeMessage('AppLifecycleState.hidden'),
+        (_) {},
+      );
+      expect(tester.binding.framesEnabled, isFalse);
+
+      harness.window.requestClose();
+      // Deliberately not a pump: the production embedder would not give one.
+      await tester.idle();
+
+      expect(harness.tray.menus.length, greaterThan(settled));
+      expect(
+        harness.tray.menu.entries
+            .firstWhere((entry) => entry.key == trayItemToggleWindow)
+            .label,
+        testL10n.trayShowWindow,
+      );
+    },
+    tags: const <String>['feature_test__desktop_residency__widget'],
+  );
+
+  testWidgets(
+    'a hide the app did not ask for still flips the tray label',
+    (tester) async {
+      final harness = build();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // The window can leave the screen without the app calling hide, and the
+      // native show and hide events are the only report of it.
+      harness.window.emitNativeVisibility(visible: false);
+      await tester.idle();
+
+      expect(harness.window.hides, 0);
       expect(
         harness.tray.menu.entries
             .firstWhere((entry) => entry.key == trayItemToggleWindow)
@@ -101,12 +159,12 @@ void main() {
 
       harness.tray.select(trayItemToggleWindow);
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
       expect(harness.window.hides, 1);
 
       harness.tray.select(trayItemToggleWindow);
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isTrue);
+      expect(harness.window.visible.value, isTrue);
       expect(harness.window.shows, 1);
 
       // Selecting the informational daemon row must do nothing at all.
@@ -128,11 +186,11 @@ void main() {
 
       harness.window.requestClose();
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
 
       harness.tray.activate();
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isTrue);
+      expect(harness.window.visible.value, isTrue);
       expect(harness.window.shows, 1);
       expect(
         harness.tray.menu.entries
@@ -145,7 +203,7 @@ void main() {
       // idempotent, or the second click would hide what the first revealed.
       harness.tray.activate();
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isTrue);
+      expect(harness.window.visible.value, isTrue);
       expect(harness.window.hides, 1);
     },
     tags: const <String>['feature_test__desktop_residency__widget'],
@@ -160,12 +218,12 @@ void main() {
 
       harness.window.requestClose();
       await tester.pumpAndSettle();
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
 
       harness.tray.select(trayItemOpenSettings);
       await tester.pumpAndSettle();
 
-      expect(harness.window.visible, isTrue);
+      expect(harness.window.visible.value, isTrue);
       expect(find.text(testL10n.generalLanguageLabel), findsOneWidget);
       expect(find.text(testL10n.generalStartupAtBootLabel), findsOneWidget);
     },
@@ -184,7 +242,7 @@ void main() {
 
       expect(harness.tray.destroys, 1);
       expect(harness.terminator.terminations, 1);
-      expect(harness.window.visible, isFalse);
+      expect(harness.window.visible.value, isFalse);
       expect(harness.window.preventingClose, isFalse);
       // The window leaves the screen first so quit feels immediate, and the
       // process only ends once the teardown that needs it has run.

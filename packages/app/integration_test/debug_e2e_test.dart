@@ -2260,8 +2260,12 @@ void main() {
       // closing to the tray.
       await window.hide();
       await _waitForWindowVisibility(window, visible: false);
+      // The tray reads this rather than the plugin query, because a hidden
+      // window stops the embedder from producing the frame a rebuild needs.
+      expect(window.visible.value, isFalse);
       await window.show();
       await _waitForWindowVisibility(window, visible: true);
+      expect(window.visible.value, isTrue);
       expect(closes, 0);
     },
     tags: const <String>[

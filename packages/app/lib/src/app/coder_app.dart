@@ -28,7 +28,6 @@ class CoderApp extends StatelessWidget {
     this.trayIcon,
     this.terminator,
     this.autostart,
-    this.startHidden = false,
     super.key,
   });
 
@@ -56,9 +55,6 @@ class CoderApp extends StatelessWidget {
   /// Login-item registration, or null where the app cannot register one.
   final AutostartRegistration? autostart;
 
-  /// Whether this launch started without showing a window.
-  final bool startHidden;
-
   late final GoRouter _router = GoRouter(routes: $appRoutes);
 
   @override
@@ -76,26 +72,18 @@ class CoderApp extends StatelessWidget {
     child: _CoderAppView(
       router: _router,
       resident: desktopWindow != null || trayIcon != null,
-      startHidden: startHidden,
     ),
   );
 }
 
 /// Builds the app shell below [ProviderScope] so it can watch settings.
 class _CoderAppView extends ConsumerWidget {
-  const _CoderAppView({
-    required this.router,
-    required this.resident,
-    required this.startHidden,
-  });
+  const _CoderAppView({required this.router, required this.resident});
 
   final GoRouter router;
 
   /// Whether this build owns a tray and can survive a closed window.
   final bool resident;
-
-  /// Whether this launch started without showing a window.
-  final bool startHidden;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -142,7 +130,6 @@ class _CoderAppView extends ConsumerWidget {
                 ? child ?? const SizedBox.shrink()
                 : DesktopShellScope(
                     router: router,
-                    startHidden: startHidden,
                     child: child ?? const SizedBox.shrink(),
                   ),
           ),
