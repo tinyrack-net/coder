@@ -24,6 +24,12 @@ String hostFailureText(AppLocalizations l10n, HostFailureReason reason) =>
         l10n.hostErrorEmbeddedAlreadyRunning(AppIdentity.name),
       HostFailureReason.localNetworkUnreachable =>
         l10n.hostErrorLocalNetworkUnreachable,
+      HostFailureReason.relayPairingUnavailable =>
+        l10n.hostErrorRelayPairingUnavailable,
+      HostFailureReason.serverIdentityMismatch =>
+        l10n.hostErrorServerIdentityMismatch,
+      HostFailureReason.credentialPathMismatch =>
+        l10n.hostErrorCredentialMismatch,
     };
 
 /// Returns the failure text to show for one daemon, or null when healthy.

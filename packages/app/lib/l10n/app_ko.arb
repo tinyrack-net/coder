@@ -1,5 +1,4 @@
 {
-  "@@locale": "ko",
   "commonCancel": "취소",
   "commonSave": "저장",
   "commonSaving": "저장 중…",
@@ -88,21 +87,23 @@
   "workspaceSidebarExpand": "사이드바 열기",
   "workspaceSidebarCollapse": "사이드바 접기",
   "workspaceNewSession": "새 session",
+  "sessionDefaultTitle": "코딩 세션",
   "workspaceNewTab": "새 탭",
   "workspaceNewTerminal": "새 터미널",
+  "terminalTabTitle": "터미널 {number}",
   "workspaceLoading": "워크스페이스 불러오는 중",
   "workspaceCatalogLoading": "워크스페이스 목록 불러오는 중",
   "workspaceCreatingWorktree": "워크트리 생성 중…",
   "workspaceStartingSession": "세션 시작 중…",
-  "terminalConnecting": "터미널 연결 중",
-  "conversationLoading": "대화 불러오는 중",
-  "directoryBrowserLoading": "디렉터리 불러오는 중",
   "workspaceTerminalStarting": "터미널 시작 중",
   "workspaceTerminalStartFailed": "터미널을 시작하지 못했습니다: {error}",
   "terminalCloseTitle": "터미널을 종료할까요?",
   "terminalCloseConfirm": "이 탭을 닫으면 셸과 하위 프로세스가 종료돼요.",
   "terminalTerminate": "종료",
   "terminalConnectionFailed": "터미널 연결에 실패했어요",
+  "terminalConnecting": "터미널 연결 중",
+  "conversationLoading": "대화 불러오는 중",
+  "directoryBrowserLoading": "디렉터리 불러오는 중",
   "terminalCreationFailed": "터미널을 만들 수 없어요",
   "terminalWorktreeUnavailable": "이 worktree는 더 이상 사용할 수 없습니다. 다른 worktree를 선택하세요.",
   "terminalShellStartFailed": "설정된 터미널 셸을 시작할 수 없습니다. 터미널 설정을 확인하고 다시 시도하세요.",
@@ -145,6 +146,13 @@
   "workspaceNoWorkspaces": "아직 workspace가 없습니다.",
   "workspaceNoProjectSessions": "프로젝트 없음",
   "workspaceNoProjectOption": "프로젝트 없음 (홈 폴더)",
+  "workspaceProjectChip": "프로젝트",
+  "workspaceProjectChipTooltip": "프로젝트 선택",
+  "workspaceProjectAdd": "추가",
+  "workspaceWorktreeNew": "새 worktree",
+  "workspaceWorktreeChipTooltip": "Worktree 선택",
+  "workspaceBaseBranchChip": "기반 branch",
+  "workspaceBaseBranchChipTooltip": "기반 branch 선택",
   "workspaceAddProjectFirst": "먼저 프로젝트를 추가하세요.",
   "workspaceSelectProject": "프로젝트를 선택하세요.",
   "workspaceCheckoutMissing": "프로젝트 checkout을 찾을 수 없습니다.",
@@ -185,6 +193,9 @@
   "hostErrorEmbeddedPortInUse": "선택한 포트를 이미 사용 중입니다.",
   "hostErrorEmbeddedAlreadyRunning": "이 컴퓨터에서 {appName}가 이미 실행 중이며 로컬 daemon을 점유하고 있습니다. 트레이에서 실행 중인 창을 열거나, 종료한 뒤 다시 시도하세요.",
   "hostErrorLocalNetworkUnreachable": "Daemon에 연결하지 못했습니다. Daemon이 실행 중인지, 그리고 이 사이트의 로컬 네트워크 접근을 허용했는지 확인하세요.",
+  "hostErrorRelayPairingUnavailable": "이 플랫폼에서는 relay 페어링을 사용할 수 없습니다.",
+  "hostErrorServerIdentityMismatch": "이 주소는 저장된 daemon이 아닌 다른 daemon으로 연결됩니다.",
+  "hostErrorCredentialMismatch": "저장된 자격 증명이 이 연결 경로와 맞지 않습니다.",
   "appSettingsTitle": "앱 설정",
   "appSettingsLocalSection": "로컬 실행",
   "appSettingsEmbeddedSubtitle": "앱과 함께 시작하고 앱 종료 시 중지합니다. 시작 실패는 앱 사용을 막지 않습니다.",
@@ -230,6 +241,7 @@
   "appSettingsAddRemoteTitle": "원격 daemon 추가",
   "appSettingsEditRemoteTitle": "원격 daemon 편집",
   "appSettingsAddress": "WebSocket 주소",
+  "appSettingsLabelPlaceholder": "운영 daemon",
   "appSettingsNewToken": "새 Bearer token (변경할 때만 입력)",
   "appSettingsBearerToken": "Bearer token",
   "appSettingsRemoteDetails": "Daemon",
@@ -249,6 +261,7 @@
   "agentSettingsHeading": "Agents",
   "agentSettingsSelectAgent": "Agent를 선택하세요.",
   "agentSettingsCount": "{count} definitions",
+  "agentSettingsModeStale": "{mode} · 해석 실패",
   "agentSettingsAdd": "Agent 추가",
   "agentSettingsAddTitle": "Agent 추가",
   "agentSettingsList": "Agent 목록",
@@ -308,14 +321,6 @@
   "providerSettingsDefaultModelUnavailable": "이 모델을 사용할 수 없어 세션은 첫 번째 사용 가능한 모델을 사용합니다.",
   "providerSettingsDefaultModelChoose": "변경",
   "providerSettingsAuthTitle": "{name} 연결",
-  "@providerSettingsAuthTitle": {
-    "description": "Title of the sheet choosing how to connect one provider.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "providerSettingsExperimental": "실험적",
   "providerSettingsDisconnectTitle": "Provider 연결 해제",
   "providerSettingsDisconnectBody": "{name} 연결을 해제할까요? 기존 agent 이력은 유지됩니다.",
@@ -343,6 +348,10 @@
   "providerSettingsModelPrefixConflict": "이미 사용 중인 모델 Prefix입니다. 갱신된 제안을 사용해 보세요.",
   "providerSettingsConnectTitle": "{name} 연결",
   "providerSettingsConnect": "연결",
+  "providerSettingsApiKey": "API 키",
+  "providerSettingsBaseUrl": "Base URL",
+  "providerSettingsConnectionFailed": "프로바이더 연결에 실패했습니다.",
+  "providerSettingsAuthUrlFailed": "인증 페이지를 열 수 없습니다.",
   "providerSettingsCustomTitle": "Custom Provider 고급 설정",
   "providerSettingsApiFormat": "API 형식",
   "providerSettingsRequiresApiKey": "API key 필요",
@@ -357,6 +366,7 @@
   "providerStatusReauthRequired": "재로그인 필요",
   "providerStatusDisconnected": "연결 해제됨",
   "providerAuthStored": "저장된 credential",
+  "providerAuthOAuth": "OAuth",
   "providerAuthNone": "인증 없음",
   "modelPickerTitle": "모델 선택",
   "modelPickerSearch": "모델 검색",
@@ -409,6 +419,9 @@
   "composerQueuedAttachments": "{count, plural, other{파일 {count}개}}",
   "composerQueuedFailed": "전송되지 않음 · {reason}",
   "composerAttachLabel": "파일 첨부",
+  "composerRemoveAttachment": "{name} 제거",
+  "composerAttachmentTooLarge": "첨부 파일은 하나당 {limit} MB 미만이어야 합니다.",
+  "composerAttachmentTooMany": "한 턴에 첨부할 수 있는 파일은 최대 {limit}개입니다.",
   "composerMoreSettings": "설정 더 보기",
   "chatEmptyTitle": "코딩 요청을 입력하세요.",
   "chatEmptyExample": "예) 테스트를 실행하고 실패 원인을 고쳐줘",
@@ -458,6 +471,8 @@
   "chatPlanKeepPlanning": "계속 계획",
   "chatPlanRunInNewSession": "새 세션에서 실행",
   "chatPlanRun": "계획대로 실행",
+  "planImplementPrompt": "계획을 실행해줘.",
+  "planFreshSessionPreamble": "이전 에이전트가 사용자의 요청을 위해 아래 계획을 세웠습니다. 이 계획을 새로운 컨텍스트에서 구현하세요. 계획을 사용자 의도의 근거로 삼되, 필요한 파일은 다시 읽고 구현과 검증까지 진행하세요.",
   "toolRejected": "거부됨",
   "toolFailed": "실패",
   "toolEmptyFile": "빈 파일",
@@ -474,9 +489,45 @@
   "toolSkillLoaded": "{name} 불러옴",
   "toolSkills": "스킬 {count}개",
   "toolSkillsTruncated": "스킬 {count}개 이상",
-  "toolEditFiles": "Edit({count}개 파일)",
+  "toolEditFiles": "편집({count}개 파일)",
   "toolPatchSummary": "+{added} -{removed} · {files}개 파일",
   "toolCommandResult": "종료 코드 {exitCode} · {lines}줄",
+  "toolTitleEdit": "편집",
+  "toolTitleEditPath": "편집({path})",
+  "toolTitleAttach": "첨부({path})",
+  "toolTitleAttachment": "첨부 파일({id})",
+  "toolTitleNow": "현재 시각()",
+  "toolTitleSleep": "슬립({milliseconds}ms)",
+  "toolTitleSleepUnknown": "슬립()",
+  "toolTitleSpawn": "생성({task})",
+  "toolTitleSend": "전송({target})",
+  "toolTitleFollowup": "후속 작업({target})",
+  "toolTitleWait": "대기()",
+  "toolTitleInterrupt": "중단({target})",
+  "toolTitleAgents": "에이전트()",
+  "toolTitleContext": "컨텍스트()",
+  "toolTitleNewContext": "새 컨텍스트()",
+  "toolTitleBash": "실행({command})",
+  "toolTitleStdin": "입력({session})",
+  "toolTitleStdinChars": "입력({session} ← {chars})",
+  "toolTitleGlob": "파일 찾기({pattern})",
+  "toolTitleGlobIn": "파일 찾기({path}에서 {pattern})",
+  "toolTitleList": "목록({path})",
+  "toolTitleMcpResources": "리소스({server})",
+  "toolTitleMcpResourceTemplates": "리소스 템플릿({server})",
+  "toolTitleMcpResource": "리소스({server}: {uri})",
+  "toolTitleRead": "읽기({path})",
+  "toolTitleReadRange": "읽기({path} @{offset}+{limit})",
+  "toolTitleAsk": "질문({headers})",
+  "toolTitleSearch": "검색({query})",
+  "toolTitleSearchIn": "검색({path}에서 {query})",
+  "toolTitleSkills": "스킬()",
+  "toolTitleSkill": "스킬({name})",
+  "toolTitleSkillResource": "스킬({name}:{resource})",
+  "toolTitleToolSearch": "도구({query})",
+  "toolTitlePlan": "계획({count})",
+  "toolTitleView": "이미지 보기({path})",
+  "toolArgumentAllServers": "전체",
   "directoryBrowserTitle": "Daemon의 폴더 선택",
   "directoryBrowserPath": "Daemon 경로",
   "directoryBrowserEmpty": "하위 폴더가 없습니다.",
@@ -572,6 +623,7 @@
   "mcpSettingsDeleteConfirm": "{name}을(를) 삭제할까요? 이 도구를 쓰던 에이전트는 사용할 수 없게 됩니다.",
   "mcpSettingsStatusDisabled": "사용 안 함",
   "mcpSettingsStatusConnecting": "연결 중",
+  "mcpSettingsConnecting": "MCP 서버 연결 중",
   "mcpSettingsStatusReady": "준비됨",
   "mcpSettingsStatusFailed": "실패",
   "mcpSettingsDiscoveredResources": "리소스",
@@ -594,90 +646,40 @@
   "composerCommandCompactDescription": "대화를 요약해 컨텍스트 창을 비웁니다.",
   "sessionContextMeter": "컨텍스트",
   "sessionContextMeterValue": "컨텍스트 창의 {percent}% 사용",
+  "sessionContextDetailsTitle": "컨텍스트 사용량",
+  "sessionContextPercent": "{percent}% 사용",
+  "sessionContextTokens": "{used} / {max} 토큰",
+  "sessionContextCost": "세션 비용 {cost}",
+  "sessionQuotaLoading": "Provider 사용량 불러오는 중",
+  "sessionQuotaError": "Provider 사용량을 일시적으로 불러올 수 없습니다.",
+  "sessionQuotaProviderPlan": "{provider} · {plan}",
+  "sessionQuotaPercent": "{percent}% 사용",
+  "sessionQuotaResets": "{time} 재설정",
+  "sessionQuotaCredits": "크레딧 {amount}",
+  "sessionQuotaWindowSession": "세션 한도",
+  "sessionQuotaWindowWeekly": "주간 한도",
+  "sessionQuotaWindowCodeReview": "코드 리뷰 한도",
   "composerCommandNoAttachments": "명령을 실행하려면 첨부를 제거하세요.",
-  "@composerCommandNoAttachments": {
-    "description": "Error shown when a slash command is submitted with attachments."
-  },
   "composerCommandsEmpty": "명령 없음",
-  "@composerCommandsEmpty": {
-    "description": "Empty state of the composer command list."
-  },
   "composerFilesEmpty": "파일 없음",
-  "@composerFilesEmpty": {
-    "description": "Empty state of the composer file mention list."
-  },
   "composerFilesSearching": "워크스페이스 검색 중",
-  "@composerFilesSearching": {
-    "description": "Loading state of the composer file mention list."
-  },
   "composerCommandsError": "명령을 불러오지 못했습니다",
-  "@composerCommandsError": {
-    "description": "Error state of the composer command list."
-  },
   "composerFilesError": "파일을 검색하지 못했습니다",
-  "@composerFilesError": {
-    "description": "Error state of the composer file mention list."
-  },
   "composerCommandSourceClient": "앱",
-  "@composerCommandSourceClient": {
-    "description": "Badge marking an app-owned composer command."
-  },
   "composerCommandSourceAgent": "명령",
-  "@composerCommandSourceAgent": {
-    "description": "Badge marking a Markdown-defined agent command."
-  },
   "composerCommandSourceSkill": "스킬",
-  "@composerCommandSourceSkill": {
-    "description": "Badge marking a composer command that loads a skill."
-  },
   "composerCommandClearLabel": "clear",
-  "@composerCommandClearLabel": {
-    "description": "Name of the composer command that clears the draft."
-  },
   "composerCommandClearDescription": "컴포저를 비웁니다.",
-  "@composerCommandClearDescription": {
-    "description": "Description of the clear command."
-  },
   "composerCommandNewLabel": "new",
-  "@composerCommandNewLabel": {
-    "description": "Name of the composer command that starts a session."
-  },
   "composerCommandNewDescription": "새 세션을 시작합니다.",
-  "@composerCommandNewDescription": {
-    "description": "Description of the new session command."
-  },
   "composerCommandModeLabel": "mode",
-  "@composerCommandModeLabel": {
-    "description": "Name of the composer command that switches mode."
-  },
   "composerCommandModeDescription": "계획과 작업 모드를 전환합니다.",
-  "@composerCommandModeDescription": {
-    "description": "Description of the mode command."
-  },
   "composerCommandAgentsLabel": "agents",
-  "@composerCommandAgentsLabel": {
-    "description": "Name of the composer command that opens agent settings."
-  },
   "composerCommandAgentsDescription": "에이전트 설정을 엽니다.",
-  "@composerCommandAgentsDescription": {
-    "description": "Description of the agents command."
-  },
   "composerCommandSkillsLabel": "skills",
-  "@composerCommandSkillsLabel": {
-    "description": "Name of the composer command that opens skill settings."
-  },
   "composerCommandSkillsDescription": "스킬 설정을 엽니다.",
-  "@composerCommandSkillsDescription": {
-    "description": "Description of the skills command."
-  },
   "composerCommandHelpLabel": "help",
-  "@composerCommandHelpLabel": {
-    "description": "Name of the composer command that lists commands."
-  },
   "composerCommandHelpDescription": "사용할 수 있는 명령을 보여줍니다.",
-  "@composerCommandHelpDescription": {
-    "description": "Description of the help command."
-  },
   "composerCommandGoalLabel": "goal",
   "composerCommandGoalDescription": "세션의 영속 작업 목표를 만들거나 관리합니다.",
   "goalStatusActive": "실행 중",
@@ -688,16 +690,7 @@
   "goalStatusComplete": "완료",
   "goalPlanHold": "Run 모드에서 재개",
   "goalElapsed": "{seconds}초 경과",
-  "@goalElapsed": {
-    "placeholders": {"seconds": {"type": "int"}}
-  },
   "goalTokenUsage": "{used} / {budget} 토큰",
-  "@goalTokenUsage": {
-    "placeholders": {
-      "used": {"type": "int"},
-      "budget": {"type": "int"}
-    }
-  },
   "goalPause": "Goal 일시 정지",
   "goalResume": "Goal 재개",
   "goalEdit": "Goal 편집",
@@ -712,13 +705,7 @@
   "goalReplaceDescription": "새 Goal을 시작하고 기록된 사용량을 초기화합니다.",
   "goalReplaceAction": "Goal 교체",
   "composerSuggestionsLabel": "제안",
-  "@composerSuggestionsLabel": {
-    "description": "Accessible name of the composer suggestion list."
-  },
   "composerDropFilesHere": "여기에 파일을 놓으세요",
-  "@composerDropFilesHere": {
-    "description": "Instruction shown over a composer pane while files are dragged over it."
-  },
   "chatToolActionRead": "파일 읽기",
   "chatToolActionList": "파일 목록 보기",
   "chatToolActionSearch": "검색",
@@ -737,18 +724,5 @@
   "chatToolStatusDenied": "거부됨",
   "chatToolDetailsTool": "도구",
   "chatToolDetailsRequest": "요청",
-  "chatToolDetailsResult": "결과",
-  "sessionContextDetailsTitle": "컨텍스트 사용량",
-  "sessionContextPercent": "{percent}% 사용",
-  "sessionContextTokens": "{used} / {max} 토큰",
-  "sessionContextCost": "세션 비용 {cost}",
-  "sessionQuotaLoading": "Provider 사용량 불러오는 중",
-  "sessionQuotaError": "Provider 사용량을 일시적으로 불러올 수 없습니다.",
-  "sessionQuotaProviderPlan": "{provider} · {plan}",
-  "sessionQuotaPercent": "{percent}% 사용",
-  "sessionQuotaResets": "{time} 재설정",
-  "sessionQuotaCredits": "크레딧 {amount}",
-  "sessionQuotaWindowSession": "세션 한도",
-  "sessionQuotaWindowWeekly": "주간 한도",
-  "sessionQuotaWindowCodeReview": "코드 리뷰 한도"
+  "chatToolDetailsResult": "결과"
 }

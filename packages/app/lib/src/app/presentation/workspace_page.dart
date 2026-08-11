@@ -943,6 +943,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
   }
 
   Future<void> _createTerminal(String paneId) async {
+    final l10n = AppLocalizations.of(context);
     final tabs = ref.read(
       sessionTabsControllerProvider(widget.selection).notifier,
     );
@@ -961,7 +962,7 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
               widget.selection.worktreeId,
             ).notifier,
           )
-          .create();
+          .create(buildTitle: l10n.terminalTabTitle);
     } on CoderClientException catch (error) {
       await tabs.removePendingTerminal(pendingTabId);
       if (mounted) setState(() => _terminalCreationError = error);
@@ -1837,6 +1838,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
   Future<Uint8List> _loadAttachment(ChatAttachment attachment) async {
     final registry = await ref.read(hostRegistryControllerProvider.future);
     final api = registry.runtimes[widget.selection.hostId]?.api;
+    // A user reaching this has hit a bug, not a situation to explain: the
+    // caller is supposed to check the connection first. Left in English for
+    // whoever reads the crash report.
     if (api == null) throw StateError('Daemon is not connected.');
     return readAttachmentDownload(
       await api.attachments.downloadAttachment(attachment.id),

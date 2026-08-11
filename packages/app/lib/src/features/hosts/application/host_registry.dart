@@ -223,6 +223,7 @@ final class HostRegistry {
     if (pairer == null || relayCredentials == null) {
       throw const HostConnectionFailure.network(
         'Relay pairing is unavailable on this platform.',
+        reason: HostFailureReason.relayPairingUnavailable,
       );
     }
     final profileId = _ids.generate();
@@ -841,6 +842,7 @@ final class HostRegistry {
         await api.close();
         throw const HostConnectionFailure.authentication(
           'Connection path resolved to a different daemon.',
+          reason: HostFailureReason.serverIdentityMismatch,
         );
       }
       final conflictingHostId = _serverOwners[api.serverInfo.serverId];
@@ -1054,6 +1056,7 @@ final class HostRegistry {
                 await api.close();
                 throw const HostConnectionFailure.authentication(
                   'Connection path resolved to a different daemon.',
+                  reason: HostFailureReason.serverIdentityMismatch,
                 );
               }
               if (completer.isCompleted) {

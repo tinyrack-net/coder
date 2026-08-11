@@ -53,10 +53,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
       await tester.pumpAndSettle();
       expect(_field('모델 Prefix'), findsOneWidget);
-      expect(_field('API key'), findsOneWidget);
+      expect(_field('API 키'), findsOneWidget);
       expect(find.byType(TRAlertDialog), findsNothing);
 
-      await tester.enterText(_field('API key'), 'deepseek-secret');
+      await tester.enterText(_field('API 키'), 'deepseek-secret');
       await tester.pump();
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-connect-submit')),
@@ -132,7 +132,7 @@ void main() {
       expect(_field('이름'), findsOneWidget);
       expect(_field('Base URL'), findsOneWidget);
       expect(_field('모델 Prefix'), findsOneWidget);
-      expect(_field('API key'), findsOneWidget);
+      expect(_field('API 키'), findsOneWidget);
       expect(_field('수동 model ID'), findsOneWidget);
       expect(find.byType(TRAlertDialog), findsNothing);
     },
@@ -201,7 +201,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('API key'), 'secret');
+    await tester.enterText(_field('API 키'), 'secret');
     await tester.pump();
     await tester.tap(
       find.byKey(const ValueKey<String>('provider-connect-submit')),
@@ -234,12 +234,12 @@ void main() {
     await tester.tap(find.widgetWithText(TRButton, '다시 연결'));
     await tester.pumpAndSettle();
 
-    expect(_field('API key'), findsOneWidget);
+    expect(_field('API 키'), findsOneWidget);
     expect(
-      tester.widget<EditableText>(_field('API key')).controller.text,
+      tester.widget<EditableText>(_field('API 키')).controller.text,
       isEmpty,
     );
-    await tester.enterText(_field('API key'), 'replacement-secret');
+    await tester.enterText(_field('API 키'), 'replacement-secret');
     await tester.pump();
     expect(
       tester
@@ -316,7 +316,7 @@ void main() {
       _field('Base URL'),
       'http://127.0.0.1:9000/v1',
     );
-    await tester.enterText(_field('API key'), 'lab-secret');
+    await tester.enterText(_field('API 키'), 'lab-secret');
     await tester.enterText(_field('수동 model ID'), 'model-a, model-b');
     await tester.tap(
       find.byKey(const ValueKey<String>('provider-custom-save')),

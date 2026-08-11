@@ -139,6 +139,7 @@ final class WebSocketHostClientFactory implements HostClientFactory {
           ),
         _ => throw const HostConnectionFailure.authentication(
           'The stored credential does not match this connection path.',
+          reason: HostFailureReason.credentialPathMismatch,
         ),
       };
     } on CoderClientException catch (error) {
@@ -193,6 +194,7 @@ Future<CoderApi> _openRelayCoderClient({
     await client.close();
     throw const HostConnectionFailure.authentication(
       'Relay path resolved to a different daemon identity.',
+      reason: HostFailureReason.serverIdentityMismatch,
     );
   }
   return client;

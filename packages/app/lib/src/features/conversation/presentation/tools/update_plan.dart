@@ -8,7 +8,7 @@ final Map<String, ChatToolPresenter> updatePlanPresenters =
         glyph: ChatToolGlyph.plan,
         title: (l10n, activity) {
           final plan = activity.arguments['plan'];
-          return 'Plan(${plan is List ? plan.length : 0})';
+          return l10n.toolTitlePlan(plan is List ? plan.length : 0);
         },
         result: (l10n, activity, output) {
           final error = output is ChatToolJsonObject

@@ -1826,7 +1826,7 @@ void main() {
         _trTextInput('Base URL'),
         'http://127.0.0.1:${modelServer.port}/unavailable/v1',
       );
-      await tester.enterText(_trTextInput('API key'), 'valid-key');
+      await tester.enterText(_trTextInput('API 키'), 'valid-key');
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-custom-save')),
       );
@@ -1937,7 +1937,7 @@ void main() {
       await tester.ensureVisible(addDeepSeek);
       await tester.tap(addDeepSeek);
       await tester.pumpAndSettle();
-      await tester.enterText(_trTextInput('API key'), 'valid-key');
+      await tester.enterText(_trTextInput('API 키'), 'valid-key');
       await tester.pump();
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-connect-submit')),

@@ -14,8 +14,10 @@ final Map<String, ChatToolPresenter> applyPatchPresenters =
           final named = files
               .where((file) => file.path.isNotEmpty)
               .toList(growable: false);
-          if (named.isEmpty) return 'Edit';
-          if (named.length == 1) return 'Edit(${named.single.path})';
+          if (named.isEmpty) return l10n.toolTitleEdit;
+          if (named.length == 1) {
+            return l10n.toolTitleEditPath(named.single.path);
+          }
           return l10n.toolEditFiles(named.length);
         },
         result: (l10n, activity, output) {

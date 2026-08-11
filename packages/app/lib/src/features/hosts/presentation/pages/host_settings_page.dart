@@ -636,13 +636,15 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                     key: const ValueKey<String>('remote-host-label'),
                     controller: _label,
                     label: l10n.commonName,
-                    placeholder: 'Production daemon',
+                    placeholder: l10n.appSettingsLabelPlaceholder,
                   ),
                   TRTextField(
                     key: const ValueKey<String>('remote-host-address'),
                     controller: _address,
                     keyboardType: TextInputType.url,
                     label: l10n.appSettingsAddress,
+                    // A URL is not prose; the example is the same in every
+                    // language.
                     placeholder: 'wss://coder.example.com/ws',
                   ),
                   TRTextField(

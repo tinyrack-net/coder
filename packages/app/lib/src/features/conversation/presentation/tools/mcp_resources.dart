@@ -6,8 +6,9 @@ final Map<String, ChatToolPresenter>
 mcpResourcesPresenters = <String, ChatToolPresenter>{
   'list_mcp_resources': ChatToolPresenter(
     glyph: ChatToolGlyph.resource,
-    title: (l10n, activity) =>
-        'Resources(${stringToolArg(activity, 'server') ?? 'all'})',
+    title: (l10n, activity) => l10n.toolTitleMcpResources(
+      stringToolArg(activity, 'server') ?? l10n.toolArgumentAllServers,
+    ),
     result: (l10n, activity, output) => _mcpListResult(
       l10n,
       output,
@@ -18,8 +19,9 @@ mcpResourcesPresenters = <String, ChatToolPresenter>{
   ),
   'list_mcp_resource_templates': ChatToolPresenter(
     glyph: ChatToolGlyph.resource,
-    title: (l10n, activity) =>
-        'ResourceTemplates(${stringToolArg(activity, 'server') ?? 'all'})',
+    title: (l10n, activity) => l10n.toolTitleMcpResourceTemplates(
+      stringToolArg(activity, 'server') ?? l10n.toolArgumentAllServers,
+    ),
     result: (l10n, activity, output) => _mcpListResult(
       l10n,
       output,
@@ -33,7 +35,7 @@ mcpResourcesPresenters = <String, ChatToolPresenter>{
     title: (l10n, activity) {
       final server = stringToolArg(activity, 'server') ?? '?';
       final uri = truncateToolText(stringToolArg(activity, 'uri') ?? '?', 48);
-      return 'Resource($server: $uri)';
+      return l10n.toolTitleMcpResource(server, uri);
     },
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);

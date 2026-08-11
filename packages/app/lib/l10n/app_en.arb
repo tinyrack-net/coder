@@ -205,7 +205,11 @@
   "advancedResetFailedDaemonRunning": "Another {appDisplayName} daemon is using the data directory. Quit it and try again. Nothing was deleted.",
   "@advancedResetFailedDaemonRunning": {
     "description": "Reset failure caused by a daemon owning the data directory.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "advancedResetFailedFilesystem": "Some daemon files could not be deleted: {error}",
   "@advancedResetFailedFilesystem": {
@@ -219,7 +223,11 @@
   "advancedResetFailedIncomplete": "Daemon data was removed but the app settings could not be cleared. Restart {appDisplayName}.",
   "@advancedResetFailedIncomplete": {
     "description": "Reset failure that leaves device-local settings behind.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "settingsRequiresOnlineDaemon": "Connect an online daemon first.",
   "@settingsRequiresOnlineDaemon": {
@@ -276,7 +284,11 @@
   "generalStartupAtBootDescription": "The operating system launches {appDisplayName} after you sign in, so the embedded daemon keeps running.",
   "@generalStartupAtBootDescription": {
     "description": "Explains what the start-at-login switch registers with the operating system.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "generalStartupMinimizedLabel": "Start minimized",
   "@generalStartupMinimizedLabel": {
@@ -301,12 +313,20 @@
   "generalStartupCloseNotice": "Closing the window keeps {appDisplayName} running in the tray.",
   "@generalStartupCloseNotice": {
     "description": "Explains that the window close button no longer quits the app.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "trayTooltip": "{appDisplayName}",
   "@trayTooltip": {
     "description": "Hover text of the tray icon.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "trayShowWindow": "Show window",
   "@trayShowWindow": {
@@ -339,7 +359,11 @@
   "desktopMenuAbout": "About {appDisplayName}",
   "@desktopMenuAbout": {
     "description": "Opens application name and version information.",
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "desktopWindowMinimize": "Minimize",
   "@desktopWindowMinimize": {
@@ -370,8 +394,21 @@
     "description": "Tooltip that collapses the workspace sidebar."
   },
   "workspaceNewSession": "New session",
+  "sessionDefaultTitle": "Coding session",
+  "@sessionDefaultTitle": {
+    "description": "Session tab title used when a prompt carries no readable title text."
+  },
   "workspaceNewTab": "New tab",
   "workspaceNewTerminal": "New terminal",
+  "terminalTabTitle": "Terminal {number}",
+  "@terminalTabTitle": {
+    "description": "Title of a newly created terminal tab, numbered within its worktree.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "workspaceLoading": "Loading workspace",
   "@workspaceLoading": {
     "description": "Announced once for the workspace pane skeleton shown while sessions and terminals load."
@@ -491,7 +528,11 @@
   "workspaceUnregisterBody": "The project disappears from {appName}, but its repository and files stay on disk.",
   "@workspaceUnregisterBody": {
     "description": "Explains that unregistering a project is non-destructive.",
-    "placeholders": {"appName": {"type": "String"}}
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "@workspaceWorktreeMenu": {
     "description": "Tooltip of the per-worktree overflow menu."
@@ -538,7 +579,11 @@
   "workspaceArchiveRemovesDirectory": "The checkout directory created by {appName} will be removed.",
   "@workspaceArchiveRemovesDirectory": {
     "description": "Archive effect for an app-managed checkout.",
-    "placeholders": {"appName": {"type": "String"}}
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "workspaceArchiveKeepsDirectory": "Only the registration is hidden; the checkout stays on disk.",
   "@workspaceArchiveKeepsDirectory": {
@@ -565,6 +610,34 @@
     "description": "Sidebar section listing sessions that belong to no project."
   },
   "workspaceNoProjectOption": "No project (home folder)",
+  "workspaceProjectChip": "Project",
+  "workspaceProjectChipTooltip": "Select a project",
+  "workspaceProjectAdd": "Add",
+  "workspaceWorktreeNew": "New worktree",
+  "workspaceWorktreeChipTooltip": "Select a worktree",
+  "workspaceBaseBranchChip": "Base branch",
+  "workspaceBaseBranchChipTooltip": "Select a base branch",
+  "@workspaceBaseBranchChipTooltip": {
+    "description": "Tooltip of the new-workspace base branch chip."
+  },
+  "@workspaceBaseBranchChip": {
+    "description": "Label of the new-workspace base branch chip before a branch is chosen."
+  },
+  "@workspaceWorktreeChipTooltip": {
+    "description": "Tooltip of the new-workspace worktree chip."
+  },
+  "@workspaceWorktreeNew": {
+    "description": "New-workspace worktree chip and menu entry that creates a fresh checkout."
+  },
+  "@workspaceProjectAdd": {
+    "description": "Menu entry that registers another project from the new-workspace chip."
+  },
+  "@workspaceProjectChipTooltip": {
+    "description": "Tooltip of the new-workspace project chip."
+  },
+  "@workspaceProjectChip": {
+    "description": "Label of the new-workspace project chip before a project is chosen."
+  },
   "@workspaceNoProjectOption": {
     "description": "Composer choice that starts a session in the user home."
   },
@@ -723,9 +796,25 @@
   "hostErrorEmbeddedAlreadyRunning": "{appName} is already running on this computer and owns the local daemon. Open the running copy from the system tray, or quit it and retry.",
   "@hostErrorEmbeddedAlreadyRunning": {
     "description": "Embedded daemon startup failure when another process already holds the daemon home.",
-    "placeholders": {"appName": {"type": "String"}}
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "hostErrorLocalNetworkUnreachable": "Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.",
+  "hostErrorRelayPairingUnavailable": "Relay pairing is not available on this platform.",
+  "hostErrorServerIdentityMismatch": "That address now reaches a different daemon than the one saved here.",
+  "hostErrorCredentialMismatch": "The stored credential does not match this connection path.",
+  "@hostErrorCredentialMismatch": {
+    "description": "Connection failure when the stored credential is of the wrong kind for the profile's connection path."
+  },
+  "@hostErrorServerIdentityMismatch": {
+    "description": "Connection failure when an address now answers as a different daemon than the one saved under this profile."
+  },
+  "@hostErrorRelayPairingUnavailable": {
+    "description": "Connection failure when the running platform has no relay pairing support."
+  },
   "@hostErrorLocalNetworkUnreachable": {
     "description": "Connection failure in a browser for a daemon on the local machine or network, where the browser does not report whether the daemon was down or the Local Network Access permission was refused."
   },
@@ -795,7 +884,11 @@
   "relayPairQrSemantics": "QR code for the one-time device connection link",
   "relayPairInvalid": "Enter a valid {appDisplayName} pairing link.",
   "@relayPairInvalid": {
-    "placeholders": {"appDisplayName": {"type": "String"}}
+    "placeholders": {
+      "appDisplayName": {
+        "type": "String"
+      }
+    }
   },
   "relayPairExpired": "This pairing link expired or was already used. Create a new link on the daemon.",
   "relayAdvancedDirect": "Advanced direct connection",
@@ -803,11 +896,23 @@
   "relayDevicesDescription": "Create a ten-minute link for a new device or remove a device that should no longer connect.",
   "relayCreateLink": "Create connection link",
   "relayLinkExpires": "Expires {expiresAt}",
-  "@relayLinkExpires": {"placeholders": {"expiresAt": {"type": "String"}}},
+  "@relayLinkExpires": {
+    "placeholders": {
+      "expiresAt": {
+        "type": "String"
+      }
+    }
+  },
   "relayNoDevices": "No devices are approved.",
   "relayRevoke": "Revoke",
   "relayRevokeTitle": "Revoke {name}?",
-  "@relayRevokeTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@relayRevokeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relayRevokeBody": "The device's live relay connection ends immediately. A new pairing link is required to reconnect.",
   "relayPathDirect": "Direct",
   "relayPathRelay": "Relay",
@@ -850,6 +955,10 @@
     "description": "Title of the remote daemon form when editing."
   },
   "appSettingsAddress": "WebSocket address",
+  "appSettingsLabelPlaceholder": "Production daemon",
+  "@appSettingsLabelPlaceholder": {
+    "description": "Example name shown in the remote daemon name field."
+  },
   "@appSettingsAddress": {
     "description": "Text field label for the daemon endpoint."
   },
@@ -936,6 +1045,15 @@
     "description": "Placeholder shown before an agent is chosen."
   },
   "agentSettingsCount": "{count} definitions",
+  "agentSettingsModeStale": "{mode} · stale",
+  "@agentSettingsModeStale": {
+    "description": "Subtitle of an agent whose definition file no longer parses, so the last good version is shown.",
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
   "@agentSettingsCount": {
     "description": "Subtitle counting agent definitions.",
     "placeholders": {
@@ -1071,7 +1189,11 @@
   "agentSettingsArchiveTitle": "Archive {name}?",
   "@agentSettingsArchiveTitle": {
     "description": "Asks whether to archive an agent definition.",
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "agentSettingsArchiveBody": "Sessions already using this agent keep running. It stops being offered for new ones.",
   "@agentSettingsArchiveBody": {
@@ -1080,7 +1202,11 @@
   "agentSettingsResetTitle": "Reset {name} to defaults?",
   "@agentSettingsResetTitle": {
     "description": "Asks whether to restore a built-in agent definition.",
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "agentSettingsResetBody": "Every edit made to this built-in agent is discarded and cannot be recovered.",
   "@agentSettingsResetBody": {
@@ -1291,6 +1417,22 @@
     }
   },
   "providerSettingsConnect": "Connect",
+  "providerSettingsApiKey": "API key",
+  "providerSettingsBaseUrl": "Base URL",
+  "providerSettingsConnectionFailed": "Provider connection failed.",
+  "providerSettingsAuthUrlFailed": "Unable to open the authorization page.",
+  "@providerSettingsAuthUrlFailed": {
+    "description": "Reported when no browser could be launched for an OAuth sign-in."
+  },
+  "@providerSettingsConnectionFailed": {
+    "description": "Fallback shown when a provider connection fails without naming a reason."
+  },
+  "@providerSettingsBaseUrl": {
+    "description": "Text field label for a custom provider endpoint."
+  },
+  "@providerSettingsApiKey": {
+    "description": "Text field label for a provider API key."
+  },
   "@providerSettingsConnect": {
     "description": "Confirms the API key dialog."
   },
@@ -1531,6 +1673,33 @@
     }
   },
   "composerAttachLabel": "Attach files",
+  "composerRemoveAttachment": "Remove {name}",
+  "composerAttachmentTooLarge": "Each attachment must be under {limit} MB.",
+  "composerAttachmentTooMany": "A turn accepts at most {limit} files.",
+  "@composerAttachmentTooMany": {
+    "description": "Reported when a submission would hold more files than one turn accepts.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@composerAttachmentTooLarge": {
+    "description": "Reported when one chosen file is over the per-attachment size limit.",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@composerRemoveAttachment": {
+    "description": "Accessible label of the button removing one pending attachment.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "@composerAttachLabel": {
     "description": "Accessible label for the composer attachment button."
   },
@@ -1847,6 +2016,14 @@
     "description": "Implements the plan in a fresh session."
   },
   "chatPlanRun": "Run the plan",
+  "planImplementPrompt": "Carry out this plan.",
+  "planFreshSessionPreamble": "A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.",
+  "@planFreshSessionPreamble": {
+    "description": "Preamble prepended to a plan handed to a brand-new session. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language."
+  },
+  "@planImplementPrompt": {
+    "description": "Prompt sent to the agent when the user accepts a plan in place. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language."
+  },
   "@chatPlanRun": {
     "description": "Implements the plan in the current session."
   },
@@ -2003,6 +2180,306 @@
     }
   },
   "toolCommandResult": "exit {exitCode} · {lines} lines",
+  "toolTitleEdit": "Edit",
+  "@toolTitleEdit": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleEditPath": "Edit({path})",
+  "@toolTitleEditPath": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleAttach": "Attach({path})",
+  "@toolTitleAttach": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleAttachment": "Attachment({id})",
+  "@toolTitleAttachment": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleNow": "Now()",
+  "@toolTitleNow": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleSleep": "Sleep({milliseconds}ms)",
+  "@toolTitleSleep": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "milliseconds": {
+        "type": "int"
+      }
+    }
+  },
+  "toolTitleSleepUnknown": "Sleep()",
+  "@toolTitleSleepUnknown": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleSpawn": "Spawn({task})",
+  "@toolTitleSpawn": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleSend": "Send({target})",
+  "@toolTitleSend": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleFollowup": "Followup({target})",
+  "@toolTitleFollowup": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleWait": "Wait()",
+  "@toolTitleWait": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleInterrupt": "Interrupt({target})",
+  "@toolTitleInterrupt": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleAgents": "Agents()",
+  "@toolTitleAgents": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleContext": "Context()",
+  "@toolTitleContext": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleNewContext": "NewContext()",
+  "@toolTitleNewContext": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleBash": "Bash({command})",
+  "@toolTitleBash": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleStdin": "Stdin({session})",
+  "@toolTitleStdin": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "session": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleStdinChars": "Stdin({session} ← {chars})",
+  "@toolTitleStdinChars": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "session": {
+        "type": "String"
+      },
+      "chars": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleGlob": "Glob({pattern})",
+  "@toolTitleGlob": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleGlobIn": "Glob({pattern} in {path})",
+  "@toolTitleGlobIn": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleList": "List({path})",
+  "@toolTitleList": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleMcpResources": "Resources({server})",
+  "@toolTitleMcpResources": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleMcpResourceTemplates": "ResourceTemplates({server})",
+  "@toolTitleMcpResourceTemplates": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleMcpResource": "Resource({server}: {uri})",
+  "@toolTitleMcpResource": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      },
+      "uri": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleRead": "Read({path})",
+  "@toolTitleRead": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleReadRange": "Read({path} @{offset}+{limit})",
+  "@toolTitleReadRange": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "offset": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleAsk": "Ask({headers})",
+  "@toolTitleAsk": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "headers": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleSearch": "Search({query})",
+  "@toolTitleSearch": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleSearchIn": "Search({query} in {path})",
+  "@toolTitleSearchIn": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleSkills": "Skills()",
+  "@toolTitleSkills": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
+  },
+  "toolTitleSkill": "Skill({name})",
+  "@toolTitleSkill": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleSkillResource": "Skill({name}:{resource})",
+  "@toolTitleSkillResource": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "resource": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitleToolSearch": "Tools({query})",
+  "@toolTitleToolSearch": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "toolTitlePlan": "Plan({count})",
+  "@toolTitlePlan": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolTitleView": "View({path})",
+  "@toolTitleView": {
+    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "toolArgumentAllServers": "all",
+  "@toolArgumentAllServers": {
+    "description": "Stands in for the server argument of an MCP call that lists every server at once."
+  },
   "@toolCommandResult": {
     "description": "Shell command result summary.",
     "placeholders": {
@@ -2263,7 +2740,11 @@
   "mcpSettingsProjectReadOnly": "Defined by this repository, so {appName} does not edit it.",
   "@mcpSettingsProjectReadOnly": {
     "description": "Explains why a project server is read-only.",
-    "placeholders": {"appName": {"type": "String"}}
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "mcpSettingsShadowed": "Hidden by your server of the same name",
   "@mcpSettingsShadowed": {
@@ -2438,6 +2919,10 @@
     "description": "Server status label."
   },
   "mcpSettingsStatusConnecting": "Connecting",
+  "mcpSettingsConnecting": "Connecting MCP server",
+  "@mcpSettingsConnecting": {
+    "description": "Accessible label of the spinner shown while an MCP server connects."
+  },
   "@mcpSettingsStatusConnecting": {
     "description": "Server status label."
   },
@@ -2550,39 +3035,67 @@
   "sessionContextDetailsTitle": "Context usage",
   "sessionContextPercent": "{percent}% used",
   "@sessionContextPercent": {
-    "placeholders": {"percent": {"type": "int"}}
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "sessionContextTokens": "{used} / {max} tokens",
   "@sessionContextTokens": {
     "placeholders": {
-      "used": {"type": "String"},
-      "max": {"type": "String"}
+      "used": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
     }
   },
   "sessionContextCost": "Session cost {cost}",
   "@sessionContextCost": {
-    "placeholders": {"cost": {"type": "String"}}
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
   },
   "sessionQuotaLoading": "Loading provider usage",
   "sessionQuotaError": "Provider usage is temporarily unavailable.",
   "sessionQuotaProviderPlan": "{provider} · {plan}",
   "@sessionQuotaProviderPlan": {
     "placeholders": {
-      "provider": {"type": "String"},
-      "plan": {"type": "String"}
+      "provider": {
+        "type": "String"
+      },
+      "plan": {
+        "type": "String"
+      }
     }
   },
   "sessionQuotaPercent": "{percent}% used",
   "@sessionQuotaPercent": {
-    "placeholders": {"percent": {"type": "int"}}
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   },
   "sessionQuotaResets": "Resets {time}",
   "@sessionQuotaResets": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "sessionQuotaCredits": "Credits {amount}",
   "@sessionQuotaCredits": {
-    "placeholders": {"amount": {"type": "String"}}
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
   "sessionQuotaWindowSession": "Session limit",
   "sessionQuotaWindowWeekly": "Weekly limit",
@@ -2682,13 +3195,21 @@
   "goalPlanHold": "Resumes in Run mode",
   "goalElapsed": "{seconds}s elapsed",
   "@goalElapsed": {
-    "placeholders": {"seconds": {"type": "int"}}
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "goalTokenUsage": "{used} / {budget} tokens",
   "@goalTokenUsage": {
     "placeholders": {
-      "used": {"type": "int"},
-      "budget": {"type": "int"}
+      "used": {
+        "type": "int"
+      },
+      "budget": {
+        "type": "int"
+      }
     }
   },
   "goalPause": "Pause goal",

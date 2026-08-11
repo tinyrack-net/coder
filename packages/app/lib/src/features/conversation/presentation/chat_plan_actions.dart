@@ -14,17 +14,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-// The two prompts below are sent to the model, not shown to the user, so they
-// are deliberately left out of the localized strings.
-
-/// Prompt sent when the user accepts a plan in the current session.
-const String implementPlanPrompt = '계획을 실행해줘.';
-
-/// Preamble sent when a plan is handed to a brand-new session.
-const String freshSessionPlanPreamble =
-    '이전 에이전트가 사용자의 요청을 위해 아래 계획을 세웠습니다. '
-    '이 계획을 새로운 컨텍스트에서 구현하세요. 계획을 사용자 의도의 근거로 삼되, '
-    '필요한 파일은 다시 읽고 구현과 검증까지 진행하세요.';
+// The two prompts below reach the model rather than the screen, but they are
+// still localized: the language a request is written in is the strongest hint
+// the model has about which language to answer in, and the answer is what the
+// user reads.
 
 /// Asks whether the proposed plan should be carried out.
 ///
@@ -80,12 +73,12 @@ class ChatPlanActions extends ConsumerWidget {
             ),
             TRButton(
               appearance: TRAppearance.ghost,
-              onPressed: () => unawaited(_startFreshSession(ref)),
+              onPressed: () => unawaited(_startFreshSession(ref, l10n)),
               child: TRText.inherit(l10n.chatPlanRunInNewSession),
             ),
             TRButton(
               intent: TRIntent.primary,
-              onPressed: () => unawaited(_implementHere(ref)),
+              onPressed: () => unawaited(_implementHere(ref, l10n)),
               child: TRText.inherit(l10n.chatPlanRun),
             ),
           ],
@@ -112,7 +105,7 @@ class ChatPlanActions extends ConsumerWidget {
     );
   }
 
-  Future<void> _implementHere(WidgetRef ref) async {
+  Future<void> _implementHere(WidgetRef ref, AppLocalizations l10n) async {
     // Read the notifiers first: dismissing unmounts this widget, and `ref` is
     // unusable afterwards.
     final sessions = ref.read(
@@ -126,21 +119,24 @@ class ChatPlanActions extends ConsumerWidget {
     );
     onDismiss();
     await sessions.setMode(session.id, SessionMode.normal);
-    await conversation.startTurn(implementPlanPrompt);
+    await conversation.startTurn(l10n.planImplementPrompt);
   }
 
-  Future<void> _startFreshSession(WidgetRef ref) async {
+  Future<void> _startFreshSession(WidgetRef ref, AppLocalizations l10n) async {
     final markdown = ChatPlanUpdate(
       steps: proposal.steps,
       explanation: proposal.explanation,
     ).toMarkdown();
-    final prompt = '$freshSessionPlanPreamble\n\n$markdown';
+    final prompt = '${l10n.planFreshSessionPreamble}\n\n$markdown';
     final created = await startSessionWithPrompt(
       ref,
       selection: selection,
       agentDefinitionId: session.agentDefinitionId,
       model: session.model,
-      title: deriveSessionTitle(proposal.steps.first.step),
+      title: deriveSessionTitle(
+        proposal.steps.first.step,
+        fallback: l10n.sessionDefaultTitle,
+      ),
       prompt: prompt,
     );
     onDismiss();

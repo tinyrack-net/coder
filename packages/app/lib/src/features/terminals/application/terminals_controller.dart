@@ -47,13 +47,19 @@ class TerminalsController extends _$TerminalsController {
   }
 
   /// Creates a terminal with a standard initial character grid.
-  Future<TerminalDto> create() async {
+  ///
+  /// [buildTitle] receives the tab's number within this worktree. The title is
+  /// stored on the daemon, so it has to be localized, but only the caller is
+  /// close enough to the widget tree to know the reader's language.
+  Future<TerminalDto> create({
+    required String Function(int number) buildTitle,
+  }) async {
     final api = await requireHostApi(ref, hostId);
     final current = state.asData?.value ?? const <TerminalDto>[];
     final terminal = await api.terminals.createTerminal(
       id: ref.read(appIdGeneratorProvider).generate(),
       worktreeId: worktreeId,
-      title: 'Terminal ${current.length + 1}',
+      title: buildTitle(current.length + 1),
       columns: 80,
       rows: 24,
     );

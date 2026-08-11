@@ -88,6 +88,8 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
               controller: _path,
               autofocus: true,
               label: l10n.directoryBrowserPath,
+              // A filesystem path is not prose; the example shape is the same
+              // in every language.
               placeholder: '/home/you/repositories/project',
               onChanged: _onPathTyped,
             ),

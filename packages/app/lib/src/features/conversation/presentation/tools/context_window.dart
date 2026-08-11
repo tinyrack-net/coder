@@ -5,7 +5,7 @@ final Map<String, ChatToolPresenter>
 contextWindowPresenters = <String, ChatToolPresenter>{
   'get_context_remaining': ChatToolPresenter(
     glyph: ChatToolGlyph.context,
-    title: (l10n, activity) => 'Context()',
+    title: (l10n, activity) => l10n.toolTitleContext,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final remaining = output.value['remainingTokens'];
@@ -24,7 +24,7 @@ contextWindowPresenters = <String, ChatToolPresenter>{
   'new_context': ChatToolPresenter(
     timeline: ChatToolTimeline.suppressed,
     glyph: ChatToolGlyph.context,
-    title: (l10n, activity) => 'NewContext()',
+    title: (l10n, activity) => l10n.toolTitleNewContext,
     result: (l10n, activity, output) =>
         output is ChatToolJsonObject && output.value['error'] is String
         ? output.value['error']! as String

@@ -5,9 +5,9 @@ final Map<String, ChatToolPresenter> readAttachmentPresenters =
     <String, ChatToolPresenter>{
       'read_attachment': ChatToolPresenter(
         glyph: ChatToolGlyph.read,
-        title: (l10n, activity) =>
-            'Attachment('
-            '${truncateToolText(stringToolArg(activity, 'id') ?? '?', 40)})',
+        title: (l10n, activity) => l10n.toolTitleAttachment(
+          truncateToolText(stringToolArg(activity, 'id') ?? '?', 40),
+        ),
         result: (l10n, activity, output) {
           if (output is! ChatToolJsonObject) {
             return genericToolResult(l10n, output);

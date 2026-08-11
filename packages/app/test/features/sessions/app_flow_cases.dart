@@ -638,7 +638,7 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TerminalView), findsOneWidget);
-      expect(find.text('Terminal 1'), findsOneWidget);
+      expect(find.text('터미널 1'), findsOneWidget);
       final terminal = (await api.terminals.listTerminals(checkout.id)).single;
       await tester.tap(
         find.byKey(ValueKey<String>('tr-tabs-close-${terminal.id}')),

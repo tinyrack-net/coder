@@ -11,7 +11,9 @@ searchTextPresenters = <String, ChatToolPresenter>{
         40,
       );
       final path = stringToolArg(activity, 'path');
-      return path == null ? 'Search($query)' : 'Search($query in $path)';
+      return path == null
+          ? l10n.toolTitleSearch(query)
+          : l10n.toolTitleSearchIn(query, path);
     },
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);

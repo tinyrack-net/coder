@@ -9,7 +9,7 @@ execPresenters = <String, ChatToolPresenter>{
     glyph: ChatToolGlyph.run,
     title: (l10n, activity) {
       final command = stringToolArg(activity, 'command') ?? '';
-      return 'Bash(${truncateToolText(firstToolLine(command), 60)})';
+      return l10n.toolTitleBash(truncateToolText(firstToolLine(command), 60));
     },
     result: _execResult,
     body: _execBody,
@@ -33,8 +33,11 @@ execPresenters = <String, ChatToolPresenter>{
       final chars = stringToolArg(activity, 'chars') ?? '';
       final session = stringToolArg(activity, 'session_id') ?? '?';
       return chars.isEmpty
-          ? 'Stdin($session)'
-          : 'Stdin($session ← ${truncateToolText(firstToolLine(chars), 40)})';
+          ? l10n.toolTitleStdin(session)
+          : l10n.toolTitleStdinChars(
+              session,
+              truncateToolText(firstToolLine(chars), 40),
+            );
     },
     result: _execResult,
     body: _execBody,

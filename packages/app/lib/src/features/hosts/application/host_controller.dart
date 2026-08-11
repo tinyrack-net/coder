@@ -102,6 +102,8 @@ Future<CoderApi?> watchConnectedHostApi(Ref ref, String hostId) {
 /// Resolves the API inside a build, re-running once the daemon connects.
 Future<CoderApi> watchHostApi(Ref ref, String hostId) async {
   final api = await watchConnectedHostApi(ref, hostId);
+  // Internal invariant, not user copy: every caller gates on a connected
+  // daemon, so this only fires on a bug. Left in English for the report.
   if (api == null) throw StateError('Online daemon connection required.');
   return api;
 }

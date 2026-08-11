@@ -62,7 +62,7 @@ final class WebAttachmentInput implements AttachmentInputPort {
 
   PendingAttachment _validated(PendingAttachment attachment) {
     if (attachment.byteSize > maxPendingAttachmentBytes) {
-      throw const FormatException('Attachment exceeds the 50 MB limit.');
+      throw const AttachmentFailure(AttachmentFailureReason.tooLarge);
     }
     return attachment;
   }

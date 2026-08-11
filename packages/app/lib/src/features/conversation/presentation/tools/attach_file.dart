@@ -6,9 +6,9 @@ final Map<String, ChatToolPresenter> attachFilePresenters =
       'attach_file': ChatToolPresenter(
         timeline: ChatToolTimeline.suppressed,
         glyph: ChatToolGlyph.read,
-        title: (l10n, activity) =>
-            'Attach('
-            '${truncateToolText(stringToolArg(activity, 'path') ?? '?', 60)})',
+        title: (l10n, activity) => l10n.toolTitleAttach(
+          truncateToolText(stringToolArg(activity, 'path') ?? '?', 60),
+        ),
         result: (l10n, activity, output) {
           if (output is! ChatToolJsonObject) {
             return genericToolResult(l10n, output);

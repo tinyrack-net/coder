@@ -423,9 +423,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           label:
               project?.workspace.name ??
               (home == null
-                  ? '프로젝트'
+                  ? AppLocalizations.of(context).workspaceProjectChip
                   : AppLocalizations.of(context).workspaceNoProjectOption),
-          tooltip: '프로젝트 선택',
+          tooltip: AppLocalizations.of(context).workspaceProjectChipTooltip,
           menuChildren: _submitting || !anyDaemonConnected
               ? null
               : <Widget>[
@@ -449,7 +449,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
                     key: const ValueKey('new-workspace-project-add'),
                     leadingIcon: const Icon(CoderIcons.addCircle),
                     onPressed: () => unawaited(_addProject()),
-                    child: const TRText.inherit('추가'),
+                    child: TRText.inherit(
+                      AppLocalizations.of(context).workspaceProjectAdd,
+                    ),
                   ),
                 ],
         ),
@@ -459,16 +461,18 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             valueKey: const ValueKey('new-workspace-worktree'),
             icon: CoderIcons.branch,
             label: worktree == null
-                ? 'New worktree'
+                ? AppLocalizations.of(context).workspaceWorktreeNew
                 : (worktree.branch ?? worktree.name),
-            tooltip: 'Worktree 선택',
+            tooltip: AppLocalizations.of(context).workspaceWorktreeChipTooltip,
             menuChildren: project == null || _submitting
                 ? null
                 : <Widget>[
                     TRMenuItem(
                       key: const ValueKey('new-workspace-worktree-new'),
                       onPressed: () => _selectWorktree(null),
-                      child: const TRText.inherit('New worktree'),
+                      child: TRText.inherit(
+                        AppLocalizations.of(context).workspaceWorktreeNew,
+                      ),
                     ),
                     for (final item in project.worktrees)
                       TRMenuItem(
@@ -482,8 +486,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           ComposerChip(
             valueKey: const ValueKey('new-workspace-branch'),
             icon: CoderIcons.check,
-            label: baseBranch ?? '기반 branch',
-            tooltip: '기반 branch 선택',
+            label:
+                baseBranch ??
+                AppLocalizations.of(context).workspaceBaseBranchChip,
+            tooltip: AppLocalizations.of(
+              context,
+            ).workspaceBaseBranchChipTooltip,
             menuChildren: project == null || worktree != null || _submitting
                 ? null
                 : <Widget>[
@@ -690,11 +698,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     ComposerSubmission submission,
     String seed,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final session = await startSessionWithPrompt(
       ref,
       selection: selection,
       agentDefinitionId: agent.id,
-      title: deriveSessionTitle(seed),
+      title: deriveSessionTitle(seed, fallback: l10n.sessionDefaultTitle),
       prompt: submission.text,
       attachments: submission.attachments,
       mode: draft.mode,

@@ -5,7 +5,7 @@ final Map<String, ChatToolPresenter>
 skillsPresenters = <String, ChatToolPresenter>{
   'list_skills': ChatToolPresenter(
     glyph: ChatToolGlyph.list,
-    title: (l10n, activity) => 'Skills()',
+    title: (l10n, activity) => l10n.toolTitleSkills,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final skills = output.value['skills'];
@@ -23,8 +23,11 @@ skillsPresenters = <String, ChatToolPresenter>{
       final resource = stringToolArg(activity, 'resource');
       // The bundled file matters as much as the skill when one is named.
       return resource == null || resource.isEmpty
-          ? 'Skill($name)'
-          : 'Skill($name:${truncateToolText(resource, 40)})';
+          ? l10n.toolTitleSkill(name)
+          : l10n.toolTitleSkillResource(
+              name,
+              truncateToolText(resource, 40),
+            );
     },
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);

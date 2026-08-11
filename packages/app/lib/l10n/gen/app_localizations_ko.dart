@@ -295,10 +295,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNewSession => '새 session';
 
   @override
+  String get sessionDefaultTitle => '코딩 세션';
+
+  @override
   String get workspaceNewTab => '새 탭';
 
   @override
   String get workspaceNewTerminal => '새 터미널';
+
+  @override
+  String terminalTabTitle(int number) {
+    return '터미널 $number';
+  }
 
   @override
   String get workspaceLoading => '워크스페이스 불러오는 중';
@@ -484,6 +492,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceNoProjectOption => '프로젝트 없음 (홈 폴더)';
 
   @override
+  String get workspaceProjectChip => '프로젝트';
+
+  @override
+  String get workspaceProjectChipTooltip => '프로젝트 선택';
+
+  @override
+  String get workspaceProjectAdd => '추가';
+
+  @override
+  String get workspaceWorktreeNew => '새 worktree';
+
+  @override
+  String get workspaceWorktreeChipTooltip => 'Worktree 선택';
+
+  @override
+  String get workspaceBaseBranchChip => '기반 branch';
+
+  @override
+  String get workspaceBaseBranchChipTooltip => '기반 branch 선택';
+
+  @override
   String get workspaceAddProjectFirst => '먼저 프로젝트를 추가하세요.';
 
   @override
@@ -611,6 +640,17 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get hostErrorLocalNetworkUnreachable =>
       'Daemon에 연결하지 못했습니다. Daemon이 실행 중인지, 그리고 이 사이트의 로컬 네트워크 접근을 허용했는지 확인하세요.';
+
+  @override
+  String get hostErrorRelayPairingUnavailable =>
+      '이 플랫폼에서는 relay 페어링을 사용할 수 없습니다.';
+
+  @override
+  String get hostErrorServerIdentityMismatch =>
+      '이 주소는 저장된 daemon이 아닌 다른 daemon으로 연결됩니다.';
+
+  @override
+  String get hostErrorCredentialMismatch => '저장된 자격 증명이 이 연결 경로와 맞지 않습니다.';
 
   @override
   String get appSettingsTitle => '앱 설정';
@@ -764,6 +804,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsAddress => 'WebSocket 주소';
 
   @override
+  String get appSettingsLabelPlaceholder => '운영 daemon';
+
+  @override
   String get appSettingsNewToken => '새 Bearer token (변경할 때만 입력)';
 
   @override
@@ -825,6 +868,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String agentSettingsCount(int count) {
     return '$count definitions';
+  }
+
+  @override
+  String agentSettingsModeStale(String mode) {
+    return '$mode · 해석 실패';
   }
 
   @override
@@ -1108,6 +1156,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsConnect => '연결';
 
   @override
+  String get providerSettingsApiKey => 'API 키';
+
+  @override
+  String get providerSettingsBaseUrl => 'Base URL';
+
+  @override
+  String get providerSettingsConnectionFailed => '프로바이더 연결에 실패했습니다.';
+
+  @override
+  String get providerSettingsAuthUrlFailed => '인증 페이지를 열 수 없습니다.';
+
+  @override
   String get providerSettingsCustomTitle => 'Custom Provider 고급 설정';
 
   @override
@@ -1329,6 +1389,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerAttachLabel => '파일 첨부';
 
   @override
+  String composerRemoveAttachment(String name) {
+    return '$name 제거';
+  }
+
+  @override
+  String composerAttachmentTooLarge(int limit) {
+    return '첨부 파일은 하나당 $limit MB 미만이어야 합니다.';
+  }
+
+  @override
+  String composerAttachmentTooMany(int limit) {
+    return '한 턴에 첨부할 수 있는 파일은 최대 $limit개입니다.';
+  }
+
+  @override
   String get composerMoreSettings => '설정 더 보기';
 
   @override
@@ -1530,6 +1605,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatPlanRun => '계획대로 실행';
 
   @override
+  String get planImplementPrompt => '계획을 실행해줘.';
+
+  @override
+  String get planFreshSessionPreamble =>
+      '이전 에이전트가 사용자의 요청을 위해 아래 계획을 세웠습니다. 이 계획을 새로운 컨텍스트에서 구현하세요. 계획을 사용자 의도의 근거로 삼되, 필요한 파일은 다시 읽고 구현과 검증까지 진행하세요.';
+
+  @override
   String get toolRejected => '거부됨';
 
   @override
@@ -1601,7 +1683,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String toolEditFiles(int count) {
-    return 'Edit($count개 파일)';
+    return '편집($count개 파일)';
   }
 
   @override
@@ -1613,6 +1695,168 @@ class AppLocalizationsKo extends AppLocalizations {
   String toolCommandResult(int exitCode, int lines) {
     return '종료 코드 $exitCode · $lines줄';
   }
+
+  @override
+  String get toolTitleEdit => '편집';
+
+  @override
+  String toolTitleEditPath(String path) {
+    return '편집($path)';
+  }
+
+  @override
+  String toolTitleAttach(String path) {
+    return '첨부($path)';
+  }
+
+  @override
+  String toolTitleAttachment(String id) {
+    return '첨부 파일($id)';
+  }
+
+  @override
+  String get toolTitleNow => '현재 시각()';
+
+  @override
+  String toolTitleSleep(int milliseconds) {
+    return '슬립(${milliseconds}ms)';
+  }
+
+  @override
+  String get toolTitleSleepUnknown => '슬립()';
+
+  @override
+  String toolTitleSpawn(String task) {
+    return '생성($task)';
+  }
+
+  @override
+  String toolTitleSend(String target) {
+    return '전송($target)';
+  }
+
+  @override
+  String toolTitleFollowup(String target) {
+    return '후속 작업($target)';
+  }
+
+  @override
+  String get toolTitleWait => '대기()';
+
+  @override
+  String toolTitleInterrupt(String target) {
+    return '중단($target)';
+  }
+
+  @override
+  String get toolTitleAgents => '에이전트()';
+
+  @override
+  String get toolTitleContext => '컨텍스트()';
+
+  @override
+  String get toolTitleNewContext => '새 컨텍스트()';
+
+  @override
+  String toolTitleBash(String command) {
+    return '실행($command)';
+  }
+
+  @override
+  String toolTitleStdin(String session) {
+    return '입력($session)';
+  }
+
+  @override
+  String toolTitleStdinChars(String session, String chars) {
+    return '입력($session ← $chars)';
+  }
+
+  @override
+  String toolTitleGlob(String pattern) {
+    return '파일 찾기($pattern)';
+  }
+
+  @override
+  String toolTitleGlobIn(String pattern, String path) {
+    return '파일 찾기($path에서 $pattern)';
+  }
+
+  @override
+  String toolTitleList(String path) {
+    return '목록($path)';
+  }
+
+  @override
+  String toolTitleMcpResources(String server) {
+    return '리소스($server)';
+  }
+
+  @override
+  String toolTitleMcpResourceTemplates(String server) {
+    return '리소스 템플릿($server)';
+  }
+
+  @override
+  String toolTitleMcpResource(String server, String uri) {
+    return '리소스($server: $uri)';
+  }
+
+  @override
+  String toolTitleRead(String path) {
+    return '읽기($path)';
+  }
+
+  @override
+  String toolTitleReadRange(String path, String offset, String limit) {
+    return '읽기($path @$offset+$limit)';
+  }
+
+  @override
+  String toolTitleAsk(String headers) {
+    return '질문($headers)';
+  }
+
+  @override
+  String toolTitleSearch(String query) {
+    return '검색($query)';
+  }
+
+  @override
+  String toolTitleSearchIn(String query, String path) {
+    return '검색($path에서 $query)';
+  }
+
+  @override
+  String get toolTitleSkills => '스킬()';
+
+  @override
+  String toolTitleSkill(String name) {
+    return '스킬($name)';
+  }
+
+  @override
+  String toolTitleSkillResource(String name, String resource) {
+    return '스킬($name:$resource)';
+  }
+
+  @override
+  String toolTitleToolSearch(String query) {
+    return '도구($query)';
+  }
+
+  @override
+  String toolTitlePlan(int count) {
+    return '계획($count)';
+  }
+
+  @override
+  String toolTitleView(String path) {
+    return '이미지 보기($path)';
+  }
+
+  @override
+  String get toolArgumentAllServers => '전체';
 
   @override
   String get directoryBrowserTitle => 'Daemon의 폴더 선택';
@@ -1917,6 +2161,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get mcpSettingsStatusConnecting => '연결 중';
+
+  @override
+  String get mcpSettingsConnecting => 'MCP 서버 연결 중';
 
   @override
   String get mcpSettingsStatusReady => '준비됨';

@@ -7,7 +7,7 @@ collaborationPresenters = <String, ChatToolPresenter>{
   'spawn_agent': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
     title: (l10n, activity) =>
-        'Spawn(${stringToolArg(activity, 'task_name') ?? '?'})',
+        l10n.toolTitleSpawn(stringToolArg(activity, 'task_name') ?? '?'),
     argumentBody: _messageArgumentBody,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
@@ -20,14 +20,14 @@ collaborationPresenters = <String, ChatToolPresenter>{
   'send_message': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
     title: (l10n, activity) =>
-        'Send(${stringToolArg(activity, 'target') ?? '?'})',
+        l10n.toolTitleSend(stringToolArg(activity, 'target') ?? '?'),
     argumentBody: _messageArgumentBody,
     result: (l10n, activity, output) => l10n.chatToolSubagentQueued,
   ),
   'followup_task': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
     title: (l10n, activity) =>
-        'Followup(${stringToolArg(activity, 'target') ?? '?'})',
+        l10n.toolTitleFollowup(stringToolArg(activity, 'target') ?? '?'),
     argumentBody: _messageArgumentBody,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
@@ -39,7 +39,7 @@ collaborationPresenters = <String, ChatToolPresenter>{
   ),
   'wait_agent': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
-    title: (l10n, activity) => 'Wait()',
+    title: (l10n, activity) => l10n.toolTitleWait,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final error = output.value['error'];
@@ -51,7 +51,7 @@ collaborationPresenters = <String, ChatToolPresenter>{
   'interrupt_agent': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
     title: (l10n, activity) =>
-        'Interrupt(${stringToolArg(activity, 'target') ?? '?'})',
+        l10n.toolTitleInterrupt(stringToolArg(activity, 'target') ?? '?'),
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final error = output.value['error'];
@@ -62,7 +62,7 @@ collaborationPresenters = <String, ChatToolPresenter>{
   ),
   'list_agents': ChatToolPresenter(
     glyph: ChatToolGlyph.delegate,
-    title: (l10n, activity) => 'Agents()',
+    title: (l10n, activity) => l10n.toolTitleAgents,
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final error = output.value['error'];

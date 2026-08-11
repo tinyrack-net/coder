@@ -14,7 +14,9 @@ final Map<String, ChatToolPresenter> requestUserInputPresenters =
                     .map((question) => question['header'])
                     .whereType<String>()
               : const <String>[];
-          return 'Ask(${headers.isEmpty ? '?' : headers.join(', ')})';
+          return l10n.toolTitleAsk(
+            headers.isEmpty ? '?' : headers.join(', '),
+          );
         },
         result: (l10n, activity, output) {
           if (output is! ChatToolJsonObject) {

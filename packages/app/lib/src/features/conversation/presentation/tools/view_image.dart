@@ -6,7 +6,7 @@ viewImagePresenters = <String, ChatToolPresenter>{
   'view_image': ChatToolPresenter(
     glyph: ChatToolGlyph.image,
     title: (l10n, activity) =>
-        'View(${stringToolArg(activity, 'path') ?? '?'})',
+        l10n.toolTitleView(stringToolArg(activity, 'path') ?? '?'),
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final error = output.value['error'];
