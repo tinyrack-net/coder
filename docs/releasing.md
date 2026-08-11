@@ -154,8 +154,8 @@ Release need. Setting them turns the step back on with no workflow change.
 ## Cutting a release
 
 Versions come from `packages/app/pubspec.yaml` and are mirrored into
-`packages/app/lib/src/version.g.dart`,
-`packages/daemon/lib/src/version.g.dart`, and
+`packages/app/lib/src/app/version.g.dart`,
+`packages/daemon/lib/src/bootstrap/version.g.dart`, and
 `packages/cli/lib/src/version.g.dart` by the release tool. Never edit
 those three by hand.
 

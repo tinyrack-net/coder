@@ -102,15 +102,33 @@ void main() {
     expect(offenders, isEmpty);
   });
 
+  test('Flutter tooling can read the Android application identifiers', () {
+    // `flutter test -d <android device>` resolves the launch activity through
+    // `AndroidProject.namespace` and `AndroidProject.applicationId`, which scan
+    // this file with these regexes rather than evaluating Gradle. A Kotlin
+    // `val` therefore reads as absent and the tool refuses to install the app,
+    // so both declarations have to stay quoted literals.
+    final gradle = packageFile('android/app/build.gradle.kts');
+    final namespace = RegExp(
+      'android {[\\S\\s]+namespace\\s*=?\\s*[\'"](.+)[\'"]',
+    ).firstMatch(gradle)?.group(1);
+    final applicationId = RegExp(
+      '^\\s*applicationId\\s*=?\\s*[\'"](.*)[\'"]\\s*\$',
+      multiLine: true,
+    ).firstMatch(gradle)?.group(1);
+
+    expect(namespace, AppIdentity.applicationId);
+    expect(applicationId, AppIdentity.applicationId);
+  });
+
   test('platform and distribution metadata agree with app identity', () {
     final expectations = <String, List<String>>{
       'android/app/src/main/res/values/strings.xml': <String>[
         '<string name="app_name">${AppIdentity.name}</string>',
       ],
       'android/app/build.gradle.kts': <String>[
-        'val productApplicationId = "${AppIdentity.applicationId}"',
-        'namespace = productApplicationId',
-        'applicationId = productApplicationId',
+        'namespace = "${AppIdentity.applicationId}"',
+        'applicationId = "${AppIdentity.applicationId}"',
       ],
       'ios/Runner/Info.plist': <String>[
         r'<string>$(PRODUCT_NAME)</string>',

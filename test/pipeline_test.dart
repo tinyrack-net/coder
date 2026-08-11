@@ -308,6 +308,26 @@ void main() {
     expect(relayWorkflow, isNot(contains('gh release create')));
   });
 
+  test('every release version file shipworld writes exists', () {
+    // `release prepare` reads each synchronized path before rewriting it, so a
+    // path left behind by a package move fails the release itself rather than
+    // any earlier gate. Nothing else in the workspace references these files by
+    // the name shipworld knows them under.
+    final declared = RegExp(
+      r'^\s*path:\s*(\S+version\.g\.dart)\s*$',
+      multiLine: true,
+    ).allMatches(shipworld).map((match) => match.group(1)!).toList();
+
+    expect(declared, hasLength(3));
+    for (final path in declared) {
+      expect(
+        File(path).existsSync(),
+        isTrue,
+        reason: 'shipworld.yaml writes $path, which does not exist',
+      );
+    }
+  });
+
   test('relay release has an independent version and reproducible image', () {
     expect(shipworld, contains('  relay:'));
     expect(shipworld, contains('source: packages/relay/pubspec.yaml'));
