@@ -332,7 +332,7 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'desktop workspace splits panes and mobile presents every tab in a sheet',
+    'desktop workspace splits panes and mobile scrolls every tab inline',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -426,81 +426,57 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(390, 760));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-split-right')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
-        findsOneWidget,
+      final mobileStrip = find.byKey(
+        const ValueKey('workspace-mobile-tab-strip'),
       );
-      await tester.tap(
-        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
-      );
-      await tester.pumpAndSettle();
-      final tabSheet = find.byKey(const ValueKey('workspace-tab-sheet'));
-      expect(tabSheet, findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('workspace-tab-row-session:one')),
-        findsOneWidget,
-      );
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget.key is ValueKey<String> &&
-              (widget.key! as ValueKey<String>).value.startsWith(
-                'workspace-tab-row-draft:',
-              ),
-        ),
-        findsWidgets,
-      );
-      final initialSheetHeight = tester.getSize(tabSheet).height;
-      final availableSheetHeight = MediaQuery.sizeOf(
-        tester.element(tabSheet),
-      ).height;
-      expect(
-        MediaQuery.disableAnimationsOf(tester.element(tabSheet)),
-        isFalse,
-      );
-      final gesture = await tester.startGesture(
-        tester.getCenter(find.text(testL10n.workspaceSwitchTab)),
-      );
-      await gesture.moveBy(
-        const Offset(0, -(TRSpacing.fourExtraLarge + TRSpacing.large)),
-      );
-      await tester.pump();
-      final draggedSheetHeight = tester.getSize(tabSheet).height;
-      expect(draggedSheetHeight, greaterThan(initialSheetHeight));
-      await tester.pump(TRMotion.slow);
-      await gesture.up();
-      await tester.pump();
-      final releasedSheetHeight = tester.getSize(tabSheet).height;
-      expect(releasedSheetHeight, greaterThanOrEqualTo(draggedSheetHeight));
-      expect(releasedSheetHeight, lessThan(availableSheetHeight));
-      await tester.pump(TRMotion.normal ~/ 2);
-      final animatedSheetHeight = tester.getSize(tabSheet).height;
-      expect(animatedSheetHeight, greaterThan(releasedSheetHeight));
-      expect(animatedSheetHeight, lessThan(availableSheetHeight));
-      await tester.pumpAndSettle();
-      expect(tester.getSize(tabSheet).height, availableSheetHeight);
-      await tester.tap(
-        find.byKey(const ValueKey('workspace-tab-row-session:one')),
-      );
+      expect(mobileStrip, findsOneWidget);
+      final tabs = tester.widget<TRTabs>(mobileStrip);
+      expect(tabs.tabWidth, TRTabsWidth.fixed);
+      expect(tabs.tabs, hasLength(4));
+      expect(tabs.tabs.map((tab) => tab.value), contains('one'));
+      expect(tabs.tabs.where((tab) => tab.onClose != null), hasLength(4));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsNothing);
+
+      final viewport = find.descendant(
+        of: mobileStrip,
+        matching: find.byType(Scrollable),
+      );
+      expect(viewport, findsOneWidget);
+      expect(
+        tester.state<ScrollableState>(viewport).position.maxScrollExtent,
+        greaterThan(0),
+      );
+      final newTabMenu = find.byKey(
+        const ValueKey('workspace-new-tab-menu'),
+      );
+      expect(newTabMenu, findsOneWidget);
+      expect(
+        tester.getTopRight(newTabMenu).dx,
+        tester.getTopRight(mobileStrip).dx,
+      );
+
+      final sessionTab = find.descendant(
+        of: mobileStrip,
+        matching: find.byKey(const ValueKey('tr-tabs-tab-one')),
+      );
+      await tester.ensureVisible(sessionTab);
+      await tester.tap(sessionTab);
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('conversation-pane-session:one')),
         findsOneWidget,
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey('workspace-mobile-tab-trigger')),
+      final closeSession = find.descendant(
+        of: mobileStrip,
+        matching: find.byKey(const ValueKey('tr-tabs-close-one')),
       );
+      await tester.ensureVisible(closeSession);
+      await tester.tap(closeSession);
       await tester.pumpAndSettle();
-      final sessionRow = find.byKey(
-        const ValueKey('workspace-tab-row-session:one'),
-      );
-      await tester.tap(
-        find.descendant(of: sessionRow, matching: find.byType(TRIconButton)),
-      );
-      await tester.pumpAndSettle();
-      expect(sessionRow, findsNothing);
+      expect(sessionTab, findsNothing);
+      expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsNothing);
     },
     tags: const <String>['feature_test__session_tabs__widget'],
   );

@@ -593,24 +593,30 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
 
   Widget _buildMobile(BuildContext context, SessionTabsState workspace) {
     final entry = workspace.focusedTab!;
+    final tabLocations = <({PaneNode pane, String tabId})>[
+      for (final pane in workspace.panes)
+        for (final tabId in pane.tabIds) (pane: pane, tabId: tabId),
+    ];
     return Column(
       children: <Widget>[
-        GestureDetector(
-          key: const ValueKey<String>('workspace-mobile-tab-trigger'),
-          behavior: HitTestBehavior.opaque,
-          onTap: () => unawaited(_showTabSheet()),
-          child: TRTabs(
-            tabWidth: TRTabsWidth.fixed,
-            semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
-            value: _controlValue(entry),
-            onValueChange: (_) => unawaited(_showTabSheet()),
-            tabs: <TRTabsTab>[
-              _tab(context, workspace, entry, closable: false),
-            ],
-            actions: <Widget>[
-              _newTabMenu(context, workspace.focusedPaneId, true),
-            ],
-          ),
+        TRTabs(
+          key: const ValueKey<String>('workspace-mobile-tab-strip'),
+          tabWidth: TRTabsWidth.fixed,
+          semanticLabel: AppLocalizations.of(context).workspaceAllSessions,
+          value: _controlValue(entry),
+          onValueChange: (value) {
+            final location = tabLocations.firstWhere(
+              (item) => _controlValue(workspace.tabs[item.tabId]!) == value,
+            );
+            unawaited(_activate(location.pane.id, location.tabId));
+          },
+          tabs: <TRTabsTab>[
+            for (final location in tabLocations)
+              _tab(context, workspace, workspace.tabs[location.tabId]!),
+          ],
+          actions: <Widget>[
+            _newTabMenu(context, workspace.focusedPaneId, true),
+          ],
         ),
         Expanded(child: _content(workspace, entry)),
       ],
@@ -771,67 +777,6 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         ),
     ],
   );
-
-  Future<void> _showTabSheet() {
-    final l10n = AppLocalizations.of(context);
-    return showTRDrawer<void>(
-      context: context,
-      useRootNavigator: false,
-      builder: (_) => TRDrawer(
-        key: const ValueKey<String>('workspace-tab-sheet'),
-        snapPoints: const <double>[0.8, 1],
-        title: TRText.inherit(l10n.workspaceSwitchTab),
-        content: Consumer(
-          builder: (_, ref, _) {
-            final workspace = ref
-                .watch(sessionTabsControllerProvider(widget.selection))
-                .requireValue;
-            return ListView(
-              shrinkWrap: true,
-              children: <Widget>[
-                for (final pane in workspace.panes)
-                  for (final tabId in pane.tabIds)
-                    _tabSheetRow(context, workspace, pane, tabId),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _tabSheetRow(
-    BuildContext context,
-    SessionTabsState workspace,
-    PaneNode pane,
-    String tabId,
-  ) {
-    final entry = workspace.tabs[tabId]!;
-    final tab = _tab(context, workspace, entry, closable: false);
-    return TinestListRow(
-      key: ValueKey<String>('workspace-tab-row-${entry.id}'),
-      leading: tab.leading,
-      title: TRText.inherit(tab.label),
-      selected: pane.id == workspace.focusedPaneId && pane.activeTabId == tabId,
-      onTap: () {
-        Navigator.of(context).pop();
-        unawaited(_activate(pane.id, tabId));
-      },
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (pane.id == workspace.focusedPaneId && pane.activeTabId == tabId)
-            const Icon(TinestIcons.check),
-          TRIconButton(
-            appearance: TRAppearance.ghost,
-            label: AppLocalizations.of(context).workspaceCloseTab,
-            onPressed: () => unawaited(_closeEntry(entry)),
-            icon: const Icon(TinestIcons.close),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _split(String paneId, WorkspaceSplitAxis axis) async {
     await ref

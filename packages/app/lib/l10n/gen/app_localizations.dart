@@ -844,12 +844,6 @@ abstract class AppLocalizations {
   /// **'Resize panes'**
   String get workspaceResizePanes;
 
-  /// Title of the mobile sheet listing every open tab.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch tab'**
-  String get workspaceSwitchTab;
-
   /// Moves the active tab to another pane without dragging.
   ///
   /// In en, this message translates to:

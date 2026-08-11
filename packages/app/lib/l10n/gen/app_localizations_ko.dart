@@ -411,9 +411,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceResizePanes => 'Pane 크기 조절';
 
   @override
-  String get workspaceSwitchTab => '탭 전환';
-
-  @override
   String get workspaceMoveTabToPane => '활성 탭을 다른 pane으로 이동';
 
   @override

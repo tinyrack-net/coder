@@ -414,9 +414,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceResizePanes => 'Resize panes';
 
   @override
-  String get workspaceSwitchTab => 'Switch tab';
-
-  @override
   String get workspaceMoveTabToPane => 'Move active tab to pane';
 
   @override
