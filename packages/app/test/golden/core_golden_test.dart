@@ -586,6 +586,58 @@ void main() {
     ),
   );
 
+  for (final variant in <({String name, ThemeMode mode})>[
+    (name: 'light', mode: ThemeMode.light),
+    (name: 'dark', mode: ThemeMode.dark),
+  ]) {
+    unawaited(
+      goldenTest(
+        'Markdown selection stays continuous through inline code '
+        '${variant.name}',
+        fileName: 'chat_markdown_selection_${variant.name}',
+        constraints: const BoxConstraints.tightFor(width: 560, height: 260),
+        whilePerforming: (tester) async {
+          final first = find.textContaining(
+            'Drag from prose',
+            findRichText: true,
+          );
+          final last = find.textContaining(
+            'highlight continuous.',
+            findRichText: true,
+          );
+          final selection = await tester.startGesture(
+            tester.getTopLeft(first) + const Offset(1, 1),
+            kind: PointerDeviceKind.mouse,
+          );
+          await tester.pump();
+          await selection.moveTo(
+            tester.getBottomRight(last) - const Offset(1, 1),
+          );
+          await tester.pump();
+          await selection.up();
+          await tester.pumpAndSettle();
+          return null;
+        },
+        builder: () => SizedBox(
+          width: 500,
+          height: 180,
+          child: _chatItem(
+            variant.mode,
+            ChatAssistantMessage(
+              key: 'selection-${variant.name}',
+              turnId: 'turn-selection',
+              createdAt: now,
+              markdown:
+                  'Drag from prose through `inline_code` and keep the '
+                  'highlight continuous.',
+              isStreaming: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   unawaited(
     goldenTest(
       'chat timeline and approval cards render in light and dark themes',

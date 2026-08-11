@@ -11,6 +11,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
@@ -992,6 +993,23 @@ void main() {
   );
 
   testWidgets(
+    'inline code leaves the shared selection highlight visible',
+    (tester) async {
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': 'before `inline_code` after',
+        }),
+        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      final markdown = tester.element(find.byType(MarkdownBody));
+      expect(chatMarkdownStyleSheet(markdown).code?.backgroundColor, isNull);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
     'one drag selects across every Markdown block of a response',
     (tester) async {
       final copied = <String>[];
@@ -1016,7 +1034,7 @@ void main() {
 
       await pump(tester, <TimelineEventDto>[
         event('assistant.delta', <String, dynamic>{
-          'text': 'first paragraph\n\nsecond paragraph',
+          'text': 'first paragraph with `inline_code`\n\nsecond paragraph',
         }),
         event('turn.completed', <String, dynamic>{'toolRounds': 0}),
       ]);
@@ -1052,7 +1070,90 @@ void main() {
 
       expect(copied, hasLength(1));
       expect(copied.single, contains('first paragraph'));
+      expect(copied.single, contains('inline_code'));
       expect(copied.single, contains('second paragraph'));
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'mixed Markdown elements copy as one readable ordered document',
+    (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add(
+              ((call.arguments as Map<Object?, Object?>)['text'] as String?) ??
+                  '',
+            );
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      const markdown = '''
+# Composite heading
+
+Lead **bold** and [linked](https://example.com) with `inline_code`.
+
+- First item
+- Second `item_code`
+
+> quoted text
+
+```dart
+final value = 42;
+```
+
+Closing paragraph.
+''';
+      await pump(tester, <TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{'text': markdown}),
+        event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+      ]);
+      await tester.pumpAndSettle();
+
+      final first = find.textContaining(
+        'Composite heading',
+        findRichText: true,
+      );
+      final last = find.textContaining(
+        'Closing paragraph.',
+        findRichText: true,
+      );
+      final gesture = await tester.startGesture(
+        tester.getTopLeft(first) + const Offset(1, 1),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getBottomRight(last) - const Offset(1, 1));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyC);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      final expected = <String>[
+        'Composite heading',
+        'Lead bold and linked with inline_code.',
+        '• First item',
+        '• Second item_code',
+        'quoted text',
+        'final value = 42;',
+        'Closing paragraph.',
+      ].join('\n');
+      expect(copied, <String>[expected]);
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
