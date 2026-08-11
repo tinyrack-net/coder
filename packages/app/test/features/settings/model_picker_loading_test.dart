@@ -115,6 +115,10 @@ void main() {
         matching: find.byType(Padding),
       );
       expect(tester.getRect(drawer).bottom, size.height);
+      expect(
+        tester.getSize(drawer).height,
+        lessThanOrEqualTo(size.height * 0.7),
+      );
       expect(tester.getRect(safeContent.at(1)).left, insets.left);
       expect(
         tester.getRect(safeContent.at(1)).right,
@@ -124,6 +128,95 @@ void main() {
         tester.getRect(safeContent.at(1)).bottom,
         size.height - insets.bottom,
       );
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
+
+  testWidgets(
+    'long mobile model sheet stays capped and scrolls to the last option',
+    (tester) async {
+      const size = Size(390, 760);
+      final options = <ModelPickerOption>[
+        for (var index = 0; index < 40; index += 1)
+          ModelPickerOption(
+            providerName: 'Provider',
+            model: ProviderModelDto(
+              connectionId: 'provider',
+              id: 'provider/model-$index',
+              providerModelId: 'model-$index',
+              label: 'Model $index',
+              source: ProviderModelSource.bundled,
+              capabilities: const ModelCapabilitiesDto(),
+            ),
+          ),
+      ];
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(_host(() async => options, size: size));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final drawer = find.byType(TRDrawer);
+      final lastOption = find.byKey(
+        const ValueKey<String>('model-option-provider-model-39'),
+      );
+      expect(tester.getSize(drawer).height, size.height * 0.7);
+      expect(tester.getRect(lastOption).top, greaterThan(size.height));
+
+      await tester.ensureVisible(lastOption);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(lastOption).bottom,
+        lessThanOrEqualTo(tester.getRect(drawer).bottom),
+      );
+      await tester.tap(lastOption);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsNothing);
+    },
+    tags: const <String>['feature_test__settings_async_loading__widget'],
+  );
+
+  testWidgets(
+    'long desktop model dialog delegates overflow scrolling to the dialog',
+    (tester) async {
+      const size = Size(1000, 800);
+      final options = <ModelPickerOption>[
+        for (var index = 0; index < 40; index += 1)
+          ModelPickerOption(
+            providerName: 'Provider',
+            model: ProviderModelDto(
+              connectionId: 'provider',
+              id: 'provider/desktop-$index',
+              providerModelId: 'desktop-$index',
+              label: 'Desktop $index',
+              source: ProviderModelSource.bundled,
+              capabilities: const ModelCapabilitiesDto(),
+            ),
+          ),
+      ];
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(_host(() async => options, size: size));
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRDialog), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('model-search-field')),
+        'desktop-39',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('model-option-provider-desktop-39'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDialog), findsNothing);
+      expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__settings_async_loading__widget'],
   );

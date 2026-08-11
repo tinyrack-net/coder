@@ -521,32 +521,43 @@ class SettingsScaffold extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(TRSpacing.extraLarge),
-    children: <Widget>[
-      // Each section stays its own list child rather than sharing one. Folding
-      // them into a single child builds every section eagerly, so a finder
-      // resolves a section that is scrolled out of view and a tap on it lands
-      // outside the viewport and quietly hits nothing.
-      for (final (index, child) in children.indexed)
-        Padding(
-          padding: EdgeInsets.only(
-            top: index > 0 ? TRSpacing.twoExtraLarge : 0,
-          ),
-          child: Align(
-            // Centred, so a wide window keeps the column balanced rather than
-            // stranding it against one edge with a growing void beside it.
-            // Below the cap the column fills the pane and this is a no-op.
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-              ),
-              child: child,
-            ),
-          ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final horizontalPadding =
+          constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint
+          ? TRSpacing.large
+          : TRSpacing.extraLarge;
+      return ListView(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: TRSpacing.extraLarge,
         ),
-    ],
+        children: <Widget>[
+          // Each section stays its own list child rather than sharing one.
+          // Folding them into a single child builds every section eagerly, so
+          // a finder resolves a section that is scrolled out of view and a tap
+          // on it lands outside the viewport and quietly hits nothing.
+          for (final (index, child) in children.indexed)
+            Padding(
+              padding: EdgeInsets.only(
+                top: index > 0 ? TRSpacing.twoExtraLarge : 0,
+              ),
+              child: Align(
+                // Centred, so a wide window keeps the column balanced rather
+                // than stranding it against one edge with a growing void.
+                // Below the cap the column fills the pane and this is a no-op.
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+                  ),
+                  child: child,
+                ),
+              ),
+            ),
+        ],
+      );
+    },
   );
 }
 
@@ -661,7 +672,16 @@ class SettingsSection extends StatelessWidget {
   );
 }
 
-/// One setting: its description leading, its control trailing.
+/// Selects how a setting's control responds to constrained width.
+enum SettingsControlLayout {
+  /// Keeps the control trailing at every width.
+  inline,
+
+  /// Moves the control below the copy when the copy rail becomes too narrow.
+  responsive,
+}
+
+/// One setting: its description leading, its control trailing or below.
 ///
 /// Every switch, checkbox, select, button, and single-line input in settings
 /// goes through here, so the inset a setting draws at is decided once. The
@@ -672,6 +692,7 @@ class SettingsRow extends StatelessWidget {
   const SettingsRow({
     required this.title,
     this.control,
+    this.controlLayout = SettingsControlLayout.inline,
     this.controlOwnsFocus = false,
     this.description,
     this.leading,
@@ -691,6 +712,7 @@ class SettingsRow extends StatelessWidget {
   const SettingsRow.collection({
     required this.title,
     this.control,
+    this.controlLayout = SettingsControlLayout.inline,
     this.controlOwnsFocus = false,
     this.description,
     this.leading,
@@ -714,6 +736,9 @@ class SettingsRow extends StatelessWidget {
 
   /// Optional trailing control.
   final Widget? control;
+
+  /// How [control] responds when the row's readable copy width is constrained.
+  final SettingsControlLayout controlLayout;
 
   /// Whether [control] is the row's only tab stop.
   ///
@@ -765,26 +790,40 @@ class SettingsRow extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => TinestListRow(
-    contentPadding: _collection
-        ? collectionContentPadding
-        : flush
-        ? flushPadding
-        : contentPadding,
-    controlOwnsFocus: controlOwnsFocus,
-    enabled: enabled,
-    hoverEnabled: false,
-    isThreeLine: wrapsDescription || unboundedDescription,
-    unboundedSubtitle: unboundedDescription,
-    leading: leading,
-    onTap: onTap,
-    selected: selected,
-    selectionAppearance: _collection
-        ? TinestListRowSelectionAppearance.navigation
-        : TinestListRowSelectionAppearance.standard,
-    subtitle: description,
-    title: title,
-    trailing: control,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final padding = _collection
+          ? collectionContentPadding
+          : flush
+          ? flushPadding
+          : contentPadding;
+      final narrow =
+          constraints.maxWidth - padding.horizontal < TRBreakpoints.small;
+      final stacksControl =
+          control != null &&
+          controlLayout == SettingsControlLayout.responsive &&
+          narrow;
+      return TinestListRow(
+        contentPadding: padding,
+        controlOwnsFocus: controlOwnsFocus,
+        enabled: enabled,
+        hoverEnabled: false,
+        isThreeLine: wrapsDescription || unboundedDescription,
+        unboundedSubtitle: unboundedDescription || (narrow && wrapsDescription),
+        leading: leading,
+        onTap: onTap,
+        selected: selected,
+        selectionAppearance: _collection
+            ? TinestListRowSelectionAppearance.navigation
+            : TinestListRowSelectionAppearance.standard,
+        subtitle: description,
+        title: title,
+        trailing: control,
+        trailingLayout: stacksControl
+            ? TinestListRowTrailingLayout.below
+            : TinestListRowTrailingLayout.inline,
+      );
+    },
   );
 }
 

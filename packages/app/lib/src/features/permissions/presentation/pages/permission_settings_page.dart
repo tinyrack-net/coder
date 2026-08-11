@@ -52,6 +52,7 @@ class _PermissionSettingsPageState
                     permissionModeDescription(l10n, settings.defaultMode),
                   ),
                   unboundedDescription: true,
+                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     key: const ValueKey<String>(
                       'permission-settings-change',

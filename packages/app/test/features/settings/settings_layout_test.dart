@@ -211,10 +211,7 @@ void main() {
         ),
       );
       expect(enteringFade.opacity.value, 0);
-      expect(
-        enteringScale.scale.value,
-        TRMeasurements.overlayClosedScale,
-      );
+      expect(enteringScale.scale.value, TRMeasurements.overlayClosedScale);
 
       await tester.pump(TRMotion.slow ~/ 2);
       expect(enteringFade.opacity.value, inExclusiveRange(0, 1));
@@ -677,8 +674,8 @@ void main() {
       );
 
       final card = tester.getRect(find.byType(TRCard));
-      expect(card.left, TRSpacing.extraLarge);
-      expect(card.width, 600 - 2 * TRSpacing.extraLarge);
+      expect(card.left, TRSpacing.large);
+      expect(card.width, 600 - 2 * TRSpacing.large);
     });
 
     testWidgets('separates its sections by one step', (tester) async {
@@ -900,6 +897,134 @@ void main() {
       expect(control.left, greaterThan(title.right));
     });
 
+    testWidgets('stacks a responsive control below readable copy when narrow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsRow(
+            title: const TRText.inherit('Display language'),
+            description: const TRText.inherit(
+              'Applies to the whole app and remains readable at narrow widths.',
+            ),
+            wrapsDescription: true,
+            controlLayout: SettingsControlLayout.responsive,
+            control: TRButton(
+              onPressed: () {},
+              child: const TRText.inherit('System default'),
+            ),
+          ),
+          width:
+              TRBreakpoints.small + SettingsRow.contentPadding.horizontal - 1,
+        ),
+      );
+
+      final description = tester.getRect(
+        find.text(
+          'Applies to the whole app and remains readable at narrow widths.',
+        ),
+      );
+      final control = tester.getRect(find.byType(TRButton));
+      final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
+      expect(control.top, greaterThan(description.bottom));
+      expect(row.trailingLayout, TinestListRowTrailingLayout.below);
+      expect(row.unboundedSubtitle, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps a responsive control trailing when copy has room', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsRow(
+            title: const TRText.inherit('Theme'),
+            description: const TRText.inherit('Applies everywhere'),
+            wrapsDescription: true,
+            controlLayout: SettingsControlLayout.responsive,
+            control: TRButton(
+              onPressed: () {},
+              child: const TRText.inherit('Follow system'),
+            ),
+          ),
+          width: TRBreakpoints.small + SettingsRow.contentPadding.horizontal,
+        ),
+      );
+
+      final title = tester.getRect(find.text('Theme'));
+      final control = tester.getRect(find.byType(TRButton));
+      final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
+      expect(control.left, greaterThan(title.right));
+      expect(row.trailingLayout, TinestListRowTrailingLayout.inline);
+      expect(row.unboundedSubtitle, isFalse);
+    });
+
+    testWidgets('keeps compact switch controls trailing on a narrow row', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          SettingsRow(
+            title: const TRText.inherit('Enabled'),
+            description: const TRText.inherit(
+              'This explanatory sentence should remain fully readable.',
+            ),
+            wrapsDescription: true,
+            control: TRSwitch(checked: true, onCheckedChange: (_) {}),
+          ),
+          width: 390,
+        ),
+      );
+
+      final title = tester.getRect(find.text('Enabled'));
+      final control = tester.getRect(find.byType(TRSwitch));
+      final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
+      expect(control.left, greaterThan(title.right));
+      expect(row.trailingLayout, TinestListRowTrailingLayout.inline);
+      expect(row.unboundedSubtitle, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('wraps Japanese copy without overflow at large text scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: TinyrackTheme.light(),
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: SizedBox(
+                width: 390,
+                child: SettingsRow(
+                  title: const TRText.inherit('表示言語'),
+                  description: const TRText.inherit(
+                    'アプリ全体に適用され、狭い画面でも省略されずに表示されます。',
+                  ),
+                  wrapsDescription: true,
+                  controlLayout: SettingsControlLayout.responsive,
+                  control: TRButton(
+                    onPressed: () {},
+                    child: const TRText.inherit('システム設定に従う'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final description = tester.getRect(
+        find.text('アプリ全体に適用され、狭い画面でも省略されずに表示されます。'),
+      );
+      final control = tester.getRect(find.byType(TRButton));
+      final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
+      expect(control.top, greaterThan(description.bottom));
+      expect(row.trailingLayout, TinestListRowTrailingLayout.below);
+      expect(row.unboundedSubtitle, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('insets every row in a card identically', (tester) async {
       await tester.pumpWidget(
         _host(
@@ -982,23 +1107,16 @@ void main() {
               key: const ValueKey<String>('settings-hover-row'),
               title: const TRText.inherit('Enabled'),
               onTap: () {},
-              control: TRSwitch(
-                checked: false,
-                onCheckedChange: (_) {},
-              ),
+              control: TRSwitch(checked: false, onCheckedChange: (_) {}),
             ),
           ),
         );
 
-        final row = find.byKey(
-          const ValueKey<String>('settings-hover-row'),
-        );
+        final row = find.byKey(const ValueKey<String>('settings-hover-row'));
         final rowSurface = _rowSurface(row, SettingsRow.contentPadding);
         final switchFinder = find.byType(TRSwitch);
         final theme = tester.element(row).tinyrackTheme;
-        final mouse = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
         addTearDown(mouse.removePointer);
         await mouse.addPointer(location: Offset.zero);
 
@@ -1066,10 +1184,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        _containerColor(
-          tester,
-          _rowSurface(row, SettingsRow.contentPadding),
-        ),
+        _containerColor(tester, _rowSurface(row, SettingsRow.contentPadding)),
         theme.surfaceHover,
       );
     });

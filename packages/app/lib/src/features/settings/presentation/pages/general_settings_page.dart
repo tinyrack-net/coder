@@ -81,6 +81,7 @@ class _StartupSection extends ConsumerWidget {
           subtitle: TRText.inherit(
             l10n.generalStartupAtBootDescription(AppIdentity.displayName),
           ),
+          wrapsSubtitle: true,
           value: settings?.startAtBoot ?? true,
           onChanged: settings == null
               ? null
@@ -106,6 +107,7 @@ class _StartupSection extends ConsumerWidget {
           key: const ValueKey<String>('general-settings-start-minimized'),
           title: TRText.inherit(l10n.generalStartupMinimizedLabel),
           subtitle: TRText.inherit(l10n.generalStartupMinimizedDescription),
+          wrapsSubtitle: true,
           // The stored preference keeps showing while it is out of reach.
           // Blanking it would claim the choice had been changed, and the
           // switch would then jump back on its own the moment login starts
@@ -152,6 +154,7 @@ class _AppearanceSection extends ConsumerWidget {
           title: TRText.inherit(l10n.generalAppearanceLabel),
           description: TRText.inherit(l10n.generalAppearanceDescription),
           wrapsDescription: true,
+          controlLayout: SettingsControlLayout.responsive,
           // The row title names the control, so the field drops its own label
           // and carries the accessible name here instead.
           control: Semantics(
@@ -214,6 +217,7 @@ class _LanguageSection extends ConsumerWidget {
           title: TRText.inherit(l10n.generalLanguageLabel),
           description: TRText.inherit(l10n.generalLanguageDescription),
           wrapsDescription: true,
+          controlLayout: SettingsControlLayout.responsive,
           control: Semantics(
             label: l10n.generalLanguageLabel,
             container: true,
