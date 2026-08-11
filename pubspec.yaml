@@ -9,6 +9,11 @@ workspace:
   - packages/*
 
 dependencies:
+  # The architecture verifier parses app sources to decide whether a call sits
+  # in a lifecycle method or in a deferred closure. That distinction is not
+  # expressible by matching lines, and a rule the team cannot trust gets
+  # exempted rather than obeyed.
+  analyzer: ^12.1.0
   path: ^1.9.1
   yaml: ^3.1.3
 
