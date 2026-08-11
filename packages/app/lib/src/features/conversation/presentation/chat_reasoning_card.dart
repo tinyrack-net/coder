@@ -2,7 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +32,7 @@ class ChatReasoningCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final running = activity.isStreaming;
     return TRChatToolDisclosure(
-      icon: CoderIcons.reasoning,
+      icon: TinestIcons.reasoning,
       label: running ? l10n.chatReasoningThinking : l10n.chatReasoningThought,
       status: running ? TRChatToolStatus.running : TRChatToolStatus.succeeded,
       statusLabel: running ? l10n.commonRunning : l10n.commonDone,

@@ -17,7 +17,7 @@ void main() {
     );
 
     final metadata = inspectRelayPairingOffer(
-      offer.toUrl(Uri.parse('https://coder.tinyrack.net/pair')),
+      offer.toUrl(Uri.parse('https://tinest.tinyrack.net/pair')),
     );
 
     expect(metadata.serverId, offer.serverId);
@@ -41,7 +41,7 @@ void main() {
     );
 
     final result = await pairer.pair(
-      pairingUrl: offer.toUrl(Uri.parse('https://coder.tinyrack.net/pair')),
+      pairingUrl: offer.toUrl(Uri.parse('https://tinest.tinyrack.net/pair')),
       deviceId: 'phone',
       deviceName: 'Phone',
       connectionId: 'relay',

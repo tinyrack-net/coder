@@ -1,5 +1,5 @@
 name: app
-description: Cross-platform GUI for Tinyrack Coder.
+description: Cross-platform GUI for Tinest.
 publish_to: none
 version: 0.5.0+6
 resolution: workspace
@@ -46,7 +46,7 @@ dependencies:
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: b7604af01013851119ec02e5af3149b329f81b15
+      ref: 858f7f81526fd8c08336b7e108d5aac6377fd37b
       path: packages/ui_flutter
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2
@@ -72,31 +72,31 @@ flutter:
   assets:
     - assets/tray/
     # The boot splash paints the brand mark before the app tree exists.
-    - assets/brand/coder-256.png
+    - assets/brand/tinest-256.png
 
 # Regenerate every native launcher icon from the Tinyrack brand master with
 # `dart run flutter_launcher_icons`. The 1024px source is rasterized from
-# `@tinyrack/ui`'s `brand/apps/coder-app-icon.svg`; edit the icon upstream in
+# `@tinyrack/ui`'s `brand/apps/tinest-app-icon.svg`; edit the icon upstream in
 # the design repository rather than retouching anything generated here.
 flutter_launcher_icons:
-  image_path: assets/brand/coder-1024.png
+  image_path: assets/brand/tinest-1024.png
   android: true
   # The tile is already dark, so the adaptive background matches it and the
   # glyph rides in the foreground safe zone.
   adaptive_icon_background: "#0a0a0a"
-  adaptive_icon_foreground: assets/brand/coder-adaptive-foreground.png
+  adaptive_icon_foreground: assets/brand/tinest-adaptive-foreground.png
   ios: true
   # App Store rejects launcher icons with an alpha channel.
   remove_alpha_ios: true
   macos:
     generate: true
-    image_path: assets/brand/coder-1024.png
+    image_path: assets/brand/tinest-1024.png
   windows:
     generate: true
-    image_path: assets/brand/coder-1024.png
+    image_path: assets/brand/tinest-1024.png
     icon_size: 256
   web:
     generate: true
-    image_path: assets/brand/coder-1024.png
+    image_path: assets/brand/tinest-1024.png
     background_color: "#0a0a0a"
     theme_color: "#0a0a0a"

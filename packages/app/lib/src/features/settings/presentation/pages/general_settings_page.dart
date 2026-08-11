@@ -5,9 +5,9 @@ import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,8 +49,8 @@ class GeneralSettingsPage extends ConsumerWidget {
       ),
     );
     if (embedded) return body;
-    return CoderPageShell(
-      appBar: CoderPageHeader(
+    return TinestPageShell(
+      appBar: TinestPageHeader(
         title: TRText.inherit(l10n.settingsCategoryGeneral),
       ),
       body: body,
@@ -75,7 +75,7 @@ class _StartupSection extends ConsumerWidget {
       title: l10n.generalStartupSection,
       description: l10n.generalStartupCloseNotice(AppIdentity.displayName),
       children: <Widget>[
-        CoderSwitchRow(
+        TinestSwitchRow(
           key: const ValueKey<String>('general-settings-start-at-boot'),
           title: TRText.inherit(l10n.generalStartupAtBootLabel),
           subtitle: TRText.inherit(
@@ -102,7 +102,7 @@ class _StartupSection extends ConsumerWidget {
                       ),
                 ),
         ),
-        CoderSwitchRow(
+        TinestSwitchRow(
           key: const ValueKey<String>('general-settings-start-minimized'),
           title: TRText.inherit(l10n.generalStartupMinimizedLabel),
           subtitle: TRText.inherit(l10n.generalStartupMinimizedDescription),

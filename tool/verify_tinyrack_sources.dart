@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/tinyrack_dependency_verifier.dart';
+import 'package:tinest_workspace/src/tinyrack_dependency_verifier.dart';
 
 void main() {
   final violations = const TinyrackDependencyVerifier().verify(

@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/source_inventory.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/source_inventory.dart';
 
 void main() {
   test('build output never reaches the formatter', () {

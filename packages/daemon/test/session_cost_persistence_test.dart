@@ -9,7 +9,7 @@ void main() {
     'session cost accumulates exactly and stays unknown after unpriced usage',
     () async {
       final now = DateTime.utc(2026);
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _Clock(now),
       );
@@ -30,7 +30,7 @@ void main() {
           name: 'Workspace',
           path: '/workspace',
           kind: WorktreeKind.directory,
-          isCoderOwned: false,
+          isTinestOwned: false,
           createdAt: now,
         ),
       );
@@ -39,7 +39,7 @@ void main() {
           id: 'session',
           worktreeId: 'worktree',
           title: 'Session',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           origin: SessionOrigin.manual,
           status: SessionStatus.idle,
           createdAt: now,

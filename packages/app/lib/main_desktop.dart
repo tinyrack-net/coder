@@ -1,5 +1,5 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/boot/presentation/bootstrap_gate.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/desktop/application/desktop_startup.dart';
@@ -10,7 +10,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:cryptography_flutter/cryptography_flutter.dart';
 import 'package:flutter/material.dart';
 
-/// Everything the desktop entrypoint resolves before it can build [CoderApp].
+/// Everything the desktop entrypoint resolves before it can build [TinestApp].
 class DesktopBoot {
   /// Bundles one desktop startup result.
   const DesktopBoot({
@@ -70,7 +70,7 @@ Future<void> runDesktopApp({
           autostart: autostart ?? const LaunchAtStartupRegistration(),
         );
       },
-      builder: (context, boot) => CoderApp(
+      builder: (context, boot) => TinestApp(
         services: boot.services,
         initialLocation: desktopPairingInitialLocation(arguments),
         attachmentInput: const NativeAttachmentInput(),

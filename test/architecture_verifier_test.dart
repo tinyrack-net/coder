@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/architecture_verifier.dart';
-import 'package:coder_workspace/src/coverage_verifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/architecture_verifier.dart';
+import 'package:tinest_workspace/src/coverage_verifier.dart';
 
 void main() {
   const verifier = ArchitectureVerifier('/workspace');
@@ -16,7 +16,7 @@ void main() {
           'sessions_controller.dart',
       source:
           "import 'package:client/client.dart';\n"
-          'final CoderApi api = throw UnimplementedError();',
+          'final TinestApi api = throw UnimplementedError();',
     );
     expect(violations, isEmpty);
   });
@@ -166,7 +166,7 @@ void main() {
         package: 'app',
         path:
             'packages/app/lib/src/features/terminals/presentation/'
-            'coder_terminal_view.dart',
+            'tinest_terminal_view.dart',
         source: 'cursor: colors.focus,',
       ),
       isEmpty,
@@ -548,7 +548,7 @@ class _State extends ConsumerState<Page> {
       ),
       (
         'app',
-        r'packages\app\lib\src\features\terminals\presentation\coder_terminal_view.dart',
+        r'packages\app\lib\src\features\terminals\presentation\tinest_terminal_view.dart',
         'cursor: colors.focus,',
       ),
     ]) {

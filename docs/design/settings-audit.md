@@ -2,7 +2,7 @@
 
 감사일: 2026-08-08
 
-대상: Tinyrack Coder 설정
+대상: Tinest 설정
 
 근거: 데스크톱 1200×900, 모바일 390×760 Linux Flutter canonical golden
 

@@ -9,9 +9,9 @@ COPY packages/relay_protocol/pubspec.yaml relay_protocol/pubspec.yaml
 COPY packages/relay_protocol/lib relay_protocol/lib
 RUN dart pub get --enforce-lockfile \
     && mkdir -p /out \
-    && dart compile exe relay/bin/coder_relay.dart -o /out/coder-relay
+    && dart compile exe relay/bin/tinest_relay.dart -o /out/tinest-relay
 
 FROM gcr.io/distroless/cc-debian12:nonroot@sha256:fccdbb0a547c14e23fcf4ce8ad62ca5d43b4faae8d22cd292f490fef9946c96e
-COPY --from=build /out/coder-relay /coder-relay
+COPY --from=build /out/tinest-relay /tinest-relay
 EXPOSE 8080
-ENTRYPOINT ["/coder-relay"]
+ENTRYPOINT ["/tinest-relay"]

@@ -48,7 +48,7 @@ void main() {
     'packages/app/windows/CMakeLists.txt',
   ).readAsStringSync();
   final windowsInstaller = File(
-    'packages/app/windows/installer/coder.iss',
+    'packages/app/windows/installer/tinest.iss',
   ).readAsStringSync();
   final cliSmoke = File(
     '.github/actions/smoke-cli-bundle/action.yml',
@@ -257,13 +257,13 @@ void main() {
       contains('flutter build apk --release -t lib/main_mobile.dart'),
     );
     expect(release, contains('verify --verbose --print-certs'));
-    expect(release, contains('Coder-android-universal.apk'));
+    expect(release, contains('Tinest-android-universal.apk'));
     expect(release, contains('if: always()'));
     expect(release, isNot(contains('pull_request')));
 
     final publish = _job(workflow, 'publish-release');
     expect(publish, contains('- build-android-release'));
-    expect(publish, contains('pattern: coder-*'));
+    expect(publish, contains('pattern: tinest-*'));
   });
 
   test('Android release builds cannot fall back to the debug signing key', () {
@@ -300,7 +300,7 @@ void main() {
     expect(relayWorkflow, contains('id-token: write'));
     expect(relayWorkflow, contains('release verify relay'));
     expect(relayWorkflow, contains('linux/amd64,linux/arm64'));
-    expect(relayWorkflow, contains('ghcr.io/tinyrack-net/coder-relay'));
+    expect(relayWorkflow, contains('ghcr.io/tinyrack-net/tinest-relay'));
     expect(
       relayWorkflow,
       contains(r'v${{ steps.version.outputs.version }}'),
@@ -396,9 +396,9 @@ void main() {
     expect(cliSmoke, contains(r'kill -0 "$daemon"'));
     expect(cliSmoke, contains(r'wait "$daemon"'));
     expect(cliSmoke, contains(r'cat "$daemon_log"'));
-    expect(cliSmoke, contains('Tinyrack Coder daemon listening on'));
+    expect(cliSmoke, contains('Tinest daemon listening on'));
 
-    final ready = cliSmoke.indexOf('Tinyrack Coder daemon listening on');
+    final ready = cliSmoke.indexOf('Tinest daemon listening on');
     final connect = cliSmoke.indexOf(r'"$cli" provider list');
     expect(ready, isNonNegative);
     expect(connect, greaterThan(ready));
@@ -586,7 +586,7 @@ void main() {
     expect(release, contains(r'$PWD\packages\app\build\windows\'));
     expect(
       release,
-      contains(r'$PWD\packages\app\windows\installer\coder.iss'),
+      contains(r'$PWD\packages\app\windows\installer\tinest.iss'),
     );
     expect(release, isNot(contains(r'$PWD\apps\app\')));
     for (final dll in <String>[

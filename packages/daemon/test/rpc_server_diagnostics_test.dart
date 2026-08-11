@@ -98,7 +98,7 @@ void main() {
 
 final Map<String, dynamic> _hello = systemHelloProcedure.encodeParams(
   const HelloParamsDto(
-    protocolMajor: coderProtocolMajor,
+    protocolMajor: tinestProtocolMajor,
     clientId: 'diagnostics-test',
     clientKind: 'test',
     capabilities: <String, bool>{},
@@ -122,7 +122,7 @@ DaemonRpcServer _server({
   serverInfo: const ServerInfoDto(
     serverId: 'diagnostics',
     version: 'test',
-    protocolVersion: coderProtocolMajor,
+    protocolVersion: tinestProtocolMajor,
     features: <String, bool>{},
   ),
   token: 'token',

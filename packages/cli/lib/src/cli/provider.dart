@@ -3,7 +3,7 @@ import 'package:cli/src/cli/shared_flags.dart';
 import 'package:cli/src/provider_cli.dart';
 import 'package:cliweave/cliweave.dart';
 
-final Command<CoderCliContext> _listCommand = buildCommand(
+final Command<TinestCliContext> _listCommand = buildCommand(
   docs: const CommandDocs(brief: 'List provider connections'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
@@ -13,13 +13,13 @@ final Command<CoderCliContext> _listCommand = buildCommand(
     context,
     flags,
     (client) => providerList(
-      backend: CoderApiProviderCliBackend(client),
+      backend: TinestApiProviderCliBackend(client),
       output: context.output,
     ),
   ),
 );
 
-final Command<CoderCliContext> _connectCommand = buildCommand(
+final Command<TinestCliContext> _connectCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Connect a provider',
     fullDescription:
@@ -33,7 +33,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
           // whatever the daemon's catalog advertises for the provider, so a
           // new vendor's flows need no CLI release. providerConnect validates
           // against the catalog and names the valid ids on a mistake.
-          ParsedFlag.optional<String, CoderCliContext>(
+          ParsedFlag.optional<String, TinestCliContext>(
             name: 'method',
             brief: 'Authentication method id from the provider catalog',
             parse: stringParser,
@@ -44,7 +44,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
           // Hidden because passing a secret on the command line leaks it
           // into the shell history; the interactive prompt is the
           // documented path.
-          ParsedFlag.optional<String, CoderCliContext>(
+          ParsedFlag.optional<String, TinestCliContext>(
             name: 'api-key',
             brief: 'API key to use instead of prompting',
             parse: stringParser,
@@ -53,7 +53,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
           ),
         )
         .and(
-          ParsedFlag.optional<String, CoderCliContext>(
+          ParsedFlag.optional<String, TinestCliContext>(
             name: 'prefix',
             brief: 'Qualified model prefix (generated when omitted)',
             parse: stringParser,
@@ -69,7 +69,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
           ),
         ),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Provider definition ID',
         parse: stringParser,
         placeholder: 'id',
@@ -80,7 +80,7 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
     context,
     flags.daemon,
     (client) => providerConnect(
-      backend: CoderApiProviderCliBackend(client),
+      backend: TinestApiProviderCliBackend(client),
       output: context.output,
       definitionId: args.id,
       methodId: flags.method,
@@ -92,20 +92,20 @@ final Command<CoderCliContext> _connectCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _prefixSetCommand = buildCommand(
+final Command<TinestCliContext> _prefixSetCommand = buildCommand(
   docs: const CommandDocs(brief: 'Change a provider model prefix'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional:
         PositionalSet.one(
-              Positional.required<String, CoderCliContext>(
+              Positional.required<String, TinestCliContext>(
                 brief: 'Connection ID',
                 parse: stringParser,
                 placeholder: 'connection-id',
               ),
             )
             .and(
-              Positional.required<String, CoderCliContext>(
+              Positional.required<String, TinestCliContext>(
                 brief: 'New model prefix',
                 parse: stringParser,
                 placeholder: 'prefix',
@@ -117,7 +117,7 @@ final Command<CoderCliContext> _prefixSetCommand = buildCommand(
     context,
     flags,
     (client) => providerPrefixSet(
-      backend: CoderApiProviderCliBackend(client),
+      backend: TinestApiProviderCliBackend(client),
       output: context.output,
       connectionId: args.$1,
       modelPrefix: args.$2,
@@ -125,12 +125,12 @@ final Command<CoderCliContext> _prefixSetCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _disconnectCommand = buildCommand(
+final Command<TinestCliContext> _disconnectCommand = buildCommand(
   docs: const CommandDocs(brief: 'Remove a provider connection'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Connection ID',
         parse: stringParser,
         placeholder: 'connection-id',
@@ -141,14 +141,14 @@ final Command<CoderCliContext> _disconnectCommand = buildCommand(
     context,
     flags,
     (client) => providerDisconnect(
-      backend: CoderApiProviderCliBackend(client),
+      backend: TinestApiProviderCliBackend(client),
       output: context.output,
       connectionId: args.id,
     ),
   ),
 );
 
-final Command<CoderCliContext> _catalogRefreshCommand = buildCommand(
+final Command<TinestCliContext> _catalogRefreshCommand = buildCommand(
   docs: const CommandDocs(brief: 'Refresh public model metadata'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
@@ -158,17 +158,17 @@ final Command<CoderCliContext> _catalogRefreshCommand = buildCommand(
     context,
     flags,
     (client) => providerCatalogRefresh(
-      backend: CoderApiProviderCliBackend(client),
+      backend: TinestApiProviderCliBackend(client),
       output: context.output,
       progress: context.progress,
     ),
   ),
 );
 
-/// The `coder-cli provider` route map.
-RouteMap<CoderCliContext> buildProviderRoutes() => buildRouteMap(
+/// The `tinest-cli provider` route map.
+RouteMap<TinestCliContext> buildProviderRoutes() => buildRouteMap(
   docs: const RouteMapDocs(brief: 'Manage provider connections'),
-  routes: <String, RoutingTarget<CoderCliContext>>{
+  routes: <String, RoutingTarget<TinestCliContext>>{
     'list': _listCommand,
     'connect': _connectCommand,
     'disconnect': _disconnectCommand,

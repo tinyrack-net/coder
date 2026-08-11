@@ -34,7 +34,7 @@ final class McpClient {
   final Duration pingInterval;
 
   /// Name reported to the server as `clientInfo.name`.
-  static const String clientName = 'tinyrack-coder';
+  static const String clientName = 'tinyrack-tinest';
 
   /// How many unanswered pings end the connection.
   static const int _maxMissedPings = 2;

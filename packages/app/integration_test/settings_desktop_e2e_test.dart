@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
@@ -184,7 +184,7 @@ void main() {
     (tester) async {
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
-      final home = await Directory.systemTemp.createTemp('coder-reset-e2e-');
+      final home = await Directory.systemTemp.createTemp('tinest-reset-e2e-');
       addTearDown(() => deleteTemporaryDirectory(home));
       // One shared resolution, exactly as the production composition root
       // wires the launcher and the eraser.
@@ -209,7 +209,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -238,7 +238,7 @@ void main() {
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
       expect(
-        File(_join(<String>[home.path, 'v4', 'coder.sqlite'])).existsSync(),
+        File(_join(<String>[home.path, 'v4', 'tinest.sqlite'])).existsSync(),
         isTrue,
       );
       expect(
@@ -289,7 +289,7 @@ void main() {
     'tray quit stops the real embedded daemon before ending the process',
     (tester) async {
       final home = await Directory.systemTemp.createTemp(
-        'coder-tray-quit-e2e-',
+        'tinest-tray-quit-e2e-',
       );
       addTearDown(() => deleteTemporaryDirectory(home));
       final calls = <String>[];
@@ -320,7 +320,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: services,
           desktopWindow: window,
           trayIcon: tray,
@@ -386,7 +386,7 @@ Future<void> _pumpApp(
   AutostartRegistration? autostart,
 }) async {
   await tester.pumpWidget(
-    CoderApp(
+    TinestApp(
       services: fixture.services,
       autostart: autostart,
     ),

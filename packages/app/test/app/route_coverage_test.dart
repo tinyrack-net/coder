@@ -3,22 +3,22 @@ import 'dart:async';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/shared/presentation/coder_control_density.dart';
+import 'package:app/src/shared/presentation/tinest_control_density.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -29,20 +29,20 @@ void main() {
     path: workspace.rootPath,
     branch: 'main',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final session = SessionDto(
     id: 'session',
     worktreeId: worktree.id,
     title: 'Route session',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
   );
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[worktree],
     agents: <SessionDto>[session],
@@ -127,7 +127,7 @@ void main() {
       ];
       for (final size in <Size>[const Size(1200, 900), const Size(390, 760)]) {
         await tester.binding.setSurfaceSize(size);
-        final routed = FakeCoderApi(
+        final routed = FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
           worktrees: <WorktreeDto>[worktree],
           agents: <SessionDto>[session],
@@ -149,7 +149,7 @@ void main() {
               localizationsDelegates: testLocalizationsDelegates,
               supportedLocales: testSupportedLocales,
               routerConfig: router,
-              builder: (context, child) => CoderControlDensity(
+              builder: (context, child) => TinestControlDensity(
                 child: child ?? const SizedBox.shrink(),
               ),
             ),
@@ -410,7 +410,7 @@ void main() {
 
 Future<void> _verifyRoute(
   WidgetTester tester,
-  FakeCoderApi api,
+  FakeTinestApi api,
   String location,
   Finder expected,
 ) async {
@@ -429,7 +429,7 @@ Future<void> _verifyRoute(
           localizationsDelegates: testLocalizationsDelegates,
           supportedLocales: testSupportedLocales,
           routerConfig: router,
-          builder: (context, child) => CoderControlDensity(
+          builder: (context, child) => TinestControlDensity(
             child: child ?? const SizedBox.shrink(),
           ),
         ),

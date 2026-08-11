@@ -10,19 +10,19 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 
-import '../support/fake_coder_api.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
   final offerUrl = RelayPairingOffer(
     serverId: 'daemon-4d2a713c9e18',
-    relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+    relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
     daemonPublicKey: List<int>.filled(32, 1),
     offerId: 'golden-offer',
     secret: List<int>.filled(32, 2),
     // Keep the rendered local clock stable across developer and CI time zones.
     expiresAt: DateTime(2100),
-  ).toUrl(Uri.parse('https://coder.tinyrack.net/pair'));
+  ).toUrl(Uri.parse('https://tinest.tinyrack.net/pair'));
   final routes = <({String name, String location})>[
     (name: 'connect', location: const ConnectDaemonRoute().location),
     (name: 'offer', location: offerUrl.toString()),
@@ -154,9 +154,9 @@ class _PairingGoldenHostState extends State<_PairingGoldenHost> {
       overrides: [
         appServicesProvider.overrideWithValue(
           fakeAppServices(
-            FakeCoderApi(
+            FakeTinestApi(
               relayPairingOffer: RelayPairingOfferDto(
-                url: 'https://coder.tinyrack.net/pair#offer=golden-offer',
+                url: 'https://tinest.tinyrack.net/pair#offer=golden-offer',
                 expiresAt: DateTime(2100),
               ),
             ),

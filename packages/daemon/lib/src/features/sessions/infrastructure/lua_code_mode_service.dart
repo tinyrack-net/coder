@@ -74,7 +74,7 @@ lua.LuaHostCommand discoverLuaHostCommand({
   );
 }
 
-/// Adapts Coder's tool and attachment contracts to the shared Lua runtime.
+/// Adapts Tinest's tool and attachment contracts to the shared Lua runtime.
 final class LuaCodeModeService {
   /// Creates a service over the process runtime supplied by the composition
   /// root.
@@ -147,8 +147,8 @@ final class LuaCodeModeService {
   lua.LuaExecutionContext<ConversationAttachment> _executionContext(
     ToolExecutionContext context,
   ) => lua.LuaExecutionContext<ConversationAttachment>(
-    dispatcher: _CoderLuaToolDispatcher(context),
-    cancellation: _CoderLuaCancellation(context.cancellation),
+    dispatcher: _TinestLuaToolDispatcher(context),
+    cancellation: _TinestLuaCancellation(context.cancellation),
   );
 
   LuaCellChunk _mapDelta(
@@ -182,7 +182,7 @@ final class LuaCodeModeService {
   /// Reclaims expired and over-time cells.
   void sweep() => _runtime.sweep();
 
-  /// Terminates all cells owned by one Coder session.
+  /// Terminates all cells owned by one Tinest session.
   Future<void> closeOwner(String owner) async {
     final session = _sessions.remove(owner);
     if (session != null) await session.close();
@@ -226,9 +226,9 @@ final class SessionLuaCodeModeHost implements LuaCodeModeHost {
   ) => _service.wait(owner: _sessionId, request: request, context: context);
 }
 
-final class _CoderLuaToolDispatcher
+final class _TinestLuaToolDispatcher
     implements lua.LuaToolDispatcher<ConversationAttachment> {
-  const _CoderLuaToolDispatcher(this._context);
+  const _TinestLuaToolDispatcher(this._context);
 
   final ToolExecutionContext _context;
 
@@ -265,8 +265,8 @@ final class _CoderLuaToolDispatcher
   }
 }
 
-final class _CoderLuaCancellation implements lua.LuaCancellationSignal {
-  const _CoderLuaCancellation(this._token);
+final class _TinestLuaCancellation implements lua.LuaCancellationSignal {
+  const _TinestLuaCancellation(this._token);
 
   final CancellationToken _token;
 

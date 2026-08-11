@@ -1,6 +1,6 @@
 # MCP servers
 
-Tinyrack Coder consumes external [Model Context Protocol][mcp] servers. The
+Tinest consumes external [Model Context Protocol][mcp] servers. The
 daemon connects to them, publishes their tools alongside the built-in ones, and
 calls them inside a turn. It does not expose an MCP server of its own: the
 built-in tools are native `AgentTool`s, and wrapping them in a protocol would
@@ -14,12 +14,12 @@ Two files, one schema:
 
 | Scope     | Path                          | Who owns it                     |
 | --------- | ----------------------------- | ------------------------------- |
-| `user`    | `<config>/v4/config.json`              | You. Coder reads and writes it. |
-| `project` | `<worktree root>/.coder/config.json`   | The repository. Read-only.      |
+| `user`    | `<config>/v4/config.json`              | You. Tinest reads and writes it. |
+| `project` | `<worktree root>/.tinest/config.json`   | The repository. Read-only.      |
 
-`<config>` is the daemon configuration directory: `$XDG_CONFIG_HOME/tinyrack-coder`
-on Linux, `~/Library/Application Support/Tinyrack Coder` on macOS, and
-`%APPDATA%\Tinyrack Coder` on Windows.
+`<config>` is the daemon configuration directory: `$XDG_CONFIG_HOME/tinyrack-tinest`
+on Linux, `~/Library/Application Support/Tinest` on macOS, and
+`%APPDATA%\Tinest` on Windows.
 
 ```jsonc
 {
@@ -71,7 +71,7 @@ references at connect time:
 escaping. An unset reference fails the connection by name rather than resolving
 to an empty string and producing a confusing 401 later.
 
-A committed `.coder/config.json` may not put a literal under a key whose name suggests a
+A committed `.tinest/config.json` may not put a literal under a key whose name suggests a
 credential (`token`, `key`, `secret`, `auth`, `password`, and similar). Those
 must use a reference. This is the cheapest available guard against the most
 common way a token reaches a public repository.
@@ -90,14 +90,14 @@ accumulate child processes.
 
 ## Trust
 
-**A project `.coder/config.json` runs without a prompt.** Opening a session in a cloned
+**A project `.tinest/config.json` runs without a prompt.** Opening a session in a cloned
 repository is enough to launch whatever `command` it names, with your
 environment. Treat cloning a repository as running its code, because with a
-`.coder/config.json` present it is.
+`.tinest/config.json` present it is.
 
 The settings screen always shows the file that declares a server, so what is
 running is at least visible. If you work in repositories you do not trust,
-review `.coder/config.json` before opening a session in them.
+review `.tinest/config.json` before opening a session in them.
 
 ## Resources
 

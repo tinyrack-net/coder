@@ -1,4 +1,4 @@
-import 'package:coder_workspace/src/desktop_host.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
 
 /// One process invocation in a desktop E2E run.
 final class DesktopE2eCommand {
@@ -118,8 +118,8 @@ final class DesktopE2eRunner {
         final command = plan.commandFor(shard).withEnvironment(
           <String, String>{
             ...environment,
-            'TINYRACK_CODER_HOME': home,
-            'TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES': '1',
+            'TINYRACK_TINEST_HOME': home,
+            'TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES': '1',
           },
         );
         final shardExitCode = await runtime.run(command);

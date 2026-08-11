@@ -81,7 +81,7 @@ Widget _scenario(ThemeMode mode) => SizedBox(
           // and the space they take, not about whatever they happen to cover.
           return ColoredBox(
             color: context.tinyrackTheme.surfaceMuted,
-            child: const CoderToastScope(child: SizedBox.expand()),
+            child: const TinestToastScope(child: SizedBox.expand()),
           );
         },
       ),

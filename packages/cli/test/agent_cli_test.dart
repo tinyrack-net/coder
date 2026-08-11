@@ -8,7 +8,7 @@ void main() {
     final output = StringBuffer();
 
     expect(await agentList(backend: backend, output: output), 0);
-    expect(output.toString(), contains('coder'));
+    expect(output.toString(), contains('tinest'));
 
     expect(
       await agentValidate(
@@ -34,7 +34,7 @@ void main() {
       await agentArchive(backend: backend, output: output, id: 'reviewer'),
       0,
     );
-    expect(await agentReset(backend: backend, output: output, id: 'coder'), 0);
+    expect(await agentReset(backend: backend, output: output, id: 'tinest'), 0);
   });
 
   test('validate takes the agent ID from the file name', () async {
@@ -114,7 +114,7 @@ final class _AgentBackend implements AgentCliBackend {
     id: id,
     name: id,
     description: '',
-    mode: id == 'coder' ? AgentMode.primary : AgentMode.subagent,
+    mode: id == 'tinest' ? AgentMode.primary : AgentMode.subagent,
     promptEnabled: true,
     systemPrompt: 'prompt',
     model: const AgentModelSelectionDto(
@@ -130,7 +130,7 @@ final class _AgentBackend implements AgentCliBackend {
     callableAgentIds: const <String>[],
     contentHash: 'hash',
     sourcePath: '/config/agents/$id.md',
-    isBuiltIn: id == 'coder',
+    isBuiltIn: id == 'tinest',
   );
 
   @override
@@ -147,7 +147,7 @@ final class _AgentBackend implements AgentCliBackend {
 
   @override
   Future<List<AgentDefinitionDto>> list() async => <AgentDefinitionDto>[
-    definition('coder'),
+    definition('tinest'),
     if (includeStale)
       definition('stale').copyWith(
         isStale: true,

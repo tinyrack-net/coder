@@ -1,9 +1,9 @@
 ---
-name: verify-coder-workspace
-description: Select, run, and report the correct test, coverage, generated-code, platform, CI, and release gates for the Tinyrack Coder Dart/Flutter workspace. Use when changing behavior, adding tests, diagnosing a failed gate, preparing a PR or release, checking completion, updating CI, or deciding which Melos verification command and platform evidence a Coder change requires.
+name: verify-tinest-workspace
+description: Select, run, and report the correct test, coverage, generated-code, platform, CI, and release gates for the Tinest Dart/Flutter workspace. Use when changing behavior, adding tests, diagnosing a failed gate, preparing a PR or release, checking completion, updating CI, or deciding which Melos verification command and platform evidence a Tinest change requires.
 ---
 
-# Verify Coder Workspace
+# Verify Tinest Workspace
 
 Read `AGENTS.md` and `docs/testing.md` before changing code. Treat them as the
 source of truth when this skill and the repository diverge.

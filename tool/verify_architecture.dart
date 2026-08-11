@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/architecture_verifier.dart';
+import 'package:tinest_workspace/src/architecture_verifier.dart';
 
 /// Verifies the repository architecture and exits non-zero on a violation.
 void main() {

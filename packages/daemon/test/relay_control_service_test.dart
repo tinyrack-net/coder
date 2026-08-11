@@ -57,7 +57,7 @@ void main() {
       );
 
       final offer = service.createOffer();
-      expect(offer.url, startsWith('https://coder.tinyrack.net/pair#offer='));
+      expect(offer.url, startsWith('https://tinest.tinyrack.net/pair#offer='));
       expect(offer.expiresAt, DateTime.utc(2026, 8, 8, 0, 10));
       await devices.upsert(
         RelayApprovedDevice(

@@ -1,5 +1,5 @@
-name: coder_workspace
-description: Tinyrack Coder monorepo.
+name: tinest_workspace
+description: Tinest monorepo.
 publish_to: none
 
 environment:
@@ -89,17 +89,17 @@ melos:
       # and PTY code assets, which only `dart build cli` produces. Under `dart
       # run` the build hooks never execute and startup fails on a missing
       # `sqlite3_initialize`.
-      run: dart run melos build:cli && dist/bundle/bin/coder_cli daemon start
+      run: dart run melos build:cli && dist/bundle/bin/tinest_cli daemon start
       stdio: inherit
     run:cli:
       # Built for the same reason as `run:daemon`.
-      run: dart run melos build:cli && dist/bundle/bin/coder_cli
+      run: dart run melos build:cli && dist/bundle/bin/tinest_cli
       stdio: inherit
     build:cli:
       # `dart build cli` rather than `dart compile exe`: the CLI now hosts the
       # daemon, so it links sqlite3 and the PTY code assets and ships as
       # `dist/bundle/bin` plus `dist/bundle/lib`.
-      run: dart build cli -t packages/cli/bin/coder_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
+      run: dart build cli -t packages/cli/bin/tinest_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.

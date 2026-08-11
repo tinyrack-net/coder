@@ -1,5 +1,5 @@
 name: client
-description: WebSocket client SDK for the Tinyrack Coder daemon.
+description: WebSocket client SDK for the Tinest daemon.
 version: 0.1.0
 publish_to: none
 resolution: workspace

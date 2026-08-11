@@ -36,7 +36,7 @@ android {
     // Gradle, and a variable reference reads as absent. Without it,
     // `flutter test -d <android device>` cannot resolve the launch activity.
     // `app_identity_test.dart` holds both to the identity constant.
-    namespace = "net.tinyrack.coder"
+    namespace = "net.tinyrack.tinest"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -46,7 +46,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "net.tinyrack.coder"
+        applicationId = "net.tinyrack.tinest"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -58,22 +58,22 @@ final class SpinnerCliProgress implements CliProgress {
 
 /// How a command reaches a running daemon.
 typedef DaemonClientFactory =
-    Future<CoderClient> Function({
+    Future<TinestClient> Function({
       required String host,
       required int port,
       required String bearerToken,
       required String clientId,
     });
 
-/// Everything a `coder-cli` command needs that touches the outside world.
+/// Everything a `tinest-cli` command needs that touches the outside world.
 ///
 /// Every side effect the commands perform — connecting a socket, reading a
 /// file, prompting for a secret, reading the environment — arrives through
-/// this object, so `bin/coder_cli.dart` stays the only composition root and a
+/// this object, so `bin/tinest_cli.dart` stays the only composition root and a
 /// test can substitute each one.
-final class CoderCliContext implements CommandContext {
+final class TinestCliContext implements CommandContext {
   /// Creates a command context.
-  CoderCliContext({
+  TinestCliContext({
     required this.process,
     required this.logger,
     required this.connectClient,
@@ -100,7 +100,7 @@ final class CoderCliContext implements CommandContext {
   /// Reads a UTF-8 text file.
   final Future<String> Function(String path) readFile;
 
-  /// Process environment, consulted for the `TINYRACK_CODER_*` overrides.
+  /// Process environment, consulted for the `TINYRACK_TINEST_*` overrides.
   final Map<String, String> environment;
 
   /// Resolved platform locations for the local daemon.
@@ -116,7 +116,7 @@ final class CoderCliContext implements CommandContext {
   ///
   /// Assigned after the application is built, because the completion command
   /// is one of the routes the application is built from.
-  Application<CoderCliContext>? application;
+  Application<TinestCliContext>? application;
 
   /// Command output as a [StringSink].
   late final StringSink output = WriteStreamSink(process.stdout);

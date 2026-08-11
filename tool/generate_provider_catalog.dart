@@ -66,7 +66,7 @@ Future<void> main(List<String> arguments) async {
 
 Future<void> _updateNormalized(Map<String, dynamic> lock) async {
   final temporary = await Directory.systemTemp.createTemp(
-    'coder-models-dev-',
+    'tinest-models-dev-',
   );
   try {
     await _run('git', <String>[

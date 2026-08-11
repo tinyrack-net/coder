@@ -3,7 +3,7 @@ import 'package:cli/src/cli/context.dart';
 import 'package:cli/src/cli/shared_flags.dart';
 import 'package:cliweave/cliweave.dart';
 
-final Command<CoderCliContext> _listCommand = buildCommand(
+final Command<TinestCliContext> _listCommand = buildCommand(
   docs: const CommandDocs(brief: 'List Markdown agent definitions'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
@@ -13,13 +13,13 @@ final Command<CoderCliContext> _listCommand = buildCommand(
     context,
     flags,
     (client) => agentList(
-      backend: CoderApiAgentCliBackend(client),
+      backend: TinestApiAgentCliBackend(client),
       output: context.output,
     ),
   ),
 );
 
-final Command<CoderCliContext> _validateCommand = buildCommand(
+final Command<TinestCliContext> _validateCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Validate a Markdown definition without saving it',
     fullDescription:
@@ -29,7 +29,7 @@ final Command<CoderCliContext> _validateCommand = buildCommand(
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Markdown file',
         parse: stringParser,
         placeholder: 'file',
@@ -40,7 +40,7 @@ final Command<CoderCliContext> _validateCommand = buildCommand(
     context,
     flags,
     (client) => agentValidate(
-      backend: CoderApiAgentCliBackend(client),
+      backend: TinestApiAgentCliBackend(client),
       output: context.output,
       path: args.path,
       readFile: context.readFile,
@@ -48,12 +48,12 @@ final Command<CoderCliContext> _validateCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _applyCommand = buildCommand(
+final Command<TinestCliContext> _applyCommand = buildCommand(
   docs: const CommandDocs(brief: 'Create or update an agent definition'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet()
         .and(
-          ParsedFlag.required<String, CoderCliContext>(
+          ParsedFlag.required<String, TinestCliContext>(
             name: 'file',
             brief: 'Markdown file to apply',
             parse: stringParser,
@@ -62,7 +62,7 @@ final Command<CoderCliContext> _applyCommand = buildCommand(
         )
         .map((values) => (daemon: values.$1, file: values.$2)),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Agent ID',
         parse: stringParser,
         placeholder: 'id',
@@ -73,7 +73,7 @@ final Command<CoderCliContext> _applyCommand = buildCommand(
     context,
     flags.daemon,
     (client) => agentApply(
-      backend: CoderApiAgentCliBackend(client),
+      backend: TinestApiAgentCliBackend(client),
       output: context.output,
       id: args.id,
       path: flags.file,
@@ -82,12 +82,12 @@ final Command<CoderCliContext> _applyCommand = buildCommand(
   ),
 );
 
-final Command<CoderCliContext> _archiveCommand = buildCommand(
+final Command<TinestCliContext> _archiveCommand = buildCommand(
   docs: const CommandDocs(brief: 'Archive a custom agent definition'),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Agent ID',
         parse: stringParser,
         placeholder: 'id',
@@ -98,24 +98,24 @@ final Command<CoderCliContext> _archiveCommand = buildCommand(
     context,
     flags,
     (client) => agentArchive(
-      backend: CoderApiAgentCliBackend(client),
+      backend: TinestApiAgentCliBackend(client),
       output: context.output,
       id: args.id,
     ),
   ),
 );
 
-final Command<CoderCliContext> _resetCommand = buildCommand(
+final Command<TinestCliContext> _resetCommand = buildCommand(
   docs: const CommandDocs(
     brief: 'Restore a built-in definition to its shipped content',
   ),
   parameters: CommandParameters(
     flags: daemonConnectionFlagSet(),
     positional: PositionalSet.one(
-      Positional.required<String, CoderCliContext>(
+      Positional.required<String, TinestCliContext>(
         brief: 'Built-in agent ID',
         parse: stringParser,
-        placeholder: 'coder',
+        placeholder: 'tinest',
       ),
     ).map((id) => (id: id)),
   ),
@@ -123,17 +123,17 @@ final Command<CoderCliContext> _resetCommand = buildCommand(
     context,
     flags,
     (client) => agentReset(
-      backend: CoderApiAgentCliBackend(client),
+      backend: TinestApiAgentCliBackend(client),
       output: context.output,
       id: args.id,
     ),
   ),
 );
 
-/// The `coder-cli agent` route map.
-RouteMap<CoderCliContext> buildAgentRoutes() => buildRouteMap(
+/// The `tinest-cli agent` route map.
+RouteMap<TinestCliContext> buildAgentRoutes() => buildRouteMap(
   docs: const RouteMapDocs(brief: 'Manage Markdown agent definitions'),
-  routes: <String, RoutingTarget<CoderCliContext>>{
+  routes: <String, RoutingTarget<TinestCliContext>>{
     'list': _listCommand,
     'validate': _validateCommand,
     'apply': _applyCommand,

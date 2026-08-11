@@ -265,7 +265,7 @@ void main() {
     }
 
     const model = TrayMenuModel(
-      tooltip: 'Coder',
+      tooltip: 'Tinest',
       entries: <TrayMenuEntry>[
         TrayMenuEntry(
           key: trayItemToggleWindow,
@@ -318,7 +318,7 @@ void main() {
 
         final windows = build(platform: TargetPlatform.windows);
         await windows.tray.update(model);
-        expect(windows.tooltips, <String>['Coder']);
+        expect(windows.tooltips, <String>['Tinest']);
 
         final macos = build(platform: TargetPlatform.macOS);
         await macos.tray.install(

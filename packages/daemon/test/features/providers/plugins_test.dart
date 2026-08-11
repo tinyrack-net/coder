@@ -153,7 +153,7 @@ void main() {
       );
       expect(adapter.options!.headers['Authorization'], 'Bearer access-secret');
       expect(adapter.options!.headers['ChatGPT-Account-ID'], 'account-id');
-      expect(adapter.options!.headers['originator'], 'tinyrack_coder');
+      expect(adapter.options!.headers['originator'], 'tinyrack_tinest');
       expect(
         jsonEncode(adapter.options!.data),
         isNot(contains('refresh-secret')),

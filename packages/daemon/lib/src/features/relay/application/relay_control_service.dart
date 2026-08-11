@@ -153,7 +153,9 @@ final class RelayControlService {
   RelayPairingOfferInfo createOffer() {
     final offer = pairing.createOffer();
     return RelayPairingOfferInfo(
-      url: offer.toUrl(Uri.parse('https://coder.tinyrack.net/pair')).toString(),
+      url: offer
+          .toUrl(Uri.parse('https://tinest.tinyrack.net/pair'))
+          .toString(),
       expiresAt: offer.expiresAt,
     );
   }

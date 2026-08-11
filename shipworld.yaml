@@ -3,7 +3,7 @@ remote: origin
 batch-commit: "release: {targets}"
 
 targets:
-  coder:
+  tinest:
     # The build number is what Apple and Android increment per release, and
     # `flutter-application` is the kind that bumps it.
     kind: flutter-application
@@ -26,17 +26,17 @@ targets:
       # The Linux launcher; macOS and Windows override it per platform because
       # their bundles nest the executable differently.
       kind: directory
-      launcher: coder
+      launcher: tinest
     product:
-      name: coder
-      display-name: Coder
+      name: tinest
+      display-name: Tinest
       description: Local-first AI coding agent with an always-on daemon
-      executable: coder
-      homepage: https://github.com/tinyrack-net/coder
-      repository: tinyrack-net/coder
+      executable: tinest
+      homepage: https://github.com/tinyrack-net/tinest
+      repository: tinyrack-net/tinest
     windows:
-      application-id: Coder
-      executable: coder.exe
+      application-id: Tinest
+      executable: tinest.exe
       background-color: "#0a0a0a"
       identity:
         name-env: MSIX_IDENTITY_NAME
@@ -45,24 +45,24 @@ targets:
         display-name-env: MSIX_DISPLAY_NAME
     macos:
       entitlements: packages/app/macos/Runner/Release.entitlements
-      bundle-name: Coder
-      bundle-id: net.tinyrack.coder
+      bundle-name: Tinest
+      bundle-id: net.tinyrack.tinest
       # SMAppService, used for the login item, needs macOS 13.
       minimum-version: ventura
     linux:
-      icon: packages/app/assets/brand/coder.svg
+      icon: packages/app/assets/brand/tinest.svg
       categories:
         - Development
       terminal: false
       maintainer: "Tinyrack <dev@tinyrack.net>"
       license: MIT
       vendor: Tinyrack
-      app-id: net.tinyrack.coder
+      app-id: net.tinyrack.tinest
       icons:
-        - { size: 0, path: packages/app/assets/brand/coder.svg }
-        - { size: 128, path: packages/app/assets/brand/coder-128.png }
-        - { size: 256, path: packages/app/assets/brand/coder-256.png }
-        - { size: 512, path: packages/app/assets/brand/coder-512.png }
+        - { size: 0, path: packages/app/assets/brand/tinest.svg }
+        - { size: 128, path: packages/app/assets/brand/tinest-128.png }
+        - { size: 256, path: packages/app/assets/brand/tinest-256.png }
+        - { size: 512, path: packages/app/assets/brand/tinest-512.png }
       deb:
         # GTK is the Flutter shell; the indicator library backs the tray icon.
         # Ubuntu 24.04 renamed libgtk-3-0 during the time_t transition.
@@ -77,13 +77,13 @@ targets:
         release: "1"
         group: Development/Tools
 
-  coder-cli:
+  tinest-cli:
     kind: cli-application
     root: .
     version:
       # The CLI rides the application's version and tag so that one release
       # ships a matching daemon, desktop app, and command line. Its version
-      # file is written by the `coder` target above, which is why nothing is
+      # file is written by the `tinest` target above, which is why nothing is
       # synchronized here.
       source: packages/app/pubspec.yaml
     tag: "v{version}"
@@ -94,17 +94,17 @@ targets:
       # sqlite3 and the PTY code assets, so `dart build cli` emits `bin/` plus
       # the `lib/` the executable loads at runtime.
       kind: directory
-      launcher: coder-cli
+      launcher: tinest-cli
     product:
-      name: coder-cli
-      display-name: Coder CLI
-      description: Command line that hosts and administers a Tinyrack Coder daemon
-      executable: coder-cli
-      homepage: https://github.com/tinyrack-net/coder
-      repository: tinyrack-net/coder
+      name: tinest-cli
+      display-name: Tinest CLI
+      description: Command line that hosts and administers a Tinest daemon
+      executable: tinest-cli
+      homepage: https://github.com/tinyrack-net/tinest
+      repository: tinyrack-net/tinest
     macos:
       entitlements: packages/cli/macos/Release.entitlements
-      bundle-id: net.tinyrack.coder.cli
+      bundle-id: net.tinyrack.tinest.cli
     homebrew:
       # No Linux arm64: building the CLI needs the Flutter SDK, because it
       # shares a pub workspace with the app, and Flutter publishes no Linux
@@ -114,10 +114,10 @@ targets:
         - macos-arm64
         - macos-x64
         - linux-x64
-      formula-class: CoderCli
+      formula-class: TinestCli
       # shipworld reads `<prefix>-<platform>-<arch>` bare executables from the
       # artifacts directory and installs them under this name.
-      artifact-prefix: coder-cli
+      artifact-prefix: tinest-cli
 
   relay:
     # The relay server ships only as a container and therefore owns a release

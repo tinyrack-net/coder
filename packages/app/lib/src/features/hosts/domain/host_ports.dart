@@ -67,7 +67,7 @@ abstract interface class RelayHostCredentialStore {
 /// Opens one typed daemon API without owning profile persistence.
 abstract interface class HostClientFactory {
   /// Connects and completes after the daemon handshake succeeds.
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

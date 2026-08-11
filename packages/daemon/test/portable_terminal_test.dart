@@ -12,7 +12,7 @@ void main() {
       await expectLater(
         const PtyworldTerminalGateway().start(
           shell: const TerminalShell(
-            executable: 'coder-definitely-missing-terminal-shell',
+            executable: 'tinest-definitely-missing-terminal-shell',
           ),
           workingDirectory: Directory.systemTemp.path,
           columns: 80,

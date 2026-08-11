@@ -1,5 +1,5 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -29,7 +29,7 @@ class SubagentStatusIcon extends StatelessWidget {
     // it as a spinner and hide the one row the user has to act on.
     if (status == SessionStatus.waitingForApproval) {
       return Icon(
-        CoderIcons.approvalPending,
+        TinestIcons.approvalPending,
         color: colors.warning,
         semanticLabel: l10n.subagentStatusWaitingForApproval,
       );
@@ -41,17 +41,17 @@ class SubagentStatusIcon extends StatelessWidget {
         label: l10n.subagentStatusRunning,
       ),
       AgentLifecycle.errored => Icon(
-        CoderIcons.error,
+        TinestIcons.error,
         color: colors.danger,
         semanticLabel: l10n.subagentStatusErrored,
       ),
       AgentLifecycle.interrupted => Icon(
-        CoderIcons.paused,
+        TinestIcons.paused,
         color: colors.textMuted,
         semanticLabel: l10n.subagentStatusInterrupted,
       ),
       AgentLifecycle.completed => Icon(
-        CoderIcons.success,
+        TinestIcons.success,
         color: colors.textMuted,
         semanticLabel: l10n.subagentStatusCompleted,
       ),

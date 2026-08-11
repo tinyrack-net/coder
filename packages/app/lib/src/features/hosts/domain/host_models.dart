@@ -519,7 +519,7 @@ final class HostRuntimeSnapshot {
   final HostEndpoint? endpoint;
 
   /// Connected daemon API, available only while online or reconnecting.
-  final CoderApi? api;
+  final TinestApi? api;
 
   /// Handshake metadata from the daemon.
   final ServerInfoDto? serverInfo;
@@ -544,7 +544,7 @@ final class HostRuntimeSnapshot {
     String? label,
     HostRuntimeStatus? status,
     HostEndpoint? endpoint,
-    CoderApi? api,
+    TinestApi? api,
     ServerInfoDto? serverInfo,
     String? error,
     HostFailureReason? errorReason,

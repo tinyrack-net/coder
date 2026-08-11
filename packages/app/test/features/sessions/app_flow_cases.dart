@@ -4,8 +4,8 @@ void _registerSessionsAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -17,14 +17,14 @@ void _registerSessionsAppFlows() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   SessionDto session(String id) => SessionDto(
     id: id,
     worktreeId: checkout.id,
     title: 'Session $id',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -36,7 +36,7 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agentDefinitions: const <AgentDefinitionDto>[],
@@ -73,7 +73,7 @@ void _registerSessionsAppFlows() {
         await tester.binding.setSurfaceSize(size);
         final startGate = Completer<void>();
         final api =
-            FakeCoderApi(
+            FakeTinestApi(
                 workspaces: <WorkspaceDto>[workspace],
                 worktrees: <WorktreeDto>[checkout],
               )
@@ -181,7 +181,7 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[first],
@@ -199,7 +199,7 @@ void _registerSessionsAppFlows() {
       addTearDown(router.dispose);
 
       // The design system owns the fixed-width strip geometry and selection
-      // indicator. Coder only supplies the selected, closable session tab.
+      // indicator. Tinest only supplies the selected, closable session tab.
       final strip = find.byKey(const ValueKey('session-tab-strip'));
       expect(strip, findsOneWidget);
       final tabs = tester.widget<TRTabs>(strip);
@@ -276,7 +276,7 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[first],
@@ -337,7 +337,7 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[first],
@@ -483,7 +483,7 @@ void _registerSessionsAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[first],
@@ -544,11 +544,11 @@ void _registerSessionsAppFlows() {
         name: 'main',
         path: docs.rootPath,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
       final first = session('one');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace, docs],
         worktrees: <WorktreeDto>[checkout, docsCheckout],
         agents: <SessionDto>[first],
@@ -616,7 +616,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -669,10 +669,10 @@ void _registerSessionsAppFlows() {
       final semantics = tester.ensureSemantics();
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
-        terminalCreateError: const CoderClientException(
+        terminalCreateError: const TinestClientException(
           'The worktree directory is no longer available.',
           code: 'worktree_unavailable',
         ),
@@ -735,10 +735,10 @@ void _registerSessionsAppFlows() {
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final router = await _pumpRoute(
           tester,
-          FakeCoderApi(
+          FakeTinestApi(
             workspaces: <WorkspaceDto>[workspace],
             worktrees: <WorktreeDto>[checkout],
-            terminalCreateError: CoderClientException(
+            terminalCreateError: TinestClientException(
               failure.message,
               code: failure.code,
             ),
@@ -782,7 +782,7 @@ void _registerSessionsAppFlows() {
     );
     final router = await _pumpRoute(
       tester,
-      FakeCoderApi(
+      FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         terminals: const <TerminalDto>[terminal],
@@ -823,7 +823,7 @@ void _registerSessionsAppFlows() {
       );
       final router = await _pumpRoute(
         tester,
-        FakeCoderApi(
+        FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
           worktrees: <WorktreeDto>[checkout],
           terminals: const <TerminalDto>[terminal],
@@ -863,7 +863,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         terminals: const <TerminalDto>[liveTerminal],
@@ -938,7 +938,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         terminals: const <TerminalDto>[liveTerminal],
@@ -998,7 +998,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         terminals: const <TerminalDto>[liveTerminal],
@@ -1083,7 +1083,7 @@ void _registerSessionsAppFlows() {
           null,
         ),
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         terminals: const <TerminalDto>[liveTerminal],
@@ -1184,7 +1184,7 @@ void _registerSessionsAppFlows() {
         contentHash: 'planner-hash',
         sourcePath: '/config/agents/planner.md',
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agentDefinitions: const <AgentDefinitionDto>[planner],
@@ -1314,7 +1314,7 @@ void _registerSessionsAppFlows() {
           toolCalling: CapabilitySupport.supported,
         ),
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         connections: <ProviderConnectionDto>[
@@ -1341,8 +1341,8 @@ void _registerSessionsAppFlows() {
         ],
         agentDefinitions: const <AgentDefinitionDto>[
           AgentDefinitionDto(
-            id: 'coder',
-            name: 'Coder',
+            id: 'tinest',
+            name: 'Tinest',
             description: 'Coding agent',
             mode: AgentMode.primary,
             promptEnabled: true,
@@ -1359,8 +1359,8 @@ void _registerSessionsAppFlows() {
             permissionMode: PermissionMode.ask,
             toolIds: <String>['read_file'],
             callableAgentIds: <String>[],
-            contentHash: 'coder-hash',
-            sourcePath: '/config/agents/coder.md',
+            contentHash: 'tinest-hash',
+            sourcePath: '/config/agents/tinest.md',
             isBuiltIn: true,
           ),
         ],
@@ -1453,7 +1453,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         connections: <ProviderConnectionDto>[
@@ -1646,7 +1646,7 @@ void _registerSessionsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );

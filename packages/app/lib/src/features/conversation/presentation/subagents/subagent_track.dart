@@ -1,7 +1,7 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -75,7 +75,7 @@ class _SubagentTrackState extends State<SubagentTrack> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (final row in widget.rows)
-                CoderListRow(
+                TinestListRow(
                   key: ValueKey('subagent-row-${row.session.id}'),
                   dense: true,
                   onTap: () => widget.onOpenSubagent(row.session.id),

@@ -62,14 +62,14 @@ final class _RecordingDataFiles implements DaemonDataFiles {
 void main() {
   // Canonical, matching what _RecordingDataFiles records.
   String home(String entry) =>
-      p.canonicalize(p.join('/state/tinyrack-coder', 'v4', entry));
+      p.canonicalize(p.join('/state/tinyrack-tinest', 'v4', entry));
   String config(String entry) =>
-      p.canonicalize(p.join('/config/tinyrack-coder', 'v4', entry));
+      p.canonicalize(p.join('/config/tinyrack-tinest', 'v4', entry));
 
   DaemonDataReset reset(
     DaemonDataFiles files, {
-    String configDirectory = '/config/tinyrack-coder',
-    String homeDirectory = '/state/tinyrack-coder',
+    String configDirectory = '/config/tinyrack-tinest',
+    String homeDirectory = '/state/tinyrack-tinest',
   }) => DaemonDataReset(
     configDirectory: configDirectory,
     homeDirectory: homeDirectory,
@@ -81,8 +81,8 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          home('coder.sqlite'),
-          home('coder.sqlite-wal'),
+          home('tinest.sqlite'),
+          home('tinest.sqlite-wal'),
           home('attachments'),
           home('daemon.lock'),
           home('worktrees'),
@@ -102,8 +102,8 @@ void main() {
       await reset(files).eraseAll();
 
       expect(files.deleted, <String>[
-        home('coder.sqlite'),
-        home('coder.sqlite-wal'),
+        home('tinest.sqlite'),
+        home('tinest.sqlite-wal'),
         home('attachments'),
         home('daemon.lock'),
         config('secrets.json'),
@@ -114,11 +114,11 @@ void main() {
       expect(files.deleted, isNot(contains(home('worktrees'))));
       expect(
         files.deleted,
-        isNot(contains(p.canonicalize('/state/tinyrack-coder'))),
+        isNot(contains(p.canonicalize('/state/tinyrack-tinest'))),
       );
       expect(
         files.deleted,
-        isNot(contains(p.canonicalize('/config/tinyrack-coder'))),
+        isNot(contains(p.canonicalize('/config/tinyrack-tinest'))),
       );
       expect(DaemonDataReset.preservedHomeEntries, <String>['v4/worktrees']);
     },
@@ -142,7 +142,7 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          p.join('/shared', 'v4', 'coder.sqlite'),
+          p.join('/shared', 'v4', 'tinest.sqlite'),
           p.join('/shared', 'v4', 'secrets.json'),
         },
       );
@@ -154,7 +154,7 @@ void main() {
       ).eraseAll();
 
       expect(files.deleted, <String>[
-        p.canonicalize(p.join('/shared', 'v4', 'coder.sqlite')),
+        p.canonicalize(p.join('/shared', 'v4', 'tinest.sqlite')),
         p.canonicalize(p.join('/shared', 'v4', 'secrets.json')),
       ]);
       expect(
@@ -170,7 +170,7 @@ void main() {
     'aborts before deleting anything while another daemon holds the lock',
     () async {
       final files = _RecordingDataFiles(
-        entries: <String>{home('coder.sqlite')},
+        entries: <String>{home('tinest.sqlite')},
         lockFailure: const DaemonDataResetException(
           'locked',
           reason: DaemonDataResetFailureReason.daemonRunning,
@@ -197,8 +197,8 @@ void main() {
     'reports the failing path when the operating system rejects a delete',
     () async {
       final files = _RecordingDataFiles(
-        entries: <String>{home('coder.sqlite')},
-        deleteFailure: home('coder.sqlite'),
+        entries: <String>{home('tinest.sqlite')},
+        deleteFailure: home('tinest.sqlite'),
       );
 
       await expectLater(
@@ -213,7 +213,7 @@ void main() {
               .having(
                 (error) => p.canonicalize(error.path!),
                 'path',
-                home('coder.sqlite'),
+                home('tinest.sqlite'),
               ),
         ),
       );
@@ -226,19 +226,19 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          p.join('/state/tinyrack-coder', 'v2'),
-          p.join('/state/tinyrack-coder', 'v3'),
-          home('coder.sqlite'),
+          p.join('/state/tinyrack-tinest', 'v2'),
+          p.join('/state/tinyrack-tinest', 'v3'),
+          home('tinest.sqlite'),
         },
         directories: <String>{
-          p.join('/state/tinyrack-coder', 'v2'),
-          p.join('/state/tinyrack-coder', 'v3'),
+          p.join('/state/tinyrack-tinest', 'v2'),
+          p.join('/state/tinyrack-tinest', 'v3'),
         },
       );
 
       await reset(files).eraseAll();
 
-      expect(files.deleted, <String>[home('coder.sqlite')]);
+      expect(files.deleted, <String>[home('tinest.sqlite')]);
     },
     tags: const <String>['feature_test__settings_reset__unit'],
   );
@@ -248,19 +248,19 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          p.join('/state/tinyrack-coder', 'v2'),
-          p.join('/config/tinyrack-coder', 'v2'),
-          p.join('/state/tinyrack-coder', 'v3'),
+          p.join('/state/tinyrack-tinest', 'v2'),
+          p.join('/config/tinyrack-tinest', 'v2'),
+          p.join('/state/tinyrack-tinest', 'v3'),
         },
         directories: <String>{
-          p.join('/state/tinyrack-coder', 'v2'),
-          p.join('/config/tinyrack-coder', 'v2'),
-          p.join('/state/tinyrack-coder', 'v3'),
+          p.join('/state/tinyrack-tinest', 'v2'),
+          p.join('/config/tinyrack-tinest', 'v2'),
+          p.join('/state/tinyrack-tinest', 'v3'),
         },
       );
       final cleanup = DaemonLegacyDataCleanup(
-        configDirectory: '/config/tinyrack-coder',
-        homeDirectory: '/state/tinyrack-coder',
+        configDirectory: '/config/tinyrack-tinest',
+        homeDirectory: '/state/tinyrack-tinest',
         files: files,
       );
 
@@ -269,13 +269,13 @@ void main() {
       expect(
         files.deleted,
         containsAll(<String>[
-          p.canonicalize(p.join('/state/tinyrack-coder', 'v2')),
-          p.canonicalize(p.join('/config/tinyrack-coder', 'v2')),
+          p.canonicalize(p.join('/state/tinyrack-tinest', 'v2')),
+          p.canonicalize(p.join('/config/tinyrack-tinest', 'v2')),
         ]),
       );
       expect(
         files.deleted,
-        isNot(contains(p.canonicalize(p.join('/state/tinyrack-coder', 'v3')))),
+        isNot(contains(p.canonicalize(p.join('/state/tinyrack-tinest', 'v3')))),
       );
       await expectLater(
         cleanup.erase(versions: const <int>{4}),
@@ -289,7 +289,7 @@ void main() {
     late Directory root;
 
     setUp(() async {
-      root = await Directory.systemTemp.createTemp('coder-data-reset-');
+      root = await Directory.systemTemp.createTemp('tinest-data-reset-');
     });
 
     tearDown(() => deleteWithRetry(root));
@@ -303,7 +303,7 @@ void main() {
         final configV4 = Directory(p.join(configRoot.path, 'v4'));
         await stateV4.create(recursive: true);
         await configV4.create(recursive: true);
-        await File(p.join(stateV4.path, 'coder.sqlite')).writeAsString('db');
+        await File(p.join(stateV4.path, 'tinest.sqlite')).writeAsString('db');
         await File(p.join(stateV4.path, 'daemon.lock')).writeAsString('');
         await Directory(p.join(stateV4.path, 'attachments')).create();
         await File(
@@ -313,7 +313,7 @@ void main() {
           p.join(configV4.path, 'secrets.json'),
         ).writeAsString('{}');
         await File(
-          p.join(configV4.path, 'agents', 'coder.md'),
+          p.join(configV4.path, 'agents', 'tinest.md'),
         ).create(recursive: true);
 
         await DaemonDataReset(
@@ -322,7 +322,7 @@ void main() {
         ).eraseAll();
 
         expect(
-          File(p.join(stateV4.path, 'coder.sqlite')).existsSync(),
+          File(p.join(stateV4.path, 'tinest.sqlite')).existsSync(),
           isFalse,
         );
         expect(File(p.join(stateV4.path, 'daemon.lock')).existsSync(), isFalse);
@@ -356,7 +356,7 @@ void main() {
         final state = Directory(p.join(root.path, 'locked'));
         final stateV4 = Directory(p.join(state.path, 'v4'));
         await stateV4.create(recursive: true);
-        await File(p.join(stateV4.path, 'coder.sqlite')).writeAsString('db');
+        await File(p.join(stateV4.path, 'tinest.sqlite')).writeAsString('db');
         final holder = await DaemonLockHolder.start(
           root: root,
           lockPath: p.join(stateV4.path, 'daemon.lock'),
@@ -377,7 +377,7 @@ void main() {
             ),
           );
           expect(
-            File(p.join(stateV4.path, 'coder.sqlite')).existsSync(),
+            File(p.join(stateV4.path, 'tinest.sqlite')).existsSync(),
             isTrue,
           );
         } finally {

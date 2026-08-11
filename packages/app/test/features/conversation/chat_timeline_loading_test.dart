@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/router_harness.dart';
 
 void main() {
@@ -25,14 +25,14 @@ void main() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'agent',
     worktreeId: checkout.id,
     title: 'Agent',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -50,7 +50,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[agent],
@@ -96,7 +96,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[agent],

@@ -2,16 +2,16 @@
 
 namespace {
 
-constexpr const wchar_t kMutexName[] = L"Local\\tinyrack-coder-single-instance";
-constexpr const wchar_t kRevealMessageName[] = L"TinyrackCoderRevealWindow";
+constexpr const wchar_t kMutexName[] = L"Local\\tinyrack-tinest-single-instance";
+constexpr const wchar_t kRevealMessageName[] = L"TinyrackTinestRevealWindow";
 
 }  // namespace
 
 SingleInstance::SingleInstance() {
   // Mirrors the Linux runner's escape hatch: an E2E shard owns an isolated
-  // daemon home, so a developer's running Coder must not take its launch over
+  // daemon home, so a developer's running Tinest must not take its launch over
   // and exit it before the Flutter engine starts.
-  if (::GetEnvironmentVariableW(L"TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES",
+  if (::GetEnvironmentVariableW(L"TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES",
                                 nullptr, 0) != 0) {
     is_primary_ = true;
     return;

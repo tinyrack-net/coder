@@ -9,7 +9,9 @@ void main() {
   test(
     'filesystem gateway canonicalizes, creates, filters, and limits',
     () async {
-      final created = await Directory.systemTemp.createTemp('coder-path-port-');
+      final created = await Directory.systemTemp.createTemp(
+        'tinest-path-port-',
+      );
       addTearDown(() => created.delete(recursive: true));
       // macOS puts the system temporary directory behind a /var symlink to
       // /private/var, and canonicalizing is the gateway's whole job, so the
@@ -40,7 +42,7 @@ void main() {
   test('filesystem gateway rejects a missing workspace', () {
     expect(
       () => const IoWorkspaceCanonicalizer().canonicalizeExistingDirectory(
-        p.join(Directory.systemTemp.path, 'coder-path-that-does-not-exist'),
+        p.join(Directory.systemTemp.path, 'tinest-path-that-does-not-exist'),
       ),
       throwsA(isA<FormatException>()),
     );
@@ -51,7 +53,7 @@ void main() {
     // adapter owes it exactly one exception type. A path that passes the
     // existence check and then cannot be resolved is the realistic race; a
     // dangling link reproduces it without one.
-    final root = Directory.systemTemp.createTempSync('coder-path-race-');
+    final root = Directory.systemTemp.createTempSync('tinest-path-race-');
     addTearDown(() => root.deleteSync(recursive: true));
     final target = Directory(p.join(root.path, 'target'))..createSync();
     final link = Link(p.join(root.path, 'link'))..createSync(target.path);

@@ -15,15 +15,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:termworld/termworld.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/provider_lifetime_recorder.dart';
 import '../../support/router_harness.dart';
 
 final _now = DateTime.utc(2026, 8, 11);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -32,11 +32,11 @@ WorktreeDto _worktree(String id, String branch) => WorktreeDto(
   id: id,
   workspaceId: _workspace.id,
   name: branch,
-  path: '/repos/coder-$id',
+  path: '/repos/tinest-$id',
   branch: branch,
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 
@@ -70,7 +70,7 @@ String _worktreeLocation(String worktreeId) => WorktreeRoute(
   worktreeId: worktreeId,
 ).location;
 
-FakeCoderApi _api() => FakeCoderApi(
+FakeTinestApi _api() => FakeTinestApi(
   workspaces: <WorkspaceDto>[_workspace],
   worktrees: <WorktreeDto>[
     _worktree('checkout-a', 'main'),

@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/workspace/presentation/widgets/directory_browser.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +38,7 @@ void main() {
       final setup = await fixture.connect(clientId: 'workspace-setup');
       addTearDown(setup.close);
 
-      await tester.pumpWidget(CoderApp(services: fixture.services));
+      await tester.pumpWidget(TinestApp(services: fixture.services));
       await tester.pumpAndSettle();
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
 
@@ -91,7 +91,7 @@ void main() {
         fixture.token,
       );
 
-      await tester.tap(find.byIcon(CoderIcons.back).first);
+      await tester.tap(find.byIcon(TinestIcons.back).first);
       await _pumpUntil(
         tester,
         find.byKey(const ValueKey('workspace-new-button')),
@@ -224,7 +224,7 @@ void main() {
         settings: AppSettings(embeddedDaemonPort: await reserveEphemeralPort()),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -263,7 +263,7 @@ void main() {
       expect(store.settings.embeddedDaemonPort, changedPort);
       await _pumpUntil(tester, find.textContaining('온라인'));
 
-      final toggle = find.widgetWithText(CoderSwitchRow, '내장 daemon');
+      final toggle = find.widgetWithText(TinestSwitchRow, '내장 daemon');
       await tester.tap(toggle);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '중지'));

@@ -71,7 +71,7 @@ repositories at exact 40-character commit SHAs, never from pub.dev and never
 from a moving ref. `dart run melos
 tinyrack-sources:check` enforces this against both the manifests and the
 lockfile. `dropwell` and `termworld` both live in
-`tinyrack-net/flutter-packages` and Coder pins them to the same merge SHA.
+`tinyrack-net/flutter-packages` and Tinest pins them to the same merge SHA.
 
 `cliweave`, `lua_tool_runtime`, and `ptyworld` all live in
 `tinyrack-net/dart-packages`, and CI checks that repository out **once** for

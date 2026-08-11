@@ -15,7 +15,7 @@ final class _FixedClock implements Clock {
 
 void main() {
   final now = DateTime.utc(2026, 8, 6);
-  late CoderDatabase database;
+  late TinestDatabase database;
 
   SessionDto session(
     String id, {
@@ -29,7 +29,7 @@ void main() {
     id: id,
     worktreeId: 'worktree',
     title: id,
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: parentSessionId == null
         ? SessionOrigin.manual
         : SessionOrigin.delegated,
@@ -44,7 +44,7 @@ void main() {
   );
 
   setUp(() async {
-    database = CoderDatabase.forTesting(
+    database = TinestDatabase.forTesting(
       NativeDatabase.memory(),
       clock: _FixedClock(now),
     );
@@ -64,7 +64,7 @@ void main() {
         name: 'Workspace',
         path: '/workspace',
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       ),
     );

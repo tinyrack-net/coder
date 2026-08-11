@@ -91,7 +91,7 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
         request,
         additionalHeaders: <String, String>{
           if (request.credential is OAuthCredential)
-            'originator': 'tinyrack_coder',
+            'originator': 'tinyrack_tinest',
           if (request.credential case OAuthCredential(:final accountId?))
             'ChatGPT-Account-ID': accountId,
         },

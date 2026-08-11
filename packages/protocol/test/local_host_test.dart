@@ -6,87 +6,87 @@ void main() {
     final directories = resolveLocalDaemonDirectories(
       environment: const _Environment(
         values: <String, String>{
-          'HOME': '/home/coder',
+          'HOME': '/home/tinest',
           'XDG_CONFIG_HOME': '/config',
           'XDG_STATE_HOME': '/state',
-          'TINYRACK_CODER_AGENTS_HOME': '/agents',
+          'TINYRACK_TINEST_AGENTS_HOME': '/agents',
         },
         linux: true,
       ),
     );
 
-    expect(directories.configDirectory, '/config/tinyrack-coder');
-    expect(directories.stateDirectory, '/state/tinyrack-coder');
+    expect(directories.configDirectory, '/config/tinyrack-tinest');
+    expect(directories.stateDirectory, '/state/tinyrack-tinest');
     expect(directories.userHomeDirectory, '/agents');
-    expect(directories.osHomeDirectory, '/home/coder');
+    expect(directories.osHomeDirectory, '/home/tinest');
   });
 
-  test('one Coder home override owns config and state', () {
+  test('one Tinest home override owns config and state', () {
     final directories = resolveLocalDaemonDirectories(
       environment: const _Environment(
         values: <String, String>{
-          'HOME': '/home/coder',
-          'TINYRACK_CODER_HOME': '/coder',
+          'HOME': '/home/tinest',
+          'TINYRACK_TINEST_HOME': '/tinest',
         },
         linux: true,
       ),
     );
 
-    expect(directories.configDirectory, '/coder');
-    expect(directories.stateDirectory, '/coder');
-    expect(directories.userHomeDirectory, '/home/coder');
+    expect(directories.configDirectory, '/tinest');
+    expect(directories.stateDirectory, '/tinest');
+    expect(directories.userHomeDirectory, '/home/tinest');
   });
 
   test('resolves macOS, Windows, and fallback conventions', () {
     final macOS = resolveLocalDaemonDirectories(
       environment: const _Environment(
-        values: <String, String>{'HOME': '/Users/coder'},
+        values: <String, String>{'HOME': '/Users/tinest'},
         macOS: true,
       ),
     );
     expect(
       macOS.configDirectory,
-      '/Users/coder/Library/Application Support/Tinyrack Coder',
+      '/Users/tinest/Library/Application Support/Tinest',
     );
     expect(macOS.stateDirectory, macOS.configDirectory);
 
     final windows = resolveLocalDaemonDirectories(
       environment: const _Environment(
         values: <String, String>{
-          'USERPROFILE': r'C:\Users\coder',
+          'USERPROFILE': r'C:\Users\tinest',
           'APPDATA': r'C:\Roaming',
           'LOCALAPPDATA': r'C:\Local',
         },
         windows: true,
       ),
     );
-    expect(windows.configDirectory, r'C:\Roaming\Tinyrack Coder');
-    expect(windows.stateDirectory, r'C:\Local\Tinyrack Coder');
+    expect(windows.configDirectory, r'C:\Roaming\Tinest');
+    expect(windows.stateDirectory, r'C:\Local\Tinest');
 
     final fallback = resolveLocalDaemonDirectories(
       environment: const _Environment(values: <String, String>{}),
     );
-    expect(fallback.configDirectory, './.config/tinyrack-coder');
-    expect(fallback.stateDirectory, './.local/state/tinyrack-coder');
+    expect(fallback.configDirectory, './.config/tinyrack-tinest');
+    expect(fallback.stateDirectory, './.local/state/tinyrack-tinest');
   });
 
   test('uses platform fallbacks when optional variables are absent', () {
     final linux = resolveLocalDaemonDirectories(
       environment: const _Environment(
-        values: <String, String>{'HOME': '/home/coder'},
+        values: <String, String>{'HOME': '/home/tinest'},
         linux: true,
       ),
     );
-    expect(linux.configDirectory, '/home/coder/.config/tinyrack-coder');
-    expect(linux.stateDirectory, '/home/coder/.local/state/tinyrack-coder');
+    expect(linux.configDirectory, '/home/tinest/.config/tinyrack-tinest');
+    expect(linux.stateDirectory, '/home/tinest/.local/state/tinyrack-tinest');
 
     final windows = resolveLocalDaemonDirectories(
       environment: const _Environment(
-        values: <String, String>{'USERPROFILE': r'C:\Users\coder'},
+        values: <String, String>{'USERPROFILE': r'C:\Users\tinest'},
         windows: true,
       ),
     );
-    expect(windows.configDirectory, r'C:\Users\coder\Tinyrack Coder');
+    expect(windows.configDirectory, r'C:\Users\tinest\Tinest');
     expect(windows.stateDirectory, windows.configDirectory);
   });
 

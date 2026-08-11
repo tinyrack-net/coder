@@ -10,7 +10,7 @@ void main() {
       final clock = _Clock(DateTime.utc(2026, 8, 8, 12));
       final service = RelayPairingService(
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 3),
         devices: MemoryRelayDeviceRepository(),
         clock: clock,
@@ -71,7 +71,7 @@ void main() {
       final terminated = <String>[];
       final service = RelayPairingService(
         serverId: 'daemon-1',
-        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 3),
         devices: repository,
         clock: _Clock(DateTime.utc(2026, 8, 8)),

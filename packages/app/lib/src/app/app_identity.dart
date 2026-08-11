@@ -7,13 +7,13 @@ abstract final class AppIdentity {
   static const String vendorName = 'Tinyrack';
 
   /// Short product name used by launchers and compact UI.
-  static const String name = 'Coder';
+  static const String name = 'Tinest';
 
-  /// Fully qualified product name used in explanatory UI.
-  static const String displayName = '$vendorName $name';
+  /// Official product name used in explanatory UI.
+  static const String displayName = name;
 
   /// Lowercase product name used by files and release targets.
-  static const String slug = 'coder';
+  static const String slug = 'tinest';
 
   /// Native application identifier.
   static const String applicationId = 'net.tinyrack.$slug';
@@ -31,13 +31,13 @@ abstract final class AppIdentity {
   static const String protocolNamespace = 'tinyrack.$slug';
 
   /// Prefix of environment variables owned by the product.
-  static const String environmentPrefix = 'TINYRACK_CODER';
+  static const String environmentPrefix = 'TINYRACK_TINEST';
 
   /// Native user configuration directory name.
   static const String configDirectoryName = 'tinyrack-$slug';
 
   /// Prefix used by device-local persisted application settings.
-  static const String storagePrefix = 'tinyrack_coder';
+  static const String storagePrefix = 'tinyrack_tinest';
 
   /// Repository-local configuration directory name.
   static const String projectConfigDirectoryName = '.$slug';

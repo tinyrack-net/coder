@@ -51,7 +51,7 @@ void main() {
         sourcePath: '/config/agents/$id.md',
       );
 
-  group('CoderApiProviderCliBackend', () {
+  group('TinestApiProviderCliBackend', () {
     test('forwards every command to the matching API method', () async {
       final api = _RecordingApi(<String, Future<Object?>>{
         'listProviderCatalog': Future<ProviderCatalogDto>.value(catalog()),
@@ -72,7 +72,7 @@ void main() {
         ),
         'refreshProviderCatalog': Future<ProviderCatalogDto>.value(catalog()),
       });
-      final backend = CoderApiProviderCliBackend(api);
+      final backend = TinestApiProviderCliBackend(api);
 
       expect((await backend.catalog()).definitions, isEmpty);
       expect(await backend.connections(), hasLength(1));
@@ -108,25 +108,25 @@ void main() {
     });
   });
 
-  group('CoderApiAgentCliBackend', () {
+  group('TinestApiAgentCliBackend', () {
     test('forwards list, validate, archive, and reset', () async {
       final api = _RecordingApi(<String, Future<Object?>>{
         'listAgentDefinitions': Future<List<AgentDefinitionDto>>.value(
-          <AgentDefinitionDto>[definition('coder')],
+          <AgentDefinitionDto>[definition('tinest')],
         ),
         'validateAgentDefinition': Future<AgentDefinitionDto>.value(
           definition('draft'),
         ),
         'resetAgentDefinition': Future<AgentDefinitionDto>.value(
-          definition('coder'),
+          definition('tinest'),
         ),
       });
-      final backend = CoderApiAgentCliBackend(api);
+      final backend = TinestApiAgentCliBackend(api);
 
       expect(await backend.list(), hasLength(1));
       expect((await backend.validate('draft', '# Draft')).id, 'draft');
       await backend.archive('old');
-      expect((await backend.reset('coder')).id, 'coder');
+      expect((await backend.reset('tinest')).id, 'tinest');
 
       expect(api.calls, <String>[
         'listAgentDefinitions',
@@ -150,7 +150,7 @@ void main() {
           definition('fresh'),
         ),
       });
-      final backend = CoderApiAgentCliBackend(api);
+      final backend = TinestApiAgentCliBackend(api);
 
       expect((await backend.apply('fresh', definition('fresh'))).id, 'fresh');
       expect(api.calls, <String>[
@@ -165,18 +165,21 @@ void main() {
         final api = _RecordingApi(<String, Future<Object?>>{
           'listAgentDefinitions': Future<List<AgentDefinitionDto>>.value(
             <AgentDefinitionDto>[
-              definition('coder', contentHash: 'stored-hash'),
+              definition('tinest', contentHash: 'stored-hash'),
             ],
           ),
           'updateAgentDefinition': Future<AgentDefinitionDto>.value(
-            definition('coder'),
+            definition('tinest'),
           ),
         });
-        final backend = CoderApiAgentCliBackend(api);
+        final backend = TinestApiAgentCliBackend(api);
 
         // The daemon rejects a blind write, so the adapter has to carry the
         // stored hash across from the listing rather than the local file.
-        await backend.apply('coder', definition('coder', contentHash: 'local'));
+        await backend.apply(
+          'tinest',
+          definition('tinest', contentHash: 'local'),
+        );
 
         expect(api.calls, <String>[
           'listAgentDefinitions',
@@ -194,10 +197,10 @@ void main() {
 }
 
 /// Forwards through [noSuchMethod] so the adapters can be checked without
-/// hand-writing the whole [CoderApi] surface.
+/// hand-writing the whole [TinestApi] surface.
 final class _RecordingApi
     implements
-        CoderApi,
+        TinestApi,
         WorkspacesApi,
         SessionsApi,
         AgentsApi,

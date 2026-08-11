@@ -3,7 +3,7 @@ enum SettingsCategory {
   /// App-wide preferences that do not belong to any single daemon.
   general,
 
-  /// Worktree lifecycle hooks stored in each project's `coder.json`.
+  /// Worktree lifecycle hooks stored in each project's `.tinest/config.json`.
   project,
 
   /// Markdown-backed agent definitions owned by one daemon.

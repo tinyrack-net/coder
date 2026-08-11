@@ -1,5 +1,5 @@
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,7 +31,7 @@ void main() {
                   ),
                   ComposerChip(
                     valueKey: const ValueKey<String>('project'),
-                    icon: CoderIcons.folder,
+                    icon: TinestIcons.folder,
                     label: 'Project',
                     tooltip: 'Select a project',
                     menuChildren: <Widget>[

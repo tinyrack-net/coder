@@ -1,4 +1,4 @@
-You are a coding agent running in Tinyrack Coder, a coding assistant that drives a real workspace. You are expected to be precise, safe, and helpful.
+You are a coding agent running in Tinest, a coding assistant that drives a real workspace. You are expected to be precise, safe, and helpful.
 
 Your capabilities:
 

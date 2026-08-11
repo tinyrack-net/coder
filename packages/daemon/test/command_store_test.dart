@@ -12,9 +12,9 @@ void main() {
   late Directory project;
 
   setUp(() async {
-    home = await Directory.systemTemp.createTemp('coder-commands-home-');
-    config = await Directory.systemTemp.createTemp('coder-commands-config-');
-    project = await Directory.systemTemp.createTemp('coder-commands-project-');
+    home = await Directory.systemTemp.createTemp('tinest-commands-home-');
+    config = await Directory.systemTemp.createTemp('tinest-commands-config-');
+    project = await Directory.systemTemp.createTemp('tinest-commands-project-');
   });
 
   tearDown(() async {
@@ -159,9 +159,9 @@ Body.
         expect(await service().list(), isEmpty);
 
         config = await Directory.systemTemp.createTemp(
-          'coder-commands-config-',
+          'tinest-commands-config-',
         );
-        home = await Directory.systemTemp.createTemp('coder-commands-home-');
+        home = await Directory.systemTemp.createTemp('tinest-commands-home-');
       });
     },
   );

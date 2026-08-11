@@ -30,8 +30,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
@@ -1548,7 +1548,7 @@ class _ComposerDropOverlayGoldenState
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+      appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
     ],
     child: _material(
       widget.mode,
@@ -1616,7 +1616,7 @@ Widget _composerState(
   Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage,
 }) => ProviderScope(
   overrides: [
-    appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+    appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
     attachmentInputProvider.overrideWithValue(null),
   ],
   child: _material(
@@ -1642,8 +1642,8 @@ Widget _composerState(
           hostId: 'server',
           definitions: const <AgentDefinitionDto>[
             AgentDefinitionDto(
-              id: 'coder',
-              name: 'Coder',
+              id: 'tinest',
+              name: 'Tinest',
               description: 'General-purpose coding agent',
               mode: AgentMode.primary,
               promptEnabled: true,
@@ -1659,12 +1659,12 @@ Widget _composerState(
               permissionMode: PermissionMode.ask,
               toolIds: <String>[],
               callableAgentIds: <String>[],
-              contentHash: 'coder-hash',
-              sourcePath: '/config/agents/coder.md',
+              contentHash: 'tinest-hash',
+              sourcePath: '/config/agents/tinest.md',
               isBuiltIn: true,
             ),
           ],
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           selection: const SessionModelSelectionDto(
             modelId: 'openai/gpt-5.6-sol',
           ),
@@ -1687,8 +1687,8 @@ Widget _sessionComposer(
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -1700,10 +1700,10 @@ Widget _sessionComposer(
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[checkout],
   );
@@ -1796,14 +1796,14 @@ Widget _directoryNewWorkspace(ThemeMode mode) {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(
         fakeAppServices(
-          FakeCoderApi(
+          FakeTinestApi(
             workspaces: <WorkspaceDto>[workspace],
             worktrees: <WorktreeDto>[checkout],
           ),
@@ -1818,7 +1818,7 @@ Widget _settings(ThemeMode mode) {
   final now = DateTime.utc(2026);
   const longModelId =
       'vendor/reasoning-model-with-an-extremely-long-identifier';
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     connections: <ProviderConnectionDto>[
       ProviderConnectionDto(
         id: 'openai',
@@ -1891,12 +1891,12 @@ Widget _settings(ThemeMode mode) {
 
 Widget _projectSettings(ThemeMode mode) {
   final api =
-      FakeCoderApi(
+      FakeTinestApi(
           workspaces: <WorkspaceDto>[
             WorkspaceDto(
               id: 'workspace',
-              name: 'coder',
-              rootPath: '/repos/coder',
+              name: 'tinest',
+              rootPath: '/repos/tinest',
               kind: WorkspaceKind.git,
               createdAt: DateTime.utc(2026, 8, 3),
             ),
@@ -1964,7 +1964,7 @@ Future<void> _revealAgentToolGroups(WidgetTester tester) async {
 }
 
 Widget _agentSettings(ThemeMode mode) {
-  final api = FakeCoderApi();
+  final api = FakeTinestApi();
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -1996,7 +1996,7 @@ Widget _mcpSettings(ThemeMode mode) {
     transport: McpTransportKind.stdio,
     command: './tools/mcp',
   );
-  final api = FakeCoderApi()
+  final api = FakeTinestApi()
     ..mcpServers['github'] = const McpServerStateDto(
       config: stdio,
       status: McpServerStatus.ready,
@@ -2022,7 +2022,7 @@ Widget _mcpSettings(ThemeMode mode) {
       config: project,
       status: McpServerStatus.ready,
       scope: McpConfigScope.project,
-      sourcePath: '/repos/coder/.mcp.json',
+      sourcePath: '/repos/tinest/.mcp.json',
       serverName: 'repo',
     );
   return ProviderScope(
@@ -2040,7 +2040,7 @@ Widget _mcpSettings(ThemeMode mode) {
 }
 
 Widget _skillSettings(ThemeMode mode) {
-  final api = FakeCoderApi();
+  final api = FakeTinestApi();
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(fakeAppServices(api)),
@@ -2109,8 +2109,8 @@ Widget _shell(
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -2121,10 +2121,10 @@ Widget _shell(
     path: workspace.rootPath,
     branch: 'main',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     workspaces: <WorkspaceDto>[workspace],
     worktrees: <WorktreeDto>[checkout],
   );
@@ -2211,7 +2211,7 @@ Widget _globalSettings(ThemeMode mode) {
         id: 'production',
         label: 'Production daemon',
         connections: directHostConnections(
-          Uri.parse('wss://coder.example.com/ws'),
+          Uri.parse('wss://tinest.example.com/ws'),
         ),
         autoConnect: false,
         createdAt: now,
@@ -2243,7 +2243,7 @@ final class _UnusedClients implements HostClientFactory {
   const _UnusedClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

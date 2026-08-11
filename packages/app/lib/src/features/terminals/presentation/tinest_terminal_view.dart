@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:termworld/termworld.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Applies the Coder design system and context-menu contract to termworld.
-final class CoderTerminalView extends StatefulWidget {
-  /// Creates a token-backed terminal viewport for Coder.
-  const CoderTerminalView({
+/// Applies the Tinest design system and context-menu contract to termworld.
+final class TinestTerminalView extends StatefulWidget {
+  /// Creates a token-backed terminal viewport for Tinest.
+  const TinestTerminalView({
     required this.terminal,
     required this.controller,
     this.contextMenuItems,
@@ -43,10 +43,10 @@ final class CoderTerminalView extends StatefulWidget {
   final bool readOnly;
 
   @override
-  State<CoderTerminalView> createState() => _CoderTerminalViewState();
+  State<TinestTerminalView> createState() => _TinestTerminalViewState();
 }
 
-final class _CoderTerminalViewState extends State<CoderTerminalView> {
+final class _TinestTerminalViewState extends State<TinestTerminalView> {
   final TRContextMenuController _menuController = TRContextMenuController();
 
   @override
@@ -56,7 +56,7 @@ final class _CoderTerminalViewState extends State<CoderTerminalView> {
   }
 
   @override
-  void didUpdateWidget(CoderTerminalView oldWidget) {
+  void didUpdateWidget(TinestTerminalView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.terminal == widget.terminal) return;
     oldWidget.terminal.attachCustomKeyEventHandler((_) => true);

@@ -7,7 +7,7 @@ import 'package:cliweave/cliweave.dart';
 ///
 /// They repeat on each command rather than sitting before the subcommand,
 /// which is what lets the scanner type them and propose completions for them.
-/// The `TINYRACK_CODER_*` environment variables remain the other way to set
+/// The `TINYRACK_TINEST_*` environment variables remain the other way to set
 /// them.
 final class DaemonConnectionFlags {
   /// Creates one resolved flag set.
@@ -28,9 +28,9 @@ final class DaemonConnectionFlags {
 }
 
 /// Builds the `--home`, `--listen`, and `--token` flag set.
-FlagSet<DaemonConnectionFlags, CoderCliContext> daemonConnectionFlagSet() {
+FlagSet<DaemonConnectionFlags, TinestCliContext> daemonConnectionFlagSet() {
   return FlagSet.one(
-        ParsedFlag.optional<String, CoderCliContext>(
+        ParsedFlag.optional<String, TinestCliContext>(
           name: 'home',
           brief: 'Configuration directory holding v4/secrets.json',
           parse: stringParser,
@@ -38,7 +38,7 @@ FlagSet<DaemonConnectionFlags, CoderCliContext> daemonConnectionFlagSet() {
         ),
       )
       .and(
-        ParsedFlag.optional<String, CoderCliContext>(
+        ParsedFlag.optional<String, TinestCliContext>(
           name: 'listen',
           brief: 'Daemon address as host:port',
           parse: stringParser,
@@ -46,7 +46,7 @@ FlagSet<DaemonConnectionFlags, CoderCliContext> daemonConnectionFlagSet() {
         ),
       )
       .and(
-        ParsedFlag.optional<String, CoderCliContext>(
+        ParsedFlag.optional<String, TinestCliContext>(
           name: 'token',
           brief: 'Daemon bearer token',
           parse: stringParser,
@@ -80,21 +80,21 @@ final class DaemonConnectionException implements Exception {
 /// Connects to the daemon addressed by [flags], the environment, or defaults.
 ///
 /// The caller owns the returned client and must close it.
-Future<CoderClient> connectDaemon(
-  CoderCliContext context,
+Future<TinestClient> connectDaemon(
+  TinestCliContext context,
   DaemonConnectionFlags flags, {
-  String clientId = 'coder-cli',
+  String clientId = 'tinest-cli',
 }) async {
   final environment = context.environment;
   final configDirectory = flags.home ?? context.directories.configDirectory;
   final (host, port) = parseLocalDaemonListen(
     flags.listen ??
-        environment['TINYRACK_CODER_LISTEN'] ??
+        environment['TINYRACK_TINEST_LISTEN'] ??
         defaultLocalDaemonListen,
   );
   final token =
       flags.token ??
-      environment['TINYRACK_CODER_TOKEN'] ??
+      environment['TINYRACK_TINEST_TOKEN'] ??
       await readLocalDaemonBearerToken(configDirectory);
   if (token == null) {
     throw DaemonConnectionException(
@@ -113,9 +113,9 @@ Future<CoderClient> connectDaemon(
 
 /// Runs [body] against a connected daemon and always closes the client.
 Future<void> withDaemon(
-  CoderCliContext context,
+  TinestCliContext context,
   DaemonConnectionFlags flags,
-  Future<int> Function(CoderClient client) body,
+  Future<int> Function(TinestClient client) body,
 ) async {
   final client = await connectDaemon(context, flags);
   try {

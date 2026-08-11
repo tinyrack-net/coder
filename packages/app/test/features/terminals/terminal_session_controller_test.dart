@@ -11,7 +11,7 @@ import 'package:protocol/protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 import 'package:termworld/termworld.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 const _terminal = TerminalDto(
   id: 'terminal-1',
@@ -40,10 +40,10 @@ Future<void> _settle() async {
   }
 }
 
-({ProviderContainer container, FakeCoderApi api}) _harness({
+({ProviderContainer container, FakeTinestApi api}) _harness({
   Exception? attachError,
 }) {
-  final api = FakeCoderApi(
+  final api = FakeTinestApi(
     terminals: const <TerminalDto>[_terminal],
     terminalAttachError: attachError,
   );

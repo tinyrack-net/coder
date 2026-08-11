@@ -10,7 +10,7 @@ import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -545,7 +545,7 @@ void main() {
       final plan = find.byType(ChatPlanCard);
       final marker = find.descendant(
         of: plan,
-        matching: find.byIcon(CoderIcons.success),
+        matching: find.byIcon(TinestIcons.success),
       );
       final label = find.descendant(
         of: plan,
@@ -1278,7 +1278,7 @@ Closing paragraph.
       );
       final copy = find.descendant(
         of: block,
-        matching: find.byIcon(CoderIcons.copy),
+        matching: find.byIcon(TinestIcons.copy),
       );
       expect(copy, findsOneWidget);
       await tester.tap(copy);

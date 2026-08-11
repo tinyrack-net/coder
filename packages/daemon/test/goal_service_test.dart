@@ -53,14 +53,14 @@ final class _Runtime implements SessionTurnPort {
 
 void main() {
   final now = DateTime.utc(2026, 8, 8);
-  late CoderDatabase database;
+  late TinestDatabase database;
   late _Clock clock;
   late SessionGoalService service;
   late List<OutboundNotification> events;
 
   setUp(() async {
     clock = _Clock(now);
-    database = CoderDatabase.forTesting(
+    database = TinestDatabase.forTesting(
       NativeDatabase.memory(),
       clock: clock,
     );
@@ -81,7 +81,7 @@ void main() {
         name: 'Workspace',
         path: '/workspace',
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       ),
     );
@@ -90,7 +90,7 @@ void main() {
         id: 'root',
         worktreeId: 'worktree',
         title: 'Root',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
         createdAt: now,

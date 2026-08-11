@@ -8,9 +8,9 @@ void main() {
   test(
     'restart interrupts running turns and cancels pending approvals',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-recovery-');
-      final databasePath = '${home.path}${Platform.pathSeparator}coder.sqlite';
-      var database = CoderDatabase(databasePath);
+      final home = await Directory.systemTemp.createTemp('tinest-recovery-');
+      final databasePath = '${home.path}${Platform.pathSeparator}tinest.sqlite';
+      var database = TinestDatabase(databasePath);
       final now = DateTime.now().toUtc();
       await database.workspaceDao.register(
         WorkspaceDto(
@@ -28,7 +28,7 @@ void main() {
           name: 'Workspace',
           path: home.path,
           kind: WorktreeKind.directory,
-          isCoderOwned: false,
+          isTinestOwned: false,
           createdAt: now,
         ),
       );
@@ -37,7 +37,7 @@ void main() {
           id: 'agent',
           worktreeId: 'worktree',
           title: 'Agent',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           origin: SessionOrigin.manual,
           status: SessionStatus.running,
           activeTurnId: 'turn',
@@ -86,7 +86,7 @@ void main() {
       );
       await database.close();
 
-      database = CoderDatabase(databasePath);
+      database = TinestDatabase(databasePath);
       await database.runtimeDao.recoverInterruptedRuns();
       final agent = await database.sessionDao.getById('agent');
       final turn = await (database.select(
@@ -112,10 +112,10 @@ void main() {
   );
 
   test('a question is answered once and only while it is pending', () async {
-    final home = await Directory.systemTemp.createTemp('coder-question-');
+    final home = await Directory.systemTemp.createTemp('tinest-question-');
     addTearDown(() => home.delete(recursive: true));
-    final database = CoderDatabase(
-      '${home.path}${Platform.pathSeparator}coder.sqlite',
+    final database = TinestDatabase(
+      '${home.path}${Platform.pathSeparator}tinest.sqlite',
     );
     addTearDown(database.close);
     final now = DateTime.now().toUtc();
@@ -135,7 +135,7 @@ void main() {
         name: 'Workspace',
         path: home.path,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       ),
     );
@@ -144,7 +144,7 @@ void main() {
         id: 'agent',
         worktreeId: 'worktree',
         title: 'Agent',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.running,
         activeTurnId: 'turn',

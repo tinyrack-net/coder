@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/skills/application/skills_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,7 +61,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact =
-            constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+            constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
         if (compact) {
           return Column(
             children: <Widget>[
@@ -155,7 +155,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
         : selected == null
         ? SettingsEmptyState(
             title: AppLocalizations.of(context).skillSettingsSelectSkill,
-            icon: const Icon(CoderIcons.sparkle),
+            icon: const Icon(TinestIcons.sparkle),
           )
         : _SkillEditor(
             key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
@@ -188,7 +188,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
       Row(
         children: <Widget>[
           SizedBox(
-            width: CoderLayoutMetrics.settingsCollectionWidth,
+            width: TinestLayoutMetrics.settingsCollectionWidth,
             child: Column(
               children: <Widget>[
                 _ProjectSelector(
@@ -210,7 +210,7 @@ class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
                 detail ??
                 SettingsEmptyState(
                   title: AppLocalizations.of(context).skillSettingsSelectSkill,
-                  icon: const Icon(CoderIcons.sparkle),
+                  icon: const Icon(TinestIcons.sparkle),
                 ),
           ),
         ],
@@ -309,7 +309,7 @@ class _SkillList extends ConsumerWidget {
               appearance: TRAppearance.ghost,
               label: l10n.skillSettingsAdd,
               onPressed: onCreate,
-              icon: const Icon(CoderIcons.add),
+              icon: const Icon(TinestIcons.add),
             ),
           ],
         ),
@@ -329,7 +329,7 @@ class _SkillList extends ConsumerWidget {
                           message: skill.isShadowed
                               ? l10n.skillSettingsShadowed
                               : l10n.skillSettingsStale,
-                          child: const Icon(CoderIcons.warning),
+                          child: const Icon(TinestIcons.warning),
                         )
                       : null,
                   control: TRSwitch(
@@ -435,7 +435,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                         id: 'skill-copy-path',
                       ),
                 ),
-                icon: const Icon(CoderIcons.copy),
+                icon: const Icon(TinestIcons.copy),
               ),
             if (skill.isEditable)
               TRIconButton(
@@ -443,7 +443,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                 appearance: TRAppearance.ghost,
                 label: l10n.skillSettingsDelete,
                 onPressed: editable ? _delete : null,
-                icon: const Icon(CoderIcons.delete),
+                icon: const Icon(TinestIcons.delete),
               ),
             if (skill.isEditable)
               TRButton(
@@ -470,7 +470,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                           if (!skill.isEditable)
                             TRAlert(
                               title: TRText.inherit(l10n.skillSettingsReadOnly),
-                              icon: const Icon(CoderIcons.lock),
+                              icon: const Icon(TinestIcons.lock),
                             ),
                           if (!skill.isEditable && skill.diagnostics.isNotEmpty)
                             const SizedBox(height: TRSpacing.small),
@@ -484,13 +484,13 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                                     .map((diagnostic) => diagnostic.message)
                                     .join('\n'),
                               ),
-                              icon: const Icon(CoderIcons.warning),
+                              icon: const Icon(TinestIcons.warning),
                               variant: TRStatusVariant.warning,
                             ),
                         ],
                       ),
                 children: <Widget>[
-                  CoderSwitchRow(
+                  TinestSwitchRow(
                     key: ValueKey<String>('skill-enabled-${skill.id}'),
                     value: skill.isEnabled,
                     onChanged: skill.isMandatory
@@ -556,7 +556,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     ),
                   for (final resource in skill.resources)
                     SettingsRow(
-                      leading: const Icon(CoderIcons.file),
+                      leading: const Icon(TinestIcons.file),
                       title: TRText.inherit(resource.path),
                       control: TRText.inherit('${resource.sizeBytes}'),
                     ),
@@ -788,7 +788,7 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
                   TRSelectFormField<SkillSource>(
                     initialValue: _source,
                     label: l10n.skillSettingsSource,
-                    width: CoderLayoutMetrics.settingsContentMaxWidth,
+                    width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: sources
                         .map(
                           (value) => TRSelectItem<SkillSource>(

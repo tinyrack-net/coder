@@ -1,5 +1,5 @@
 name: relay_protocol
-description: End-to-end encrypted relay wire contracts for Tinyrack Coder.
+description: End-to-end encrypted relay wire contracts for Tinest.
 version: 0.1.0
 publish_to: none
 resolution: workspace

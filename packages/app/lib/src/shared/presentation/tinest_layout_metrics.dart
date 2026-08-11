@@ -1,7 +1,7 @@
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Product layout measurements composed from public Tinyrack design tokens.
-abstract final class CoderLayoutMetrics {
+abstract final class TinestLayoutMetrics {
   /// Width below which list-detail surfaces show one pane at a time.
   static const double compactBreakpoint =
       TRMeasurements.measureXl + TRMeasurements.measureXl;

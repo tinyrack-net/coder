@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Tinest Workspace"
+  short_description: "Run the correct Tinest test and release gates"
+  default_prompt: "Use $verify-tinest-workspace to select and run the correct verification for this change."

@@ -1,12 +1,12 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
-import 'package:app/src/app/coder_app.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/app/version.g.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/desktop/presentation/desktop_title_bar.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -14,8 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
 import '../../support/fake_desktop_ports.dart';
+import '../../support/fake_tinest_api.dart';
 
 void main() {
   ({
@@ -26,7 +26,7 @@ void main() {
     MemoryAppStore store,
   })
   build({
-    FakeCoderApi? api,
+    FakeTinestApi? api,
     bool connected = false,
     DesktopWindowChrome chrome = DesktopWindowChrome.custom,
   }) {
@@ -40,9 +40,9 @@ void main() {
       ),
     );
     return (
-      app: CoderApp(
+      app: TinestApp(
         services: fakeAppServices(
-          api ?? FakeCoderApi(),
+          api ?? FakeTinestApi(),
           connected: connected,
           store: store,
         ),
@@ -113,9 +113,9 @@ void main() {
         tester.element(borderFinder).tinyrackTheme.border,
       );
       for (final entry in <String, IconData>{
-        'desktop-title-bar-minimize': CoderIcons.minimize,
-        'desktop-title-bar-maximize': CoderIcons.maximize,
-        'desktop-title-bar-close': CoderIcons.close,
+        'desktop-title-bar-minimize': TinestIcons.minimize,
+        'desktop-title-bar-maximize': TinestIcons.maximize,
+        'desktop-title-bar-close': TinestIcons.close,
       }.entries) {
         expect(
           tester
@@ -159,7 +159,7 @@ void main() {
               ),
             )
             .icon,
-        CoderIcons.restoreWindow,
+        TinestIcons.restoreWindow,
       );
 
       await tester.tap(
@@ -394,13 +394,13 @@ void main() {
       final now = DateTime.utc(2026, 8, 5);
       final workspace = WorkspaceDto(
         id: 'workspace',
-        name: 'Coder',
-        rootPath: '/repos/coder',
+        name: 'Tinest',
+        rootPath: '/repos/tinest',
         kind: WorkspaceKind.git,
         createdAt: now,
       );
       final harness = build(
-        api: FakeCoderApi(
+        api: FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
           worktrees: <WorktreeDto>[
             WorktreeDto(
@@ -410,7 +410,7 @@ void main() {
               path: workspace.rootPath,
               branch: 'main',
               kind: WorktreeKind.checkout,
-              isCoderOwned: false,
+              isTinestOwned: false,
               createdAt: now,
             ),
           ],

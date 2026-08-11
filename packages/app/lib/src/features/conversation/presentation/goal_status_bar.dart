@@ -1,5 +1,5 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -96,20 +96,20 @@ class GoalStatusBar extends StatelessWidget {
                       resumable ? GoalStatus.active : GoalStatus.paused,
                     ),
                     icon: Icon(
-                      resumable ? CoderIcons.resume : CoderIcons.paused,
+                      resumable ? TinestIcons.resume : TinestIcons.paused,
                     ),
                   ),
                 TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: l10n.goalEdit,
                   onPressed: onEdit,
-                  icon: const Icon(CoderIcons.edit),
+                  icon: const Icon(TinestIcons.edit),
                 ),
                 TRIconButton(
                   appearance: TRAppearance.ghost,
                   label: l10n.goalClear,
                   onPressed: onClear,
-                  icon: const Icon(CoderIcons.delete),
+                  icon: const Icon(TinestIcons.delete),
                 ),
               ],
             ),

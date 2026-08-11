@@ -11,7 +11,7 @@ permissions:
 env:
   FLUTTER_VERSION: 3.44.8
   TINYRACK_DART_PACKAGES_REF: e07124e15bd7495818bd34ed655f39e5a4bcc35b
-  RELAY_IMAGE: ghcr.io/tinyrack-net/coder-relay
+  RELAY_IMAGE: ghcr.io/tinyrack-net/tinest-relay
 
 jobs:
   publish-relay:
@@ -54,18 +54,18 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Build the native smoke image
-        run: docker build --file packages/relay/Dockerfile --tag coder-relay:smoke .
+        run: docker build --file packages/relay/Dockerfile --tag tinest-relay:smoke .
       - name: Smoke the built relay and graceful shutdown
         shell: bash
         run: |
           set -euo pipefail
           cleanup() {
-            docker rm --force coder-relay-smoke >/dev/null 2>&1 || true
+            docker rm --force tinest-relay-smoke >/dev/null 2>&1 || true
             rm -f relay-smoke.ready relay-smoke.log
           }
           trap cleanup EXIT
-          docker run --detach --name coder-relay-smoke \
-            --publish 127.0.0.1:18080:8080 coder-relay:smoke
+          docker run --detach --name tinest-relay-smoke \
+            --publish 127.0.0.1:18080:8080 tinest-relay:smoke
           for _ in $(seq 1 40); do
             if curl --fail --silent http://127.0.0.1:18080/health/ready \
               >/dev/null; then
@@ -82,10 +82,10 @@ jobs:
             sleep 0.25
           done
           test -f relay-smoke.ready
-          docker stop --time 5 coder-relay-smoke >/dev/null
+          docker stop --time 5 tinest-relay-smoke >/dev/null
           wait "$smoke_pid"
           test "$(docker inspect --format '{{.State.ExitCode}}' \
-            coder-relay-smoke)" = "0"
+            tinest-relay-smoke)" = "0"
 
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
@@ -104,8 +104,8 @@ jobs:
             type=raw,value=v${{ steps.version.outputs.version }}
             type=raw,value=latest
           labels: |
-            org.opencontainers.image.title=Tinyrack Coder Relay
-            org.opencontainers.image.description=Opaque WebSocket relay for Tinyrack Coder
+            org.opencontainers.image.title=Tinest Relay
+            org.opencontainers.image.description=Opaque WebSocket relay for Tinest
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=v${{ steps.version.outputs.version }}

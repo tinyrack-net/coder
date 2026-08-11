@@ -3,7 +3,7 @@ import 'package:agent/src/prompts/prompt_assets.g.dart';
 
 /// The two axes upstream describes separately, resolved for one mode.
 ///
-/// Coder collapses them into a single [AgentPermissionMode], so the mapping
+/// Tinest collapses them into a single [AgentPermissionMode], so the mapping
 /// lives here rather than in the templates: the model still reads a sandbox
 /// sentence and an approval-policy section, as it does upstream.
 typedef _Permissions = ({String sandbox, String approval, bool writableRoot});

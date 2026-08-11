@@ -300,7 +300,7 @@ AgentToolScope _scope({
   AgentToolSurfaceMode toolSurfaceMode = AgentToolSurfaceMode.direct,
 }) => AgentToolScope(
   session: const AgentSessionContext(id: 'session-1'),
-  definition: const AgentDefinitionContext(id: 'coder'),
+  definition: const AgentDefinitionContext(id: 'tinest'),
   selectedToolIds: selected,
   workspaceRoot: '/workspace',
   turnId: 'turn-1',

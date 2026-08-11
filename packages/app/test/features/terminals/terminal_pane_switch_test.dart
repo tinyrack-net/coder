@@ -9,14 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 final _now = DateTime.utc(2026, 8, 3);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -24,11 +24,11 @@ final _worktree = WorktreeDto(
   id: 'checkout',
   workspaceId: 'workspace',
   name: 'main',
-  path: '/repos/coder',
+  path: '/repos/tinest',
   branch: 'main',
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 
@@ -54,7 +54,7 @@ void main() {
   testWidgets('switching terminal tabs attaches the terminal switched to', (
     tester,
   ) async {
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[_workspace],
       worktrees: <WorktreeDto>[_worktree],
       terminals: <TerminalDto>[

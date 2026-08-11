@@ -1420,7 +1420,7 @@ as DateTime,
 /// @nodoc
 mixin _$WorktreeDto {
 
- String get id; String get workspaceId; String get name; String get path; WorktreeKind get kind; bool get isCoderOwned; DateTime get createdAt; String? get branch; String? get head; DateTime? get archivedAt;
+ String get id; String get workspaceId; String get name; String get path; WorktreeKind get kind; bool get isTinestOwned; DateTime get createdAt; String? get branch; String? get head; DateTime? get archivedAt;
 /// Create a copy of WorktreeDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1433,16 +1433,16 @@ $WorktreeDtoCopyWith<WorktreeDto> get copyWith => _$WorktreeDtoCopyWithImpl<Work
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isCoderOwned, isCoderOwned) || other.isCoderOwned == isCoderOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isTinestOwned, isTinestOwned) || other.isTinestOwned == isTinestOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isCoderOwned,createdAt,branch,head,archivedAt);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isTinestOwned,createdAt,branch,head,archivedAt);
 
 @override
 String toString() {
-  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isCoderOwned: $isCoderOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
+  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isTinestOwned: $isTinestOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
 }
 
 
@@ -1453,7 +1453,7 @@ abstract mixin class $WorktreeDtoCopyWith<$Res>  {
   factory $WorktreeDtoCopyWith(WorktreeDto value, $Res Function(WorktreeDto) _then) = _$WorktreeDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String workspaceId, String name, String path, WorktreeKind kind, bool isCoderOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
+ String id, String workspaceId, String name, String path, WorktreeKind kind, bool isTinestOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
 });
 
 
@@ -1470,14 +1470,14 @@ class _$WorktreeDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorktreeDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isCoderOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isTinestOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
-as WorktreeKind,isCoderOwned: null == isCoderOwned ? _self.isCoderOwned : isCoderOwned // ignore: cast_nullable_to_non_nullable
+as WorktreeKind,isTinestOwned: null == isTinestOwned ? _self.isTinestOwned : isTinestOwned // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,branch: freezed == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
 as String?,head: freezed == head ? _self.head : head // ignore: cast_nullable_to_non_nullable
@@ -1567,10 +1567,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isTinestOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WorktreeDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isTinestOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
   return orElse();
 
 }
@@ -1588,10 +1588,10 @@ return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isTinestOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)  $default,) {final _that = this;
 switch (_that) {
 case _WorktreeDto():
-return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isTinestOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1608,10 +1608,10 @@ return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isCoderOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String workspaceId,  String name,  String path,  WorktreeKind kind,  bool isTinestOwned,  DateTime createdAt,  String? branch,  String? head,  DateTime? archivedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _WorktreeDto() when $default != null:
-return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isCoderOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
+return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_that.isTinestOwned,_that.createdAt,_that.branch,_that.head,_that.archivedAt);case _:
   return null;
 
 }
@@ -1623,7 +1623,7 @@ return $default(_that.id,_that.workspaceId,_that.name,_that.path,_that.kind,_tha
 @JsonSerializable()
 
 class _WorktreeDto implements WorktreeDto {
-  const _WorktreeDto({required this.id, required this.workspaceId, required this.name, required this.path, required this.kind, required this.isCoderOwned, required this.createdAt, this.branch, this.head, this.archivedAt});
+  const _WorktreeDto({required this.id, required this.workspaceId, required this.name, required this.path, required this.kind, required this.isTinestOwned, required this.createdAt, this.branch, this.head, this.archivedAt});
   factory _WorktreeDto.fromJson(Map<String, dynamic> json) => _$WorktreeDtoFromJson(json);
 
 @override final  String id;
@@ -1631,7 +1631,7 @@ class _WorktreeDto implements WorktreeDto {
 @override final  String name;
 @override final  String path;
 @override final  WorktreeKind kind;
-@override final  bool isCoderOwned;
+@override final  bool isTinestOwned;
 @override final  DateTime createdAt;
 @override final  String? branch;
 @override final  String? head;
@@ -1650,16 +1650,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isCoderOwned, isCoderOwned) || other.isCoderOwned == isCoderOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorktreeDto&&(identical(other.id, id) || other.id == id)&&(identical(other.workspaceId, workspaceId) || other.workspaceId == workspaceId)&&(identical(other.name, name) || other.name == name)&&(identical(other.path, path) || other.path == path)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isTinestOwned, isTinestOwned) || other.isTinestOwned == isTinestOwned)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.head, head) || other.head == head)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isCoderOwned,createdAt,branch,head,archivedAt);
+int get hashCode => Object.hash(runtimeType,id,workspaceId,name,path,kind,isTinestOwned,createdAt,branch,head,archivedAt);
 
 @override
 String toString() {
-  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isCoderOwned: $isCoderOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
+  return 'WorktreeDto(id: $id, workspaceId: $workspaceId, name: $name, path: $path, kind: $kind, isTinestOwned: $isTinestOwned, createdAt: $createdAt, branch: $branch, head: $head, archivedAt: $archivedAt)';
 }
 
 
@@ -1670,7 +1670,7 @@ abstract mixin class _$WorktreeDtoCopyWith<$Res> implements $WorktreeDtoCopyWith
   factory _$WorktreeDtoCopyWith(_WorktreeDto value, $Res Function(_WorktreeDto) _then) = __$WorktreeDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String workspaceId, String name, String path, WorktreeKind kind, bool isCoderOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
+ String id, String workspaceId, String name, String path, WorktreeKind kind, bool isTinestOwned, DateTime createdAt, String? branch, String? head, DateTime? archivedAt
 });
 
 
@@ -1687,14 +1687,14 @@ class __$WorktreeDtoCopyWithImpl<$Res>
 
 /// Create a copy of WorktreeDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isCoderOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? workspaceId = null,Object? name = null,Object? path = null,Object? kind = null,Object? isTinestOwned = null,Object? createdAt = null,Object? branch = freezed,Object? head = freezed,Object? archivedAt = freezed,}) {
   return _then(_WorktreeDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,workspaceId: null == workspaceId ? _self.workspaceId : workspaceId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
-as WorktreeKind,isCoderOwned: null == isCoderOwned ? _self.isCoderOwned : isCoderOwned // ignore: cast_nullable_to_non_nullable
+as WorktreeKind,isTinestOwned: null == isTinestOwned ? _self.isTinestOwned : isTinestOwned // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,branch: freezed == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
 as String?,head: freezed == head ? _self.head : head // ignore: cast_nullable_to_non_nullable

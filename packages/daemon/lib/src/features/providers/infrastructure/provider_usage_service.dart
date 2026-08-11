@@ -8,7 +8,7 @@ import 'package:protocol/protocol.dart';
 
 /// Lazily reads provider subscription quota with bounded caching.
 final class ProviderUsageService {
-  /// Creates a provider usage service over Coder-owned connections only.
+  /// Creates a provider usage service over Tinest-owned connections only.
   factory ProviderUsageService({
     required ProviderRepository repository,
     required CredentialRepository credentials,

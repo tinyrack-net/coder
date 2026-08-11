@@ -3,7 +3,7 @@ import 'package:app/main_desktop.dart' as desktop_entry;
 import 'package:app/main_mobile.dart' as mobile_entry;
 import 'package:app/main_web.dart' as web_entry;
 import 'package:app/src/app/app_identity.dart';
-import 'package:app/src/app/coder_app.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_export_web.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_web.dart';
 import 'package:app/src/features/desktop/application/desktop_startup.dart';
@@ -15,8 +15,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../support/fake_coder_api.dart';
 import '../support/fake_desktop_ports.dart';
+import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
@@ -44,12 +44,12 @@ void main() {
   testWidgets('desktop and mobile runners accept test services', (
     tester,
   ) async {
-    final desktopApi = FakeCoderApi(
+    final desktopApi = FakeTinestApi(
       workspaces: <WorkspaceDto>[
         WorkspaceDto(
           id: 'workspace',
-          name: 'Coder',
-          rootPath: '/repos/coder',
+          name: 'Tinest',
+          rootPath: '/repos/tinest',
           kind: WorkspaceKind.git,
           createdAt: DateTime.utc(2026, 8, 3),
         ),
@@ -69,27 +69,27 @@ void main() {
       AppIdentity.displayName,
     );
     // The injected daemon names the workspace row it serves.
-    expect(find.text('Test daemon · /repos/coder'), findsOneWidget);
+    expect(find.text('Test daemon · /repos/tinest'), findsOneWidget);
     // The desktop runner is resident: it owns a tray and swallows the close.
     expect(window.preparedHidden, isFalse);
     expect(window.preventingClose, isTrue);
     expect(tray.installs, 1);
 
-    final mobileApi = FakeCoderApi();
+    final mobileApi = FakeTinestApi();
     await mobile_entry.runMobileApp(
       services: fakeAppServices(mobileApi),
     );
     // The gate paints its splash first, so the app arrives a frame after the
     // bootstrap future resolves rather than in the first pump.
     await tester.pumpAndSettle();
-    expect(find.byType(CoderApp), findsOneWidget);
+    expect(find.byType(TinestApp), findsOneWidget);
   });
 
   testWidgets('the web runner starts remote-only', (tester) async {
-    await web_entry.runWebApp(services: fakeAppServices(FakeCoderApi()));
+    await web_entry.runWebApp(services: fakeAppServices(FakeTinestApi()));
     await tester.pumpAndSettle();
 
-    expect(find.byType(CoderApp), findsOneWidget);
+    expect(find.byType(TinestApp), findsOneWidget);
   });
 
   test('the web attachment adapters replace their native counterparts', () {
@@ -114,7 +114,7 @@ void main() {
       final window = FakeDesktopWindow();
       final tray = FakeTrayIcon();
       await desktop_entry.runDesktopApp(
-        services: fakeAppServices(FakeCoderApi(), store: store),
+        services: fakeAppServices(FakeTinestApi(), store: store),
         arguments: const <String>[startMinimizedFlag],
         window: window,
         tray: tray,

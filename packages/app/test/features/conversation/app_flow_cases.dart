@@ -4,8 +4,8 @@ void _registerConversationAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -17,14 +17,14 @@ void _registerConversationAppFlows() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   SessionDto session(String id) => SessionDto(
     id: id,
     worktreeId: checkout.id,
     title: 'Session $id',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -37,7 +37,7 @@ void _registerConversationAppFlows() {
         status: SessionStatus.running,
         permissionMode: PermissionMode.ask,
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[running],
@@ -80,7 +80,7 @@ void _registerConversationAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       );
@@ -174,12 +174,12 @@ void _registerConversationAppFlows() {
       // It used to be fired and forgotten: the chip snapped back with nothing
       // said and the failure escaped as an unhandled asynchronous error.
       final api =
-          FakeCoderApi(
+          FakeTinestApi(
               workspaces: <WorkspaceDto>[workspace],
               worktrees: <WorktreeDto>[checkout],
               agents: <SessionDto>[planning],
             )
-            ..sessionUpdateError = const CoderClientException(
+            ..sessionUpdateError = const TinestClientException(
               'Cannot change the settings while a turn is running.',
               code: RpcErrorCodes.sessionTurnActive,
             );
@@ -213,7 +213,7 @@ void _registerConversationAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final planning = session('planning').copyWith(mode: SessionMode.plan);
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[planning],
@@ -306,7 +306,7 @@ void _registerConversationAppFlows() {
         data: const <String, dynamic>{'text': 'Inspect this'},
         createdAt: now,
       );
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -397,7 +397,7 @@ void _registerConversationAppFlows() {
         status: UserQuestionStatus.pending,
         createdAt: now,
       );
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       Future<void> pump() => tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -500,7 +500,7 @@ void _registerConversationAppFlows() {
         createdAt: now,
         updatedAt: now,
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[agent],
@@ -630,7 +630,7 @@ void _registerConversationAppFlows() {
         status: UserQuestionStatus.pending,
         createdAt: now,
       );
-      final api = FakeCoderApi(agents: <SessionDto>[agent]);
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -685,7 +685,7 @@ void _registerConversationAppFlows() {
       await tester.pumpAndSettle();
       expect(find.text('Which store should the cache use?'), findsNothing);
       expect(find.text('Which theme should the editor use?'), findsOneWidget);
-      expect(find.byIcon(CoderIcons.check), findsOneWidget);
+      expect(find.byIcon(TinestIcons.check), findsOneWidget);
 
       await tester.tap(find.text('직접 입력'));
       await tester.pumpAndSettle();
@@ -705,7 +705,7 @@ void _registerConversationAppFlows() {
       await tester.pumpAndSettle();
 
       expect(find.text('How should changes be reviewed?'), findsOneWidget);
-      expect(find.byIcon(CoderIcons.check), findsNWidgets(2));
+      expect(find.byIcon(TinestIcons.check), findsNWidgets(2));
       expect(find.widgetWithText(TRButton, '답변'), findsOneWidget);
       expect(tester.widget<TRButton>(primary).onPressed, isNull);
 

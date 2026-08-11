@@ -129,7 +129,7 @@ class ToastMessenger {
   /// A daemon failure already carries a written explanation; anything else has
   /// only its own description, which at least names what went wrong.
   String _describe(Object error) => switch (error) {
-    CoderClientException(:final message) => _trim(message),
+    TinestClientException(:final message) => _trim(message),
     _ => _trim('$error'),
   };
 
@@ -144,9 +144,9 @@ class ToastMessenger {
 ///
 /// Sits above the router so a report outlives the route that produced it, and
 /// below [Localizations] so its accessible name follows the chosen language.
-class CoderToastScope extends ConsumerWidget {
+class TinestToastScope extends ConsumerWidget {
   /// Creates the scope around [child].
-  const CoderToastScope({required this.child, super.key});
+  const TinestToastScope({required this.child, super.key});
 
   /// Content the toasts are drawn over.
   final Widget child;

@@ -176,7 +176,7 @@
   "errorAgentDefinitionNotFound": "そのAgentは存在しません。別のAgentを選択してください。",
   "errorAgentDefinitionUnusable": "そのAgentではセッションを開始できません。別のAgentを選択してください。",
   "errorProtocolMismatch": "アプリとDaemonのプロトコルバージョンが異なります。両方を同じリリースに更新してください。",
-  "errorInvalidProjectSettings": "プロジェクトのcoder.jsonを読み込めませんでした。ファイルを修正して再試行してください。",
+  "errorInvalidProjectSettings": "プロジェクトの.tinest/config.jsonを読み込めませんでした。ファイルを修正して再試行してください。",
   "errorRequestTimeout": "Daemonが時間内に応答しませんでした。もう一度お試しください。",
   "errorInternalDaemon": "Daemonで予期しない問題が発生しました。報告する際は以下の内容をコピーしてください。",
   "errorSessionTurnActive": "この sessionは turnを実行中です。完了を待つか停止してから設定を変更してください。",

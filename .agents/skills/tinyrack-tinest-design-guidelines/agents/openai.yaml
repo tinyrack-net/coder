@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tinest Design Guidelines"
+  short_description: "Enforce Tinyrack UI components and design tokens"
+  default_prompt: "Use $tinyrack-tinest-design-guidelines to implement or review this Flutter UI change with Tinyrack components and tokens."

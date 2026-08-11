@@ -1,6 +1,6 @@
 # app
 
-Cross-platform Flutter client for Tinyrack Coder. The app uses a feature-first
+Cross-platform Flutter client for Tinest. The app uses a feature-first
 layout with Riverpod application controllers and typed `go_router` navigation.
 
 ## Source layout
@@ -28,7 +28,7 @@ feature. Domain code does not import Flutter or platform packages, and
 application controllers do not instantiate transports, filesystems, clocks, or
 ID generators.
 
-`CoderApi` and `protocol` DTOs are already transport-neutral boundaries.
+`TinestApi` and `protocol` DTOs are already transport-neutral boundaries.
 Do not wrap them mechanically in repositories or duplicate DTO models. Add a
 repository or use-case only when the app owns a source of truth, caching,
 retry/merge behavior, or reusable multi-source business logic.

@@ -8,14 +8,14 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
   testWidgets(
     'describes every mode and persists full access without confirmation',
     (tester) async {
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final router = GoRouter(
         initialLocation: const PermissionSettingsRoute(
           hostId: 'server',
@@ -36,7 +36,7 @@ void main() {
             supportedLocales: testSupportedLocales,
             routerConfig: router,
             builder: (context, child) =>
-                CoderToastScope(child: child ?? const SizedBox.shrink()),
+                TinestToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );
@@ -73,7 +73,7 @@ void main() {
   testWidgets(
     'restores the prior default and shows an error when persistence fails',
     (tester) async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         defaultPermissionSetError: Exception('daemon rejected update'),
       );
       final router = GoRouter(
@@ -95,7 +95,7 @@ void main() {
             supportedLocales: testSupportedLocales,
             routerConfig: router,
             builder: (context, child) =>
-                CoderToastScope(child: child ?? const SizedBox.shrink()),
+                TinestToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );
@@ -137,7 +137,7 @@ void main() {
         ProviderScope(
           overrides: [
             appServicesProvider.overrideWithValue(
-              fakeAppServices(FakeCoderApi()),
+              fakeAppServices(FakeTinestApi()),
             ),
           ],
           child: MaterialApp.router(
@@ -147,7 +147,7 @@ void main() {
             supportedLocales: testSupportedLocales,
             routerConfig: router,
             builder: (context, child) =>
-                CoderToastScope(child: child ?? const SizedBox.shrink()),
+                TinestToastScope(child: child ?? const SizedBox.shrink()),
           ),
         ),
       );

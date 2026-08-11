@@ -16,7 +16,7 @@ void _registerProvidersControllerTests() {
   test(
     'provider settings notifier performs every administrative command',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         models: const <String, List<ProviderModelDto>>{
           'openai': <ProviderModelDto>[model],
         },
@@ -103,7 +103,7 @@ void _registerProvidersControllerTests() {
         source: ProviderModelSource.discovered,
         capabilities: ModelCapabilitiesDto(),
       );
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         models: const <String, List<ProviderModelDto>>{
           'first': <ProviderModelDto>[first],
           'second': <ProviderModelDto>[second],
@@ -155,7 +155,7 @@ void _registerProvidersControllerTests() {
         status: McpServerStatus.failed,
         error: 'planned process failure',
       );
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final container = _container(api);
       addTearDown(container.dispose);
       await container.read(hostRegistryControllerProvider.future);

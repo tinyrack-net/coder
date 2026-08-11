@@ -34,7 +34,7 @@ abstract interface class ModelProviderFactory {
 
 /// Secret-bearing transport used only by the provider usage service.
 abstract interface class ProviderUsageGateway {
-  /// Reads OpenAI subscription quota using one Coder-managed OAuth credential.
+  /// Reads OpenAI subscription quota using one Tinest-managed OAuth credential.
   Future<ProviderUsagePayload> fetchOpenAIUsage(OAuthCredential credential);
 }
 

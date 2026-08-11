@@ -8,7 +8,7 @@ void main() {
   test(
     'a reset drops daemon state, keeps checkouts, and yields a new identity',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-reset-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-reset-home-');
       final config = DaemonConfig(
         homeDirectory: home.path,
         port: 0,
@@ -29,7 +29,7 @@ void main() {
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
       expect(
-        File(p.join(home.path, 'v4', 'coder.sqlite')).existsSync(),
+        File(p.join(home.path, 'v4', 'tinest.sqlite')).existsSync(),
         isTrue,
       );
       expect(
@@ -44,7 +44,7 @@ void main() {
       ).eraseAll();
 
       expect(
-        File(p.join(home.path, 'v4', 'coder.sqlite')).existsSync(),
+        File(p.join(home.path, 'v4', 'tinest.sqlite')).existsSync(),
         isFalse,
       );
       expect(

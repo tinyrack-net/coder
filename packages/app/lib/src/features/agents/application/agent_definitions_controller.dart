@@ -94,10 +94,10 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
     await refresh();
   }
 
-  /// Restores the built-in Coder definition.
-  Future<AgentDefinitionDto> resetCoder() async {
+  /// Restores the built-in Tinest definition.
+  Future<AgentDefinitionDto> resetTinest() async {
     final api = await requireHostApi(ref, hostId);
-    final reset = await api.agents.resetAgentDefinition('coder');
+    final reset = await api.agents.resetAgentDefinition('tinest');
     await refresh();
     return reset;
   }

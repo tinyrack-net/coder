@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app/src/features/boot/presentation/boot_splash.dart';
 import 'package:app/src/features/boot/presentation/bootstrap_gate.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -112,8 +112,8 @@ void main() {
         TinyrackTheme.dark().extension<TinyrackThemeData>()!.surface,
       );
       final mark = tester.widget<Image>(find.byType(Image));
-      expect((mark.image as AssetImage).assetName, contains('brand/coder'));
-      expect(mark.width, CoderLayoutMetrics.bootBrandMarkSize);
+      expect((mark.image as AssetImage).assetName, contains('brand/tinest'));
+      expect(mark.width, TinestLayoutMetrics.bootBrandMarkSize);
     });
   });
 }

@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -20,13 +20,13 @@ void main() {
   const directories = <String, List<String>>{
     '/': <String>['/home'],
     home: <String>['$home/projects'],
-    '$home/projects': <String>['$home/projects/coder'],
+    '$home/projects': <String>['$home/projects/tinest'],
   };
 
   ServerInfoDto info({String? homeDirectory}) => ServerInfoDto(
     serverId: 'server',
     version: 'test',
-    protocolVersion: coderProtocolMajor,
+    protocolVersion: tinestProtocolMajor,
     features: const <String, bool>{},
     homeDirectory: homeDirectory,
   );
@@ -36,7 +36,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         serverInfo: info(homeDirectory: home),
         directories: directories,
       );
@@ -57,7 +57,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(serverInfo: info(), directories: directories);
+      final api = FakeTinestApi(serverInfo: info(), directories: directories);
       final router = await _pump(tester, api);
       addTearDown(router.dispose);
 
@@ -73,11 +73,11 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         serverInfo: info(homeDirectory: home),
         directories: directories,
       );
-      final picker = _FakeDirectoryPicker(result: '$home/projects/coder');
+      final picker = _FakeDirectoryPicker(result: '$home/projects/tinest');
       final router = await _pump(tester, api, embedded: true, picker: picker);
       addTearDown(router.dispose);
 
@@ -87,7 +87,7 @@ void main() {
       expect(find.text('Daemon의 폴더 선택'), findsNothing);
       expect(api.suggestedQueries, isEmpty);
       expect(picker.initialDirectories, <String?>[home]);
-      expect(api.registeredPaths, <String>['$home/projects/coder']);
+      expect(api.registeredPaths, <String>['$home/projects/tinest']);
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
   );
@@ -97,7 +97,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         serverInfo: info(homeDirectory: home),
         directories: directories,
       );
@@ -124,7 +124,7 @@ Future<void> _openProjectPicker(WidgetTester tester) async {
 
 Future<GoRouter> _pump(
   WidgetTester tester,
-  FakeCoderApi api, {
+  FakeTinestApi api, {
   bool embedded = false,
   DirectoryPickerPort? picker,
 }) async {
@@ -159,7 +159,7 @@ Future<GoRouter> _pump(
 ///
 /// [AppSettings] enables the embedded daemon by default and no remote profile
 /// is stored, so the pane finds exactly one host and skips the daemon prompt.
-AppServices _embeddedServices(FakeCoderApi api) {
+AppServices _embeddedServices(FakeTinestApi api) {
   final store = MemoryAppStore();
   return AppServices(
     settings: store,
@@ -191,10 +191,10 @@ final class _FakeDirectoryPicker implements DirectoryPickerPort {
 final class _FakeClients implements HostClientFactory {
   const _FakeClients(this.api);
 
-  final CoderApi api;
+  final TinestApi api;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

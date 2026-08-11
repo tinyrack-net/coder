@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/feature_verifier.dart';
 import 'package:test/test.dart';
+import 'package:tinest_workspace/src/feature_verifier.dart';
 
 void main() {
   test('feature verifier accepts complete API, route, and layer evidence', () {
@@ -16,7 +16,7 @@ void main() {
         'scenario__';
     final fixture = _fixture(
       api:
-          'abstract interface class CoderApi {'
+          'abstract interface class TinestApi {'
           ' Future<void> createThing(); }',
       routes: '@TypedGoRoute<HomeRoute>(path: "/")',
       tests: <String>[
@@ -65,7 +65,7 @@ void main() {
         'feature_'
         'scenario__';
     final fixture = _fixture(
-      api: 'abstract interface class CoderApi {}',
+      api: 'abstract interface class TinestApi {}',
       routes: '',
       tests: <String>[
         "testWidgets('creates a thing', (tester) async {",
@@ -109,7 +109,7 @@ void main() {
         'feature_'
         'scenario__';
     final fixture = _fixture(
-      api: 'abstract interface class CoderApi {}',
+      api: 'abstract interface class TinestApi {}',
       routes: '',
       tests: <String>[
         "test('marker only', () {}, tags: <String>[",
@@ -172,7 +172,7 @@ void main() {
         'feature_'
         'test__';
     final fixture = _fixture(
-      api: 'abstract interface class CoderApi {}',
+      api: 'abstract interface class TinestApi {}',
       routes: '',
       tests:
           "test('layer', () {}, "
@@ -210,7 +210,7 @@ void main() {
         'test__';
     final fixture = _fixture(
       api:
-          'abstract interface class CoderApi {'
+          'abstract interface class TinestApi {'
           ' Future<void> createThing(); Future<void> deleteThing(); }',
       routes:
           '@TypedGoRoute<HomeRoute>(path: "/") '
@@ -255,7 +255,7 @@ void main() {
 
   test('feature verifier rejects retired security terms in production', () {
     final fixture = _fixture(
-      api: 'abstract interface class CoderApi {}',
+      api: 'abstract interface class TinestApi {}',
       routes: '',
       tests: '',
     );

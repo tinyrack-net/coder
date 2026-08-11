@@ -149,7 +149,7 @@ class SessionsController extends _$SessionsController {
   Future<SessionDto> _apply(
     String sessionId,
     SessionDto Function(SessionDto session) patch,
-    Future<SessionDto> Function(CoderApi api) commit,
+    Future<SessionDto> Function(TinestApi api) commit,
   ) async {
     // Patched before the first suspension, so the chip is already showing the
     // new value on the frame the tap is handled.

@@ -2,7 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_first_line_alignment.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -35,7 +35,7 @@ class ChatPlanCard extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  Icon(CoderIcons.plan, color: colors.primary),
+                  Icon(TinestIcons.plan, color: colors.primary),
                   const SizedBox(width: TRSpacing.small),
                   TRText(
                     AppLocalizations.of(context).chatPlanTitle,
@@ -79,17 +79,17 @@ class _PlanStepRow extends StatelessWidget {
     final markerSize = TRTypography.bodySm.fontSize!;
     final (IconData icon, Color color, String status) = switch (step.status) {
       ChatPlanStepStatus.completed => (
-        CoderIcons.success,
+        TinestIcons.success,
         colors.success,
         l10n.chatPlanStepCompleted,
       ),
       ChatPlanStepStatus.inProgress => (
-        CoderIcons.status,
+        TinestIcons.status,
         colors.primary,
         l10n.chatPlanStepInProgress,
       ),
       ChatPlanStepStatus.pending => (
-        CoderIcons.unchecked,
+        TinestIcons.unchecked,
         colors.textMuted,
         l10n.chatPlanStepPending,
       ),

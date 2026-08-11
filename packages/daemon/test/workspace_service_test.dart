@@ -14,7 +14,7 @@ import 'support/fake_file_index_gateway.dart';
 
 /// Builds a service over an in-memory database with the standard fakes.
 WorkspaceOperations _service(
-  CoderDatabase database, {
+  TinestDatabase database, {
   required GitWorkspaceGateway git,
 }) => WorkspaceOperations(
   database.workspaceDao,
@@ -49,7 +49,7 @@ branch refs/heads/feature/settings
   test(
     'registers repository checkouts and creates a managed worktree',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -90,7 +90,7 @@ branch refs/heads/feature/settings
         ),
       );
       expect(managed.worktree.kind, WorktreeKind.managed);
-      expect(managed.worktree.isCoderOwned, isTrue);
+      expect(managed.worktree.isTinestOwned, isTrue);
       // The configured root is preserved verbatim and the branch names the
       // leaf; only the separator between them follows the host.
       expect(managed.worktree.path, startsWith('/state/worktrees'));
@@ -108,7 +108,7 @@ branch refs/heads/feature/settings
   test(
     'a managed worktree keeps one identity when Git resolves its real path',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -160,16 +160,16 @@ branch refs/heads/feature/settings
           .toList(growable: false);
       expect(owned.map((worktree) => worktree.id), <String>['managed-1']);
       expect(owned.single.kind, WorktreeKind.managed);
-      expect(owned.single.isCoderOwned, isTrue);
+      expect(owned.single.isTinestOwned, isTrue);
       expect(owned.single.head, 'created-head');
     },
     tags: const <String>['feature_test__worktree_lifecycle__unit'],
   );
 
   test(
-    'catalog archives Git worktrees that disappeared outside Coder',
+    'catalog archives Git worktrees that disappeared outside Tinest',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -227,7 +227,7 @@ branch refs/heads/feature/settings
     'catalog polling does not steal the identity of a managed worktree '
     'being created',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -279,7 +279,7 @@ branch refs/heads/feature/settings
   test(
     'catalog preserves a managed identity across path separators',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -334,7 +334,7 @@ branch refs/heads/feature/settings
   test(
     'catalog does not archive unavailable directory workspaces',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -360,7 +360,7 @@ branch refs/heads/feature/settings
   test(
     'archive requires confirmation and only removes managed paths',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -410,7 +410,7 @@ branch refs/heads/feature/settings
   test(
     'the project checkout cannot be archived but extra worktrees can',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -426,7 +426,7 @@ branch refs/heads/feature/settings
         ),
       );
 
-      // The repository checkout is not Coder-owned, so archiving it would keep
+      // The repository checkout is not Tinest-owned, so archiving it would keep
       // the directory and let the next refresh rediscover it under a new id.
       await expectLater(
         service.archive('checkout-1', force: true),
@@ -449,7 +449,7 @@ branch refs/heads/feature/settings
   test(
     'supports directory lifecycle and rejects Git-only operations',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -514,7 +514,7 @@ branch refs/heads/feature/settings
   test(
     'home provisioning is idempotent and yields one directory checkout',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -525,7 +525,7 @@ branch refs/heads/feature/settings
       expect(first, isNotNull);
       expect(first!.kind, WorktreeKind.directory);
       expect(first.path, '/home/user');
-      expect(first.isCoderOwned, isFalse);
+      expect(first.isTinestOwned, isFalse);
 
       // Every boot re-provisions, so a second call must not fork a second
       // workspace or checkout.
@@ -542,7 +542,7 @@ branch refs/heads/feature/settings
   test(
     'a daemon without a user home provisions no home workspace',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -558,7 +558,7 @@ branch refs/heads/feature/settings
   test(
     'a workspace already registered at the home path becomes the home one',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -586,7 +586,7 @@ branch refs/heads/feature/settings
   test(
     'the home workspace and its checkout cannot be removed or re-registered',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -623,7 +623,7 @@ branch refs/heads/feature/settings
   test(
     'worktree creation is idempotent and validates branch collisions',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -745,7 +745,7 @@ branch refs/heads/feature/settings
   test(
     'derived naming steps past a branch an archived worktree left behind',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -816,7 +816,7 @@ branch refs/heads/feature/settings
   test(
     'two simultaneous submissions of one prompt take different branches',
     () async {
-      final database = CoderDatabase.forTesting(
+      final database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -908,12 +908,12 @@ branch refs/heads/feature/settings
       'feature_test__composer_file_mention__unit',
     ],
     () {
-      late CoderDatabase database;
+      late TinestDatabase database;
       late FakeFileIndexGateway fileIndex;
       late WorkspaceOperations service;
 
       setUp(() async {
-        database = CoderDatabase.forTesting(
+        database = TinestDatabase.forTesting(
           NativeDatabase.memory(),
           clock: _FixedClock(),
         );
@@ -993,7 +993,7 @@ branch refs/heads/feature/settings
   );
 
   test('archive refuses a worktree with a running session', () async {
-    final database = CoderDatabase.forTesting(
+    final database = TinestDatabase.forTesting(
       NativeDatabase.memory(),
       clock: _FixedClock(),
     );
@@ -1021,7 +1021,7 @@ branch refs/heads/feature/settings
         id: 'running-session',
         worktreeId: 'checkout-1',
         title: 'Running',
-        agentDefinitionId: 'coder',
+        agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.running,
         createdAt: _FixedClock.now,
@@ -1037,7 +1037,7 @@ branch refs/heads/feature/settings
   });
 
   group('worktree lifecycle hooks', () {
-    late CoderDatabase database;
+    late TinestDatabase database;
     late _FakeProjectSettings projectSettings;
     late _FakeHookRunner hooks;
     late _FakeGitGateway git;
@@ -1045,7 +1045,7 @@ branch refs/heads/feature/settings
     late WorkspaceOperations service;
 
     setUp(() async {
-      database = CoderDatabase.forTesting(
+      database = TinestDatabase.forTesting(
         NativeDatabase.memory(),
         clock: _FixedClock(),
       );
@@ -1093,7 +1093,7 @@ branch refs/heads/feature/settings
           await service.getProjectSettings('repo-1'),
           const ProjectSettingsResultDto(
             settings: ProjectSettingsDto(),
-            sourcePath: '/repo/coder.json',
+            sourcePath: '/repo/.tinest/config.json',
           ),
         );
 
@@ -1110,7 +1110,7 @@ branch refs/heads/feature/settings
           ),
           const ProjectSettingsResultDto(
             settings: settings,
-            sourcePath: '/repo/coder.json',
+            sourcePath: '/repo/.tinest/config.json',
           ),
         );
         expect(projectSettings.saved, <ProjectSettingsDto>[settings]);
@@ -1190,7 +1190,7 @@ branch refs/heads/feature/settings
       final created = await createManaged();
 
       expect(created.hookRuns.single.exitCode, -1);
-      expect(created.hookRuns.single.command, '/repo/coder.json');
+      expect(created.hookRuns.single.command, '/repo/.tinest/config.json');
       expect(created.hookRuns.single.stderr, contains('broken'));
       expect(hooks.invocations, isEmpty);
     });
@@ -1568,7 +1568,7 @@ final class _FakeProjectSettings implements ProjectSettingsStore {
   final List<ProjectSettingsDto> saved = <ProjectSettingsDto>[];
 
   @override
-  String sourcePath(String rootPath) => '$rootPath/coder.json';
+  String sourcePath(String rootPath) => '$rootPath/.tinest/config.json';
 
   @override
   Future<ProjectSettingsDto> load(String rootPath) async {

@@ -14,7 +14,7 @@ void main() {
   });
 
   test('v4 app storage does not read or remove the v3 document', () async {
-    const legacyKey = 'tinyrack_coder.app_document_v3';
+    const legacyKey = 'tinyrack_tinest.app_document_v3';
     SharedPreferences.setMockInitialValues(<String, Object>{
       legacyKey: '{"version":3,"settings":{},"profiles":[]}',
     });
@@ -42,7 +42,7 @@ void main() {
         id: 'host-id',
         label: 'Production',
         connections: directHostConnections(
-          Uri.parse('wss://coder.example.com/ws'),
+          Uri.parse('wss://tinest.example.com/ws'),
         ),
         autoConnect: true,
         serverId: 'server-id',
@@ -143,7 +143,7 @@ void main() {
           id: 'host-id',
           label: 'Production',
           connections: directHostConnections(
-            Uri.parse('wss://coder.example.com/ws'),
+            Uri.parse('wss://tinest.example.com/ws'),
           ),
           autoConnect: true,
           createdAt: now,
@@ -169,7 +169,7 @@ void main() {
     () async {
       FlutterSecureStorage.setMockInitialValues(<String, String>{
         'unrelated.plugin.key': 'keep-me',
-        'tinyrack_coder.remote_host_token.legacy': 'v3-secret',
+        'tinyrack_tinest.remote_host_token.legacy': 'v3-secret',
       });
       const credentials = SecureRemoteHostCredentialStore(
         FlutterSecureStorage(),
@@ -187,7 +187,7 @@ void main() {
       );
       expect(
         await const FlutterSecureStorage().read(
-          key: 'tinyrack_coder.remote_host_token.legacy',
+          key: 'tinyrack_tinest.remote_host_token.legacy',
         ),
         'v3-secret',
       );
@@ -197,8 +197,8 @@ void main() {
 
   test('fresh storage ignores legacy singleton host keys', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
-      'tinyrack_coder.host_address': 'ws://legacy.test/ws',
-      'tinyrack_coder.host_token': 'legacy-token',
+      'tinyrack_tinest.host_address': 'ws://legacy.test/ws',
+      'tinyrack_tinest.host_token': 'legacy-token',
     });
     final store = SharedPreferencesAppStore(
       await SharedPreferences.getInstance(),
@@ -294,7 +294,7 @@ void main() {
       id: 'relay-path',
       credentialKey: 'relay-credential',
       serverId: 'daemon-1',
-      relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
+      relayUri: Uri.parse('wss://relay.tinest.tinyrack.net/v1/ws'),
       daemonIdentityPublicKey: List<int>.generate(32, (index) => index),
     );
     await store.upsertProfile(
@@ -384,7 +384,7 @@ void main() {
     const storage = FlutterSecureStorage();
     const credentials = SecureRemoteHostCredentialStore(storage);
     await storage.write(
-      key: 'tinyrack_coder.v5.remote_host_credential.broken',
+      key: 'tinyrack_tinest.v5.remote_host_credential.broken',
       value: '{"type":"relay-device","deviceId":7}',
     );
 
@@ -585,7 +585,7 @@ void main() {
           <String, Object?>{
             'id': 7,
             'label': 'Invalid',
-            'websocketUri': 'wss://coder.example.com/ws',
+            'websocketUri': 'wss://tinest.example.com/ws',
             'autoConnect': true,
             'serverId': null,
             'createdAt': '2026-08-03T00:00:00.000Z',

@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 10);
@@ -14,16 +14,16 @@ void main() {
     id: 'worktree',
     workspaceId: 'workspace',
     name: 'main',
-    path: '/repos/coder',
+    path: '/repos/tinest',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'one',
     worktreeId: worktree.id,
     title: 'Session one',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -33,7 +33,7 @@ void main() {
   test(
     'a daemon that drops settles the conversation empty rather than reloading',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],
         timelines: <String, List<TimelineEventDto>>{

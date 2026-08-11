@@ -15,10 +15,10 @@ SessionModelSelectionDto? _canonicalSelection(
     ? null
     : SessionModelSelectionDto(modelId: selection.qualifiedModelId);
 
-/// CoderClientException defines a public contract.
-class CoderClientException implements Exception {
-  /// Creates a [CoderClientException].
-  const CoderClientException(
+/// TinestClientException defines a public contract.
+class TinestClientException implements Exception {
+  /// Creates a [TinestClientException].
+  const TinestClientException(
     this.message, {
     this.code,
     this.retryable = false,
@@ -39,13 +39,13 @@ class CoderClientException implements Exception {
 
   @override
   String toString() =>
-      'CoderClientException${code == null ? '' : '($code)'}: $message';
+      'TinestClientException${code == null ? '' : '($code)'}: $message';
 }
 
-/// CoderClient defines a public contract.
-class CoderClient
+/// TinestClient defines a public contract.
+class TinestClient
     implements
-        CoderApi,
+        TinestApi,
         WorkspacesApi,
         SessionsApi,
         AgentsApi,
@@ -55,7 +55,7 @@ class CoderClient
         TerminalsApi,
         AttachmentsApi,
         RelayApi {
-  CoderClient._({
+  TinestClient._({
     required this._endpoint,
     required this._credentials,
     required this._clientId,
@@ -67,7 +67,7 @@ class CoderClient
   });
 
   /// The connect public API member.
-  static Future<CoderClient> connect({
+  static Future<TinestClient> connect({
     required HostEndpoint endpoint,
     required DaemonCredentials credentials,
     required String clientId,
@@ -77,7 +77,7 @@ class CoderClient
     Duration requestTimeout = const Duration(seconds: 60),
     Duration Function(int attempt)? reconnectDelay,
   }) async {
-    final client = CoderClient._(
+    final client = TinestClient._(
       endpoint: endpoint,
       credentials: credentials,
       clientId: clientId,
@@ -255,7 +255,7 @@ class CoderClient
           HelloParamsDto(
             clientId: _clientId,
             clientKind: _clientKind,
-            protocolMajor: coderProtocolMajor,
+            protocolMajor: tinestProtocolMajor,
             clientVersion: _clientVersion,
             capabilities: const <String, bool>{'timelineCatchup': true},
           ),
@@ -388,7 +388,7 @@ class CoderClient
     try {
       final result =
           await (_peer ??
-                  (throw const CoderClientException(
+                  (throw const TinestClientException(
                     'Not connected.',
                     retryable: true,
                   )))
@@ -399,8 +399,8 @@ class CoderClient
       );
     } on TimeoutException {
       // Without this the deadline escapes _call untyped, so every caller that
-      // handles CoderClientException misses it and leaves its UI mid-flight.
-      throw const CoderClientException(
+      // handles TinestClientException misses it and leaves its UI mid-flight.
+      throw const TinestClientException(
         'The daemon did not respond in time.',
         code: RpcErrorCodes.requestTimeout,
         retryable: true,
@@ -414,7 +414,7 @@ class CoderClient
           failure = null;
         }
       }
-      throw CoderClientException(
+      throw TinestClientException(
         error.message,
         code: failure?.code,
         retryable: failure?.retryable ?? false,
@@ -424,7 +424,7 @@ class CoderClient
       // alternative; converting it keeps shutdown races off the error zone.
       // ignore: avoid_catching_errors
     } on StateError catch (error) {
-      throw CoderClientException(error.message, retryable: true);
+      throw TinestClientException(error.message, retryable: true);
     }
   }
 
@@ -1316,7 +1316,7 @@ class CoderClient
         await client.send(request),
       );
       if (response.statusCode != 200) {
-        throw CoderClientException(
+        throw TinestClientException(
           response.body.isEmpty ? 'Attachment upload failed.' : response.body,
           code: 'attachment_upload_failed',
         );
@@ -1345,7 +1345,7 @@ class CoderClient
     if (response.statusCode != 200) {
       final body = await response.stream.bytesToString();
       client.close();
-      throw CoderClientException(
+      throw TinestClientException(
         body.isEmpty ? 'Attachment download failed.' : body,
         code: 'attachment_download_failed',
       );

@@ -28,17 +28,17 @@ abstract interface class ExternalToolSource {
   AgentTool? Function(String id) lookupFor(String workspaceRoot);
 }
 
-/// Resolves the pseudo-terminals one coder session owns.
+/// Resolves the pseudo-terminals one tinest session owns.
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
-/// Resolves the Lua cells one coder session owns in its current worktree.
+/// Resolves the Lua cells one tinest session owns in its current worktree.
 typedef LuaHostFactory =
     LuaCodeModeHost Function(
       String sessionId,
       String workingDirectory,
     );
 
-/// Coordinates model-turn execution and lifecycle for coder sessions.
+/// Coordinates model-turn execution and lifecycle for tinest sessions.
 class SessionTurnCoordinator implements SessionTurnPort {
   /// Creates a session turn coordinator.
   SessionTurnCoordinator({

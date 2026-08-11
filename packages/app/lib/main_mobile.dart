@@ -1,5 +1,5 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/boot/presentation/bootstrap_gate.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/hosts/infrastructure/remote_bootstrap.dart';
@@ -14,7 +14,7 @@ Future<void> runMobileApp({AppServices? services}) async {
   runApp(
     BootstrapGate<AppServices>(
       bootstrap: () async => services ?? await createRemoteServices(),
-      builder: (context, resolved) => CoderApp(
+      builder: (context, resolved) => TinestApp(
         services: resolved,
         attachmentInput: const NativeAttachmentInput(),
       ),

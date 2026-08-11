@@ -9,15 +9,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
     id: 'workspace',
-    name: 'Coder',
-    rootPath: '/repos/coder',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
     kind: WorkspaceKind.git,
     createdAt: now,
   );
@@ -29,7 +29,7 @@ void main() {
     branch: 'main',
     head: 'abc',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final location = WorktreeRoute(
@@ -38,7 +38,7 @@ void main() {
     worktreeId: checkout.id,
   ).location;
 
-  Future<GoRouter> pumpDraft(WidgetTester tester, FakeCoderApi api) async {
+  Future<GoRouter> pumpDraft(WidgetTester tester, FakeTinestApi api) async {
     final router = GoRouter(initialLocation: location, routes: $appRoutes);
     await tester.pumpWidget(
       ProviderScope(
@@ -70,7 +70,7 @@ void main() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       )..startTurnError = Exception('daemon rejected the turn');

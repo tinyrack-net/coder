@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'CoderApi exposes the v4 feature boundaries',
+    'TinestApi exposes the v4 feature boundaries',
     () {
       final api = _ApiShapeProbe();
 
@@ -23,7 +23,7 @@ void main() {
 
 final class _ApiShapeProbe
     implements
-        CoderApi,
+        TinestApi,
         WorkspacesApi,
         SessionsApi,
         AgentsApi,

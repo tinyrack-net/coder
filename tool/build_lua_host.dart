@@ -14,7 +14,7 @@ Future<void> main(List<String> arguments) async {
   final root = Directory.current.absolute;
   final daemon = Directory('${root.path}/packages/daemon');
   if (!File('${daemon.path}/pubspec.yaml').existsSync()) {
-    throw StateError('Run this command from the Coder repository root.');
+    throw StateError('Run this command from the Tinest repository root.');
   }
   final destination = Directory(
     arguments[destinationIndex + 1],

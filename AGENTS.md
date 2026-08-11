@@ -1,4 +1,4 @@
-# Tinyrack Coder engineering policy
+# Tinest engineering policy
 
 This repository is under active development. Prefer a sound, type-safe Dart and
 Flutter design over compatibility with development data, deprecated APIs, or an
@@ -21,8 +21,8 @@ in fact pinned shut by the Flutter SDK or an upstream package, and why.
 
 For every Flutter UI implementation, modification, refactor, review, styling,
 layout, component-selection, theme, or pixel-changing test task, use
-`$tinyrack-coder-design-guidelines` and follow
-`.agents/skills/tinyrack-coder-design-guidelines/SKILL.md`.
+`$tinyrack-tinest-design-guidelines` and follow
+`.agents/skills/tinyrack-tinest-design-guidelines/SKILL.md`.
 
 All controls and surfaces must use the public `tinyrack_ui` component when one
 exists. Every visual design value, including color, spacing, dimensions,
@@ -72,7 +72,7 @@ design value, pub-cache edit, path dependency, moving Git ref, or
 - `dart analyze --fatal-infos` has zero diagnostics under strict casts,
   inference, raw types, and `very_good_analysis`.
 - Dependency and architecture verification have zero violations.
-- Feature verification has no unregistered `CoderApi` method, typed route,
+- Feature verification has no unregistered `TinestApi` method, typed route,
   unknown/skip tag, or missing required test layer.
 - Each package independently has at least 90% line and 80% branch coverage.
   Missing production files count as 0%; only generated sources are excluded.

@@ -71,7 +71,7 @@ List<RpcBindingDescriptor> promptRpcBindings({
       } on SkillFileConflict catch (error) {
         throw RpcFailureException(
           code: 'skill_file_conflict',
-          message: 'Skill file changed outside Coder.',
+          message: 'Skill file changed outside Tinest.',
           details: <String, dynamic>{
             'currentContentHash': error.currentContentHash,
           },

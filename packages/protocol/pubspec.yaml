@@ -1,5 +1,5 @@
 name: protocol
-description: Versioned protocol and immutable DTOs for Tinyrack Coder.
+description: Versioned protocol and immutable DTOs for Tinest.
 version: 0.1.0
 publish_to: none
 resolution: workspace

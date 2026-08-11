@@ -9,8 +9,8 @@ void main() {
   late Directory outside;
 
   setUp(() async {
-    skill = await Directory.systemTemp.createTemp('coder-skill-');
-    outside = await Directory.systemTemp.createTemp('coder-skill-outside-');
+    skill = await Directory.systemTemp.createTemp('tinest-skill-');
+    outside = await Directory.systemTemp.createTemp('tinest-skill-outside-');
     await File('${outside.path}/secret.txt').writeAsString('secret');
     await Directory('${skill.path}/scripts').create();
     await File('${skill.path}/scripts/split.sh').writeAsString('echo split\n');
@@ -374,7 +374,7 @@ final class _UnusedPorts
 
 AgentToolScope _skillScope(SkillCatalog skills) => AgentToolScope(
   session: const AgentSessionContext(id: 'session-1'),
-  definition: const AgentDefinitionContext(id: 'coder'),
+  definition: const AgentDefinitionContext(id: 'tinest'),
   selectedToolIds: const <String>{},
   workspaceRoot: '/workspace',
   turnId: 'turn-1',

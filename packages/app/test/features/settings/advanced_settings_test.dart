@@ -1,5 +1,5 @@
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -148,7 +148,7 @@ Widget _app(
   MemoryAppStore store, {
   EmbeddedDaemonDataEraser? eraser,
   AutostartRegistration? autostart,
-}) => CoderApp(
+}) => TinestApp(
   services: AppServices(
     settings: store,
     profiles: store,
@@ -178,10 +178,10 @@ final class _OfflineClients implements HostClientFactory {
   const _OfflineClients();
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(const HostConnectionFailure.network('offline'));
+  }) => Future<TinestApi>.error(const HostConnectionFailure.network('offline'));
 }

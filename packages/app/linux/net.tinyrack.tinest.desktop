@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Coder
+Name=Tinest
 Comment=Local-first AI coding agent with an always-on daemon
-Exec=coder %u
-Icon=net.tinyrack.coder
+Exec=tinest %u
+Icon=net.tinyrack.tinest
 Terminal=false
 Categories=Development;
-MimeType=x-scheme-handler/tinyrack-coder;
+MimeType=x-scheme-handler/tinyrack-tinest;

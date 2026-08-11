@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 10);
@@ -17,28 +17,28 @@ void main() {
     id: 'worktree',
     workspaceId: 'workspace',
     name: 'main',
-    path: '/repos/coder',
+    path: '/repos/tinest',
     kind: WorktreeKind.checkout,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'one',
     worktreeId: worktree.id,
     title: 'Session one',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
   );
 
-  ({ProviderContainer container, FakeCoderApi api}) connectedHost() {
-    final api = FakeCoderApi(
+  ({ProviderContainer container, FakeTinestApi api}) connectedHost() {
+    final api = FakeTinestApi(
       serverInfo: const ServerInfoDto(
         serverId: 'server',
         version: 'test',
-        protocolVersion: coderProtocolMajor,
+        protocolVersion: tinestProtocolMajor,
         features: <String, bool>{},
       ),
       worktrees: <WorktreeDto>[worktree],
@@ -68,7 +68,7 @@ void main() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: _HostClients(<String, CoderApi>{'server.test': api}),
+              clients: _HostClients(<String, TinestApi>{'server.test': api}),
               clientKind: 'test',
             ),
           ),
@@ -84,7 +84,7 @@ void main() {
       final host = connectedHost();
       addTearDown(host.container.dispose);
       var builds = 0;
-      final probe = Provider<CoderApi?>((ref) {
+      final probe = Provider<TinestApi?>((ref) {
         builds += 1;
         return watchHostConnection(ref, 'server').api;
       });
@@ -155,7 +155,7 @@ void main() {
         throwsA(isA<StateError>()),
       );
 
-      final probe = FutureProvider<CoderApi?>(
+      final probe = FutureProvider<TinestApi?>(
         (ref) => watchConnectedHostApi(ref, 'server'),
       );
       container.listen(probe, (_, _) {});
@@ -177,7 +177,7 @@ void main() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: const _HostClients(<String, CoderApi>{}),
+              clients: const _HostClients(<String, TinestApi>{}),
               clientKind: 'test',
             ),
           ),
@@ -241,21 +241,21 @@ final class _FailingStore
   Future<void> clear() async {}
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,
     required String clientKind,
-  }) => Future<CoderApi>.error(StateError('connection failed'));
+  }) => Future<TinestApi>.error(StateError('connection failed'));
 }
 
 final class _HostClients implements HostClientFactory {
   const _HostClients(this.apis);
 
-  final Map<String, CoderApi> apis;
+  final Map<String, TinestApi> apis;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

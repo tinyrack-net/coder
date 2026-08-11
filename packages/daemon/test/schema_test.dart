@@ -23,7 +23,7 @@ void main() {
       () => worktrees.branch,
       () => worktrees.head,
       () => worktrees.kind,
-      () => worktrees.isCoderOwned,
+      () => worktrees.isTinestOwned,
       () => worktrees.archivedAt,
       () => worktrees.createdAt,
       () => worktrees.primaryKey,
@@ -186,7 +186,7 @@ void main() {
   test(
     'database testing constructor installs schema and foreign keys',
     () async {
-      final database = CoderDatabase.forTesting(NativeDatabase.memory());
+      final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
       expect(database.schemaVersion, 17);

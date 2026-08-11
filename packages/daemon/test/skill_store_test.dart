@@ -57,7 +57,7 @@ void main() {
       SkillScope(workspaceId: 'workspace', projectRoot: project.path);
 
   setUp(() async {
-    root = await Directory.systemTemp.createTemp('coder-skills-');
+    root = await Directory.systemTemp.createTemp('tinest-skills-');
     configHome = Directory(p.join(root.path, 'config'))..createSync();
     userHome = Directory(p.join(root.path, 'home'))..createSync();
     project = Directory(p.join(root.path, 'project'))..createSync();

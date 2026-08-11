@@ -1,4 +1,4 @@
-# Coder
+# Tinest
 
 Flutter GUI and a pure-Dart AI coding-agent daemon. The daemon owns workspace,
 agent, timeline, and approval state; desktop and mobile applications connect to
@@ -24,8 +24,8 @@ dart run melos run run:daemon
 ```
 
 The default endpoint is `ws://127.0.0.1:7337/v4/ws`. Override the state/config
-directory and listener with `TINYRACK_CODER_HOME` and
-`TINYRACK_CODER_LISTEN`. Without an override, Linux uses the XDG config/state
+directory and listener with `TINYRACK_TINEST_HOME` and
+`TINYRACK_TINEST_LISTEN`. Without an override, Linux uses the XDG config/state
 directories, macOS uses Application Support, and Windows uses AppData.
 
 The app shell does not require a daemon connection. Desktop enables its
@@ -38,18 +38,18 @@ profiles and the last selected host remain navigable.
 
 Provider and Markdown Agent setup belongs to a connected daemon. Every client
 uses one bearer token, which grants the complete daemon API for both local and
-remote connections. `coder-cli` both hosts a daemon and drives the same
+remote connections. `tinest-cli` both hosts a daemon and drives the same
 setup from a terminal against an already running one, discovering its token
 from the same configuration directory:
 
 ```sh
-brew install tinyrack-net/tap/coder-cli   # or winget install tinyrack.coder-cli
-coder-cli daemon start
-coder-cli provider list
-coder-cli agent apply reviewer --file reviewer.md
+brew install tinyrack-net/tap/tinest-cli   # or winget install tinyrack.tinest-cli
+tinest-cli daemon start
+tinest-cli provider list
+tinest-cli agent apply reviewer --file reviewer.md
 ```
 
-Run `coder-cli completion bash` (or `zsh`, `fish`, `powershell`) to install
+Run `tinest-cli completion bash` (or `zsh`, `fish`, `powershell`) to install
 shell completion.
 
 From a checkout, `dart run melos run:cli -- provider list` runs the same
@@ -64,7 +64,7 @@ flutter run -t lib/main_mobile.dart
 flutter run -d chrome -t lib/main_web.dart
 ```
 
-The web build is a client only, hosted at `https://coder.tinyrack.net`. It
+The web build is a client only, hosted at `https://tinest.tinyrack.net`. It
 connects to a daemon you run yourself, which has to allow the page's origin
 first. A daemon on your own machine also works, after granting the browser's
 Local Network Access permission once. See
@@ -86,4 +86,4 @@ authentication-header, and development-data reset examples.
 
 See [`docs/mcp.md`](docs/mcp.md) for configuring external MCP servers, the
 secret reference syntax, and the trust implications of a repository-declared
-`.coder/config.json`.
+`.tinest/config.json`.

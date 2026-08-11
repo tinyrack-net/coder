@@ -6,7 +6,7 @@ void _registerContractsControllerTests() {
   test(
     'feature state value objects and production ports are deterministic',
     () {
-      final api = FakeCoderApi();
+      final api = FakeTinestApi();
       final endpoint = HostEndpoint.parse('ws://localhost/ws');
       final snapshot = HostRuntimeSnapshot(
         id: 'host',

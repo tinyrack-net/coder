@@ -10,9 +10,9 @@ void main() {
   test(
     'real daemon persists goal RPC state and notifications across restart',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-goal-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-goal-home-');
       final userHome = await Directory.systemTemp.createTemp(
-        'coder-goal-user-',
+        'tinest-goal-user-',
       );
       const token = 'goal-token-0123456789abcdef0123456789';
       final config = DaemonConfig(
@@ -23,10 +23,10 @@ void main() {
         useEnvironmentCredentials: false,
       );
       DaemonHandle? handle;
-      CoderClient? client;
+      TinestClient? client;
       try {
         handle = await DaemonApplication.start(config, provider: _NoModel());
-        client = await CoderClient.connect(
+        client = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
           credentials: const DaemonCredentials(bearerToken: token),
           clientId: 'goal-first',
@@ -43,7 +43,7 @@ void main() {
           id: 'goal-session',
           worktreeId: checkout.id,
           title: 'Goal session',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           mode: SessionMode.plan,
         );
         final update = client.sessions.goalUpdates.first;
@@ -63,7 +63,7 @@ void main() {
         handle = null;
 
         handle = await DaemonApplication.start(config, provider: _NoModel());
-        client = await CoderClient.connect(
+        client = await TinestClient.connect(
           endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
           credentials: const DaemonCredentials(bearerToken: token),
           clientId: 'goal-second',

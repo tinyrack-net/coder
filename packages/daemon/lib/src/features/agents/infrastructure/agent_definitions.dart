@@ -26,7 +26,7 @@ abstract interface class AgentDefinitionStore {
   /// Emits after a valid catalog change or a stale diagnostic is detected.
   Stream<void> get changes;
 
-  /// Loads files and creates the protected built-in Coder file when absent.
+  /// Loads files and creates the protected built-in Tinest file when absent.
   Future<void> initialize();
 
   /// Returns visible definitions.
@@ -60,8 +60,8 @@ abstract interface class AgentDefinitionStore {
   /// Moves one custom definition to the archive directory.
   Future<void> archive(String id);
 
-  /// Restores the canonical built-in Coder definition.
-  Future<AgentDefinitionDto> resetCoder();
+  /// Restores the canonical built-in Tinest definition.
+  Future<AgentDefinitionDto> resetTinest();
 
   /// Reloads external file changes immediately.
   Future<void> reload();
@@ -307,8 +307,8 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
     return _serialize(() async {
       final definitions = _active.values.toList(growable: false)
         ..sort((left, right) {
-          if (left.id == 'coder') return -1;
-          if (right.id == 'coder') return 1;
+          if (left.id == 'tinest') return -1;
+          if (right.id == 'tinest') return 1;
           return left.name.compareTo(right.name);
         });
       return definitions;
@@ -343,7 +343,7 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
     await initialize();
     return _serialize(() async {
       _validateId(id);
-      if (id == 'coder' ||
+      if (id == 'tinest' ||
           _active.containsKey(id) ||
           _archived.containsKey(id)) {
         throw StateError('Agent definition already exists: $id');
@@ -480,8 +480,8 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
   Future<void> archive(String id) async {
     await initialize();
     await _serialize(() async {
-      if (id == 'coder') {
-        throw StateError('The built-in Coder agent cannot be archived.');
+      if (id == 'tinest') {
+        throw StateError('The built-in Tinest agent cannot be archived.');
       }
       if (!_active.containsKey(id)) {
         throw StateError('Agent definition not found: $id');
@@ -492,13 +492,15 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
   }
 
   @override
-  Future<AgentDefinitionDto> resetCoder() async {
+  Future<AgentDefinitionDto> resetTinest() async {
     await initialize();
     return _serialize(() async {
-      final source = codec.encodeNew(_defaultCoder(_files.activePath('coder')));
-      await _files.writeActive('coder', source);
+      final source = codec.encodeNew(
+        _defaultTinest(_files.activePath('tinest')),
+      );
+      await _files.writeActive('tinest', source);
       await _reloadLocked();
-      return _active['coder']!;
+      return _active['tinest']!;
     });
   }
 
@@ -510,16 +512,16 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
 
   Future<void> _reloadLocked() async {
     var activeDocuments = await _files.readActive();
-    if (!activeDocuments.any((document) => document.id == 'coder')) {
-      await _writeDefaultCoder();
+    if (!activeDocuments.any((document) => document.id == 'tinest')) {
+      await _writeDefaultTinest();
       activeDocuments = await _files.readActive();
     }
     var snapshot = _parseSnapshot(
       activeDocuments: activeDocuments,
       archivedDocuments: await _files.readArchived(),
     );
-    if (!snapshot.active.containsKey('coder')) {
-      await _writeDefaultCoder();
+    if (!snapshot.active.containsKey('tinest')) {
+      await _writeDefaultTinest();
       snapshot = _parseSnapshot(
         activeDocuments: await _files.readActive(),
         archivedDocuments: await _files.readArchived(),
@@ -590,9 +592,9 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
     );
   }
 
-  Future<void> _writeDefaultCoder() => _files.writeActive(
-    'coder',
-    codec.encodeNew(_defaultCoder(_files.activePath('coder'))),
+  Future<void> _writeDefaultTinest() => _files.writeActive(
+    'tinest',
+    codec.encodeNew(_defaultTinest(_files.activePath('tinest'))),
   );
 
   void _scheduleReload() {
@@ -667,9 +669,9 @@ final class _AgentCatalogSnapshot {
 Uri? _yamlSourceUrl(String sourcePath) =>
     p.isAbsolute(sourcePath) ? Uri.file(sourcePath) : null;
 
-AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
-  id: 'coder',
-  name: 'Coder',
+AgentDefinitionDto _defaultTinest(String sourcePath) => AgentDefinitionDto(
+  id: 'tinest',
+  name: 'Tinest',
   description: 'General-purpose coding agent',
   mode: AgentMode.primary,
   // The built-in system prompt is the shipped behaviour, so the override starts
@@ -681,10 +683,10 @@ AgentDefinitionDto _defaultCoder(String sourcePath) => AgentDefinitionDto(
       'your work.',
   model: const AgentModelSelectionDto(source: AgentModelSource.session),
   // The always-on tools are implicit; every selectable built-in capability is
-  // enabled for the shipped Coder definition. The Lua tool surface is not among
-  // them: a model that wants it declares `ModelToolSurface.luaCode` and the
-  // registry swaps the surface in for the whole turn, so naming it here would
-  // select nothing.
+  // enabled for the shipped Tinest definition. The Lua tool surface is not
+  // among them: a model that wants it declares `ModelToolSurface.luaCode` and
+  // the registry swaps the surface in for the whole turn, so naming it here
+  // would select nothing.
   toolIds: const <String>[
     'apply_patch',
     'list_mcp_resources',
@@ -901,12 +903,12 @@ final class AgentDefinitionService {
     }
   }
 
-  /// Restores the protected built-in Coder definition.
+  /// Restores the protected built-in Tinest definition.
   Future<AgentDefinitionDto> reset(String id) async {
-    if (id != 'coder') {
-      throw StateError('Only the built-in Coder agent can be reset.');
+    if (id != 'tinest') {
+      throw StateError('Only the built-in Tinest agent can be reset.');
     }
-    return _decorate(await _store.resetCoder());
+    return _decorate(await _store.resetTinest());
   }
 
   /// Parses and validates one unsaved Markdown document.
@@ -969,7 +971,7 @@ final class AgentDefinitionService {
   Future<void> close() => _store.close();
 }
 
-/// Parses and updates the Coder agent Markdown format.
+/// Parses and updates the Tinest agent Markdown format.
 final class AgentMarkdownCodec {
   /// Creates the stateless Markdown codec.
   const AgentMarkdownCodec();
@@ -1045,7 +1047,7 @@ final class AgentMarkdownCodec {
       callableAgentIds: callableAgentIds,
       contentHash: sha256.convert(utf8.encode(source)).toString(),
       sourcePath: sourcePath,
-      isBuiltIn: id == 'coder',
+      isBuiltIn: id == 'tinest',
       isArchived: isArchived,
     );
   }

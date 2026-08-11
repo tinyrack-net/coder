@@ -5,10 +5,10 @@ import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 
 /// Filename holding project-scoped configuration in a workspace root.
-const String projectSettingsFileName = '.coder/config.json';
+const String projectSettingsFileName = '.tinest/config.json';
 
 String _projectSettingsPath(String rootPath) =>
-    p.join(rootPath, '.coder', 'config.json');
+    p.join(rootPath, '.tinest', 'config.json');
 
 /// Schema shared by project worktree and MCP configuration.
 const int projectConfigSchemaVersion = 4;
@@ -25,7 +25,7 @@ abstract interface class ProjectSettingsStore {
   Future<void> save(String rootPath, ProjectSettingsDto settings);
 }
 
-/// Reads and writes `<workspace root>/.coder/config.json`.
+/// Reads and writes `<workspace root>/.tinest/config.json`.
 final class FileProjectSettingsStore implements ProjectSettingsStore {
   /// Creates the production project settings adapter.
   const FileProjectSettingsStore();

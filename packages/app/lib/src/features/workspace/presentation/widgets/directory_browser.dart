@@ -4,8 +4,8 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/remote_path.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +18,7 @@ const Duration directoryBrowserDebounce = Duration(milliseconds: 200);
 /// Opens the daemon-side directory browser and returns the chosen path.
 Future<String?> showDirectoryBrowser(
   BuildContext context, {
-  required CoderApi api,
+  required TinestApi api,
   required String initialPath,
 }) => showTRDialog<String>(
   context: context,
@@ -36,7 +36,7 @@ class DirectoryBrowserDialog extends StatefulWidget {
   });
 
   /// Daemon whose filesystem is browsed.
-  final CoderApi api;
+  final TinestApi api;
 
   /// Directory listed when the dialog opens.
   final String initialPath;
@@ -116,26 +116,26 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
                   : ListView(
                       children: <Widget>[
                         if (parent != null)
-                          CoderListRow(
+                          TinestListRow(
                             key: const ValueKey('directory-browser-parent'),
                             dense: true,
-                            leading: const Icon(CoderIcons.uploadFolder),
+                            leading: const Icon(TinestIcons.uploadFolder),
                             title: const TRText.inherit('..'),
                             onTap: () => unawaited(_open(parent)),
                           ),
                         for (final entry in _entries)
-                          CoderListRow(
+                          TinestListRow(
                             key: ValueKey(
                               'directory-browser-entry-${entry.path}',
                             ),
                             dense: true,
-                            leading: const Icon(CoderIcons.folder),
+                            leading: const Icon(TinestIcons.folder),
                             title: TRText.inherit(entry.name),
                             subtitle: TRText.inherit(entry.path),
                             onTap: () => unawaited(_open(entry.path)),
                           ),
                         if (!_loading && _entries.isEmpty && _error == null)
-                          CoderListRow(
+                          TinestListRow(
                             dense: true,
                             title: TRText.inherit(l10n.directoryBrowserEmpty),
                           ),
@@ -190,7 +190,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
         _loading = false;
         _loadedOnce = true;
       });
-    } on CoderClientException catch (error) {
+    } on TinestClientException catch (error) {
       if (!mounted || id != _requestId) return;
       setState(() {
         _error = error.message;
@@ -218,12 +218,12 @@ class DaemonPickerDialog extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         for (final host in hosts)
-          CoderListRow(
+          TinestListRow(
             onTap: () => Navigator.pop(context, host.id),
             leading: Icon(
               host.kind == HostKind.embedded
-                  ? CoderIcons.computer
-                  : CoderIcons.cloud,
+                  ? TinestIcons.computer
+                  : TinestIcons.cloud,
             ),
             title: TRText.inherit(
               hostLabel(AppLocalizations.of(context), host),

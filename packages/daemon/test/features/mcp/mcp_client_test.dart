@@ -45,7 +45,7 @@ void main() {
     expect(initialize['protocolVersion'], preferredMcpProtocolVersion);
     expect(
       (initialize['clientInfo']! as Map<String, dynamic>)['name'],
-      'tinyrack-coder',
+      'tinyrack-tinest',
     );
     expect(
       (initialize['clientInfo']! as Map<String, dynamic>)['version'],

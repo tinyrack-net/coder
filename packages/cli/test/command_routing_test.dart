@@ -136,7 +136,7 @@ void main() {
     test('list renders each definition', () async {
       expect(await run(<String>['agent', 'list']), 0);
 
-      expect(out.text, contains('coder'));
+      expect(out.text, contains('tinest'));
       expect(client.closed, isTrue);
     });
 
@@ -174,9 +174,9 @@ void main() {
     });
 
     test('reset restores the built-in definition', () async {
-      expect(await run(<String>['agent', 'reset', 'coder']), 0);
+      expect(await run(<String>['agent', 'reset', 'tinest']), 0);
 
-      expect(client.reset, <String>['coder']);
+      expect(client.reset, <String>['tinest']);
     });
 
     test('reset refuses any other agent', () async {
@@ -187,7 +187,7 @@ void main() {
 
     test('the real file reader is used by default', () async {
       final file = File(
-        '${Directory.systemTemp.createTempSync('coder-cli-agent-').path}'
+        '${Directory.systemTemp.createTempSync('tinest-cli-agent-').path}'
         '/reviewer.md',
       )..writeAsStringSync('markdown from disk');
       addTearDown(() => file.parent.deleteSync(recursive: true));
@@ -256,7 +256,7 @@ void main() {
           '--token',
           'a' * 32,
           '--allowed-origin',
-          'https://coder.tinyrack.net',
+          'https://tinest.tinyrack.net',
           '--allowed-origin',
           'http://localhost:8080',
           '--relay',
@@ -279,7 +279,7 @@ void main() {
       expect(seen?.port, 9300);
       expect(seen?.bearerToken, 'a' * 32);
       expect(seen?.allowedOrigins, <String>{
-        'https://coder.tinyrack.net',
+        'https://tinest.tinyrack.net',
         'http://localhost:8080',
       });
       expect(seen?.relay.enabled, isTrue);
@@ -335,7 +335,7 @@ void main() {
       );
 
       expect(client.relayEnabled, isTrue);
-      expect(out.text, contains('https://coder.tinyrack.net/pair#offer='));
+      expect(out.text, contains('https://tinest.tinyrack.net/pair#offer='));
       expect(out.text, contains('serverId'));
     });
 
@@ -438,9 +438,9 @@ final class _FakeHandle implements DaemonHandle {
   }
 }
 
-/// A [CoderClient] stand-in answering only the calls the CLI makes.
+/// A [TinestClient] stand-in answering only the calls the CLI makes.
 final class _FakeClient
-    implements CoderClient, ProvidersApi, AgentsApi, RelayApi {
+    implements TinestClient, ProvidersApi, AgentsApi, RelayApi {
   _FakeClient(this.now);
 
   final DateTime now;
@@ -471,7 +471,7 @@ final class _FakeClient
   RelayStatusDto get _relayStatus => RelayStatusDto(
     enabled: relayEnabled,
     connected: relayEnabled,
-    endpoint: 'wss://relay.coder.tinyrack.net/v1/ws',
+    endpoint: 'wss://relay.tinest.tinyrack.net/v1/ws',
     serverId: 'server-1',
   );
 
@@ -487,7 +487,7 @@ final class _FakeClient
   @override
   Future<RelayPairingOfferDto> createRelayPairingOffer() async =>
       RelayPairingOfferDto(
-        url: 'https://coder.tinyrack.net/pair#offer=test',
+        url: 'https://tinest.tinyrack.net/pair#offer=test',
         expiresAt: now.add(const Duration(minutes: 10)),
       );
 
@@ -536,7 +536,7 @@ final class _FakeClient
     callableAgentIds: const <String>[],
     contentHash: 'hash',
     sourcePath: '/config/agents/$id.md',
-    isBuiltIn: id == 'coder',
+    isBuiltIn: id == 'tinest',
   );
 
   @override
@@ -629,7 +629,7 @@ final class _FakeClient
 
   @override
   Future<List<AgentDefinitionDto>> listAgentDefinitions() async =>
-      <AgentDefinitionDto>[_definition('coder')];
+      <AgentDefinitionDto>[_definition('tinest')];
 
   @override
   Future<AgentDefinitionDto> validateAgentDefinition(

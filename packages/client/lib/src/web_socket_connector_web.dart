@@ -25,7 +25,7 @@ final class WebWebSocketConnector implements WebSocketConnector {
     final channel = WebSocketChannel.connect(
       uri,
       protocols: <String>[
-        coderWebSocketProtocol,
+        tinestWebSocketProtocol,
         if (token != null) encodeWebSocketTokenProtocol(token),
       ],
     );
@@ -37,7 +37,7 @@ final class WebWebSocketConnector implements WebSocketConnector {
       // Network Access permission are indistinguishable here. Report the
       // address instead of guessing between them.
       if (!targetsLocalNetwork(uri)) rethrow;
-      throw CoderClientException(
+      throw TinestClientException(
         'Could not reach a daemon at ${uri.host}:${uri.port}.',
         code: localNetworkUnreachableCode,
         retryable: true,

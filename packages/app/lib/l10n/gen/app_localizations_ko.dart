@@ -574,7 +574,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get errorInvalidProjectSettings =>
-      '프로젝트의 coder.json을 읽을 수 없습니다. 파일을 고친 뒤 다시 시도하세요.';
+      '프로젝트의 .tinest/config.json을 읽을 수 없습니다. 파일을 고친 뒤 다시 시도하세요.';
 
   @override
   String get errorRequestTimeout => 'Daemon이 제때 응답하지 않았습니다. 다시 시도하세요.';

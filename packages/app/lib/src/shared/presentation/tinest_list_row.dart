@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Selects the semantic surface used when a row is selected.
-enum CoderListRowSelectionAppearance {
+enum TinestListRowSelectionAppearance {
   /// Uses the standard content-list selected surface.
   standard,
 
@@ -11,7 +11,7 @@ enum CoderListRowSelectionAppearance {
   navigation,
 }
 
-/// A Coder content row composed exclusively from Tinyrack tokens.
+/// A Tinest content row composed exclusively from Tinyrack tokens.
 ///
 /// The row rings itself only while it holds the primary focus. A row reports
 /// focus for its descendants as well, so a row that read plain focus painted
@@ -20,9 +20,9 @@ enum CoderListRowSelectionAppearance {
 ///
 /// A row whose [onTap] only repeats what its trailing control already does sets
 /// [controlOwnsFocus] so the control is the single tab stop for the setting.
-class CoderListRow extends StatefulWidget {
+class TinestListRow extends StatefulWidget {
   /// Creates a content or navigation row.
-  const CoderListRow({
+  const TinestListRow({
     required this.title,
     this.contentPadding,
     this.controlOwnsFocus = false,
@@ -33,7 +33,7 @@ class CoderListRow extends StatefulWidget {
     this.leading,
     this.onTap,
     this.selected = false,
-    this.selectionAppearance = CoderListRowSelectionAppearance.standard,
+    this.selectionAppearance = TinestListRowSelectionAppearance.standard,
     this.subtitle,
     this.subtitleMaxLines,
     this.trailing,
@@ -60,7 +60,7 @@ class CoderListRow extends StatefulWidget {
   final bool selected;
 
   /// Semantic appearance used for the selected surface.
-  final CoderListRowSelectionAppearance selectionAppearance;
+  final TinestListRowSelectionAppearance selectionAppearance;
 
   /// Whether the row accepts activation.
   final bool enabled;
@@ -102,15 +102,15 @@ class CoderListRow extends StatefulWidget {
   final bool controlOwnsFocus;
 
   @override
-  State<CoderListRow> createState() => _CoderListRowState();
+  State<TinestListRow> createState() => _TinestListRowState();
 }
 
-class _CoderListRowState extends State<CoderListRow> {
+class _TinestListRowState extends State<TinestListRow> {
   final FocusNode _focusNode = FocusNode();
   bool _hovered = false;
   bool _focused = false;
 
-  /// Whether a pointer on the row runs [CoderListRow.onTap].
+  /// Whether a pointer on the row runs [TinestListRow.onTap].
   bool get _interactive => widget.enabled && widget.onTap != null;
 
   /// Whether the row is a tab stop of its own.
@@ -145,7 +145,7 @@ class _CoderListRowState extends State<CoderListRow> {
     final colors = context.tinyrackTheme;
     final background = widget.selected
         ? widget.selectionAppearance ==
-                  CoderListRowSelectionAppearance.navigation
+                  TinestListRowSelectionAppearance.navigation
               ? colors.surfaceHover
               : colors.surfaceSelected
         : widget.hoverEnabled && _hovered

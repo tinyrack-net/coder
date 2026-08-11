@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:coder_workspace/src/desktop_e2e_runner.dart';
-import 'package:coder_workspace/src/desktop_host.dart';
-import 'package:coder_workspace/src/windows_build_environment.dart';
+import 'package:tinest_workspace/src/desktop_e2e_runner.dart';
+import 'package:tinest_workspace/src/desktop_host.dart';
+import 'package:tinest_workspace/src/windows_build_environment.dart';
 
 import 'support/windows_build_environment.dart';
 
@@ -38,7 +38,7 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
 
   @override
   Future<String> createTemporaryHome() async =>
-      (await Directory.systemTemp.createTemp('coder-e2e-home-')).path;
+      (await Directory.systemTemp.createTemp('tinest-e2e-home-')).path;
 
   @override
   Future<void> deleteTemporaryHome(String path) async {

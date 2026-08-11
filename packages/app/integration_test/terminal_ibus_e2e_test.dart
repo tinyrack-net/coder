@@ -5,12 +5,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
@@ -30,13 +30,13 @@ void main() {
     'real IBus input and X clipboard paste reach the embedded PTY once',
     (tester) async {
       final daemonHome = await Directory.systemTemp.createTemp(
-        'coder-ibus-daemon-',
+        'tinest-ibus-daemon-',
       );
       final userHome = await Directory.systemTemp.createTemp(
-        'coder-ibus-user-',
+        'tinest-ibus-user-',
       );
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-ibus-workspace-',
+        'tinest-ibus-workspace-',
       );
       await _initializeGitRepository(workspace.path);
       final port = await reserveEphemeralPort();
@@ -87,7 +87,7 @@ void main() {
         settings: AppSettings(embeddedDaemonPort: port),
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
@@ -140,7 +140,7 @@ void main() {
       await _waitUntil(
         () async =>
             (await setupClient.terminals.listTerminals(checkout.id)).isNotEmpty,
-        'Coder to create the terminal through its real daemon',
+        'Tinest to create the terminal through its real daemon',
       );
       final terminal = (await setupClient.terminals.listTerminals(
         checkout.id,
@@ -149,7 +149,7 @@ void main() {
           .byKey(ValueKey<String>('terminal-view-${terminal.id}'))
           .hitTestable();
       await pumpUntil(tester, terminalViewFinder);
-      final terminalView = tester.widget<CoderTerminalView>(
+      final terminalView = tester.widget<TinestTerminalView>(
         terminalViewFinder,
       );
       const wrapReadyMarker = '__CODER_WRAP_PROBE_READY__';
@@ -315,12 +315,12 @@ void main() {
   );
 }
 
-Future<CoderApi> _connectToDaemon(int port, String token) async {
+Future<TinestApi> _connectToDaemon(int port, String token) async {
   Object? lastError;
   final deadline = DateTime.now().add(const Duration(seconds: 30));
   while (DateTime.now().isBefore(deadline)) {
     try {
-      return await CoderClient.connect(
+      return await TinestClient.connect(
         endpoint: HostEndpoint.parse('127.0.0.1:$port'),
         credentials: DaemonCredentials(bearerToken: token),
         clientId: 'ibus-e2e-setup',
@@ -383,7 +383,7 @@ Future<String> _findWindow() async {
     'search',
     '--onlyvisible',
     '--class',
-    r'^Net\.tinyrack\.coder$',
+    r'^Net\.tinyrack\.tinest$',
   ]);
   final ids = result.stdout.toString().trim().split(RegExp(r'\s+'));
   return ids.single;
@@ -576,7 +576,7 @@ Future<void> _waitForTerminalParsed(Terminal terminal) async {
   await parsed.future.timeout(const Duration(seconds: 15));
 }
 
-List<String> _terminalRows(CoderTerminalView view) {
+List<String> _terminalRows(TinestTerminalView view) {
   final buffer = view.terminal.buffer.active;
   return <String>[
     for (var index = 0; index < buffer.length; index++)
@@ -594,9 +594,9 @@ Future<void> _initializeGitRepository(String path) async {
     '-C',
     path,
     '-c',
-    'user.name=Coder IBus E2E',
+    'user.name=Tinest IBus E2E',
     '-c',
-    'user.email=coder-ibus-e2e@example.invalid',
+    'user.email=tinest-ibus-e2e@example.invalid',
     'commit',
     '-m',
     'Initial fixture',

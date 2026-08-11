@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coder_workspace/src/embedded_port_verifier.dart';
+import 'package:tinest_workspace/src/embedded_port_verifier.dart';
 
 /// Verifies E2E daemon port isolation and exits non-zero on a violation.
 void main() {

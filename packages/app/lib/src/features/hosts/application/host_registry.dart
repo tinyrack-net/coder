@@ -10,7 +10,7 @@ final class _RuntimeResource {
 
   int generation;
   int retryAttempt = 0;
-  CoderApi? api;
+  TinestApi? api;
   HostConnection? activeConnection;
   HostPathPolicy? pathPolicy;
   HostPathProbeTask? probeTask;
@@ -835,7 +835,7 @@ final class HostRegistry {
     required HostConnection connection,
     required HostConnectionCredential credential,
     required bool retry,
-    CoderApi? connectedApi,
+    TinestApi? connectedApi,
   }) async {
     final resource = _resources.putIfAbsent(
       hostId,
@@ -1114,7 +1114,7 @@ final class HostRegistry {
 
   void _handleClientState(
     String hostId,
-    CoderApi api,
+    TinestApi api,
     ClientConnectionState state,
   ) {
     if (_closed || value.runtimes[hostId]?.api != api) return;
@@ -1152,10 +1152,10 @@ final class HostRegistry {
 
   HostConnectionFailure _failureFrom(Object error) {
     if (error is HostConnectionFailure) return error;
-    if (error is CoderClientException && error.code == 'protocol_mismatch') {
+    if (error is TinestClientException && error.code == 'protocol_mismatch') {
       return HostConnectionFailure.protocolMismatch(error.message);
     }
-    if (error is CoderClientException &&
+    if (error is TinestClientException &&
         error.code == localNetworkUnreachableCode) {
       return HostConnectionFailure.network(
         error.message,
@@ -1307,5 +1307,5 @@ final class _ConnectedPath {
 
   final HostConnection connection;
   final HostConnectionCredential credential;
-  final CoderApi api;
+  final TinestApi api;
 }

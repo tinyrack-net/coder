@@ -23,7 +23,7 @@ void main() {
     id: id,
     worktreeId: 'checkout',
     title: taskName,
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.delegated,
     status: status,
     parentSessionId: parentId,

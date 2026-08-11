@@ -47,7 +47,7 @@ abstract interface class ExecSession {
   Future<void> interrupt();
 }
 
-/// Owns the terminals and pipes one coder session may drive.
+/// Owns the terminals and pipes one tinest session may drive.
 abstract interface class ExecSessionHost {
   /// Starts [command] in a new session rooted at [workingDirectory].
   ///

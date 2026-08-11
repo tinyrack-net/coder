@@ -1,6 +1,6 @@
 name: Build the CLI bundle
 description: >-
-  Build `coder-cli` for the current runner and lay it out as the directory
+  Build `tinest-cli` for the current runner and lay it out as the directory
   bundle every channel ships. `dart build cli` rather than `dart compile exe`,
   because hosting the daemon links the sqlite3 and PTY code assets: the
   executable loads them from a sibling `lib/` at run time.
@@ -25,17 +25,17 @@ runs:
       # network access rather than only a warm pub cache.
       run: |
         set -euo pipefail
-        dart build cli -t packages/cli/bin/coder_cli.dart -o dist
-        mkdir -p "dist/coder-cli-$TARGET"
-        cp -R dist/bundle/. "dist/coder-cli-$TARGET/"
+        dart build cli -t packages/cli/bin/tinest_cli.dart -o dist
+        mkdir -p "dist/tinest-cli-$TARGET"
+        cp -R dist/bundle/. "dist/tinest-cli-$TARGET/"
         # `dart build cli` names the launcher after the entrypoint file; every
-        # channel installs it as `coder-cli`.
+        # channel installs it as `tinest-cli`.
         if [ "$PLATFORM" = "windows" ]; then
-          mv "dist/coder-cli-$TARGET/bin/coder_cli.exe" \
-            "dist/coder-cli-$TARGET/bin/coder-cli.exe"
+          mv "dist/tinest-cli-$TARGET/bin/tinest_cli.exe" \
+            "dist/tinest-cli-$TARGET/bin/tinest-cli.exe"
         else
-          mv "dist/coder-cli-$TARGET/bin/coder_cli" \
-            "dist/coder-cli-$TARGET/bin/coder-cli"
+          mv "dist/tinest-cli-$TARGET/bin/tinest_cli" \
+            "dist/tinest-cli-$TARGET/bin/tinest-cli"
         fi
         dart run tool/build_lua_host.dart \
-          --destination "dist/coder-cli-$TARGET/bin"
+          --destination "dist/tinest-cli-$TARGET/bin"

@@ -1,10 +1,10 @@
 # Architecture
 
-Tinyrack Coder uses one authoritative daemon and multiple thin clients. The
+Tinest uses one authoritative daemon and multiple thin clients. The
 desktop app normally starts that daemon in a separate isolate; the standalone
 binary starts the same `DaemonApplication` in its own process. Android and iOS
 compile `main_mobile.dart`, whose bootstrap can only create a remote
-`CoderClient`.
+`TinestClient`.
 
 ```text
 app -> client -> protocol
@@ -23,7 +23,7 @@ app -> client -> protocol
   requests, responses, events, and typed procedure descriptors for protocol
   version 4.
 - `client`: authenticated JSON-RPC 2.0 over WebSocket, reconnect, and
-  sequence-based timeline catch-up. Its root `CoderApi` exposes lifecycle and
+  sequence-based timeline catch-up. Its root `TinestApi` exposes lifecycle and
   feature APIs such as `sessions`, `providers`, and `mcp`; each feature owns
   its typed update streams.
 - `agent`: provider-independent turn loop, approval policy, cancellation,
@@ -36,14 +36,14 @@ app -> client -> protocol
 - `cli`: standalone daemon composition and feature-API command surface.
 - `app`: feature-scoped Riverpod `AsyncNotifier` application state,
   typed go_router navigation, and adaptive Tinyrack UI. Controllers depend only
-  on injected ports such as the transport-neutral `CoderApi`.
+  on injected ports such as the transport-neutral `TinestApi`.
 
 Dependencies point inward through DTOs and interfaces. `agent` does not
 read databases or call the network. The daemon is the only package allowed to
 combine a provider, repositories, tools, and transports.
 
 The v4 WebSocket endpoint is `/v4/ws` with subprotocol
-`tinyrack.coder.v4`. `system.hello` requires protocol major 4 and revision 0.
+`tinyrack.tinest.v4`. `system.hello` requires protocol major 4 and revision 0.
 State and config start fresh under their respective `v4` directories; v2 and
 v3 data are neither read nor removed by normal startup or reset. Only the
 explicit legacy-cleanup operation may target those preserved namespaces.
@@ -68,7 +68,7 @@ composition is performed by the app shell. These rules are executable in
 Riverpod controllers are the Flutter equivalent of feature stores and actions;
 they retain their `Controller` naming. The central typed router owns URL shape,
 while route targets remain feature pages or app-owned cross-feature shells.
-The app consumes `CoderApi` and `protocol` DTOs directly because they are
+The app consumes `TinestApi` and `protocol` DTOs directly because they are
 already transport-neutral contracts. A repository or use-case is added only
 for an app-owned source of truth or genuinely shared, multi-source logic.
 
@@ -116,7 +116,7 @@ Linux and Windows runners are single-instance and later launches raise the
 running window. Linux keys that on the `GApplication` ID; Windows takes a mutex
 in the `Local\` namespace, which is scoped to the logon session and so matches
 the scope of the `%LOCALAPPDATA%` daemon home. Setting
-`TINYRACK_CODER_ALLOW_MULTIPLE_INSTANCES` opts a run out, which is how the E2E
+`TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES` opts a run out, which is how the E2E
 shards keep their own process. That also means `flutter run -d linux` exits
 immediately while another build of the app is running; stop it first.
 

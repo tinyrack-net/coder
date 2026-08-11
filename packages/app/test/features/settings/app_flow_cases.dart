@@ -7,19 +7,19 @@ void _registerSettingsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final first = FakeCoderApi(
+      final first = FakeTinestApi(
         serverInfo: const ServerInfoDto(
           serverId: 'first-server',
           version: 'test',
-          protocolVersion: coderProtocolMajor,
+          protocolVersion: tinestProtocolMajor,
           features: <String, bool>{},
         ),
       );
-      final second = FakeCoderApi(
+      final second = FakeTinestApi(
         serverInfo: const ServerInfoDto(
           serverId: 'second-server',
           version: 'test',
-          protocolVersion: coderProtocolMajor,
+          protocolVersion: tinestProtocolMajor,
           features: <String, bool>{},
         ),
       );
@@ -53,12 +53,12 @@ void _registerSettingsAppFlows() {
         },
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
             credentials: store,
-            clients: _MappedClients(<String, CoderApi>{
+            clients: _MappedClients(<String, TinestApi>{
               'first.test': first,
               'second.test': second,
             }),
@@ -129,11 +129,11 @@ void _registerSettingsAppFlows() {
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         serverInfo: const ServerInfoDto(
           serverId: 'sidebar-server',
           version: 'test',
-          protocolVersion: coderProtocolMajor,
+          protocolVersion: tinestProtocolMajor,
           features: <String, bool>{},
         ),
       );
@@ -153,12 +153,12 @@ void _registerSettingsAppFlows() {
         tokens: const <String, String>{'only': 'only-token'},
       );
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: store,
             profiles: store,
             credentials: store,
-            clients: _MappedClients(<String, CoderApi>{'only.test': api}),
+            clients: _MappedClients(<String, TinestApi>{'only.test': api}),
             clientKind: 'sidebar-daemon-select-test',
           ),
         ),
@@ -204,7 +204,7 @@ void _registerSettingsAppFlows() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(1100, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     final router = await _pumpRoute(
       tester,
       api,
@@ -246,7 +246,7 @@ void _registerSettingsAppFlows() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
-        FakeCoderApi(),
+        FakeTinestApi(),
         const ProviderSettingsRoute(hostId: 'server').location,
       );
       addTearDown(router.dispose);
@@ -277,7 +277,7 @@ void _registerSettingsAppFlows() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
-        FakeCoderApi(),
+        FakeTinestApi(),
         const DaemonCategoriesRoute(hostId: 'server').location,
       );
       addTearDown(router.dispose);
@@ -317,7 +317,7 @@ void _registerSettingsAppFlows() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
-        FakeCoderApi(),
+        FakeTinestApi(),
         const SettingsHomeRoute().location,
       );
       addTearDown(router.dispose);

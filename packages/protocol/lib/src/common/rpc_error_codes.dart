@@ -65,7 +65,7 @@ abstract final class RpcErrorCodes {
   /// The terminal shell process failed to start.
   static const String terminalStartFailed = 'terminal_start_failed';
 
-  /// A project `coder.json` file could not be parsed.
+  /// A project `.tinest/config.json` file could not be parsed.
   static const String invalidProjectSettings = 'invalid_project_settings';
 
   /// A setting was changed on a session whose turn is still running.

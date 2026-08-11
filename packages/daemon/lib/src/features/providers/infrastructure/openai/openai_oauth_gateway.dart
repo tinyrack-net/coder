@@ -134,7 +134,7 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
             'id_token_add_organizations': 'true',
             'codex_cli_simplified_flow': 'true',
             'state': state,
-            'originator': 'tinyrack_coder',
+            'originator': 'tinyrack_tinest',
           },
         )
         .toString();
@@ -358,7 +358,7 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
     request.response
       ..statusCode = status
       ..headers.contentType = ContentType.html
-      ..write('<!doctype html><title>Tinyrack Coder</title><p>$body</p>');
+      ..write('<!doctype html><title>Tinest</title><p>$body</p>');
     await request.response.close();
   }
 

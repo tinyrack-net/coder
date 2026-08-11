@@ -6,7 +6,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
@@ -19,7 +19,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 typedef _WorkspaceEntry = ({
   String hostId,
   String hostLabel,
-  CoderApi api,
+  TinestApi api,
   WorkspaceDto workspace,
   List<WorktreeDto> worktrees,
 });
@@ -179,7 +179,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const Icon(CoderIcons.add),
+                const Icon(TinestIcons.add),
                 const SizedBox(width: TRSpacing.extraSmall),
                 TRText(l10n.workspaceNewWorkspace),
               ],
@@ -257,7 +257,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               for (final entry in loose)
                 TRTreeNavLeaf<String>(
                   value: entry.session.id,
-                  leading: const Icon(CoderIcons.chat),
+                  leading: const Icon(TinestIcons.chat),
                   label: TRText.inherit(
                     entry.session.title,
                     maxLines: 1,
@@ -327,15 +327,15 @@ class WorkspaceSidebar extends ConsumerWidget {
           workspaceCount == 1 || selected?.workspaceId == workspace.id,
       leading: Icon(
         workspace.kind == WorkspaceKind.git
-            ? CoderIcons.worktree
-            : CoderIcons.folder,
+            ? TinestIcons.worktree
+            : TinestIcons.folder,
       ),
       label: Row(
         children: <Widget>[
           Expanded(child: TRText.inherit(workspace.name)),
           TRMenu.icon(
             key: ValueKey<String>('workspace-menu-${workspace.id}'),
-            icon: const Icon(CoderIcons.more),
+            icon: const Icon(TinestIcons.more),
             label: l10n.workspaceProjectMenu,
             menuChildren: <Widget>[
               TRMenuItem(
@@ -366,8 +366,8 @@ class WorkspaceSidebar extends ConsumerWidget {
             ),
             leading: Icon(
               worktree.kind == WorktreeKind.checkout
-                  ? CoderIcons.workspace
-                  : CoderIcons.branch,
+                  ? TinestIcons.workspace
+                  : TinestIcons.branch,
             ),
             label: TRText.inherit(worktree.branch ?? worktree.name),
             description: TRText.inherit(
@@ -380,7 +380,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: isArchivableWorktreeKind(worktree.kind)
                 ? TRMenu.icon(
                     key: ValueKey<String>('worktree-menu-${worktree.id}'),
-                    icon: const Icon(CoderIcons.more),
+                    icon: const Icon(TinestIcons.more),
                     label: l10n.workspaceWorktreeMenu,
                     menuChildren: <Widget>[
                       TRMenuItem(

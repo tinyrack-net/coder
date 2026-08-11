@@ -181,6 +181,6 @@ Future<RelayCipherState> _pairingCipher(
   RelayDirection direction,
 ) => RelayCipherState.create(
   sharedSecret: secret,
-  transcript: utf8.encode('tinyrack-coder-pair-v1:$serverId:$offerId'),
+  transcript: utf8.encode('tinyrack-tinest-pair-v1:$serverId:$offerId'),
   direction: direction,
 );

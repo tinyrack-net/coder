@@ -18,7 +18,7 @@ void main() {
   test(
     'daemon start serves a client that the same binary then drives',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-cli-daemon-');
+      final home = await Directory.systemTemp.createTemp('tinest-cli-daemon-');
       addTearDown(() => home.delete(recursive: true));
 
       // Port 0 lets the operating system pick a free port, so a parallel test
@@ -93,7 +93,7 @@ void main() {
   test(
     'a client rejects a daemon it cannot authenticate against',
     () async {
-      final home = await Directory.systemTemp.createTemp('coder-cli-daemon-');
+      final home = await Directory.systemTemp.createTemp('tinest-cli-daemon-');
       addTearDown(() => home.delete(recursive: true));
 
       final handle = await DaemonApplication.start(

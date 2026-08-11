@@ -15,14 +15,14 @@ void _registerWorkspaceControllerTests() {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
-    isCoderOwned: false,
+    isTinestOwned: false,
     createdAt: now,
   );
   final agent = SessionDto(
     id: 'agent',
     worktreeId: worktree.id,
     title: 'Agent',
-    agentDefinitionId: 'coder',
+    agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
     createdAt: now,
@@ -31,7 +31,7 @@ void _registerWorkspaceControllerTests() {
   test(
     'connection, workspace, and agent notifiers own their feature state',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],
@@ -106,7 +106,7 @@ void _registerWorkspaceControllerTests() {
           .read(agentsProvider.notifier)
           .create(
             title: 'Created',
-            agentDefinitionId: 'coder',
+            agentDefinitionId: 'tinest',
             mode: SessionMode.plan,
             model: override,
           );
@@ -194,7 +194,7 @@ void _registerWorkspaceControllerTests() {
         name: home.name,
         path: home.rootPath,
         kind: WorktreeKind.directory,
-        isCoderOwned: false,
+        isTinestOwned: false,
         createdAt: now,
       );
       final state = UnifiedWorkspaceCatalogState(
@@ -255,7 +255,7 @@ void _registerWorkspaceControllerTests() {
       source: ProviderCatalogSource.bundled,
       updatedAt: now,
     );
-    final firstApi = FakeCoderApi(
+    final firstApi = FakeTinestApi(
       serverInfo: _serverInfo('first-server'),
       workspaces: <WorkspaceDto>[hostWorkspace('first')],
       worktrees: <WorktreeDto>[worktree],
@@ -265,7 +265,7 @@ void _registerWorkspaceControllerTests() {
       },
       catalog: hostCatalog('first'),
     );
-    final secondApi = FakeCoderApi(
+    final secondApi = FakeTinestApi(
       serverInfo: _serverInfo('second-server'),
       workspaces: <WorkspaceDto>[hostWorkspace('second')],
       worktrees: <WorktreeDto>[worktree],
@@ -290,7 +290,7 @@ void _registerWorkspaceControllerTests() {
             settings: store,
             profiles: store,
             credentials: store,
-            clients: _HostClients(<String, CoderApi>{
+            clients: _HostClients(<String, TinestApi>{
               'first.test': firstApi,
               'second.test': secondApi,
             }),
@@ -360,7 +360,7 @@ void _registerWorkspaceControllerTests() {
     'session tabs close locally and persist independently per worktree',
     () async {
       final second = agent.copyWith(id: 'agent-2', title: 'Second');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent, second],
@@ -377,7 +377,7 @@ void _registerWorkspaceControllerTests() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: _HostClients(<String, CoderApi>{
+              clients: _HostClients(<String, TinestApi>{
                 'server.test': api,
               }),
               clientKind: 'test',
@@ -422,7 +422,7 @@ void _registerWorkspaceControllerTests() {
     'session catalog updates preserve the ready tab tree without loading',
     () async {
       final createGate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],
@@ -454,7 +454,7 @@ void _registerWorkspaceControllerTests() {
           .read(sessionsProvider.notifier)
           .create(
             title: 'Created',
-            agentDefinitionId: 'coder',
+            agentDefinitionId: 'tinest',
           );
       await Future<void>.delayed(Duration.zero);
 
@@ -507,7 +507,7 @@ void _registerWorkspaceControllerTests() {
             .read(sessionsProvider.notifier)
             .create(
               title: 'Failed',
-              agentDefinitionId: 'coder',
+              agentDefinitionId: 'tinest',
             ),
         throwsException,
       );
@@ -531,7 +531,7 @@ void _registerWorkspaceControllerTests() {
     'workspace tabs split, move, collapse empty panes, and persist ratios',
     () async {
       final second = agent.copyWith(id: 'agent-2', title: 'Second');
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent, second],
@@ -549,7 +549,7 @@ void _registerWorkspaceControllerTests() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: _HostClients(<String, CoderApi>{'server.test': api}),
+              clients: _HostClients(<String, TinestApi>{'server.test': api}),
               clientKind: 'test',
             ),
           ),
@@ -621,12 +621,12 @@ void _registerWorkspaceControllerTests() {
     'catalogs merge per host so one slow daemon cannot block others', //
     () async {
       final gate = Completer<void>();
-      final fastApi = FakeCoderApi(
+      final fastApi = FakeTinestApi(
         serverInfo: _serverInfo('first-server'),
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
       );
-      final slowApi = FakeCoderApi(
+      final slowApi = FakeTinestApi(
         serverInfo: _serverInfo('second-server'),
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
@@ -647,7 +647,7 @@ void _registerWorkspaceControllerTests() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: _HostClients(<String, CoderApi>{
+              clients: _HostClients(<String, TinestApi>{
                 'first.test': fastApi,
                 'second.test': slowApi,
               }),
@@ -684,7 +684,7 @@ void _registerWorkspaceControllerTests() {
     'a catalog response is ignored after its provider is disposed',
     () async {
       final gate = Completer<void>();
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         workspaceCatalogGate: gate.future,
@@ -710,7 +710,7 @@ void _registerWorkspaceControllerTests() {
   test(
     'saving the tab layout leaves the sidebar catalog and sessions untouched',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],
@@ -782,7 +782,7 @@ void _registerWorkspaceControllerTests() {
     'pending terminal tabs appear instantly, persist nothing, and promote '
     'or roll back',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
       );
@@ -798,7 +798,7 @@ void _registerWorkspaceControllerTests() {
               settings: store,
               profiles: store,
               credentials: store,
-              clients: _HostClients(<String, CoderApi>{'server.test': api}),
+              clients: _HostClients(<String, TinestApi>{'server.test': api}),
               clientKind: 'test',
             ),
           ),
@@ -874,7 +874,7 @@ void _registerWorkspaceControllerTests() {
   test(
     'tab mutations complete without waiting for the settings write',
     () async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[worktree],
         agents: <SessionDto>[agent],

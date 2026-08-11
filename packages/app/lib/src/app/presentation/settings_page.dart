@@ -16,10 +16,10 @@ import 'package:app/src/features/settings/presentation/pages/advanced_settings_p
 import 'package:app/src/features/settings/presentation/pages/general_settings_page.dart';
 import 'package:app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:app/src/features/workspace/presentation/pages/project_settings_page.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -191,7 +191,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact =
-            constraints.maxWidth < CoderLayoutMetrics.compactBreakpoint;
+            constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
         final body = compact
             ? switch ((widget.category, widget.hostId)) {
                 (null, null) => _MobileSettingsHome(hosts: hosts),
@@ -210,7 +210,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                     scroll: false,
                     // The sidebar lays content out at the width it is given,
                     // so the width belongs here rather than on an outer box.
-                    width: CoderLayoutMetrics.settingsSidebarWidth,
+                    width: TinestLayoutMetrics.settingsSidebarWidth,
                     child: _SettingsSidebar(
                       selected: category,
                       hosts: hosts,
@@ -231,14 +231,14 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _goBack(compact: compact, hostId: hostId);
           },
-          child: CoderPageShell(
-            appBar: CoderPageHeader(
+          child: TinestPageShell(
+            appBar: TinestPageHeader(
               leading: TRIconButton(
                 key: const ValueKey<String>('settings-back-button'),
                 appearance: TRAppearance.ghost,
                 label: MaterialLocalizations.of(context).backButtonTooltip,
                 onPressed: () => _goBack(compact: compact, hostId: hostId),
-                icon: const Icon(CoderIcons.back),
+                icon: const Icon(TinestIcons.back),
               ),
               title: TRText.inherit(AppLocalizations.of(context).settingsTitle),
             ),
@@ -289,7 +289,7 @@ class _MobileSettingsHome extends StatelessWidget {
           SettingsRow(
             leading: Icon(_settingsCategoryIcon(category)),
             title: TRText.inherit(_settingsCategoryLabel(l10n, category)),
-            control: const Icon(CoderIcons.chevronRight),
+            control: const Icon(TinestIcons.chevronRight),
             onTap: () => _goToSettingsCategory(context, category),
           ),
         const SizedBox(height: TRSpacing.large),
@@ -300,7 +300,7 @@ class _MobileSettingsHome extends StatelessWidget {
             leading: Icon(hostStatusIcon(host.status)),
             title: TRText.inherit(hostLabel(l10n, host)),
             description: TRText.inherit(hostStatusText(l10n, host)),
-            control: const Icon(CoderIcons.chevronRight),
+            control: const Icon(TinestIcons.chevronRight),
             onTap: () => _openDaemonCategories(context, host.id),
           ),
       ],
@@ -333,7 +333,7 @@ class _MobileDaemonCategories extends StatelessWidget {
     if (host == null) {
       return SettingsEmptyState(
         title: l10n.settingsDaemonSelectEmpty,
-        icon: const Icon(CoderIcons.daemon),
+        icon: const Icon(TinestIcons.daemon),
       );
     }
     return Column(
@@ -353,7 +353,7 @@ class _MobileDaemonCategories extends StatelessWidget {
                   title: TRText.inherit(
                     _settingsCategoryLabel(l10n, category),
                   ),
-                  control: const Icon(CoderIcons.chevronRight),
+                  control: const Icon(TinestIcons.chevronRight),
                   onTap: () => _goToSettingsCategory(
                     context,
                     category,
@@ -536,16 +536,16 @@ class _DaemonSelect extends ConsumerWidget {
 }
 
 IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
-  SettingsCategory.general => CoderIcons.tune,
-  SettingsCategory.project => CoderIcons.projects,
-  SettingsCategory.agent => CoderIcons.agent,
-  SettingsCategory.mcp => CoderIcons.extension,
-  SettingsCategory.connection => CoderIcons.link,
-  SettingsCategory.skill => CoderIcons.sparkle,
-  SettingsCategory.provider => CoderIcons.network,
-  SettingsCategory.permission => CoderIcons.permission,
-  SettingsCategory.daemon => CoderIcons.daemon,
-  SettingsCategory.advanced => CoderIcons.tool,
+  SettingsCategory.general => TinestIcons.tune,
+  SettingsCategory.project => TinestIcons.projects,
+  SettingsCategory.agent => TinestIcons.agent,
+  SettingsCategory.mcp => TinestIcons.extension,
+  SettingsCategory.connection => TinestIcons.link,
+  SettingsCategory.skill => TinestIcons.sparkle,
+  SettingsCategory.provider => TinestIcons.network,
+  SettingsCategory.permission => TinestIcons.permission,
+  SettingsCategory.daemon => TinestIcons.daemon,
+  SettingsCategory.advanced => TinestIcons.tool,
 };
 
 String _settingsCategoryLabel(

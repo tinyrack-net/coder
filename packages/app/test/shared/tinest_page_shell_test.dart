@@ -1,4 +1,4 @@
-import 'package:app/src/shared/presentation/coder_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -29,7 +29,7 @@ void main() {
 
     final shell = find.byType(TRAppShell);
     final surface = find.descendant(
-      of: find.byType(CoderPageShell),
+      of: find.byType(TinestPageShell),
       matching: find.byType(ColoredBox),
     );
 
@@ -72,8 +72,8 @@ Widget _host({required EdgeInsets padding, required Widget body}) =>
         ),
         child: child!,
       ),
-      home: CoderPageShell(
-        appBar: const CoderPageHeader(
+      home: TinestPageShell(
+        appBar: const TinestPageHeader(
           title: Text('Title', key: ValueKey<String>('title')),
         ),
         body: body,

@@ -77,10 +77,10 @@ final class ProviderAuthUpdatedClientEvent extends ClientEvent {
   final ProviderAuthAttemptDto attempt;
 }
 
-/// An in-memory [CoderApi] used by notifier and widget tests.
-final class FakeCoderApi
+/// An in-memory [TinestApi] used by notifier and widget tests.
+final class FakeTinestApi
     implements
-        CoderApi,
+        TinestApi,
         WorkspacesApi,
         SessionsApi,
         AgentsApi,
@@ -90,8 +90,8 @@ final class FakeCoderApi
         TerminalsApi,
         AttachmentsApi,
         RelayApi {
-  /// Creates a configurable [FakeCoderApi].
-  FakeCoderApi({
+  /// Creates a configurable [FakeTinestApi].
+  FakeTinestApi({
     ServerInfoDto? serverInfo,
     ProviderCatalogDto? catalog,
     List<ProviderConnectionDto>? connections,
@@ -143,7 +143,7 @@ final class FakeCoderApi
     this.relayPairingOffer,
     List<RelayDeviceDto>? relayDevices,
     this.relayEnabled = false,
-    this.relayEndpoint = 'wss://relay.coder.tinyrack.net/v1/ws',
+    this.relayEndpoint = 'wss://relay.tinest.tinyrack.net/v1/ws',
     this._defaultPermissionMode = PermissionMode.ask,
   }) : mcpListResponses =
            mcpListResponses ?? <Future<List<McpServerStateDto>>>[],
@@ -170,7 +170,7 @@ final class FakeCoderApi
        _terminals = List<TerminalDto>.of(terminals ?? const <TerminalDto>[]),
        _terminalReplays = _groupReplay(terminalReplay),
        _agentDefinitions = List<AgentDefinitionDto>.of(
-         agentDefinitions ?? <AgentDefinitionDto>[_coder],
+         agentDefinitions ?? <AgentDefinitionDto>[_tinest],
        ),
        _skills = List<SkillDto>.of(
          skills ?? <SkillDto>[_builtInSkill, _configSkill],
@@ -224,14 +224,14 @@ final class FakeCoderApi
   String relayEndpoint;
 
   /// Error thrown once by the next explicit provider catalog refresh.
-  CoderClientException? catalogRefreshError;
+  TinestClientException? catalogRefreshError;
 
   /// Error thrown once by the next explicit provider connection.
-  CoderClientException? providerConnectError;
+  TinestClientException? providerConnectError;
   static const ServerInfoDto _defaultServerInfo = ServerInfoDto(
     serverId: 'server',
     version: 'test',
-    protocolVersion: coderProtocolMajor,
+    protocolVersion: tinestProtocolMajor,
     features: <String, bool>{},
   );
   static final ProviderCatalogDto _defaultCatalog = ProviderCatalogDto(
@@ -308,9 +308,9 @@ final class FakeCoderApi
       source: CapabilitySource.bundled,
     ),
   );
-  static const AgentDefinitionDto _coder = AgentDefinitionDto(
-    id: 'coder',
-    name: 'Coder',
+  static const AgentDefinitionDto _tinest = AgentDefinitionDto(
+    id: 'tinest',
+    name: 'Tinest',
     description: 'General-purpose coding agent',
     mode: AgentMode.primary,
     promptEnabled: true,
@@ -321,8 +321,8 @@ final class FakeCoderApi
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
-    contentHash: 'coder-hash',
-    sourcePath: '/config/agents/coder.md',
+    contentHash: 'tinest-hash',
+    sourcePath: '/config/agents/tinest.md',
     isBuiltIn: true,
   );
 
@@ -485,13 +485,13 @@ final class FakeCoderApi
   ///
   /// Mutable so a test can clear it and assert that a failed submission left
   /// the composer usable for the retry.
-  CoderClientException? createWorktreeError;
+  TinestClientException? createWorktreeError;
 
   /// Optional gate used to keep a worktree creation pending.
   Completer<void>? createWorktreeGate;
 
   /// Optional daemon failure returned while listing directories.
-  final CoderClientException? suggestDirectoriesError;
+  final TinestClientException? suggestDirectoriesError;
 
   /// Directory queries received by the fake, in call order.
   final List<String> suggestedQueries = <String>[];
@@ -506,7 +506,7 @@ final class FakeCoderApi
   final Future<void>? searchFilesGate;
 
   /// Optional daemon failure returned while searching files.
-  final CoderClientException? searchFilesError;
+  final TinestClientException? searchFilesError;
 
   /// File search queries received by the fake, in call order.
   final List<String> searchedQueries = <String>[];
@@ -880,7 +880,7 @@ final class FakeCoderApi
       name: name,
       path: rootPath,
       kind: WorktreeKind.directory,
-      isCoderOwned: false,
+      isTinestOwned: false,
       createdAt: _now,
     );
     _workspaces.add(workspace);
@@ -983,7 +983,7 @@ final class FakeCoderApi
     if (projectSettingsError case final error?) throw error;
     return ProjectSettingsResultDto(
       settings: projectSettings[workspaceId] ?? const ProjectSettingsDto(),
-      sourcePath: '/projects/$workspaceId/coder.json',
+      sourcePath: '/projects/$workspaceId/.tinest/config.json',
     );
   }
 
@@ -1021,7 +1021,7 @@ final class FakeCoderApi
       path: '/worktrees/$branchName',
       branch: branchName,
       kind: WorktreeKind.managed,
-      isCoderOwned: true,
+      isTinestOwned: true,
       createdAt: _now,
     );
     _worktrees.add(worktree);
@@ -1042,7 +1042,7 @@ final class FakeCoderApi
     removesDirectory: _worktrees
         .where((item) => item.id == worktreeId)
         .first
-        .isCoderOwned,
+        .isTinestOwned,
   );
 
   @override
@@ -1518,19 +1518,19 @@ final class FakeCoderApi
 
   @override
   Future<AgentDefinitionDto> resetAgentDefinition(String id) async {
-    if (id != 'coder') throw StateError('Only coder can be reset.');
+    if (id != 'tinest') throw StateError('Only tinest can be reset.');
     final index = _agentDefinitions.indexWhere(
       (definition) => definition.id == id,
     );
-    _agentDefinitions[index] = _coder;
-    return _coder;
+    _agentDefinitions[index] = _tinest;
+    return _tinest;
   }
 
   @override
   Future<AgentDefinitionDto> validateAgentDefinition(
     String id,
     String markdown,
-  ) async => _coder.copyWith(id: id, systemPrompt: markdown);
+  ) async => _tinest.copyWith(id: id, systemPrompt: markdown);
 
   @override
   Future<List<AgentToolDefinitionDto>> listAgentTools({
@@ -2187,7 +2187,7 @@ final class FakeCoderApi
 
 /// Creates app services with one deterministic remote daemon profile.
 AppServices fakeAppServices(
-  FakeCoderApi api, {
+  FakeTinestApi api, {
   bool connected = true,
   String hostId = 'server',
   MemoryAppStore? store,
@@ -2248,10 +2248,10 @@ final class _NoopHostPathProbeTask implements HostPathProbeTask {
 final class _FakeHostClientFactory implements HostClientFactory {
   const _FakeHostClientFactory(this.api);
 
-  final CoderApi api;
+  final TinestApi api;
 
   @override
-  Future<CoderApi> connect({
+  Future<TinestApi> connect({
     required HostConnection connection,
     required HostConnectionCredential credential,
     required String clientId,

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:agent/agent.dart';
-import 'package:app/src/app/coder_app.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:daemon/daemon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -170,7 +170,7 @@ Future<void> _pumpProviderSettings(
 ) async {
   tester.binding.platformDispatcher.localeTestValue = const Locale('en');
   addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
-  await tester.pumpWidget(CoderApp(services: fixture.services));
+  await tester.pumpWidget(TinestApp(services: fixture.services));
   addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
   await tester.pumpAndSettle();
   await tester.tap(

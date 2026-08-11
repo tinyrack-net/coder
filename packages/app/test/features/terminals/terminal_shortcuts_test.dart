@@ -3,7 +3,7 @@ library;
 
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/features/terminals/presentation/coder_terminal_view.dart';
+import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,14 +12,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 final _now = DateTime.utc(2026, 8, 3);
 final _workspace = WorkspaceDto(
   id: 'workspace',
-  name: 'Coder',
-  rootPath: '/repos/coder',
+  name: 'Tinest',
+  rootPath: '/repos/tinest',
   kind: WorkspaceKind.git,
   createdAt: _now,
 );
@@ -27,11 +27,11 @@ final _worktree = WorktreeDto(
   id: 'checkout',
   workspaceId: 'workspace',
   name: 'main',
-  path: '/repos/coder',
+  path: '/repos/tinest',
   branch: 'main',
   head: 'abc',
   kind: WorktreeKind.checkout,
-  isCoderOwned: false,
+  isTinestOwned: false,
   createdAt: _now,
 );
 const _terminal = TerminalDto(
@@ -65,7 +65,7 @@ void main() {
     'a focused terminal keeps control chords and yields the shifted ones',
     (tester) async {
       final fired = <String>[];
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_workspace],
         worktrees: <WorktreeDto>[_worktree],
         terminals: const <TerminalDto>[_terminal],
@@ -149,7 +149,7 @@ void main() {
   testWidgets(
     'Ctrl+Shift+V pastes the clipboard while Ctrl+V stays with the program',
     (tester) async {
-      final api = FakeCoderApi(
+      final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[_workspace],
         worktrees: <WorktreeDto>[_worktree],
         terminals: const <TerminalDto>[_terminal],
@@ -218,7 +218,7 @@ void main() {
   testWidgets('Ctrl+Shift+C copies the selection to the clipboard', (
     tester,
   ) async {
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[_workspace],
       worktrees: <WorktreeDto>[_worktree],
       terminals: const <TerminalDto>[_terminal],
@@ -285,8 +285,8 @@ void main() {
     expect(copied, isEmpty);
     expect(api.terminalWrites, isEmpty);
 
-    final view = tester.widget<CoderTerminalView>(
-      find.byType(CoderTerminalView),
+    final view = tester.widget<TinestTerminalView>(
+      find.byType(TinestTerminalView),
     );
     view.controller.selectAll();
     await tester.pump();
@@ -304,7 +304,7 @@ void main() {
   testWidgets('a Hangul composition followed by Space is written once', (
     tester,
   ) async {
-    final api = FakeCoderApi(
+    final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[_workspace],
       worktrees: <WorktreeDto>[_worktree],
       terminals: const <TerminalDto>[_terminal],

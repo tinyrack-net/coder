@@ -1,7 +1,7 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 
 /// Returns the name to show for one daemon.
@@ -66,13 +66,13 @@ String hostStatusText(AppLocalizations l10n, HostRuntimeSnapshot? runtime) {
 /// A null status means the daemon has not reported yet, which reads as
 /// paused rather than as a failure.
 IconData hostStatusIcon(HostRuntimeStatus? status) => switch (status) {
-  HostRuntimeStatus.online => CoderIcons.success,
+  HostRuntimeStatus.online => TinestIcons.success,
   HostRuntimeStatus.connecting ||
-  HostRuntimeStatus.reconnecting => CoderIcons.sync,
-  HostRuntimeStatus.offline => CoderIcons.offline,
-  HostRuntimeStatus.conflict => CoderIcons.branch,
-  HostRuntimeStatus.error => CoderIcons.error,
-  HostRuntimeStatus.idle || null => CoderIcons.paused,
+  HostRuntimeStatus.reconnecting => TinestIcons.sync,
+  HostRuntimeStatus.offline => TinestIcons.offline,
+  HostRuntimeStatus.conflict => TinestIcons.branch,
+  HostRuntimeStatus.error => TinestIcons.error,
+  HostRuntimeStatus.idle || null => TinestIcons.paused,
 };
 
 /// Returns the localized message for a connection failure.

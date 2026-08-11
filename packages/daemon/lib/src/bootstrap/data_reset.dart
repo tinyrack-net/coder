@@ -99,7 +99,7 @@ final class NativeDaemonDataFiles implements DaemonDataFiles {
 /// Erases every daemon-owned file while preserving managed Git checkouts.
 ///
 /// The daemon must be stopped first: it holds an exclusive lock on
-/// `daemon.lock` and an open handle on `coder.sqlite`.
+/// `daemon.lock` and an open handle on `tinest.sqlite`.
 final class DaemonDataReset {
   /// Creates a reset targeting one daemon's config and state directories.
   const DaemonDataReset({
@@ -119,10 +119,10 @@ final class DaemonDataReset {
 
   /// Entries erased from [homeDirectory].
   static const List<String> homeEntries = <String>[
-    'v4/coder.sqlite',
-    'v4/coder.sqlite-wal',
-    'v4/coder.sqlite-shm',
-    'v4/coder.sqlite-journal',
+    'v4/tinest.sqlite',
+    'v4/tinest.sqlite-wal',
+    'v4/tinest.sqlite-shm',
+    'v4/tinest.sqlite-journal',
     'v4/attachments',
     'v4/daemon.lock',
   ];
@@ -174,7 +174,7 @@ final class DaemonDataReset {
   /// Absolute deletion targets, deduplicated by canonical path.
   ///
   /// The config and state roots collapse into one directory on macOS, on
-  /// Windows without `LOCALAPPDATA`, and under `TINYRACK_CODER_HOME`, so the
+  /// Windows without `LOCALAPPDATA`, and under `TINYRACK_TINEST_HOME`, so the
   /// same entry can be named twice.
   List<String> _targets() {
     final seen = <String>{};

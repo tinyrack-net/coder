@@ -5,7 +5,7 @@ import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -78,7 +78,7 @@ class ChatAttachmentLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TRChatMessageRow(
-    icon: message.attachment.isImage ? CoderIcons.image : CoderIcons.file,
+    icon: message.attachment.isImage ? TinestIcons.image : TinestIcons.file,
     alignment: TRChatMessageAlignment.center,
     child: Align(
       alignment: AlignmentDirectional.centerStart,
@@ -169,15 +169,15 @@ class _ChatAttachmentTileState extends State<ChatAttachmentTile> {
                       height: TRControlMetrics.heightOf(TRUiSize.lg),
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const Icon(
-                        CoderIcons.image,
+                        TinestIcons.image,
                       ),
                     ),
                   )
                 : _failed
-                ? const Icon(CoderIcons.image)
+                ? const Icon(TinestIcons.image)
                 : const TRSkeleton(shape: TRSkeletonShape.rectangle),
           )
-        : Icon(attachment.isImage ? CoderIcons.image : CoderIcons.file);
+        : Icon(attachment.isImage ? TinestIcons.image : TinestIcons.file);
     final onTap = loader == null
         ? null
         : () => attachment.isImage
@@ -215,7 +215,7 @@ class _ChatAttachmentTileState extends State<ChatAttachmentTile> {
               ),
               if (!attachment.isImage) ...<Widget>[
                 const SizedBox(width: TRSpacing.small),
-                const Icon(CoderIcons.download),
+                const Icon(TinestIcons.download),
               ],
             ],
           ),
@@ -260,7 +260,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return TRChatMessageRow(
-      icon: CoderIcons.status,
+      icon: TinestIcons.status,
       tone: TRChatMessageTone.primary,
       // One selection host for the whole answer. `MarkdownBody.selectable`
       // would give every block its own `SelectableText`, so a drag could never
@@ -289,7 +289,7 @@ class ChatAssistantMessageView extends ConsumerWidget {
                   appearance: TRAppearance.ghost,
                   uiSize: TRUiSize.sm,
                   label: l10n.chatCopyResponse,
-                  icon: const Icon(CoderIcons.copy),
+                  icon: const Icon(TinestIcons.copy),
                   onPressed: () => Clipboard.setData(
                     ClipboardData(text: message.markdown),
                   ),
@@ -349,7 +349,7 @@ class ChatUsageLine extends StatelessWidget {
       child: TRChatStatusRow(
         label: summary,
         status: TRChatToolStatus.succeeded,
-        icon: CoderIcons.gauge,
+        icon: TinestIcons.gauge,
       ),
     );
   }
@@ -479,7 +479,7 @@ class ChatDeferredToolsLine extends StatelessWidget {
     child: TRChatStatusRow(
       label: AppLocalizations.of(context).chatDeferredTools(notice.count),
       status: TRChatToolStatus.succeeded,
-      icon: CoderIcons.tool,
+      icon: TinestIcons.tool,
     ),
   );
 }
@@ -513,7 +513,7 @@ class ChatEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(
-            CoderIcons.chat,
+            TinestIcons.chat,
             size: TRSpacing.twoExtraLarge,
             color: context.tinyrackTheme.textMuted,
           ),

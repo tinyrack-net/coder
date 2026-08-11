@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -250,10 +250,10 @@ class _CaptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TRIconButton(
     icon: Icon(switch (action) {
-      DesktopCaptionAction.minimize => CoderIcons.minimize,
-      DesktopCaptionAction.maximize => CoderIcons.maximize,
-      DesktopCaptionAction.restore => CoderIcons.restoreWindow,
-      DesktopCaptionAction.close => CoderIcons.close,
+      DesktopCaptionAction.minimize => TinestIcons.minimize,
+      DesktopCaptionAction.maximize => TinestIcons.maximize,
+      DesktopCaptionAction.restore => TinestIcons.restoreWindow,
+      DesktopCaptionAction.close => TinestIcons.close,
     }),
     label: tooltip,
     onPressed: onPressed,

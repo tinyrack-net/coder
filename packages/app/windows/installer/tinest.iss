@@ -1,11 +1,11 @@
-; Inno Setup script for the Coder desktop application.
+; Inno Setup script for the Tinest desktop application.
 ;
 ; The Flutter release output is a directory, so the installer ships the whole
 ; tree and creates the shortcuts and uninstaller that a portable zip cannot.
 ;
 ; Build with:
 ;   iscc /DAppVersion=1.2.3 /DSourceDir=..\..\build\windows\x64\runner\Release \
-;        /DOutputDir=..\..\dist /DAppArch=x64 coder.iss
+;        /DOutputDir=..\..\dist /DAppArch=x64 tinest.iss
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -20,10 +20,10 @@
   #define AppArch "x64"
 #endif
 
-#define AppName "Coder"
+#define AppName "Tinest"
 #define AppPublisher "Tinyrack"
-#define AppUrl "https://github.com/tinyrack-net/coder"
-#define AppExeName "coder.exe"
+#define AppUrl "https://github.com/tinyrack-net/tinest"
+#define AppExeName "tinest.exe"
 
 [Setup]
 AppId={{9F4B3C21-6E58-4A7D-9C1E-0B2D5A8F3E14}
@@ -39,7 +39,7 @@ DisableProgramGroupPage=yes
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExeName}
 OutputDir={#OutputDir}
-OutputBaseFilename=Coder-setup-win-{#AppArch}
+OutputBaseFilename=Tinest-setup-win-{#AppArch}
 SetupIconFile=..\runner\resources\app_icon.ico
 Compression=lzma2/max
 SolidCompression=yes
@@ -51,7 +51,7 @@ PrivilegesRequiredOverridesAllowed=commandline dialog
 ; otherwise survive the install, keep the exclusive lock on the daemon home,
 ; and make the freshly launched copy fail to start its daemon. The mutex name
 ; must match kMutexName in windows/runner/single_instance.cpp.
-AppMutex=Local\tinyrack-coder-single-instance
+AppMutex=Local\tinyrack-tinest-single-instance
 CloseApplications=yes
 ; The app restores itself through its login item, and restarting it from here
 ; would run it with the installer's token.
@@ -92,14 +92,14 @@ Filename: "{app}\{#AppExeName}"; \
 
 [Registry]
 ; Register the fragment-only pairing protocol for installed desktop builds.
-Root: HKA; Subkey: "Software\Classes\tinyrack-coder"; \
-  ValueType: string; ValueData: "URL:Tinyrack Coder pairing protocol"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\tinyrack-coder"; \
+Root: HKA; Subkey: "Software\Classes\tinyrack-tinest"; \
+  ValueType: string; ValueData: "URL:Tinest pairing protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\tinyrack-tinest"; \
   ValueName: "URL Protocol"; ValueType: string; ValueData: ""
-Root: HKA; Subkey: "Software\Classes\tinyrack-coder\shell\open\command"; \
+Root: HKA; Subkey: "Software\Classes\tinyrack-tinest\shell\open\command"; \
   ValueType: string; ValueData: """{app}\{#AppExeName}"" ""%1"""
 ; The app registers itself to start at login by writing this Run value, so the
 ; uninstaller has to remove it or Windows keeps launching a deleted path. The
 ; entry is never created here, only cleaned up.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
-  ValueName: "tinyrack-coder"; ValueType: none; Flags: uninsdeletevalue
+  ValueName: "tinyrack-tinest"; ValueType: none; Flags: uninsdeletevalue

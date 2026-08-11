@@ -1,13 +1,13 @@
 import javax.inject.Inject
 import org.gradle.process.ExecOperations
 
-abstract class CoderExecOperations {
+abstract class TinestExecOperations {
     @Inject
     abstract ExecOperations getExecOperations()
 }
 
 def execOperations = objects
-    .newInstance(CoderExecOperations)
+    .newInstance(TinestExecOperations)
     .execOperations
 
 // irondash_engine_context 0.5.5 bundles CargoKit code that invokes the

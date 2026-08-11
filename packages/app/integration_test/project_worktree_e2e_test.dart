@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app/src/app/coder_app.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -15,11 +15,11 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'project hooks save to .coder/config.json, preserve keys, and reload',
+    'project hooks save to .tinest/config.json, preserve keys, and reload',
     (tester) async {
       final fixture = await _projectFixture('project-save');
       addTearDown(fixture.$1.dispose);
-      final settingsFile = File('${fixture.$2.path}/.coder/config.json');
+      final settingsFile = File('${fixture.$2.path}/.tinest/config.json');
       await settingsFile.parent.create();
       await settingsFile.writeAsString(
         '${jsonEncode(<String, Object?>{
@@ -67,7 +67,7 @@ void main() {
     (tester) async {
       final fixture = await _projectFixture('project-recovery');
       addTearDown(fixture.$1.dispose);
-      final settingsFile = File('${fixture.$2.path}/.coder/config.json');
+      final settingsFile = File('${fixture.$2.path}/.tinest/config.json');
       await settingsFile.parent.create();
       await settingsFile.writeAsString('{not json\n');
 
@@ -104,7 +104,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(CoderApp(services: fixture.$1.services));
+      await tester.pumpWidget(TinestApp(services: fixture.$1.services));
       await pumpUntil(tester, find.text('Git Project E2E'));
       final created = await client.workspaces.createWorktree(
         id: 'failed-worktree',
@@ -153,7 +153,7 @@ void main() {
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(CoderApp(services: fixture.$1.services));
+      await tester.pumpWidget(TinestApp(services: fixture.$1.services));
       await pumpUntil(tester, find.text('archive-cancel'));
       final menu = find.byKey(
         ValueKey<String>('worktree-menu-${activeWorktree.id}'),
@@ -213,9 +213,9 @@ Future<(RealDaemonFixture, Directory, String)> _gitProjectFixture(
   await _runGit(root.path, <String>['add', 'README.md']);
   await _runGit(root.path, <String>[
     '-c',
-    'user.name=Coder E2E',
+    'user.name=Tinest E2E',
     '-c',
-    'user.email=coder-e2e@example.invalid',
+    'user.email=tinest-e2e@example.invalid',
     'commit',
     '-m',
     'Initial fixture',
@@ -250,7 +250,7 @@ Future<void> _pumpProjectSettings(
   addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
   await tester.binding.setSurfaceSize(const Size(1200, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(CoderApp(services: fixture.services));
+  await tester.pumpWidget(TinestApp(services: fixture.services));
   await tester.pumpAndSettle();
   await pumpUntil(tester, find.text('Project E2E'));
   await tester.tap(

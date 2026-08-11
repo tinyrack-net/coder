@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:agent/agent.dart';
-import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
@@ -14,8 +14,8 @@ import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:dropwell/dropwell.dart';
@@ -48,25 +48,25 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1400, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       FlutterSecureStorage.setMockInitialValues(<String, String>{});
-      final home = await Directory.systemTemp.createTemp('coder-e2e-home-');
+      final home = await Directory.systemTemp.createTemp('tinest-e2e-home-');
       final workspace = await Directory.systemTemp.createTemp(
-        'coder-e2e-workspace-',
+        'tinest-e2e-workspace-',
       );
       final directoryWorkspace = await Directory.systemTemp.createTemp(
-        'coder-e2e-directory-',
+        'tinest-e2e-directory-',
       );
       // Stands in for the machine home the daemon turns into the implicit home
       // workspace, so the run never touches the home of whoever runs it.
       final userHome = Directory(
         await (await Directory.systemTemp.createTemp(
-          'coder-e2e-user-home-',
+          'tinest-e2e-user-home-',
         )).resolveSymbolicLinks(),
       );
       final remoteHome = await Directory.systemTemp.createTemp(
-        'coder-e2e-remote-home-',
+        'tinest-e2e-remote-home-',
       );
       final remoteWorkspace = await Directory.systemTemp.createTemp(
-        'coder-e2e-remote-workspace-',
+        'tinest-e2e-remote-workspace-',
       );
       const selectedModelId =
           'vendor/reasoning-model-with-an-extremely-long-identifier';
@@ -144,7 +144,7 @@ void main() {
       final endpoint = HostEndpoint(
         websocketUri: handle.boundEndpoint,
       );
-      var setupClient = await CoderClient.connect(
+      var setupClient = await TinestClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
@@ -153,7 +153,7 @@ void main() {
         clientKind: 'integration-test',
       );
       addTearDown(() => setupClient.close());
-      final remoteClient = await CoderClient.connect(
+      final remoteClient = await TinestClient.connect(
         endpoint: HostEndpoint(websocketUri: remoteHandle.boundEndpoint),
         credentials: const DaemonCredentials(
           bearerToken: 'remote-token-0123456789abcdef0123456789',
@@ -231,7 +231,7 @@ void main() {
       addTearDown(desktopWindow.releaseClose);
 
       await tester.pumpWidget(
-        CoderApp(
+        TinestApp(
           services: AppServices(
             settings: appStore,
             profiles: appStore,
@@ -311,7 +311,7 @@ void main() {
       );
       await pumpUntilCondition(
         tester,
-        () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
+        () => tester.widget<TinestSwitchRow>(exposureToggle).onChanged != null,
         'all-interface daemon to reconnect',
       );
       expect(
@@ -329,14 +329,14 @@ void main() {
       );
       await pumpUntilCondition(
         tester,
-        () => tester.widget<CoderSwitchRow>(exposureToggle).onChanged != null,
+        () => tester.widget<TinestSwitchRow>(exposureToggle).onChanged != null,
         'loopback daemon to reconnect',
       );
       expect(
         embeddedLauncher.exposures.last,
         EmbeddedDaemonExposure.loopback,
       );
-      setupClient = await CoderClient.connect(
+      setupClient = await TinestClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
@@ -429,7 +429,7 @@ void main() {
           'reviewer',
           'this document has no frontmatter',
         ),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
       expect(await reviewerFile.readAsString(), validReviewerSource);
 
@@ -464,7 +464,7 @@ void main() {
         isNot(contains('temporary')),
       );
 
-      await tester.tap(find.text('Coder').first);
+      await tester.tap(find.text('Tinest').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
       await tester.pumpAndSettle();
@@ -499,7 +499,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<CoderCheckboxRow>(
+            .widget<TinestCheckboxRow>(
               find.byKey(
                 const ValueKey<String>('agent-tool-tile-collaboration'),
               ),
@@ -520,11 +520,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
-      final collaboratingCoder = await setupClient.agents.getAgentDefinition(
-        'coder',
+      final collaboratingTinest = await setupClient.agents.getAgentDefinition(
+        'tinest',
       );
-      expect(collaboratingCoder.callableAgentIds, <String>['reviewer']);
-      expect(collaboratingCoder.toolIds, contains('collaboration'));
+      expect(collaboratingTinest.callableAgentIds, <String>['reviewer']);
+      expect(collaboratingTinest.toolIds, contains('collaboration'));
 
       await tester.tap(find.text('Agent'));
       await pumpUntil(tester, find.text('Agents'));
@@ -608,7 +608,7 @@ void main() {
           invokedSkill.copyWith(body: 'must not overwrite'),
           expectedContentHash: 'stale-content-hash',
         ),
-        throwsA(isA<CoderClientException>()),
+        throwsA(isA<TinestClientException>()),
       );
       expect(await invokedSkillFile.readAsString(), validSkillSource);
 
@@ -794,21 +794,21 @@ void main() {
             McpServerStatus.ready,
         'the MCP turn server to reconnect',
       );
-      final coderDefinition = await setupClient.agents.getAgentDefinition(
-        'coder',
+      final tinestDefinition = await setupClient.agents.getAgentDefinition(
+        'tinest',
       );
       // The remaining turn fixtures invoke individual tools directly, so they
       // need the MCP echo capability on top of the shipped set. The Lua
       // surface stays out of them because these models declare the direct
       // tool surface, not because of anything listed here.
       await setupClient.agents.updateAgentDefinition(
-        coderDefinition.copyWith(
-          toolIds: <String>[...coderDefinition.toolIds, 'mcp__e2e__echo'],
+        tinestDefinition.copyWith(
+          toolIds: <String>[...tinestDefinition.toolIds, 'mcp__e2e__echo'],
         ),
-        expectedContentHash: coderDefinition.contentHash,
+        expectedContentHash: tinestDefinition.contentHash,
       );
 
-      await tester.tap(find.byIcon(CoderIcons.back).first);
+      await tester.tap(find.byIcon(TinestIcons.back).first);
       await pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
@@ -985,7 +985,7 @@ void main() {
         tester,
         find.descendant(
           of: childRow,
-          matching: find.byIcon(CoderIcons.approvalPending),
+          matching: find.byIcon(TinestIcons.approvalPending),
         ),
       );
 
@@ -1025,7 +1025,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TRMenuItem, 'review_task'), findsNothing);
       await tester.tap(find.text('Delegate review').last);
-      await pumpUntil(tester, find.text('coder · manual'));
+      await pumpUntil(tester, find.text('tinest · manual'));
       await pumpUntil(tester, find.byKey(composer));
 
       final goalSessionId = (await setupClient.sessions.listSessions(
@@ -1081,7 +1081,7 @@ void main() {
         );
       }
       await pumpUntil(tester, find.text('완료'));
-      final reconnectClient = await CoderClient.connect(
+      final reconnectClient = await TinestClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(bearerToken: handle.bearerToken),
         clientId: 'goal-reconnect',
@@ -1648,7 +1648,7 @@ void main() {
         findsOneWidget,
       );
 
-      final reconnected = await CoderClient.connect(
+      final reconnected = await TinestClient.connect(
         endpoint: endpoint,
         credentials: DaemonCredentials(
           bearerToken: handle.bearerToken,
@@ -2287,7 +2287,7 @@ void main() {
       await window.interceptClose(() => closes += 1);
 
       const menu = TrayMenuModel(
-        tooltip: 'Tinyrack Coder',
+        tooltip: 'Tinest',
         entries: <TrayMenuEntry>[
           TrayMenuEntry(
             key: trayItemToggleWindow,
@@ -2377,7 +2377,7 @@ final class _E2eAttachmentInput implements AttachmentInputPort {
 }
 
 Future<ProviderConnectionDto> _waitForProviderModels(
-  CoderApi api,
+  TinestApi api,
   String displayName,
 ) => awaitValue(() async {
   final connection = (await api.providers.listProviderConnections())
@@ -2389,7 +2389,7 @@ Future<ProviderConnectionDto> _waitForProviderModels(
 }, '$displayName to discover models');
 
 Future<void> _waitForAgentPrompt(
-  CoderApi api,
+  TinestApi api,
   String id,
   String prompt,
 ) => awaitCondition(
@@ -2398,12 +2398,12 @@ Future<void> _waitForAgentPrompt(
 );
 
 Future<AgentDefinitionDto> _waitForAgentDefinition(
-  CoderApi api,
+  TinestApi api,
   String id,
 ) => awaitValue(() async {
   try {
     return await api.agents.getAgentDefinition(id);
-  } on CoderClientException catch (error) {
+  } on TinestClientException catch (error) {
     if (error.code != 'request_failed') rethrow;
     return null;
   }
@@ -2486,9 +2486,9 @@ Future<void> _initializeGitRepository(String path) async {
   await _runGit(path, <String>['add', 'README.md']);
   await _runGit(path, <String>[
     '-c',
-    'user.name=Coder E2E',
+    'user.name=Tinest E2E',
     '-c',
-    'user.email=coder-e2e@example.invalid',
+    'user.email=tinest-e2e@example.invalid',
     'commit',
     '-m',
     'Initial fixture',
@@ -2733,7 +2733,7 @@ Future<void> _replaceMcpFieldText(
 Future<void> _pumpUntilWithSessionDiagnostics(
   WidgetTester tester,
   Finder finder,
-  CoderApi api,
+  TinestApi api,
 ) async {
   try {
     await pumpUntil(tester, finder, budget: e2eTurnBudget);

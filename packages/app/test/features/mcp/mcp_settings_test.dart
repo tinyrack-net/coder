@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-import '../../support/fake_coder_api.dart';
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
@@ -39,7 +39,7 @@ void main() {
     shadowed: shadowed,
     sourcePath: scope == McpConfigScope.user
         ? '/config/mcp.json'
-        : '/repos/coder/.mcp.json',
+        : '/repos/tinest/.mcp.json',
     serverName: config.id,
     tools: <McpToolSummaryDto>[
       McpToolSummaryDto(
@@ -50,7 +50,7 @@ void main() {
     ],
   );
 
-  Future<GoRouter> pump(WidgetTester tester, FakeCoderApi api) async {
+  Future<GoRouter> pump(WidgetTester tester, FakeTinestApi api) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final router = GoRouter(
@@ -78,7 +78,7 @@ void main() {
   }
 
   testWidgets('an empty daemon invites the first server', (tester) async {
-    await pump(tester, FakeCoderApi());
+    await pump(tester, FakeTinestApi());
 
     expect(find.text('MCP 서버'), findsOneWidget);
     expect(
@@ -89,7 +89,7 @@ void main() {
   });
 
   testWidgets('adding a server writes it through the daemon', (tester) async {
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     await pump(tester, api);
 
     await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
@@ -122,7 +122,7 @@ void main() {
   });
 
   testWidgets('an unusable server id is refused before saving', (tester) async {
-    final api = FakeCoderApi();
+    final api = FakeTinestApi();
     await pump(tester, api);
 
     await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
@@ -142,7 +142,7 @@ void main() {
   });
 
   testWidgets('switching transport swaps the fields it needs', (tester) async {
-    await pump(tester, FakeCoderApi());
+    await pump(tester, FakeTinestApi());
 
     await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
     await tester.pumpAndSettle();
@@ -167,7 +167,7 @@ void main() {
   });
 
   testWidgets('a ready server shows its status and tools', (tester) async {
-    final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+    final api = FakeTinestApi()..mcpServers['github'] = ready(stdioServer);
     await pump(tester, api);
 
     expect(
@@ -189,7 +189,7 @@ void main() {
   testWidgets(
     'a server publishing resources lists them beside its tools',
     (tester) async {
-      final api = FakeCoderApi()
+      final api = FakeTinestApi()
         ..mcpServers['github'] = ready(stdioServer).copyWith(
           resources: const <McpResourceSummaryDto>[
             McpResourceSummaryDto(
@@ -259,7 +259,7 @@ void main() {
   testWidgets(
     'a server without resources says so instead of showing nothing',
     (tester) async {
-      final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+      final api = FakeTinestApi()..mcpServers['github'] = ready(stdioServer);
       await pump(tester, api);
       await tester.tap(
         find.byKey(const ValueKey<String>('mcp-server-tile-github')),
@@ -283,7 +283,7 @@ void main() {
   );
 
   testWidgets('a failed server surfaces its reason and output', (tester) async {
-    final api = FakeCoderApi()
+    final api = FakeTinestApi()
       ..mcpServers['github'] = const McpServerStateDto(
         config: stdioServer,
         status: McpServerStatus.failed,
@@ -314,7 +314,7 @@ void main() {
   testWidgets('a project server is shown read-only with its source', (
     tester,
   ) async {
-    final api = FakeCoderApi()
+    final api = FakeTinestApi()
       ..mcpServers['repo'] = ready(
         projectServer,
         scope: McpConfigScope.project,
@@ -351,7 +351,7 @@ void main() {
   });
 
   testWidgets('a shadowed project server warns why it is off', (tester) async {
-    final api = FakeCoderApi()
+    final api = FakeTinestApi()
       ..mcpServers['user'] = ready(stdioServer)
       ..mcpServers['repo'] = ready(
         projectServer,
@@ -371,7 +371,7 @@ void main() {
   });
 
   testWidgets('testing a connection reports what it found', (tester) async {
-    final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+    final api = FakeTinestApi()..mcpServers['github'] = ready(stdioServer);
     await pump(tester, api);
     await tester.tap(
       find.byKey(const ValueKey<String>('mcp-server-tile-github')),
@@ -389,7 +389,7 @@ void main() {
   });
 
   testWidgets('deleting asks first, then removes the server', (tester) async {
-    final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+    final api = FakeTinestApi()..mcpServers['github'] = ready(stdioServer);
     await pump(tester, api);
     await tester.tap(
       find.byKey(const ValueKey<String>('mcp-server-tile-github')),
@@ -411,7 +411,7 @@ void main() {
   testWidgets('a secret is stored without appearing in the config', (
     tester,
   ) async {
-    final api = FakeCoderApi()..mcpServers['github'] = ready(stdioServer);
+    final api = FakeTinestApi()..mcpServers['github'] = ready(stdioServer);
     await pump(tester, api);
     await tester.tap(
       find.byKey(const ValueKey<String>('mcp-server-tile-github')),

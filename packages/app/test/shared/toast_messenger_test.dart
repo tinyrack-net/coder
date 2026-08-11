@@ -66,7 +66,7 @@ void main() {
       () {
         messenger.failure(
           'Could not save.',
-          error: const CoderClientException('the host refused the request'),
+          error: const TinestClientException('the host refused the request'),
         );
 
         expect(
@@ -98,7 +98,7 @@ void main() {
       () {
         messenger.failure(
           'Could not save.',
-          error: CoderClientException('detail ' * 200),
+          error: TinestClientException('detail ' * 200),
         );
 
         final description = _description(controller.toasts.single)!;
@@ -166,7 +166,7 @@ void main() {
       'a thrown action answers false and reports the failure',
       () async {
         final saved = await messenger.run(
-          () async => throw const CoderClientException('the host refused'),
+          () async => throw const TinestClientException('the host refused'),
           failure: 'Could not save.',
           success: 'Saved.',
         );

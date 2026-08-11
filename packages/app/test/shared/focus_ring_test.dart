@@ -1,8 +1,8 @@
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
-import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +47,7 @@ Finder get _primaryFocus => find.byElementPredicate(
 );
 
 Color _focusColor(WidgetTester tester) =>
-    tester.element(find.byType(CoderListRow)).tinyrackTheme.focus;
+    tester.element(find.byType(TinestListRow)).tinyrackTheme.focus;
 
 Future<void> _requestFocusFromKeyboard(
   WidgetTester tester,
@@ -74,7 +74,7 @@ void main() {
   );
   tearDown(TRFocusSource.instance.debugReset);
 
-  group('CoderListRow focus ring', () {
+  group('TinestListRow focus ring', () {
     testWidgets('leaves the ring to a control that takes the focus', (
       tester,
     ) async {
@@ -106,7 +106,7 @@ void main() {
       // marks for one control. A row reports focus for its descendants too, so
       // the ring has to follow the primary focus rather than that.
       expect(
-        _focusRingPainter(tester, find.byType(CoderListRow)),
+        _focusRingPainter(tester, find.byType(TinestListRow)),
         isNot(paints..rrect(color: _focusColor(tester))),
       );
     });
@@ -127,16 +127,16 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       expect(
-        _focusRingPainter(tester, find.byType(CoderListRow)),
+        _focusRingPainter(tester, find.byType(TinestListRow)),
         isNot(paints..rrect(color: _focusColor(tester))),
       );
 
       tester.binding.focusManager.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
-      await _requestFocusFromKeyboard(tester, find.byType(CoderListRow));
+      await _requestFocusFromKeyboard(tester, find.byType(TinestListRow));
 
       expect(
-        _focusRingPainter(tester, find.byType(CoderListRow)),
+        _focusRingPainter(tester, find.byType(TinestListRow)),
         paints..rrect(color: _focusColor(tester)),
       );
     });
@@ -174,7 +174,7 @@ void main() {
                 onPressed: () {},
                 child: const TRText.inherit('Before'),
               ),
-              CoderSwitchRow(
+              TinestSwitchRow(
                 title: const TRText.inherit('Enabled'),
                 value: false,
                 onChanged: (_) {},
@@ -222,7 +222,7 @@ void main() {
       var closed = 0;
       await tester.pumpWidget(
         _host(
-          CoderListRow(
+          TinestListRow(
             title: const TRText.inherit('Session'),
             onTap: () => opened++,
             trailing: TRIconButton(
@@ -240,14 +240,14 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       expect(
-        _focusRingPainter(tester, find.byType(CoderListRow)),
+        _focusRingPainter(tester, find.byType(TinestListRow)),
         paints..rrect(color: _focusColor(tester)),
       );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       expect(
-        _focusRingPainter(tester, find.byType(CoderListRow)),
+        _focusRingPainter(tester, find.byType(TinestListRow)),
         isNot(paints..rrect(color: _focusColor(tester))),
       );
 
@@ -262,7 +262,7 @@ void main() {
       var value = false;
       await tester.pumpWidget(
         _host(
-          CoderSwitchRow(
+          TinestSwitchRow(
             title: const TRText.inherit('Enabled'),
             subtitle: const TRText.inherit('Explains the setting.'),
             value: value,

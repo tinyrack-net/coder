@@ -588,7 +588,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorInvalidProjectSettings =>
-      'The project\'s coder.json could not be read. Fix the file and try again.';
+      'The project\'s .tinest/config.json could not be read. Fix the file and try again.';
 
   @override
   String get errorRequestTimeout =>

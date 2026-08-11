@@ -1,12 +1,12 @@
 # 우분투 Wayland 한글 IME 재정렬 버그 — 트레이스 캡처 계획서
 
 > 이 문서는 자기완결형입니다. 이 폴더(`ime_delta_probe/`)만 있으면
-> Tinyrack Coder 레포 없이 수행할 수 있습니다. 실행 주체가 에이전트라면
+> Tinest 레포 없이 수행할 수 있습니다. 실행 주체가 에이전트라면
 > 아래 단계를 순서대로 수행하고 "회수 산출물"을 전부 수집해 보고하세요.
 
 ## 1. 배경 (왜 하는가)
 
-- **버그**: Ubuntu GNOME Wayland + ibus-hangul에서 Tinyrack Coder 터미널에
+- **버그**: Ubuntu GNOME Wayland + ibus-hangul에서 Tinest 터미널에
   `안녕하세요.`를 입력하면 `안세녕하요.`로 재정렬됨. 커서가 "녕"에서 멈추는
   증상 동반. 업스트림(termworld) 패치 수차례에도 미해결.
 - **지금까지 확정된 사실**:
@@ -47,7 +47,7 @@ Flutter SDK가 없으면 3.44.x stable 설치. `docker/` 하위 폴더는 이 �
 
 ## 4. 환경 사실 수집 (모든 분기가 여기 걸림)
 
-**Coder 앱(또는 프로브 앱)을 먼저 띄운 상태에서**:
+**Tinest 앱(또는 프로브 앱)을 먼저 띄운 상태에서**:
 
 ```bash
 bash capture_env.sh > env.txt 2>&1
@@ -58,7 +58,7 @@ bash capture_env.sh > env.txt 2>&1
 - `XDG_SESSION_TYPE=wayland` 인지.
 - `GTK_IM_MODULE` 값: **비어 있으면 text-input-v3 경로**(유력 용의 경로),
   `ibus`면 직결 경로.
-- **XWayland 체크**: `xlsclients` 출력에 Coder/프로브 앱이 보이면 앱이
+- **XWayland 체크**: `xlsclients` 출력에 Tinest/프로브 앱이 보이면 앱이
   XWayland로 떠 있다는 뜻 → text-input-v3 가설 폐기, 결과에 반드시 명기.
 - `gsettings`의 `preedit-mode`, `word-commit` 값 (CI 하네스와 다르면
   하네스를 이 값으로 맞춰야 함).
@@ -89,7 +89,7 @@ bash run_probe.sh x11-control       # ③ 대조군 (GDK_BACKEND=x11)
 | ③ x11-control | `안녕하세요.` (정상) | Wayland-only 확정 |
 
 - ①에서 재정렬이 안 나오면: 더 빠르게 여러 번 반복 입력해 볼 것(레이스성).
-  그래도 안 나오면 실제 Coder 앱에서는 재현되는지 함께 확인하고 보고
+  그래도 안 나오면 실제 Tinest 앱에서는 재현되는지 함께 확인하고 보고
   (프로브 앱 미재현 + 실제 앱 재현이면 앱 구성 요인 → 다음 단계에서
   앱 내부 계측으로 전환).
 - ①이 재현됐는데 ②도 재정렬되면: 예상과 다른 신호 — 그대로 보고

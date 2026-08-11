@@ -9,7 +9,7 @@ import 'package:protocol/protocol.dart';
 const String userMcpConfigFileName = 'config.json';
 
 /// Filename holding project-scoped MCP configuration in a worktree root.
-const String projectMcpConfigFileName = '.coder/config.json';
+const String projectMcpConfigFileName = '.tinest/config.json';
 
 /// The only document version this daemon reads.
 const int mcpConfigVersion = 4;
@@ -75,7 +75,7 @@ final class FileMcpConfigStore implements McpConfigStore {
         if (rootPath == null) {
           throw ArgumentError.notNull('rootPath');
         }
-        return p.join(rootPath, '.coder', 'config.json');
+        return p.join(rootPath, '.tinest', 'config.json');
     }
   }
 
@@ -104,7 +104,7 @@ final class FileMcpConfigStore implements McpConfigStore {
   Future<void> save(McpConfigDocument document) async {
     if (document.scope == McpConfigScope.project) {
       throw const FormatException(
-        'mcp_project_scope_readonly: project .coder/config.json belongs to the '
+        'mcp_project_scope_readonly: project .tinest/config.json belongs to the '
         'repository, so the daemon never rewrites it.',
       );
     }
@@ -351,7 +351,7 @@ Map<String, String> _stringMap(
       if (_namesASecret(entry.key) && !_carriesAReference(entry.value)) {
         reject(
           'declares "$field.${entry.key}" as a literal secret. A committed '
-          r'.coder/config.json may only reference ${env:NAME} or ${secret:key}.',
+          r'.tinest/config.json may only reference ${env:NAME} or ${secret:key}.',
         );
       }
     }
