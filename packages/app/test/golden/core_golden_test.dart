@@ -1000,6 +1000,26 @@ void main() {
     ),
   );
 
+  unawaited(
+    goldenTest(
+      'agent settings locks a fixed model without a provider on desktop',
+      fileName: 'agent_settings_locked_model_desktop',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      pumpBeforeTest: _revealLockedAgentModel,
+      builder: () => _agentSettingsLockedModel(ThemeMode.light),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'agent settings locks a fixed model without a provider on mobile',
+      fileName: 'agent_settings_locked_model_mobile',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      pumpBeforeTest: _revealLockedAgentModel,
+      builder: () => _agentSettingsLockedModel(ThemeMode.dark),
+    ),
+  );
+
   // The tool list is far below the fold of the agent_settings golden, so the
   // group rows need a frame of their own. All three states are in it: a locked
   // group of always-on tools, a closed group nothing is on in, and an open one
@@ -2038,8 +2058,53 @@ Future<void> _revealAgentToolGroups(WidgetTester tester) async {
   await reveal(find.byKey(mcp));
 }
 
+Future<void> _revealLockedAgentModel(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Tinest').first);
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(
+    find.byKey(const ValueKey<String>('agent-settings-model-selector')),
+  );
+}
+
 Widget _agentSettings(ThemeMode mode) {
   final api = FakeTinestApi();
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(fakeAppServices(api)),
+    ],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.agent,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _agentSettingsLockedModel(ThemeMode mode) {
+  const fixedAgent = AgentDefinitionDto(
+    id: 'tinest',
+    name: 'Tinest',
+    description: 'General coding',
+    mode: AgentMode.primary,
+    promptEnabled: false,
+    systemPrompt: '',
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.fixed,
+      modelId: 'openai/gpt-5.6-sol',
+    ),
+    toolIds: <String>[],
+    callableAgentIds: <String>[],
+    contentHash: 'fixed-agent-hash',
+    sourcePath: '/config/agents/tinest.md',
+    isBuiltIn: true,
+  );
+  final api = FakeTinestApi(
+    agentDefinitions: const <AgentDefinitionDto>[fixedAgent],
+    connections: const <ProviderConnectionDto>[],
+  );
   return ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(fakeAppServices(api)),
