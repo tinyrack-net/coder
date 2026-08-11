@@ -15,14 +15,11 @@ enum DesktopWindowChrome {
   /// The operating system owns both the window frame and application menus.
   native,
 
-  /// The operating system owns the frame while Flutter renders app menus.
-  nativeWithMenuBar,
-
   /// Flutter owns the frame, application menus, and caption controls.
   custom;
 
   /// Whether Flutter renders the localized application menu row.
-  bool get showsApplicationMenuBar => this != native;
+  bool get showsApplicationMenuBar => this == custom;
 
   /// Whether Flutter replaces the native title bar and caption controls.
   bool get usesCustomTitleBar => this == custom;
@@ -169,8 +166,8 @@ final class PluginDesktopWindow implements DesktopWindow {
 
   @override
   DesktopWindowChrome get chrome => switch (platform) {
-    TargetPlatform.windows => DesktopWindowChrome.custom,
-    TargetPlatform.linux => DesktopWindowChrome.nativeWithMenuBar,
+    TargetPlatform.windows ||
+    TargetPlatform.linux => DesktopWindowChrome.custom,
     _ => DesktopWindowChrome.native,
   };
 
