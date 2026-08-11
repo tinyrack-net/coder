@@ -41,12 +41,7 @@ class ConnectDaemonPage extends StatelessWidget {
       title: l10n.relayConnectDaemonTitle,
       child: SettingsSection(
         title: l10n.relayConnectDaemonTitle,
-        banner: TRAlert(
-          title: TRText.inherit(l10n.relayConnectDaemonTitle),
-          description: TRText.inherit(l10n.relayConnectDaemonDescription),
-          icon: const Icon(CoderIcons.lock),
-          variant: TRStatusVariant.info,
-        ),
+        description: l10n.relayConnectDaemonDescription,
         children: <Widget>[
           if (cameraSupported)
             _ConnectionMethod(
@@ -91,15 +86,12 @@ class _ConnectionMethod extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => TRCard(
-    padding: TRCardPadding.none,
-    child: SettingsRow(
-      leading: Icon(icon),
-      title: TRText.inherit(title),
-      description: TRText.inherit(description),
-      control: const Icon(CoderIcons.chevronRight),
-      onTap: onTap,
-    ),
+  Widget build(BuildContext context) => SettingsRow(
+    leading: Icon(icon),
+    title: TRText.inherit(title),
+    description: TRText.inherit(description),
+    control: const Icon(CoderIcons.chevronRight),
+    onTap: onTap,
   );
 }
 
