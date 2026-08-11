@@ -831,11 +831,15 @@ void main() {
 
       // Opening the subagent's tab replays its timeline, which is where the
       // pending approval surfaces. Approvals only reach clients subscribed to
-      // that session, so this subscribe is what the tab does on open.
-      final childTimeline = await client.subscribeTimeline(blocked.id);
-      final requested = childTimeline
-          .where((event) => event.type == 'approval.requested')
-          .single;
+      // that session, so this subscribe is what the tab does on open. The
+      // request is written to the child's timeline independently of the status
+      // the parent reports, so a tab that opens the moment the parent blocks
+      // can replay a timeline that does not carry it yet.
+      final requested = await _waitForTimelineEvent(
+        client,
+        blocked.id,
+        'approval.requested',
+      );
       final approval = ApprovalRequestDto.fromJson(
         Map<String, dynamic>.from(
           requested.data['approval'] as Map<dynamic, dynamic>,
@@ -3507,6 +3511,26 @@ Future<SessionDto> _waitForSubagentStatus(
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   throw StateError('Timed out waiting for a subagent of $parentId at $status.');
+}
+
+/// Replays [sessionId]'s timeline until [type] appears on it.
+///
+/// A session's status and its timeline are written separately, so a status that
+/// implies an event has happened does not prove the event is readable yet.
+Future<TimelineEventDto> _waitForTimelineEvent(
+  CoderApi client,
+  String sessionId,
+  String type, {
+  int attempts = 100,
+}) async {
+  for (var attempt = 0; attempt < attempts; attempt += 1) {
+    final events = await client.sessions.subscribeTimeline(sessionId);
+    for (final event in events) {
+      if (event.type == type) return event;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  throw StateError('Timed out waiting for "$type" on session $sessionId.');
 }
 
 Future<void> _waitForIdleSession(
