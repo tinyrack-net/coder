@@ -628,6 +628,12 @@ abstract class AppLocalizations {
   /// **'New session'**
   String get workspaceNewSession;
 
+  /// Session tab title used when a prompt carries no readable title text.
+  ///
+  /// In en, this message translates to:
+  /// **'Coding session'**
+  String get sessionDefaultTitle;
+
   /// No description provided for @workspaceNewTab.
   ///
   /// In en, this message translates to:
@@ -639,6 +645,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New terminal'**
   String get workspaceNewTerminal;
+
+  /// Title of a newly created terminal tab, numbered within its worktree.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal {number}'**
+  String terminalTabTitle(int number);
 
   /// Announced once for the workspace pane skeleton shown while sessions and terminals load.
   ///
@@ -970,6 +982,48 @@ abstract class AppLocalizations {
   /// **'No project (home folder)'**
   String get workspaceNoProjectOption;
 
+  /// Label of the new-workspace project chip before a project is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get workspaceProjectChip;
+
+  /// Tooltip of the new-workspace project chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a project'**
+  String get workspaceProjectChipTooltip;
+
+  /// Menu entry that registers another project from the new-workspace chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get workspaceProjectAdd;
+
+  /// New-workspace worktree chip and menu entry that creates a fresh checkout.
+  ///
+  /// In en, this message translates to:
+  /// **'New worktree'**
+  String get workspaceWorktreeNew;
+
+  /// Tooltip of the new-workspace worktree chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a worktree'**
+  String get workspaceWorktreeChipTooltip;
+
+  /// Label of the new-workspace base branch chip before a branch is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Base branch'**
+  String get workspaceBaseBranchChip;
+
+  /// Tooltip of the new-workspace base branch chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a base branch'**
+  String get workspaceBaseBranchChipTooltip;
+
   /// Composer hint when no project is registered.
   ///
   /// In en, this message translates to:
@@ -1209,6 +1263,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.'**
   String get hostErrorLocalNetworkUnreachable;
+
+  /// Connection failure when the running platform has no relay pairing support.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay pairing is not available on this platform.'**
+  String get hostErrorRelayPairingUnavailable;
+
+  /// Connection failure when an address now answers as a different daemon than the one saved under this profile.
+  ///
+  /// In en, this message translates to:
+  /// **'That address now reaches a different daemon than the one saved here.'**
+  String get hostErrorServerIdentityMismatch;
+
+  /// Connection failure when the stored credential is of the wrong kind for the profile's connection path.
+  ///
+  /// In en, this message translates to:
+  /// **'The stored credential does not match this connection path.'**
+  String get hostErrorCredentialMismatch;
 
   /// Title of the standalone daemon settings page.
   ///
@@ -1480,6 +1552,12 @@ abstract class AppLocalizations {
   /// **'WebSocket address'**
   String get appSettingsAddress;
 
+  /// Example name shown in the remote daemon name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Production daemon'**
+  String get appSettingsLabelPlaceholder;
+
   /// Text field label for replacing a stored token.
   ///
   /// In en, this message translates to:
@@ -1593,6 +1671,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} definitions'**
   String agentSettingsCount(int count);
+
+  /// Subtitle of an agent whose definition file no longer parses, so the last good version is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'{mode} · stale'**
+  String agentSettingsModeStale(String mode);
 
   /// Tooltip that opens the agent creation dialog.
   ///
@@ -2110,6 +2194,30 @@ abstract class AppLocalizations {
   /// **'Connect'**
   String get providerSettingsConnect;
 
+  /// Text field label for a provider API key.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providerSettingsApiKey;
+
+  /// Text field label for a custom provider endpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get providerSettingsBaseUrl;
+
+  /// Fallback shown when a provider connection fails without naming a reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider connection failed.'**
+  String get providerSettingsConnectionFailed;
+
+  /// Reported when no browser could be launched for an OAuth sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open the authorization page.'**
+  String get providerSettingsAuthUrlFailed;
+
   /// Title of the custom provider dialog.
   ///
   /// In en, this message translates to:
@@ -2512,6 +2620,24 @@ abstract class AppLocalizations {
   /// **'Attach files'**
   String get composerAttachLabel;
 
+  /// Accessible label of the button removing one pending attachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String composerRemoveAttachment(String name);
+
+  /// Reported when one chosen file is over the per-attachment size limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Each attachment must be under {limit} MB.'**
+  String composerAttachmentTooLarge(int limit);
+
+  /// Reported when a submission would hold more files than one turn accepts.
+  ///
+  /// In en, this message translates to:
+  /// **'A turn accepts at most {limit} files.'**
+  String composerAttachmentTooMany(int limit);
+
   /// Label of the overflow menu holding the settings that do not fit.
   ///
   /// In en, this message translates to:
@@ -2806,6 +2932,18 @@ abstract class AppLocalizations {
   /// **'Run the plan'**
   String get chatPlanRun;
 
+  /// Prompt sent to the agent when the user accepts a plan in place. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language.
+  ///
+  /// In en, this message translates to:
+  /// **'Carry out this plan.'**
+  String get planImplementPrompt;
+
+  /// Preamble prepended to a plan handed to a brand-new session. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language.
+  ///
+  /// In en, this message translates to:
+  /// **'A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.'**
+  String get planFreshSessionPreamble;
+
   /// Result line of a denied tool call.
   ///
   /// In en, this message translates to:
@@ -2919,6 +3057,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'exit {exitCode} · {lines} lines'**
   String toolCommandResult(int exitCode, int lines);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get toolTitleEdit;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit({path})'**
+  String toolTitleEditPath(String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach({path})'**
+  String toolTitleAttach(String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment({id})'**
+  String toolTitleAttachment(String id);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Now()'**
+  String get toolTitleNow;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep({milliseconds}ms)'**
+  String toolTitleSleep(int milliseconds);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep()'**
+  String get toolTitleSleepUnknown;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawn({task})'**
+  String toolTitleSpawn(String task);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Send({target})'**
+  String toolTitleSend(String target);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Followup({target})'**
+  String toolTitleFollowup(String target);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait()'**
+  String get toolTitleWait;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupt({target})'**
+  String toolTitleInterrupt(String target);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents()'**
+  String get toolTitleAgents;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Context()'**
+  String get toolTitleContext;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'NewContext()'**
+  String get toolTitleNewContext;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Bash({command})'**
+  String toolTitleBash(String command);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Stdin({session})'**
+  String toolTitleStdin(String session);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Stdin({session} ← {chars})'**
+  String toolTitleStdinChars(String session, String chars);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Glob({pattern})'**
+  String toolTitleGlob(String pattern);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Glob({pattern} in {path})'**
+  String toolTitleGlobIn(String pattern, String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'List({path})'**
+  String toolTitleList(String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources({server})'**
+  String toolTitleMcpResources(String server);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'ResourceTemplates({server})'**
+  String toolTitleMcpResourceTemplates(String server);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource({server}: {uri})'**
+  String toolTitleMcpResource(String server, String uri);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Read({path})'**
+  String toolTitleRead(String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Read({path} @{offset}+{limit})'**
+  String toolTitleReadRange(String path, String offset, String limit);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask({headers})'**
+  String toolTitleAsk(String headers);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Search({query})'**
+  String toolTitleSearch(String query);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Search({query} in {path})'**
+  String toolTitleSearchIn(String query, String path);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills()'**
+  String get toolTitleSkills;
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill({name})'**
+  String toolTitleSkill(String name);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill({name}:{resource})'**
+  String toolTitleSkillResource(String name, String resource);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools({query})'**
+  String toolTitleToolSearch(String query);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan({count})'**
+  String toolTitlePlan(int count);
+
+  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'View({path})'**
+  String toolTitleView(String path);
+
+  /// Stands in for the server argument of an MCP call that lists every server at once.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get toolArgumentAllServers;
 
   /// Title of the remote directory browser.
   ///
@@ -3489,6 +3843,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connecting'**
   String get mcpSettingsStatusConnecting;
+
+  /// Accessible label of the spinner shown while an MCP server connects.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting MCP server'**
+  String get mcpSettingsConnecting;
 
   /// Server status label.
   ///

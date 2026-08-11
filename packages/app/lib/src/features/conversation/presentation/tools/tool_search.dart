@@ -5,9 +5,9 @@ final Map<String, ChatToolPresenter>
 toolSearchPresenters = <String, ChatToolPresenter>{
   'tool_search': ChatToolPresenter(
     glyph: ChatToolGlyph.tools,
-    title: (l10n, activity) =>
-        'Tools('
-        '${truncateToolText(stringToolArg(activity, 'query') ?? '', 40)})',
+    title: (l10n, activity) => l10n.toolTitleToolSearch(
+      truncateToolText(stringToolArg(activity, 'query') ?? '', 40),
+    ),
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonObject) return genericToolResult(l10n, output);
       final error = output.value['error'];

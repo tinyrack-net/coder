@@ -1,3 +1,4 @@
+import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/app/coder_app.dart';
 import 'package:app/src/app/version.g.dart';
@@ -383,13 +384,18 @@ void main() {
       // way a keyboard user reaches it on the home pane.
       final chip = find.byKey(const ValueKey<String>('new-workspace-project'));
       expect(chip, findsOneWidget);
+      // This harness pins the app to English, so the tooltip is read from
+      // the same locale the widget renders in rather than written out.
+      final tooltip = lookupAppLocalizations(
+        const Locale('en'),
+      ).workspaceProjectChipTooltip;
       var reached = false;
       for (var attempt = 0; attempt < 40 && !reached; attempt += 1) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump();
-        reached = find.text('프로젝트 선택').evaluate().isNotEmpty;
+        reached = find.text(tooltip).evaluate().isNotEmpty;
       }
       expect(
         reached,

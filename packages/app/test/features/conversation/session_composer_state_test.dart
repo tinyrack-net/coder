@@ -56,13 +56,20 @@ void main() {
   test(
     'session titles come from the first readable prompt line',
     () {
-      expect(deriveSessionTitle('Run the tests'), 'Run the tests');
+      const fallback = 'Coding session';
       expect(
-        deriveSessionTitle('\n\n  Fix   the   parser \nand ship it'),
+        deriveSessionTitle('Run the tests', fallback: fallback),
+        'Run the tests',
+      );
+      expect(
+        deriveSessionTitle(
+          '\n\n  Fix   the   parser \nand ship it',
+          fallback: fallback,
+        ),
         'Fix the parser',
       );
-      expect(deriveSessionTitle('   \n \t '), defaultSessionTitle);
-      final long = deriveSessionTitle('a' * 80);
+      expect(deriveSessionTitle('   \n \t ', fallback: fallback), fallback);
+      final long = deriveSessionTitle('a' * 80, fallback: fallback);
       expect(long.length, maxSessionTitleLength);
       expect(long.endsWith('…'), isTrue);
     },

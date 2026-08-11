@@ -297,10 +297,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNewSession => 'New session';
 
   @override
+  String get sessionDefaultTitle => 'Coding session';
+
+  @override
   String get workspaceNewTab => 'New tab';
 
   @override
   String get workspaceNewTerminal => 'New terminal';
+
+  @override
+  String terminalTabTitle(int number) {
+    return 'Terminal $number';
+  }
 
   @override
   String get workspaceLoading => 'Loading workspace';
@@ -488,6 +496,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceNoProjectOption => 'No project (home folder)';
 
   @override
+  String get workspaceProjectChip => 'Project';
+
+  @override
+  String get workspaceProjectChipTooltip => 'Select a project';
+
+  @override
+  String get workspaceProjectAdd => 'Add';
+
+  @override
+  String get workspaceWorktreeNew => 'New worktree';
+
+  @override
+  String get workspaceWorktreeChipTooltip => 'Select a worktree';
+
+  @override
+  String get workspaceBaseBranchChip => 'Base branch';
+
+  @override
+  String get workspaceBaseBranchChipTooltip => 'Select a base branch';
+
+  @override
   String get workspaceAddProjectFirst => 'Add a project first.';
 
   @override
@@ -628,6 +657,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hostErrorLocalNetworkUnreachable =>
       'Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.';
+
+  @override
+  String get hostErrorRelayPairingUnavailable =>
+      'Relay pairing is not available on this platform.';
+
+  @override
+  String get hostErrorServerIdentityMismatch =>
+      'That address now reaches a different daemon than the one saved here.';
+
+  @override
+  String get hostErrorCredentialMismatch =>
+      'The stored credential does not match this connection path.';
 
   @override
   String get appSettingsTitle => 'App settings';
@@ -784,6 +825,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSettingsAddress => 'WebSocket address';
 
   @override
+  String get appSettingsLabelPlaceholder => 'Production daemon';
+
+  @override
   String get appSettingsNewToken => 'New bearer token (only when changing it)';
 
   @override
@@ -847,6 +891,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String agentSettingsCount(int count) {
     return '$count definitions';
+  }
+
+  @override
+  String agentSettingsModeStale(String mode) {
+    return '$mode · stale';
   }
 
   @override
@@ -1135,6 +1184,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsConnect => 'Connect';
 
   @override
+  String get providerSettingsApiKey => 'API key';
+
+  @override
+  String get providerSettingsBaseUrl => 'Base URL';
+
+  @override
+  String get providerSettingsConnectionFailed => 'Provider connection failed.';
+
+  @override
+  String get providerSettingsAuthUrlFailed =>
+      'Unable to open the authorization page.';
+
+  @override
   String get providerSettingsCustomTitle => 'Custom provider advanced settings';
 
   @override
@@ -1363,6 +1425,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerAttachLabel => 'Attach files';
 
   @override
+  String composerRemoveAttachment(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String composerAttachmentTooLarge(int limit) {
+    return 'Each attachment must be under $limit MB.';
+  }
+
+  @override
+  String composerAttachmentTooMany(int limit) {
+    return 'A turn accepts at most $limit files.';
+  }
+
+  @override
   String get composerMoreSettings => 'More settings';
 
   @override
@@ -1565,6 +1642,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPlanRun => 'Run the plan';
 
   @override
+  String get planImplementPrompt => 'Carry out this plan.';
+
+  @override
+  String get planFreshSessionPreamble =>
+      'A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.';
+
+  @override
   String get toolRejected => 'Rejected';
 
   @override
@@ -1648,6 +1732,168 @@ class AppLocalizationsEn extends AppLocalizations {
   String toolCommandResult(int exitCode, int lines) {
     return 'exit $exitCode · $lines lines';
   }
+
+  @override
+  String get toolTitleEdit => 'Edit';
+
+  @override
+  String toolTitleEditPath(String path) {
+    return 'Edit($path)';
+  }
+
+  @override
+  String toolTitleAttach(String path) {
+    return 'Attach($path)';
+  }
+
+  @override
+  String toolTitleAttachment(String id) {
+    return 'Attachment($id)';
+  }
+
+  @override
+  String get toolTitleNow => 'Now()';
+
+  @override
+  String toolTitleSleep(int milliseconds) {
+    return 'Sleep(${milliseconds}ms)';
+  }
+
+  @override
+  String get toolTitleSleepUnknown => 'Sleep()';
+
+  @override
+  String toolTitleSpawn(String task) {
+    return 'Spawn($task)';
+  }
+
+  @override
+  String toolTitleSend(String target) {
+    return 'Send($target)';
+  }
+
+  @override
+  String toolTitleFollowup(String target) {
+    return 'Followup($target)';
+  }
+
+  @override
+  String get toolTitleWait => 'Wait()';
+
+  @override
+  String toolTitleInterrupt(String target) {
+    return 'Interrupt($target)';
+  }
+
+  @override
+  String get toolTitleAgents => 'Agents()';
+
+  @override
+  String get toolTitleContext => 'Context()';
+
+  @override
+  String get toolTitleNewContext => 'NewContext()';
+
+  @override
+  String toolTitleBash(String command) {
+    return 'Bash($command)';
+  }
+
+  @override
+  String toolTitleStdin(String session) {
+    return 'Stdin($session)';
+  }
+
+  @override
+  String toolTitleStdinChars(String session, String chars) {
+    return 'Stdin($session ← $chars)';
+  }
+
+  @override
+  String toolTitleGlob(String pattern) {
+    return 'Glob($pattern)';
+  }
+
+  @override
+  String toolTitleGlobIn(String pattern, String path) {
+    return 'Glob($pattern in $path)';
+  }
+
+  @override
+  String toolTitleList(String path) {
+    return 'List($path)';
+  }
+
+  @override
+  String toolTitleMcpResources(String server) {
+    return 'Resources($server)';
+  }
+
+  @override
+  String toolTitleMcpResourceTemplates(String server) {
+    return 'ResourceTemplates($server)';
+  }
+
+  @override
+  String toolTitleMcpResource(String server, String uri) {
+    return 'Resource($server: $uri)';
+  }
+
+  @override
+  String toolTitleRead(String path) {
+    return 'Read($path)';
+  }
+
+  @override
+  String toolTitleReadRange(String path, String offset, String limit) {
+    return 'Read($path @$offset+$limit)';
+  }
+
+  @override
+  String toolTitleAsk(String headers) {
+    return 'Ask($headers)';
+  }
+
+  @override
+  String toolTitleSearch(String query) {
+    return 'Search($query)';
+  }
+
+  @override
+  String toolTitleSearchIn(String query, String path) {
+    return 'Search($query in $path)';
+  }
+
+  @override
+  String get toolTitleSkills => 'Skills()';
+
+  @override
+  String toolTitleSkill(String name) {
+    return 'Skill($name)';
+  }
+
+  @override
+  String toolTitleSkillResource(String name, String resource) {
+    return 'Skill($name:$resource)';
+  }
+
+  @override
+  String toolTitleToolSearch(String query) {
+    return 'Tools($query)';
+  }
+
+  @override
+  String toolTitlePlan(int count) {
+    return 'Plan($count)';
+  }
+
+  @override
+  String toolTitleView(String path) {
+    return 'View($path)';
+  }
+
+  @override
+  String get toolArgumentAllServers => 'all';
 
   @override
   String get directoryBrowserTitle => 'Choose a folder on the daemon';
@@ -1964,6 +2210,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpSettingsStatusConnecting => 'Connecting';
+
+  @override
+  String get mcpSettingsConnecting => 'Connecting MCP server';
 
   @override
   String get mcpSettingsStatusReady => 'Ready';

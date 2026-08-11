@@ -11,7 +11,9 @@ final Map<String, ChatToolPresenter> globPresenters =
             40,
           );
           final path = stringToolArg(activity, 'path');
-          return path == null ? 'Glob($pattern)' : 'Glob($pattern in $path)';
+          return path == null
+              ? l10n.toolTitleGlob(pattern)
+              : l10n.toolTitleGlobIn(pattern, path);
         },
         result: (l10n, activity, output) {
           if (output is! ChatToolJsonObject) {

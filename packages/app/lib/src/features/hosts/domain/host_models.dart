@@ -56,6 +56,15 @@ enum HostFailureReason {
   /// Network Access permission; a browser reports both identically, so the
   /// message names both. See `docs/remote-daemon.md`.
   localNetworkUnreachable,
+
+  /// The running platform has no relay pairing support.
+  relayPairingUnavailable,
+
+  /// The address answered as a daemon other than the one this profile saved.
+  serverIdentityMismatch,
+
+  /// The stored credential is the wrong kind for the profile's connection.
+  credentialPathMismatch,
 }
 
 /// Why a factory reset could not finish.
@@ -364,6 +373,9 @@ final class RemoteDaemonProfile {
          _normalizeHostConnections(id, connections),
        ) {
     if (connections.isEmpty) {
+      // Reached only by a caller that skipped validation or by a stored
+      // record that was corrupted, never by a form the user filled in, so
+      // this stays English for whoever reads the report.
       throw const FormatException(
         'A remote daemon requires a connection path.',
       );

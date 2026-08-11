@@ -57,7 +57,7 @@ void main() {
     expect(japanese.trayTooltip(AppIdentity.displayName), 'Tinyrack Coder');
     expect(
       japanese.desktopMenuAbout(AppIdentity.displayName),
-      'About Tinyrack Coder',
+      'Tinyrack Coder について',
     );
   });
 

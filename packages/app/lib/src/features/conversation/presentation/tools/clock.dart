@@ -5,7 +5,7 @@ final Map<String, ChatToolPresenter> clockPresenters =
     <String, ChatToolPresenter>{
       'clock__curr_time': ChatToolPresenter(
         glyph: ChatToolGlyph.clock,
-        title: (l10n, activity) => 'Now()',
+        title: (l10n, activity) => l10n.toolTitleNow,
         result: (l10n, activity, output) =>
             output is ChatToolJsonObject && output.value['utc'] is String
             ? output.value['utc']! as String
@@ -18,7 +18,9 @@ final Map<String, ChatToolPresenter> clockPresenters =
         glyph: ChatToolGlyph.clock,
         title: (l10n, activity) {
           final milliseconds = activity.arguments['duration_ms'];
-          return milliseconds is int ? 'Sleep(${milliseconds}ms)' : 'Sleep()';
+          return milliseconds is int
+              ? l10n.toolTitleSleep(milliseconds)
+              : l10n.toolTitleSleepUnknown;
         },
         result: (l10n, activity, output) {
           if (output is! ChatToolJsonObject) {

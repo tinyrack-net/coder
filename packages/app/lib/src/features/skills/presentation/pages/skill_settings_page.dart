@@ -768,6 +768,8 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
                     enabled: !_saving,
                     onChanged: (_) => setState(() => _error = null),
                     label: l10n.skillSettingsIdLabel,
+                    // An ID becomes a directory name, so the example stays a
+                    // literal identifier in every language.
                     placeholder: 'release-notes',
                     errorText: _idError(l10n),
                   ),

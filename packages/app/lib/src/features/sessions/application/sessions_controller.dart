@@ -41,6 +41,8 @@ class SessionsController extends _$SessionsController {
   }) async {
     final worktreeId = _worktreeId;
     if (worktreeId == null) {
+      // Internal invariant, not user copy: the composer is disabled without
+      // both, so this only fires on a bug. Left in English for the report.
       throw StateError('Worktree selection and daemon connection required.');
     }
     final api = await requireHostApi(ref, hostId);

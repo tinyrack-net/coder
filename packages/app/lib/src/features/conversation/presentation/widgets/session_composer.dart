@@ -1064,6 +1064,7 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
     AgentDefinitionDto agent,
     SessionComposerDraft draft,
   ) async {
+    final l10n = AppLocalizations.of(context);
     widget.onCreated(
       await startSessionWithPrompt(
         ref,
@@ -1073,6 +1074,7 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
           submission.text.isEmpty
               ? submission.attachments.first.fileName
               : submission.text,
+          fallback: l10n.sessionDefaultTitle,
         ),
         prompt: submission.text,
         draftTabId: widget.draftId,
@@ -1338,6 +1340,22 @@ class _SessionComposerState extends State<SessionComposer> {
   bool _focused = false;
   String? _attachmentError;
   ComposerTrigger? _trigger;
+
+  /// Text for a failure the composer reports above the input.
+  ///
+  /// The app's own limits are localized; anything else keeps its own words,
+  /// since only whoever raised it knows what it means.
+  String _attachmentText(Object error) => switch (error) {
+    AttachmentFailure(:final reason) => switch (reason) {
+      AttachmentFailureReason.tooLarge => AppLocalizations.of(
+        context,
+      ).composerAttachmentTooLarge(maxPendingAttachmentBytes ~/ (1024 * 1024)),
+      AttachmentFailureReason.tooMany => AppLocalizations.of(
+        context,
+      ).composerAttachmentTooMany(maxPendingAttachmentCount),
+    },
+    _ => '$error',
+  };
 
   @override
   void initState() {
@@ -1707,7 +1725,7 @@ class _SessionComposerState extends State<SessionComposer> {
     try {
       final files = await pending;
       if (_attachments.length + files.length > maxPendingAttachmentCount) {
-        throw const FormatException('A turn accepts at most 10 attachments.');
+        throw const AttachmentFailure(AttachmentFailureReason.tooMany);
       }
       if (!mounted) return;
       setState(() {
@@ -1716,7 +1734,7 @@ class _SessionComposerState extends State<SessionComposer> {
       });
     } on Exception catch (error) {
       if (!mounted) return;
-      setState(() => _attachmentError = '$error');
+      setState(() => _attachmentError = _attachmentText(error));
     }
   }
 
@@ -1790,7 +1808,7 @@ class _SessionComposerState extends State<SessionComposer> {
     } on Exception catch (error) {
       if (!mounted) return;
       _restore(submission);
-      setState(() => _attachmentError = '$error');
+      setState(() => _attachmentError = _attachmentText(error));
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -1803,7 +1821,7 @@ class _SessionComposerState extends State<SessionComposer> {
     try {
       await widget.onQueuedSendNow!(id);
     } on Exception catch (error) {
-      if (mounted) setState(() => _attachmentError = '$error');
+      if (mounted) setState(() => _attachmentError = _attachmentText(error));
     }
   }
 
@@ -2212,37 +2230,40 @@ class _PendingAttachmentPill extends StatelessWidget {
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(maxWidth: TRMeasurements.measureMd),
-    child: TRCard(
-      padding: TRCardPadding.sm,
-      variant: TRCardVariant.elevated,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: TRSpacing.extraSmall,
-        children: <Widget>[
-          if (uploading)
-            const TRSpinner()
-          else
-            _PendingAttachmentPreview(attachment: attachment),
-          Flexible(
-            child: TRText.inherit(
-              '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: TRMeasurements.measureMd),
+      child: TRCard(
+        padding: TRCardPadding.sm,
+        variant: TRCardVariant.elevated,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: TRSpacing.extraSmall,
+          children: <Widget>[
+            if (uploading)
+              const TRSpinner()
+            else
+              _PendingAttachmentPreview(attachment: attachment),
+            Flexible(
+              child: TRText.inherit(
+                '${attachment.fileName} · ${_formatBytes(attachment.byteSize)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          TRIconButton(
-            key: ValueKey('remove-${attachment.fileName}'),
-            appearance: TRAppearance.ghost,
-            onPressed: onRemove,
-            icon: const Icon(CoderIcons.close),
-            label: 'Remove ${attachment.fileName}',
-          ),
-        ],
+            TRIconButton(
+              key: ValueKey('remove-${attachment.fileName}'),
+              appearance: TRAppearance.ghost,
+              onPressed: onRemove,
+              icon: const Icon(CoderIcons.close),
+              label: l10n.composerRemoveAttachment(attachment.fileName),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _PendingAttachmentPreview extends StatefulWidget {

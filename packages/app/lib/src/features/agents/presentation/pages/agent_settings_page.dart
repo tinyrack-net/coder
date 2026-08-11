@@ -202,7 +202,7 @@ class _AgentDefinitionList extends StatelessWidget {
                   title: TRText.inherit(definition.name),
                   description: TRText.inherit(
                     definition.isStale
-                        ? '${definition.mode.name} · stale'
+                        ? l10n.agentSettingsModeStale(definition.mode.name)
                         : definition.mode.name,
                   ),
                   control: definition.diagnostics.isEmpty
@@ -832,6 +832,8 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
                     enabled: !_saving,
                     onChanged: (_) => setState(() => _error = null),
                     label: l10n.agentSettingsIdLabel,
+                    // An ID becomes a file name, so the example stays a
+                    // literal identifier in every language.
                     placeholder: 'reviewer',
                     errorText: _idError(l10n),
                   ),

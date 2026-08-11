@@ -289,6 +289,8 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
                         minLines: 3,
                         maxLines: 8,
                         label: l10n.projectSettingsSetup,
+                        // Hook placeholders are shell commands, not prose: the
+                        // example has to stay something a shell would accept.
                         placeholder: 'npm install',
                       ),
                       TRTextField(

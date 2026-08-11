@@ -42,11 +42,21 @@ void main() {
       expect(find.text('Display language'), findsOneWidget);
       expect(find.text('설정'), findsNothing);
 
+      await tester.tap(_selectTrigger('general-settings-language'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('日本語').last);
+      await tester.pumpAndSettle();
+
+      expect(store.settings.localeTag, 'ja');
+      expect(find.text('設定'), findsOneWidget);
+      expect(find.text('表示言語'), findsOneWidget);
+      expect(find.text('Settings'), findsNothing);
+
       // Returning to the system default clears the stored tag rather than
       // storing the resolved locale, so the app follows the platform again.
       await tester.tap(_selectTrigger('general-settings-language'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('System default').last);
+      await tester.tap(find.text('システムに合わせる').last);
       await tester.pumpAndSettle();
 
       expect(store.settings.localeTag, isNull);

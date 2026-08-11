@@ -6,7 +6,7 @@ listDirectoryPresenters = <String, ChatToolPresenter>{
   'list_directory': ChatToolPresenter(
     glyph: ChatToolGlyph.list,
     title: (l10n, activity) =>
-        'List(${stringToolArg(activity, 'path') ?? '.'})',
+        l10n.toolTitleList(stringToolArg(activity, 'path') ?? '.'),
     result: (l10n, activity, output) {
       if (output is! ChatToolJsonArray) return genericToolResult(l10n, output);
       final entries = output.value.whereType<Map<String, dynamic>>();

@@ -64,7 +64,7 @@ void main() {
   );
 
   test(
-    'built-in tools render CLI titles and Korean result lines',
+    'built-in tools render Korean titles and result lines',
     () {
       final read = describeToolActivity(
         testL10n,
@@ -74,7 +74,7 @@ void main() {
           output: 'void main() {}\nfinal a = 1;\nfinal b = 2;',
         ),
       );
-      expect(read.title, 'Read(lib/main.dart)');
+      expect(read.title, '읽기(lib/main.dart)');
       expect(read.resultLine, '3줄 읽음');
       expect(read.glyph, ChatToolGlyph.read);
 
@@ -95,7 +95,7 @@ void main() {
             .having(
               (value) => value.title,
               'title',
-              'Read(lib/main.dart @10+40)',
+              '읽기(lib/main.dart @10+40)',
             )
             .having((value) => value.resultLine, 'result', '빈 파일'),
       );
@@ -110,7 +110,7 @@ void main() {
               '{"name":"main.dart","type":"file"}]',
         ),
       );
-      expect(list.title, 'List(lib)');
+      expect(list.title, '목록(lib)');
       expect(list.resultLine, '디렉터리 1 · 파일 1');
 
       final edit = describeToolActivity(
@@ -130,7 +130,7 @@ void main() {
           output: '{"changedFiles":1}',
         ),
       );
-      expect(edit.title, 'Edit(lib/main.dart)');
+      expect(edit.title, '편집(lib/main.dart)');
       expect(edit.resultLine, '+2 -1 · 1개 파일');
 
       final run = describeToolActivity(
@@ -141,7 +141,7 @@ void main() {
           output: r'{"exitCode":0,"output":"All tests passed!\ndone"}',
         ),
       );
-      expect(run.title, 'Bash(flutter test)');
+      expect(run.title, '실행(flutter test)');
       expect(run.resultLine, '종료 코드 0 · 2줄');
       expect(run.isFailure, isFalse);
       expect(run.body, isA<ChatToolTextBody>());
@@ -173,7 +173,7 @@ void main() {
           output: '{"task_name":"/root/review_task"}',
         ),
       );
-      expect(spawn.title, 'Spawn(review_task)');
+      expect(spawn.title, '생성(review_task)');
       expect(spawn.resultLine, '/root/review_task');
 
       final send = describeToolActivity(
@@ -187,7 +187,7 @@ void main() {
           output: '{"queued":true}',
         ),
       );
-      expect(send.title, 'Send(review_task)');
+      expect(send.title, '전송(review_task)');
 
       final followup = describeToolActivity(
         testL10n,
@@ -200,7 +200,7 @@ void main() {
           output: '{"delivery":"triggered"}',
         ),
       );
-      expect(followup.title, 'Followup(review_task)');
+      expect(followup.title, '후속 작업(review_task)');
       expect(followup.resultLine, 'triggered');
 
       final wait = describeToolActivity(
@@ -211,7 +211,7 @@ void main() {
           output: '{"message":"Wait timed out.","timed_out":true}',
         ),
       );
-      expect(wait.title, 'Wait()');
+      expect(wait.title, '대기()');
       expect(wait.resultLine, 'Wait timed out.');
 
       final interrupt = describeToolActivity(
@@ -222,7 +222,7 @@ void main() {
           output: '{"previous_status":"running"}',
         ),
       );
-      expect(interrupt.title, 'Interrupt(review_task)');
+      expect(interrupt.title, '중단(review_task)');
       expect(interrupt.resultLine, 'running');
 
       final agentList = describeToolActivity(
@@ -235,7 +235,7 @@ void main() {
               '"agent_status":"completed"}]}',
         ),
       );
-      expect(agentList.title, 'Agents()');
+      expect(agentList.title, '에이전트()');
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );
@@ -256,7 +256,7 @@ void main() {
               '"matchCount":3,"filesSearched":9,"truncated":false}',
         ),
       );
-      expect(search.title, 'Search(TODO in lib)');
+      expect(search.title, '검색(lib에서 TODO)');
       expect(search.resultLine, '2개 파일에서 3건');
       expect(
         describeToolActivity(
@@ -311,7 +311,7 @@ void main() {
           output: '{"paths":["lib/a.dart","lib/b.dart"],"truncated":false}',
         ),
       );
-      expect(globbed.title, 'Glob(**/*.dart in lib)');
+      expect(globbed.title, '파일 찾기(lib에서 **/*.dart)');
       expect(globbed.resultLine, '파일 2개');
       expect(
         describeToolActivity(
@@ -354,7 +354,7 @@ void main() {
           ),
         ),
         isA<ChatToolPresentation>()
-            .having((value) => value.title, 'title', 'Skills()')
+            .having((value) => value.title, 'title', '스킬()')
             .having((value) => value.resultLine, 'result', '스킬 2개'),
       );
       expect(
@@ -377,7 +377,7 @@ void main() {
           output: '{"name":"commit","instructions":"Stage related changes."}',
         ),
       );
-      expect(skill.title, 'Skill(commit)');
+      expect(skill.title, '스킬(commit)');
       expect(skill.resultLine, 'commit 불러옴');
       expect(
         skill.body,
@@ -400,7 +400,7 @@ void main() {
             output: '{"name":"commit","content":"echo split"}',
           ),
         ).title,
-        'Skill(commit:scripts/split.sh)',
+        '스킬(commit:scripts/split.sh)',
       );
     },
     tags: const <String>['feature_test__skill_invocation__widget'],
@@ -419,7 +419,7 @@ void main() {
           ),
         ),
         isA<ChatToolPresentation>()
-            .having((value) => value.title, 'title', 'Attach(docs/spec.pdf)')
+            .having((value) => value.title, 'title', '첨부(docs/spec.pdf)')
             .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
       );
 
@@ -433,7 +433,7 @@ void main() {
           ),
         ),
         isA<ChatToolPresentation>()
-            .having((value) => value.title, 'title', 'Attachment(a1)')
+            .having((value) => value.title, 'title', '첨부 파일(a1)')
             .having((value) => value.resultLine, 'result', 'spec.pdf 첨부'),
       );
 
@@ -585,7 +585,7 @@ void main() {
         ),
       );
       expect(running.glyph, ChatToolGlyph.run);
-      expect(running.title, 'Bash(python3)');
+      expect(running.title, '실행(python3)');
       // No exit code yet, so the summary says so rather than inventing one.
       expect(running.resultLine, contains('실행 중'));
       expect(running.isFailure, isFalse);
@@ -613,7 +613,7 @@ void main() {
         ),
       );
       expect(written.glyph, ChatToolGlyph.run);
-      expect(written.title, 'Stdin(exec-1 ← 2 + 2)');
+      expect(written.title, '입력(exec-1 ← 2 + 2)');
 
       final lost = describeToolActivity(
         testL10n,
@@ -627,7 +627,7 @@ void main() {
           isError: true,
         ),
       );
-      expect(lost.title, 'Stdin(exec-gone)');
+      expect(lost.title, '입력(exec-gone)');
       expect(lost.resultLine, 'exec session not found');
       expect(lost.isFailure, isTrue);
     },
@@ -647,7 +647,7 @@ void main() {
       );
       expect(viewed.glyph, ChatToolGlyph.image);
       expect(chatToolIcon(viewed.glyph), CoderIcons.image);
-      expect(viewed.title, 'View(design/mock.png)');
+      expect(viewed.title, '이미지 보기(design/mock.png)');
       expect(viewed.resultLine, contains('2048'));
       expect(viewed.isFailure, isFalse);
 
@@ -678,7 +678,7 @@ void main() {
         ),
       );
       expect(plan.glyph, ChatToolGlyph.plan);
-      expect(plan.title, 'Plan(1)');
+      expect(plan.title, '계획(1)');
       expect(plan.isFailure, isTrue);
 
       final asked = describeToolActivity(
@@ -698,7 +698,7 @@ void main() {
       );
       expect(asked.glyph, ChatToolGlyph.ask);
       expect(chatToolIcon(asked.glyph), CoderIcons.chat);
-      expect(asked.title, 'Ask(Storage, Cache)');
+      expect(asked.title, '질문(Storage, Cache)');
       // The transcript records what the user actually chose.
       expect(asked.resultLine, 'SQLite, Redis');
       expect(asked.isFailure, isFalse);
@@ -718,7 +718,7 @@ void main() {
       );
       expect(now.glyph, ChatToolGlyph.clock);
       expect(chatToolIcon(now.glyph), CoderIcons.time);
-      expect(now.title, 'Now()');
+      expect(now.title, '현재 시각()');
       expect(now.resultLine, '2026-08-05T14:23:01.000Z');
 
       // A running sleep is its own card; this spec only draws the leftovers.
@@ -730,7 +730,7 @@ void main() {
           output: '{"sleptMs":2500,"outcome":"elapsed"}',
         ),
       );
-      expect(slept.title, 'Sleep(2500ms)');
+      expect(slept.title, '슬립(2500ms)');
       expect(slept.resultLine, '3초 대기함');
 
       final rejected = describeToolActivity(
@@ -741,7 +741,7 @@ void main() {
           isError: true,
         ),
       );
-      expect(rejected.title, 'Sleep()');
+      expect(rejected.title, '슬립()');
       expect(rejected.isFailure, isTrue);
     },
   );
@@ -761,7 +761,7 @@ void main() {
       );
       expect(remaining.glyph, ChatToolGlyph.context);
       expect(chatToolIcon(remaining.glyph), CoderIcons.gauge);
-      expect(remaining.title, 'Context()');
+      expect(remaining.title, '컨텍스트()');
       expect(remaining.resultLine, '토큰 168000/200000 남음');
 
       // Without an advertised window there is no fraction to report, so the
@@ -787,7 +787,7 @@ void main() {
         ),
       );
       expect(denied.glyph, ChatToolGlyph.context);
-      expect(denied.title, 'NewContext()');
+      expect(denied.title, '새 컨텍스트()');
       expect(denied.resultLine, 'Denied.');
       expect(denied.isFailure, isTrue);
     },
@@ -810,7 +810,7 @@ void main() {
 
       expect(searched.glyph, ChatToolGlyph.tools);
       expect(chatToolIcon(searched.glyph), CoderIcons.tool);
-      expect(searched.title, 'Tools(open a pull request)');
+      expect(searched.title, '도구(open a pull request)');
       expect(searched.resultLine, contains('11'));
       // The body lists names, not the schemas the model needs.
       expect(
@@ -847,7 +847,7 @@ void main() {
       );
       expect(listed.glyph, ChatToolGlyph.resource);
       expect(chatToolIcon(listed.glyph), CoderIcons.extension);
-      expect(listed.title, 'Resources(github)');
+      expect(listed.title, '리소스(github)');
       expect(listed.resultLine, contains('1'));
       expect(listed.isFailure, isFalse);
 
@@ -859,7 +859,7 @@ void main() {
           output: '{"resources":[],"truncated":false}',
         ),
       );
-      expect(fanned.title, 'Resources(all)');
+      expect(fanned.title, '리소스(전체)');
 
       // A truncated page is marked so the model knows to page again.
       final truncated = describeToolActivity(
@@ -871,7 +871,7 @@ void main() {
               '{"resourceTemplates":[{"uriTemplate":"a"}],"truncated":true}',
         ),
       );
-      expect(truncated.title, 'ResourceTemplates(github)');
+      expect(truncated.title, '리소스 템플릿(github)');
       expect(truncated.resultLine, endsWith('…'));
 
       final read = describeToolActivity(
@@ -888,7 +888,7 @@ void main() {
               '"text":"file body"}]}',
         ),
       );
-      expect(read.title, 'Resource(github: file:///a.txt)');
+      expect(read.title, '리소스(github: file:///a.txt)');
       // The expanded body shows the text, not the JSON envelope.
       expect((read.body as ChatToolTextBody).text, 'file body');
 
@@ -917,7 +917,7 @@ void main() {
         testL10n,
         activity('exec_command', arguments: <String, dynamic>{'command': long}),
       );
-      expect(run.title.length, lessThanOrEqualTo('Bash()'.length + 60));
+      expect(run.title.length, lessThanOrEqualTo('실행()'.length + 60));
       final failed = describeToolActivity(
         testL10n,
         activity(

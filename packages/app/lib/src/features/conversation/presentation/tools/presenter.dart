@@ -306,6 +306,8 @@ String truncateToolText(String text, int max) =>
 final ChatToolPresenter mcpToolPresenter = ChatToolPresenter(
   glyph: ChatToolGlyph.generic,
   argumentBody: prettyToolArgumentBody,
+  // Built from the MCP server and tool names, which the server chooses and no
+  // locale of this app can translate.
   title: (l10n, activity) {
     final parts = activity.toolName.split('__');
     return parts.length >= 3
@@ -327,6 +329,8 @@ final ChatToolPresenter mcpToolPresenter = ChatToolPresenter(
 final ChatToolPresenter genericToolPresenter = ChatToolPresenter(
   glyph: ChatToolGlyph.generic,
   argumentBody: prettyToolArgumentBody,
+  // The fallback for a tool this app has no spec for: the name is the only
+  // thing known about it, and it is the agent's identifier, not app copy.
   title: (l10n, activity) {
     final scalar = activity.arguments.values
         .where((value) => value is String || value is num || value is bool)

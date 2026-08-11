@@ -478,7 +478,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                       controller: _apiKey,
                       enabled: !_busy,
                       obscureText: true,
-                      label: 'API key',
+                      label: l10n.providerSettingsApiKey,
                       onChanged: (_) => setState(() => _error = null),
                     ),
                   if (_method.experimental)
@@ -710,12 +710,18 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
   }
 
   Future<void> _openUrl(String value) async {
+    final l10n = AppLocalizations.of(context);
     try {
       final opened = await ref
           .read(externalUrlOpenerProvider)
           .open(Uri.parse(value));
-      if (!opened) throw StateError('Unable to open authorization URL.');
-      if (mounted) setState(() => _openError = null);
+      if (!mounted) return;
+      // A false result is not a failure the opener can describe: no handler
+      // accepted the URL. Only this layer knows the reader's language, so the
+      // explanation is written here rather than thrown from below.
+      setState(
+        () => _openError = opened ? null : l10n.providerSettingsAuthUrlFailed,
+      );
     } on Object catch (error) {
       if (mounted) setState(() => _openError = error);
     }
@@ -725,7 +731,9 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
     if (connection.status == ProviderConnectionStatus.error) {
       setState(() {
         _retryConnectionId = connection.id;
-        _error = connection.error ?? 'Provider connection failed.';
+        _error =
+            connection.error ??
+            AppLocalizations.of(context).providerSettingsConnectionFailed;
       });
       return;
     }
@@ -989,6 +997,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
   late bool _authenticationRequired;
   late Set<String> _controlIds;
   bool _busy = false;
+  bool _namePrefilled = false;
   Object? _error;
 
   @override
@@ -996,7 +1005,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
     super.initState();
     final connection = widget.existing;
     final initial = connection?.customConfig;
-    _name = TextEditingController(text: initial?.name ?? 'Custom Provider');
+    _name = TextEditingController(text: initial?.name);
     _baseUrl = TextEditingController(
       text: initial?.baseUrl ?? 'http://127.0.0.1:8080/v1',
     );
@@ -1024,6 +1033,19 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
             )
             .loadModels(connection.id),
       );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Localizations are not in scope during initState, so the default name for
+    // a brand-new provider is filled in here. The flag keeps a later locale
+    // change from overwriting a name the user has since typed or cleared.
+    if (_namePrefilled) return;
+    _namePrefilled = true;
+    if (widget.existing == null) {
+      _name.text = AppLocalizations.of(context).providerSettingsCustomName;
     }
   }
 
@@ -1088,7 +1110,10 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       ),
                 children: <Widget>[
                   TRTextField(controller: _name, label: l10n.commonName),
-                  TRTextField(controller: _baseUrl, label: 'Base URL'),
+                  TRTextField(
+                    controller: _baseUrl,
+                    label: l10n.providerSettingsBaseUrl,
+                  ),
                   TRTextField(
                     key: const ValueKey<String>('provider-model-prefix'),
                     controller: _prefix,
@@ -1130,11 +1155,13 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       key: const ValueKey<String>('provider-api-key'),
                       controller: _apiKey,
                       obscureText: true,
-                      label: 'API key',
+                      label: l10n.providerSettingsApiKey,
                     ),
                   TRTextField(
                     controller: _models,
                     label: l10n.providerSettingsManualModels,
+                    // Demonstrates the comma-separated syntax with stand-in
+                    // model IDs, which providers never localize.
                     placeholder: 'model-a, model-b',
                   ),
                   for (final control in _selectedWire.controls)

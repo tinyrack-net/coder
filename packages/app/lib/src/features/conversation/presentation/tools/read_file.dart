@@ -9,8 +9,12 @@ final Map<String, ChatToolPresenter> readFilePresenters =
           final path = stringToolArg(activity, 'path') ?? '?';
           final offset = activity.arguments['offset'];
           final limit = activity.arguments['limit'];
-          if (offset == null && limit == null) return 'Read($path)';
-          return 'Read($path @${offset ?? 0}+${limit ?? 0})';
+          if (offset == null && limit == null) return l10n.toolTitleRead(path);
+          return l10n.toolTitleReadRange(
+            path,
+            '${offset ?? 0}',
+            '${limit ?? 0}',
+          );
         },
         result: (l10n, activity, output) {
           final text = toolOutputText(output);

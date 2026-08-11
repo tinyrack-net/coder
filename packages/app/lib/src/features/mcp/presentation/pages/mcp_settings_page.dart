@@ -257,7 +257,7 @@ class _StatusDot extends StatelessWidget {
     if (server.status == McpServerStatus.connecting) {
       return TRSpinner(
         key: ValueKey<String>('mcp-server-status-${server.config.id}'),
-        label: 'Connecting MCP server',
+        label: AppLocalizations.of(context).mcpSettingsConnecting,
       );
     }
     final color = switch (server.status) {

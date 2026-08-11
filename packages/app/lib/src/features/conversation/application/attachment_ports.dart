@@ -14,6 +14,32 @@ const int maxPendingAttachmentBytes = 50 * 1024 * 1024;
 /// Maximum pending files accepted by one submission.
 const int maxPendingAttachmentCount = 10;
 
+/// Why an attachment could not be accepted.
+enum AttachmentFailureReason {
+  /// One file is larger than [maxPendingAttachmentBytes].
+  tooLarge,
+
+  /// The submission would hold more than [maxPendingAttachmentCount] files.
+  tooMany,
+}
+
+/// A rejected attachment, described by cause rather than by sentence.
+///
+/// Both limits are the app's own, so the explanation has to reach the user in
+/// their language. Carrying the reason instead of a message keeps that
+/// decision with the widget that renders it, which is the only layer that
+/// knows the locale.
+final class AttachmentFailure implements Exception {
+  /// Creates a failure for [reason].
+  const AttachmentFailure(this.reason);
+
+  /// What about the selection could not be accepted.
+  final AttachmentFailureReason reason;
+
+  @override
+  String toString() => 'AttachmentFailure(${reason.name})';
+}
+
 /// A repeatably readable local file waiting to be uploaded.
 final class PendingAttachment {
   /// Creates a pending attachment.

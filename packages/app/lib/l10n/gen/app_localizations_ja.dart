@@ -18,64 +18,64 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonSaving => '保存中';
 
   @override
-  String get commonCreate => 'Create';
+  String get commonCreate => '作成';
 
   @override
-  String get commonCreating => 'Creating…';
+  String get commonCreating => '作成中…';
 
   @override
   String get commonConfirm => 'OK';
 
   @override
-  String get commonDelete => 'Delete';
+  String get commonDelete => '削除';
 
   @override
-  String get commonRetry => 'Retry';
+  String get commonRetry => '再試行';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => '閉じる';
 
   @override
-  String get commonCopy => 'Copy';
+  String get commonCopy => 'コピー';
 
   @override
-  String get commonStop => 'Stop';
+  String get commonStop => '停止';
 
   @override
   String get commonName => '名前';
 
   @override
-  String get commonKind => 'Kind';
+  String get commonKind => '種類';
 
   @override
   String get commonDescription => '説明';
 
   @override
-  String get commonRunning => 'Running';
+  String get commonRunning => '実行中';
 
   @override
-  String get commonDone => 'Done';
+  String get commonDone => '完了';
 
   @override
-  String get commonDetails => 'Details';
+  String get commonDetails => '詳細';
 
   @override
-  String get commonSaved => 'Saved.';
+  String get commonSaved => '保存しました。';
 
   @override
-  String get commonDeleted => 'Deleted.';
+  String get commonDeleted => '削除しました。';
 
   @override
-  String get commonCopied => 'Copied to the clipboard.';
+  String get commonCopied => 'クリップボードにコピーしました。';
 
   @override
-  String get commonActionFailed => 'Something went wrong.';
+  String get commonActionFailed => '問題が発生しました。';
 
   @override
-  String get toastRegionLabel => 'Notifications';
+  String get toastRegionLabel => '通知';
 
   @override
-  String get settingsTitle => 'Settings';
+  String get settingsTitle => '設定';
 
   @override
   String get settingsLoading => '設定を読み込み中';
@@ -86,159 +86,157 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get settingsSectionApp => 'App';
+  String get settingsSectionApp => 'アプリ';
 
   @override
-  String get settingsSectionDaemon => 'Daemon';
+  String get settingsSectionDaemon => 'デーモン';
 
   @override
-  String get settingsDaemonSelectLabel => 'Daemon';
+  String get settingsDaemonSelectLabel => 'デーモン';
 
   @override
-  String get settingsDaemonSelectEmpty => 'No daemons';
+  String get settingsDaemonSelectEmpty => 'デーモンなし';
 
   @override
   String settingsDaemonOffline(String label) {
-    return '$label is not connected.';
+    return '$label に接続していません。';
   }
 
   @override
-  String get settingsCategoryGeneral => 'General';
+  String get settingsCategoryGeneral => '一般';
 
   @override
-  String get settingsCategoryProjects => 'Projects';
+  String get settingsCategoryProjects => 'プロジェクト';
 
   @override
-  String get settingsCategoryAgent => 'Agent';
+  String get settingsCategoryAgent => 'エージェント';
 
   @override
-  String get settingsCategoryProvider => 'Provider';
+  String get settingsCategoryProvider => 'プロバイダー';
 
   @override
-  String get settingsCategoryPermission => 'Permissions';
+  String get settingsCategoryPermission => '権限';
 
   @override
-  String get settingsCategoryDaemon => 'Daemons';
+  String get settingsCategoryDaemon => 'デーモン';
 
   @override
-  String get settingsCategoryAdvanced => 'Advanced';
+  String get settingsCategoryAdvanced => '詳細設定';
 
   @override
-  String get advancedResetSection => 'Reset';
+  String get advancedResetSection => 'リセット';
 
   @override
-  String get advancedResetTitle => 'Reset all data';
+  String get advancedResetTitle => 'すべてのデータをリセット';
 
   @override
   String get advancedResetDescription =>
-      'Deletes the embedded daemon\'s database, credentials, MCP and agent configuration, skills, and attachments, and clears every app setting and stored remote daemon token. Git checkouts under the worktrees folder stay on disk.';
+      '内蔵デーモンのデータベース、認証情報、MCP とエージェントの設定、スキル、添付ファイルを削除し、すべてのアプリ設定と保存済みのリモートデーモントークンを消去します。worktrees フォルダー内の Git チェックアウトはディスクに残ります。';
 
   @override
   String get advancedResetDescriptionAppOnly =>
-      'Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.';
+      'このデバイスのすべてのアプリ設定と保存済みのリモートデーモントークンを消去します。リモートデーモン側のデータはそのまま残ります。';
 
   @override
-  String get advancedResetAction => 'Reset all data';
+  String get advancedResetAction => 'すべてのデータをリセット';
 
   @override
-  String get advancedResetRunning => 'Resetting…';
+  String get advancedResetRunning => 'リセット中…';
 
   @override
-  String get advancedResetConfirmTitle => 'Reset all data?';
+  String get advancedResetConfirmTitle => 'すべてのデータをリセットしますか？';
 
   @override
   String get advancedResetConfirmBody =>
-      'Every session, workspace registration, provider connection, agent, skill, and MCP server on the embedded daemon is deleted, together with every app setting and remote daemon profile and token. The daemon returns to its default port. Git checkouts stay on disk but have to be added again. This cannot be undone.';
+      '内蔵デーモンのセッション、ワークスペース登録、プロバイダー接続、エージェント、スキル、MCP サーバーがすべて削除され、あわせてすべてのアプリ設定とリモートデーモンのプロファイルおよびトークンも削除されます。デーモンは既定のポートに戻ります。Git チェックアウトはディスクに残りますが、追加し直す必要があります。この操作は取り消せません。';
 
   @override
-  String get advancedResetConfirmAccept => 'Reset';
+  String get advancedResetConfirmAccept => 'リセット';
 
   @override
-  String get advancedResetDone => 'Reset to factory defaults.';
+  String get advancedResetDone => '初期設定に戻しました。';
 
   @override
-  String get advancedResetFailedTitle => 'Reset failed';
+  String get advancedResetFailedTitle => 'リセットに失敗しました';
 
   @override
   String advancedResetFailedDaemonRunning(String appDisplayName) {
-    return 'Another $appDisplayName daemon is using the data directory. Quit it and try again. Nothing was deleted.';
+    return '別の $appDisplayName デーモンがデータディレクトリを使用しています。終了してからもう一度お試しください。削除されたものはありません。';
   }
 
   @override
   String advancedResetFailedFilesystem(String error) {
-    return 'Some daemon files could not be deleted: $error';
+    return '一部のデーモンファイルを削除できませんでした: $error';
   }
 
   @override
   String advancedResetFailedIncomplete(String appDisplayName) {
-    return 'Daemon data was removed but the app settings could not be cleared. Restart $appDisplayName.';
+    return 'デーモンのデータは削除しましたが、アプリ設定を消去できませんでした。$appDisplayName を再起動してください。';
   }
 
   @override
-  String get settingsRequiresOnlineDaemon => 'Connect an online daemon first.';
+  String get settingsRequiresOnlineDaemon => '先にオンラインのデーモンに接続してください。';
 
   @override
-  String get generalAppearanceSection => 'Appearance';
+  String get generalAppearanceSection => '外観';
 
   @override
-  String get generalAppearanceLabel => 'Theme';
+  String get generalAppearanceLabel => 'テーマ';
 
   @override
-  String get generalAppearanceDescription =>
-      'Applies to the whole app and is remembered the next time you start it.';
+  String get generalAppearanceDescription => 'アプリ全体に適用され、次回の起動時にも引き継がれます。';
 
   @override
-  String get generalAppearanceSystem => 'Follow system';
+  String get generalAppearanceSystem => 'システムに合わせる';
 
   @override
-  String get generalAppearanceLight => 'Light';
+  String get generalAppearanceLight => 'ライト';
 
   @override
-  String get generalAppearanceDark => 'Dark';
+  String get generalAppearanceDark => 'ダーク';
 
   @override
-  String get generalLanguageSection => 'Language';
+  String get generalLanguageSection => '言語';
 
   @override
-  String get generalLanguageLabel => 'Display language';
+  String get generalLanguageLabel => '表示言語';
 
   @override
-  String get generalLanguageDescription =>
-      'Applies to the whole app and takes effect immediately.';
+  String get generalLanguageDescription => 'アプリ全体に適用され、すぐに反映されます。';
 
   @override
-  String get generalLanguageSystem => 'System default';
+  String get generalLanguageSystem => 'システムに合わせる';
 
   @override
-  String get generalStartupSection => 'Startup';
+  String get generalStartupSection => '起動';
 
   @override
-  String get generalStartupAtBootLabel => 'Start at login';
+  String get generalStartupAtBootLabel => 'ログイン時に起動';
 
   @override
   String generalStartupAtBootDescription(String appDisplayName) {
-    return 'The operating system launches $appDisplayName after you sign in, so the embedded daemon keeps running.';
+    return 'サインインすると OS が $appDisplayName を起動するので、内蔵デーモンが動き続けます。';
   }
 
   @override
-  String get generalStartupMinimizedLabel => 'Start minimized';
+  String get generalStartupMinimizedLabel => '最小化した状態で起動';
 
   @override
   String get generalStartupMinimizedDescription =>
-      'A login-time launch goes straight to the tray without opening a window.';
+      'ログイン時の起動ではウィンドウを開かず、そのままトレイに入ります。';
 
   @override
-  String get generalAppearanceFailed => 'Could not change the appearance.';
+  String get generalAppearanceFailed => 'テーマを変更できませんでした。';
 
   @override
-  String get generalLanguageFailed => 'Could not change the language.';
+  String get generalLanguageFailed => '言語を変更できませんでした。';
 
   @override
-  String get generalStartupFailed => 'Could not change the startup setting.';
+  String get generalStartupFailed => '起動設定を変更できませんでした。';
 
   @override
   String generalStartupCloseNotice(String appDisplayName) {
-    return 'Closing the window keeps $appDisplayName running in the tray.';
+    return 'ウィンドウを閉じても $appDisplayName はトレイで動き続けます。';
   }
 
   @override
@@ -247,60 +245,68 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get trayShowWindow => 'Show window';
+  String get trayShowWindow => 'ウィンドウを表示';
 
   @override
-  String get trayHideWindow => 'Hide window';
+  String get trayHideWindow => 'ウィンドウを隠す';
 
   @override
-  String get trayOpenSettings => 'Settings';
+  String get trayOpenSettings => '設定';
 
   @override
-  String get trayQuit => 'Quit';
+  String get trayQuit => '終了';
 
   @override
-  String get desktopMenuFile => 'File';
+  String get desktopMenuFile => 'ファイル';
 
   @override
-  String get desktopMenuView => 'View';
+  String get desktopMenuView => '表示';
 
   @override
-  String get desktopMenuHelp => 'Help';
+  String get desktopMenuHelp => 'ヘルプ';
 
   @override
   String desktopMenuAbout(String appDisplayName) {
-    return 'About $appDisplayName';
+    return '$appDisplayName について';
   }
 
   @override
-  String get desktopWindowMinimize => 'Minimize';
+  String get desktopWindowMinimize => '最小化';
 
   @override
-  String get desktopWindowMaximize => 'Maximize';
+  String get desktopWindowMaximize => '最大化';
 
   @override
-  String get desktopWindowRestore => 'Restore';
+  String get desktopWindowRestore => '元のサイズに戻す';
 
   @override
-  String get desktopWindowClose => 'Close to tray';
+  String get desktopWindowClose => 'トレイにしまう';
 
   @override
-  String get workspacesTitle => 'Workspaces';
+  String get workspacesTitle => 'ワークスペース';
 
   @override
-  String get workspaceSidebarExpand => 'Show sidebar';
+  String get workspaceSidebarExpand => 'サイドバーを表示';
 
   @override
-  String get workspaceSidebarCollapse => 'Hide sidebar';
+  String get workspaceSidebarCollapse => 'サイドバーを隠す';
 
   @override
-  String get workspaceNewSession => 'New session';
+  String get workspaceNewSession => '新しいセッション';
 
   @override
-  String get workspaceNewTab => 'New tab';
+  String get sessionDefaultTitle => 'コーディングセッション';
 
   @override
-  String get workspaceNewTerminal => 'New terminal';
+  String get workspaceNewTab => '新しいタブ';
+
+  @override
+  String get workspaceNewTerminal => '新しいターミナル';
+
+  @override
+  String terminalTabTitle(int number) {
+    return 'ターミナル $number';
+  }
 
   @override
   String get workspaceLoading => 'ワークスペースを読み込み中';
@@ -323,17 +329,16 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get terminalCloseTitle => 'Terminate terminal?';
+  String get terminalCloseTitle => 'ターミナルを終了しますか？';
 
   @override
-  String get terminalCloseConfirm =>
-      'Closing this tab terminates its shell and child processes.';
+  String get terminalCloseConfirm => 'このタブを閉じると、シェルと子プロセスが終了します。';
 
   @override
-  String get terminalTerminate => 'Terminate';
+  String get terminalTerminate => '終了';
 
   @override
-  String get terminalConnectionFailed => 'Terminal connection failed';
+  String get terminalConnectionFailed => 'ターミナルに接続できませんでした';
 
   @override
   String get terminalConnecting => 'ターミナルに接続中';
@@ -356,45 +361,45 @@ class AppLocalizationsJa extends AppLocalizations {
       '設定されたターミナルシェルを起動できませんでした。ターミナル設定を確認して、もう一度お試しください。';
 
   @override
-  String get terminalMenuCopy => 'Copy';
+  String get terminalMenuCopy => 'コピー';
 
   @override
-  String get terminalMenuPaste => 'Paste';
+  String get terminalMenuPaste => '貼り付け';
 
   @override
-  String get terminalMenuSelectAll => 'Select all';
+  String get terminalMenuSelectAll => 'すべて選択';
 
   @override
-  String get terminalMenuClearSelection => 'Clear selection';
+  String get terminalMenuClearSelection => '選択を解除';
 
   @override
-  String get terminalMenuClearScreen => 'Clear screen';
+  String get terminalMenuClearScreen => '画面を消去';
 
   @override
-  String get projectSettingsHookHeading => 'Worktree lifecycle hooks';
+  String get projectSettingsHookHeading => 'ワークツリーのライフサイクルフック';
 
   @override
-  String get projectSettingsShellHeading => 'Project terminal shell';
+  String get projectSettingsShellHeading => 'プロジェクトのターミナルシェル';
 
   @override
   String get projectSettingsShellHelp =>
-      'Overrides the daemon host shell for terminals opened in this project. Leave the executable empty to inherit the host default.';
+      'このプロジェクトで開くターミナルについて、デーモンホストのシェルを上書きします。実行ファイルを空のままにすると、ホストの既定値を使います。';
 
   @override
-  String get projectSettingsShellExecutable => 'Shell executable';
+  String get projectSettingsShellExecutable => 'シェルの実行ファイル';
 
   @override
-  String get projectSettingsShellArguments => 'Shell arguments (one per line)';
+  String get projectSettingsShellArguments => 'シェルの引数（1 行に 1 つ）';
 
   @override
-  String get projectSettingsHostShellHeading => 'Daemon host default shell';
+  String get projectSettingsHostShellHeading => 'デーモンホストの既定シェル';
 
   @override
   String get projectSettingsHostShellHelp =>
-      'Used by every project on this daemon host unless the project overrides it. Leave the executable empty to use the operating system default.';
+      'プロジェクト側で上書きしないかぎり、このデーモンホストのすべてのプロジェクトで使われます。実行ファイルを空のままにすると、OS の既定値を使います。';
 
   @override
-  String get workspaceAllSessions => 'All sessions';
+  String get workspaceAllSessions => 'すべてのセッション';
 
   @override
   String get workspaceSplitRight => '右に分割';
@@ -412,95 +417,115 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceMoveTabToPane => 'アクティブなタブを別のペインに移動';
 
   @override
-  String get workspaceCloseTab => 'Close tab';
+  String get workspaceCloseTab => 'タブを閉じる';
 
   @override
-  String get workspaceNewWorkspace => 'New workspace';
+  String get workspaceNewWorkspace => '新しいワークスペース';
 
   @override
-  String get workspaceWorktreeMenu => 'Worktree menu';
+  String get workspaceWorktreeMenu => 'ワークツリーメニュー';
 
   @override
-  String get workspaceProjectMenu => 'Project menu';
+  String get workspaceProjectMenu => 'プロジェクトメニュー';
 
   @override
-  String get workspaceUnregister => 'Remove project';
+  String get workspaceUnregister => 'プロジェクトを削除';
 
   @override
   String workspaceUnregisterTitle(String name) {
-    return 'Remove $name?';
+    return '$name を削除しますか？';
   }
 
   @override
   String workspaceUnregisterBody(String appName) {
-    return 'The project disappears from $appName, but its repository and files stay on disk.';
+    return '$appName の一覧からは消えますが、リポジトリとファイルはディスクに残ります。';
   }
 
   @override
-  String get workspaceArchive => 'Archive';
+  String get workspaceArchive => 'アーカイブ';
 
   @override
-  String get workspaceArchiveBlockedTitle => 'Cannot archive';
+  String get workspaceArchiveBlockedTitle => 'アーカイブできません';
 
   @override
   String workspaceArchiveBlockedBody(int count) {
-    return 'Stop the $count running session(s) first.';
+    return '実行中のセッション $count 件を先に停止してください。';
   }
 
   @override
   String workspaceArchiveTitle(String name) {
-    return 'Archive $name?';
+    return '$name をアーカイブしますか？';
   }
 
   @override
-  String get workspaceArchiveDirty => 'It has uncommitted changes.\n';
+  String get workspaceArchiveDirty => 'コミットしていない変更があります。\n';
 
   @override
   String workspaceArchiveUnpushed(int count) {
-    return 'It has $count unpushed commit(s).\n';
+    return 'プッシュしていないコミットが $count 件あります。\n';
   }
 
   @override
   String workspaceArchiveRemovesDirectory(String appName) {
-    return 'The checkout directory created by $appName will be removed.';
+    return '$appName が作成したチェックアウトディレクトリは削除されます。';
   }
 
   @override
-  String get workspaceArchiveKeepsDirectory =>
-      'Only the registration is hidden; the checkout stays on disk.';
+  String get workspaceArchiveKeepsDirectory => '登録を隠すだけで、チェックアウトはディスクに残ります。';
 
   @override
-  String get workspaceArchiveRisky => 'Confirm the risks and archive';
+  String get workspaceArchiveRisky => 'リスクを確認してアーカイブ';
 
   @override
-  String get workspaceNoDaemons => 'No daemons are configured.';
+  String get workspaceNoDaemons => 'デーモンが設定されていません。';
 
   @override
-  String get workspaceNoConnectedDaemons => 'No daemon is connected.';
+  String get workspaceNoConnectedDaemons => '接続中のデーモンがありません。';
 
   @override
-  String get workspaceNoWorkspaces => 'No workspaces yet.';
+  String get workspaceNoWorkspaces => 'ワークスペースがまだありません。';
 
   @override
-  String get workspaceNoProjectSessions => 'No project';
+  String get workspaceNoProjectSessions => 'プロジェクトなし';
 
   @override
-  String get workspaceNoProjectOption => 'No project (home folder)';
+  String get workspaceNoProjectOption => 'プロジェクトなし（ホームフォルダー）';
 
   @override
-  String get workspaceAddProjectFirst => 'Add a project first.';
+  String get workspaceProjectChip => 'プロジェクト';
 
   @override
-  String get workspaceSelectProject => 'Select a project.';
+  String get workspaceProjectChipTooltip => 'プロジェクトを選択';
 
   @override
-  String get workspaceCheckoutMissing => 'No project checkout was found.';
+  String get workspaceProjectAdd => '追加';
 
   @override
-  String get workspaceDaemonRequired => 'A daemon connection is required.';
+  String get workspaceWorktreeNew => '新しいワークツリー';
 
   @override
-  String get workspaceOpenDaemonSettings => 'Daemon settings';
+  String get workspaceWorktreeChipTooltip => 'ワークツリーを選択';
+
+  @override
+  String get workspaceBaseBranchChip => 'ベースブランチ';
+
+  @override
+  String get workspaceBaseBranchChipTooltip => 'ベースブランチを選択';
+
+  @override
+  String get workspaceAddProjectFirst => '先にプロジェクトを追加してください。';
+
+  @override
+  String get workspaceSelectProject => 'プロジェクトを選択してください。';
+
+  @override
+  String get workspaceCheckoutMissing => 'プロジェクトのチェックアウトが見つかりませんでした。';
+
+  @override
+  String get workspaceDaemonRequired => 'デーモンへの接続が必要です。';
+
+  @override
+  String get workspaceOpenDaemonSettings => 'デーモン設定';
 
   @override
   String get workspaceStartFailedTitle => 'セッションを開始できませんでした';
@@ -565,102 +590,110 @@ class AppLocalizationsJa extends AppLocalizations {
   String get errorSessionSettingFailed => 'Session設定を変更できませんでした。';
 
   @override
-  String get hostStatusOnline => 'Online';
+  String get hostStatusOnline => 'オンライン';
 
   @override
-  String get hostStatusConnecting => 'Connecting';
+  String get hostStatusConnecting => '接続中';
 
   @override
-  String get hostStatusReconnecting => 'Reconnecting';
+  String get hostStatusReconnecting => '再接続中';
 
   @override
-  String get hostStatusOffline => 'Offline';
+  String get hostStatusOffline => 'オフライン';
 
   @override
-  String get hostStatusError => 'Error';
+  String get hostStatusError => 'エラー';
 
   @override
-  String get hostStatusConflict => 'Duplicate daemon';
+  String get hostStatusConflict => 'デーモンの重複';
 
   @override
-  String get hostStatusIdle => 'Auto-connect off';
+  String get hostStatusIdle => '自動接続オフ';
 
   @override
-  String get hostStatusPending => 'Waiting';
+  String get hostStatusPending => '待機中';
 
   @override
-  String get embeddedDaemonName => 'Embedded daemon';
+  String get embeddedDaemonName => '内蔵デーモン';
 
   @override
-  String get hostErrorMissingToken => 'Enter a bearer token.';
+  String get hostErrorMissingToken => 'ベアラートークンを入力してください。';
 
   @override
-  String get hostErrorNoToken => 'No bearer token is stored.';
+  String get hostErrorNoToken => 'ベアラートークンが保存されていません。';
 
   @override
-  String get hostErrorDuplicate => 'That daemon is already registered.';
+  String get hostErrorDuplicate => 'そのデーモンはすでに登録されています。';
 
   @override
-  String get hostErrorUnauthorized => 'The daemon rejected the bearer token.';
+  String get hostErrorUnauthorized => 'デーモンがベアラートークンを拒否しました。';
 
   @override
-  String get hostErrorEmbeddedPortInUse =>
-      'The selected port is already in use.';
+  String get hostErrorEmbeddedPortInUse => '選択したポートはすでに使用中です。';
 
   @override
   String hostErrorEmbeddedAlreadyRunning(String appName) {
-    return '$appName is already running on this computer and owns the local daemon. Open the running copy from the system tray, or quit it and retry.';
+    return 'このコンピューターではすでに $appName が動作していて、ローカルデーモンを使用しています。システムトレイから実行中のウィンドウを開くか、終了してからもう一度お試しください。';
   }
 
   @override
   String get hostErrorLocalNetworkUnreachable =>
-      'Could not reach the daemon. Check that it is running, and that you allowed this site to access your local network.';
+      'デーモンに接続できませんでした。デーモンが動作しているか、このサイトにローカルネットワークへのアクセスを許可しているかを確認してください。';
 
   @override
-  String get appSettingsTitle => 'App settings';
+  String get hostErrorRelayPairingUnavailable =>
+      'このプラットフォームではリレーのペアリングを利用できません。';
 
   @override
-  String get appSettingsLocalSection => 'Local execution';
+  String get hostErrorServerIdentityMismatch =>
+      'このアドレスは、ここに保存されているものとは別のデーモンにつながっています。';
+
+  @override
+  String get hostErrorCredentialMismatch => '保存されている認証情報は、この接続経路と一致しません。';
+
+  @override
+  String get appSettingsTitle => 'アプリ設定';
+
+  @override
+  String get appSettingsLocalSection => 'ローカル実行';
 
   @override
   String get appSettingsEmbeddedSubtitle =>
-      'Starts with the app and stops when it exits. A failed start does not block the app.';
+      'アプリと一緒に起動し、終了すると停止します。起動に失敗してもアプリは使えます。';
 
   @override
-  String get appSettingsExposure => 'Allow network access';
+  String get appSettingsExposure => 'ネットワークアクセスを許可';
 
   @override
   String get appSettingsExposureSubtitle =>
-      'Off accepts connections from this machine only; on accepts them on every IPv4 interface.';
+      'オフではこのマシンからのみ、オンではすべての IPv4 インターフェースから接続を受け付けます。';
 
   @override
-  String get appSettingsEmbeddedPort => 'Port';
+  String get appSettingsEmbeddedPort => 'ポート';
 
   @override
   String get appSettingsEmbeddedPortHelp =>
-      'Choose a port from 1 to 65535. Applying restarts the embedded daemon when it is running.';
+      '1〜65535 のポートを選んでください。適用すると、動作中の内蔵デーモンは再起動します。';
 
   @override
-  String get appSettingsEmbeddedPortInvalid =>
-      'Enter a whole number from 1 to 65535.';
+  String get appSettingsEmbeddedPortInvalid => '1〜65535 の整数を入力してください。';
 
   @override
-  String get appSettingsEmbeddedPortApply => 'Apply';
+  String get appSettingsEmbeddedPortApply => '適用';
 
   @override
-  String get appSettingsEmbeddedFailureTitle =>
-      'The embedded daemon could not start';
+  String get appSettingsEmbeddedFailureTitle => '内蔵デーモンを起動できませんでした';
 
   @override
   String appSettingsEmbeddedPortConflict(int port) {
-    return 'Port $port is being used by another process. Choose another port and apply it, or retry after the port becomes available.';
+    return 'ポート $port は別のプロセスが使用中です。別のポートを指定して適用するか、ポートが空いてからもう一度お試しください。';
   }
 
   @override
-  String get appSettingsRemoteSection => 'Remote daemons';
+  String get appSettingsRemoteSection => 'リモートデーモン';
 
   @override
-  String get appSettingsAddRemote => 'Add remote daemon';
+  String get appSettingsAddRemote => 'リモートデーモンを追加';
 
   @override
   String get relayPairTitle => 'デバイスを接続';
@@ -736,252 +769,255 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayApprovedDevices => 'デバイス';
 
   @override
-  String get appSettingsNoRemotes => 'No remote daemons are saved.';
+  String get appSettingsNoRemotes => '保存されたリモートデーモンはありません。';
 
   @override
-  String get appSettingsStopEmbeddedTitle => 'Stop the embedded daemon?';
+  String get appSettingsStopEmbeddedTitle => '内蔵デーモンを停止しますか？';
 
   @override
   String get appSettingsStopEmbeddedBody =>
-      'This stops only the daemon this app owns, along with its connection. Remote and standalone daemons are unaffected.';
+      'このアプリが持つデーモンとその接続だけを停止します。リモートデーモンや単独起動のデーモンには影響しません。';
 
   @override
-  String get appSettingsEditConnection => 'Edit connection';
+  String get appSettingsEditConnection => '接続を編集';
 
   @override
-  String get appSettingsAutoConnect => 'Connect on app start';
+  String get appSettingsAutoConnect => 'アプリ起動時に接続';
 
   @override
-  String get appSettingsReconnect => 'Reconnect';
+  String get appSettingsReconnect => '再接続';
 
   @override
-  String get appSettingsProviderSettings => 'Provider settings';
+  String get appSettingsProviderSettings => 'プロバイダー設定';
 
   @override
-  String get appSettingsAddRemoteTitle => 'Add remote daemon';
+  String get appSettingsAddRemoteTitle => 'リモートデーモンを追加';
 
   @override
-  String get appSettingsEditRemoteTitle => 'Edit remote daemon';
+  String get appSettingsEditRemoteTitle => 'リモートデーモンを編集';
 
   @override
-  String get appSettingsAddress => 'WebSocket address';
+  String get appSettingsAddress => 'WebSocket アドレス';
 
   @override
-  String get appSettingsNewToken => 'New bearer token (only when changing it)';
+  String get appSettingsLabelPlaceholder => '本番デーモン';
 
   @override
-  String get appSettingsBearerToken => 'Bearer token';
+  String get appSettingsNewToken => '新しいベアラートークン（変更するときのみ）';
 
   @override
-  String get appSettingsRemoteDetails => 'Daemon';
+  String get appSettingsBearerToken => 'ベアラートークン';
 
   @override
-  String get appSettingsConnectionBehaviour => 'Connection';
+  String get appSettingsRemoteDetails => 'デーモン';
 
   @override
-  String get appSettingsConnectionFailed => 'Could not save the connection';
+  String get appSettingsConnectionBehaviour => '接続';
+
+  @override
+  String get appSettingsConnectionFailed => '接続を保存できませんでした';
 
   @override
   String appSettingsDeleteTitle(String label) {
-    return 'Delete $label?';
+    return '$label を削除しますか？';
   }
 
   @override
-  String get appSettingsDeleteBody =>
-      'The connection and the bearer token stored on this device are removed too.';
+  String get appSettingsDeleteBody => 'この端末に保存された接続情報とベアラートークンも削除されます。';
 
   @override
-  String get projectSettingsHeading => 'Projects';
+  String get projectSettingsHeading => 'プロジェクト';
 
   @override
-  String get projectSettingsNoProjects => 'No projects are registered.';
+  String get projectSettingsNoProjects => '登録されたプロジェクトがありません。';
 
   @override
-  String get projectSettingsSelectProject => 'Select a project.';
+  String get projectSettingsSelectProject => 'プロジェクトを選択してください。';
 
   @override
-  String get projectSettingsProjectList => 'Project list';
+  String get projectSettingsProjectList => 'プロジェクト一覧';
 
   @override
   String projectSettingsCount(int count) {
-    return '$count projects';
+    return '$count 件のプロジェクト';
   }
 
   @override
-  String get projectSettingsCopyPath => 'Copy file location';
+  String get projectSettingsCopyPath => 'ファイルの場所をコピー';
 
   @override
   String get projectSettingsHookHelp =>
-      'Write one command per line; they run in order in the daemon host\'s shell. The CODER_WORKTREE_PATH, CODER_PROJECT_PATH, and CODER_BRANCH environment variables are available.';
+      '1 行に 1 つコマンドを書くと、デーモンホストのシェルで上から順に実行されます。環境変数 CODER_WORKTREE_PATH、CODER_PROJECT_PATH、CODER_BRANCH が使えます。';
 
   @override
-  String get projectSettingsSetup => 'Setup (after a worktree is created)';
+  String get projectSettingsSetup => 'セットアップ（ワークツリーの作成後）';
 
   @override
-  String get projectSettingsTeardown =>
-      'Teardown (before a worktree is removed)';
+  String get projectSettingsTeardown => '後処理（ワークツリーの削除前）';
 
   @override
-  String get agentSettingsHeading => 'Agents';
+  String get agentSettingsHeading => 'エージェント';
 
   @override
-  String get agentSettingsSelectAgent => 'Select an agent.';
+  String get agentSettingsSelectAgent => 'エージェントを選択してください。';
 
   @override
   String agentSettingsCount(int count) {
-    return '$count definitions';
+    return '$count 件の定義';
   }
 
   @override
-  String get agentSettingsAdd => 'Add agent';
+  String agentSettingsModeStale(String mode) {
+    return '$mode · 解析エラー';
+  }
 
   @override
-  String get agentSettingsAddTitle => 'Add agent';
+  String get agentSettingsAdd => 'エージェントを追加';
 
   @override
-  String get agentSettingsList => 'Agent list';
+  String get agentSettingsAddTitle => 'エージェントを追加';
 
   @override
-  String get agentSettingsCopyPath => 'Copy file location';
+  String get agentSettingsList => 'エージェント一覧';
 
   @override
-  String get agentSettingsReset => 'Reset to defaults';
+  String get agentSettingsCopyPath => 'ファイルの場所をコピー';
 
   @override
-  String get agentSettingsCustomPrompt => 'Use a custom system prompt';
+  String get agentSettingsReset => '既定値に戻す';
 
   @override
-  String get agentSettingsSessionModel => 'Choose for each session';
+  String get agentSettingsCustomPrompt => 'カスタムシステムプロンプトを使う';
 
   @override
-  String get agentSettingsPinnedModel => 'Pinned provider/model';
+  String get agentSettingsSessionModel => 'セッションごとに選ぶ';
 
   @override
-  String get agentSettingsDefinitionHeading => 'Definition';
+  String get agentSettingsPinnedModel => 'プロバイダー／モデルを固定';
 
   @override
-  String get agentSettingsPromptHeading => 'System prompt';
+  String get agentSettingsDefinitionHeading => '定義';
 
   @override
-  String get agentSettingsSystemPrompt => 'System prompt (Markdown)';
+  String get agentSettingsPromptHeading => 'システムプロンプト';
 
   @override
-  String get agentSettingsModelHeading => 'Model';
+  String get agentSettingsSystemPrompt => 'システムプロンプト（Markdown）';
 
   @override
-  String get agentSettingsProviderConnectionId => 'Provider connection ID';
+  String get agentSettingsModelHeading => 'モデル';
 
   @override
-  String get agentSettingsModelId => 'Model ID';
+  String get agentSettingsProviderConnectionId => 'プロバイダー接続 ID';
 
   @override
-  String get agentSettingsBehaviourHeading => 'Behaviour';
+  String get agentSettingsModelId => 'モデル ID';
 
   @override
-  String get agentSettingsReasoning => 'Reasoning effort';
+  String get agentSettingsBehaviourHeading => '動作';
 
   @override
-  String get agentSettingsPermission => 'Permission mode';
+  String get agentSettingsReasoning => '推論の深さ';
 
   @override
-  String get agentSettingsBuiltinTools => 'Built-in tools';
+  String get agentSettingsPermission => '権限モード';
 
   @override
-  String get agentSettingsToolGroupFilesystem => 'Files';
+  String get agentSettingsBuiltinTools => '組み込みツール';
 
   @override
-  String get agentSettingsToolGroupEditing => 'Editing';
+  String get agentSettingsToolGroupFilesystem => 'ファイル';
 
   @override
-  String get agentSettingsToolGroupExecution => 'Commands';
+  String get agentSettingsToolGroupEditing => '編集';
 
   @override
-  String get agentSettingsToolGroupAttachments => 'Attachments';
+  String get agentSettingsToolGroupExecution => 'コマンド実行';
+
+  @override
+  String get agentSettingsToolGroupAttachments => '添付ファイル';
 
   @override
   String get agentSettingsToolGroupMcp => 'MCP';
 
   @override
-  String get agentSettingsToolGroupCollaboration => 'Collaboration';
+  String get agentSettingsToolGroupCollaboration => 'コラボレーション';
 
   @override
-  String get agentSettingsToolGroupSession => 'Session';
+  String get agentSettingsToolGroupSession => 'セッション';
 
   @override
   String agentSettingsToolGroupSummary(int enabled, int total) {
-    return '$enabled of $total on';
+    return '$total 個中 $enabled 個オン';
   }
 
   @override
-  String get agentSettingsToolGroupAlwaysOn => 'Always available';
+  String get agentSettingsToolGroupAlwaysOn => '常に利用可能';
 
   @override
-  String get agentSettingsSubagents => 'Callable subagents';
+  String get agentSettingsSubagents => '呼び出せるサブエージェント';
 
   @override
-  String get agentSettingsNoSubagents => 'No subagents are registered.';
+  String get agentSettingsNoSubagents => '登録されたサブエージェントがありません。';
 
   @override
   String agentSettingsArchiveTitle(String name) {
-    return 'Archive $name?';
+    return '$name をアーカイブしますか？';
   }
 
   @override
   String get agentSettingsArchiveBody =>
-      'Sessions already using this agent keep running. It stops being offered for new ones.';
+      'このエージェントをすでに使っているセッションはそのまま動き続けます。新しいセッションで選べなくなるだけです。';
 
   @override
   String agentSettingsResetTitle(String name) {
-    return 'Reset $name to defaults?';
+    return '$name を既定値に戻しますか？';
   }
 
   @override
-  String get agentSettingsResetBody =>
-      'Every edit made to this built-in agent is discarded and cannot be recovered.';
+  String get agentSettingsResetBody => 'この組み込みエージェントに加えた変更はすべて破棄され、元に戻せません。';
 
   @override
-  String get agentSettingsArchiveFailed => 'Could not archive the agent.';
+  String get agentSettingsArchiveFailed => 'エージェントをアーカイブできませんでした。';
 
   @override
-  String get agentSettingsResetFailed =>
-      'Could not restore the built-in agent.';
+  String get agentSettingsResetFailed => '組み込みエージェントを元に戻せませんでした。';
 
   @override
-  String get agentSettingsArchived => 'Archived.';
+  String get agentSettingsArchived => 'アーカイブしました。';
 
   @override
-  String get agentSettingsResetDone => 'Restored the built-in agent.';
+  String get agentSettingsResetDone => '組み込みエージェントに戻しました。';
 
   @override
-  String get agentSettingsSaveFailedTitle => 'Could not save the agent';
+  String get agentSettingsSaveFailedTitle => 'エージェントを保存できませんでした';
 
   @override
-  String get agentSettingsReload => 'Reload';
+  String get agentSettingsReload => '再読み込み';
 
   @override
-  String get agentSettingsOverwrite => 'Overwrite';
+  String get agentSettingsOverwrite => '上書き';
 
   @override
-  String get agentSettingsIdInvalid =>
-      'Only lowercase letters, digits, -, and _ are allowed.';
+  String get agentSettingsIdInvalid => '半角小文字、数字、-、_ のみ使えます。';
 
   @override
-  String get agentSettingsIdTaken => 'That agent ID already exists.';
+  String get agentSettingsIdTaken => 'そのエージェント ID はすでに存在します。';
 
   @override
-  String get agentSettingsIdLabel => 'ID (file name)';
+  String get agentSettingsIdLabel => 'ID（ファイル名）';
 
   @override
-  String get agentSettingsNameRequired => 'Enter a name.';
+  String get agentSettingsNameRequired => '名前を入力してください。';
 
   @override
   String get providerSettingsTitle => 'プロバイダー';
 
   @override
-  String get providerSettingsRequiresDaemon => 'Connect a daemon first.';
+  String get providerSettingsRequiresDaemon => '先にデーモンに接続してください。';
 
   @override
-  String get providerSettingsRefreshCatalog => 'Refresh catalog';
+  String get providerSettingsRefreshCatalog => 'カタログを更新';
 
   @override
   String get providerSettingsCatalogStatus => 'カタログメタデータ';
@@ -999,58 +1035,57 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsCatalogStale => '更新期限切れ。ローカルデータを使用できます';
 
   @override
-  String get providerSettingsDefaultModelTitle => 'Default model';
+  String get providerSettingsDefaultModelTitle => '既定のモデル';
 
   @override
   String get providerSettingsDefaultModelDescription =>
-      'Used when a session and its agent do not pin a model.';
+      'セッションとエージェントのどちらもモデルを指定していないときに使います。';
 
   @override
   String get providerSettingsDefaultModelAutomatic => 'プロバイダーの既定値';
 
   @override
-  String get providerSettingsDefaultModelNone =>
-      'No connected provider offers a usable model.';
+  String get providerSettingsDefaultModelNone => '接続中のプロバイダーに使えるモデルがありません。';
 
   @override
   String get providerSettingsDefaultModelUnavailable =>
-      'This model is unavailable, so sessions use the first usable model.';
+      'このモデルは使えないため、セッションでは最初に使えるモデルを利用します。';
 
   @override
-  String get providerSettingsDefaultModelChoose => 'Change';
+  String get providerSettingsDefaultModelChoose => '変更';
 
   @override
   String providerSettingsAuthTitle(String name) {
-    return '$name connection';
+    return '$name の接続';
   }
 
   @override
-  String get providerSettingsExperimental => 'Experimental';
+  String get providerSettingsExperimental => '実験的';
 
   @override
-  String get providerSettingsDisconnectTitle => 'Disconnect provider';
+  String get providerSettingsDisconnectTitle => 'プロバイダーの接続を解除';
 
   @override
   String providerSettingsDisconnectBody(String name) {
-    return 'Disconnect $name? Existing agent history is kept.';
+    return '$name の接続を解除しますか？これまでのエージェント履歴は残ります。';
   }
 
   @override
-  String get providerSettingsDisconnect => 'Disconnect';
+  String get providerSettingsDisconnect => '接続を解除';
 
   @override
-  String get providerSettingsDeleteCustomTitle => 'Delete custom provider';
+  String get providerSettingsDeleteCustomTitle => 'カスタムプロバイダーを削除';
 
   @override
   String providerSettingsDeleteCustomBody(String name) {
-    return 'Delete $name and its stored credentials? Existing session history is kept.';
+    return '$name と保存された認証情報を削除しますか？これまでのセッション履歴は残ります。';
   }
 
   @override
-  String get providerSettingsConnected => 'Connected';
+  String get providerSettingsConnected => '接続済み';
 
   @override
-  String get providerSettingsNoConnections => 'No providers are connected.';
+  String get providerSettingsNoConnections => '接続中のプロバイダーはありません。';
 
   @override
   String get providerSettingsSelectConnection => '管理するProviderを選択してください。';
@@ -1062,29 +1097,28 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsApiKeyRequired => 'API keyを入力してください。';
 
   @override
-  String get providerSettingsEditAdvanced => 'Edit advanced settings';
+  String get providerSettingsEditAdvanced => '詳細設定を編集';
 
   @override
-  String get providerSettingsActions => 'Connection actions';
+  String get providerSettingsActions => '接続の操作';
 
   @override
-  String get providerSettingsAdd => 'Add provider';
+  String get providerSettingsAdd => 'プロバイダーを追加';
 
   @override
-  String get providerSettingsNoPresets => 'No presets are left to add.';
+  String get providerSettingsNoPresets => '追加できるプリセットはもうありません。';
 
   @override
-  String get providerSettingsCustomSubtitle =>
-      'Advanced: connect your own endpoint';
+  String get providerSettingsCustomSubtitle => '上級者向け: 独自のエンドポイントに接続';
 
   @override
-  String get providerSettingsCustomName => 'Custom Provider';
+  String get providerSettingsCustomName => 'カスタムプロバイダー';
 
   @override
-  String get providerSettingsRefreshFailed => 'Could not refresh the catalog';
+  String get providerSettingsRefreshFailed => 'カタログを更新できませんでした';
 
   @override
-  String get providerSettingsOAuthPending => 'Waiting for sign-in';
+  String get providerSettingsOAuthPending => 'サインインを待っています';
 
   @override
   String get providerSettingsOpenBrowser => 'ブラウザーを開く';
@@ -1109,11 +1143,23 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String providerSettingsConnectTitle(String name) {
-    return 'Connect $name';
+    return '$name に接続';
   }
 
   @override
-  String get providerSettingsConnect => 'Connect';
+  String get providerSettingsConnect => '接続';
+
+  @override
+  String get providerSettingsApiKey => 'API キー';
+
+  @override
+  String get providerSettingsBaseUrl => 'ベース URL';
+
+  @override
+  String get providerSettingsConnectionFailed => 'プロバイダーへの接続に失敗しました。';
+
+  @override
+  String get providerSettingsAuthUrlFailed => '認証ページを開けませんでした。';
 
   @override
   String get providerSettingsCustomTitle => 'カスタムプロバイダー詳細設定';
@@ -1128,196 +1174,190 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsManualModels => '手動モデル ID';
 
   @override
-  String get providerSettingsModelLookupFailedTitle => 'Could not list models';
+  String get providerSettingsModelLookupFailedTitle => 'モデルを一覧できませんでした';
 
   @override
   String get providerSettingsModelLookupFailedBody =>
-      'The provider did not return a model list. Enter the model IDs to use.';
+      'プロバイダーがモデル一覧を返しませんでした。使用するモデル ID を入力してください。';
 
   @override
-  String get providerSettingsLater => 'Later';
+  String get providerSettingsLater => 'あとで';
 
   @override
-  String get providerStatusConnecting => 'Connecting';
+  String get providerStatusConnecting => '接続中';
 
   @override
-  String get providerStatusConnected => 'Connected';
+  String get providerStatusConnected => '接続済み';
 
   @override
-  String get providerStatusDegraded => 'Limited connection';
+  String get providerStatusDegraded => '接続が制限されています';
 
   @override
-  String get providerStatusError => 'Error';
+  String get providerStatusError => 'エラー';
 
   @override
-  String get providerStatusReauthRequired => 'Sign in again';
+  String get providerStatusReauthRequired => '再サインインが必要';
 
   @override
-  String get providerStatusDisconnected => 'Disconnected';
+  String get providerStatusDisconnected => '未接続';
 
   @override
-  String get providerAuthStored => 'Stored credential';
+  String get providerAuthStored => '保存済みの認証情報';
 
   @override
   String get providerAuthOAuth => 'OAuth';
 
   @override
-  String get providerAuthNone => 'No credential';
+  String get providerAuthNone => '認証情報なし';
 
   @override
-  String get modelPickerTitle => 'Select a model';
+  String get modelPickerTitle => 'モデルを選択';
 
   @override
-  String get modelPickerSearch => 'Search models';
+  String get modelPickerSearch => 'モデルを検索';
 
   @override
-  String get modelPickerNoResults => 'No results.';
+  String get modelPickerNoResults => '該当するものがありません。';
 
   @override
-  String get composerPlan => 'Plan';
+  String get composerPlan => '計画';
 
   @override
-  String get composerRun => 'Run';
+  String get composerRun => '実行';
 
   @override
-  String get composerPlanTooltip => 'Only drafts a plan. Shift+Tab to switch';
+  String get composerPlanTooltip => '計画を立てるだけです。Shift+Tab で切り替え';
 
   @override
-  String get composerRunTooltip =>
-      'Carries the request out directly. Shift+Tab to switch';
+  String get composerRunTooltip => '依頼をそのまま実行します。Shift+Tab で切り替え';
 
   @override
-  String get composerSelectAgent => 'Select an agent';
+  String get composerSelectAgent => 'エージェントを選択';
 
   @override
-  String get composerAgentLocked =>
-      'The agent cannot be changed after the session starts.';
+  String get composerAgentLocked => 'セッションの開始後はエージェントを変更できません。';
 
   @override
-  String get composerModel => 'Model';
+  String get composerModel => 'モデル';
 
   @override
-  String get composerSelectModel => 'Select a model';
+  String get composerSelectModel => 'モデルを選択';
 
   @override
-  String get composerInheritModel => 'Use the agent default';
+  String get composerInheritModel => 'エージェントの既定値を使う';
 
   @override
-  String get composerInheritDefaultModel => 'Use the default model';
+  String get composerInheritDefaultModel => '既定のモデルを使う';
 
   @override
-  String get composerStartHint => 'Start a new session with a coding request.';
+  String get composerStartHint => 'コーディングの依頼を書いて新しいセッションを始めましょう。';
 
   @override
   String get composerNoPrimaryAgent => '利用できるprimary Agentがありません。';
 
   @override
-  String get composerConnectProviderFirst => 'Connect a provider first.';
+  String get composerConnectProviderFirst => '先にプロバイダーに接続してください。';
 
   @override
-  String get composerInputHint => 'Type a coding request…';
+  String get composerInputHint => 'コーディングの依頼を入力…';
 
   @override
-  String get composerReasoningEffort => 'Effort';
+  String get composerReasoningEffort => '推論';
 
   @override
-  String get composerSelectReasoningEffort => 'Select reasoning effort';
+  String get composerSelectReasoningEffort => '推論の深さを選択';
 
   @override
-  String get composerInheritReasoningEffort => 'Agent default';
+  String get composerInheritReasoningEffort => 'エージェントの既定値';
 
   @override
-  String get composerPermissionMode => 'Permissions';
+  String get composerPermissionMode => '権限';
 
   @override
-  String get composerSelectPermissionMode => 'Select permissions';
+  String get composerSelectPermissionMode => '権限を選択';
 
   @override
-  String get composerInheritPermissionMode => 'Agent default';
+  String get composerInheritPermissionMode => 'エージェントの既定値';
 
   @override
-  String get composerPermissionReadOnly => 'Read only';
+  String get composerPermissionReadOnly => '読み取り専用';
 
   @override
-  String get composerPermissionAsk => 'Ask before changes';
+  String get composerPermissionAsk => '変更前に確認';
 
   @override
-  String get composerPermissionWorkspaceWrite => 'Workspace access';
+  String get composerPermissionWorkspaceWrite => 'ワークスペースへの書き込み';
 
   @override
-  String get composerPermissionFullAccess => 'Full access';
+  String get composerPermissionFullAccess => 'フルアクセス';
 
   @override
-  String get permissionPickerDescription =>
-      'Choose what the agent may do without asking.';
+  String get permissionPickerDescription => 'エージェントが確認なしで行える操作を選んでください。';
 
   @override
   String get permissionDescriptionReadOnly =>
-      'Can read files. File changes, commands, and write-capable external tools are blocked.';
+      'ファイルの読み取りができます。ファイルの変更、コマンド実行、書き込み可能な外部ツールはブロックします。';
 
   @override
   String get permissionDescriptionAsk =>
-      'Reads without asking. Asks before file changes, commands, and write-capable external tools.';
+      '読み取りは確認なしで行います。ファイルの変更、コマンド実行、書き込み可能な外部ツールは事前に確認します。';
 
   @override
   String get permissionDescriptionWorkspaceWrite =>
-      'Can read and edit workspace files. Asks before commands and write-capable external tools.';
+      'ワークスペースのファイルは読み書きできます。コマンド実行と書き込み可能な外部ツールは事前に確認します。';
 
   @override
   String get permissionDescriptionFullAccess =>
-      'Runs file changes, commands, and external tools without asking. Use only for trusted work.';
+      'ファイルの変更、コマンド実行、外部ツールを確認なしで実行します。信頼できる作業でのみ使ってください。';
 
   @override
-  String get permissionSettingsTitle => 'Permissions';
+  String get permissionSettingsTitle => '権限';
 
   @override
-  String get permissionSettingsSection => 'Default permissions';
+  String get permissionSettingsSection => '既定の権限';
 
   @override
   String get permissionSettingsSectionDescription =>
-      'Agents that do not choose their own permissions inherit this daemon default.';
+      '独自の権限を選んでいないエージェントは、このデーモンの既定値を引き継ぎます。';
 
   @override
-  String get permissionSettingsChange => 'Change default permissions';
+  String get permissionSettingsChange => '既定の権限を変更';
 
   @override
-  String get permissionSettingsSaveFailed =>
-      'Could not update default permissions';
+  String get permissionSettingsSaveFailed => '既定の権限を変更できませんでした';
 
   @override
-  String get permissionChangeFailed => 'Could not change permissions';
+  String get permissionChangeFailed => '権限を変更できませんでした';
 
   @override
-  String get permissionSettingsDaemonDefault => 'Daemon default';
+  String get permissionSettingsDaemonDefault => 'デーモンの既定値';
 
   @override
-  String get composerFastMode => 'Fast';
+  String get composerFastMode => '高速';
 
   @override
-  String get composerFastModeTooltip =>
-      'Faster responses at a higher credit rate';
+  String get composerFastModeTooltip => 'クレジットを多く使う代わりに応答が速くなります';
 
   @override
-  String get composerFastModeOnTooltip =>
-      'Fast mode is on; tap to use the standard tier';
+  String get composerFastModeOnTooltip => '高速モードがオンです。タップすると標準に戻ります';
 
   @override
-  String get composerSettingLocked => 'Settings change between turns';
+  String get composerSettingLocked => '設定を変更できるのはターンの合間だけです';
 
   @override
-  String get composerSendLabel => 'Send message';
+  String get composerSendLabel => 'メッセージを送信';
 
   @override
-  String get composerQueueLabel => 'Queue message';
+  String get composerQueueLabel => 'メッセージを順番待ちに入れる';
 
   @override
-  String get composerQueueTooltip => 'Sends when the current turn finishes';
+  String get composerQueueTooltip => '現在のターンが終わったら送信します';
 
   @override
-  String get composerQueuedEdit => 'Edit queued message';
+  String get composerQueuedEdit => '順番待ちのメッセージを編集';
 
   @override
-  String get composerQueuedSendNow => 'Send queued message now';
+  String get composerQueuedSendNow => '順番待ちのメッセージをすぐ送信';
 
   @override
   String composerQueuedAttachments(num count) {
@@ -1329,79 +1369,93 @@ class AppLocalizationsJa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$countString files',
-      one: '1 file',
+      other: 'ファイル $countString 件',
     );
     return '$_temp0';
   }
 
   @override
   String composerQueuedFailed(String reason) {
-    return 'Not sent · $reason';
+    return '未送信 · $reason';
   }
 
   @override
-  String get composerAttachLabel => 'Attach files';
+  String get composerAttachLabel => 'ファイルを添付';
 
   @override
-  String get composerMoreSettings => 'More settings';
+  String composerRemoveAttachment(String name) {
+    return '$name を削除';
+  }
 
   @override
-  String get chatEmptyTitle => 'Type a coding request.';
+  String composerAttachmentTooLarge(int limit) {
+    return '添付ファイルは 1 つあたり $limit MB 未満にしてください。';
+  }
 
   @override
-  String get chatEmptyExample => 'e.g. Run the tests and fix what fails';
+  String composerAttachmentTooMany(int limit) {
+    return '1 ターンに添付できるファイルは最大 $limit 件です。';
+  }
 
   @override
-  String get chatNoticeCancelled => 'Stopped';
+  String get composerMoreSettings => 'その他の設定';
+
+  @override
+  String get chatEmptyTitle => 'コーディングの依頼を入力してください。';
+
+  @override
+  String get chatEmptyExample => '例）テストを実行して、失敗した原因を直して';
+
+  @override
+  String get chatNoticeCancelled => '停止しました';
 
   @override
   String chatNoticeFailed(String message) {
-    return 'Failed · $message';
+    return '失敗 · $message';
   }
 
   @override
   String chatMoreLines(int count) {
-    return '… $count more lines';
+    return '… 他 $count 行';
   }
 
   @override
   String chatApprovalRequired(String tool) {
-    return 'Approval required · $tool';
+    return '承認が必要 · $tool';
   }
 
   @override
-  String get chatApprovalDeny => 'Deny';
+  String get chatApprovalDeny => '拒否';
 
   @override
-  String get chatApprovalAllow => 'Allow';
+  String get chatApprovalAllow => '許可';
 
   @override
-  String get chatPlanTitle => 'Plan';
+  String get chatPlanTitle => '計画';
 
   @override
   String usageInput(int tokens) {
-    return 'in $tokens';
+    return '入力 $tokens';
   }
 
   @override
   String usageInputCached(int tokens, int cached) {
-    return 'in $tokens ($cached cached)';
+    return '入力 $tokens（キャッシュ $cached）';
   }
 
   @override
   String usageOutput(int tokens) {
-    return 'out $tokens';
+    return '出力 $tokens';
   }
 
   @override
   String usageOutputReasoning(int tokens, int reasoning) {
-    return 'out $tokens ($reasoning reasoning)';
+    return '出力 $tokens（推論 $reasoning）';
   }
 
   @override
   String usageTotal(int tokens) {
-    return 'total $tokens';
+    return '合計 $tokens';
   }
 
   @override
@@ -1416,30 +1470,30 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String toolExecRunning(int lines) {
-    return 'running · $lines lines';
+    return '実行中 · $lines 行';
   }
 
   @override
   String chatAnswerTyped(String answer) {
-    return '$answer (typed)';
+    return '$answer（自由入力）';
   }
 
   @override
-  String get chatSleepWaiting => 'Waiting';
+  String get chatSleepWaiting => '待機中';
 
   @override
   String chatSleepRemaining(int seconds) {
-    return '${seconds}s left';
+    return '残り $seconds 秒';
   }
 
   @override
   String chatSleepDone(int seconds) {
-    return 'Waited ${seconds}s';
+    return '$seconds 秒待機しました';
   }
 
   @override
   String toolSearchFound(int found, int remaining) {
-    return '$found loaded · $remaining still hidden';
+    return '$found 件を読み込み · 残り $remaining 件';
   }
 
   @override
@@ -1447,577 +1501,734 @@ class AppLocalizationsJa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count subagents',
-      one: '1 subagent',
+      other: 'サブエージェント $count 個',
     );
     return '$_temp0';
   }
 
   @override
   String subagentTrackRunning(int count) {
-    return '$count running';
+    return '$count 個実行中';
   }
 
   @override
-  String get subagentStatusRunning => 'Running';
+  String get subagentStatusRunning => '実行中';
 
   @override
-  String get subagentStatusCompleted => 'Completed';
+  String get subagentStatusCompleted => '完了';
 
   @override
-  String get subagentStatusInterrupted => 'Interrupted';
+  String get subagentStatusInterrupted => '中断';
 
   @override
-  String get subagentStatusErrored => 'Failed';
+  String get subagentStatusErrored => '失敗';
 
   @override
-  String get subagentReadOnlyNotice => 'Subagent conversation · read-only';
+  String get subagentReadOnlyNotice => 'サブエージェントの会話 · 読み取り専用';
 
   @override
-  String get chatToolSubagentQueued => 'Queued';
+  String get chatToolSubagentQueued => '順番待ちに追加しました';
 
   @override
   String chatToolSubagentCount(int count) {
-    return '$count agents';
+    return 'エージェント $count 個';
   }
 
   @override
   String chatDeferredTools(int count) {
-    return '$count tools are available through search';
+    return '検索して使えるツールが $count 個あります';
   }
 
   @override
   String toolMcpResources(int count) {
-    return '$count resources';
+    return 'リソース $count 件';
   }
 
   @override
   String toolMcpResourceTemplates(int count) {
-    return '$count templates';
+    return 'テンプレート $count 件';
   }
 
   @override
   String toolMcpResourceRead(int count) {
-    return '$count blocks';
+    return 'ブロック $count 件';
   }
 
   @override
   String toolImageLoaded(int bytes) {
-    return '$bytes bytes viewed';
+    return '$bytes バイトを確認';
   }
 
   @override
-  String get chatQuestionSubmit => 'Answer';
+  String get chatQuestionSubmit => '回答';
 
   @override
-  String get chatQuestionNext => 'Next';
+  String get chatQuestionNext => '次へ';
 
   @override
-  String get chatQuestionNavigation => 'Questions';
+  String get chatQuestionNavigation => '質問';
 
   @override
-  String get chatQuestionSubmitting => 'Submitting answers';
+  String get chatQuestionSubmitting => '回答を送信しています';
 
   @override
-  String get chatQuestionOther => 'Other';
+  String get chatQuestionOther => '自由入力';
 
   @override
-  String get chatQuestionOtherPlaceholder => 'Type your answer';
+  String get chatQuestionOtherPlaceholder => '回答を入力してください';
 
   @override
-  String get chatPlanStepPending => 'not started';
+  String get chatPlanStepPending => '未着手';
 
   @override
-  String get chatPlanStepInProgress => 'in progress';
+  String get chatPlanStepInProgress => '進行中';
 
   @override
-  String get chatPlanStepCompleted => 'completed';
+  String get chatPlanStepCompleted => '完了';
 
   @override
-  String get chatPlanPrompt => 'Proceed with this plan?';
+  String get chatPlanPrompt => 'この計画で進めますか？';
 
   @override
-  String get chatPlanKeepPlanning => 'Keep planning';
+  String get chatPlanKeepPlanning => '計画を続ける';
 
   @override
-  String get chatPlanRunInNewSession => 'Run in a new session';
+  String get chatPlanRunInNewSession => '新しいセッションで実行';
 
   @override
-  String get chatPlanRun => 'Run the plan';
+  String get chatPlanRun => '計画どおり実行';
 
   @override
-  String get toolRejected => 'Rejected';
+  String get planImplementPrompt => 'この計画を実行してください。';
 
   @override
-  String get toolFailed => 'Failed';
+  String get planFreshSessionPreamble =>
+      '前のエージェントが、ユーザーの依頼を受けて以下の計画を作成しました。この計画を新しいコンテキストで実装してください。計画はユーザーの意図を示す記録として扱い、必要なファイルは改めて読み直したうえで、実装と検証まで進めてください。';
 
   @override
-  String get toolEmptyFile => 'Empty file';
+  String get toolRejected => '拒否されました';
+
+  @override
+  String get toolFailed => '失敗';
+
+  @override
+  String get toolEmptyFile => '空のファイル';
 
   @override
   String toolReadLines(int count) {
-    return 'Read $count lines';
+    return '$count 行を読み込み';
   }
 
   @override
   String toolListItems(int count) {
-    return '$count items';
+    return '項目 $count 件';
   }
 
   @override
   String toolListEntries(int directories, int files) {
-    return '$directories directories · $files files';
+    return 'ディレクトリ $directories · ファイル $files';
   }
 
   @override
-  String get toolNoMatches => 'No matches';
+  String get toolNoMatches => '一致なし';
 
   @override
   String toolMatches(int matches, int files) {
-    return '$matches matches in $files files';
+    return '$files 個のファイルで $matches 件';
   }
 
   @override
   String toolMatchesTruncated(int matches, int files) {
-    return '$matches+ matches in $files files';
+    return '$files 個のファイルで $matches 件以上';
   }
 
   @override
-  String get toolNoPaths => 'No files';
+  String get toolNoPaths => 'ファイルなし';
 
   @override
   String toolPaths(int count) {
-    return '$count files';
+    return 'ファイル $count 件';
   }
 
   @override
   String toolPathsTruncated(int count) {
-    return '$count+ files';
+    return 'ファイル $count 件以上';
   }
 
   @override
   String toolAttached(String name) {
-    return 'Attached $name';
+    return '$name を添付しました';
   }
 
   @override
   String toolSkillLoaded(String name) {
-    return 'Loaded $name';
+    return '$name を読み込みました';
   }
 
   @override
   String toolSkills(int count) {
-    return '$count skills';
+    return 'スキル $count 件';
   }
 
   @override
   String toolSkillsTruncated(int count) {
-    return '$count+ skills';
+    return 'スキル $count 件以上';
   }
 
   @override
   String toolEditFiles(int count) {
-    return 'Edit($count files)';
+    return '編集($count 件のファイル)';
   }
 
   @override
   String toolPatchSummary(int added, int removed, int files) {
-    return '+$added -$removed · $files files';
+    return '+$added -$removed · $files 個のファイル';
   }
 
   @override
   String toolCommandResult(int exitCode, int lines) {
-    return 'exit $exitCode · $lines lines';
+    return '終了コード $exitCode · $lines 行';
   }
 
   @override
-  String get directoryBrowserTitle => 'Choose a folder on the daemon';
+  String get toolTitleEdit => '編集';
 
   @override
-  String get directoryBrowserPath => 'Daemon path';
+  String toolTitleEditPath(String path) {
+    return '編集($path)';
+  }
 
   @override
-  String get directoryBrowserEmpty => 'No subfolders.';
+  String toolTitleAttach(String path) {
+    return '添付($path)';
+  }
 
   @override
-  String get directoryBrowserSelect => 'Choose this folder';
+  String toolTitleAttachment(String id) {
+    return '添付ファイル($id)';
+  }
 
   @override
-  String get directoryBrowserHostTitle => 'Daemon to add the folder to';
+  String get toolTitleNow => '現在時刻()';
+
+  @override
+  String toolTitleSleep(int milliseconds) {
+    return 'スリープ(${milliseconds}ms)';
+  }
+
+  @override
+  String get toolTitleSleepUnknown => 'スリープ()';
+
+  @override
+  String toolTitleSpawn(String task) {
+    return '起動($task)';
+  }
+
+  @override
+  String toolTitleSend(String target) {
+    return '送信($target)';
+  }
+
+  @override
+  String toolTitleFollowup(String target) {
+    return 'フォローアップ($target)';
+  }
+
+  @override
+  String get toolTitleWait => '待機()';
+
+  @override
+  String toolTitleInterrupt(String target) {
+    return '中断($target)';
+  }
+
+  @override
+  String get toolTitleAgents => 'エージェント()';
+
+  @override
+  String get toolTitleContext => 'コンテキスト()';
+
+  @override
+  String get toolTitleNewContext => '新しいコンテキスト()';
+
+  @override
+  String toolTitleBash(String command) {
+    return '実行($command)';
+  }
+
+  @override
+  String toolTitleStdin(String session) {
+    return '入力($session)';
+  }
+
+  @override
+  String toolTitleStdinChars(String session, String chars) {
+    return '入力($session ← $chars)';
+  }
+
+  @override
+  String toolTitleGlob(String pattern) {
+    return 'ファイル検索($pattern)';
+  }
+
+  @override
+  String toolTitleGlobIn(String pattern, String path) {
+    return 'ファイル検索($path 内の $pattern)';
+  }
+
+  @override
+  String toolTitleList(String path) {
+    return '一覧($path)';
+  }
+
+  @override
+  String toolTitleMcpResources(String server) {
+    return 'リソース($server)';
+  }
+
+  @override
+  String toolTitleMcpResourceTemplates(String server) {
+    return 'リソーステンプレート($server)';
+  }
+
+  @override
+  String toolTitleMcpResource(String server, String uri) {
+    return 'リソース($server: $uri)';
+  }
+
+  @override
+  String toolTitleRead(String path) {
+    return '読み込み($path)';
+  }
+
+  @override
+  String toolTitleReadRange(String path, String offset, String limit) {
+    return '読み込み($path @$offset+$limit)';
+  }
+
+  @override
+  String toolTitleAsk(String headers) {
+    return '質問($headers)';
+  }
+
+  @override
+  String toolTitleSearch(String query) {
+    return '検索($query)';
+  }
+
+  @override
+  String toolTitleSearchIn(String query, String path) {
+    return '検索($path 内の $query)';
+  }
+
+  @override
+  String get toolTitleSkills => 'スキル()';
+
+  @override
+  String toolTitleSkill(String name) {
+    return 'スキル($name)';
+  }
+
+  @override
+  String toolTitleSkillResource(String name, String resource) {
+    return 'スキル($name:$resource)';
+  }
+
+  @override
+  String toolTitleToolSearch(String query) {
+    return 'ツール($query)';
+  }
+
+  @override
+  String toolTitlePlan(int count) {
+    return '計画($count)';
+  }
+
+  @override
+  String toolTitleView(String path) {
+    return '画像表示($path)';
+  }
+
+  @override
+  String get toolArgumentAllServers => 'すべて';
+
+  @override
+  String get directoryBrowserTitle => 'デーモン上のフォルダーを選択';
+
+  @override
+  String get directoryBrowserPath => 'デーモンのパス';
+
+  @override
+  String get directoryBrowserEmpty => 'サブフォルダーがありません。';
+
+  @override
+  String get directoryBrowserSelect => 'このフォルダーを選択';
+
+  @override
+  String get directoryBrowserHostTitle => 'フォルダーを追加するデーモン';
 
   @override
   String hookFailureMessage(String phase, int exitCode, String command) {
-    return '$phase failed (exit $exitCode): $command';
+    return '$phase が失敗しました（終了コード $exitCode）: $command';
   }
 
   @override
   String hookFailureTitle(String phase) {
-    return '$phase hook failed';
+    return '$phase フックが失敗しました';
   }
 
   @override
-  String get hookFailureNoOutput => '(no output)';
+  String get hookFailureNoOutput => '(出力なし)';
 
   @override
-  String get settingsCategorySkill => 'Skill';
+  String get settingsCategorySkill => 'スキル';
 
   @override
-  String get skillSettingsHeading => 'Skills';
+  String get skillSettingsHeading => 'スキル';
 
   @override
   String skillSettingsCount(int count) {
-    return '$count skills';
+    return 'スキル $count 件';
   }
 
   @override
-  String get skillSettingsSelectSkill => 'Select a skill.';
+  String get skillSettingsSelectSkill => 'スキルを選択してください。';
 
   @override
-  String get skillSettingsList => 'Skill list';
+  String get skillSettingsList => 'スキル一覧';
 
   @override
-  String get skillSettingsAdd => 'Add skill';
+  String get skillSettingsAdd => 'スキルを追加';
 
   @override
-  String get skillSettingsAddTitle => 'Add skill';
+  String get skillSettingsAddTitle => 'スキルを追加';
 
   @override
-  String get skillSettingsIdLabel => 'ID (directory name)';
+  String get skillSettingsIdLabel => 'ID（ディレクトリ名）';
 
   @override
-  String get skillSettingsIdInvalid =>
-      'Only lowercase letters, digits, -, and _ are allowed.';
+  String get skillSettingsIdInvalid => '半角小文字、数字、-、_ のみ使えます。';
 
   @override
-  String get skillSettingsIdTaken => 'That skill ID already exists.';
+  String get skillSettingsIdTaken => 'そのスキル ID はすでに存在します。';
 
   @override
-  String get skillSettingsNameRequired => 'Enter a name.';
+  String get skillSettingsNameRequired => '名前を入力してください。';
 
   @override
-  String get skillSettingsCopyPath => 'Copy file location';
+  String get skillSettingsCopyPath => 'ファイルの場所をコピー';
 
   @override
-  String get skillSettingsDelete => 'Delete skill';
+  String get skillSettingsDelete => 'スキルを削除';
 
   @override
-  String get skillSettingsDeleteFailed => 'Could not delete the skill.';
+  String get skillSettingsDeleteFailed => 'スキルを削除できませんでした。';
 
   @override
-  String get skillSettingsToggleFailed =>
-      'Could not change whether the skill is enabled.';
+  String get skillSettingsToggleFailed => 'スキルの有効・無効を切り替えられませんでした。';
 
   @override
   String skillSettingsDeleteTitle(String name) {
-    return 'Delete $name?';
+    return '$name を削除しますか？';
   }
 
   @override
-  String get skillSettingsDeleteMessage =>
-      'The skill directory moves to .archive next to it.';
+  String get skillSettingsDeleteMessage => 'スキルのディレクトリは、同じ場所の .archive に移動します。';
 
   @override
-  String get skillSettingsEnabled => 'Enabled';
+  String get skillSettingsEnabled => '有効';
 
   @override
-  String get skillSettingsMandatory => 'This built-in skill is always enabled.';
+  String get skillSettingsMandatory => 'この組み込みスキルは常に有効です。';
 
   @override
-  String get skillSettingsReadOnly =>
-      'Built-in skills ship with the app and cannot be edited.';
+  String get skillSettingsReadOnly => '組み込みスキルはアプリに同梱されているため編集できません。';
 
   @override
-  String get skillSettingsInstructions => 'Instructions (Markdown)';
+  String get skillSettingsInstructions => '指示（Markdown）';
 
   @override
-  String get skillSettingsStateHeading => 'Availability';
+  String get skillSettingsStateHeading => '利用可否';
 
   @override
-  String get skillSettingsDefinitionHeading => 'Definition';
+  String get skillSettingsDefinitionHeading => '定義';
 
   @override
-  String get skillSettingsResources => 'Bundled files';
+  String get skillSettingsResources => '同梱ファイル';
 
   @override
-  String get skillSettingsNoResources =>
-      'No files are bundled with this skill.';
+  String get skillSettingsNoResources => 'このスキルに同梱されているファイルはありません。';
 
   @override
-  String get skillSettingsSaveFailedTitle => 'Could not save the skill';
+  String get skillSettingsSaveFailedTitle => 'スキルを保存できませんでした';
 
   @override
-  String get skillSettingsReload => 'Reload';
+  String get skillSettingsReload => '再読み込み';
 
   @override
-  String get skillSettingsOverwrite => 'Overwrite';
+  String get skillSettingsOverwrite => '上書き';
 
   @override
-  String get skillSettingsShadowed => 'Another source overrides this skill.';
+  String get skillSettingsShadowed => '別のソースがこのスキルを上書きしています。';
 
   @override
-  String get skillSettingsStale =>
-      'This file no longer parses; the last good version is shown.';
+  String get skillSettingsStale => 'このファイルを解析できないため、最後に正常だった内容を表示しています。';
 
   @override
-  String get skillSettingsSource => 'Source';
+  String get skillSettingsSource => '提供元';
 
   @override
-  String get skillSettingsSourceBuiltIn => 'Built-in';
+  String get skillSettingsSourceBuiltIn => '組み込み';
 
   @override
-  String get skillSettingsSourceUserHome => 'Global';
+  String get skillSettingsSourceUserHome => 'グローバル';
 
   @override
-  String get skillSettingsSourceConfig => 'Settings';
+  String get skillSettingsSourceConfig => '設定';
 
   @override
-  String get skillSettingsSourceProject => 'Project';
+  String get skillSettingsSourceProject => 'プロジェクト';
 
   @override
-  String get skillSettingsProject => 'Project';
+  String get skillSettingsProject => 'プロジェクト';
 
   @override
-  String get skillSettingsProjectNone => 'Global skills only';
+  String get skillSettingsProjectNone => 'グローバルスキルのみ';
 
   @override
-  String get skillSettingsProjectHint =>
-      'Pick a project to see and edit the skills committed to it.';
+  String get skillSettingsProjectHint => 'プロジェクトを選ぶと、そこにコミットされたスキルもあわせて表示されます。';
 
   @override
-  String get skillSettingsProjectSearch => 'Search projects';
+  String get skillSettingsProjectSearch => 'プロジェクトを検索';
 
   @override
-  String get skillSettingsProjectNoMatch => 'No matching project';
+  String get skillSettingsProjectNoMatch => '一致するプロジェクトがありません';
 
   @override
   String get settingsCategoryMcp => 'MCP';
 
   @override
-  String get mcpSettingsHeading => 'MCP servers';
+  String get mcpSettingsHeading => 'MCP サーバー';
 
   @override
-  String get mcpSettingsAdd => 'Add MCP server';
+  String get mcpSettingsAdd => 'MCP サーバーを追加';
 
   @override
-  String get mcpSettingsEmpty => 'No MCP servers are configured.';
+  String get mcpSettingsEmpty => '設定された MCP サーバーがありません。';
 
   @override
-  String get mcpSettingsSelectServer => 'Select a server to edit it.';
+  String get mcpSettingsSelectServer => '編集するサーバーを選択してください。';
 
   @override
-  String get mcpSettingsScopeUser => 'Yours';
+  String get mcpSettingsScopeUser => '自分の設定';
 
   @override
-  String get mcpSettingsScopeProject => 'This project';
+  String get mcpSettingsScopeProject => 'このプロジェクト';
 
   @override
   String mcpSettingsProjectReadOnly(String appName) {
-    return 'Defined by this repository, so $appName does not edit it.';
+    return 'このリポジトリが定義しているサーバーのため、$appName は編集しません。';
   }
 
   @override
-  String get mcpSettingsShadowed => 'Hidden by your server of the same name';
+  String get mcpSettingsShadowed => '同じ名前の自分のサーバーに隠れています';
 
   @override
   String mcpSettingsSource(String path) {
-    return 'Defined in $path';
+    return '$path で定義';
   }
 
   @override
   String get mcpSettingsServerId => 'ID';
 
   @override
-  String get mcpSettingsServerIdInvalid =>
-      'Use lower-case letters, digits, - and _.';
+  String get mcpSettingsServerIdInvalid => '半角小文字、数字、-、_ を使ってください。';
 
   @override
-  String get mcpSettingsTransport => 'Transport';
+  String get mcpSettingsTransport => '接続方式';
 
   @override
-  String get mcpSettingsTransportStdio => 'Command';
+  String get mcpSettingsTransportStdio => 'コマンド';
 
   @override
   String get mcpSettingsTransportHttp => 'HTTP';
 
   @override
-  String get mcpSettingsCommand => 'Command';
+  String get mcpSettingsCommand => 'コマンド';
 
   @override
-  String get mcpSettingsArgs => 'Arguments (one per line)';
+  String get mcpSettingsArgs => '引数（1 行に 1 つ）';
 
   @override
-  String get mcpSettingsWorkingDirectory => 'Working directory (optional)';
+  String get mcpSettingsWorkingDirectory => '作業ディレクトリ（任意）';
 
   @override
   String get mcpSettingsUrl => 'URL';
 
   @override
-  String get mcpSettingsEnvironment => 'Environment (KEY=value, one per line)';
+  String get mcpSettingsEnvironment => '環境変数（KEY=value、1 行に 1 つ）';
 
   @override
-  String get mcpSettingsHeaders => 'Headers (Name: value, one per line)';
+  String get mcpSettingsHeaders => 'ヘッダー（Name: value、1 行に 1 つ）';
 
   @override
-  String get mcpSettingsConnectionHeading => 'Connection';
+  String get mcpSettingsConnectionHeading => '接続';
 
   @override
-  String get mcpSettingsStateHeading => 'Availability';
+  String get mcpSettingsStateHeading => '利用可否';
 
   @override
-  String get mcpSettingsEnabled => 'Enabled';
+  String get mcpSettingsEnabled => '有効';
 
   @override
   String get mcpSettingsSecretHint =>
-      'Never paste a secret here. Reference a stored secret or an environment variable instead:';
+      'ここに秘密情報を直接貼り付けないでください。保存済みのシークレットか環境変数を参照してください:';
 
   @override
-  String get mcpSettingsTest => 'Test connection';
+  String get mcpSettingsTest => '接続をテスト';
 
   @override
   String mcpSettingsTestSucceeded(int count) {
-    return 'Connected and found $count tools.';
+    return '接続できました。ツールを $count 個見つけました。';
   }
 
   @override
   String mcpSettingsTestFailed(String error) {
-    return 'Could not connect: $error';
+    return '接続できませんでした: $error';
   }
 
   @override
-  String get terminalTerminateFailed => 'Could not stop the terminal.';
+  String get terminalTerminateFailed => 'ターミナルを終了できませんでした。';
 
   @override
-  String get relayRevokeFailed => 'Could not revoke the device.';
+  String get relayRevokeFailed => 'デバイスを失効させられませんでした。';
 
   @override
-  String get appSettingsDaemonChangeFailed =>
-      'Could not change the daemon setting.';
+  String get appSettingsDaemonChangeFailed => 'デーモンの設定を変更できませんでした。';
 
   @override
-  String get appSettingsDeleteFailed => 'Could not remove the daemon.';
+  String get appSettingsDeleteFailed => 'デーモンを削除できませんでした。';
 
   @override
-  String get appSettingsReconnectFailed => 'Could not reconnect.';
+  String get appSettingsReconnectFailed => '再接続できませんでした。';
 
   @override
-  String get providerSettingsDisconnectFailed =>
-      'Could not disconnect the provider.';
+  String get providerSettingsDisconnectFailed => 'プロバイダーの接続を解除できませんでした。';
 
   @override
-  String get providerSettingsDeleteFailed => 'Could not delete the provider.';
+  String get providerSettingsDeleteFailed => 'プロバイダーを削除できませんでした。';
 
   @override
-  String get providerSettingsDefaultModelFailed =>
-      'Could not change the default model.';
+  String get providerSettingsDefaultModelFailed => '既定のモデルを変更できませんでした。';
 
   @override
-  String get providerSettingsDisconnected => 'Disconnected.';
+  String get providerSettingsDisconnected => '接続を解除しました。';
 
   @override
-  String get workspaceArchiveFailed => 'Could not archive the worktree.';
+  String get workspaceArchiveFailed => 'ワークツリーをアーカイブできませんでした。';
 
   @override
-  String get workspaceUnregisterFailed => 'Could not remove the project.';
+  String get workspaceUnregisterFailed => 'プロジェクトを削除できませんでした。';
 
   @override
-  String get projectSettingsSaveFailed =>
-      'Could not save the project settings.';
+  String get projectSettingsSaveFailed => 'プロジェクト設定を保存できませんでした。';
 
   @override
-  String get mcpSettingsSaveFailed => 'Could not save the server.';
+  String get mcpSettingsSaveFailed => 'サーバーを保存できませんでした。';
 
   @override
-  String get mcpSettingsDeleteFailed => 'Could not delete the server.';
+  String get mcpSettingsDeleteFailed => 'サーバーを削除できませんでした。';
 
   @override
-  String get mcpSettingsSecretFailed => 'Could not store the secret.';
+  String get mcpSettingsSecretFailed => 'シークレットを保存できませんでした。';
 
   @override
-  String get mcpSettingsDelete => 'Delete server';
+  String get mcpSettingsDelete => 'サーバーを削除';
 
   @override
   String mcpSettingsDeleteConfirm(String name) {
-    return 'Delete $name? Agents using its tools will lose them.';
+    return '$name を削除しますか？このサーバーのツールを使っているエージェントは使えなくなります。';
   }
 
   @override
-  String get mcpSettingsStatusDisabled => 'Disabled';
+  String get mcpSettingsStatusDisabled => '無効';
 
   @override
-  String get mcpSettingsStatusConnecting => 'Connecting';
+  String get mcpSettingsStatusConnecting => '接続中';
 
   @override
-  String get mcpSettingsStatusReady => 'Ready';
+  String get mcpSettingsConnecting => 'MCP サーバーに接続中';
 
   @override
-  String get mcpSettingsStatusFailed => 'Failed';
+  String get mcpSettingsStatusReady => '準備完了';
 
   @override
-  String get mcpSettingsDiscoveredResources => 'resources';
+  String get mcpSettingsStatusFailed => '失敗';
 
   @override
-  String get mcpSettingsResources => 'Published resources';
+  String get mcpSettingsDiscoveredResources => 'リソース';
 
   @override
-  String get mcpSettingsNoResources => 'This server publishes no resources.';
+  String get mcpSettingsResources => '公開中のリソース';
 
   @override
-  String get mcpSettingsResourceTemplates => 'Resource templates';
+  String get mcpSettingsNoResources => 'このサーバーはリソースを公開していません。';
 
   @override
-  String get mcpSettingsNoResourceTemplates =>
-      'This server publishes no resource templates.';
+  String get mcpSettingsResourceTemplates => 'リソーステンプレート';
 
   @override
-  String get mcpSettingsDiscoveredTools => 'Tools';
+  String get mcpSettingsNoResourceTemplates => 'このサーバーはリソーステンプレートを公開していません。';
 
   @override
-  String get mcpSettingsNoTools => 'This server publishes no tools.';
+  String get mcpSettingsDiscoveredTools => 'ツール';
 
   @override
-  String get mcpSettingsDiagnostics => 'Server output';
+  String get mcpSettingsNoTools => 'このサーバーはツールを公開していません。';
 
   @override
-  String get mcpSettingsSecretSet => 'Store a secret';
+  String get mcpSettingsDiagnostics => 'サーバー出力';
 
   @override
-  String get mcpSettingsSecretKey => 'Reference name';
+  String get mcpSettingsSecretSet => 'シークレットを保存';
 
   @override
-  String get mcpSettingsSecretValue => 'Value';
+  String get mcpSettingsSecretKey => '参照名';
 
   @override
-  String get agentSettingsToolAlwaysOn => 'Always available';
+  String get mcpSettingsSecretValue => '値';
+
+  @override
+  String get agentSettingsToolAlwaysOn => '常に利用可能';
 
   @override
   String toolContextRemaining(int remaining, int window) {
-    return '$remaining of $window tokens left';
+    return 'トークン残り $remaining／$window';
   }
 
   @override
   String toolContextRemainingUnknown(int used) {
-    return '$used tokens used';
+    return 'トークン $used 個を使用';
   }
 
   @override
-  String get chatContextReset => 'New context window';
+  String get chatContextReset => '新しいコンテキストウィンドウ';
 
   @override
-  String get chatContextCompacted => 'Conversation summarized';
+  String get chatContextCompacted => '会話を要約しました';
 
   @override
   String get composerCommandCompactLabel => 'compact';
 
   @override
-  String get composerCommandCompactDescription =>
-      'Summarize the conversation to free the context window.';
+  String get composerCommandCompactDescription => '会話を要約してコンテキストウィンドウを空けます。';
 
   @override
-  String get sessionContextMeter => 'Context';
+  String get sessionContextMeter => 'コンテキスト';
 
   @override
   String sessionContextMeterValue(int percent) {
-    return '$percent% of the context window used';
+    return 'コンテキストウィンドウの $percent% を使用';
   }
 
   @override
@@ -2074,69 +2285,67 @@ class AppLocalizationsJa extends AppLocalizations {
   String get sessionQuotaWindowCodeReview => 'コードレビュー上限';
 
   @override
-  String get composerCommandNoAttachments =>
-      'Remove attachments to run a command.';
+  String get composerCommandNoAttachments => 'コマンドを実行するには添付ファイルを外してください。';
 
   @override
-  String get composerCommandsEmpty => 'No commands';
+  String get composerCommandsEmpty => 'コマンドなし';
 
   @override
-  String get composerFilesEmpty => 'No files';
+  String get composerFilesEmpty => 'ファイルなし';
 
   @override
-  String get composerFilesSearching => 'Searching workspace';
+  String get composerFilesSearching => 'ワークスペースを検索中';
 
   @override
-  String get composerCommandsError => 'Could not load commands';
+  String get composerCommandsError => 'コマンドを読み込めませんでした';
 
   @override
-  String get composerFilesError => 'Could not search files';
+  String get composerFilesError => 'ファイルを検索できませんでした';
 
   @override
-  String get composerCommandSourceClient => 'app';
+  String get composerCommandSourceClient => 'アプリ';
 
   @override
-  String get composerCommandSourceAgent => 'command';
+  String get composerCommandSourceAgent => 'コマンド';
 
   @override
-  String get composerCommandSourceSkill => 'skill';
+  String get composerCommandSourceSkill => 'スキル';
 
   @override
   String get composerCommandClearLabel => 'clear';
 
   @override
-  String get composerCommandClearDescription => 'Clear the composer.';
+  String get composerCommandClearDescription => 'コンポーザーを空にします。';
 
   @override
   String get composerCommandNewLabel => 'new';
 
   @override
-  String get composerCommandNewDescription => 'Start a new session.';
+  String get composerCommandNewDescription => '新しいセッションを始めます。';
 
   @override
   String get composerCommandModeLabel => 'mode';
 
   @override
-  String get composerCommandModeDescription =>
-      'Switch between planning and working.';
+  String get composerCommandModeDescription => '計画モードと作業モードを切り替えます。';
 
   @override
   String get composerCommandAgentsLabel => 'agents';
 
   @override
-  String get composerCommandAgentsDescription => 'Open agent settings.';
+  String get composerCommandAgentsDescription => 'エージェント設定を開きます。';
 
   @override
   String get composerCommandSkillsLabel => 'skills';
 
   @override
-  String get composerCommandSkillsDescription => 'Open skill settings.';
+  String get composerCommandSkillsDescription => 'スキル設定を開きます。';
 
   @override
   String get composerCommandHelpLabel => 'help';
 
   @override
-  String get composerCommandHelpDescription => 'List the available commands.';
+  String get composerCommandHelpDescription => '使えるコマンドを一覧します。';
 
   @override
   String get composerCommandGoalLabel => 'goal';
@@ -2215,7 +2424,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get goalReplaceAction => 'Goalを置き換える';
 
   @override
-  String get composerSuggestionsLabel => 'Suggestions';
+  String get composerSuggestionsLabel => '候補';
 
   @override
   String get composerDropFilesHere => 'ここにファイルをドロップ';
