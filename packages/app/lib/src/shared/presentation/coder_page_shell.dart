@@ -13,29 +13,34 @@ class CoderPageShell extends StatelessWidget {
   final CoderPageHeader? appBar;
 
   @override
-  Widget build(BuildContext context) => TRAppShell(
-    header: appBar == null
-        ? null
-        : TRAppShellHeader(
-            borderBottom: true,
-            padding: const EdgeInsets.symmetric(
-              horizontal: TRSpacing.small,
-              vertical: TRSpacing.extraSmall,
-            ),
-            children: [
-              ?appBar!.leading,
-              Expanded(
-                child: DefaultTextStyle.merge(
-                  style: TRTypography.headingSm,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  child: appBar!.title,
+  Widget build(BuildContext context) => ColoredBox(
+    color: context.tinyrackTheme.surface,
+    child: SafeArea(
+      child: TRAppShell(
+        header: appBar == null
+            ? null
+            : TRAppShellHeader(
+                borderBottom: true,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: TRSpacing.small,
+                  vertical: TRSpacing.extraSmall,
                 ),
+                children: [
+                  ?appBar!.leading,
+                  Expanded(
+                    child: DefaultTextStyle.merge(
+                      style: TRTypography.headingSm,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      child: appBar!.title,
+                    ),
+                  ),
+                  ...appBar!.actions,
+                ],
               ),
-              ...appBar!.actions,
-            ],
-          ),
-    main: TRAppShellMain(child: body),
+        main: TRAppShellMain(child: body),
+      ),
+    ),
   );
 }
 

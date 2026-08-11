@@ -437,6 +437,15 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
       theme: testLightTheme,
       darkTheme: testDarkTheme,
       themeMode: ThemeMode.dark,
+      builder: (context, child) {
+        const padding = EdgeInsets.fromLTRB(0, 24, 0, 34);
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(padding: padding, viewPadding: padding),
+          child: child!,
+        );
+      },
       home: Scaffold(
         body: Align(
           alignment: Alignment.bottomCenter,
@@ -849,6 +858,17 @@ class _ModelPickerGoldenHost extends StatelessWidget {
       theme: testLightTheme,
       darkTheme: testDarkTheme,
       themeMode: mode,
+      builder: (context, child) {
+        final padding = size.width < 760
+            ? const EdgeInsets.fromLTRB(0, 24, 0, 34)
+            : EdgeInsets.zero;
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(padding: padding, viewPadding: padding),
+          child: child!,
+        );
+      },
       home: const TRTooltipProvider(child: _OpenModelPicker()),
     ),
   );

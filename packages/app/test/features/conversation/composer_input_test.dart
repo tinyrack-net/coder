@@ -498,6 +498,7 @@ void main() {
         _harness(
           api: api,
           composer: _CompactSettingsHost(key: hostKey),
+          mediaPadding: const EdgeInsets.only(top: 24, bottom: 34),
         ),
       );
       await tester.pumpAndSettle();
@@ -512,6 +513,17 @@ void main() {
         ),
         findsOneWidget,
       );
+      final settingsDrawer = find.byType(TRDrawer);
+      final settingsSafeArea = find.descendant(
+        of: settingsDrawer,
+        matching: find.byType(SafeArea),
+      );
+      final settingsSafeContent = find.descendant(
+        of: settingsSafeArea,
+        matching: find.byType(Padding),
+      );
+      expect(tester.getRect(settingsDrawer).bottom, 760);
+      expect(tester.getRect(settingsSafeContent.at(1)).bottom, 726);
       for (final setting in <String>[
         'agent',
         'model',
@@ -1522,6 +1534,7 @@ Widget _harness({
   required Widget composer,
   TargetPlatform platform = TargetPlatform.linux,
   FakeCoderApi? api,
+  EdgeInsets mediaPadding = EdgeInsets.zero,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(
@@ -1533,6 +1546,12 @@ Widget _harness({
     locale: testLocale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(padding: mediaPadding, viewPadding: mediaPadding),
+      child: child!,
+    ),
     home: Scaffold(
       body: Align(alignment: Alignment.bottomCenter, child: composer),
     ),
