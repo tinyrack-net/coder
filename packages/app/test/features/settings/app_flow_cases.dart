@@ -67,7 +67,9 @@ void _registerSettingsAppFlows() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Agent'));
       await tester.pumpAndSettle();
@@ -162,7 +164,9 @@ void _registerSettingsAppFlows() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
 
       // The sidebar is a flat list of borderless nav rows, so a boxed select

@@ -42,7 +42,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
@@ -169,7 +171,9 @@ void main() {
         isEmpty,
       );
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();
@@ -229,7 +233,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Daemons'));
       await tester.pumpAndSettle();

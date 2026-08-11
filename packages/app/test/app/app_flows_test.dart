@@ -124,6 +124,62 @@ Finder _textInput(String label) => find.descendant(
   matching: find.byType(EditableText),
 );
 
+Future<void> _openComposerSetting(
+  WidgetTester tester,
+  String setting,
+) async {
+  final direct = find.byKey(ValueKey<String>('session-composer-$setting'));
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct);
+    await tester.pumpAndSettle();
+    return;
+  }
+  await tester.tap(
+    find.byKey(const ValueKey<String>('session-composer-settings')),
+  );
+  await tester.pumpAndSettle();
+  final row = find.byKey(
+    ValueKey<String>('session-composer-settings-$setting'),
+  );
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _dismissComposerSettings(WidgetTester tester) async {
+  if (find
+      .byKey(const ValueKey<String>('session-composer-settings-sheet'))
+      .evaluate()
+      .isEmpty) {
+    return;
+  }
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectComposerMode(
+  WidgetTester tester,
+  SessionMode mode,
+) async {
+  final direct = find.byKey(
+    const ValueKey<String>('session-composer-mode'),
+  );
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct);
+    await tester.pumpAndSettle();
+    return;
+  }
+  await _openComposerSetting(tester, 'mode');
+  await tester.tap(
+    find.byKey(
+      ValueKey<String>('session-composer-mode-${mode.name}-sheet'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await _dismissComposerSettings(tester);
+}
+
 final class _MappedClients implements HostClientFactory {
   const _MappedClients(this.apis);
 

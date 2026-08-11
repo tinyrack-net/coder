@@ -1520,6 +1520,10 @@
   "@composerRun": {
     "description": "Composer mode that carries the request out."
   },
+  "composerMode": "Mode",
+  "@composerMode": {
+    "description": "Label of the composer collaboration mode setting."
+  },
   "composerPlanTooltip": "Only drafts a plan. Shift+Tab to switch",
   "@composerPlanTooltip": {
     "description": "Tooltip of the plan composer mode."
@@ -1531,6 +1535,10 @@
   "composerSelectAgent": "Select an agent",
   "@composerSelectAgent": {
     "description": "Tooltip of the agent selector."
+  },
+  "composerAgent": "Agent",
+  "@composerAgent": {
+    "description": "Label of the composer agent setting."
   },
   "composerAgentLocked": "The agent cannot be changed after the session starts.",
   "@composerAgentLocked": {
@@ -1705,7 +1713,15 @@
   },
   "composerMoreSettings": "More settings",
   "@composerMoreSettings": {
-    "description": "Label of the overflow menu holding the settings that do not fit."
+    "description": "Label and title of the compact composer settings sheet."
+  },
+  "composerUseDefault": "Use default",
+  "@composerUseDefault": {
+    "description": "Choice that removes an explicit model-control override."
+  },
+  "composerEnabled": "Enabled",
+  "@composerEnabled": {
+    "description": "Choice that enables a toggle model control."
   },
   "chatEmptyTitle": "Type a coding request.",
   "@chatEmptyTitle": {

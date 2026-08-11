@@ -20,8 +20,10 @@ Future<PermissionPickerChoice?> showPermissionPicker(
   required PermissionMode? currentMode,
   String? inheritLabel,
   PermissionMode? inheritedMode,
+  bool useRootNavigator = true,
 }) => showTRDrawer<PermissionPickerChoice>(
   context: context,
+  useRootNavigator: useRootNavigator,
   builder: (context) => PermissionPickerDrawer(
     currentMode: currentMode,
     inheritLabel: inheritLabel,

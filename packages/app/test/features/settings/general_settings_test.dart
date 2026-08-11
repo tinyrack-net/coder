@@ -3,7 +3,6 @@ import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +21,9 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -77,7 +78,9 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
@@ -94,7 +97,9 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -164,7 +169,9 @@ void main() {
       await tester.pumpWidget(_app(store, autostart: autostart));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -211,7 +218,9 @@ void main() {
       await tester.pumpWidget(_app(store, autostart: autostart));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -267,7 +276,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();
@@ -297,7 +308,9 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('General'));
       await tester.pumpAndSettle();

@@ -57,10 +57,7 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-permission')),
-      );
-      await tester.pumpAndSettle();
+      await _openComposerSetting(tester, 'permission');
       final fullAccess = find.byKey(
         const ValueKey('permission-option-fullAccess'),
       );
@@ -81,7 +78,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'plan mode starts a planning session and implements the proposal',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await tester.binding.setSurfaceSize(const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -106,8 +103,7 @@ void _registerConversationAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
-      await tester.pumpAndSettle();
+      await _selectComposerMode(tester, SessionMode.plan);
       // The chip label is the whole mode indicator, so the run label is gone.
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('실행'), findsNothing);
@@ -200,8 +196,7 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
-      await tester.pumpAndSettle();
+      await _selectComposerMode(tester, SessionMode.normal);
 
       expect(tester.takeException(), isNull);
       expect(
@@ -272,14 +267,16 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      expect(find.text('Plan'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+        findsOneWidget,
+      );
       await tester.tap(find.widgetWithText(TRButton, '계속 계획'));
       await tester.pumpAndSettle();
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
       expect(api.startedPrompts, isEmpty);
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-mode')));
-      await tester.pumpAndSettle();
+      await _selectComposerMode(tester, SessionMode.normal);
       expect(api.updatedSessionModes.single.mode, SessionMode.normal);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],

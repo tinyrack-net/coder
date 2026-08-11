@@ -10,6 +10,7 @@ import 'package:app/src/features/conversation/presentation/widgets/composer_sugg
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -380,7 +381,7 @@ void main() {
   );
 
   testWidgets(
-    'the settings toolbar drops labels, then chips, as width runs out',
+    'the composer swaps the labelled settings row for one settings sheet',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
       addTearDown(tester.view.resetPhysicalSize);
@@ -394,6 +395,7 @@ void main() {
         'session-composer-mode',
       ];
       const overflowKey = ValueKey<String>('session-composer-overflow');
+      const settingsKey = ValueKey<String>('session-composer-settings');
 
       Future<void> pumpAt(double width) async {
         tester.view.physicalSize = Size(width, 800);
@@ -412,51 +414,33 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Wide: every chip keeps its label.
-      await pumpAt(1400);
+      // The composer breakpoint is based on the width this widget receives,
+      // not the window class around it.
+      await pumpAt(1024);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
       }
       expect(find.byKey(overflowKey), findsNothing);
-      final labelled = tester.getSize(
-        find.byKey(const ValueKey('session-composer-mode')),
-      );
+      expect(find.byKey(settingsKey), findsNothing);
+      expect(find.text(testL10n.composerRun), findsOneWidget);
 
-      // Narrow: the chips are still all there, the trailing ones as icons.
-      await pumpAt(300);
+      // One logical pixel below the boundary the settings are represented by
+      // one ghost action. No individual chip or overflow action survives.
+      await pumpAt(1023);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
-        expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
+        expect(find.byKey(ValueKey<String>(chip)), findsNothing);
       }
-      expect(
-        tester
-            .getSize(find.byKey(const ValueKey('session-composer-mode')))
-            .width,
-        lessThan(labelled.width),
-      );
-
-      // Narrower still: whatever cannot fit moves into one menu.
-      await pumpAt(200);
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(overflowKey), findsOneWidget);
+      expect(find.byKey(overflowKey), findsNothing);
+      expect(find.byKey(settingsKey), findsOneWidget);
       expect(
         find.byKey(
           const ValueKey<String>('session-composer-context-meter'),
         ),
         findsOneWidget,
       );
-      // The overflow stands in the dense chip row beside the attach and send
-      // icon buttons, so it takes their square geometry at the same size.
-      expect(
-        tester.getSize(find.byKey(overflowKey)),
-        Size.square(TRControlMetrics.heightOf(TRUiSize.sm)),
-      );
-      expect(
-        find.byKey(const ValueKey('session-composer-mode')),
-        findsNothing,
-      );
-      // The attach and send actions are reachable at every width.
+      // Prompt actions and context usage stay reachable in compact mode.
       expect(
         find.byKey(const ValueKey('session-composer-attach')),
         findsOneWidget,
@@ -465,6 +449,212 @@ void main() {
         find.byKey(const ValueKey('session-composer-send')),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'compact settings keep the parent sheet while every value uses a child',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final hostKey = GlobalKey<_CompactSettingsHostState>();
+      final api = FakeCoderApi(
+        agentDefinitions: _compactAgentDefinitions,
+        models: const <String, List<ProviderModelDto>>{
+          'openai': <ProviderModelDto>[_compactSettingsModel],
+        },
+      );
+      await tester.pumpWidget(
+        _harness(
+          api: api,
+          composer: _CompactSettingsHost(key: hostKey),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey<String>('session-composer-settings-sheet'),
+        ),
+        findsOneWidget,
+      );
+      for (final setting in <String>[
+        'agent',
+        'model',
+        'control-reasoning_effort',
+        'control-fast_mode',
+        'control-thinking_budget',
+        'permission',
+        'mode',
+      ]) {
+        expect(
+          find.byKey(ValueKey<String>('session-composer-settings-$setting')),
+          findsOneWidget,
+        );
+      }
+
+      // The model picker is forced to a nested drawer at a width where its
+      // ordinary auto policy would otherwise choose a dialog.
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('session-composer-settings-model'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsNWidgets(2));
+      expect(find.byType(TRDialog), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('session-composer-settings-agent'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('session-composer-agent-planner-sheet'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(hostKey.currentState!.agentId, 'planner');
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(find.text('Planner'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-settings-control-reasoning_effort',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-control-reasoning_effort-high-sheet',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        hostKey.currentState!.controls['reasoning_effort'],
+        const ModelControlValueDto.stringValue(value: 'high'),
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-settings-control-fast_mode',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-control-fast_mode-enabled-sheet',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        hostKey.currentState!.controls['fast_mode'],
+        const ModelControlValueDto.boolValue(value: true),
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-settings-control-thinking_budget',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-control-thinking_budget-integer',
+          ),
+        ),
+        '7',
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-control-thinking_budget-save',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        hostKey.currentState!.controls['thinking_budget'],
+        const ModelControlValueDto.intValue(value: 7),
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('session-composer-settings-permission'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('permission-option-readOnly')),
+      );
+      await tester.pumpAndSettle();
+      expect(hostKey.currentState!.permissionMode, PermissionMode.readOnly);
+
+      final modeSetting = find.byKey(
+        const ValueKey<String>('session-composer-settings-mode'),
+      );
+      await tester.ensureVisible(modeSetting);
+      await tester.pumpAndSettle();
+      await tester.tap(modeSetting);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('session-composer-mode-plan-sheet'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(hostKey.currentState!.mode, SessionMode.plan);
+      expect(find.byType(TRDrawer), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compact settings preserve the locked agent state',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          api: FakeCoderApi(agentDefinitions: _compactAgentDefinitions),
+          composer: const _CompactSettingsHost(agentEnabled: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+      );
+      await tester.pumpAndSettle();
+
+      final agentRow = find.byKey(
+        const ValueKey<String>('session-composer-settings-agent'),
+      );
+      expect(tester.widget<CoderListRow>(agentRow).enabled, isFalse);
+      await tester.tap(agentRow);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
     },
   );
 
@@ -1078,12 +1268,123 @@ void main() {
   );
 }
 
+const _compactAgentDefinitions = <AgentDefinitionDto>[
+  AgentDefinitionDto(
+    id: 'coder',
+    name: 'Coder',
+    description: 'Codes',
+    mode: AgentMode.primary,
+    promptEnabled: true,
+    systemPrompt: 'Code.',
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    toolIds: <String>[],
+    callableAgentIds: <String>[],
+    contentHash: 'coder-hash',
+    sourcePath: '/agents/coder.md',
+    isBuiltIn: true,
+  ),
+  AgentDefinitionDto(
+    id: 'planner',
+    name: 'Planner',
+    description: 'Plans',
+    mode: AgentMode.primary,
+    promptEnabled: true,
+    systemPrompt: 'Plan.',
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    toolIds: <String>[],
+    callableAgentIds: <String>[],
+    contentHash: 'planner-hash',
+    sourcePath: '/agents/planner.md',
+  ),
+];
+
+const _compactSettingsModel = ProviderModelDto(
+  connectionId: 'openai',
+  id: 'openai/gpt-settings',
+  providerModelId: 'gpt-settings',
+  label: 'GPT Settings',
+  source: ProviderModelSource.bundled,
+  capabilities: ModelCapabilitiesDto(
+    controls: <ModelControlDescriptorDto>[
+      ModelControlDescriptorDto(
+        id: 'reasoning_effort',
+        label: 'Reasoning effort',
+        kind: ModelControlKind.choice,
+        presentation: ModelControlPresentation.menuChip,
+        choices: <ModelControlChoiceDto>[
+          ModelControlChoiceDto(id: 'low', label: 'Low'),
+          ModelControlChoiceDto(id: 'high', label: 'High'),
+        ],
+      ),
+      ModelControlDescriptorDto(
+        id: 'fast_mode',
+        label: 'Fast',
+        kind: ModelControlKind.toggle,
+        presentation: ModelControlPresentation.selectableChip,
+      ),
+      ModelControlDescriptorDto(
+        id: 'thinking_budget',
+        label: 'Thinking budget',
+        kind: ModelControlKind.integer,
+        presentation: ModelControlPresentation.menuChip,
+        minimum: 1,
+        maximum: 9,
+        step: 2,
+      ),
+    ],
+  ),
+);
+
+class _CompactSettingsHost extends StatefulWidget {
+  const _CompactSettingsHost({this.agentEnabled = true, super.key});
+
+  final bool agentEnabled;
+
+  @override
+  State<_CompactSettingsHost> createState() => _CompactSettingsHostState();
+}
+
+class _CompactSettingsHostState extends State<_CompactSettingsHost> {
+  String agentId = 'coder';
+  SessionMode mode = SessionMode.normal;
+  PermissionMode? permissionMode;
+  Map<String, ModelControlValueDto> controls = <String, ModelControlValueDto>{};
+
+  @override
+  Widget build(BuildContext context) => SessionComposer(
+    enabled: true,
+    onSubmit: (_) {},
+    bar: SessionComposerBar(
+      hostId: 'server',
+      definitions: _compactAgentDefinitions,
+      agentDefinitionId: agentId,
+      selection: const SessionModelSelectionDto(
+        modelId: 'openai/gpt-settings',
+      ),
+      onAgentChanged: (value) => setState(() => agentId = value),
+      onModelChanged: (_, nextControls) =>
+          setState(() => controls = nextControls),
+      mode: mode,
+      onModeChanged: (value) => setState(() => mode = value),
+      modelControls: controls,
+      onModelControlsChanged: (value) => setState(() => controls = value),
+      permissionMode: permissionMode,
+      onPermissionModeChanged: (value) =>
+          setState(() => permissionMode = value),
+      agentEnabled: widget.agentEnabled,
+    ),
+  );
+}
+
 Widget _harness({
   required Widget composer,
   TargetPlatform platform = TargetPlatform.linux,
+  FakeCoderApi? api,
 }) => ProviderScope(
   overrides: [
-    appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+    appServicesProvider.overrideWithValue(
+      fakeAppServices(api ?? FakeCoderApi()),
+    ),
   ],
   child: MaterialApp(
     theme: testLightTheme.copyWith(platform: platform),

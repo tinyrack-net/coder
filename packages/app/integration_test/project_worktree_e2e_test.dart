@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:app/src/app/coder_app.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -254,7 +253,9 @@ Future<void> _pumpProjectSettings(
   await tester.pumpWidget(CoderApp(services: fixture.services));
   await tester.pumpAndSettle();
   await pumpUntil(tester, find.text('Project E2E'));
-  await tester.tap(find.byIcon(CoderIcons.settings));
+  await tester.tap(
+    find.byKey(const ValueKey<String>('workspace-settings-button')),
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Projects'));
   await tester.pumpAndSettle();

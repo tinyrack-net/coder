@@ -333,7 +333,7 @@ void _registerWorkspaceAppFlows() {
       // loaded state instead of flashing an empty-state error.
       await tester.pump();
       expect(find.text('먼저 프로젝트를 추가하세요.'), findsNothing);
-      expect(find.byKey(const ValueKey('session-composer-model')), findsOne);
+      expect(find.byKey(const ValueKey('session-composer-settings')), findsOne);
       expect(find.text('사용 가능한 primary Agent가 없습니다.'), findsNothing);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-new-button')), findsNothing);

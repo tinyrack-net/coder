@@ -820,22 +820,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('E2E Workspace ·').last);
       await tester.pumpAndSettle();
-      final worktreeModelSelector = find.byKey(
-        const ValueKey('session-composer-model'),
+      await _selectComposerModel(
+        tester,
+        search: 'gpt-5.2',
+        modelId: 'openai-gpt-5.2',
       );
-      await tester.ensureVisible(worktreeModelSelector);
-      await tester.pumpAndSettle();
-      await tester.tap(worktreeModelSelector);
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.2',
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
-      );
-      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
         'Feature e2e',
@@ -891,23 +880,11 @@ void main() {
       const send = ValueKey<String>('session-composer-send');
       await pumpUntil(tester, find.byKey(composer));
       await tester.pumpAndSettle();
-      final sessionModelSelector = find.byKey(
-        const ValueKey('session-composer-model'),
+      await _selectComposerModel(
+        tester,
+        search: 'gpt-5.2',
+        modelId: 'openai-gpt-5.2',
       );
-      expect(sessionModelSelector, findsOne);
-      await tester.ensureVisible(sessionModelSelector);
-      await tester.pumpAndSettle();
-      await tester.tap(sessionModelSelector);
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('model-search-field')),
-        'gpt-5.2',
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.2')),
-      );
-      await tester.pumpAndSettle();
 
       // An @ token completes into a worktree-relative path rather than
       // sending, and the completed prompt is what reaches the daemon.
@@ -1518,9 +1495,7 @@ void main() {
       );
 
       // Plan mode proposes work and hands it back for approval.
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
-      );
+      await _selectComposerMode(tester, SessionMode.plan);
       await pumpUntilCondition(
         tester,
         () async =>
@@ -1541,14 +1516,9 @@ void main() {
       // update_plan records execution progress and is unavailable in Plan
       // Mode. The user explicitly returns to Default mode after reading the
       // prose proposal.
-      await tester.tap(
-        find.byKey(const ValueKey('session-composer-mode')).hitTestable(),
-      );
-      await tester.pump();
-      // The chip returning to 실행 proves the session left plan mode.
-      await pumpUntil(tester, find.text('실행'));
-      // The chip only reflects what the app asked for, so confirm the daemon
-      // agrees before sending a prompt that must not be planned again.
+      await _selectComposerMode(tester, SessionMode.normal);
+      // Confirm the daemon agrees before sending a prompt that must not be
+      // planned again.
       await pumpUntilCondition(
         tester,
         () async =>
@@ -2534,6 +2504,78 @@ Future<void> _waitForComposerReady(
   () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
   'the composer to have a model selected',
 );
+
+Future<void> _selectComposerModel(
+  WidgetTester tester, {
+  required String search,
+  required String modelId,
+}) async {
+  final direct = find.byKey(
+    const ValueKey<String>('session-composer-model'),
+  );
+  if (direct.evaluate().isNotEmpty) {
+    await tester.ensureVisible(direct);
+    await tester.pumpAndSettle();
+    await tester.tap(direct);
+  } else {
+    await tester.tap(
+      find.byKey(const ValueKey<String>('session-composer-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(
+        const ValueKey<String>('session-composer-settings-model'),
+      ),
+    );
+  }
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const ValueKey<String>('model-search-field')),
+    search,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(ValueKey<String>('model-option-$modelId')),
+  );
+  await tester.pumpAndSettle();
+  if (find
+      .byKey(const ValueKey<String>('session-composer-settings-sheet'))
+      .evaluate()
+      .isNotEmpty) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> _selectComposerMode(
+  WidgetTester tester,
+  SessionMode mode,
+) async {
+  final direct = find
+      .byKey(const ValueKey<String>('session-composer-mode'))
+      .hitTestable();
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct);
+    await tester.pump();
+    return;
+  }
+  await tester.tap(
+    find.byKey(const ValueKey<String>('session-composer-settings')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(const ValueKey<String>('session-composer-settings-mode')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(
+      ValueKey<String>('session-composer-mode-${mode.name}-sheet'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  await tester.pumpAndSettle();
+}
 
 /// Types [prompt] into the composer and proves it arrived.
 ///

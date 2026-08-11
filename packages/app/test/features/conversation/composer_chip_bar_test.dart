@@ -8,14 +8,12 @@ import '../../support/localization.dart';
 
 void main() {
   testWidgets(
-    'a long value gives up its own label rather than every label',
+    'the wide bar always keeps every setting label',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
-      // A model name long enough that the row cannot show all three labels in
-      // full, which is exactly the case that used to strip the whole row.
       await _pump(
         tester,
-        width: 420,
+        width: 1024,
         chips: _chips(model: 'Claude Opus 4.6 (extended thinking, 1M context)'),
       );
 
@@ -24,7 +22,7 @@ void main() {
       expect(
         find.textContaining('Claude Opus 4.6'),
         findsOneWidget,
-        reason: 'the long chip keeps a readable prefix of its label',
+        reason: 'the long model remains a labelled control',
       );
 
       final model = tester.getSize(find.byKey(_modelKey)).width;
@@ -34,29 +32,12 @@ void main() {
       );
       expect(
         model,
-        lessThan(natural),
-        reason: 'the long label is capped, not laid out in full',
+        greaterThan(
+          TRControlMetrics.heightOf(TRUiSize.sm),
+        ),
+        reason: 'the model remains wider than an icon-only control',
       );
-    },
-  );
-
-  testWidgets(
-    'labels are given up from the trailing end as width runs out',
-    tags: const <String>['feature_test__session_lifecycle__widget'],
-    (tester) async {
-      await _pump(tester, width: 150, chips: _chips(model: 'Sonnet 4.6'));
-
-      expect(
-        find.text('Agent'),
-        findsOneWidget,
-        reason: 'the leading chip keeps its label longest',
-      );
-      expect(find.text('Plan'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('composer-chip-mode')),
-        findsOneWidget,
-        reason: 'a chip that gave up its label is still on the row',
-      );
+      expect(model, lessThan(natural));
     },
   );
 
@@ -124,7 +105,6 @@ Future<void> _pump(
             width: width,
             child: ComposerChipBar(
               chips: chips,
-              overflowLabel: 'More settings',
               uiSize: TRUiSize.sm,
             ),
           ),

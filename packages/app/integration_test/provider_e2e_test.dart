@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:agent/agent.dart';
 import 'package:app/src/app/coder_app.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:daemon/daemon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -174,7 +173,9 @@ Future<void> _pumpProviderSettings(
   await tester.pumpWidget(CoderApp(services: fixture.services));
   addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
   await tester.pumpAndSettle();
-  await tester.tap(find.byIcon(CoderIcons.settings));
+  await tester.tap(
+    find.byKey(const ValueKey<String>('workspace-settings-button')),
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.text('Provider'));
   await tester.pumpAndSettle();

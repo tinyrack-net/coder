@@ -37,6 +37,15 @@ sealed class ModelPickerChoice {
 /// Loads the provider-qualified models displayed by a picker.
 typedef ModelPickerOptionsLoader = Future<List<ModelPickerOption>> Function();
 
+/// Surface policy used by [showModelPicker].
+enum ModelPickerSurface {
+  /// Uses a dialog on wide viewports and a bottom sheet on compact viewports.
+  auto,
+
+  /// Always uses a bottom sheet, including when opened from another sheet.
+  sheet,
+}
+
 /// An explicitly selected provider-qualified model.
 final class SelectedModelPickerChoice extends ModelPickerChoice {
   /// Creates a selected model result.
@@ -62,6 +71,8 @@ Future<ModelPickerChoice?> showModelPicker(
   required SessionModelSelectionDto? currentSelection,
   String? title,
   String? inheritLabel,
+  ModelPickerSurface surface = ModelPickerSurface.auto,
+  bool useRootNavigator = true,
 }) {
   final picker = _AsyncModelPicker(
     loadOptions: loadOptions,
@@ -69,9 +80,11 @@ Future<ModelPickerChoice?> showModelPicker(
     title: title,
     inheritLabel: inheritLabel,
   );
-  if (MediaQuery.sizeOf(context).width < CoderLayoutMetrics.compactBreakpoint) {
+  if (surface == ModelPickerSurface.sheet ||
+      MediaQuery.sizeOf(context).width < CoderLayoutMetrics.compactBreakpoint) {
     return showTRDrawer<ModelPickerChoice>(
       context: context,
+      useRootNavigator: useRootNavigator,
       builder: (context) => TRDrawer(
         semanticLabel: title,
         snapPoints: const <double>[0.8, 1],

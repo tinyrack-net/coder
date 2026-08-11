@@ -1232,6 +1232,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerRun => '실행';
 
   @override
+  String get composerMode => '모드';
+
+  @override
   String get composerPlanTooltip => '계획만 세웁니다. Shift+Tab으로 전환';
 
   @override
@@ -1239,6 +1242,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerSelectAgent => 'Agent 선택';
+
+  @override
+  String get composerAgent => 'Agent';
 
   @override
   String get composerAgentLocked => '세션 생성 후에는 Agent를 바꿀 수 없습니다.';
@@ -1405,6 +1411,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerMoreSettings => '설정 더 보기';
+
+  @override
+  String get composerUseDefault => '기본값 사용';
+
+  @override
+  String get composerEnabled => '사용';
 
   @override
   String get chatEmptyTitle => '코딩 요청을 입력하세요.';

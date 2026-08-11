@@ -1261,6 +1261,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerRun => 'Run';
 
   @override
+  String get composerMode => 'Mode';
+
+  @override
   String get composerPlanTooltip => 'Only drafts a plan. Shift+Tab to switch';
 
   @override
@@ -1269,6 +1272,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSelectAgent => 'Select an agent';
+
+  @override
+  String get composerAgent => 'Agent';
 
   @override
   String get composerAgentLocked =>
@@ -1441,6 +1447,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerMoreSettings => 'More settings';
+
+  @override
+  String get composerUseDefault => 'Use default';
+
+  @override
+  String get composerEnabled => 'Enabled';
 
   @override
   String get chatEmptyTitle => 'Type a coding request.';
