@@ -59,6 +59,14 @@ class ToastMessenger {
     id: id,
   );
 
+  /// Reports information that explains the result of a user action.
+  void info(String title, {String? description, String? id}) => _show(
+    title: title,
+    description: description,
+    variant: TRStatusVariant.info,
+    id: id,
+  );
+
   /// Reports an action that could not complete, describing [error] if given.
   void failure(String title, {Object? error, String? id}) => _show(
     title: title,

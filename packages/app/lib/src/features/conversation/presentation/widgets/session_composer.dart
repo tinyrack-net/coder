@@ -24,6 +24,7 @@ import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -297,10 +298,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         builder: (context, sheetRef, _) {
           final snapshot = _settingsSnapshot(sheetRef);
           final l10n = AppLocalizations.of(context);
+          final agentLocked = !widget.agentEnabled;
           return TRDrawer(
             key: const ValueKey<String>('session-composer-settings-sheet'),
             title: TRText.inherit(l10n.composerMoreSettings),
-            snapPoints: const <double>[0.8, 1],
             content: ListView(
               shrinkWrap: true,
               children: <Widget>[
@@ -322,29 +323,39 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   title: l10n.composerAgent,
                   value: snapshot.agent?.name ?? l10n.composerAgent,
                   enabled:
-                      widget.enabled &&
-                      widget.agentEnabled &&
-                      widget.definitions.isNotEmpty,
-                  onTap: () async {
-                    final choice = await _showChoiceSheet<String>(
-                      sheetContext,
-                      title: l10n.composerSelectAgent,
-                      choices: <_ComposerSheetOption<String>>[
-                        for (final definition in widget.definitions)
-                          _ComposerSheetOption<String>(
-                            key: ValueKey<String>(
-                              'session-composer-agent-${definition.id}-sheet',
-                            ),
-                            value: definition.id,
-                            label: definition.name,
-                            selected: definition.id == widget.agentDefinitionId,
-                          ),
-                      ],
-                    );
-                    if (choice == null) return;
-                    widget.onAgentChanged(choice.value);
-                    await _refreshSettings(refresh);
-                  },
+                      agentLocked ||
+                      (widget.enabled && widget.definitions.isNotEmpty),
+                  locked: agentLocked,
+                  lockedHint: l10n.composerAgentLocked,
+                  onTap: agentLocked
+                      ? () => ref
+                            .read(toastMessengerProvider)
+                            .info(
+                              l10n.composerAgentLocked,
+                              id: 'session-composer-agent-locked',
+                            )
+                      : () async {
+                          final choice = await _showChoiceSheet<String>(
+                            sheetContext,
+                            title: l10n.composerSelectAgent,
+                            choices: <_ComposerSheetOption<String>>[
+                              for (final definition in widget.definitions)
+                                _ComposerSheetOption<String>(
+                                  key: ValueKey<String>(
+                                    'session-composer-agent-'
+                                    '${definition.id}-sheet',
+                                  ),
+                                  value: definition.id,
+                                  label: definition.name,
+                                  selected:
+                                      definition.id == widget.agentDefinitionId,
+                                ),
+                            ],
+                          );
+                          if (choice == null) return;
+                          widget.onAgentChanged(choice.value);
+                          await _refreshSettings(refresh);
+                        },
                 ),
                 _settingsRow(
                   key: const ValueKey<String>(
@@ -459,15 +470,26 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required String value,
     required bool enabled,
     required VoidCallback onTap,
-  }) => CoderListRow(
-    key: key,
-    enabled: enabled,
-    leading: Icon(icon),
-    title: TRText.inherit(title),
-    subtitle: TRText.inherit(value),
-    trailing: const Icon(CoderIcons.expand),
-    onTap: onTap,
-  );
+    bool locked = false,
+    String? lockedHint,
+  }) {
+    final row = CoderListRow(
+      key: key,
+      enabled: enabled,
+      leading: Icon(icon),
+      title: TRText.inherit(
+        title,
+        color: locked ? TRTextColor.muted : null,
+      ),
+      subtitle: TRText.inherit(value),
+      trailing: Icon(
+        locked ? CoderIcons.lock : CoderIcons.expand,
+        color: locked ? context.tinyrackTheme.textMuted : null,
+      ),
+      onTap: onTap,
+    );
+    return lockedHint == null ? row : Semantics(hint: lockedHint, child: row);
+  }
 
   ({
     AgentDefinitionDto? agent,
