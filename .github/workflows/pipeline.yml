@@ -623,10 +623,15 @@ jobs:
 
           $installer = "$PWD\dist\Coder-setup-win-${{ matrix.arch }}.exe"
           $installRoot = Join-Path $env:RUNNER_TEMP 'coder-installer-smoke'
-          & $installer /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER `
+          $installProcess = Start-Process -FilePath $installer -ArgumentList @(
+            '/VERYSILENT',
+            '/SUPPRESSMSGBOXES',
+            '/NORESTART',
+            '/CURRENTUSER',
             "/DIR=$installRoot"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows installer smoke test failed with exit code $LASTEXITCODE"
+          ) -Wait -PassThru
+          if ($installProcess.ExitCode -ne 0) {
+            throw "Windows installer smoke test failed with exit code $($installProcess.ExitCode)"
           }
           foreach ($installedFile in @('coder.exe') + $runtimeDlls) {
             $installedPath = Join-Path $installRoot $installedFile

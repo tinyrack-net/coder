@@ -47,6 +47,9 @@ void main() {
   final windowsCmake = File(
     'packages/app/windows/CMakeLists.txt',
   ).readAsStringSync();
+  final windowsInstaller = File(
+    'packages/app/windows/installer/coder.iss',
+  ).readAsStringSync();
   final luaHostBuilder = File('tool/build_lua_host.dart').readAsStringSync();
 
   test('normal quality jobs do not run in the nightly workflow', () {
@@ -579,6 +582,15 @@ void main() {
     expect(release, contains('Test-Path -LiteralPath'));
     expect(release, contains('/VERYSILENT'));
     expect(release, contains('/CURRENTUSER'));
+    expect(release, contains('Start-Process'));
+    expect(release, contains('-Wait'));
+    expect(release, contains('-PassThru'));
+    expect(release, contains(r'$installProcess.ExitCode'));
+    expect(release, isNot(contains(r'& $installer /VERYSILENT')));
+    expect(
+      windowsInstaller,
+      contains('PrivilegesRequiredOverridesAllowed=commandline dialog'),
+    );
   });
 
   test('Android supplies the CargoKit Gradle 9 exec compatibility service', () {
