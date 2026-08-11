@@ -177,6 +177,28 @@ void main() {
         builder: () => _SettingsDialogGoldenHost(mode: variant.mode),
       ),
     );
+    for (final alert in <bool>[false, true]) {
+      final kind = alert ? 'alert_dialog' : 'dialog';
+      unawaited(
+        goldenTest(
+          'scrollable $kind ${variant.name} layer',
+          fileName: 'scrollable_${kind}_${variant.name}',
+          constraints: BoxConstraints.tight(variant.size),
+          whilePerforming: (tester) async {
+            final scrollable = tester.state<ScrollableState>(
+              find.byType(Scrollable).first,
+            );
+            scrollable.position.jumpTo(TRSpacing.extraLarge * 2);
+            await tester.pump();
+            return null;
+          },
+          builder: () => _ScrollableDialogGoldenHost(
+            mode: variant.mode,
+            alert: alert,
+          ),
+        ),
+      );
+    }
   }
 
   unawaited(
@@ -840,6 +862,59 @@ class _SettingsDialogGoldenHost extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ScrollableDialogGoldenHost extends StatelessWidget {
+  const _ScrollableDialogGoldenHost({required this.mode, required this.alert});
+
+  final ThemeMode mode;
+  final bool alert;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: List<Widget>.generate(
+        28,
+        (index) => TRText.inherit('스크롤 가능한 모달 본문 ${index + 1}'),
+      ),
+    );
+    final dialog = alert
+        ? TRAlertDialog(
+            title: const TRText.inherit('긴 경고 모달'),
+            description: const TRText.inherit('제목과 액션은 고정됩니다.'),
+            content: body,
+            actions: const <TRButton>[
+              TRButton(onPressed: null, child: TRText.inherit('확인')),
+            ],
+          )
+        : TRDialog(
+            title: const TRText.inherit('긴 일반 모달'),
+            description: const TRText.inherit('본문만 스크롤됩니다.'),
+            content: body,
+            actions: const TRText.inherit('완료'),
+          );
+    final lightTheme = testLightTheme.copyWith(
+      scrollbarTheme: testLightTheme.scrollbarTheme.copyWith(
+        thumbVisibility: const WidgetStatePropertyAll<bool>(true),
+      ),
+    );
+    final darkTheme = testDarkTheme.copyWith(
+      scrollbarTheme: testDarkTheme.scrollbarTheme.copyWith(
+        thumbVisibility: const WidgetStatePropertyAll<bool>(true),
+      ),
+    );
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      locale: testLocale,
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: mode,
+      home: Scaffold(body: Center(child: dialog)),
+    );
+  }
 }
 
 class _ModelPickerGoldenHost extends StatelessWidget {
