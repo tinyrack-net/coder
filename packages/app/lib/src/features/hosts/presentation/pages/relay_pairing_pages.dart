@@ -10,6 +10,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/pairing_intent.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/coder_layout_metrics.dart';
 import 'package:app/src/shared/presentation/coder_page_shell.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
@@ -486,7 +487,6 @@ class DaemonConnectionsPage extends ConsumerStatefulWidget {
 
 class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
   final _offerLink = TextEditingController();
-  RelayPairingOfferDto? _offer;
   RelayStatusDto? _status;
   String? _error;
   bool _busy = false;
@@ -559,15 +559,10 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
             ),
           ],
         ),
-        SettingsSection.form(
+        SettingsSection(
           title: l10n.relayPairTitle,
           banner: _error == null
-              ? TRAlert(
-                  title: TRText.inherit(l10n.relayPairTitle),
-                  description: TRText.inherit(l10n.relayDevicesDescription),
-                  icon: const Icon(CoderIcons.lock),
-                  variant: TRStatusVariant.info,
-                )
+              ? null
               : TRAlert(
                   title: TRText.inherit(l10n.appSettingsConnectionFailed),
                   description: TRText.inherit(_error!),
@@ -575,80 +570,53 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                   variant: TRStatusVariant.danger,
                 ),
           children: <Widget>[
-            if (_status case RelayStatusDto(enabled: false))
-              TRCard(
-                padding: TRCardPadding.none,
-                child: SettingsRow(
-                  leading: const Icon(CoderIcons.cloud),
-                  title: TRText.inherit(l10n.relayEnableTitle),
-                  description: TRText.inherit(l10n.relayEnableDescription),
-                  wrapsDescription: true,
-                  control: TRButton(
-                    key: const ValueKey<String>('relay-enable'),
-                    intent: TRIntent.primary,
-                    loading: _busy,
-                    loadingLabel: l10n.relayEnableAction,
-                    onPressed: _busy ? null : _enableAndCreate,
-                    child: TRText.inherit(l10n.relayEnableAction),
-                  ),
+            TRCard(
+              padding: TRCardPadding.none,
+              child: SettingsRow(
+                key: const ValueKey<String>('relay-pair-device'),
+                title: TRText.inherit(l10n.relayPairTitle),
+                description: TRText.inherit(
+                  l10n.relayPairDeviceDescription,
                 ),
-              )
-            else if (_offer case final offer?) ...<Widget>[
-              Center(
-                child: TRQrCode(
-                  data: offer.url,
-                  semanticLabel: l10n.relayPairQrSemantics,
-                  uiSize: TRUiSize.lg,
+                wrapsDescription: true,
+                control: _busy
+                    ? const TRSpinner()
+                    : const Icon(CoderIcons.chevronRight),
+                onTap: _busy ? null : _openPairDialog,
+              ),
+            ),
+          ],
+        ),
+        SettingsSection(
+          title: l10n.settingsCategoryAdvanced,
+          children: <Widget>[
+            TRCard(
+              padding: TRCardPadding.none,
+              child: SettingsRow(
+                key: const ValueKey<String>('relay-advanced-endpoint'),
+                leading: const Icon(CoderIcons.cloud),
+                title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
+                description: _status == null
+                    ? null
+                    : TRText.inherit(_status!.endpoint),
+                wrapsDescription: true,
+                control: const Icon(CoderIcons.chevronRight),
+                onTap: _busy ? null : _openRelayEndpointEditor,
+              ),
+            ),
+            TRCard(
+              padding: TRCardPadding.none,
+              child: SettingsRow(
+                key: const ValueKey<String>('relay-advanced-direct'),
+                leading: const Icon(CoderIcons.link),
+                title: TRText.inherit(l10n.relayAdvancedDirect),
+                description: TRText.inherit(
+                  l10n.relayConnectDirectDescription,
                 ),
+                control: const Icon(CoderIcons.chevronRight),
+                onTap: () => const AdvancedNewHostRoute().push<void>(context),
               ),
-              TRTextField(
-                controller: _offerLink,
-                label: l10n.relayPairLink,
-                readOnly: true,
-              ),
-              TRText.inherit(
-                l10n.relayLinkExpires(
-                  MaterialLocalizations.of(context).formatTimeOfDay(
-                    TimeOfDay.fromDateTime(offer.expiresAt.toLocal()),
-                  ),
-                ),
-              ),
-              Wrap(
-                alignment: WrapAlignment.end,
-                spacing: TRSpacing.small,
-                runSpacing: TRSpacing.extraSmall,
-                children: <Widget>[
-                  TRCopyButton(value: offer.url, idleLabel: l10n.commonCopy),
-                  TRButton(
-                    appearance: TRAppearance.outline,
-                    onPressed: _busy
-                        ? null
-                        : () => unawaited(
-                            SharePlus.instance.share(
-                              ShareParams(text: offer.url),
-                            ),
-                          ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        const Icon(CoderIcons.share),
-                        const SizedBox(width: TRSpacing.extraSmall),
-                        TRText(l10n.relayShare),
-                      ],
-                    ),
-                  ),
-                  TRButton(
-                    key: const ValueKey<String>('relay-create-offer'),
-                    intent: TRIntent.primary,
-                    loading: _busy,
-                    loadingLabel: l10n.relayRefreshLink,
-                    onPressed: _busy ? null : _createOffer,
-                    child: TRText.inherit(l10n.relayRefreshLink),
-                  ),
-                ],
-              ),
-            ] else if (_status?.enabled == true)
-              const Center(child: TRSpinner()),
+            ),
           ],
         ),
         _devicesSection(devicesAsync),
@@ -737,7 +705,6 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
       final status = await (await _relay()).getRelayStatus();
       if (!mounted) return;
       setState(() => _status = status);
-      if (status.enabled) await _createOffer();
     } on Exception catch (error) {
       if (mounted) setState(() => _error = '$error');
     } finally {
@@ -745,21 +712,21 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
     }
   }
 
-  Future<void> _enableAndCreate() async {
+  Future<void> _openPairDialog() async {
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final relay = await _relay();
-      final status = await relay.setRelayEnabled(enabled: true);
+      final status = _status?.enabled == true
+          ? _status!
+          : await relay.setRelayEnabled(enabled: true);
       final offer = await relay.createRelayPairingOffer();
       if (mounted) {
         _offerLink.text = offer.url;
-        setState(() {
-          _status = status;
-          _offer = offer;
-        });
+        setState(() => _status = status);
+        unawaited(_showPairDialog(offer));
       }
     } on Exception catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -768,23 +735,117 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
     }
   }
 
-  Future<void> _createOffer() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final offer = await (await _relay()).createRelayPairingOffer();
-      if (mounted) {
-        _offerLink.text = offer.url;
-        setState(() => _offer = offer);
-      }
-    } on Exception catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
+  Future<void> _openRelayEndpointEditor() async {
+    final l10n = AppLocalizations.of(context);
+    final editor = _RelayEndpointEditor(
+      initialValue: _status?.endpoint ?? '',
+      fieldLabel: l10n.relayAdvancedRelayEndpoint,
+      saveLabel: l10n.commonSave,
+      errorTitle: l10n.appSettingsConnectionFailed,
+      onSave: _setRelayEndpoint,
+    );
+    if (MediaQuery.sizeOf(context).width <
+        CoderLayoutMetrics.compactBreakpoint) {
+      await showTRDrawer<void>(
+        context: context,
+        builder: (context) => TRDrawer(
+          semanticLabel: l10n.relayAdvancedRelayEndpointChange,
+          title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
+          description: TRText.inherit(l10n.relayAdvancedRelayEndpointHelp),
+          content: editor,
+        ),
+      );
+      return;
     }
+    await showTRDialog<void>(
+      context: context,
+      builder: (context) => TRDialog(
+        semanticLabel: l10n.relayAdvancedRelayEndpointChange,
+        title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
+        description: TRText.inherit(l10n.relayAdvancedRelayEndpointHelp),
+        content: editor,
+      ),
+    );
   }
+
+  Future<void> _setRelayEndpoint(String endpoint) async {
+    final status = await (await _relay()).setRelayEndpoint(endpoint);
+    if (mounted) setState(() => _status = status);
+  }
+
+  Future<void> _showPairDialog(RelayPairingOfferDto offer) =>
+      showTRDialog<void>(
+        context: context,
+        builder: (dialogContext) => TRDialog(
+          title: Row(
+            children: <Widget>[
+              Expanded(
+                child: TRText.inherit(
+                  AppLocalizations.of(context).relayPairTitle,
+                ),
+              ),
+              TRIconButton(
+                key: const ValueKey<String>('relay-dialog-close'),
+                appearance: TRAppearance.ghost,
+                label: AppLocalizations.of(context).commonClose,
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(CoderIcons.close),
+              ),
+            ],
+          ),
+          description: TRText.inherit(
+            AppLocalizations.of(context).relayPairDialogDescription,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const SizedBox(height: TRSpacing.large),
+                Center(
+                  child: TRQrCode(
+                    data: offer.url,
+                    semanticLabel: AppLocalizations.of(
+                      context,
+                    ).relayPairQrSemantics,
+                    uiSize: TRUiSize.lg,
+                  ),
+                ),
+                const SizedBox(height: TRSpacing.medium),
+                TRTextField(
+                  controller: _offerLink,
+                  label: AppLocalizations.of(context).relayPairLink,
+                  readOnly: true,
+                ),
+                const SizedBox(height: TRSpacing.small),
+                TRText.inherit(
+                  AppLocalizations.of(context).relayLinkExpires(
+                    MaterialLocalizations.of(context).formatTimeOfDay(
+                      TimeOfDay.fromDateTime(offer.expiresAt.toLocal()),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: TRSpacing.small,
+            children: <Widget>[
+              TRCopyButton(
+                value: offer.url,
+                idleLabel: AppLocalizations.of(context).commonCopy,
+              ),
+              TRButton(
+                appearance: TRAppearance.outline,
+                onPressed: () => unawaited(
+                  SharePlus.instance.share(ShareParams(text: offer.url)),
+                ),
+                child: TRText.inherit(AppLocalizations.of(context).relayShare),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Future<void> _revoke(RelayDeviceDto device) async {
     final l10n = AppLocalizations.of(context);
@@ -819,5 +880,91 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
         );
     if (revoked) ref.invalidate(relayDevicesProvider(widget.hostId));
     if (mounted) setState(() => _busy = false);
+  }
+}
+
+class _RelayEndpointEditor extends StatefulWidget {
+  const _RelayEndpointEditor({
+    required this.initialValue,
+    required this.fieldLabel,
+    required this.saveLabel,
+    required this.errorTitle,
+    required this.onSave,
+  });
+
+  final String initialValue;
+  final String fieldLabel;
+  final String saveLabel;
+  final String errorTitle;
+  final Future<void> Function(String endpoint) onSave;
+
+  @override
+  State<_RelayEndpointEditor> createState() => _RelayEndpointEditorState();
+}
+
+class _RelayEndpointEditorState extends State<_RelayEndpointEditor> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (_error case final error?) ...<Widget>[
+          TRAlert(
+            title: TRText.inherit(widget.errorTitle),
+            description: TRText.inherit(error),
+            icon: const Icon(CoderIcons.error),
+            variant: TRStatusVariant.danger,
+          ),
+          const SizedBox(height: TRSpacing.medium),
+        ],
+        TRTextField(
+          key: const ValueKey<String>('relay-endpoint'),
+          controller: _controller,
+          keyboardType: TextInputType.url,
+          label: widget.fieldLabel,
+          onSubmitted: (_) => _save(),
+        ),
+        const SizedBox(height: TRSpacing.medium),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TRButton(
+            key: const ValueKey<String>('relay-endpoint-save'),
+            intent: TRIntent.primary,
+            loading: _saving,
+            loadingLabel: widget.saveLabel,
+            onPressed: _saving ? null : _save,
+            child: TRText.inherit(widget.saveLabel),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.onSave(_controller.text.trim());
+      if (mounted) Navigator.pop(context);
+    } on Exception catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }

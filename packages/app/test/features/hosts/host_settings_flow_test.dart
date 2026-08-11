@@ -84,6 +84,7 @@ void main() {
     'pairing link registers a daemon-scoped relay device',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       final store = MemoryAppStore(
         settings: const AppSettings(embeddedDaemonEnabled: false),
       );
@@ -108,7 +109,7 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
 
-      expect(find.text('고급 직접 연결'), findsOneWidget);
+      expect(find.text('직접 연결'), findsOneWidget);
       expect(
         find.byKey(const ValueKey<String>('connect-daemon-scan')),
         findsNothing,
@@ -236,6 +237,10 @@ void main() {
   testWidgets(
     'approved devices can create a pairing offer and revoke a device',
     (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final semantics = tester.ensureSemantics();
       final now = DateTime.utc(2026, 8, 8);
       final api = FakeCoderApi(
@@ -287,19 +292,68 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('My phone'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey<String>('relay-enable')));
+      expect(find.byType(TRQrCode), findsNothing);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-pair-device')),
+      );
       await tester.pumpAndSettle();
       expect(find.textContaining('offer=test-offer'), findsOneWidget);
       expect(find.byType(TRQrCode), findsOneWidget);
+      expect(find.byType(TRDialog), findsOneWidget);
       expect(
         tester.getSemantics(find.byType(TRQrCode)).label,
         contains('일회용 기기 연결 링크 QR 코드'),
       );
       expect(api.relayEnabled, isTrue);
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-dialog-close')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDialog), findsNothing);
+      expect(
+        find.byKey(const ValueKey<String>('relay-advanced-direct')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('relay-endpoint')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-advanced-endpoint')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDialog), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('relay-endpoint')),
+        'wss://self-hosted.example/v1/ws',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-endpoint-save')),
+      );
+      await tester.pumpAndSettle();
+      expect(api.relayEndpoint, 'wss://self-hosted.example/v1/ws');
+
+      tester.view.physicalSize = const Size(390, 760);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('relay-advanced-endpoint')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('relay-endpoint')),
+        findsOneWidget,
+      );
+      Navigator.pop(tester.element(find.byType(TRDrawer)));
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(1200, 900);
+      await tester.pumpAndSettle();
+
       await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
       await tester.pumpAndSettle();
+      expect(find.text('My phone'), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '해제'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '해제').last);
@@ -774,7 +828,7 @@ final class _Pairer implements HostRelayPairer {
         id: connectionId,
         credentialKey: credentialKey,
         serverId: 'relay-server',
-        relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+        relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
         daemonIdentityPublicKey: List<int>.filled(32, 1),
       ),
       credential: RelayHostCredential(
@@ -859,7 +913,7 @@ final class _ProfileClients implements HostClientFactory {
 
 Uri _pairingUrl() => RelayPairingOffer(
   serverId: 'relay-server',
-  relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+  relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
   daemonPublicKey: List<int>.filled(32, 1),
   offerId: 'test-offer',
   secret: List<int>.filled(32, 2),

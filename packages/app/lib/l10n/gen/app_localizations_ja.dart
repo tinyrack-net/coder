@@ -699,6 +699,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayPairTitle => 'デバイスを接続';
 
   @override
+  String get relayPairDeviceDescription =>
+      'QRコードをスキャンするかリンクをコピーして、他のデバイスをこのDaemonに接続します。';
+
+  @override
+  String get relayPairDialogDescription =>
+      '他のデバイスでこのQRコードをスキャンするか、下の接続リンクをコピーしてください。';
+
+  @override
   String get relayConnectDaemonTitle => 'Daemonに接続';
 
   @override
@@ -796,7 +804,17 @@ class AppLocalizationsJa extends AppLocalizations {
       'このDaemonに接続できませんでした。Daemonで新しいリンクを作成して再試行してください。';
 
   @override
-  String get relayAdvancedDirect => '高度な直接接続';
+  String get relayAdvancedDirect => '直接接続';
+
+  @override
+  String get relayAdvancedRelayEndpoint => 'リレーサーバーアドレス';
+
+  @override
+  String get relayAdvancedRelayEndpointChange => 'リレーサーバーアドレスを変更';
+
+  @override
+  String get relayAdvancedRelayEndpointHelp =>
+      'デフォルトで公式リレーを使用するか、self-hosted WebSocket endpointを入力します。';
 
   @override
   String get relayDevicesTitle => '接続済みデバイス';

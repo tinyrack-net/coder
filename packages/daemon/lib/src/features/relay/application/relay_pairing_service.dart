@@ -136,7 +136,7 @@ final class RelayPairingService {
   final String serverId;
 
   /// Effective relay WebSocket endpoint.
-  final Uri relayUri;
+  Uri relayUri;
 
   /// Daemon Ed25519 public identity distributed in offers.
   final List<int> daemonIdentityPublicKey;

@@ -13,7 +13,7 @@ void main() {
     final intent = PairingIntent.parse(uri, nowUtc: now);
 
     expect(intent.serverId, 'daemon-1234567890');
-    expect(intent.relayUri, Uri.parse('wss://relay.tinyrack.net/v1/ws'));
+    expect(intent.relayUri, Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'));
     expect(intent.expiresAt, now.add(const Duration(minutes: 10)));
     expect(intent.pairingUrl, uri);
     expect(intent.toString(), isNot(contains('offer=')));
@@ -69,7 +69,7 @@ void main() {
 
 RelayPairingOffer _offer({required DateTime expiresAt}) => RelayPairingOffer(
   serverId: 'daemon-1234567890',
-  relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+  relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
   daemonPublicKey: List<int>.filled(32, 1),
   offerId: 'offer-id',
   secret: List<int>.filled(32, 2),

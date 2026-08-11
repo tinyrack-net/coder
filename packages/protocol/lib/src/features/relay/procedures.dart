@@ -21,6 +21,16 @@ final relaySetEnabledProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
+/// Changes the persisted relay endpoint and reconnects when enabled.
+final relaySetEndpointProcedure =
+    RpcProcedure<RelaySetEndpointParamsDto, RelayStatusDto>(
+      name: 'relay.setEndpoint',
+      decodeParams: RelaySetEndpointParamsDto.fromJson,
+      encodeParams: (value) => value.toJson(),
+      decodeResult: RelayStatusDto.fromJson,
+      encodeResult: (value) => value.toJson(),
+    );
+
 /// Creates a ten-minute one-time pairing offer.
 final relayCreateOfferProcedure =
     RpcProcedure<RelayEmptyParamsDto, RelayPairingOfferDto>(
@@ -62,6 +72,7 @@ final relayStatusChangedNotification = RpcNotification<RelayStatusDto>(
 final relayProcedures = <RpcProcedureDescriptor>[
   relayStatusProcedure,
   relaySetEnabledProcedure,
+  relaySetEndpointProcedure,
   relayCreateOfferProcedure,
   relayListDevicesProcedure,
   relayRevokeDeviceProcedure,

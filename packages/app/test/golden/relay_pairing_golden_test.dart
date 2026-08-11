@@ -5,7 +5,9 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:protocol/protocol.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 
 import '../support/fake_coder_api.dart';
@@ -14,7 +16,7 @@ import '../support/localization.dart';
 void main() {
   final offerUrl = RelayPairingOffer(
     serverId: 'daemon-4d2a713c9e18',
-    relayUri: Uri.parse('wss://relay.tinyrack.net/v1/ws'),
+    relayUri: Uri.parse('wss://relay.coder.tinyrack.net/v1/ws'),
     daemonPublicKey: List<int>.filled(32, 1),
     offerId: 'golden-offer',
     secret: List<int>.filled(32, 2),
@@ -58,6 +60,57 @@ void main() {
       }
     }
   }
+
+  unawaited(
+    goldenTest(
+      'connections relay pairing dialog',
+      fileName: 'relay_connections_pair_dialog_ko_desktop_dark',
+      constraints: const BoxConstraints.tightFor(width: 1200, height: 900),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('relay-pair-device')),
+        );
+        await tester.pumpAndSettle();
+        return null;
+      },
+      builder: () => const _PairingGoldenHost(
+        location: '/settings/daemons/server/connections',
+        locale: Locale('ko'),
+        brightness: Brightness.dark,
+        size: Size(1200, 900),
+      ),
+    ),
+  );
+
+  for (final variant in <({String name, Size size})>[
+    (name: 'desktop_dialog', size: const Size(1200, 900)),
+    (name: 'mobile_sheet', size: const Size(390, 760)),
+  ]) {
+    unawaited(
+      goldenTest(
+        'relay endpoint editor ${variant.name}',
+        fileName: 'relay_endpoint_editor_ko_${variant.name}_light',
+        constraints: BoxConstraints.tight(variant.size),
+        whilePerforming: (tester) async {
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.byKey(const ValueKey<String>('relay-advanced-endpoint')),
+          );
+          await tester.pumpAndSettle();
+          return null;
+        },
+        builder: () => _PairingGoldenHost(
+          location: const DaemonConnectionsRoute(
+            hostId: 'server',
+          ).location,
+          locale: const Locale('ko'),
+          brightness: Brightness.light,
+          size: variant.size,
+        ),
+      ),
+    );
+  }
 }
 
 const _viewports = <({String name, Size size})>[
@@ -99,7 +152,16 @@ class _PairingGoldenHostState extends State<_PairingGoldenHost> {
     size: widget.size,
     child: ProviderScope(
       overrides: [
-        appServicesProvider.overrideWithValue(fakeAppServices(FakeCoderApi())),
+        appServicesProvider.overrideWithValue(
+          fakeAppServices(
+            FakeCoderApi(
+              relayPairingOffer: RelayPairingOfferDto(
+                url: 'https://coder.tinyrack.net/pair#offer=golden-offer',
+                expiresAt: DateTime(2100),
+              ),
+            ),
+          ),
+        ),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

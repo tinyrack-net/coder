@@ -435,7 +435,11 @@ class _SettingsSidebar extends StatelessWidget {
       ],
       onValueChange: (category) {
         if (category == null) return;
-        _goToSettingsCategory(context, category);
+        _goToSettingsCategory(
+          context,
+          category,
+          hostId: category == SettingsCategory.connection ? hostId : null,
+        );
       },
     );
   }

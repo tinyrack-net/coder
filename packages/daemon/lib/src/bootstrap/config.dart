@@ -63,7 +63,7 @@ final class RelayDaemonConfig {
 
   /// Effective outbound WebSocket URI.
   Uri get endpoint =>
-      endpointOverride ?? Uri.parse('wss://relay.tinyrack.net/v1/ws');
+      endpointOverride ?? Uri.parse('wss://relay.coder.tinyrack.net/v1/ws');
 }
 
 /// DaemonConfig defines a public contract.

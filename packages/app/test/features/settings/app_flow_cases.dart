@@ -240,6 +240,75 @@ void _registerSettingsAppFlows() {
   });
 
   testWidgets(
+    'desktop settings opens Connections for the selected daemon',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeCoderApi(),
+        const ProviderSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.text('연결'));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        const DaemonConnectionsRoute(hostId: 'server').location,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+        findsOneWidget,
+      );
+      expect(find.text('기기 연결'), findsWidgets);
+    },
+    tags: const <String>[
+      'feature_test__app_navigation__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
+    'mobile daemon settings opens Connections and returns to categories',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeCoderApi(),
+        const DaemonCategoriesRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.text('연결'));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        const DaemonConnectionsRoute(hostId: 'server').location,
+      );
+      expect(find.text('기기 연결'), findsWidgets);
+      final back = find.byKey(const ValueKey<String>('settings-back-button'));
+      expect(back, findsOneWidget);
+
+      await tester.tap(back);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        const DaemonCategoriesRoute(hostId: 'server').location,
+      );
+      expect(find.text('MCP'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__app_navigation__widget',
+      'feature_test__daemon_relay__widget',
+    ],
+  );
+
+  testWidgets(
     'mobile settings drills from home into daemon MCP settings',
     (
       tester,

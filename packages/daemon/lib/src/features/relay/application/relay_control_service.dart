@@ -63,6 +63,9 @@ final class RelayDeviceInfo {
 /// Starts or stops the daemon's outbound relay adapter.
 typedef RelayEnabledApplier = Future<void> Function({required bool enabled});
 
+/// Persists and applies a changed relay endpoint.
+typedef RelayEndpointApplier = Future<void> Function(Uri endpoint);
+
 /// Daemon relay configuration, pairing, and device-revocation service.
 final class RelayControlService {
   /// Creates relay control state for one daemon.
@@ -72,10 +75,11 @@ final class RelayControlService {
     required this.serverId,
     required this.pairing,
     required this._applyEnabled,
-  });
+    RelayEndpointApplier? applyEndpoint,
+  }) : _applyEndpoint = applyEndpoint ?? _ignoreEndpoint;
 
   /// Effective outbound relay endpoint.
-  final Uri endpoint;
+  Uri endpoint;
 
   /// Authoritative daemon identity.
   final String serverId;
@@ -84,6 +88,7 @@ final class RelayControlService {
   final RelayPairingService pairing;
 
   final RelayEnabledApplier _applyEnabled;
+  final RelayEndpointApplier _applyEndpoint;
   final StreamController<RelayStatus> _updates =
       StreamController<RelayStatus>.broadcast(sync: true);
   bool _enabled;
@@ -110,6 +115,27 @@ final class RelayControlService {
     if (!enabled) {
       _connected = false;
     }
+    _updates.add(status);
+    return status;
+  }
+
+  /// Persists a relay endpoint and reconnects the active transport.
+  Future<RelayStatus> setEndpoint(String value) async {
+    final parsed = Uri.tryParse(value.trim());
+    if (parsed == null ||
+        (parsed.scheme != 'ws' && parsed.scheme != 'wss') ||
+        parsed.host.isEmpty ||
+        parsed.hasFragment ||
+        parsed.userInfo.isNotEmpty) {
+      throw const FormatException(
+        'Relay endpoint must be a ws or wss URL without credentials or a '
+        'fragment.',
+      );
+    }
+    if (parsed == endpoint) return status;
+    await _applyEndpoint(parsed);
+    endpoint = parsed;
+    pairing.relayUri = parsed;
     _updates.add(status);
     return status;
   }
@@ -151,3 +177,5 @@ final class RelayControlService {
   /// Releases the status stream.
   Future<void> close() => _updates.close();
 }
+
+Future<void> _ignoreEndpoint(Uri _) async {}

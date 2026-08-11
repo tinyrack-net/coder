@@ -62,7 +62,7 @@ final class DaemonRelayTransport {
   final String serverId;
 
   /// Relay WebSocket endpoint.
-  final Uri endpoint;
+  Uri endpoint;
 
   /// TLS validation mode.
   final RelayTlsPolicy tlsPolicy;
@@ -117,6 +117,15 @@ final class DaemonRelayTransport {
     }
     _sessions.clear();
     control.setConnected(connected: false);
+  }
+
+  /// Reconnects an enabled transport through [value].
+  Future<void> setEndpoint(Uri value) async {
+    if (endpoint == value) return;
+    final restart = _enabled;
+    await stop();
+    endpoint = value;
+    if (restart) await start();
   }
 
   /// Terminates encrypted transport state for a revoked device.
