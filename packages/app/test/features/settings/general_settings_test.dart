@@ -3,6 +3,8 @@ import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,50 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 import '../../support/fake_desktop_ports.dart';
 
 void main() {
+  testWidgets(
+    'general controls stack and use the readable width at 696 pixels',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(696, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+      );
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+
+      for (final key in <String>[
+        'general-settings-theme-mode',
+        'general-settings-language',
+      ]) {
+        final setting = find.ancestor(
+          of: find.byKey(ValueKey<String>(key)),
+          matching: find.byType(SettingsRow),
+        );
+        final row = tester.widget<TinestListRow>(
+          find.descendant(of: setting, matching: find.byType(TinestListRow)),
+        );
+        expect(row.trailingLayout, TinestListRowTrailingLayout.below);
+        expect(row.unboundedSubtitle, isTrue);
+        expect(
+          tester.getRect(find.byKey(ValueKey<String>(key))).width,
+          greaterThan(TRMeasurements.measureXl),
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>[
+      'feature_test__settings_appearance__widget',
+      'feature_test__settings_language__widget',
+    ],
+  );
+
   testWidgets(
     'the language setting switches the whole app and persists the choice',
     (tester) async {
@@ -181,9 +227,12 @@ void main() {
 
       // Turning off "start minimized" keeps the login item but has to rewrite
       // the arguments it records.
-      await tester.tap(
-        find.byKey(const ValueKey<String>('general-settings-start-minimized')),
+      final startMinimized = find.byKey(
+        const ValueKey<String>('general-settings-start-minimized'),
       );
+      await tester.ensureVisible(startMinimized);
+      await tester.pumpAndSettle();
+      await tester.tap(startMinimized);
       await tester.pumpAndSettle();
       expect(store.settings.startMinimizedAtBoot, isFalse);
       expect(
@@ -191,9 +240,12 @@ void main() {
         (enabled: true, minimized: false),
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+      final startAtBoot = find.byKey(
+        const ValueKey<String>('general-settings-start-at-boot'),
       );
+      await tester.ensureVisible(startAtBoot);
+      await tester.pumpAndSettle();
+      await tester.tap(startAtBoot);
       await tester.pumpAndSettle();
       expect(store.settings.startAtBoot, isFalse);
       expect(autostart.enabled, isFalse);
@@ -249,9 +301,12 @@ void main() {
       // Turning start-at-login back on may not move the switch, because it
       // never claimed the preference had changed.
       expect(store.settings.startMinimizedAtBoot, isTrue);
-      await tester.tap(
-        find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+      final startAtBoot = find.byKey(
+        const ValueKey<String>('general-settings-start-at-boot'),
       );
+      await tester.ensureVisible(startAtBoot);
+      await tester.pumpAndSettle();
+      await tester.tap(startAtBoot);
       await tester.pumpAndSettle();
       expect(
         autostart.applications.single,

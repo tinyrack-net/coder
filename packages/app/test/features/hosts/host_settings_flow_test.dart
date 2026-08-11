@@ -6,6 +6,7 @@ import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
@@ -488,6 +489,60 @@ void main() {
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
     },
     tags: const <String>['feature_test__daemon_management__widget'],
+  );
+
+  testWidgets(
+    'daemon controls preserve readable copy at 696 pixels',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(696, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final store = MemoryAppStore();
+      await tester.pumpWidget(
+        TinestApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: const _OfflineClients(),
+            clientKind: 'desktop',
+            embeddedLauncher: _FailingLauncher(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(findAccessibleAction('설정'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Daemons'));
+      await tester.pumpAndSettle();
+
+      final port = find.byKey(const ValueKey<String>('embedded-daemon-port'));
+      await tester.ensureVisible(port);
+      await tester.pumpAndSettle();
+      final portSetting = find.ancestor(
+        of: port,
+        matching: find.byType(SettingsRow),
+      );
+      final portRow = tester.widget<TinestListRow>(
+        find.descendant(of: portSetting, matching: find.byType(TinestListRow)),
+      );
+      expect(portRow.trailingLayout, TinestListRowTrailingLayout.below);
+      expect(portRow.unboundedSubtitle, isTrue);
+      expect(
+        tester.getRect(port).width,
+        greaterThan(TRMeasurements.measureSm),
+      );
+
+      final exposure = find.byKey(
+        const ValueKey<String>('embedded-daemon-exposure'),
+      );
+      final exposureRow = tester.widget<TinestListRow>(
+        find.descendant(of: exposure, matching: find.byType(TinestListRow)),
+      );
+      expect(exposureRow.trailingLayout, TinestListRowTrailingLayout.inline);
+      expect(exposureRow.unboundedSubtitle, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__daemon_exposure__widget'],
   );
 
   testWidgets(

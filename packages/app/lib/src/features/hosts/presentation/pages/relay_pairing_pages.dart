@@ -525,6 +525,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                 title: TRText.inherit(runtime?.label ?? widget.hostId),
                 description: TRText.inherit(hostStatusText(l10n, runtime)),
                 wrapsDescription: true,
+                controlLayout: SettingsControlLayout.responsive,
                 control: pathLabel == null && profile == null
                     ? null
                     : Row(
@@ -668,6 +669,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
               child: SettingsRow(
                 leading: const Icon(TinestIcons.computer),
                 title: TRText.inherit(device.name),
+                controlLayout: SettingsControlLayout.responsive,
                 control: TRButton(
                   appearance: TRAppearance.ghost,
                   onPressed: _busy ? null : () => _revoke(device),
