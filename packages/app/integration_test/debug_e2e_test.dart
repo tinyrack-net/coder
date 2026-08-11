@@ -830,7 +830,12 @@ void main() {
         find.byKey(const ValueKey('session-composer-input')),
         'Feature e2e',
       );
-      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      const newWorkspaceSend = ValueKey<String>('session-composer-send');
+      await _waitForComposerReady(tester, newWorkspaceSend);
+      final newWorkspaceSendButton = find.byKey(newWorkspaceSend);
+      await tester.ensureVisible(newWorkspaceSendButton);
+      await tester.pumpAndSettle();
+      await tester.tap(newWorkspaceSendButton);
       await pumpUntilCondition(
         tester,
         () async =>
@@ -2631,6 +2636,10 @@ Future<void> _selectComposerModel(
     find.byKey(ValueKey<String>('model-option-$modelId')),
   );
   await tester.pumpAndSettle();
+  await pumpUntilGone(
+    tester,
+    find.byKey(const ValueKey<String>('model-search-field')),
+  );
   if (find
       .byKey(const ValueKey<String>('session-composer-settings-sheet'))
       .evaluate()

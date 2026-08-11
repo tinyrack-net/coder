@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:agent/agent.dart';
-import 'package:app/src/app/coder_app.dart';
+import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
@@ -69,14 +69,19 @@ void main() {
           id: 'adversity-session',
           worktreeId: 'adversity-checkout',
           title: 'Adversity conversation',
-          agentDefinitionId: 'coder',
+          agentDefinitionId: 'tinest',
           model: SessionModelSelectionDto(modelId: model.id),
         );
-      } on CoderClientException catch (error) {
+      } on TinestClientException catch (error) {
         throw TestFailure('Session setup failed: ${error.details}');
       }
 
-      await _pumpConversation(tester, fixture, worktreeLabel);
+      await _pumpConversation(
+        tester,
+        fixture,
+        registeredWorktree.id,
+        worktreeLabel,
+      );
       const composerKey = ValueKey<String>('session-composer-input');
       const sendKey = ValueKey<String>('session-composer-send');
       await _submit(tester, composerKey, sendKey, 'Stream first');
@@ -98,7 +103,12 @@ void main() {
 
       await pumpUntil(tester, find.text('Storage'));
       expect(find.text('Which store should the cache use?'), findsOneWidget);
-      await _remountConversation(tester, fixture, worktreeLabel);
+      await _remountConversation(
+        tester,
+        fixture,
+        registeredWorktree.id,
+        worktreeLabel,
+      );
       expect(find.text('Which store should the cache use?'), findsOneWidget);
 
       await tester.tap(find.text('SQLite'));
@@ -114,7 +124,12 @@ void main() {
 
       var approval = _patchApproval();
       await pumpUntil(tester, approval);
-      await _remountConversation(tester, fixture, worktreeLabel);
+      await _remountConversation(
+        tester,
+        fixture,
+        registeredWorktree.id,
+        worktreeLabel,
+      );
       approval = _patchApproval();
       await pumpUntil(tester, approval);
       await tester.tap(
@@ -175,14 +190,17 @@ Finder _patchApproval() => find.byWidgetPredicate(
 Future<void> _pumpConversation(
   WidgetTester tester,
   RealDaemonFixture fixture,
+  String worktreeId,
   String worktreeLabel,
 ) async {
-  await tester.pumpWidget(CoderApp(services: fixture.services));
+  await tester.pumpWidget(TinestApp(services: fixture.services));
   await pumpUntil(tester, find.text('Adversity Workspace'));
   // The catalog can render behind the startup transition before that layer
   // stops absorbing pointers on a slower Debug runner. Text presence alone is
   // therefore not sufficient evidence that navigation is interactive.
-  final worktree = find.text(worktreeLabel).hitTestable();
+  final worktree = find
+      .byKey(ValueKey<String>('workspace-worktree-$worktreeId'))
+      .hitTestable();
   await pumpUntil(tester, worktree);
   await tester.tap(worktree.last);
   await pumpUntil(
@@ -204,11 +222,12 @@ Future<void> _pumpConversation(
 Future<void> _remountConversation(
   WidgetTester tester,
   RealDaemonFixture fixture,
+  String worktreeId,
   String worktreeLabel,
 ) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpAndSettle();
-  await _pumpConversation(tester, fixture, worktreeLabel);
+  await _pumpConversation(tester, fixture, worktreeId, worktreeLabel);
 }
 
 Future<void> _submit(
