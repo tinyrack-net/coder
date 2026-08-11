@@ -629,7 +629,7 @@ class SettingsSection extends StatelessWidget {
         ],
       ),
       if (description case final description?) ...<Widget>[
-        const SizedBox(height: TRSpacing.extraSmall),
+        const SizedBox(height: TRSpacing.medium),
         TRText(
           description,
           variant: TRTextVariant.bodySm,
