@@ -225,6 +225,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     // state where the composer is disabled and has nothing to complete.
     Widget composer(ComposerCompletion? completion) => SessionComposer(
       controller: _dropController,
+      settingsBreakpoint: TRBreakpoints.small,
       enabled: ready,
       hint: _hint(
         AppLocalizations.of(context),

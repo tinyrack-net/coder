@@ -1311,6 +1311,26 @@ void main() {
 
   unawaited(
     goldenTest(
+      'mobile new workspace collapses turn settings into one action',
+      fileName: 'new_workspace_mobile',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Plain folder ·').last);
+        await tester.pumpAndSettle();
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 760,
+        child: _directoryNewWorkspace(ThemeMode.dark),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
       constraints: const BoxConstraints.tightFor(width: 960, height: 1910),

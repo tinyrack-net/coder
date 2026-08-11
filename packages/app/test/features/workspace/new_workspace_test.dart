@@ -108,6 +108,49 @@ void main() {
   );
 
   testWidgets(
+    'new workspace switches between selector bar and compact settings by width',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pump(
+        tester,
+        FakeTinestApi(
+          workspaces: <WorkspaceDto>[_home],
+          worktrees: <WorktreeDto>[_homeCheckout],
+        ),
+      );
+      addTearDown(router.dispose);
+
+      final settings = find.byKey(
+        const ValueKey<String>('session-composer-settings'),
+      );
+      final agent = find.byKey(
+        const ValueKey<String>('session-composer-agent'),
+      );
+      final model = find.byKey(
+        const ValueKey<String>('session-composer-model'),
+      );
+
+      expect(settings, findsNothing);
+      expect(agent, findsOneWidget);
+      expect(model, findsOneWidget);
+
+      await tester.binding.setSurfaceSize(const Size(640, 900));
+      await tester.pumpAndSettle();
+      expect(settings, findsNothing);
+      expect(agent, findsOneWidget);
+
+      await tester.binding.setSurfaceSize(const Size(390, 900));
+      await tester.pumpAndSettle();
+      expect(settings, findsOneWidget);
+      expect(agent, findsNothing);
+      expect(model, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
     'a new worktree is created from the first prompt',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
