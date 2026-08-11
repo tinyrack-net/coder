@@ -1226,6 +1226,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get composerRun => '実行';
 
   @override
+  String get composerMode => 'モード';
+
+  @override
   String get composerPlanTooltip => '計画を立てるだけです。Shift+Tab で切り替え';
 
   @override
@@ -1233,6 +1236,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSelectAgent => 'エージェントを選択';
+
+  @override
+  String get composerAgent => 'Agent';
 
   @override
   String get composerAgentLocked => 'セッションの開始後はエージェントを変更できません。';
@@ -1399,6 +1405,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerMoreSettings => 'その他の設定';
+
+  @override
+  String get composerUseDefault => 'デフォルトを使用';
+
+  @override
+  String get composerEnabled => '有効';
 
   @override
   String get chatEmptyTitle => 'コーディングの依頼を入力してください。';

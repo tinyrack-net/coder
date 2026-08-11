@@ -3,7 +3,6 @@ import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +14,9 @@ void main() {
 
   Future<void> openAdvanced(WidgetTester tester) async {
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(CoderIcons.settings));
+    await tester.tap(
+      find.byKey(const ValueKey<String>('workspace-settings-button')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('고급'));
     await tester.pumpAndSettle();

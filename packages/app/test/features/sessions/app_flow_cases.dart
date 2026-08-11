@@ -1163,7 +1163,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'creates a session and sends a coding request',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await tester.binding.setSurfaceSize(const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const planner = AgentDefinitionDto(
         id: 'planner',
@@ -1302,7 +1302,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'composer pins a model at creation and clears it mid-session',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await tester.binding.setSurfaceSize(const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const fast = ProviderModelDto(
         connectionId: 'openai',
@@ -1644,7 +1644,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'the draft composer runs a client command instead of sending it',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await tester.binding.setSurfaceSize(const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[workspace],

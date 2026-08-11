@@ -7,7 +7,6 @@ import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/shared/presentation/coder_icons.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:flutter/foundation.dart';
@@ -45,7 +44,9 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       await _pumpApp(tester, fixture);
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Settings'), findsOneWidget);
 
@@ -245,7 +246,9 @@ void main() {
         isTrue,
       );
 
-      await tester.tap(find.byIcon(CoderIcons.settings));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('고급'));
       await tester.pumpAndSettle();
@@ -392,7 +395,9 @@ Future<void> _pumpApp(
 }
 
 Future<void> _openGeneralSettings(WidgetTester tester) async {
-  await tester.tap(find.byIcon(CoderIcons.settings));
+  await tester.tap(
+    find.byKey(const ValueKey<String>('workspace-settings-button')),
+  );
   await tester.pumpAndSettle();
   await tester.tap(find.text('General'));
   await tester.pumpAndSettle();

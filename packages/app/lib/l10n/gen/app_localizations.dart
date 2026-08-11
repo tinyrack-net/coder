@@ -2344,6 +2344,12 @@ abstract class AppLocalizations {
   /// **'Run'**
   String get composerRun;
 
+  /// Label of the composer collaboration mode setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get composerMode;
+
   /// Tooltip of the plan composer mode.
   ///
   /// In en, this message translates to:
@@ -2361,6 +2367,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select an agent'**
   String get composerSelectAgent;
+
+  /// Label of the composer agent setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get composerAgent;
 
   /// Tooltip explaining why the agent selector is disabled.
   ///
@@ -2638,11 +2650,23 @@ abstract class AppLocalizations {
   /// **'A turn accepts at most {limit} files.'**
   String composerAttachmentTooMany(int limit);
 
-  /// Label of the overflow menu holding the settings that do not fit.
+  /// Label and title of the compact composer settings sheet.
   ///
   /// In en, this message translates to:
   /// **'More settings'**
   String get composerMoreSettings;
+
+  /// Choice that removes an explicit model-control override.
+  ///
+  /// In en, this message translates to:
+  /// **'Use default'**
+  String get composerUseDefault;
+
+  /// Choice that enables a toggle model control.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get composerEnabled;
 
   /// Empty state of the chat timeline.
   ///

@@ -751,7 +751,7 @@ void main() {
   testWidgets(
     'a client command typed in the home composer runs instead of sending',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await tester.binding.setSurfaceSize(const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeCoderApi(
         workspaces: <WorkspaceDto>[_home],
@@ -773,6 +773,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await tester.pumpAndSettle();
 
+      final compactSettings = find.byKey(
+        const ValueKey<String>('session-composer-settings'),
+      );
+      if (compactSettings.evaluate().isNotEmpty) {
+        await tester.tap(compactSettings);
+        await tester.pumpAndSettle();
+      }
       expect(find.text('Plan'), findsOneWidget);
       expect(api.createdSessions, isEmpty);
       expect(api.startedPrompts, isEmpty);
@@ -946,10 +953,32 @@ Future<void> _selectProject(WidgetTester tester, String name) async {
 }
 
 Future<void> _selectModel(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('session-composer-model')));
+  final direct = find.byKey(
+    const ValueKey<String>('session-composer-model'),
+  );
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct);
+  } else {
+    await tester.tap(
+      find.byKey(const ValueKey<String>('session-composer-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(
+        const ValueKey<String>('session-composer-settings-model'),
+      ),
+    );
+  }
   await tester.pumpAndSettle();
   await tester.tap(
     find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
   );
   await tester.pumpAndSettle();
+  if (find
+      .byKey(const ValueKey<String>('session-composer-settings-sheet'))
+      .evaluate()
+      .isNotEmpty) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+  }
 }

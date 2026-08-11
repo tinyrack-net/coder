@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:app/l10n/gen/app_localizations.dart';
@@ -22,6 +21,7 @@ import 'package:app/src/features/providers/application/provider_settings_control
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
+import 'package:app/src/shared/presentation/coder_list_row.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:dropwell/dropwell.dart';
@@ -30,6 +30,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+const double _composerSettingsBreakpoint =
+    TRMeasurements.measureXl * 2 + TRMeasurements.measureLg;
 
 /// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
@@ -49,18 +52,12 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     this.onPermissionModeChanged,
     this.agentEnabled = true,
     this.enabled = true,
-    this.leading,
+    this.compact = false,
     super.key,
   });
 
-  /// Control pinned before the chips, which never collapses.
-  final Widget? leading;
-
-  /// Returns this bar with [leading] pinned before its chips.
-  ///
-  /// The composer owns the attach action but the bar owns the width the chips
-  /// have to fit, so the two are measured together.
-  SessionComposerBar withLeading(Widget leading) => SessionComposerBar(
+  /// Returns the single settings action used below the composer breakpoint.
+  SessionComposerBar asCompact() => SessionComposerBar(
     hostId: hostId,
     definitions: definitions,
     agentDefinitionId: agentDefinitionId,
@@ -75,7 +72,7 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     onPermissionModeChanged: onPermissionModeChanged,
     agentEnabled: agentEnabled,
     enabled: enabled,
-    leading: leading,
+    compact: true,
     key: key,
   );
 
@@ -125,6 +122,9 @@ class SessionComposerBar extends ConsumerStatefulWidget {
 
   /// Whether any selector accepts input.
   final bool enabled;
+
+  /// Whether this bar renders as the compact settings-sheet trigger.
+  final bool compact;
 
   @override
   ConsumerState<SessionComposerBar> createState() => _SessionComposerBarState();
@@ -199,9 +199,17 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     // Labels come from the model catalog, so load it once per connection
     // instead of showing a raw model id.
     if (connection != null) _scheduleModelLoad(connection.id);
+    if (widget.compact) {
+      return TRIconButton(
+        key: const ValueKey<String>('session-composer-settings'),
+        appearance: TRAppearance.ghost,
+        uiSize: TRUiSize.sm,
+        onPressed: () => unawaited(_showSettings()),
+        icon: const Icon(CoderIcons.settings),
+        label: l10n.composerMoreSettings,
+      );
+    }
     final bar = ComposerChipBar(
-      overflowLabel: l10n.composerMoreSettings,
-      leading: widget.leading,
       // These are settings under the prompt, not the prompt itself, so the row
       // takes the dense size the design system keeps for application chrome.
       uiSize: TRUiSize.sm,
@@ -280,6 +288,357 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       ],
     );
   }
+
+  Future<void> _showSettings() => showTRDrawer<void>(
+    context: context,
+    useRootNavigator: false,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, refresh) => Consumer(
+        builder: (context, sheetRef, _) {
+          final snapshot = _settingsSnapshot(sheetRef);
+          final l10n = AppLocalizations.of(context);
+          return TRDrawer(
+            key: const ValueKey<String>('session-composer-settings-sheet'),
+            title: TRText.inherit(l10n.composerMoreSettings),
+            snapPoints: const <double>[0.8, 1],
+            content: ListView(
+              shrinkWrap: true,
+              children: <Widget>[
+                if (_permissionError case final error?)
+                  TRAlert(
+                    key: const ValueKey<String>(
+                      'session-composer-permission-error',
+                    ),
+                    title: TRText.inherit(l10n.permissionChangeFailed),
+                    description: TRText.inherit(error),
+                    icon: const Icon(CoderIcons.error),
+                    variant: TRStatusVariant.danger,
+                  ),
+                _settingsRow(
+                  key: const ValueKey<String>(
+                    'session-composer-settings-agent',
+                  ),
+                  icon: CoderIcons.agent,
+                  title: l10n.composerAgent,
+                  value: snapshot.agent?.name ?? l10n.composerAgent,
+                  enabled:
+                      widget.enabled &&
+                      widget.agentEnabled &&
+                      widget.definitions.isNotEmpty,
+                  onTap: () async {
+                    final choice = await _showChoiceSheet<String>(
+                      sheetContext,
+                      title: l10n.composerSelectAgent,
+                      choices: <_ComposerSheetOption<String>>[
+                        for (final definition in widget.definitions)
+                          _ComposerSheetOption<String>(
+                            key: ValueKey<String>(
+                              'session-composer-agent-${definition.id}-sheet',
+                            ),
+                            value: definition.id,
+                            label: definition.name,
+                            selected: definition.id == widget.agentDefinitionId,
+                          ),
+                      ],
+                    );
+                    if (choice == null) return;
+                    widget.onAgentChanged(choice.value);
+                    await _refreshSettings(refresh);
+                  },
+                ),
+                _settingsRow(
+                  key: const ValueKey<String>(
+                    'session-composer-settings-model',
+                  ),
+                  icon: CoderIcons.memory,
+                  title: l10n.composerModel,
+                  value:
+                      widget.selection?.modelId ??
+                      snapshot.model?.label ??
+                      l10n.composerModel,
+                  enabled: widget.enabled && snapshot.connections.isNotEmpty,
+                  onTap: () async {
+                    await _chooseModel(
+                      sheetContext,
+                      surface: ModelPickerSurface.sheet,
+                    );
+                    await _refreshSettings(refresh);
+                  },
+                ),
+                for (final descriptor in snapshot.capabilities.controls)
+                  _settingsRow(
+                    key: ValueKey<String>(
+                      'session-composer-settings-control-${descriptor.id}',
+                    ),
+                    icon: _controlIcon(descriptor.id),
+                    title: descriptor.label,
+                    value: _controlValueLabel(l10n, descriptor),
+                    enabled:
+                        widget.enabled && widget.onModelControlsChanged != null,
+                    onTap: () async {
+                      await _chooseControlSheet(sheetContext, descriptor);
+                      await _refreshSettings(refresh);
+                    },
+                  ),
+                _settingsRow(
+                  key: const ValueKey<String>(
+                    'session-composer-settings-permission',
+                  ),
+                  icon: CoderIcons.permission,
+                  title: l10n.composerPermissionMode,
+                  value: permissionModeLabel(
+                    l10n,
+                    widget.permissionMode ?? snapshot.inheritedPermission,
+                  ),
+                  enabled:
+                      widget.enabled && widget.onPermissionModeChanged != null,
+                  onTap: () async {
+                    await _choosePermission(
+                      sheetContext,
+                      snapshot.inheritedPermission,
+                      useRootNavigator: false,
+                    );
+                    await _refreshSettings(refresh);
+                  },
+                ),
+                _settingsRow(
+                  key: const ValueKey<String>(
+                    'session-composer-settings-mode',
+                  ),
+                  icon: CoderIcons.checklist,
+                  title: l10n.composerMode,
+                  value: widget.mode == SessionMode.plan
+                      ? l10n.composerPlan
+                      : l10n.composerRun,
+                  enabled: widget.enabled,
+                  onTap: () async {
+                    final choice = await _showChoiceSheet<SessionMode>(
+                      sheetContext,
+                      title: l10n.composerMode,
+                      choices: <_ComposerSheetOption<SessionMode>>[
+                        _ComposerSheetOption<SessionMode>(
+                          key: const ValueKey<String>(
+                            'session-composer-mode-normal-sheet',
+                          ),
+                          value: SessionMode.normal,
+                          label: l10n.composerRun,
+                          selected: widget.mode == SessionMode.normal,
+                        ),
+                        _ComposerSheetOption<SessionMode>(
+                          key: const ValueKey<String>(
+                            'session-composer-mode-plan-sheet',
+                          ),
+                          value: SessionMode.plan,
+                          label: l10n.composerPlan,
+                          selected: widget.mode == SessionMode.plan,
+                        ),
+                      ],
+                    );
+                    if (choice == null) return;
+                    widget.onModeChanged(choice.value);
+                    await _refreshSettings(refresh);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  );
+
+  Future<void> _refreshSettings(StateSetter refresh) async {
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) refresh(() {});
+  }
+
+  Widget _settingsRow({
+    required ValueKey<String> key,
+    required IconData icon,
+    required String title,
+    required String value,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) => CoderListRow(
+    key: key,
+    enabled: enabled,
+    leading: Icon(icon),
+    title: TRText.inherit(title),
+    subtitle: TRText.inherit(value),
+    trailing: const Icon(CoderIcons.expand),
+    onTap: onTap,
+  );
+
+  ({
+    AgentDefinitionDto? agent,
+    List<ProviderConnectionDto> connections,
+    ProviderModelDto? model,
+    ModelCapabilitiesDto capabilities,
+    PermissionMode inheritedPermission,
+  })
+  _settingsSnapshot(WidgetRef settingsRef) {
+    final providers = settingsRef
+        .watch(providerSettingsControllerProvider(widget.hostId))
+        .value;
+    final connections = usableConnections(
+      providers?.connections ?? const <ProviderConnectionDto>[],
+    );
+    final agent = _selectedAgent;
+    final daemonDefault = settingsRef
+        .watch(permissionSettingsControllerProvider(widget.hostId))
+        .value
+        ?.defaultMode;
+    final connection = connections
+        .where(
+          (item) =>
+              widget.selection?.qualifiedModelId.startsWith(
+                '${item.modelPrefix}/',
+              ) ??
+              false,
+        )
+        .firstOrNull;
+    final model =
+        (providers?.models[connection?.id] ?? const <ProviderModelDto>[])
+            .where((item) => item.id == widget.selection?.modelId)
+            .firstOrNull;
+    return (
+      agent: agent,
+      connections: connections,
+      model: model,
+      capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
+      inheritedPermission:
+          agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask,
+    );
+  }
+
+  Future<_ComposerSheetChoice<T>?> _showChoiceSheet<T>(
+    BuildContext context, {
+    required String title,
+    required List<_ComposerSheetOption<T>> choices,
+  }) => showTRDrawer<_ComposerSheetChoice<T>>(
+    context: context,
+    useRootNavigator: false,
+    builder: (context) => TRDrawer(
+      title: TRText.inherit(title),
+      content: ListView(
+        shrinkWrap: true,
+        children: <Widget>[
+          for (final choice in choices)
+            CoderListRow(
+              key: choice.key,
+              enabled: choice.enabled,
+              selected: choice.selected,
+              title: TRText.inherit(choice.label),
+              subtitle: choice.description == null
+                  ? null
+                  : TRText.inherit(choice.description!),
+              unboundedSubtitle: choice.description != null,
+              trailing: choice.selected ? const Icon(CoderIcons.check) : null,
+              onTap: () => Navigator.pop(
+                context,
+                _ComposerSheetChoice<T>(choice.value),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _chooseControlSheet(
+    BuildContext context,
+    ModelControlDescriptorDto descriptor,
+  ) async {
+    final current = widget.modelControls[descriptor.id];
+    final l10n = AppLocalizations.of(context);
+    switch (descriptor.kind) {
+      case ModelControlKind.choice:
+        final chosen = await _showChoiceSheet<ModelControlValueDto?>(
+          context,
+          title: descriptor.label,
+          choices: <_ComposerSheetOption<ModelControlValueDto?>>[
+            _ComposerSheetOption<ModelControlValueDto?>(
+              key: ValueKey<String>(
+                'session-composer-control-${descriptor.id}-default-sheet',
+              ),
+              value: null,
+              label: l10n.composerUseDefault,
+              selected: current == null,
+            ),
+            for (final choice in descriptor.choices)
+              _ComposerSheetOption<ModelControlValueDto?>(
+                key: ValueKey<String>(
+                  'session-composer-control-${descriptor.id}-'
+                  '${choice.id}-sheet',
+                ),
+                value: ModelControlValueDto.stringValue(value: choice.id),
+                label: choice.label,
+                selected:
+                    current is ModelControlStringValueDto &&
+                    current.value == choice.id,
+              ),
+          ],
+        );
+        if (chosen != null) _setControl(descriptor, chosen.value);
+      case ModelControlKind.toggle:
+        final chosen = await _showChoiceSheet<ModelControlValueDto?>(
+          context,
+          title: descriptor.label,
+          choices: <_ComposerSheetOption<ModelControlValueDto?>>[
+            _ComposerSheetOption<ModelControlValueDto?>(
+              key: ValueKey<String>(
+                'session-composer-control-${descriptor.id}-default-sheet',
+              ),
+              value: null,
+              label: l10n.composerUseDefault,
+              selected: current == null,
+            ),
+            _ComposerSheetOption<ModelControlValueDto?>(
+              key: ValueKey<String>(
+                'session-composer-control-${descriptor.id}-enabled-sheet',
+              ),
+              value: const ModelControlValueDto.boolValue(value: true),
+              label: l10n.composerEnabled,
+              selected: current is ModelControlBoolValueDto && current.value,
+            ),
+          ],
+        );
+        if (chosen != null) _setControl(descriptor, chosen.value);
+      case ModelControlKind.integer:
+        final chosen = await showTRDrawer<_ComposerSheetChoice<int?>>(
+          context: context,
+          useRootNavigator: false,
+          builder: (context) => _IntegerControlDrawer(
+            descriptor: descriptor,
+            initialValue: current is ModelControlIntValueDto
+                ? current.value
+                : null,
+          ),
+        );
+        if (chosen == null) return;
+        _setControl(
+          descriptor,
+          chosen.value == null
+              ? null
+              : ModelControlValueDto.intValue(value: chosen.value!),
+        );
+    }
+  }
+
+  String _controlValueLabel(
+    AppLocalizations l10n,
+    ModelControlDescriptorDto descriptor,
+  ) => switch (widget.modelControls[descriptor.id]) {
+    ModelControlStringValueDto(:final value) =>
+      descriptor.choices
+              .where((choice) => choice.id == value)
+              .firstOrNull
+              ?.label ??
+          value,
+    ModelControlBoolValueDto(:final value) =>
+      value ? l10n.composerEnabled : l10n.composerUseDefault,
+    ModelControlIntValueDto(:final value) => '$value',
+    _ => l10n.composerUseDefault,
+  };
 
   ComposerChipSpec _controlChip(
     ModelControlDescriptorDto descriptor,
@@ -401,13 +760,15 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
 
   Future<void> _choosePermission(
     BuildContext context,
-    PermissionMode inheritedMode,
-  ) async {
+    PermissionMode inheritedMode, {
+    bool useRootNavigator = true,
+  }) async {
     final choice = await showPermissionPicker(
       context,
       currentMode: widget.permissionMode,
       inheritLabel: AppLocalizations.of(context).composerInheritPermissionMode,
       inheritedMode: inheritedMode,
+      useRootNavigator: useRootNavigator,
     );
     if (choice == null) return;
     if (mounted) setState(() => _permissionError = null);
@@ -430,7 +791,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .loadModels(connectionId);
   }
 
-  Future<void> _chooseModel(BuildContext context) async {
+  Future<void> _chooseModel(
+    BuildContext context, {
+    ModelPickerSurface surface = ModelPickerSurface.auto,
+  }) async {
     final l10n = AppLocalizations.of(context);
     var options = const <ModelPickerOption>[];
     // Clearing the override always means "follow the fallback chain"; only the
@@ -449,6 +813,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
           ? l10n.composerInheritModel
           : l10n.composerInheritDefaultModel,
+      surface: surface,
+      useRootNavigator: surface != ModelPickerSurface.sheet,
     );
     if (chosen == null) return;
     switch (chosen) {
@@ -477,6 +843,140 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   AgentDefinitionDto? get _selectedAgent => widget.definitions
       .where((definition) => definition.id == widget.agentDefinitionId)
       .firstOrNull;
+}
+
+@immutable
+final class _ComposerSheetChoice<T> {
+  const _ComposerSheetChoice(this.value);
+
+  final T value;
+}
+
+@immutable
+final class _ComposerSheetOption<T> {
+  const _ComposerSheetOption({
+    required this.key,
+    required this.value,
+    required this.label,
+    required this.selected,
+    this.description,
+    this.enabled = true,
+  });
+
+  final ValueKey<String> key;
+  final T value;
+  final String label;
+  final String? description;
+  final bool selected;
+  final bool enabled;
+}
+
+class _IntegerControlDrawer extends StatefulWidget {
+  const _IntegerControlDrawer({
+    required this.descriptor,
+    required this.initialValue,
+  });
+
+  final ModelControlDescriptorDto descriptor;
+  final int? initialValue;
+
+  @override
+  State<_IntegerControlDrawer> createState() => _IntegerControlDrawerState();
+}
+
+class _IntegerControlDrawerState extends State<_IntegerControlDrawer> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue?.toString() ?? '',
+  );
+
+  int? get _value => int.tryParse(_controller.text.trim());
+
+  bool get _valid {
+    final value = _value;
+    if (value == null) return false;
+    final descriptor = widget.descriptor;
+    return (descriptor.minimum == null || value >= descriptor.minimum!) &&
+        (descriptor.maximum == null || value <= descriptor.maximum!) &&
+        (descriptor.step == null ||
+            descriptor.minimum == null ||
+            (value - descriptor.minimum!) % descriptor.step! == 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return TRDrawer(
+      title: TRText.inherit(widget.descriptor.label),
+      description: widget.descriptor.description == null
+          ? null
+          : TRText.inherit(widget.descriptor.description!),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: TRSpacing.small,
+        children: <Widget>[
+          CoderListRow(
+            key: ValueKey<String>(
+              'session-composer-control-${widget.descriptor.id}-default-sheet',
+            ),
+            selected: widget.initialValue == null,
+            title: TRText.inherit(l10n.composerUseDefault),
+            trailing: widget.initialValue == null
+                ? const Icon(CoderIcons.check)
+                : null,
+            onTap: () => Navigator.pop(
+              context,
+              const _ComposerSheetChoice<int?>(null),
+            ),
+          ),
+          TRTextField(
+            key: ValueKey<String>(
+              'session-composer-control-${widget.descriptor.id}-integer',
+            ),
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {}),
+            label: widget.descriptor.label,
+            errorText: _controller.text.isEmpty || _valid
+                ? null
+                : '${widget.descriptor.minimum ?? ''}'
+                      '–${widget.descriptor.maximum ?? ''}',
+          ),
+        ],
+      ),
+      actions: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        spacing: TRSpacing.small,
+        children: <Widget>[
+          TRButton(
+            appearance: TRAppearance.ghost,
+            onPressed: () => Navigator.pop(context),
+            child: TRText.inherit(l10n.commonCancel),
+          ),
+          TRButton(
+            key: ValueKey<String>(
+              'session-composer-control-${widget.descriptor.id}-save',
+            ),
+            intent: TRIntent.primary,
+            onPressed: _valid
+                ? () => Navigator.pop(
+                    context,
+                    _ComposerSheetChoice<int?>(_value),
+                  )
+                : null,
+            child: TRText.inherit(l10n.commonSave),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _IntegerControlDialog extends StatefulWidget {
@@ -548,10 +1048,7 @@ class _IntegerControlDialogState extends State<_IntegerControlDialog> {
   );
 }
 
-/// One turn setting the composer toolbar offers.
-///
-/// The toolbar decides how much of a chip fits, so a setting describes itself
-/// once and is rendered as a labelled chip, an icon, or a menu entry.
+/// One labelled turn setting the wide composer toolbar offers.
 @immutable
 class ComposerChipSpec {
   /// Creates a [ComposerChipSpec].
@@ -587,11 +1084,7 @@ class ComposerChipSpec {
   final bool selected;
 
   /// Renders the setting as a chip.
-  Widget toChip({
-    TRUiSize uiSize = TRUiSize.md,
-    bool compact = false,
-    double? maxWidth,
-  }) => ComposerChip(
+  Widget toChip({TRUiSize uiSize = TRUiSize.md}) => ComposerChip(
     valueKey: valueKey,
     icon: icon,
     label: label,
@@ -600,22 +1093,14 @@ class ComposerChipSpec {
     menuChildren: menuChildren,
     selected: selected,
     uiSize: uiSize,
-    compact: compact,
-    maxWidth: maxWidth,
   );
 }
 
-/// Toolbar that trades label width, then whole labels, then chips, for width.
-///
-/// Chip widths are computed from the published control geometry rather than
-/// measured after the fact, so exactly one arrangement is ever built: the
-/// widest one that fits.
+/// Labelled settings toolbar shown only above the composer breakpoint.
 class ComposerChipBar extends StatelessWidget {
   /// Creates a [ComposerChipBar].
   const ComposerChipBar({
     required this.chips,
-    required this.overflowLabel,
-    this.leading,
     this.uiSize = TRUiSize.md,
     super.key,
   });
@@ -626,187 +1111,16 @@ class ComposerChipBar extends StatelessWidget {
   /// Settings to show. The trailing ones give up their labels and room first.
   final List<ComposerChipSpec> chips;
 
-  /// Label and tooltip of the menu holding whatever did not fit.
-  final String overflowLabel;
-
-  /// Control pinned before the chips at every width.
-  final Widget? leading;
-
   @override
-  Widget build(BuildContext context) {
-    const gap = TRSpacing.extraSmall;
-    // A chip is a control holding one icon; a labelled one adds its text, and
-    // a menu chip its disclosure glyph.
-    final icon = TRControlMetrics.iconSizeOf(uiSize);
-    final compact =
-        2 *
-            (TRControlMetrics.inlinePaddingOf(uiSize) +
-                TRControlMetrics.borderWidth) +
-        icon;
-    // A chip renders its label in the control style, not the ambient one, and
-    // measuring it any other way under-reports the width.
-    final style = TRControlMetrics.labelStyleOf(uiSize);
-    final scaler = MediaQuery.textScalerOf(context);
-    double width(int index, double label) =>
-        compact +
-        gap +
-        label +
-        (chips[index].menuChildren == null ? 0 : gap + icon);
-    final natural = <double>[
-      for (var index = 0; index < chips.length; index += 1)
-        width(index, _textWidth(chips[index].label, style, scaler)),
-    ];
-    // A label narrower than the glyph beside it is a character and an ellipsis,
-    // which reads as noise next to an icon that already names the setting. Such
-    // a chip gives its label up instead of showing a stub.
-    final legible = <double>[
-      for (var index = 0; index < chips.length; index += 1) width(index, icon),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // The pinned control is a square icon button and keeps its slot at
-        // every width, so the chips only ever compete for what it leaves.
-        final pinned = leading == null
-            ? 0.0
-            : TRControlMetrics.heightOf(uiSize) + gap;
-        final available = constraints.maxWidth - pinned;
-        final gaps = chips.isEmpty ? 0.0 : gap * (chips.length - 1);
-        final room = available - gaps;
-        // Labels are dropped from the trailing end, one at a time. A row where
-        // only the last chip is wordy keeps every label before it, and the one
-        // long value is ellipsized rather than costing the whole row its text.
-        for (var labelled = chips.length; labelled >= 1; labelled -= 1) {
-          final widths = _share(
-            natural.take(labelled).toList(growable: false),
-            room - compact * (chips.length - labelled),
-          );
-          final fits = <bool>[
-            for (var index = 0; index < labelled; index += 1)
-              widths[index] >= math.min(natural[index], legible[index]),
-          ];
-          if (fits.contains(false)) continue;
-          return _row(<Widget>[
-            for (var index = 0; index < labelled; index += 1)
-              chips[index].toChip(
-                uiSize: uiSize,
-                maxWidth: widths[index] < natural[index] ? widths[index] : null,
-              ),
-            for (final chip in chips.skip(labelled))
-              chip.toChip(uiSize: uiSize, compact: true),
-          ]);
-        }
-        if (compact * chips.length <= room) {
-          return _row(
-            chips
-                .map((chip) => chip.toChip(uiSize: uiSize, compact: true))
-                .toList(),
-          );
-        }
-        // Every chip that still fits keeps its place; the rest move into one
-        // menu, which needs a slot of its own.
-        final shared = available - compact - gap;
-        final visible = shared <= 0
-            ? 0
-            : ((shared + gap) / (compact + gap)).floor().clamp(0, chips.length);
-        return _row(<Widget>[
-          for (final chip in chips.take(visible))
-            chip.toChip(uiSize: uiSize, compact: true),
-          _overflow(chips.skip(visible).toList(growable: false)),
-        ]);
-      },
-    );
-  }
-
-  /// Divides [room] between chips wanting [natural] widths, fairest first.
-  ///
-  /// A chip that wants less than an equal share takes only what it wants and
-  /// leaves the rest to be shared again, so a row of short labels and one long
-  /// one spends the width on the long one instead of clipping all of them.
-  List<double> _share(List<double> natural, double room) {
-    final widths = List<double>.filled(natural.length, 0);
-    final pending = <int>{
-      for (var index = 0; index < natural.length; index += 1) index,
-    };
-    var remaining = room;
-    while (pending.isNotEmpty) {
-      final equal = remaining / pending.length;
-      final content = pending
-          .where((index) => natural[index] <= equal)
-          .toList(
-            growable: false,
-          );
-      if (content.isEmpty) {
-        for (final index in pending) {
-          widths[index] = equal;
-        }
-        break;
-      }
-      for (final index in content) {
-        widths[index] = natural[index];
-        remaining -= natural[index];
-        pending.remove(index);
-      }
-    }
-    return widths;
-  }
-
-  double _textWidth(String label, TextStyle style, TextScaler scaler) {
-    final painter = TextPainter(
-      text: TextSpan(text: label, style: style),
-      textDirection: TextDirection.ltr,
-      textScaler: scaler,
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
-  }
-
-  Widget _row(List<Widget> children) => Row(
-    mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => Row(
     spacing: TRSpacing.extraSmall,
     children: <Widget>[
-      ?leading,
-      ...children,
+      for (final chip in chips) Flexible(child: chip.toChip(uiSize: uiSize)),
     ],
-  );
-
-  Widget _overflow(List<ComposerChipSpec> hidden) => TRTooltip(
-    message: overflowLabel,
-    child: TRMenu.icon(
-      key: const ValueKey('session-composer-overflow'),
-      uiSize: uiSize,
-      icon: const Icon(CoderIcons.more),
-      label: overflowLabel,
-      menuChildren: <Widget>[
-        for (final chip in hidden)
-          if (chip.menuChildren case final children?)
-            TRMenuSubmenu(
-              key: ValueKey('${chip.valueKey.value}-overflow'),
-              menuChildren: children,
-              leadingIcon: Icon(chip.icon),
-              child: Text(chip.label),
-            )
-          else
-            // The entry supplies its own context so an action that anchors a
-            // picker opens it against the menu it was chosen from.
-            Builder(
-              builder: (itemContext) => TRMenuItem(
-                key: ValueKey('${chip.valueKey.value}-overflow'),
-                leadingIcon: Icon(chip.icon),
-                onPressed: chip.onPressed == null
-                    ? null
-                    : () => chip.onPressed!(itemContext),
-                child: Text(chip.label),
-              ),
-            ),
-      ],
-    ),
   );
 }
 
-/// Compact selector chip shared by the composers.
+/// Labelled selector chip shared by the composers.
 class ComposerChip extends StatelessWidget {
   /// Creates a composer chip.
   const ComposerChip({
@@ -818,8 +1132,6 @@ class ComposerChip extends StatelessWidget {
     this.onPressed,
     this.selected = false,
     this.uiSize = TRUiSize.md,
-    this.compact = false,
-    this.maxWidth,
     super.key,
   });
 
@@ -847,19 +1159,6 @@ class ComposerChip extends StatelessWidget {
   /// Control geometry the chip and the row around it share.
   final TRUiSize uiSize;
 
-  /// Whether the chip drops its label and shows the icon alone.
-  ///
-  /// The tooltip already names the control, so a narrow toolbar loses width
-  /// rather than meaning.
-  final bool compact;
-
-  /// Outer width the chip may not exceed, ellipsizing its label to fit.
-  ///
-  /// A chip whose value is long enough to crowd out its neighbours is capped
-  /// here instead, so one wordy model name costs its own label rather than
-  /// every label in the row.
-  final double? maxWidth;
-
   @override
   Widget build(BuildContext context) {
     // The glyph never appears or disappears with selection: a chip that
@@ -871,14 +1170,9 @@ class ComposerChip extends StatelessWidget {
         // Sized from the token the toolbar measures with, so a chip is exactly
         // as wide as the arithmetic that decided it fits.
         Icon(icon, size: TRControlMetrics.iconSizeOf(uiSize)),
-        if (!compact) ...<Widget>[
-          Flexible(
-            // The chip caps and ellipsizes its own label.
-            child: TRText.inherit(label, truncate: true),
-          ),
-          if (menuChildren != null)
-            Icon(CoderIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
-        ],
+        Flexible(child: TRText.inherit(label, truncate: true)),
+        if (menuChildren != null)
+          Icon(CoderIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
       ],
     );
     // Every chip sits inside the composer card, so the toolbar reads as one
@@ -899,15 +1193,7 @@ class ComposerChip extends StatelessWidget {
             trigger: content,
             menuChildren: menuChildren!,
           );
-    return TRTooltip(
-      message: tooltip,
-      child: maxWidth == null
-          ? control
-          : ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth!),
-              child: control,
-            ),
-    );
+    return TRTooltip(message: tooltip, child: control);
   }
 }
 
@@ -1464,7 +1750,17 @@ class _SessionComposerState extends State<SessionComposer> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => _buildContent(
+      context,
+      compactSettings: constraints.maxWidth < _composerSettingsBreakpoint,
+    ),
+  );
+
+  Widget _buildContent(
+    BuildContext context, {
+    required bool compactSettings,
+  }) {
     final l10n = AppLocalizations.of(context);
     // Attaching is about composing the next prompt, so it stays available
     // while a turn runs; only the upload of this prompt takes it away.
@@ -1486,10 +1782,10 @@ class _SessionComposerState extends State<SessionComposer> {
           children: <Widget>[
             if (widget.header != null) widget.header!,
             TRCard(
-              // The card is the control: the prompt, its settings, and send are
-              // one thing to the reader, so descendant focus is passed through
-              // once. The design system decides whether that raw focus should
-              // be visible for the current input modality.
+              // The card is the control: the prompt, its settings, and send
+              // are one thing to the reader, so descendant focus is passed
+              // through once. The design system decides whether that raw
+              // focus should be visible for the current input modality.
               focused: _focused,
               padding: TRCardPadding.sm,
               child: Focus(
@@ -1530,8 +1826,8 @@ class _SessionComposerState extends State<SessionComposer> {
                         )?.sessionKey;
                         widget.onCompletionQueryChanged?.call(null);
                       },
-                      // Shift+Tab cycles the mode instead of moving focus, and
-                      // Enter sends rather than opening a line.
+                      // Shift+Tab cycles the mode instead of moving focus,
+                      // and Enter sends rather than opening a line.
                       child: Focus(
                         onKeyEvent: _handleKey,
                         child: TRTextField(
@@ -1571,25 +1867,23 @@ class _SessionComposerState extends State<SessionComposer> {
                     Row(
                       spacing: TRSpacing.small,
                       children: <Widget>[
-                        // Attach leads and send stays pinned at the trailing
-                        // edge; only the settings between them give up room.
+                        TRIconButton(
+                          key: const ValueKey('session-composer-attach'),
+                          appearance: TRAppearance.ghost,
+                          uiSize: TRUiSize.sm,
+                          onPressed: editable && widget.attachmentInput != null
+                              ? _pickFiles
+                              : null,
+                          icon: const Icon(CoderIcons.paperclip),
+                          label: l10n.composerAttachLabel,
+                        ),
                         Expanded(
-                          child: Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: widget.bar.withLeading(
-                              TRIconButton(
-                                key: const ValueKey('session-composer-attach'),
-                                appearance: TRAppearance.ghost,
-                                uiSize: TRUiSize.sm,
-                                onPressed:
-                                    editable && widget.attachmentInput != null
-                                    ? _pickFiles
-                                    : null,
-                                icon: const Icon(CoderIcons.paperclip),
-                                label: l10n.composerAttachLabel,
-                              ),
-                            ),
-                          ),
+                          child: compactSettings
+                              ? const SizedBox.shrink()
+                              : Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: widget.bar,
+                                ),
                         ),
                         if (widget.contextWindow case final window?
                             when window > 0)
@@ -1600,6 +1894,7 @@ class _SessionComposerState extends State<SessionComposer> {
                             providerConnectionId: widget.providerConnectionId,
                             onLoadProviderUsage: widget.onLoadProviderUsage,
                           ),
+                        if (compactSettings) widget.bar.asCompact(),
                         TRTooltip(
                           message: queueing
                               ? l10n.composerQueueTooltip

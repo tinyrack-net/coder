@@ -345,6 +345,131 @@ void main() {
       ),
     );
   }
+
+  unawaited(
+    goldenTest(
+      'compact composer settings sheet',
+      fileName: 'composer_settings_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-settings')),
+        );
+        await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
+      },
+      builder: _ComposerSettingsGoldenHost.new,
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'compact composer nested agent sheet',
+      fileName: 'composer_settings_agent_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-settings')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(
+            const ValueKey<String>('session-composer-settings-agent'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
+      },
+      builder: _ComposerSettingsGoldenHost.new,
+    ),
+  );
+}
+
+class _ComposerSettingsGoldenHost extends StatelessWidget {
+  const _ComposerSettingsGoldenHost();
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(
+          FakeCoderApi(agentDefinitions: _definitions),
+        ),
+      ),
+    ],
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      locale: testLocale,
+      localizationsDelegates: testLocalizationsDelegates,
+      supportedLocales: testSupportedLocales,
+      theme: testLightTheme,
+      darkTheme: testDarkTheme,
+      themeMode: ThemeMode.dark,
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.bottomCenter,
+          child: SessionComposer(
+            enabled: true,
+            contextTokens: 75000,
+            contextWindow: 200000,
+            onSubmit: (_) {},
+            bar: SessionComposerBar(
+              hostId: 'server',
+              definitions: _definitions,
+              agentDefinitionId: 'coder',
+              selection: null,
+              onAgentChanged: (_) {},
+              onModelChanged: (_, _) {},
+              mode: SessionMode.normal,
+              onModeChanged: (_) {},
+              permissionMode: PermissionMode.ask,
+              onPermissionModeChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  static const _definitions = <AgentDefinitionDto>[
+    AgentDefinitionDto(
+      id: 'coder',
+      name: 'Coder',
+      description: 'General-purpose coding agent',
+      mode: AgentMode.primary,
+      promptEnabled: true,
+      systemPrompt: 'Code carefully.',
+      model: AgentModelSelectionDto(source: AgentModelSource.session),
+      toolIds: <String>[],
+      callableAgentIds: <String>[],
+      contentHash: 'coder-hash',
+      sourcePath: '/agents/coder.md',
+      isBuiltIn: true,
+    ),
+    AgentDefinitionDto(
+      id: 'reviewer',
+      name: 'Reviewer',
+      description: 'Reviews changes',
+      mode: AgentMode.primary,
+      promptEnabled: true,
+      systemPrompt: 'Review carefully.',
+      model: AgentModelSelectionDto(source: AgentModelSource.session),
+      toolIds: <String>[],
+      callableAgentIds: <String>[],
+      contentHash: 'reviewer-hash',
+      sourcePath: '/agents/reviewer.md',
+    ),
+  ];
 }
 
 Widget _settingsSkeleton(ThemeMode mode, Widget child) => MaterialApp(
