@@ -147,6 +147,13 @@ WinGet consumes the Inno Setup `setup.exe`; the MSIX exists for the Microsoft
 Store path and is not yet submitted. There is no `.msixbundle` because there is
 only one Windows architecture to bundle.
 
+The Windows release directory is self-contained. CMake stages the MSVC runtime
+DLLs (`msvcp140.dll`, `vcruntime140.dll`, and `vcruntime140_1.dll`) beside
+`coder.exe`, and the same directory feeds the Inno installer, portable zip, and
+MSIX. The WinGet manifest also declares `Microsoft.VCRedist.2015+.x64` so the
+original 0.2.0 installer remains runnable through WinGet on clean Windows
+machines.
+
 The MSIX step is skipped unless `MSIX_IDENTITY_NAME` is set, so a release
 without those three secrets still produces everything winget and the GitHub
 Release need. Setting them turns the step back on with no workflow change.

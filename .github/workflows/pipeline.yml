@@ -600,13 +600,40 @@ jobs:
         run: |
           $version = (Select-String -Path packages/app/pubspec.yaml `
             -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value.Split('+')[0]
+          $bundle = "$PWD\packages\app\build\windows\${{ matrix.arch }}\runner\Release"
+          $runtimeDlls = @(
+            'msvcp140.dll',
+            'vcruntime140.dll',
+            'vcruntime140_1.dll'
+          )
+          foreach ($runtimeDll in $runtimeDlls) {
+            $runtimePath = Join-Path $bundle $runtimeDll
+            if (-not (Test-Path -LiteralPath $runtimePath)) {
+              throw "Windows release bundle is missing app-local runtime: $runtimeDll"
+            }
+          }
+
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
             "/DAppVersion=$version" `
             "/DAppArch=${{ matrix.arch }}" `
-            "/DSourceDir=$PWD\apps\app\build\windows\${{ matrix.arch }}\runner\Release" `
+            "/DSourceDir=$bundle" `
             "/DOutputDir=$PWD\dist" `
-            apps\app\windows\installer\coder.iss
+            "$PWD\packages\app\windows\installer\coder.iss"
+
+          $installer = "$PWD\dist\Coder-setup-win-${{ matrix.arch }}.exe"
+          $installRoot = Join-Path $env:RUNNER_TEMP 'coder-installer-smoke'
+          & $installer /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER `
+            "/DIR=$installRoot"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Windows installer smoke test failed with exit code $LASTEXITCODE"
+          }
+          foreach ($installedFile in @('coder.exe') + $runtimeDlls) {
+            $installedPath = Join-Path $installRoot $installedFile
+            if (-not (Test-Path -LiteralPath $installedPath)) {
+              throw "Windows installer omitted required file: $installedFile"
+            }
+          }
       - name: Build the Windows MSIX
         # Skipped until the identity secrets exist. winget takes the Inno
         # Setup installer, so a release without an MSIX is complete; the MSIX

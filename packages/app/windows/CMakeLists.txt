@@ -2,6 +2,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(coder LANGUAGES CXX)
 
+# Flutter's Windows runner uses the dynamic MSVC runtime. Discover the
+# redistributable DLLs from the active Visual Studio toolchain, but install
+# them explicitly into Flutter's app-local bundle below instead of CMake's
+# default bin directory.
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+include(InstallRequiredSystemLibraries)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(APP_DISPLAY_NAME "Coder")
@@ -101,6 +108,8 @@ install(PROGRAMS "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host.exe"
   DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 install(DIRECTORY "${LUA_RUNTIME_STAGE}/lua_tool_runtime"
   DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)

@@ -547,6 +547,40 @@ void main() {
     expect(luaHostBuilder, contains("'--build-directory'"));
   });
 
+  test('Windows release artifacts carry their app-local MSVC runtime', () {
+    expect(
+      windowsCmake,
+      contains('set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)'),
+    );
+    expect(windowsCmake, contains('include(InstallRequiredSystemLibraries)'));
+    expect(
+      windowsCmake,
+      contains(r'install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}'),
+    );
+    expect(
+      windowsCmake,
+      contains(r'DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime'),
+    );
+
+    final release = _job(workflow, 'build-and-package');
+    expect(release, contains(r'$PWD\packages\app\build\windows\'));
+    expect(
+      release,
+      contains(r'$PWD\packages\app\windows\installer\coder.iss'),
+    );
+    expect(release, isNot(contains(r'$PWD\apps\app\')));
+    for (final dll in <String>[
+      'msvcp140.dll',
+      'vcruntime140.dll',
+      'vcruntime140_1.dll',
+    ]) {
+      expect(release, contains(dll));
+    }
+    expect(release, contains('Test-Path -LiteralPath'));
+    expect(release, contains('/VERYSILENT'));
+    expect(release, contains('/CURRENTUSER'));
+  });
+
   test('Android supplies the CargoKit Gradle 9 exec compatibility service', () {
     expect(
       androidBuild,
