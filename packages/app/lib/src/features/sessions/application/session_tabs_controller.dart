@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/src/app/composition/app_providers.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
@@ -250,9 +251,16 @@ class SessionTabsController extends _$SessionTabsController {
   }
 
   /// Hides a session tab without deleting daemon history.
-  Future<void> close(String sessionId) => _closeWhere(
-    (target) => target is SessionTabTarget && target.sessionId == sessionId,
-  );
+  Future<void> close(String sessionId) async {
+    await _closeWhere(
+      (target) => target is SessionTabTarget && target.sessionId == sessionId,
+    );
+    // A first turn that failed to start is kept so a mounting conversation
+    // pane can requeue it. Closing the tab is the user declining that offer,
+    // and it is the only bound on the pending map: without it an entry whose
+    // pane never mounts is retained for the life of the process.
+    ref.read(pendingFirstTurnsProvider.notifier).clear(sessionId);
+  }
 
   /// Retargets the focused draft after the daemon creates its session.
   Future<void> add(SessionDto agent, {String? draftTabId}) async {
