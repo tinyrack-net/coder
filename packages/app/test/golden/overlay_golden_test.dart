@@ -393,10 +393,32 @@ void main() {
       builder: _ComposerSettingsGoldenHost.new,
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'compact composer settings locked agent',
+      fileName: 'composer_settings_locked_agent',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-settings')),
+        );
+        await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
+      },
+      builder: () => const _ComposerSettingsGoldenHost(agentEnabled: false),
+    ),
+  );
 }
 
 class _ComposerSettingsGoldenHost extends StatelessWidget {
-  const _ComposerSettingsGoldenHost();
+  const _ComposerSettingsGoldenHost({this.agentEnabled = true});
+
+  final bool agentEnabled;
 
   @override
   Widget build(BuildContext context) => ProviderScope(
@@ -434,6 +456,7 @@ class _ComposerSettingsGoldenHost extends StatelessWidget {
               onModeChanged: (_) {},
               permissionMode: PermissionMode.ask,
               onPermissionModeChanged: (_) {},
+              agentEnabled: agentEnabled,
             ),
           ),
         ),

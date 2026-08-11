@@ -10,7 +10,7 @@ import 'package:app/src/features/conversation/presentation/widgets/composer_sugg
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
 import 'package:app/src/shared/presentation/coder_icons.dart';
-import 'package:app/src/shared/presentation/coder_list_row.dart';
+import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -453,6 +453,34 @@ void main() {
   );
 
   testWidgets(
+    'compact settings fit their content at mobile width',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      const surfaceSize = Size(390, 760);
+      await tester.binding.setSurfaceSize(surfaceSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          api: FakeCoderApi(agentDefinitions: _compactAgentDefinitions),
+          composer: const _CompactSettingsHost(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+      );
+      await tester.pumpAndSettle();
+
+      final sheet = find.byKey(
+        const ValueKey<String>('session-composer-settings-sheet'),
+      );
+      expect(tester.getSize(sheet).height, lessThan(surfaceSize.height * 0.75));
+      expect(tester.getBottomLeft(sheet).dy, surfaceSize.height);
+    },
+  );
+
+  testWidgets(
     'compact settings keep the parent sheet while every value uses a child',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
@@ -631,7 +659,7 @@ void main() {
   );
 
   testWidgets(
-    'compact settings preserve the locked agent state',
+    'compact settings explain the locked agent state without closing',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(900, 760));
@@ -651,9 +679,49 @@ void main() {
       final agentRow = find.byKey(
         const ValueKey<String>('session-composer-settings-agent'),
       );
-      expect(tester.widget<CoderListRow>(agentRow).enabled, isFalse);
+      expect(
+        find.descendant(
+          of: agentRow,
+          matching: find.byIcon(CoderIcons.lock),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widgetList<TRText>(
+              find.descendant(of: agentRow, matching: find.byType(TRText)),
+            )
+            .first
+            .color,
+        TRTextColor.muted,
+      );
+      final semantics = tester.getSemantics(agentRow);
+      expect(semantics.hint, testL10n.composerAgentLocked);
+      final container = ProviderScope.containerOf(tester.element(agentRow));
+      final toasts = container.read(appToastControllerProvider);
+
       await tester.tap(agentRow);
       await tester.pumpAndSettle();
+
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(toasts.toasts, hasLength(1));
+      expect(toasts.toasts.single.variant, TRStatusVariant.info);
+      expect(
+        (toasts.toasts.single.title as TRText).data,
+        testL10n.composerAgentLocked,
+      );
+
+      Focus.of(
+        tester.element(
+          find
+              .descendant(of: agentRow, matching: find.byType(MouseRegion))
+              .first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(toasts.toasts, hasLength(1));
       expect(find.byType(TRDrawer), findsOneWidget);
     },
   );

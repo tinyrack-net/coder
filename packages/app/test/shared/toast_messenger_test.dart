@@ -37,6 +37,20 @@ void main() {
     );
 
     test(
+      'information is queued as an info toast',
+      () {
+        messenger
+          ..info('Agent is locked.', id: 'agent-lock')
+          ..info('Agent is locked.', id: 'agent-lock');
+
+        expect(controller.toasts, hasLength(1));
+        expect(_title(controller.toasts.single), 'Agent is locked.');
+        expect(controller.toasts.single.variant, TRStatusVariant.info);
+      },
+      tags: const <String>['feature_test__app_toast__unit'],
+    );
+
+    test(
       'a failure is queued as a danger toast',
       () {
         messenger.failure('Could not save.');
