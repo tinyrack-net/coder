@@ -319,6 +319,11 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+      // The catalog can finish loading after a pushed task such as Settings
+      // has covered this page. Replacing from this stale context would replace
+      // that task with a second workspace-shell page, duplicating its Page key
+      // in the root Navigator. Opening another task supersedes startup restore.
+      if (ModalRoute.of(context)?.isCurrent != true) return;
       _goWorktree(context, saved);
     });
   }

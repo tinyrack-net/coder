@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/features/hosts/domain/host_models.dart';
+import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:protocol/protocol.dart';
@@ -262,6 +264,64 @@ void main() {
         currentLocation(router),
         const SettingsHomeRoute().location,
       );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'a delayed workspace restore cannot replace an open settings task',
+    (tester) async {
+      await useDesktop(tester);
+      final catalogGate = Completer<void>();
+      final api = FakeCoderApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree],
+        workspaceCatalogGate: catalogGate.future,
+      );
+      final store = MemoryAppStore(
+        settings: AppSettings(
+          embeddedDaemonEnabled: false,
+          lastWorktree: WorkspaceSelection(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: worktree.id,
+          ),
+        ),
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        api,
+        initialLocation: const WorkspaceHomeRoute().location,
+        store: store,
+        settle: false,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      for (var frame = 0; frame < 4; frame += 1) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      expect(currentLocation(router), const DaemonSettingsRoute().location);
+
+      catalogGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const DaemonSettingsRoute().location);
+      expect(find.byType(Navigator), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('General'));
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const GeneralSettingsRoute().location);
+      expect(find.byType(Navigator), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
