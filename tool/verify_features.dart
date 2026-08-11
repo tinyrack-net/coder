@@ -7,6 +7,8 @@ void main() {
   final violations = FeatureVerifier(
     Directory.current.path,
     contracts: tinestFeatureManifest,
+    uiContracts: tinestUiReachabilityManifest,
+    uiJourneys: tinestUiJourneyManifest,
   ).verify();
   if (violations.isEmpty) {
     stdout.writeln(

@@ -164,6 +164,10 @@ void main() {
 
     expect(find.text('main'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey<String>('workspace-worktree-first-main')),
+      findsOneWidget,
+    );
+    expect(
       controller.expanded,
       contains((hostId: runtime.id, workspaceId: first.id, worktreeId: null)),
     );

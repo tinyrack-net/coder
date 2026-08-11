@@ -201,6 +201,208 @@ void main() {
     );
   });
 
+  test('feature verifier accepts complete UI reachability evidence', () {
+    const statePrefix = 'ui_state__';
+    const transitionPrefix = 'ui_transition__';
+    const variantPrefix = 'ui_variant__';
+    const journeyPrefix = 'ui_journey__';
+    final fixture = _fixture(
+      api: 'abstract interface class TinestApi {}',
+      routes: '',
+      tests: <String>[
+        "testWidgets('loaded', (tester) async { await tester.pump(); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${statePrefix}conversation__loaded__widget',
+        "']);",
+        "testWidgets('error', (tester) async { await tester.pump(); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${statePrefix}conversation__error__widget',
+        "']);",
+        "testWidgets('retry', (tester) async { ",
+        "await tester.tap(find.text('Retry')); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${transitionPrefix}conversation__retry__widget',
+        "']);",
+        "testWidgets('desktop Korean', (tester) async { await tester.pump(); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${variantPrefix}conversation__desktop_korean__widget',
+        "']);",
+        "testWidgets('reconnect journey', (tester) async { ",
+        'await tester.pump(); ',
+        "expect(true, isTrue); }, tags: <String>['",
+        '${journeyPrefix}conversation_reconnect__e2e',
+        "']);",
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[],
+      uiContracts: const <UiReachabilityContract>[
+        UiReachabilityContract(
+          id: 'conversation',
+          featureId: 'turn.execution',
+          description: 'Conversation route and overlays.',
+          states: <UiStateContract>[
+            UiStateContract(id: 'loaded', description: 'Timeline is loaded.'),
+            UiStateContract(id: 'error', description: 'Timeline failed.'),
+          ],
+          transitions: <UiTransitionContract>[
+            UiTransitionContract(
+              id: 'retry',
+              description: 'Retries a failed turn.',
+              fromState: 'error',
+              outcomes: <String>{'loaded', 'error'},
+            ),
+          ],
+          variants: <UiVariantContract>[
+            UiVariantContract(
+              id: 'desktop_korean',
+              description: 'Desktop Korean keyboard path.',
+            ),
+          ],
+        ),
+      ],
+      uiJourneys: const <UiJourneyContract>[
+        UiJourneyContract(
+          id: 'conversation_reconnect',
+          description: 'Restores an interrupted conversation.',
+          tier: UiEvidenceTier.nightlyExtended,
+          surfaces: <FeatureSurface>{FeatureSurface.desktop},
+          transitionIds: <String>['conversation/retry'],
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(violations, isEmpty);
+  });
+
+  test('feature verifier rejects incomplete or laundered UI evidence', () {
+    const statePrefix = 'ui_state__';
+    const transitionPrefix = 'ui_transition__';
+    const variantPrefix = 'ui_variant__';
+    const journeyPrefix = 'ui_journey__';
+    final fixture = _fixture(
+      api: 'abstract interface class TinestApi {}',
+      routes: '',
+      tests: <String>[
+        "testWidgets('laundered', (tester) async { await tester.pump(); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${statePrefix}conversation__loaded__widget',
+        "', '",
+        '${transitionPrefix}conversation__retry__widget',
+        "']);",
+        "testWidgets('unknown', (tester) async { await tester.pump(); ",
+        "expect(true, isTrue); }, tags: <String>['",
+        '${variantPrefix}conversation__unknown__widget',
+        "', '",
+        '${journeyPrefix}unknown__e2e',
+        "']);",
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[],
+      uiContracts: const <UiReachabilityContract>[
+        UiReachabilityContract(
+          id: 'conversation',
+          featureId: 'turn.execution',
+          description: 'Conversation route and overlays.',
+          states: <UiStateContract>[
+            UiStateContract(id: 'loaded', description: 'Timeline is loaded.'),
+            UiStateContract(id: 'error', description: 'Timeline failed.'),
+          ],
+          transitions: <UiTransitionContract>[
+            UiTransitionContract(
+              id: 'retry',
+              description: 'Retries a failed turn.',
+              fromState: 'error',
+              outcomes: <String>{'loaded'},
+            ),
+          ],
+          variants: <UiVariantContract>[
+            UiVariantContract(
+              id: 'desktop_korean',
+              description: 'Desktop Korean keyboard path.',
+            ),
+          ],
+        ),
+      ],
+      uiJourneys: const <UiJourneyContract>[
+        UiJourneyContract(
+          id: 'conversation_reconnect',
+          description: 'Restores an interrupted conversation.',
+          tier: UiEvidenceTier.prRequired,
+          surfaces: <FeatureSurface>{FeatureSurface.desktop},
+          transitionIds: <String>['conversation/retry'],
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+    final messages = violations.map((item) => item.message).join('\n');
+
+    expect(messages, contains('must prove exactly one atomic UI contract'));
+    expect(messages, contains('conversation/error is missing widget evidence'));
+    expect(
+      messages,
+      contains('conversation/desktop_korean is missing widget evidence'),
+    );
+    expect(messages, contains('Unknown UI variant tag: conversation/unknown'));
+    expect(messages, contains('Unknown UI journey tag: unknown'));
+    expect(
+      messages,
+      contains('conversation_reconnect is missing E2E evidence'),
+    );
+  });
+
+  test('UI evidence can precede its callback or use an asserting helper', () {
+    const statePrefix = 'ui_state__';
+    const variantPrefix = 'ui_variant__';
+    final fixture = _fixture(
+      api: 'abstract interface class TinestApi {}',
+      routes: '',
+      tests: <String>[
+        "testWidgets('route', tags: <String>['",
+        '${statePrefix}home__rendered__widget',
+        "', '",
+        '${variantPrefix}home__desktop__widget',
+        "'], (tester) => _verifyRoute(tester));",
+        'Future<void> _verifyRoute(WidgetTester tester) async {',
+        'await tester.pump(); expect(true, isTrue); }',
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[],
+      uiContracts: const <UiReachabilityContract>[
+        UiReachabilityContract(
+          id: 'home',
+          featureId: 'app.navigation',
+          description: 'Home route.',
+          states: <UiStateContract>[
+            UiStateContract(id: 'rendered', description: 'Home is visible.'),
+          ],
+          transitions: <UiTransitionContract>[],
+          variants: <UiVariantContract>[
+            UiVariantContract(id: 'desktop', description: 'Desktop case.'),
+          ],
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(violations, isEmpty);
+  });
+
   test('feature verifier reports every missing or unsafe registration', () {
     const markerPrefix =
         'feature_'

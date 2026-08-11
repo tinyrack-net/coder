@@ -1,0 +1,4 @@
+tags:
+  feature_test__daemon_authentication__unit:
+  feature_test__daemon_management__unit:
+  feature_test__daemon_management__verticalSlice:

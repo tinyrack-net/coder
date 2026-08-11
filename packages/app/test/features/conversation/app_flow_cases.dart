@@ -460,7 +460,10 @@ void _registerConversationAppFlows() {
         ],
       );
     },
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__approval_pending__widget',
+    ],
   );
 
   testWidgets(
@@ -577,7 +580,10 @@ void _registerConversationAppFlows() {
         ),
       ]);
     },
-    tags: const <String>['feature_test__turn_question__widget'],
+    tags: const <String>[
+      'feature_test__turn_question__widget',
+      'ui_state__conversation_timeline__question_pending__widget',
+    ],
   );
 
   testWidgets(
@@ -886,7 +892,10 @@ void _registerConversationAppFlows() {
         ),
       ]);
     },
-    tags: const <String>['feature_test__turn_question__widget'],
+    tags: const <String>[
+      'feature_test__turn_question__widget',
+      'ui_transition__conversation_timeline__answer_question__widget',
+    ],
   );
 
   testWidgets(
@@ -966,6 +975,11 @@ void _registerConversationAppFlows() {
       expect(tester.takeException(), isNull);
       semantics.dispose();
     },
-    tags: const <String>['feature_test__turn_question__widget'],
+    tags: const <String>[
+      'feature_test__turn_question__widget',
+      // Exact executable tag required by the typed UI manifest.
+      // ignore: lines_longer_than_80_chars
+      'ui_variant__conversation_timeline__mobile_light_korean_large_text_touch_online__widget',
+    ],
   );
 }

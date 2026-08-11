@@ -365,6 +365,7 @@ class WorkspaceSidebar extends ConsumerWidget {
       children: <TRTreeNavItem<WorkspaceNavValue>>[
         for (final worktree in entry.worktrees)
           TRTreeNavLeaf<WorkspaceNavValue>(
+            key: ValueKey<String>('workspace-worktree-${worktree.id}'),
             value: (
               hostId: entry.hostId,
               workspaceId: workspace.id,
