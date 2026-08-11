@@ -4,7 +4,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-val productApplicationId = "net.tinyrack.coder"
 val keystorePropertiesFile = rootProject.file("key.properties")
 val releaseBuildRequested = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
@@ -32,7 +31,12 @@ fun signingProperty(name: String): String =
         ?: throw GradleException("Missing Android signing property: $name")
 
 android {
-    namespace = productApplicationId
+    // Quoted literal, not a `val`: the Flutter tool reads the namespace and the
+    // application id out of this file with a regex instead of evaluating
+    // Gradle, and a variable reference reads as absent. Without it,
+    // `flutter test -d <android device>` cannot resolve the launch activity.
+    // `app_identity_test.dart` holds both to the identity constant.
+    namespace = "net.tinyrack.coder"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -42,7 +46,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = productApplicationId
+        applicationId = "net.tinyrack.coder"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

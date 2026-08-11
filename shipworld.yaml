@@ -14,9 +14,9 @@ targets:
       source: packages/app/pubspec.yaml
       synchronized:
         - type: dart-constant
-          path: packages/app/lib/src/version.g.dart
+          path: packages/app/lib/src/app/version.g.dart
         - type: dart-constant
-          path: packages/daemon/lib/src/version.g.dart
+          path: packages/daemon/lib/src/bootstrap/version.g.dart
         - type: dart-constant
           path: packages/cli/lib/src/version.g.dart
     tag: "v{version}"
