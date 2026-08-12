@@ -1,0 +1,66 @@
+name: desktop_app
+description: Desktop composition root for Tinest and its embedded daemon.
+publish_to: none
+version: 0.8.0+9
+resolution: workspace
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  app: ^0.8.0
+  daemon: ^0.1.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  agent: ^0.1.0
+  client: ^0.1.0
+  cliweave:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+      path: packages/cliweave
+  dropwell:
+    git:
+      url: https://github.com/tinyrack-net/flutter-packages.git
+      ref: c21627dcd525f899223ac584a931c72ddf6f2b12
+      path: packages/dropwell
+  flutter_launcher_icons: ^0.14.4
+  flutter_secure_storage: ^10.3.1
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  protocol: ^0.1.0
+  relay: ^0.4.0
+  relay_protocol: ^0.1.0
+  shared_preferences: ^2.5.4
+  shelf: ^1.4.2
+  termworld:
+    git:
+      url: https://github.com/tinyrack-net/flutter-packages.git
+      ref: bd114b5c46c3848bc5e8cf5fd5263004329b2879
+      path: packages/termworld
+  test: ^1.31.0
+  tinyrack_ui:
+    git:
+      url: https://github.com/tinyrack-net/design.git
+      ref: 579bd51644e80a0dce8ce6b8a493f5eb9cee1c51
+      path: packages/ui_flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/tray/
+    - assets/brand/tinest-256.png
+
+flutter_launcher_icons:
+  image_path: assets/brand/tinest-1024.png
+  macos:
+    generate: true
+    image_path: assets/brand/tinest-1024.png
+  windows:
+    generate: true
+    image_path: assets/brand/tinest-1024.png
+    icon_size: 256

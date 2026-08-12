@@ -67,7 +67,8 @@ Desktop, mobile, and web use separate targets so that only the desktop
 bootstrap can start a daemon. Run these commands from `packages/app`:
 
 ```sh
-flutter run -d linux -t lib/main_desktop.dart
+cd ../desktop_app
+flutter run -d linux -t lib/main.dart
 flutter run -t lib/main_mobile.dart
 flutter run -d chrome -t lib/main_web.dart
 ```

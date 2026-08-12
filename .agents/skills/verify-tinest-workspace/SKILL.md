@@ -69,14 +69,14 @@ only such gate is the native IBus terminal E2E, which needs a live `ibus-daemon`
 and an X11 session; report it as owned by `linux-ibus-terminal-e2e` rather than
 reproducing it.
 
-`verify:debug` delegates to the app-owned desktop E2E runner. With one job it
+`verify:debug` delegates to the desktop-app-owned E2E runner. With one job it
 runs the catalog serially; with two or more jobs it balances the catalog over
 at most two isolated lanes. Each lane has its own persistent Flutter build
 directory and temporary app/config home. The second build starts only after
 the first native app signals readiness, so the tests overlap without racing
 Flutter's desktop build cache. Use `dart run tinest_quality e2e --jobs=N
 --report=build/quality/e2e.json` to measure or reproduce the runner, and
-`dart run packages/app/tool/run_desktop_e2e.dart --scenario=<id> --jobs=N` for
+`dart run packages/desktop_app/tool/run_desktop_e2e.dart --scenario=<id> --jobs=N` for
 a focused catalog scenario. Linux uses `xvfb-run -a`; Windows can show two app
 windows. Do not bypass the entrypoint with direct `flutter test` commands.
 

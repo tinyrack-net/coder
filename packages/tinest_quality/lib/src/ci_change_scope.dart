@@ -28,7 +28,11 @@ enum CiChangeScope {
     if (files.every((file) => file.startsWith('packages/relay/'))) {
       return relayOnly;
     }
-    if (files.every((file) => file.startsWith('packages/app/'))) {
+    if (files.every(
+      (file) =>
+          file.startsWith('packages/app/') ||
+          file.startsWith('packages/desktop_app/'),
+    )) {
       return appOnly;
     }
     return full;

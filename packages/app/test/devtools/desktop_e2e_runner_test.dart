@@ -51,7 +51,7 @@ void main() {
 
   test('integration dispatcher registers every catalog scenario once', () {
     final dispatcher = File(
-      'integration_test/desktop_e2e_suite_test.dart',
+      '../desktop_app/integration_test/desktop_e2e_suite_test.dart',
     ).readAsStringSync();
     for (final scenario in desktopE2eScenarios) {
       expect(
@@ -69,7 +69,7 @@ void main() {
     expect(lanes.first.scenarios.map((scenario) => scenario.id), <String>[
       'conversation',
     ]);
-    expect(lanes.last.estimatedSeconds, 70);
+    expect(lanes.last.estimatedSeconds, 68);
   });
 
   test('second lane waits for application readiness', () async {
@@ -151,7 +151,7 @@ void main() {
 
   test('macOS Lua host phase is incremental', () {
     final project = File(
-      'macos/Runner.xcodeproj/project.pbxproj',
+      '../desktop_app/macos/Runner.xcodeproj/project.pbxproj',
     ).readAsStringSync();
     final start = project.indexOf('/* Bundle Lua Host */ = {');
     final end = project.indexOf('\n\t\t};', start);

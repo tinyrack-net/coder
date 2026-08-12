@@ -375,8 +375,6 @@ jobs:
             scenario: provider
           - shard: settings-desktop
             scenario: settings-desktop
-          - shard: remote-bootstrap
-            scenario: remote-bootstrap
           - shard: desktop-shell
             scenario: desktop-shell
     runs-on: ubuntu-24.04
@@ -389,7 +387,7 @@ jobs:
           extra-packages: xvfb
       - run: dart pub get --enforce-lockfile
       - run: >-
-          dart run packages/app/tool/run_desktop_e2e.dart
+          dart run packages/desktop_app/tool/run_desktop_e2e.dart
           --scenario=${{ matrix.scenario }}
           --jobs=2
           --report=build/e2e-${{ matrix.scenario }}.json
@@ -429,7 +427,7 @@ jobs:
             "$GITHUB_WORKSPACE/ibus-terminal-artifacts"
           chmod 700 "$XDG_RUNTIME_DIR"
           xvfb-run -a dbus-run-session -- \
-            bash packages/app/tool/run_linux_ibus_terminal_e2e.sh
+            bash packages/desktop_app/tool/run_linux_ibus_terminal_e2e.sh
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -462,6 +460,19 @@ jobs:
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: packages/app
+      - name: Verify the mobile artifact excludes embedded SQLite
+        shell: bash
+        run: |
+          if [[ "${{ matrix.gradle_cache }}" == "true" ]]; then
+            if unzip -l build/app/outputs/flutter-apk/app-debug.apk | grep -Ei '(^|/)(lib)?sqlite3[^/]*$'; then
+              echo 'Android artifact contains an embedded SQLite native asset.' >&2
+              exit 1
+            fi
+          elif find build/ios/iphoneos/Runner.app -iname '*sqlite3*' -print -quit | grep -q .; then
+            echo 'iOS artifact contains an embedded SQLite native asset.' >&2
+            exit 1
+          fi
+        working-directory: packages/app
 
   desktop-debug-build:
     name: Desktop Debug Build (${{ matrix.os }})
@@ -477,9 +488,9 @@ jobs:
       matrix:
         include:
           - os: macos-26
-            command: flutter build macos --debug -t lib/main_desktop.dart
+            command: flutter build macos --debug -t lib/main.dart
           - os: windows-2025
-            command: flutter build windows --debug -t lib/main_desktop.dart
+            command: flutter build windows --debug -t lib/main.dart
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -487,7 +498,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
-        working-directory: packages/app
+        working-directory: packages/desktop_app
 
   web-build:
     name: Web Build
@@ -644,7 +655,7 @@ jobs:
       - name: Package Linux artifacts
         if: matrix.platform == 'linux'
         env:
-          BUNDLE: packages/app/build/linux/x64/release/bundle
+          BUNDLE: packages/desktop_app/build/linux/x64/release/bundle
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage tinest --input "$BUNDLE" \
             --output dist/Tinest-linux-x64.AppImage --arch x86_64 \
@@ -675,7 +686,7 @@ jobs:
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_KEY_P8_BASE64 }}
-          APP: packages/app/build/macos/Build/Products/Release/Tinest.app
+          APP: packages/desktop_app/build/macos/Build/Products/Release/Tinest.app
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package macos sign tinest --input "$APP" --app-bundle \
             ${{ !startsWith(github.ref, 'refs/tags/v') && '--skip-notarize' || '' }}
@@ -693,9 +704,9 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          $version = (Select-String -Path packages/app/pubspec.yaml `
+          $version = (Select-String -Path packages/desktop_app/pubspec.yaml `
             -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value.Split('+')[0]
-          $bundle = "$PWD\packages\app\build\windows\${{ matrix.arch }}\runner\Release"
+          $bundle = "$PWD\packages\desktop_app\build\windows\${{ matrix.arch }}\runner\Release"
           $runtimeDlls = @(
             'msvcp140.dll',
             'vcruntime140.dll',
@@ -714,7 +725,7 @@ jobs:
             "/DAppArch=${{ matrix.arch }}" `
             "/DSourceDir=$bundle" `
             "/DOutputDir=$PWD\dist" `
-            "$PWD\packages\app\windows\installer\tinest.iss"
+            "$PWD\packages\desktop_app\windows\installer\tinest.iss"
 
           $installer = "$PWD\dist\Tinest-setup-win-${{ matrix.arch }}.exe"
           $installRoot = Join-Path $env:RUNNER_TEMP 'tinest-installer-smoke'
@@ -747,7 +758,7 @@ jobs:
           MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package windows msix tinest
-          --input packages/app/build/windows/${{ matrix.arch }}/runner/Release
+          --input packages/desktop_app/build/windows/${{ matrix.arch }}/runner/Release
           --launcher tinest.exe --arch ${{ matrix.arch }}
           --output dist/Tinest-win-${{ matrix.arch }}.msix
           --package-root dist/msix/${{ matrix.arch }}
@@ -755,7 +766,7 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: Compress-Archive
-          -Path packages/app/build/windows/${{ matrix.arch }}/runner/Release/*
+          -Path packages/desktop_app/build/windows/${{ matrix.arch }}/runner/Release/*
           -DestinationPath dist/Tinest-${{ matrix.target }}.zip
 
       - name: Upload artifacts
@@ -1157,7 +1168,6 @@ jobs:
           - conversation
           - provider
           - settings-desktop
-          - remote-bootstrap
           - desktop-shell
     runs-on: ${{ matrix.platform.os }}
     timeout-minutes: 45
@@ -1166,7 +1176,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: >-
-          dart run packages/app/tool/run_desktop_e2e.dart
+          dart run packages/desktop_app/tool/run_desktop_e2e.dart
           --scenario=${{ matrix.scenario }}
           --jobs=2
           --report=build/e2e-${{ matrix.scenario }}.json
@@ -1192,8 +1202,6 @@ jobs:
           script: >-
             cd packages/app &&
             flutter test integration_test/remote_bootstrap_smoke_test.dart
-            -d emulator-5554 &&
-            flutter test integration_test/provider_e2e_test.dart
             -d emulator-5554
 
   nightly-ios-smoke:
@@ -1212,7 +1220,5 @@ jobs:
           echo "IOS_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
       - run: >-
           flutter test integration_test/remote_bootstrap_smoke_test.dart
-          -d "$IOS_DEVICE_ID" &&
-          flutter test integration_test/provider_e2e_test.dart
           -d "$IOS_DEVICE_ID"
         working-directory: packages/app
