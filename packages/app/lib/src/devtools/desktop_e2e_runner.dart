@@ -225,7 +225,6 @@ final class DesktopE2ePlan {
       '--suppress-analytics',
       'test',
       'integration_test/desktop_e2e_suite_test.dart',
-      '--no-pub',
       '-d',
       device,
       '--test-randomize-ordering-seed=$seed',

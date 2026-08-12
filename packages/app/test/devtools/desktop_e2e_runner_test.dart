@@ -25,6 +25,11 @@ void main() {
         '--test-randomize-ordering-seed=7',
       ]),
     );
+    expect(
+      linux.commandForLane(lane, seed: 7).arguments,
+      isNot(contains('--no-pub')),
+      reason: 'clean isolated build directories need plugin symlink bootstrap',
+    );
   });
 
   test('jobs adapt to one or two exact-once deterministic lanes', () {
