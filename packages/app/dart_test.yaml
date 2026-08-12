@@ -83,7 +83,6 @@ tags:
   feature_test__settings_async_loading__widget:
   feature_test__workspace_async_loading__widget:
   feature_test__context_compaction__widget:
-  golden:
   feature_test__conversation_turn_queue__unit:
   feature_test__conversation_turn_queue__widget:
   feature_test__conversation_attachments__unit:

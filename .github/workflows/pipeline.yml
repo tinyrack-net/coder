@@ -296,20 +296,6 @@ jobs:
           test "$(docker inspect --format '{{.State.ExitCode}}' \
             coder-relay-smoke)" = "0"
 
-  golden-linux:
-    name: Linux goldens
-    needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
-      needs.changes.outputs.scope != 'relay-only'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-flutter
-      - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:golden
-
   debug-e2e-linux:
     name: Linux Debug E2E (${{ matrix.shard }})
     needs: changes
@@ -510,7 +496,6 @@ jobs:
       - coverage-flutter-linux
       - relay-coverage-linux
       - relay-smoke-linux
-      - golden-linux
       - debug-e2e-linux
       - linux-ibus-terminal-e2e
       - mobile-debug-build

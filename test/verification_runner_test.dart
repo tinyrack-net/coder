@@ -91,15 +91,10 @@ void main() {
 
   test('workspace plans keep every canonical test suite single-pass', () {
     final fast = WorkspaceVerificationPlans.fast();
-    final linux = WorkspaceVerificationPlans.full(
-      hostPlatform: DesktopHost.linux,
-    );
-    final windows = WorkspaceVerificationPlans.full(
-      hostPlatform: DesktopHost.windows,
-    );
-    final macos = WorkspaceVerificationPlans.full(
-      hostPlatform: DesktopHost.macos,
-    );
+    // The full plan takes no host: every gate in it runs everywhere, so no
+    // host can silently verify less than another and report a pass for work
+    // it never did.
+    final full = WorkspaceVerificationPlans.full();
     final coverage = WorkspaceVerificationPlans.coverage();
 
     expect(_scripts(fast), containsAll(<String>['test:dart', 'test:flutter']));
@@ -117,37 +112,15 @@ void main() {
     );
 
     expect(
-      _scripts(linux),
+      _scripts(full),
       containsAll(<String>[
         'test:coverage:dart',
         'test:coverage:flutter',
-        'test:golden',
         'coverage:check',
       ]),
     );
-    expect(_scripts(linux), isNot(contains('test:dart')));
-    expect(_scripts(linux), isNot(contains('test:flutter')));
-    final flutterCoveragePhase = linux.phases.indexWhere(
-      (phase) => phase.tasks.any(
-        (task) => task.script == 'test:coverage:flutter',
-      ),
-    );
-    final goldenPhase = linux.phases.indexWhere(
-      (phase) => phase.tasks.any((task) => task.script == 'test:golden'),
-    );
-    expect(goldenPhase, greaterThan(flutterCoveragePhase));
-    expect(_scripts(windows), isNot(contains('test:golden')));
-    expect(_scripts(macos), isNot(contains('test:golden')));
-    for (final plan in <VerificationPlan>[windows, macos]) {
-      expect(
-        _scripts(plan),
-        containsAll(<String>[
-          'test:coverage:dart',
-          'test:coverage:flutter',
-          'coverage:check',
-        ]),
-      );
-    }
+    expect(_scripts(full), isNot(contains('test:dart')));
+    expect(_scripts(full), isNot(contains('test:flutter')));
     expect(_scripts(coverage), <String>[
       'test:coverage:dart',
       'test:coverage:flutter',

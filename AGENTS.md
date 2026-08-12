@@ -13,9 +13,10 @@ exact 40-character commit SHAs. Do not use pub.dev, moving branches or tags, pat
 dependencies, or `dependency_overrides` for these packages. Run
 `dart run melos tinyrack-sources:check` after changing dependencies.
 
-Before upgrading anything, read [`docs/dependencies.md`](docs/dependencies.md).
-It records which packages `flutter pub outdated` reports as upgradable but are
-in fact pinned shut by the Flutter SDK or an upstream package, and why.
+`flutter pub outdated` reports packages as upgradable that are in fact pinned
+shut by the Flutter SDK or an upstream package. Before upgrading anything,
+resolve the constraint that actually holds the version down and say what it is;
+a bump that only passes because the lockfile was regenerated is not an upgrade.
 
 ## UI design system
 
@@ -49,7 +50,7 @@ design value, pub-cache edit, path dependency, moving Git ref, or
 3. Never edit generated `.g.dart` or `.freezed.dart` files by hand. Run the
    generator and commit its output.
 4. Add unit and contract tests for every behavior change. UI changes also require
-   widget tests and an updated Linux golden when pixels change. Protocol or daemon
+   widget tests asserting the affected layout and styling values. Protocol or daemon
    changes require contract and daemon integration tests.
 5. Register every new or changed capability in the typed feature manifest and
    add executable `feature_test__<feature_id>__<layer>` tags for every required
@@ -66,6 +67,11 @@ design value, pub-cache edit, path dependency, moving Git ref, or
 7. Run a platform Debug build for every platform-specific change. If the current
    machine cannot run that platform, explicitly report it as unverified and name
    the CI job responsible for it.
+8. Never emulate another host. Do not use Docker, Podman, any container, WSL, a
+   virtual machine, or a remote Linux machine to run a gate the local host
+   cannot run. Every gate in `verify` runs natively on Linux, macOS, and
+   Windows; the one gate no host runs locally is the native IBus terminal E2E,
+   which is owned by `linux-ibus-terminal-e2e` and is reported, not reproduced.
 
 ## Non-negotiable gates
 
@@ -86,5 +92,16 @@ Do not use broad lint ignores, coverage ignores, skipped tests, or broad excepti
 catches to make a gate pass. A necessary line-level ignore must include a comment
 explaining the reason and safety argument.
 
-The commands, test taxonomy, coverage rules, and platform matrix are documented in
-[`docs/testing.md`](docs/testing.md).
+`dart run melos verify` and `dart run melos verify:debug` are the two required
+gates, and every gate inside them runs natively on Linux, macOS, and Windows.
+`verify` uses the coverage runs as the canonical test execution rather than
+running the suites once plain and again instrumented.
+
+There is no pixel gate. Goldens were removed after measurement: readable images
+differ between Linux and Windows by 0.9-1.1% of pixels, and blocking the text
+out does not fix it, because obscuring removes glyph painting but not glyph
+measurement — the rectangle it paints is sized from the measured text, so a
+sub-pixel metric difference moves its edge a whole pixel. 32 of 165 images
+still differed, worst on scripts that fall back to another font (Japanese, up
+to 5.45%). Assert layout, spacing, and colour on the widgets instead. Do not
+reintroduce goldens without accepting that only one host can verify them.
