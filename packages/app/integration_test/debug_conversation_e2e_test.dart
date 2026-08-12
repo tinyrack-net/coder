@@ -2550,7 +2550,11 @@ Future<void> _waitForComposerReady(
   ValueKey<String> sendKey,
 ) => pumpUntilCondition(
   tester,
-  () => tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
+  () {
+    final sendButton = find.byKey(sendKey);
+    if (sendButton.evaluate().length != 1) return false;
+    return tester.widget<TRIconButton>(sendButton).onPressed != null;
+  },
   'the composer to have a model selected',
 );
 
