@@ -1049,10 +1049,7 @@ final class FakeTinestApi
     dirty: false,
     unpushedCommitCount: 0,
     runningSessionCount: 0,
-    removesDirectory: _worktrees
-        .where((item) => item.id == worktreeId)
-        .first
-        .isTinestOwned,
+    removesDirectory: true,
   );
 
   @override

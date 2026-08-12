@@ -2799,6 +2799,43 @@ void main() {
         ),
       );
 
+      final archivedExternalPath = p.join(home.path, 'external-archive');
+      await _runGit(repository.path, <String>[
+        'worktree',
+        'add',
+        '-b',
+        'external-archive',
+        archivedExternalPath,
+      ]);
+      final canonicalArchivedExternalPath = await Directory(
+        archivedExternalPath,
+      ).resolveSymbolicLinks();
+      final archiveCatalog = await client.refreshWorkspace('git-workspace');
+      final archivedExternal = archiveCatalog.worktrees.singleWhere(
+        (worktree) => p.equals(worktree.path, canonicalArchivedExternalPath),
+      );
+      expect(archivedExternal.kind, WorktreeKind.external);
+      expect(
+        (await client.previewWorktreeArchive(
+          archivedExternal.id,
+        )).removesDirectory,
+        isTrue,
+      );
+      await client.archiveWorktree(archivedExternal.id);
+      expect(Directory(archivedExternalPath).existsSync(), isFalse);
+      expect(
+        (await client.listGitBranches('git-workspace')).map(
+          (branch) => branch.name,
+        ),
+        contains('external-archive'),
+      );
+      expect(
+        (await client.getWorkspaceCatalog()).worktrees.map(
+          (worktree) => worktree.id,
+        ),
+        isNot(contains(archivedExternal.id)),
+      );
+
       final managed = await client.createWorktree(
         id: 'managed-worktree',
         workspaceId: 'git-workspace',

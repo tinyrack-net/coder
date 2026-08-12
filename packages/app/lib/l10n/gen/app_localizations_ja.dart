@@ -463,12 +463,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String workspaceArchiveRemovesDirectory(String appName) {
-    return '$appName が作成したチェックアウトディレクトリは削除されます。';
-  }
-
-  @override
-  String get workspaceArchiveKeepsDirectory => '登録を隠すだけで、チェックアウトはディスクに残ります。';
+  String get workspaceArchiveRemovesDirectory => 'チェックアウトディレクトリは削除されます。';
 
   @override
   String get workspaceArchiveRisky => 'リスクを確認してアーカイブ';

@@ -928,17 +928,11 @@ abstract class AppLocalizations {
   /// **'It has {count} unpushed commit(s).\n'**
   String workspaceArchiveUnpushed(int count);
 
-  /// Archive effect for an app-managed checkout.
+  /// Archive effect for a removable checkout.
   ///
   /// In en, this message translates to:
-  /// **'The checkout directory created by {appName} will be removed.'**
-  String workspaceArchiveRemovesDirectory(String appName);
-
-  /// Archive effect for an externally created checkout.
-  ///
-  /// In en, this message translates to:
-  /// **'Only the registration is hidden; the checkout stays on disk.'**
-  String get workspaceArchiveKeepsDirectory;
+  /// **'The checkout directory will be removed.'**
+  String get workspaceArchiveRemovesDirectory;
 
   /// Archive confirmation label when the checkout has unsaved work.
   ///

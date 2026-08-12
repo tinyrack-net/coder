@@ -467,6 +467,12 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
         description: 'Previews archive effects and preserves on cancel.',
         surfaces: _allSurfaces,
       ),
+      FeatureScenario(
+        id: 'archive_external',
+        description:
+            'Archives a discovered external worktree and removes its checkout.',
+        surfaces: _allSurfaces,
+      ),
     ],
   ),
   FeatureContract(

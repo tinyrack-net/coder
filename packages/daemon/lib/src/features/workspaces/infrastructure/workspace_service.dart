@@ -530,7 +530,7 @@ final class WorkspaceOperations {
       dirty: state.dirty,
       unpushedCommitCount: state.unpushedCommitCount,
       runningSessionCount: await _agents.countActive(worktree.id),
-      removesDirectory: worktree.isTinestOwned,
+      removesDirectory: isArchivableWorktreeKind(worktree.kind),
     );
   }
 
@@ -575,12 +575,14 @@ final class WorkspaceOperations {
       workspace: workspace,
       worktree: worktree,
     );
-    if (worktree.isTinestOwned) {
+    try {
       await _git.removeWorktree(
         workspace.rootPath,
         worktree.path,
         force: force,
       );
+    } on GitCommandException catch (error) {
+      throw _gitFailure(error);
     }
     final archivedAt = _clock.nowUtc();
     await _worktrees.archive(worktree.id, archivedAt);

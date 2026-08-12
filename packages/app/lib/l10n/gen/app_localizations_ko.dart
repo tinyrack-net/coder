@@ -463,12 +463,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String workspaceArchiveRemovesDirectory(String appName) {
-    return '$appName가 만든 checkout 디렉터리가 제거됩니다.';
-  }
-
-  @override
-  String get workspaceArchiveKeepsDirectory => '등록만 숨기고 디스크의 checkout은 유지합니다.';
+  String get workspaceArchiveRemovesDirectory => 'checkout 디렉터리가 제거됩니다.';
 
   @override
   String get workspaceArchiveRisky => '위험을 확인하고 Archive';

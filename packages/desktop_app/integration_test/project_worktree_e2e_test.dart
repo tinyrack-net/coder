@@ -184,6 +184,70 @@ void main() {
       'feature_scenario__worktree_lifecycle__archive_preview_cancel__e2e',
     ],
   );
+
+  testWidgets(
+    'archiving a discovered external worktree removes its checkout',
+    (tester) async {
+      final fixture = await _gitProjectFixture('worktree-archive-external');
+      addTearDown(fixture.$1.dispose);
+      final client = await fixture.$1.connect(clientId: 'archive-external');
+      addTearDown(client.close);
+      final externalPath = Directory(
+        '${fixture.$1.home.path}/external-checkout',
+      );
+      await _runGit(fixture.$2.path, <String>[
+        'worktree',
+        'add',
+        '-b',
+        'archive-external',
+        externalPath.path,
+      ]);
+      final catalog = await client.workspaces.refreshWorkspace(fixture.$3);
+      final external = catalog.worktrees.singleWhere(
+        (worktree) => worktree.branch == 'archive-external',
+      );
+      expect(external.kind, WorktreeKind.external);
+
+      tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
+      addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(TinestApp(services: fixture.$1.services));
+      await pumpUntil(tester, find.text('archive-external'));
+      final menu = find.byKey(
+        ValueKey<String>('worktree-menu-${external.id}'),
+      );
+      await tester.ensureVisible(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('worktree-archive-confirm')),
+      );
+      expect(find.text('checkout 디렉터리가 제거됩니다.'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TRButton, 'Archive'));
+      await pumpUntilGone(tester, find.text('archive-external'));
+
+      expect(externalPath.existsSync(), isFalse);
+      expect(
+        (await client.workspaces.listGitBranches(fixture.$3)).map(
+          (branch) => branch.name,
+        ),
+        contains('archive-external'),
+      );
+      expect(
+        (await client.workspaces.getWorkspaceCatalog()).worktrees.map(
+          (worktree) => worktree.id,
+        ),
+        isNot(contains(external.id)),
+      );
+    },
+    tags: const <String>[
+      'feature_scenario__worktree_lifecycle__archive_external__e2e',
+    ],
+  );
 }
 
 Future<(RealDaemonFixture, Directory)> _projectFixture(String id) async {

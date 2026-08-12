@@ -572,18 +572,9 @@
       }
     }
   },
-  "workspaceArchiveRemovesDirectory": "The checkout directory created by {appName} will be removed.",
+  "workspaceArchiveRemovesDirectory": "The checkout directory will be removed.",
   "@workspaceArchiveRemovesDirectory": {
-    "description": "Archive effect for an app-managed checkout.",
-    "placeholders": {
-      "appName": {
-        "type": "String"
-      }
-    }
-  },
-  "workspaceArchiveKeepsDirectory": "Only the registration is hidden; the checkout stays on disk.",
-  "@workspaceArchiveKeepsDirectory": {
-    "description": "Archive effect for an externally created checkout."
+    "description": "Archive effect for a removable checkout."
   },
   "workspaceArchiveRisky": "Confirm the risks and archive",
   "@workspaceArchiveRisky": {
