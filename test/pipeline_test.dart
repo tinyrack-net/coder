@@ -431,6 +431,15 @@ void main() {
     }
   });
 
+  test('release metadata points at the repository that hosts artifacts', () {
+    expect(
+      shipworld,
+      contains('homepage: https://github.com/tinyrack-net/coder'),
+    );
+    expect(shipworld, contains('repository: tinyrack-net/coder'));
+    expect(shipworld, isNot(contains('tinyrack-net/tinest')));
+  });
+
   test('relay release has an independent version and reproducible image', () {
     expect(shipworld, contains('  relay:'));
     expect(shipworld, contains('source: packages/relay/pubspec.yaml'));
