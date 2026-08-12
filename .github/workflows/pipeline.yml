@@ -469,12 +469,13 @@ jobs:
               exit 1
             fi
           else
-            mapfile -t ios_apps < <(find build/ios/iphoneos -maxdepth 1 -type d -name '*.app')
-            if [[ "${#ios_apps[@]}" -ne 1 ]]; then
-              echo "Expected one iOS app bundle, found ${#ios_apps[@]}." >&2
+            ios_app_count="$(find build/ios/iphoneos -maxdepth 1 -type d -name '*.app' | wc -l | tr -d ' ')"
+            if [[ "$ios_app_count" -ne 1 ]]; then
+              echo "Expected one iOS app bundle, found $ios_app_count." >&2
               exit 1
             fi
-            if find "${ios_apps[0]}" -iname '*sqlite3*' -print -quit | grep -q .; then
+            ios_app="$(find build/ios/iphoneos -maxdepth 1 -type d -name '*.app' -print -quit)"
+            if find "$ios_app" -iname '*sqlite3*' -print -quit | grep -q .; then
               echo 'iOS artifact contains an embedded SQLite native asset.' >&2
               exit 1
             fi

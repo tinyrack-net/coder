@@ -356,7 +356,9 @@ void main() {
 
     expect(mobileBuild, contains("-type d -name '*.app'"));
     expect(mobileBuild, contains('Expected one iOS app bundle'));
-    expect(mobileBuild, contains(r'"${ios_apps[0]}"'));
+    expect(mobileBuild, contains(r'ios_app_count="$(find'));
+    expect(mobileBuild, contains(r'find "$ios_app"'));
+    expect(mobileBuild, isNot(contains('mapfile')));
     expect(mobileBuild, isNot(contains('Runner.app')));
   });
 
