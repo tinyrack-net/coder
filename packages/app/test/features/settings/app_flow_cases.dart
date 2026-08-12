@@ -104,10 +104,7 @@ void _registerSettingsAppFlows() {
         await tester.pumpAndSettle();
         final shortcut = find.descendant(
           of: find
-              .ancestor(
-                of: find.text(hostLabel),
-                matching: find.byType(TRCard),
-              )
+              .ancestor(of: find.text(hostLabel), matching: find.byType(TRCard))
               .first,
           matching: find.widgetWithText(TRButton, 'Provider 설정'),
         );
@@ -309,10 +306,101 @@ void _registerSettingsAppFlows() {
   );
 
   testWidgets(
+    'mobile settings navigation rows remain keyboard activatable',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        const GeneralSettingsRoute().location,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile settings navigation rows expose hover and pressed surfaces',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      Color? rowBackground(String label) {
+        final surface = tester.widget<AnimatedContainer>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(AnimatedContainer),
+              )
+              .first,
+        );
+        return (surface.decoration! as BoxDecoration).color;
+      }
+
+      final theme = tester.element(find.text('General')).tinyrackTheme;
+      final generalSemantics = tester.getSemantics(find.text('General'));
+      expect(generalSemantics.label, 'General');
+      expect(
+        generalSemantics.getSemanticsData().hasAction(ui.SemanticsAction.tap),
+        isTrue,
+      );
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      expect(find.byType(TRTreeNav<SettingsCategory>), findsOneWidget);
+      await mouse.moveTo(tester.getCenter(find.text('General')));
+      await tester.pumpAndSettle();
+      expect(rowBackground('General'), theme.surfaceHover);
+      await mouse.down(tester.getCenter(find.text('General')));
+      await tester.pump();
+      expect(rowBackground('General'), theme.surfacePressed);
+      await mouse.cancel();
+      await tester.pumpAndSettle();
+      expect(rowBackground('General'), theme.surfaceHover);
+
+      await tester.tap(find.text('Test daemon'));
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        '/settings/daemons/server/categories',
+      );
+      expect(find.byType(TRTreeNav<SettingsCategory>), findsOneWidget);
+      await mouse.moveTo(tester.getCenter(find.text('MCP')));
+      await tester.pumpAndSettle();
+      expect(rowBackground('MCP'), theme.surfaceHover);
+      await mouse.down(tester.getCenter(find.text('MCP')));
+      await tester.pump();
+      expect(rowBackground('MCP'), theme.surfacePressed);
+      await mouse.cancel();
+      await tester.pumpAndSettle();
+      expect(rowBackground('MCP'), theme.surfaceHover);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
     'mobile settings drills from home into daemon MCP settings',
-    (
-      tester,
-    ) async {
+    (tester) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
@@ -341,9 +429,7 @@ void _registerSettingsAppFlows() {
         findsOneWidget,
       );
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-daemon-categories-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
         findsOneWidget,
       );
       await tester.pumpAndSettle();
@@ -357,9 +443,7 @@ void _registerSettingsAppFlows() {
       await tester.pump();
       await tester.pump();
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-daemon-categories-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
         findsOneWidget,
       );
       expect(
@@ -370,14 +454,10 @@ void _registerSettingsAppFlows() {
       expect(router.routeInformationProvider.value.uri.path, '/settings/mcp');
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('mcp-server-add')),
-      );
+      await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
       await tester.pump();
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-list-collection-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-list-collection-pane')),
         findsOneWidget,
       );
       expect(
@@ -391,9 +471,7 @@ void _registerSettingsAppFlows() {
       );
       expect(find.text('MCP 서버'), findsNothing);
 
-      final back = find.byKey(
-        const ValueKey<String>('settings-back-button'),
-      );
+      final back = find.byKey(const ValueKey<String>('settings-back-button'));
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(
@@ -401,9 +479,7 @@ void _registerSettingsAppFlows() {
         findsOneWidget,
       );
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-list-collection-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-list-collection-pane')),
         findsOneWidget,
       );
       await tester.pumpAndSettle();
@@ -418,9 +494,7 @@ void _registerSettingsAppFlows() {
         findsOneWidget,
       );
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-daemon-categories-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
         findsOneWidget,
       );
       await tester.pumpAndSettle();
@@ -434,9 +508,7 @@ void _registerSettingsAppFlows() {
       await tester.pump();
       await tester.pump();
       expect(
-        find.byKey(
-          const ValueKey<String>('settings-daemon-categories-pane'),
-        ),
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
         findsOneWidget,
       );
       expect(

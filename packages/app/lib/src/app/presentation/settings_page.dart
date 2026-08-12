@@ -305,24 +305,48 @@ class _MobileSettingsHome extends StatelessWidget {
       padding: const EdgeInsets.all(TRSpacing.medium),
       children: <Widget>[
         _SettingsSectionLabel(text: l10n.settingsSectionApp),
-        for (final category in _categoriesInScope(SettingsCategoryScope.app))
-          SettingsRow(
-            leading: Icon(_settingsCategoryIcon(category)),
-            title: TRText.inherit(_settingsCategoryLabel(l10n, category)),
-            control: const Icon(TinestIcons.chevronRight),
-            onTap: () => _goToSettingsCategory(context, category),
-          ),
+        TRTreeNav<SettingsCategory>.controlled(
+          value: null,
+          semanticLabel: l10n.settingsSectionApp,
+          itemSpacing: TRSpacing.extraSmall,
+          items: <TRTreeNavItem<SettingsCategory>>[
+            for (final category in _categoriesInScope(
+              SettingsCategoryScope.app,
+            ))
+              TRTreeNavLeaf<SettingsCategory>(
+                value: category,
+                leading: Icon(_settingsCategoryIcon(category)),
+                label: TRText.inherit(_settingsCategoryLabel(l10n, category)),
+                trailing: const Icon(TinestIcons.chevronRight),
+              ),
+          ],
+          onValueChange: (category) {
+            if (category == null) return;
+            _goToSettingsCategory(context, category);
+          },
+        ),
         const SizedBox(height: TRSpacing.large),
         _SettingsSectionLabel(text: l10n.settingsSectionDaemon),
-        for (final host in hosts)
-          SettingsRow(
-            key: ValueKey<String>('settings-daemon-row-${host.id}'),
-            leading: Icon(hostStatusIcon(host.status)),
-            title: TRText.inherit(hostLabel(l10n, host)),
-            description: TRText.inherit(hostStatusText(l10n, host)),
-            control: const Icon(TinestIcons.chevronRight),
-            onTap: () => _openDaemonCategories(context, host.id),
-          ),
+        TRTreeNav<String>.controlled(
+          value: null,
+          semanticLabel: l10n.settingsSectionDaemon,
+          itemSpacing: TRSpacing.extraSmall,
+          items: <TRTreeNavItem<String>>[
+            for (final host in hosts)
+              TRTreeNavLeaf<String>(
+                key: ValueKey<String>('settings-daemon-row-${host.id}'),
+                value: host.id,
+                leading: Icon(hostStatusIcon(host.status)),
+                label: TRText.inherit(hostLabel(l10n, host)),
+                description: TRText.inherit(hostStatusText(l10n, host)),
+                trailing: const Icon(TinestIcons.chevronRight),
+              ),
+          ],
+          onValueChange: (hostId) {
+            if (hostId == null) return;
+            unawaited(_openDaemonCategories(context, hostId));
+          },
+        ),
       ],
     );
   }
@@ -365,21 +389,32 @@ class _MobileDaemonCategories extends StatelessWidget {
         Expanded(
           child: ListView(
             children: <Widget>[
-              for (final category in _categoriesInScope(
-                SettingsCategoryScope.daemon,
-              ))
-                SettingsRow(
-                  leading: Icon(_settingsCategoryIcon(category)),
-                  title: TRText.inherit(
-                    _settingsCategoryLabel(l10n, category),
-                  ),
-                  control: const Icon(TinestIcons.chevronRight),
-                  onTap: () => _goToSettingsCategory(
+              TRTreeNav<SettingsCategory>.controlled(
+                value: null,
+                semanticLabel: l10n.settingsSectionDaemon,
+                itemSpacing: TRSpacing.extraSmall,
+                items: <TRTreeNavItem<SettingsCategory>>[
+                  for (final category in _categoriesInScope(
+                    SettingsCategoryScope.daemon,
+                  ))
+                    TRTreeNavLeaf<SettingsCategory>(
+                      value: category,
+                      leading: Icon(_settingsCategoryIcon(category)),
+                      label: TRText.inherit(
+                        _settingsCategoryLabel(l10n, category),
+                      ),
+                      trailing: const Icon(TinestIcons.chevronRight),
+                    ),
+                ],
+                onValueChange: (category) {
+                  if (category == null) return;
+                  _goToSettingsCategory(
                     context,
                     category,
                     hostId: host.id,
-                  ),
-                ),
+                  );
+                },
+              ),
             ],
           ),
         ),
