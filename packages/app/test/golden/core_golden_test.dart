@@ -1320,11 +1320,58 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.textContaining('Plain folder ·').last);
         await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
       },
       builder: () => SizedBox(
         width: 1100,
         height: 760,
         child: _directoryNewWorkspace(ThemeMode.light),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile new workspace stacks Git targets above the composer',
+      fileName: 'new_workspace_mobile',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 780),
+      pumpBeforeTest: (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 780);
+        addTearDown(tester.view.reset);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Tinest ·').last);
+        await tester.pumpAndSettle();
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 780,
+        child: _gitNewWorkspace(ThemeMode.dark),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile new workspace opens project Select as a sheet',
+      fileName: 'new_workspace_mobile_project_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 780),
+      pumpBeforeTest: (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 780);
+        addTearDown(tester.view.reset);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        expect(find.byType(TRDrawer), findsOneWidget);
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 780,
+        child: _gitNewWorkspace(ThemeMode.dark),
       ),
     ),
   );
@@ -1891,6 +1938,40 @@ Widget _directoryNewWorkspace(ThemeMode mode) {
     name: workspace.name,
     path: workspace.rootPath,
     kind: WorktreeKind.directory,
+    isTinestOwned: false,
+    createdAt: now,
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(
+          FakeTinestApi(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[checkout],
+          ),
+        ),
+      ),
+    ],
+    child: _material(mode, const WorkspacePage(compose: true)),
+  );
+}
+
+Widget _gitNewWorkspace(ThemeMode mode) {
+  final now = DateTime.utc(2026);
+  final workspace = WorkspaceDto(
+    id: 'tinest',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final checkout = WorktreeDto(
+    id: 'tinest-main',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    kind: WorktreeKind.checkout,
     isTinestOwned: false,
     createdAt: now,
   );
