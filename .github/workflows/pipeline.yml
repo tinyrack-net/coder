@@ -828,29 +828,36 @@ jobs:
             printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
             printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
           } > packages/app/android/key.properties
-      - name: Build the signed universal APK
-        run: flutter build apk --release -t lib/main_mobile.dart
+      - name: Build the signed Android release artifacts
+        run: |
+          flutter build apk --release -t lib/main_mobile.dart
+          flutter build appbundle --release -t lib/main_mobile.dart
         working-directory: packages/app
-      - name: Verify and stage the signed APK
+      - name: Verify and stage the signed Android release artifacts
         run: |
           set -euo pipefail
           apksigner="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner \
             | sort -V | tail -n 1)"
           test -n "$apksigner"
           apk="packages/app/build/app/outputs/flutter-apk/app-release.apk"
+          aab="packages/app/build/app/outputs/bundle/release/app-release.aab"
           "$apksigner" verify --verbose --print-certs "$apk"
+          jarsigner -verify -verbose -certs "$aab"
           mkdir -p dist
           cp "$apk" dist/Tinest-android-universal.apk
+          cp "$aab" dist/Tinest-android-play.aab
       - name: Remove Android signing material
         if: always()
         run: rm -f packages/app/android/key.properties
           "$RUNNER_TEMP/tinest-release.jks"
-      - name: Upload Android release artifact
+      - name: Upload Android release artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: tinest-android-universal
+          name: tinest-android
           retention-days: 7
-          path: dist/Tinest-android-universal.apk
+          path: |
+            dist/Tinest-android-universal.apk
+            dist/Tinest-android-play.aab
           if-no-files-found: error
 
   deploy-web:
