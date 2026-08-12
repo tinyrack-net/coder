@@ -138,6 +138,18 @@ void main() {
         await incoming.decrypt(encryptedResponse.payload),
       );
       expect(RelayRpcMessageAssembler().add(record), response);
+      await transport.terminateDeviceSessions('phone');
+      expect(await iterator.moveNext(), isTrue);
+      final terminated = RelayRecord.decode(
+        await incoming.decrypt(
+          RelayWireFrame.decode(
+            RelayEnvelope.decode(iterator.current! as List<int>).payload,
+          ).payload,
+        ),
+      );
+      expect(terminated.type, RelayRecordType.close);
+      expect(terminated.streamId, 0);
+      expect(terminated.payload, isEmpty);
       await iterator.cancel();
       await transport.terminateDeviceSessions('missing-device');
       await transport.close();
@@ -258,9 +270,6 @@ void main() {
           );
       expect(downloadedBytes, size);
     },
-    tags: const <String>[
-      'feature_test__daemon_relay__e2e',
-    ],
   );
 }
 
