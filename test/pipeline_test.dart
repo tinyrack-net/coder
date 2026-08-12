@@ -342,8 +342,15 @@ void main() {
   test('app tags deploy web as a required release artifact', () {
     final deployWeb = _job(workflow, 'deploy-web');
     final publishRelease = _job(workflow, 'publish-release');
+    final publishHomebrew = _job(workflow, 'publish-homebrew');
+    final publishWinget = _job(workflow, 'publish-winget');
 
     expect(deployWeb, contains("startsWith(github.ref, 'refs/tags/v')"));
+    expect(deployWeb, contains('if: always() &&'));
+    expect(deployWeb, contains("needs.quality-gate.result == 'success'"));
+    expect(deployWeb, contains("needs.web-build.result == 'success'"));
+    expect(deployWeb, contains("needs.build-and-package.result == 'success'"));
+    expect(deployWeb, contains("needs.build-cli.result == 'success'"));
     expect(deployWeb, isNot(contains("github.ref == 'refs/heads/main'")));
     for (final dependency in <String>[
       'quality-gate',
@@ -354,6 +361,33 @@ void main() {
       expect(deployWeb, contains('- $dependency'));
     }
     expect(publishRelease, contains('- deploy-web'));
+    expect(publishRelease, contains('if: always() &&'));
+    expect(publishRelease, contains("needs.deploy-web.result == 'success'"));
+    expect(publishHomebrew, contains('if: always() &&'));
+    expect(
+      publishHomebrew,
+      contains("needs.publish-release.result == 'success'"),
+    );
+    expect(publishWinget, contains('if: always() &&'));
+    expect(
+      publishWinget,
+      contains("needs.publish-release.result == 'success'"),
+    );
+  });
+
+  test('a release web deployment can recover from a skipped publish job', () {
+    final recovery = File(
+      '.github/workflows/recover-release-web.yml',
+    ).readAsStringSync();
+
+    expect(recovery, contains('source_run_id:'));
+    expect(recovery, contains('release_tag:'));
+    expect(recovery, contains('actions: read'));
+    expect(recovery, contains(r'gh run download "$SOURCE_RUN_ID"'));
+    expect(recovery, contains('--name web-assets'));
+    expect(recovery, contains('tag_sha'));
+    expect(recovery, contains('run_sha'));
+    expect(recovery, contains('cloudflare/wrangler-action@v3'));
   });
 
   test('relay tags publish one attested multi-platform GHCR image', () {
