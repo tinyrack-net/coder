@@ -795,7 +795,11 @@ jobs:
       - build-cli
     # The hosted client is one of the application release artifacts. Main and
     # pull requests still compile it through `web-build` without publishing.
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') &&
+      needs.quality-gate.result == 'success' &&
+      needs.web-build.result == 'success' &&
+      needs.build-and-package.result == 'success' &&
+      needs.build-cli.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -932,7 +936,12 @@ jobs:
       - build-cli
       - quality-gate
       - deploy-web
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') &&
+      needs.build-and-package.result == 'success' &&
+      needs.build-android-release.result == 'success' &&
+      needs.build-cli.result == 'success' &&
+      needs.quality-gate.result == 'success' &&
+      needs.deploy-web.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -977,7 +986,8 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew
     needs: publish-release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') &&
+      needs.publish-release.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -1044,7 +1054,8 @@ jobs:
   publish-winget:
     name: Publish WinGet
     needs: publish-release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') &&
+      needs.publish-release.result == 'success'
     runs-on: windows-2025
     timeout-minutes: 20
     steps:
