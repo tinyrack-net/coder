@@ -468,9 +468,16 @@ jobs:
               echo 'Android artifact contains an embedded SQLite native asset.' >&2
               exit 1
             fi
-          elif find build/ios/iphoneos/Runner.app -iname '*sqlite3*' -print -quit | grep -q .; then
-            echo 'iOS artifact contains an embedded SQLite native asset.' >&2
-            exit 1
+          else
+            mapfile -t ios_apps < <(find build/ios/iphoneos -maxdepth 1 -type d -name '*.app')
+            if [[ "${#ios_apps[@]}" -ne 1 ]]; then
+              echo "Expected one iOS app bundle, found ${#ios_apps[@]}." >&2
+              exit 1
+            fi
+            if find "${ios_apps[0]}" -iname '*sqlite3*' -print -quit | grep -q .; then
+              echo 'iOS artifact contains an embedded SQLite native asset.' >&2
+              exit 1
+            fi
           fi
         working-directory: packages/app
 

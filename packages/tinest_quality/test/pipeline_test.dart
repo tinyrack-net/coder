@@ -351,6 +351,15 @@ void main() {
     expect(publish, contains('pattern: tinest-*'));
   });
 
+  test('mobile artifact checks inspect the actual iOS app bundle', () {
+    final mobileBuild = _job(workflow, 'mobile-debug-build');
+
+    expect(mobileBuild, contains("-type d -name '*.app'"));
+    expect(mobileBuild, contains('Expected one iOS app bundle'));
+    expect(mobileBuild, contains(r'"${ios_apps[0]}"'));
+    expect(mobileBuild, isNot(contains('Runner.app')));
+  });
+
   test('Android release builds cannot fall back to the debug signing key', () {
     expect(androidAppBuild, contains('key.properties'));
     expect(androidAppBuild, contains('signingConfigs'));
