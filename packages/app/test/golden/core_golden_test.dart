@@ -550,16 +550,8 @@ void main() {
       createdAt: now,
       tokens: const <String, num>{'input': 1234, 'output': 456},
     ),
-    ChatContextReset(
-      key: 'reset',
-      turnId: 'turn-all',
-      createdAt: now,
-    ),
-    ChatContextCompacted(
-      key: 'compacted',
-      turnId: 'turn-all',
-      createdAt: now,
-    ),
+    ChatContextReset(key: 'reset', turnId: 'turn-all', createdAt: now),
+    ChatContextCompacted(key: 'compacted', turnId: 'turn-all', createdAt: now),
     ChatUnknownEvent(
       key: 'unknown',
       turnId: 'turn-all',
@@ -1286,11 +1278,7 @@ void main() {
       builder: () => SizedBox(
         width: 1100,
         height: 760,
-        child: _sessionComposer(
-          ThemeMode.dark,
-          split: true,
-          nestedSplit: true,
-        ),
+        child: _sessionComposer(ThemeMode.dark, split: true, nestedSplit: true),
       ),
     ),
   );
@@ -1328,6 +1316,26 @@ void main() {
         width: 1100,
         height: 760,
         child: _directoryNewWorkspace(ThemeMode.light),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile new workspace collapses turn settings into one action',
+      fileName: 'new_workspace_mobile_directory',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      pumpBeforeTest: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Plain folder ·').last);
+        await tester.pumpAndSettle();
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 760,
+        child: _directoryNewWorkspace(ThemeMode.dark),
       ),
     ),
   );
@@ -1735,9 +1743,7 @@ Widget _composerState(
               mode: AgentMode.primary,
               promptEnabled: true,
               systemPrompt: 'Code carefully.',
-              model: AgentModelSelectionDto(
-                source: AgentModelSource.session,
-              ),
+              model: AgentModelSelectionDto(source: AgentModelSource.session),
               modelControls: <String, ModelControlValueDto>{
                 'reasoning_effort': ModelControlValueDto.stringValue(
                   value: 'medium',
@@ -2077,9 +2083,7 @@ Widget _settings(ThemeMode mode) {
     },
   );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2115,9 +2119,7 @@ Widget _projectSettings(ThemeMode mode) {
           teardown: <String>['docker compose down'],
         );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2176,9 +2178,7 @@ Future<void> _revealLockedAgentModel(WidgetTester tester) async {
 Widget _agentSettings(ThemeMode mode) {
   final api = FakeTinestApi();
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2212,9 +2212,7 @@ Widget _agentSettingsLockedModel(ThemeMode mode) {
     connections: const <ProviderConnectionDto>[],
   );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2272,9 +2270,7 @@ Widget _mcpSettings(ThemeMode mode) {
       serverName: 'repo',
     );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2288,9 +2284,7 @@ Widget _mcpSettings(ThemeMode mode) {
 Widget _skillSettings(ThemeMode mode) {
   final api = FakeTinestApi();
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2311,22 +2305,19 @@ Widget _chat(ThemeMode mode, List<TimelineEventDto> events) => ProviderScope(
   ),
 );
 
-Widget _chatItems(
-  ThemeMode mode,
-  List<ChatItem> items, {
-  required bool busy,
-}) => ProviderScope(
-  overrides: [
-    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
-  ],
-  child: _material(
-    mode,
-    TickerMode(
-      enabled: false,
-      child: ChatTimelineView(items: items, busy: busy),
-    ),
-  ),
-);
+Widget _chatItems(ThemeMode mode, List<ChatItem> items, {required bool busy}) =>
+    ProviderScope(
+      overrides: [
+        externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+      ],
+      child: _material(
+        mode,
+        TickerMode(
+          enabled: false,
+          child: ChatTimelineView(items: items, busy: busy),
+        ),
+      ),
+    );
 
 Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
   overrides: [
@@ -2334,9 +2325,7 @@ Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
   ],
   child: _material(
     mode,
-    SingleChildScrollView(
-      child: ChatItemView(item: item, expanded: true),
-    ),
+    SingleChildScrollView(child: ChatItemView(item: item, expanded: true)),
   ),
 );
 
@@ -2347,10 +2336,7 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
   Future<bool> open(Uri uri) async => true;
 }
 
-Widget _shell(
-  ThemeMode mode, {
-  bool collapsed = false,
-}) {
+Widget _shell(ThemeMode mode, {bool collapsed = false}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -2381,9 +2367,7 @@ Widget _shell(
   );
   return ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(
-        fakeAppServices(api, store: store),
-      ),
+      appServicesProvider.overrideWithValue(fakeAppServices(api, store: store)),
       attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(
