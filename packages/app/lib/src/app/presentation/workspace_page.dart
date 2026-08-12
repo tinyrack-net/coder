@@ -1427,6 +1427,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               _ConversationContentColumn(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
+                    // tinyrack-check-ignore-next-line tokens/no-literal -- reserve half the viewport for the composer and timeline
                     maxHeight: constraints.maxHeight / 2,
                   ),
                   child: Column(

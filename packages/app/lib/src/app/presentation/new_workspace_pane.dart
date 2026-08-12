@@ -301,6 +301,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     );
     final content = ConstrainedBox(
       constraints: const BoxConstraints(
+        // tinyrack-check-ignore-next-line tokens/no-literal -- the pane cap is intentionally one eighth wider than the small breakpoint
         maxWidth: TRBreakpoints.small * 9 / 8,
       ),
       child: Column(

@@ -13,7 +13,9 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// One compact control plus the inset `TRMenubar` draws around its triggers,
 /// so the menubar fills the row instead of being clipped by a taller frame.
 final double desktopMenuBarHeight =
-    TRControlMetrics.heightOf(TRUiSize.sm) + TRSpacing.extraSmall * 2;
+    TRControlMetrics.heightOf(TRUiSize.sm) +
+    TRSpacing.extraSmall +
+    TRSpacing.extraSmall;
 
 /// Window command a title-bar caption button issues.
 enum DesktopCaptionAction {
