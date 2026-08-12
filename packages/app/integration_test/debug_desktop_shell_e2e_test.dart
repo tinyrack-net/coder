@@ -18,6 +18,8 @@ void main() {
       addTearDown(window.releaseClose);
 
       await window.prepare(startHidden: false);
+      await window.show();
+      await _waitForWindowVisibility(window, visible: true);
       expect(window.chrome, DesktopWindowChrome.custom);
       expect(await window.isVisible(), isTrue);
       await window.toggleMaximized();

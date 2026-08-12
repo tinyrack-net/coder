@@ -99,7 +99,11 @@ void main() {
           directoryPicker: _FixedDirectoryPicker(workspace.path),
         ),
       );
-      final setupClient = await _connectToDaemon(port, token);
+      final daemonSession = await launcher.started;
+      final setupClient = await _connectToDaemon(
+        daemonSession.endpoint.port,
+        daemonSession.credentials.bearerToken,
+      );
       addTearDown(setupClient.close);
       final projectMenu = find.byKey(
         const ValueKey<String>('new-workspace-project'),

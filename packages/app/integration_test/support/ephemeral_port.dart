@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 
@@ -14,13 +16,22 @@ const int testEmbeddedDaemonPort = 49152;
 ///
 /// The app-owned embedded-port contract keeps every real-daemon E2E here.
 final class EphemeralEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
-  const EphemeralEmbeddedDaemonLauncher(this.delegate);
+  EphemeralEmbeddedDaemonLauncher(this.delegate);
 
   final EmbeddedDaemonLauncher delegate;
+  final Completer<EmbeddedDaemonSession> _started =
+      Completer<EmbeddedDaemonSession>();
+
+  /// The real session, including the OS-assigned endpoint.
+  Future<EmbeddedDaemonSession> get started => _started.future;
 
   @override
   Future<EmbeddedDaemonSession> start({
     required EmbeddedDaemonExposure exposure,
     required int port,
-  }) => delegate.start(exposure: exposure, port: 0);
+  }) async {
+    final session = await delegate.start(exposure: exposure, port: 0);
+    if (!_started.isCompleted) _started.complete(session);
+    return session;
+  }
 }

@@ -878,9 +878,13 @@ void main() {
         await tester.tap(find.text('E2E Workspace').last);
         await tester.pumpAndSettle();
       }
-      await tester.ensureVisible(find.text('main'));
+      final mainWorktree = find.byKey(
+        const ValueKey<String>('workspace-worktree-checkout-e2e'),
+      );
+      await pumpUntil(tester, mainWorktree);
+      await tester.ensureVisible(mainWorktree);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('main'));
+      await tester.tap(mainWorktree);
       const composer = ValueKey<String>('session-composer-input');
       const send = ValueKey<String>('session-composer-send');
       await pumpUntil(tester, find.byKey(composer));
