@@ -9,7 +9,7 @@ import 'dart:io';
 /// system for a port instead: it draws from the ephemeral range and does not
 /// immediately reissue one it just released.
 ///
-/// The `embedded-ports:check` gate keeps every real-daemon E2E on this helper.
+/// The app-owned embedded-port contract keeps every real-daemon E2E here.
 Future<int> reserveEphemeralPort() async {
   final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
   final port = socket.port;

@@ -64,12 +64,11 @@ add_custom_command(
   OUTPUT
     "${LUA_RUNTIME_STAGE}/lua-tool-runtime-host"
     "${LUA_RUNTIME_STAGE}/lua_tool_runtime/bootstrap.lua"
-  COMMAND "${DART_EXECUTABLE}" run tool/build_lua_host.dart
+  COMMAND "${DART_EXECUTABLE}" run lua_tool_runtime:stage
     --destination "${LUA_RUNTIME_STAGE}" --build-mode release
   DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../pubspec.lock"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../../tool/build_lua_host.dart"
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../.."
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../daemon"
   COMMENT "Staging lua_tool_runtime"
   VERBATIM)
 add_custom_target(lua_tool_runtime_stage ALL DEPENDS

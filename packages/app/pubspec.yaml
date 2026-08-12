@@ -34,6 +34,7 @@ dependencies:
   markdown: ^7.3.1
   meta: ^1.17.0
   mobile_scanner: ^7.4.0
+  path: ^1.9.1
   protocol: ^0.1.0
   riverpod_annotation: 4.0.3
   share_plus: ^12.0.2
@@ -64,6 +65,7 @@ dev_dependencies:
     sdk: flutter
   relay_protocol: ^0.1.0
   riverpod_generator: 4.0.4
+  test: ^1.31.0
 
 flutter:
   generate: true

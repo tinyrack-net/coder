@@ -11,7 +11,7 @@ Consume packages owned by `tinyrack-net`, including `tinyrack_ui`, `cliweave`,
 `dartage`, `shipworld`, and `dropwell`, from their public Git repositories at
 exact 40-character commit SHAs. Do not use pub.dev, moving branches or tags, path
 dependencies, or `dependency_overrides` for these packages. Run
-`dart run melos tinyrack-sources:check` after changing dependencies.
+`dart run tinyrack_workspace source-check` after changing dependencies.
 
 `flutter pub outdated` reports packages as upgradable that are in fact pinned
 shut by the Flutter SDK or an upstream package. Before upgrading anything,

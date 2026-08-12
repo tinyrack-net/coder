@@ -10,7 +10,7 @@ packages:
     source: hosted
     version: "99.0.0"
   analyzer:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: analyzer
       sha256: "663efa951fb8a45e06f491223a604c93820598f20e6a99c25617a1576065e8b7"
@@ -219,7 +219,7 @@ packages:
     source: hosted
     version: "3.1.2"
   coverage:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: coverage
       sha256: "956a3de0725ca232ad353565a8290d3357592bf4250f6f298a185e2d949c5d3d"
@@ -856,7 +856,7 @@ packages:
     source: hosted
     version: "2.2.0"
   path:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: path
       sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
@@ -1335,7 +1335,7 @@ packages:
     source: git
     version: "0.4.1"
   test:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: test
       sha256: "8d9ceddbab833f180fbefed08afa76d7c03513dfdba87ffcec2718b02bbcbf20"
@@ -1367,6 +1367,15 @@ packages:
       url: "https://github.com/tinyrack-net/design.git"
     source: git
     version: "0.55.2"
+  tinyrack_workspace:
+    dependency: transitive
+    description:
+      path: "packages/tinyrack_workspace"
+      ref: dec43d1c6238a9de01f9a0ab3d8dc95dba98b5f5
+      resolved-ref: dec43d1c6238a9de01f9a0ab3d8dc95dba98b5f5
+      url: "https://github.com/tinyrack-net/dart-packages.git"
+    source: git
+    version: "0.1.0"
   tray_manager:
     dependency: transitive
     description:
@@ -1577,7 +1586,7 @@ packages:
     source: hosted
     version: "7.0.1"
   yaml:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: yaml
       sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce

@@ -37,5 +37,5 @@ runs:
           mv "dist/tinest-cli-$TARGET/bin/tinest_cli" \
             "dist/tinest-cli-$TARGET/bin/tinest-cli"
         fi
-        dart run tool/build_lua_host.dart \
-          --destination "dist/tinest-cli-$TARGET/bin"
+        (cd packages/daemon && dart run lua_tool_runtime:stage \
+          --destination "../../dist/tinest-cli-$TARGET/bin")

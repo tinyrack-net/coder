@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND.
 // Source: packages/agent/prompts
-// Regenerate with `dart run tool/generate_prompts.dart`.
+// Regenerate with `dart run packages/agent/tool/generate_prompts.dart`.
 
 /// Prompt text compiled from the `packages/agent/prompts` tree.
 abstract final class PromptAssets {

@@ -21,16 +21,13 @@ this skill and the repository diverge.
 Use focused commands while iterating:
 
 ```sh
-dart run melos test:dart
-dart run melos test:flutter
-dart run melos test:contract
-dart run melos test:vertical-slice
-dart run melos test:coverage
+cd packages/<dart-package> && dart test [path-or-tag]
+cd packages/app && flutter test [path-or-tag]
 ```
 
-Prefer `test:dart` and `test:flutter` for a single-pass workspace check. Do not
-chain unit, contract, and vertical-slice commands as an aggregate; that reruns
-the same package tests.
+Use `dart run melos test` for a single-pass workspace check. Do not chain unit,
+contract, and vertical-slice commands as an aggregate; that reruns the same
+package tests.
 
 ## Apply change-specific gates
 
@@ -65,15 +62,16 @@ only such gate is the native IBus terminal E2E, which needs a live `ibus-daemon`
 and an X11 session; report it as owned by `linux-ibus-terminal-e2e` rather than
 reproducing it.
 
-`verify:debug` delegates to `test:e2e:desktop`, which selects the current Linux,
-macOS, or Windows Flutter device and runs every shard with an isolated temporary
-home. Linux uses `xvfb-run -a`; Windows can show application windows during the
-run. Do not bypass the entrypoint with direct `flutter test` commands. If the
-current platform cannot run Debug E2E, report it as unverified and name the CI
-job that owns the missing evidence.
+`verify:debug` delegates to the app-owned desktop E2E runner, which selects the
+current Linux, macOS, or Windows Flutter device and runs every shard with an
+isolated temporary home. Linux uses `xvfb-run -a`; Windows can show application
+windows during the run. Do not bypass the entrypoint with direct `flutter test`
+commands. If the current platform cannot run Debug E2E, report it as unverified
+and name the CI job that owns the missing evidence.
 
 Run `actionlint` after changing `.github/workflows/`. Confirm PR/main, tag,
-manual, and schedule conditions with `test/pipeline_test.dart`.
+manual, and schedule conditions with
+`packages/tinest_quality/test/pipeline_test.dart`.
 
 ## Report evidence
 
