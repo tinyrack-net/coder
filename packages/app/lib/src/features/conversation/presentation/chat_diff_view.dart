@@ -25,7 +25,7 @@ class ChatDiffView extends StatelessWidget {
         rows.add(
           Padding(
             padding: const EdgeInsets.only(
-              bottom: TRSpacing.extraSmall / 2,
+              bottom: TRSpacing.threeExtraSmall,
               top: TRSpacing.extraSmall,
             ),
             child: TRText(

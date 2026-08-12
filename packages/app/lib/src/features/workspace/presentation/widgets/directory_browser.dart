@@ -83,6 +83,7 @@ class _DirectoryBrowserDialogState extends State<DirectoryBrowserDialog> {
       title: TRText.inherit(l10n.directoryBrowserTitle),
       content: SizedBox(
         width: _directoryBrowserWidth,
+        // tinyrack-check-ignore-next-line tokens/no-literal -- preserve the browser dialog's structural 4:3 aspect ratio
         height: _directoryBrowserHeight,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

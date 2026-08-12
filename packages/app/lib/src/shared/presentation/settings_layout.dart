@@ -37,11 +37,10 @@ class SettingsAsyncContent<T> extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              TRSpacing.extraLarge,
-              TRSpacing.medium,
-              TRSpacing.extraLarge,
-              0,
+            padding: const EdgeInsets.only(
+              left: TRSpacing.extraLarge,
+              top: TRSpacing.medium,
+              right: TRSpacing.extraLarge,
             ),
             child: TRAlert(
               key: const ValueKey<String>('settings-refresh-error'),
@@ -539,9 +538,10 @@ class SettingsScaffold extends StatelessWidget {
           // on it lands outside the viewport and quietly hits nothing.
           for (final (index, child) in children.indexed)
             Padding(
-              padding: EdgeInsets.only(
-                top: index > 0 ? TRSpacing.twoExtraLarge : 0,
-              ),
+              // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
+              padding: index > 0
+                  ? const EdgeInsets.only(top: TRSpacing.twoExtraLarge)
+                  : EdgeInsets.zero,
               child: Align(
                 // Centred, so a wide window keeps the column balanced rather
                 // than stranding it against one edge with a growing void.

@@ -87,11 +87,10 @@ class ChatPlanActions extends ConsumerWidget {
     );
     if (embedded) return content;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        TRSpacing.large,
-        TRSpacing.small,
-        TRSpacing.large,
-        0,
+      padding: const EdgeInsets.only(
+        left: TRSpacing.large,
+        top: TRSpacing.small,
+        right: TRSpacing.large,
       ),
       child: TRCard(
         padding: TRCardPadding.none,
