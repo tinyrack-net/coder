@@ -296,10 +296,7 @@ void main() {
 
       // An unrecognized code has no localized wording, so the daemon's own
       // message is the best available explanation and is shown verbatim.
-      expect(
-        find.textContaining('A worktree already uses'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('A worktree already uses'), findsOneWidget);
       expect(api.createdSessions, isEmpty);
       expect(
         router.routeInformationProvider.value.uri.path,
@@ -486,6 +483,67 @@ void main() {
   );
 
   testWidgets(
+    'mobile targets stack at the leading edge and open in sheets above a '
+    'bottom-aligned composer',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 780);
+      addTearDown(tester.view.reset);
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+
+      final project = find.byKey(const ValueKey('new-workspace-project'));
+      await tester.tap(project);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
+      await tester.tap(
+        find.byKey(
+          const ValueKey('new-workspace-project-server\u0000workspace'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final worktree = find.byKey(const ValueKey('new-workspace-worktree'));
+      final branch = find.byKey(const ValueKey('new-workspace-branch'));
+      expect(tester.widget(project), isA<TRSelect<Object?>>());
+      expect(tester.widget(worktree), isA<TRSelect<Object?>>());
+      expect(tester.widget(branch), isA<TRSelect<Object?>>());
+      final projectRect = tester.getRect(project);
+      final worktreeRect = tester.getRect(worktree);
+      final branchRect = tester.getRect(branch);
+      expect(projectRect.left, closeTo(worktreeRect.left, 0.01));
+      expect(worktreeRect.left, closeTo(branchRect.left, 0.01));
+      expect(projectRect.width, closeTo(worktreeRect.width, 0.01));
+      expect(worktreeRect.width, closeTo(branchRect.width, 0.01));
+      expect(projectRect.bottom, lessThan(worktreeRect.top));
+      expect(worktreeRect.bottom, lessThan(branchRect.top));
+
+      final composer = tester.getRect(
+        find.byKey(const ValueKey('session-composer-input')),
+      );
+      expect(composer.bottom, greaterThan(700));
+      expect(
+        tester.getTopLeft(find.text('New workspace').first).dy,
+        greaterThan(250),
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(worktree);
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree-checkout')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
     'activating a hovered project chip dismisses its tooltip',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
@@ -540,10 +598,7 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('new-workspace-project-add')),
-        findsOne,
-      );
+      expect(find.byKey(const ValueKey('new-workspace-project-add')), findsOne);
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
   );
@@ -644,10 +699,7 @@ void main() {
         find.byKey(const ValueKey('new-workspace-worktree')),
         findsNothing,
       );
-      expect(
-        find.byKey(const ValueKey('new-workspace-branch')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('new-workspace-branch')), findsNothing);
       expect(api.listedGitBranchWorkspaceIds, isEmpty);
       await _selectModel(tester);
 
@@ -719,10 +771,11 @@ void main() {
       addTearDown(router.dispose);
 
       expect(find.text('연결된 Daemon이 없습니다.'), findsNothing);
-      final control = tester.widget<TRButton>(
-        find.byKey(const ValueKey('new-workspace-project')),
-      );
-      expect(control.onPressed, isNull);
+      final control = tester
+          .widget<TRSelect<({String? projectKey, bool addProject})>>(
+            find.byKey(const ValueKey('new-workspace-project')),
+          );
+      expect(control.enabled, isFalse);
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
@@ -996,9 +1049,7 @@ Future<void> _selectProject(WidgetTester tester, String name) async {
 }
 
 Future<void> _selectModel(WidgetTester tester) async {
-  final direct = find.byKey(
-    const ValueKey<String>('session-composer-model'),
-  );
+  final direct = find.byKey(const ValueKey<String>('session-composer-model'));
   if (direct.evaluate().isNotEmpty) {
     await tester.tap(direct);
   } else {
@@ -1007,9 +1058,7 @@ Future<void> _selectModel(WidgetTester tester) async {
     );
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(
-        const ValueKey<String>('session-composer-settings-model'),
-      ),
+      find.byKey(const ValueKey<String>('session-composer-settings-model')),
     );
   }
   await tester.pumpAndSettle();

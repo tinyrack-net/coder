@@ -1,4 +1,5 @@
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ Future<PermissionPickerChoice?> showPermissionPicker(
   String? inheritLabel,
   PermissionMode? inheritedMode,
   bool useRootNavigator = true,
-}) => showTRDrawer<PermissionPickerChoice>(
+}) => showTinestBottomSheet<PermissionPickerChoice>(
   context: context,
   useRootNavigator: useRootNavigator,
   builder: (context) => PermissionPickerDrawer(
@@ -55,7 +56,7 @@ class PermissionPickerDrawer extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final inheritLabel = this.inheritLabel;
     final inheritedMode = this.inheritedMode;
-    return TRDrawer(
+    return TinestBottomSheet(
       title: TRText.inherit(l10n.composerSelectPermissionMode),
       description: TRText.inherit(l10n.permissionPickerDescription),
       content: Column(

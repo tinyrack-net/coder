@@ -5,6 +5,7 @@ import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/features/conversation/application/agent_commands_controller.dart';
 import 'package:app/src/features/conversation/application/composer_controller.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';

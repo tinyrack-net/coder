@@ -556,6 +556,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                   if (attempt.authorizationUrl case final url?)
                     SettingsRow(
                       title: SelectionArea(child: TRText.inherit(url)),
+                      controlLayout: SettingsControlLayout.responsive,
                       control: Wrap(
                         spacing: TRSpacing.small,
                         children: <Widget>[

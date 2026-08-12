@@ -45,6 +45,7 @@ void main() {
     bool busy = false,
     _RecordingUrlOpener? opener,
     TextScaler textScaler = TextScaler.noScaling,
+    bool disableAnimations = false,
   }) => tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -59,7 +60,10 @@ void main() {
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: textScaler,
+            disableAnimations: disableAnimations,
+          ),
           child: TinestUiDensity(child: child!),
         ),
         home: Scaffold(
@@ -252,22 +256,65 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('실행 중'), findsWidgets);
-      expect(find.byType(TRSpinner), findsWidgets);
-      final runningSpinner = find.descendant(
-        of: find.byKey(const ValueKey<String>('chat-running')),
-        matching: find.byType(TRSpinner),
-      );
-      final runningSpinnerSize = tester.getSize(runningSpinner);
+      final tool = find.byType(ChatToolCard);
+      expect(find.text('명령 실행 실행(sleep 5)'), findsOneWidget);
       expect(
-        runningSpinnerSize.width,
-        closeTo(runningSpinnerSize.height, 0.001),
+        find.descendant(of: tool, matching: find.byType(ShaderMask)),
+        findsOneWidget,
       );
+      expect(
+        find.descendant(of: tool, matching: find.byType(TRSpinner)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: tool, matching: find.text('실행 중')),
+        findsNothing,
+      );
+      final runningRow = find.byKey(const ValueKey<String>('chat-running'));
+      expect(
+        find.descendant(of: runningRow, matching: find.byType(ShaderMask)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: runningRow, matching: find.byType(TRSpinner)),
+        findsNothing,
+      );
+      final runningText = find.descendant(
+        of: find.byKey(const ValueKey<String>('chat-running')),
+        matching: find.text('실행 중'),
+      );
+      expect(runningText, findsOneWidget);
       expect(find.byType(TRChatUserBubble), findsOneWidget);
 
       await pump(tester, const <TimelineEventDto>[]);
       await tester.pumpAndSettle();
       expect(find.text('코딩 요청을 입력하세요.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'running shimmer becomes static when reduced motion is enabled',
+    (tester) async {
+      await pump(
+        tester,
+        <TimelineEventDto>[
+          event('tool.requested', <String, dynamic>{
+            'callId': 'call-1',
+            'name': 'exec_command',
+            'arguments': <String, dynamic>{'command': 'sleep 5'},
+          }),
+        ],
+        busy: true,
+        disableAnimations: true,
+      );
+      await tester.pump();
+
+      expect(find.text('명령 실행 실행(sleep 5)'), findsOneWidget);
+      expect(find.text('실행 중'), findsOneWidget);
+      expect(find.byType(ShaderMask), findsNothing);
+      expect(find.byType(TRSpinner), findsNothing);
+      expect(tester.binding.transientCallbackCount, 0);
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
@@ -510,7 +557,7 @@ void main() {
         '이미지를 보냈어요! 🖼️',
         findRichText: true,
       );
-      final toolText = find.text('파일 읽기');
+      final toolText = find.text('파일 읽기 읽기(lib/main.dart)');
 
       expect(
         tester.getTopLeft(assistantIcon).dx,
@@ -758,7 +805,7 @@ void main() {
         findsNothing,
       );
       // It falls back to the ordinary tool row so the mistake stays visible.
-      expect(find.text('대기'), findsOneWidget);
+      expect(find.text('대기 슬립()'), findsOneWidget);
     },
     tags: const <String>['feature_test__tool_clock__widget'],
   );

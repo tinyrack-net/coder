@@ -1281,26 +1281,22 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final pendingFirstTurn = ref.watch(
       pendingFirstTurnsProvider.select((value) => value[current.id]),
     );
-    // A first turn that failed before this pane mounted could not be queued:
-    // the auto-disposed conversation state was not alive to hold it. Now that
-    // this pane keeps the conversation alive, convert the survivor into a
-    // queued turn with its usual error and retry affordances.
-    if (pendingFirstTurn != null &&
+    final failedFirstTurn =
+        pendingFirstTurn != null &&
         pendingFirstTurn.failed &&
-        conversation.hasValue) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final entry = ref.read(pendingFirstTurnsProvider)[current.id];
-        if (entry == null || !entry.failed) return;
-        ref.read(pendingFirstTurnsProvider.notifier).clear(current.id);
-        _conversation(
-          ref,
-          current.id,
-        ).enqueueTurn(entry.prompt, attachments: entry.attachments);
-      });
-    }
+        conversation.hasValue;
+    final restoreSubmission = failedFirstTurn
+        ? ComposerSubmission(
+            text: pendingFirstTurn.prompt,
+            attachments: pendingFirstTurn.attachments,
+          )
+        : null;
+    final restoreKey = failedFirstTurn
+        ? '${current.id}:${pendingFirstTurn.createdAt.microsecondsSinceEpoch}'
+        : null;
     final optimistic =
         pendingFirstTurn != null &&
+        !pendingFirstTurn.failed &&
         !visibleItems.any((item) => item is ChatUserMessage);
     if (optimistic) {
       visibleItems = <ChatItem>[
@@ -1568,6 +1564,25 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                               _runClientCommand(invocation, current),
                           onSubmit: (submission) =>
                               _send(current.id, submission),
+                          restoreSubmission: restoreSubmission,
+                          restoreKey: restoreKey,
+                          onRestoreConsumed: restoreSubmission == null
+                              ? null
+                              : () {
+                                  final entry = ref.read(
+                                    pendingFirstTurnsProvider,
+                                  )[current.id];
+                                  if (entry != null &&
+                                      entry.failed &&
+                                      entry.createdAt ==
+                                          pendingFirstTurn!.createdAt) {
+                                    ref
+                                        .read(
+                                          pendingFirstTurnsProvider.notifier,
+                                        )
+                                        .clear(current.id);
+                                  }
+                                },
                         ),
                       ),
                     ],

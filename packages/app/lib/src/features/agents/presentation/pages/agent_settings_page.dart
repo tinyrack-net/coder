@@ -4,6 +4,8 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/agents/application/agent_definitions_controller.dart';
 import 'package:app/src/features/agents/presentation/tool_groups.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
+import 'package:app/src/features/providers/application/provider_settings_controller.dart';
+import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
@@ -284,6 +286,16 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     final l10n = AppLocalizations.of(context);
     final definition = widget.definition;
     final editable = !_saving;
+    final providersState = ref.watch(
+      providerSettingsControllerProvider(widget.hostId),
+    );
+    final providers = providersState.value;
+    final providersResolved = providersState.hasValue && providers != null;
+    final modelBlocked =
+        editable &&
+        providersResolved &&
+        usableConnections(providers.connections).isEmpty;
+    final modelSelectionEnabled = editable && providersResolved;
     final subagents = widget.state.definitions.where(
       (candidate) =>
           candidate.mode == AgentMode.subagent &&
@@ -412,17 +424,42 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                     ],
                   ),
                   if (_modelSource == AgentModelSource.fixed) ...<Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(l10n.agentSettingsModelId),
-                      description: TRText.inherit(
-                        _modelId.text.isEmpty ? '—' : _modelId.text,
+                    Semantics(
+                      key: const ValueKey<String>(
+                        'agent-settings-model-selector',
                       ),
-                      control: TRButton(
-                        appearance: TRAppearance.outline,
-                        onPressed: editable ? _chooseModel : null,
-                        child: TRText.inherit(
-                          l10n.providerSettingsDefaultModelChoose,
+                      hint: modelBlocked
+                          ? l10n.composerConnectProviderFirst
+                          : null,
+                      child: SettingsRow(
+                        enabled: modelSelectionEnabled,
+                        onTap: modelBlocked
+                            ? () => _showProviderRequiredToast(l10n)
+                            : modelSelectionEnabled
+                            ? _chooseModel
+                            : null,
+                        title: TRText.inherit(
+                          l10n.agentSettingsModelId,
+                          color: modelBlocked ? TRTextColor.muted : null,
                         ),
+                        description: TRText.inherit(
+                          _modelId.text.isEmpty ? '—' : _modelId.text,
+                        ),
+                        controlLayout: SettingsControlLayout.responsive,
+                        control: modelBlocked
+                            ? Icon(
+                                TinestIcons.lock,
+                                color: context.tinyrackTheme.textMuted,
+                              )
+                            : TRButton(
+                                appearance: TRAppearance.outline,
+                                onPressed: modelSelectionEnabled
+                                    ? _chooseModel
+                                    : null,
+                                child: TRText.inherit(
+                                  l10n.providerSettingsDefaultModelChoose,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -439,6 +476,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                           : permissionModeDescription(l10n, _permissionMode!),
                     ),
                     unboundedDescription: true,
+                    controlLayout: SettingsControlLayout.responsive,
                     control: TRButton(
                       key: const ValueKey<String>('agent-permission-change'),
                       appearance: TRAppearance.outline,
@@ -588,7 +626,25 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     callableAgentIds: _callableAgents.toList(growable: false)..sort(),
   );
 
+  void _showProviderRequiredToast(AppLocalizations l10n) {
+    ref
+        .read(toastMessengerProvider)
+        .info(
+          l10n.composerConnectProviderFirst,
+          id: 'model-selector-provider-required',
+        );
+  }
+
   Future<void> _chooseModel() async {
+    final providersState = ref.read(
+      providerSettingsControllerProvider(widget.hostId),
+    );
+    final providers = providersState.value;
+    if (!providersState.hasValue || providers == null) return;
+    if (usableConnections(providers.connections).isEmpty) {
+      _showProviderRequiredToast(AppLocalizations.of(context));
+      return;
+    }
     final choice = await showModelPicker(
       context,
       loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),

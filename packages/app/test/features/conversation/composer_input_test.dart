@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
+import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
@@ -512,7 +513,10 @@ void main() {
       final sheet = find.byKey(
         const ValueKey<String>('session-composer-settings-sheet'),
       );
-      expect(tester.getSize(sheet).height, lessThan(surfaceSize.height * 0.75));
+      expect(
+        tester.getSize(sheet).height,
+        lessThanOrEqualTo(surfaceSize.height * 0.7),
+      );
       expect(tester.getBottomLeft(sheet).dy, surfaceSize.height);
     },
   );
@@ -677,11 +681,12 @@ void main() {
         const ModelControlValueDto.intValue(value: 7),
       );
 
-      await tester.tap(
-        find.byKey(
-          const ValueKey<String>('session-composer-settings-permission'),
-        ),
+      final permissionSetting = find.byKey(
+        const ValueKey<String>('session-composer-settings-permission'),
       );
+      await tester.ensureVisible(permissionSetting);
+      await tester.pumpAndSettle();
+      await tester.tap(permissionSetting);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('permission-option-readOnly')),
@@ -772,6 +777,139 @@ void main() {
       await tester.pumpAndSettle();
       expect(toasts.toasts, hasLength(1));
       expect(find.byType(TRDrawer), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compact settings explain the missing provider for model selection',
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__app_toast__widget',
+    ],
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          api: FakeTinestApi(
+            connections: const <ProviderConnectionDto>[],
+          ),
+          composer: const _CompactSettingsHost(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('session-composer-settings')),
+      );
+      await tester.pumpAndSettle();
+
+      final modelRow = find.byKey(
+        const ValueKey<String>('session-composer-settings-model'),
+      );
+      expect(
+        find.descendant(
+          of: modelRow,
+          matching: find.byIcon(TinestIcons.lock),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widgetList<TRText>(
+              find.descendant(of: modelRow, matching: find.byType(TRText)),
+            )
+            .first
+            .color,
+        TRTextColor.muted,
+      );
+      expect(
+        tester.getSemantics(modelRow).hint,
+        testL10n.composerConnectProviderFirst,
+      );
+      final container = ProviderScope.containerOf(tester.element(modelRow));
+      final toasts = container.read(appToastControllerProvider);
+
+      await tester.tap(modelRow);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(find.byType(ModelPicker), findsNothing);
+      expect(toasts.toasts, hasLength(1));
+      expect(toasts.toasts.single.variant, TRStatusVariant.info);
+      expect(
+        (toasts.toasts.single.title as TRText).data,
+        testL10n.composerConnectProviderFirst,
+      );
+
+      Focus.of(
+        tester.element(
+          find
+              .descendant(of: modelRow, matching: find.byType(MouseRegion))
+              .first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(toasts.toasts, hasLength(1));
+      expect(find.byType(TRDrawer), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'wide model chip explains the missing provider without opening a picker',
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__app_toast__widget',
+    ],
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          api: FakeTinestApi(
+            connections: const <ProviderConnectionDto>[],
+          ),
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final modelChip = find.byKey(
+        const ValueKey<String>('session-composer-model'),
+      );
+      expect(
+        tester
+            .widget<TRButton>(
+              find.descendant(of: modelChip, matching: find.byType(TRButton)),
+            )
+            .onPressed,
+        isNull,
+        reason: 'the blocked chip keeps the design-system disabled styling',
+      );
+      expect(
+        tester.getSemantics(modelChip).hint,
+        testL10n.composerConnectProviderFirst,
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(modelChip),
+      );
+      final toasts = container.read(appToastControllerProvider);
+
+      await tester.tap(modelChip);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ModelPicker), findsNothing);
+      expect(toasts.toasts, hasLength(1));
+      expect(toasts.toasts.single.variant, TRStatusVariant.info);
+      expect(
+        (toasts.toasts.single.title as TRText).data,
+        testL10n.composerConnectProviderFirst,
+      );
     },
   );
 

@@ -18,6 +18,7 @@ import 'package:app/src/features/terminals/presentation/tinest_terminal_view.dar
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -436,19 +437,46 @@ void main() {
       builder: () => const _ComposerSettingsGoldenHost(agentEnabled: false),
     ),
   );
+
+  unawaited(
+    goldenTest(
+      'compact composer settings locked model without a provider',
+      fileName: 'composer_settings_locked_model',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      whilePerforming: (tester) async {
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-settings')),
+        );
+        await tester.pumpAndSettle();
+        return () async {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        };
+      },
+      builder: () => const _ComposerSettingsGoldenHost(noProvider: true),
+    ),
+  );
 }
 
 class _ComposerSettingsGoldenHost extends StatelessWidget {
-  const _ComposerSettingsGoldenHost({this.agentEnabled = true});
+  const _ComposerSettingsGoldenHost({
+    this.agentEnabled = true,
+    this.noProvider = false,
+  });
 
   final bool agentEnabled;
+  final bool noProvider;
 
   @override
   Widget build(BuildContext context) => ProviderScope(
     overrides: [
       appServicesProvider.overrideWithValue(
         fakeAppServices(
-          FakeTinestApi(agentDefinitions: _definitions),
+          FakeTinestApi(
+            agentDefinitions: _definitions,
+            connections: noProvider ? const <ProviderConnectionDto>[] : null,
+          ),
         ),
       ),
     ],
@@ -988,18 +1016,20 @@ class _OpenModelPicker extends StatelessWidget {
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
       child: isMobile
-          ? Align(
+          ? const Align(
               alignment: Alignment.bottomCenter,
-              child: TRDrawer(
+              child: TinestBottomSheet(
                 semanticLabel: '모델 선택',
-                snapPoints: const <double>[0.8, 1],
-                content: const SizedBox(height: 520, child: picker),
+                content: picker,
               ),
             )
-          : const Center(
+          : Center(
               child: TRDialog(
                 semanticLabel: '모델 선택',
-                content: SizedBox(width: 560, height: 600, child: picker),
+                content: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: picker,
+                ),
               ),
             ),
     );

@@ -1345,11 +1345,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/termworld"
-      ref: "612f10d133999cd98a9de69c44743f2195c9dae3"
-      resolved-ref: "612f10d133999cd98a9de69c44743f2195c9dae3"
+      ref: bd114b5c46c3848bc5e8cf5fd5263004329b2879
+      resolved-ref: bd114b5c46c3848bc5e8cf5fd5263004329b2879
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
-    version: "0.4.0"
+    version: "0.4.1"
   test:
     dependency: "direct dev"
     description:
@@ -1378,11 +1378,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: "6ccdf88cacebddf1285c2d0aa602a489922e0886"
-      resolved-ref: "6ccdf88cacebddf1285c2d0aa602a489922e0886"
+      ref: c71d09988afced43d8281a3465885905b26eed44
+      resolved-ref: c71d09988afced43d8281a3465885905b26eed44
       url: "https://github.com/tinyrack-net/design.git"
     source: git
-    version: "0.52.1"
+    version: "0.55.2"
   tray_manager:
     dependency: transitive
     description:

@@ -167,6 +167,96 @@ void _registerAgentsAppFlows() {
     },
   );
 
+  testWidgets(
+    'fixed agent model explains the missing provider without opening a picker',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const fixedAgent = AgentDefinitionDto(
+        id: 'tinest',
+        name: 'Tinest',
+        description: 'General coding',
+        mode: AgentMode.primary,
+        promptEnabled: false,
+        systemPrompt: '',
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          modelId: 'openai/gpt-5.6-sol',
+        ),
+        toolIds: <String>[],
+        callableAgentIds: <String>[],
+        contentHash: 'fixed-agent-hash',
+        sourcePath: '/config/agents/tinest.md',
+        isBuiltIn: true,
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[fixedAgent],
+        connections: const <ProviderConnectionDto>[],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final modelRow = find.byKey(
+        const ValueKey<String>('agent-settings-model-selector'),
+      );
+      await tester.ensureVisible(modelRow);
+      expect(
+        find.descendant(
+          of: modelRow,
+          matching: find.byIcon(TinestIcons.lock),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widgetList<TRText>(
+              find.descendant(of: modelRow, matching: find.byType(TRText)),
+            )
+            .first
+            .color,
+        TRTextColor.muted,
+      );
+      expect(
+        tester.getSemantics(modelRow).hint,
+        testL10n.composerConnectProviderFirst,
+      );
+      final container = ProviderScope.containerOf(tester.element(modelRow));
+      final toasts = container.read(appToastControllerProvider);
+
+      await tester.tap(modelRow);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ModelPicker), findsNothing);
+      expect(toasts.toasts, hasLength(1));
+      expect(toasts.toasts.single.variant, TRStatusVariant.info);
+      expect(
+        (toasts.toasts.single.title as TRText).data,
+        testL10n.composerConnectProviderFirst,
+      );
+
+      Focus.of(
+        tester.element(
+          find
+              .descendant(of: modelRow, matching: find.byType(MouseRegion))
+              .first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(toasts.toasts, hasLength(1));
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+      'feature_test__app_toast__widget',
+    ],
+  );
+
   testWidgets('mobile agent settings navigates from list to Markdown detail', (
     tester,
   ) async {

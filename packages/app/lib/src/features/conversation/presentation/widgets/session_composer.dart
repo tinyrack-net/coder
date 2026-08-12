@@ -22,6 +22,7 @@ import 'package:app/src/features/providers/application/session_model_options.dar
 import 'package:app/src/features/sessions/domain/session_title.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
@@ -163,10 +164,15 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final agentEnabled = widget.agentEnabled;
     final enabled = widget.enabled;
     final planning = widget.mode == SessionMode.plan;
-    // Keep the loaded connections while the provider refreshes.
-    final providers = ref
-        .watch(providerSettingsControllerProvider(hostId))
-        .value;
+    // Keep the loaded connections while the provider refreshes. A provider
+    // state that has not produced its first value is different from a loaded
+    // empty connection list: only the latter can explain why model selection
+    // is unavailable.
+    final providersState = ref.watch(
+      providerSettingsControllerProvider(hostId),
+    );
+    final providers = providersState.value;
+    final providersResolved = providersState.hasValue && providers != null;
     final l10n = AppLocalizations.of(context);
     final connections = usableConnections(
       providers?.connections ?? const <ProviderConnectionDto>[],
@@ -195,6 +201,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .where((item) => item.id == selection?.modelId)
         .firstOrNull;
     final modelLabel = model?.label;
+    final modelBlocked = enabled && providersResolved && connections.isEmpty;
     // The catalog decides which turn settings the chosen model can honour, so
     // an unsupported control is hidden rather than shown and ignored.
     final capabilities = model?.capabilities ?? const ModelCapabilitiesDto();
@@ -238,7 +245,14 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           valueKey: const ValueKey('session-composer-model'),
           icon: TinestIcons.memory,
           label: selection?.modelId ?? modelLabel ?? l10n.composerModel,
-          tooltip: l10n.composerSelectModel,
+          tooltip: modelBlocked
+              ? l10n.composerConnectProviderFirst
+              : l10n.composerSelectModel,
+          locked: modelBlocked,
+          lockedHint: modelBlocked ? l10n.composerConnectProviderFirst : null,
+          onLockedPressed: modelBlocked
+              ? (_) => _showProviderRequiredToast(l10n)
+              : null,
           onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
         ),
         for (final control in capabilities.controls)
@@ -291,7 +305,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     );
   }
 
-  Future<void> _showSettings() => showTRDrawer<void>(
+  Future<void> _showSettings() => showTinestBottomSheet<void>(
     context: context,
     useRootNavigator: false,
     builder: (sheetContext) => StatefulBuilder(
@@ -300,11 +314,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           final snapshot = _settingsSnapshot(sheetRef);
           final l10n = AppLocalizations.of(context);
           final agentLocked = !widget.agentEnabled;
-          return TRDrawer(
+          return TinestBottomSheet(
             key: const ValueKey<String>('session-composer-settings-sheet'),
             title: TRText.inherit(l10n.composerMoreSettings),
             content: ListView(
               shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               children: <Widget>[
                 if (_permissionError case final error?)
                   TRAlert(
@@ -368,14 +383,29 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                       widget.selection?.modelId ??
                       snapshot.model?.label ??
                       l10n.composerModel,
-                  enabled: widget.enabled && snapshot.connections.isNotEmpty,
-                  onTap: () async {
-                    await _chooseModel(
-                      sheetContext,
-                      surface: ModelPickerSurface.sheet,
-                    );
-                    await _refreshSettings(refresh);
-                  },
+                  enabled: widget.enabled && snapshot.providersResolved,
+                  locked:
+                      widget.enabled &&
+                      snapshot.providersResolved &&
+                      snapshot.connections.isEmpty,
+                  lockedHint:
+                      widget.enabled &&
+                          snapshot.providersResolved &&
+                          snapshot.connections.isEmpty
+                      ? l10n.composerConnectProviderFirst
+                      : null,
+                  onTap:
+                      widget.enabled &&
+                          snapshot.providersResolved &&
+                          snapshot.connections.isEmpty
+                      ? () => _showProviderRequiredToast(l10n)
+                      : () async {
+                          await _chooseModel(
+                            sheetContext,
+                            surface: ModelPickerSurface.sheet,
+                          );
+                          await _refreshSettings(refresh);
+                        },
                 ),
                 for (final descriptor in snapshot.capabilities.controls)
                   _settingsRow(
@@ -495,14 +525,16 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   ({
     AgentDefinitionDto? agent,
     List<ProviderConnectionDto> connections,
+    bool providersResolved,
     ProviderModelDto? model,
     ModelCapabilitiesDto capabilities,
     PermissionMode inheritedPermission,
   })
   _settingsSnapshot(WidgetRef settingsRef) {
-    final providers = settingsRef
-        .watch(providerSettingsControllerProvider(widget.hostId))
-        .value;
+    final providersState = settingsRef.watch(
+      providerSettingsControllerProvider(widget.hostId),
+    );
+    final providers = providersState.value;
     final connections = usableConnections(
       providers?.connections ?? const <ProviderConnectionDto>[],
     );
@@ -527,6 +559,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     return (
       agent: agent,
       connections: connections,
+      providersResolved: providersState.hasValue && providers != null,
       model: model,
       capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
       inheritedPermission:
@@ -538,13 +571,14 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     BuildContext context, {
     required String title,
     required List<_ComposerSheetOption<T>> choices,
-  }) => showTRDrawer<_ComposerSheetChoice<T>>(
+  }) => showTinestBottomSheet<_ComposerSheetChoice<T>>(
     context: context,
     useRootNavigator: false,
-    builder: (context) => TRDrawer(
+    builder: (context) => TinestBottomSheet(
       title: TRText.inherit(title),
       content: ListView(
         shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         children: <Widget>[
           for (final choice in choices)
             TinestListRow(
@@ -627,7 +661,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         );
         if (chosen != null) _setControl(descriptor, chosen.value);
       case ModelControlKind.integer:
-        final chosen = await showTRDrawer<_ComposerSheetChoice<int?>>(
+        final chosen = await showTinestBottomSheet<_ComposerSheetChoice<int?>>(
           context: context,
           useRootNavigator: false,
           builder: (context) => _IntegerControlDrawer(
@@ -814,11 +848,29 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .loadModels(connectionId);
   }
 
+  void _showProviderRequiredToast(AppLocalizations l10n) {
+    ref
+        .read(toastMessengerProvider)
+        .info(
+          l10n.composerConnectProviderFirst,
+          id: 'model-selector-provider-required',
+        );
+  }
+
   Future<void> _chooseModel(
     BuildContext context, {
     ModelPickerSurface surface = ModelPickerSurface.auto,
   }) async {
     final l10n = AppLocalizations.of(context);
+    final providersState = ref.read(
+      providerSettingsControllerProvider(widget.hostId),
+    );
+    final providers = providersState.value;
+    if (!providersState.hasValue || providers == null) return;
+    if (usableConnections(providers.connections).isEmpty) {
+      _showProviderRequiredToast(l10n);
+      return;
+    }
     var options = const <ModelPickerOption>[];
     // Clearing the override always means "follow the fallback chain"; only the
     // first step of that chain differs per agent.
@@ -934,7 +986,7 @@ class _IntegerControlDrawerState extends State<_IntegerControlDrawer> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return TRDrawer(
+    return TinestBottomSheet(
       title: TRText.inherit(widget.descriptor.label),
       description: widget.descriptor.description == null
           ? null
@@ -1081,6 +1133,9 @@ class ComposerChipSpec {
     required this.label,
     required this.tooltip,
     this.onPressed,
+    this.locked = false,
+    this.lockedHint,
+    this.onLockedPressed,
     this.menuChildren,
     this.selected = false,
   });
@@ -1100,6 +1155,16 @@ class ComposerChipSpec {
   /// Tap handler receiving the chip's own context.
   final void Function(BuildContext chipContext)? onPressed;
 
+  /// Whether the chip keeps its disabled appearance while explaining why it
+  /// cannot be activated.
+  final bool locked;
+
+  /// Accessibility explanation for a locked chip.
+  final String? lockedHint;
+
+  /// Tap handler for a locked chip.
+  final void Function(BuildContext chipContext)? onLockedPressed;
+
   /// Anchored menu entries. When supplied, the chip opens a menu.
   final List<Widget>? menuChildren;
 
@@ -1113,6 +1178,9 @@ class ComposerChipSpec {
     label: label,
     tooltip: tooltip,
     onPressed: onPressed,
+    locked: locked,
+    lockedHint: lockedHint,
+    onLockedPressed: onLockedPressed,
     menuChildren: menuChildren,
     selected: selected,
     uiSize: uiSize,
@@ -1153,6 +1221,9 @@ class ComposerChip extends StatelessWidget {
     required this.tooltip,
     this.menuChildren,
     this.onPressed,
+    this.locked = false,
+    this.lockedHint,
+    this.onLockedPressed,
     this.selected = false,
     this.uiSize = TRUiSize.md,
     super.key,
@@ -1172,6 +1243,16 @@ class ComposerChip extends StatelessWidget {
 
   /// Tap handler receiving the chip's own context.
   final void Function(BuildContext chipContext)? onPressed;
+
+  /// Whether the chip keeps its disabled appearance while explaining why it
+  /// cannot be activated.
+  final bool locked;
+
+  /// Accessibility explanation for a locked chip.
+  final String? lockedHint;
+
+  /// Tap handler for a locked chip.
+  final void Function(BuildContext chipContext)? onLockedPressed;
 
   /// Anchored menu entries. When supplied, the chip is a [TRMenu] trigger.
   final List<Widget>? menuChildren;
@@ -1202,11 +1283,15 @@ class ComposerChip extends StatelessWidget {
     // surface: flat until a chip is active, and never a second nested border.
     final control = menuChildren == null
         ? TRButton(
-            key: valueKey,
+            key: locked ? null : valueKey,
             appearance: selected ? TRAppearance.solid : TRAppearance.ghost,
             intent: selected ? TRIntent.primary : TRIntent.neutral,
             uiSize: uiSize,
-            onPressed: onPressed == null ? null : () => onPressed!(context),
+            onPressed: locked
+                ? null
+                : onPressed == null
+                ? null
+                : () => onPressed!(context),
             child: content,
           )
         : TRMenu(
@@ -1216,8 +1301,96 @@ class ComposerChip extends StatelessWidget {
             trigger: content,
             menuChildren: menuChildren!,
           );
-    return TRTooltip(message: tooltip, child: control);
+    final interactiveLocked = locked && onLockedPressed != null;
+    final wrapped = interactiveLocked
+        ? _BlockedComposerChip(
+            key: valueKey,
+            label: label,
+            hint: lockedHint ?? tooltip,
+            onTap: () => onLockedPressed!(context),
+            child: control,
+          )
+        : control;
+    return TRTooltip(message: tooltip, child: wrapped);
   }
+}
+
+/// Keeps a disabled design-system control actionable long enough to explain
+/// why it is unavailable. This is intentionally a product composite: the
+/// visual control remains [TRButton], while this wrapper owns only focus,
+/// keyboard, pointer, and semantics behavior for the locked state.
+class _BlockedComposerChip extends StatefulWidget {
+  const _BlockedComposerChip({
+    required this.label,
+    required this.hint,
+    required this.onTap,
+    required this.child,
+    super.key,
+  });
+
+  final String label;
+  final String hint;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_BlockedComposerChip> createState() => _BlockedComposerChipState();
+}
+
+class _BlockedComposerChipState extends State<_BlockedComposerChip> {
+  final FocusNode _focusNode = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    final focused = _focusNode.hasPrimaryFocus;
+    if (focused == _focused || !mounted) return;
+    setState(() => _focused = focused);
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    button: true,
+    enabled: true,
+    label: widget.label,
+    hint: widget.hint,
+    onTap: widget.onTap,
+    child: CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.enter): widget.onTap,
+        const SingleActivator(LogicalKeyboardKey.space): widget.onTap,
+      },
+      child: Focus(
+        focusNode: _focusNode,
+        canRequestFocus: true,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: TRFocusRing(
+              focused: _focused,
+              child: ExcludeSemantics(child: widget.child),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 /// Composer shown when no session is selected; the first prompt creates one.
@@ -1534,6 +1707,9 @@ class SessionComposer extends StatefulWidget {
     this.header,
     this.hint,
     this.failure,
+    this.restoreSubmission,
+    this.restoreKey,
+    this.onRestoreConsumed,
     this.attachmentInput,
     this.contextTokens = 0,
     this.contextWindow,
@@ -1629,6 +1805,18 @@ class SessionComposer extends StatefulWidget {
   /// Report of an operation that failed, rendered above [hint].
   final Widget? failure;
 
+  /// Submission to restore after a pre-echo first-turn failure.
+  ///
+  /// The owning session pane supplies this once. Keeping restoration at the
+  /// composer boundary preserves both text and local attachment streams.
+  final ComposerSubmission? restoreSubmission;
+
+  /// Stable identity for one external restoration request.
+  final String? restoreKey;
+
+  /// Called after [restoreSubmission] has been applied and focused.
+  final VoidCallback? onRestoreConsumed;
+
   /// Rows offered for the token being completed; closed by default.
   final ComposerSuggestionsState suggestions;
 
@@ -1662,6 +1850,7 @@ class _SessionComposerState extends State<SessionComposer> {
   bool _focused = false;
   String? _attachmentError;
   ComposerTrigger? _trigger;
+  String? _restoredKey;
 
   /// Text for a failure the composer reports above the input.
   ///
@@ -1686,6 +1875,7 @@ class _SessionComposerState extends State<SessionComposer> {
     // programmatically, and that has to re-evaluate the token too.
     _controller.addListener(_handleTextChanged);
     _scheduleDropBinding();
+    _scheduleRestore();
   }
 
   @override
@@ -1697,6 +1887,28 @@ class _SessionComposerState extends State<SessionComposer> {
       );
     }
     _scheduleDropBinding();
+    if (oldWidget.restoreKey != widget.restoreKey) _scheduleRestore();
+  }
+
+  void _scheduleRestore() {
+    final submission = widget.restoreSubmission;
+    final key = widget.restoreKey;
+    if (submission == null || key == null || key == _restoredKey) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.restoreKey != key) return;
+      final current = widget.restoreSubmission;
+      if (current == null) return;
+      _controller.text = current.text;
+      setState(() {
+        _attachments
+          ..clear()
+          ..addAll(current.attachments);
+        _attachmentError = null;
+        _restoredKey = key;
+      });
+      _inputFocus.requestFocus();
+      widget.onRestoreConsumed?.call();
+    });
   }
 
   void _handleTextChanged() {

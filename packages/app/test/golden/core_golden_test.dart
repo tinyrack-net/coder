@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:alchemist/alchemist.dart';
 import 'package:app/src/app/composition/app_providers.dart';
@@ -549,16 +550,8 @@ void main() {
       createdAt: now,
       tokens: const <String, num>{'input': 1234, 'output': 456},
     ),
-    ChatContextReset(
-      key: 'reset',
-      turnId: 'turn-all',
-      createdAt: now,
-    ),
-    ChatContextCompacted(
-      key: 'compacted',
-      turnId: 'turn-all',
-      createdAt: now,
-    ),
+    ChatContextReset(key: 'reset', turnId: 'turn-all', createdAt: now),
+    ChatContextCompacted(key: 'compacted', turnId: 'turn-all', createdAt: now),
     ChatUnknownEvent(
       key: 'unknown',
       turnId: 'turn-all',
@@ -1000,6 +993,26 @@ void main() {
     ),
   );
 
+  unawaited(
+    goldenTest(
+      'agent settings locks a fixed model without a provider on desktop',
+      fileName: 'agent_settings_locked_model_desktop',
+      constraints: const BoxConstraints.tightFor(width: 1100, height: 760),
+      pumpBeforeTest: _revealLockedAgentModel,
+      builder: () => _agentSettingsLockedModel(ThemeMode.light),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'agent settings locks a fixed model without a provider on mobile',
+      fileName: 'agent_settings_locked_model_mobile',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 760),
+      pumpBeforeTest: _revealLockedAgentModel,
+      builder: () => _agentSettingsLockedModel(ThemeMode.dark),
+    ),
+  );
+
   // The tool list is far below the fold of the agent_settings golden, so the
   // group rows need a frame of their own. All three states are in it: a locked
   // group of always-on tools, a closed group nothing is on in, and an open one
@@ -1265,11 +1278,7 @@ void main() {
       builder: () => SizedBox(
         width: 1100,
         height: 760,
-        child: _sessionComposer(
-          ThemeMode.dark,
-          split: true,
-          nestedSplit: true,
-        ),
+        child: _sessionComposer(ThemeMode.dark, split: true, nestedSplit: true),
       ),
     ),
   );
@@ -1300,6 +1309,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.textContaining('Plain folder ·').last);
         await tester.pumpAndSettle();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
       },
       builder: () => SizedBox(
         width: 1100,
@@ -1312,7 +1323,7 @@ void main() {
   unawaited(
     goldenTest(
       'mobile new workspace collapses turn settings into one action',
-      fileName: 'new_workspace_mobile',
+      fileName: 'new_workspace_mobile_directory',
       constraints: const BoxConstraints.tightFor(width: 390, height: 760),
       pumpBeforeTest: (tester) async {
         await tester.pumpAndSettle();
@@ -1331,9 +1342,54 @@ void main() {
 
   unawaited(
     goldenTest(
+      'mobile new workspace stacks Git targets above the composer',
+      fileName: 'new_workspace_mobile',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 780),
+      pumpBeforeTest: (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 780);
+        addTearDown(tester.view.reset);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Tinest ·').last);
+        await tester.pumpAndSettle();
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 780,
+        child: _gitNewWorkspace(ThemeMode.dark),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
+      'mobile new workspace opens project Select as a sheet',
+      fileName: 'new_workspace_mobile_project_sheet',
+      constraints: const BoxConstraints.tightFor(width: 390, height: 780),
+      pumpBeforeTest: (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(390, 780);
+        addTearDown(tester.view.reset);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
+        await tester.pumpAndSettle();
+        expect(find.byType(TRDrawer), findsOneWidget);
+      },
+      builder: () => SizedBox(
+        width: 390,
+        height: 780,
+        child: _gitNewWorkspace(ThemeMode.dark),
+      ),
+    ),
+  );
+
+  unawaited(
+    goldenTest(
       'session composer exposes ready invalid and loading states',
       fileName: 'composer_states',
-      constraints: const BoxConstraints.tightFor(width: 960, height: 1910),
+      constraints: const BoxConstraints.tightFor(width: 960, height: 2400),
       builder: () => GoldenTestGroup(
         columns: 1,
         children: <Widget>[
@@ -1439,6 +1495,26 @@ void main() {
                     error: 'Exception: offline',
                   ),
                 ],
+              ),
+            ),
+          ),
+          GoldenTestScenario(
+            name: 'first turn failure restores light',
+            child: SizedBox(
+              width: 900,
+              height: 340,
+              child: _composerState(
+                ThemeMode.light,
+                restoreSubmission: ComposerSubmission(
+                  text: '복원된 첫 요청',
+                  attachments: <PendingAttachment>[
+                    PendingAttachment.fromBytes(
+                      fileName: 'fixture.txt',
+                      mimeType: 'text/plain',
+                      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1629,6 +1705,7 @@ Widget _composerState(
   double? totalCostUsd,
   String? providerConnectionId,
   Future<List<ProviderUsageDto>> Function()? onLoadProviderUsage,
+  ComposerSubmission? restoreSubmission,
 }) => ProviderScope(
   overrides: [
     appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
@@ -1653,6 +1730,9 @@ Widget _composerState(
         onQueuedSendNow: (_) {},
         onStop: stoppable ? () {} : null,
         onSubmit: (_) {},
+        restoreSubmission: restoreSubmission,
+        restoreKey: restoreSubmission == null ? null : 'first-turn-restore',
+        onRestoreConsumed: restoreSubmission == null ? null : () {},
         bar: SessionComposerBar(
           hostId: 'server',
           definitions: const <AgentDefinitionDto>[
@@ -1663,9 +1743,7 @@ Widget _composerState(
               mode: AgentMode.primary,
               promptEnabled: true,
               systemPrompt: 'Code carefully.',
-              model: AgentModelSelectionDto(
-                source: AgentModelSource.session,
-              ),
+              model: AgentModelSelectionDto(source: AgentModelSource.session),
               modelControls: <String, ModelControlValueDto>{
                 'reasoning_effort': ModelControlValueDto.stringValue(
                   value: 'medium',
@@ -1909,6 +1987,40 @@ Widget _directoryNewWorkspace(ThemeMode mode) {
   );
 }
 
+Widget _gitNewWorkspace(ThemeMode mode) {
+  final now = DateTime.utc(2026);
+  final workspace = WorkspaceDto(
+    id: 'tinest',
+    name: 'Tinest',
+    rootPath: '/repos/tinest',
+    kind: WorkspaceKind.git,
+    createdAt: now,
+  );
+  final checkout = WorktreeDto(
+    id: 'tinest-main',
+    workspaceId: workspace.id,
+    name: 'main',
+    path: workspace.rootPath,
+    branch: 'main',
+    kind: WorktreeKind.checkout,
+    isTinestOwned: false,
+    createdAt: now,
+  );
+  return ProviderScope(
+    overrides: [
+      appServicesProvider.overrideWithValue(
+        fakeAppServices(
+          FakeTinestApi(
+            workspaces: <WorkspaceDto>[workspace],
+            worktrees: <WorktreeDto>[checkout],
+          ),
+        ),
+      ),
+    ],
+    child: _material(mode, const WorkspacePage(compose: true)),
+  );
+}
+
 Widget _settings(ThemeMode mode) {
   final now = DateTime.utc(2026);
   const longModelId =
@@ -1971,9 +2083,7 @@ Widget _settings(ThemeMode mode) {
     },
   );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2009,9 +2119,7 @@ Widget _projectSettings(ThemeMode mode) {
           teardown: <String>['docker compose down'],
         );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2058,12 +2166,53 @@ Future<void> _revealAgentToolGroups(WidgetTester tester) async {
   await reveal(find.byKey(mcp));
 }
 
+Future<void> _revealLockedAgentModel(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Tinest').first);
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(
+    find.byKey(const ValueKey<String>('agent-settings-model-selector')),
+  );
+}
+
 Widget _agentSettings(ThemeMode mode) {
   final api = FakeTinestApi();
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
+    child: _material(
+      mode,
+      const UnifiedSettingsPage(
+        category: SettingsCategory.agent,
+        hostId: 'server',
+      ),
+    ),
+  );
+}
+
+Widget _agentSettingsLockedModel(ThemeMode mode) {
+  const fixedAgent = AgentDefinitionDto(
+    id: 'tinest',
+    name: 'Tinest',
+    description: 'General coding',
+    mode: AgentMode.primary,
+    promptEnabled: false,
+    systemPrompt: '',
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.fixed,
+      modelId: 'openai/gpt-5.6-sol',
+    ),
+    toolIds: <String>[],
+    callableAgentIds: <String>[],
+    contentHash: 'fixed-agent-hash',
+    sourcePath: '/config/agents/tinest.md',
+    isBuiltIn: true,
+  );
+  final api = FakeTinestApi(
+    agentDefinitions: const <AgentDefinitionDto>[fixedAgent],
+    connections: const <ProviderConnectionDto>[],
+  );
+  return ProviderScope(
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2121,9 +2270,7 @@ Widget _mcpSettings(ThemeMode mode) {
       serverName: 'repo',
     );
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2137,9 +2284,7 @@ Widget _mcpSettings(ThemeMode mode) {
 Widget _skillSettings(ThemeMode mode) {
   final api = FakeTinestApi();
   return ProviderScope(
-    overrides: [
-      appServicesProvider.overrideWithValue(fakeAppServices(api)),
-    ],
+    overrides: [appServicesProvider.overrideWithValue(fakeAppServices(api))],
     child: _material(
       mode,
       const UnifiedSettingsPage(
@@ -2160,22 +2305,19 @@ Widget _chat(ThemeMode mode, List<TimelineEventDto> events) => ProviderScope(
   ),
 );
 
-Widget _chatItems(
-  ThemeMode mode,
-  List<ChatItem> items, {
-  required bool busy,
-}) => ProviderScope(
-  overrides: [
-    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
-  ],
-  child: _material(
-    mode,
-    TickerMode(
-      enabled: false,
-      child: ChatTimelineView(items: items, busy: busy),
-    ),
-  ),
-);
+Widget _chatItems(ThemeMode mode, List<ChatItem> items, {required bool busy}) =>
+    ProviderScope(
+      overrides: [
+        externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+      ],
+      child: _material(
+        mode,
+        TickerMode(
+          enabled: false,
+          child: ChatTimelineView(items: items, busy: busy),
+        ),
+      ),
+    );
 
 Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
   overrides: [
@@ -2183,9 +2325,7 @@ Widget _chatItem(ThemeMode mode, ChatItem item) => ProviderScope(
   ],
   child: _material(
     mode,
-    SingleChildScrollView(
-      child: ChatItemView(item: item, expanded: true),
-    ),
+    SingleChildScrollView(child: ChatItemView(item: item, expanded: true)),
   ),
 );
 
@@ -2196,10 +2336,7 @@ final class _NoopUrlOpener implements ExternalUrlOpener {
   Future<bool> open(Uri uri) async => true;
 }
 
-Widget _shell(
-  ThemeMode mode, {
-  bool collapsed = false,
-}) {
+Widget _shell(ThemeMode mode, {bool collapsed = false}) {
   final now = DateTime.utc(2026);
   final workspace = WorkspaceDto(
     id: 'workspace',
@@ -2230,9 +2367,7 @@ Widget _shell(
   );
   return ProviderScope(
     overrides: [
-      appServicesProvider.overrideWithValue(
-        fakeAppServices(api, store: store),
-      ),
+      appServicesProvider.overrideWithValue(fakeAppServices(api, store: store)),
       attachmentInputProvider.overrideWithValue(null),
     ],
     child: _material(

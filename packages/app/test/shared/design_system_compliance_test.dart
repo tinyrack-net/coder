@@ -36,6 +36,8 @@ void main() {
       RegExp(
         r'\b(?:showAboutDialog|showDialog|showModalBottomSheet|showMenu)\s*<?',
       ): 'direct Material overlay',
+      RegExp(r'\b(?:showTRDrawer(?:<[^>]+>)?|TRDrawer)\s*\('):
+          'direct drawer; use the Tinest bottom-sheet policy',
       RegExp(r'\b(?:ScaffoldMessenger|SnackBar)(?:\.|\s*\()'):
           'direct Material transient feedback',
       // Design values, which must name a token rather than a measurement
@@ -63,6 +65,9 @@ void main() {
     final exempt = <String, Set<String>>{
       'lib/src/shared/presentation/tinest_icons.dart': {
         'raw Lucide glyph; use TinestIcons',
+      },
+      'lib/src/shared/presentation/tinest_bottom_sheet.dart': {
+        'direct drawer; use the Tinest bottom-sheet policy',
       },
     };
     final violations = <String>[];
