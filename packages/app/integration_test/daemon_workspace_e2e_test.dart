@@ -111,13 +111,18 @@ void main() {
         fixture.home.path,
       );
       final missingPath = '${fixture.home.path}/missing-project';
-      await tester.enterText(
-        find.byKey(const ValueKey('directory-browser-path')),
-        missingPath,
+      await _replaceFieldText(tester, 'directory-browser-path', missingPath);
+      await tester.tap(find.widgetWithText(TRButton, '이 폴더 선택'));
+      await _pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('new-workspace-error')),
       );
-      await tester.pump(directoryBrowserDebounce);
-      await tester.pumpAndSettle();
-      expect(find.textContaining(missingPath), findsOneWidget);
+      expect(
+        (await setup.workspaces.getWorkspaceCatalog()).workspaces,
+        isEmpty,
+      );
+
+      await _openProjectDirectoryBrowser(tester);
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
       expect(
@@ -126,8 +131,9 @@ void main() {
       );
 
       await _openProjectDirectoryBrowser(tester);
-      await tester.enterText(
-        find.byKey(const ValueKey('directory-browser-path')),
+      await _replaceFieldText(
+        tester,
+        'directory-browser-path',
         workspace.path,
       );
       await tester.pump(directoryBrowserDebounce);
@@ -307,6 +313,20 @@ Finder _field(String key) => find.descendant(
   of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(EditableText),
 );
+
+Future<void> _replaceFieldText(
+  WidgetTester tester,
+  String key,
+  String value,
+) async {
+  final field = tester.widget<TRTextField>(
+    find.byKey(ValueKey<String>(key)),
+  );
+  field.controller!.text = value;
+  field.onChanged!(value);
+  await tester.pump();
+  expect(field.controller!.text, value);
+}
 
 Finder _action(String label) => find.byWidgetPredicate(
   (widget) => widget is TRIconButton && widget.label == label,
