@@ -1,7 +1,7 @@
 name: desktop_app
 description: Desktop composition root for Tinest and its embedded daemon.
 publish_to: none
-version: 0.8.1+10
+version: 0.8.2+11
 resolution: workspace
 
 environment:
