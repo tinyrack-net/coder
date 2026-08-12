@@ -455,11 +455,20 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                     TRSelectFormField<String>(
                       key: const ValueKey<String>('provider-auth-method'),
                       initialValue: _method.id,
+                      searchable: true,
+                      searchPlaceholder: l10n.selectSearchPlaceholder,
+                      noResultsText: l10n.selectNoResults,
+                      // Explicit for the auditable adaptive Select contract.
+                      // ignore: avoid_redundant_argument_values
+                      surface: TRSelectSurface.auto,
                       label: l10n.providerSettingsActions,
                       width: TinestLayoutMetrics.settingsContentMaxWidth,
                       items: <TRSelectItem<String>>[
                         for (final method in widget.definition.authMethods)
                           TRSelectItem<String>(
+                            key: ValueKey<String>(
+                              'provider-auth-method-${method.id}',
+                            ),
                             value: method.id,
                             label: method.label,
                           ),
@@ -528,6 +537,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
               )
             else
               TRButton(
+                key: const ValueKey<String>('provider-auth-retry'),
                 intent: TRIntent.primary,
                 onPressed: () => setState(() {
                   _attemptId = null;
@@ -838,7 +848,7 @@ class _ProviderConnectionPaneState
                   ),
                 ],
               ),
-              SettingsSection(
+              SettingsSection.form(
                 title: l10n.providerSettingsDefaultModelTitle,
                 action: _loadingModels
                     ? null
@@ -848,39 +858,45 @@ class _ProviderConnectionPaneState
                         child: TRText.inherit(l10n.commonRetry),
                       ),
                 children: <Widget>[
-                  SettingsRow(
-                    selected: widget.state.defaultModel == null,
-                    title: TRText.inherit(
-                      l10n.providerSettingsDefaultModelAutomatic,
-                    ),
-                    onTap: () => ref
-                        .read(
-                          providerSettingsControllerProvider(
-                            widget.hostId,
-                          ).notifier,
-                        )
-                        .setDefaultModel(null),
-                  ),
-                  for (final model in models)
-                    SettingsRow(
-                      key: ValueKey<String>('provider-model-${model.id}'),
-                      selected:
-                          widget.state.defaultModel?.qualifiedModelId ==
-                          model.id,
-                      title: TRText.inherit(model.label),
-                      description: TRText.inherit(model.id),
-                      onTap: () => ref
+                  TRSelect<String?>.controlled(
+                    key: const ValueKey<String>('provider-default-model'),
+                    value: widget.state.defaultModel?.qualifiedModelId,
+                    searchable: true,
+                    searchPlaceholder: l10n.selectSearchPlaceholder,
+                    noResultsText: l10n.selectNoResults,
+                    // Explicit for the auditable adaptive Select contract.
+                    // ignore: avoid_redundant_argument_values
+                    surface: TRSelectSurface.auto,
+                    items: <TRSelectItem<String?>>[
+                      TRSelectItem<String?>(
+                        value: null,
+                        label: l10n.providerSettingsDefaultModelAutomatic,
+                      ),
+                      for (final model in models)
+                        TRSelectItem<String?>(
+                          key: ValueKey<String>(
+                            'provider-model-${model.id}',
+                          ),
+                          value: model.id,
+                          label: model.label,
+                          description:
+                              '${widget.connection.displayName} · ${model.id}',
+                        ),
+                    ],
+                    onValueChange: (modelId) => unawaited(
+                      ref
                           .read(
                             providerSettingsControllerProvider(
                               widget.hostId,
                             ).notifier,
                           )
                           .setDefaultModel(
-                            SessionModelSelectionDto(
-                              modelId: model.id,
-                            ),
+                            modelId == null
+                                ? null
+                                : SessionModelSelectionDto(modelId: modelId),
                           ),
                     ),
+                  ),
                 ],
               ),
             ],
@@ -1123,6 +1139,12 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   ),
                   TRSelectFormField<String>(
                     initialValue: _wireFormatId,
+                    searchable: true,
+                    searchPlaceholder: l10n.selectSearchPlaceholder,
+                    noResultsText: l10n.selectNoResults,
+                    // Explicit for the auditable adaptive Select contract.
+                    // ignore: avoid_redundant_argument_values
+                    surface: TRSelectSurface.auto,
                     label: l10n.providerSettingsApiFormat,
                     width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: <TRSelectItem<String>>[
@@ -1181,30 +1203,44 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                 ],
               ),
               if (widget.existing case final existing?)
-                SettingsSection(
+                SettingsSection.form(
                   title: l10n.providerSettingsDefaultModelTitle,
                   children: <Widget>[
-                    SettingsRow(
-                      selected: widget.state.defaultModel == null,
-                      title: TRText.inherit(
-                        l10n.providerSettingsDefaultModelAutomatic,
-                      ),
-                      onTap: () => _setDefault(null),
-                    ),
-                    for (final model
-                        in widget.state.models[existing.id] ??
-                            const <ProviderModelDto>[])
-                      SettingsRow(
-                        key: ValueKey<String>('provider-model-${model.id}'),
-                        selected:
-                            widget.state.defaultModel?.qualifiedModelId ==
-                            model.id,
-                        title: TRText.inherit(model.label),
-                        description: TRText.inherit(model.id),
-                        onTap: () => _setDefault(
-                          SessionModelSelectionDto(modelId: model.id),
+                    TRSelect<String?>.controlled(
+                      key: const ValueKey<String>('provider-default-model'),
+                      value: widget.state.defaultModel?.qualifiedModelId,
+                      searchable: true,
+                      searchPlaceholder: l10n.selectSearchPlaceholder,
+                      noResultsText: l10n.selectNoResults,
+                      // Explicit for the auditable adaptive Select contract.
+                      // ignore: avoid_redundant_argument_values
+                      surface: TRSelectSurface.auto,
+                      items: <TRSelectItem<String?>>[
+                        TRSelectItem<String?>(
+                          value: null,
+                          label: l10n.providerSettingsDefaultModelAutomatic,
+                        ),
+                        for (final model
+                            in widget.state.models[existing.id] ??
+                                const <ProviderModelDto>[])
+                          TRSelectItem<String?>(
+                            key: ValueKey<String>(
+                              'provider-model-${model.id}',
+                            ),
+                            value: model.id,
+                            label: model.label,
+                            description:
+                                '${existing.displayName} · ${model.id}',
+                          ),
+                      ],
+                      onValueChange: (modelId) => unawaited(
+                        _setDefault(
+                          modelId == null
+                              ? null
+                              : SessionModelSelectionDto(modelId: modelId),
                         ),
                       ),
+                    ),
                   ],
                 ),
             ],

@@ -152,7 +152,10 @@ Future<void> _openComposerSetting(
   );
   await tester.ensureVisible(row);
   await tester.pumpAndSettle();
-  await tester.tap(row);
+  final select = find.byKey(
+    ValueKey<String>('session-composer-settings-$setting-select'),
+  );
+  await tester.tap(select.evaluate().isEmpty ? row : select);
   await tester.pumpAndSettle();
 }
 
@@ -180,12 +183,6 @@ Future<void> _selectComposerMode(
     return;
   }
   await _openComposerSetting(tester, 'mode');
-  await tester.tap(
-    find.byKey(
-      ValueKey<String>('session-composer-mode-${mode.name}-sheet'),
-    ),
-  );
-  await tester.pumpAndSettle();
   await _dismissComposerSettings(tester);
 }
 

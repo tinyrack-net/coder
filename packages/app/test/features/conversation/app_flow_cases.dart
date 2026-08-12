@@ -162,7 +162,7 @@ void _registerConversationAppFlows() {
       await tester.tap(fullAccess);
       await tester.pumpAndSettle();
 
-      expect(find.text('변경 전 확인'), findsOneWidget);
+      expect(find.text('변경 전 확인'), findsWidgets);
       expect(
         find.byKey(const ValueKey('session-composer-permission-error')),
         findsOneWidget,

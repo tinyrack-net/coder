@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/domain/fuzzy_match.dart';
+import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -614,15 +615,13 @@ void main() {
         );
       }
 
-      // The model picker is forced to a nested drawer at a width where its
-      // ordinary auto policy would otherwise choose a dialog.
       await tester.tap(
         find.byKey(
-          const ValueKey<String>('session-composer-settings-model'),
+          const ValueKey<String>('session-composer-settings-model-select'),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(TRDrawer), findsNWidgets(2));
+      expect(find.byType(TRDrawer), findsOneWidget);
       expect(find.byType(TRDialog), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -630,13 +629,13 @@ void main() {
 
       await tester.tap(
         find.byKey(
-          const ValueKey<String>('session-composer-settings-agent'),
+          const ValueKey<String>('session-composer-settings-agent-select'),
         ),
       );
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(
-          const ValueKey<String>('session-composer-agent-planner-sheet'),
+          const ValueKey<String>('session-composer-agent-planner'),
         ),
       );
       await tester.pumpAndSettle();
@@ -647,7 +646,7 @@ void main() {
       await tester.tap(
         find.byKey(
           const ValueKey<String>(
-            'session-composer-settings-control-reasoning_effort',
+            'session-composer-settings-control-reasoning_effort-select',
           ),
         ),
       );
@@ -655,7 +654,7 @@ void main() {
       await tester.tap(
         find.byKey(
           const ValueKey<String>(
-            'session-composer-control-reasoning_effort-high-sheet',
+            'session-composer-control-reasoning_effort-high',
           ),
         ),
       );
@@ -669,14 +668,6 @@ void main() {
         find.byKey(
           const ValueKey<String>(
             'session-composer-settings-control-fast_mode',
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(
-          const ValueKey<String>(
-            'session-composer-control-fast_mode-enabled-sheet',
           ),
         ),
       );
@@ -721,7 +712,13 @@ void main() {
       );
       await tester.ensureVisible(permissionSetting);
       await tester.pumpAndSettle();
-      await tester.tap(permissionSetting);
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'session-composer-settings-permission-select',
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('permission-option-readOnly')),
@@ -735,12 +732,6 @@ void main() {
       await tester.ensureVisible(modeSetting);
       await tester.pumpAndSettle();
       await tester.tap(modeSetting);
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(
-          const ValueKey<String>('session-composer-mode-plan-sheet'),
-        ),
-      );
       await tester.pumpAndSettle();
       expect(hostKey.currentState!.mode, SessionMode.plan);
       expect(find.byType(TRDrawer), findsOneWidget);
@@ -784,12 +775,18 @@ void main() {
             .color,
         TRTextColor.muted,
       );
-      final semantics = tester.getSemantics(agentRow);
-      expect(semantics.hint, testL10n.composerAgentLocked);
+      final blockedAgent = find.descendant(
+        of: agentRow,
+        matching: find.byType(BlockedControl),
+      );
+      expect(
+        tester.getSemantics(blockedAgent).hint,
+        testL10n.composerAgentLocked,
+      );
       final container = ProviderScope.containerOf(tester.element(agentRow));
       final toasts = container.read(appToastControllerProvider);
 
-      await tester.tap(agentRow);
+      await tester.tap(blockedAgent);
       await tester.pumpAndSettle();
 
       expect(find.byType(TRDrawer), findsOneWidget);
@@ -803,7 +800,10 @@ void main() {
       Focus.of(
         tester.element(
           find
-              .descendant(of: agentRow, matching: find.byType(MouseRegion))
+              .descendant(
+                of: blockedAgent,
+                matching: find.byType(MouseRegion),
+              )
               .first,
         ),
       ).requestFocus();
@@ -857,18 +857,22 @@ void main() {
             .color,
         TRTextColor.muted,
       );
+      final blockedModel = find.descendant(
+        of: modelRow,
+        matching: find.byType(BlockedControl),
+      );
       expect(
-        tester.getSemantics(modelRow).hint,
+        tester.getSemantics(blockedModel).hint,
         testL10n.composerConnectProviderFirst,
       );
       final container = ProviderScope.containerOf(tester.element(modelRow));
       final toasts = container.read(appToastControllerProvider);
 
-      await tester.tap(modelRow);
+      await tester.tap(blockedModel);
       await tester.pumpAndSettle();
 
       expect(find.byType(TRDrawer), findsOneWidget);
-      expect(find.byType(ModelPicker), findsNothing);
+      expect(find.byType(AsyncModelSelect), findsOneWidget);
       expect(toasts.toasts, hasLength(1));
       expect(toasts.toasts.single.variant, TRStatusVariant.info);
       expect(
@@ -879,7 +883,10 @@ void main() {
       Focus.of(
         tester.element(
           find
-              .descendant(of: modelRow, matching: find.byType(MouseRegion))
+              .descendant(
+                of: blockedModel,
+                matching: find.byType(MouseRegion),
+              )
               .first,
         ),
       ).requestFocus();
@@ -919,11 +926,14 @@ void main() {
       );
       expect(
         tester
-            .widget<TRButton>(
-              find.descendant(of: modelChip, matching: find.byType(TRButton)),
+            .widget<TRSelect<ModelPickerOption?>>(
+              find.descendant(
+                of: modelChip,
+                matching: find.byType(TRSelect<ModelPickerOption?>),
+              ),
             )
-            .onPressed,
-        isNull,
+            .enabled,
+        isFalse,
         reason: 'the blocked chip keeps the design-system disabled styling',
       );
       expect(
@@ -938,7 +948,7 @@ void main() {
       await tester.tap(modelChip);
       await tester.pumpAndSettle();
 
-      expect(find.byType(ModelPicker), findsNothing);
+      expect(find.byType(AsyncModelSelect), findsOneWidget);
       expect(toasts.toasts, hasLength(1));
       expect(toasts.toasts.single.variant, TRStatusVariant.info);
       expect(

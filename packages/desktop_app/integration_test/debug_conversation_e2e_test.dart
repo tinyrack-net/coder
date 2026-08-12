@@ -2582,19 +2582,18 @@ Future<void> _selectComposerModel(
     );
   }
   await tester.pumpAndSettle();
+  final searchField = find.byType(TRTextField).last;
   await tester.enterText(
-    find.byKey(const ValueKey<String>('model-search-field')),
+    searchField,
     search,
   );
   await tester.pumpAndSettle();
+  final option = find.byKey(ValueKey<String>('model-option-$modelId'));
   await tester.tap(
-    find.byKey(ValueKey<String>('model-option-$modelId')),
+    option,
   );
   await tester.pumpAndSettle();
-  await pumpUntilGone(
-    tester,
-    find.byKey(const ValueKey<String>('model-search-field')),
-  );
+  await pumpUntilGone(tester, option);
   if (find
       .byKey(const ValueKey<String>('session-composer-settings-sheet'))
       .evaluate()

@@ -14,7 +14,9 @@ void main() {
       await _pump(
         tester,
         width: 1024,
-        chips: _chips(model: 'Claude Opus 4.6 (extended thinking, 1M context)'),
+        children: _controls(
+          model: 'Claude Opus 4.6 (extended thinking, 1M context)',
+        ),
       );
 
       expect(find.text('Agent'), findsOneWidget);
@@ -45,7 +47,11 @@ void main() {
     'the row is built at the size it is given',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
-      await _pump(tester, width: 900, chips: _chips(model: 'Sonnet 4.6'));
+      await _pump(
+        tester,
+        width: 900,
+        children: _controls(model: 'Sonnet 4.6'),
+      );
 
       for (final key in <ValueKey<String>>[_agentKey, _modelKey, _modeKey]) {
         expect(
@@ -62,30 +68,39 @@ const _agentKey = ValueKey<String>('composer-chip-agent');
 const _modelKey = ValueKey<String>('composer-chip-model');
 const _modeKey = ValueKey<String>('composer-chip-mode');
 
-List<ComposerChipSpec> _chips({required String model}) => <ComposerChipSpec>[
-  ComposerChipSpec(
-    valueKey: _agentKey,
-    icon: TinestIcons.agent,
-    label: 'Agent',
-    tooltip: 'Select agent',
-    menuChildren: <Widget>[
-      TRMenuItem(onPressed: () {}, child: const Text('Claude')),
+List<Widget> _controls({required String model}) => <Widget>[
+  TRSelect<String>.controlled(
+    key: _agentKey,
+    value: 'agent',
+    appearance: TRFieldAppearance.ghost,
+    uiSize: TRUiSize.sm,
+    width: TRMeasurements.measureXl,
+    leading: const Icon(TinestIcons.agent),
+    searchable: true,
+    items: const <TRSelectItem<String>>[
+      TRSelectItem<String>(value: 'agent', label: 'Agent'),
     ],
+    onValueChange: (_) {},
   ),
-  ComposerChipSpec(
-    valueKey: _modelKey,
-    icon: TinestIcons.memory,
-    label: model,
-    tooltip: 'Select model',
-    menuChildren: <Widget>[
-      TRMenuItem(onPressed: () {}, child: Text(model)),
+  TRSelect<String>.controlled(
+    key: _modelKey,
+    value: model,
+    appearance: TRFieldAppearance.ghost,
+    uiSize: TRUiSize.sm,
+    width: TRMeasurements.measureXl,
+    leading: const Icon(TinestIcons.memory),
+    searchable: true,
+    items: <TRSelectItem<String>>[
+      TRSelectItem<String>(value: model, label: model),
     ],
+    onValueChange: (_) {},
   ),
-  ComposerChipSpec(
+  ComposerChip(
     valueKey: _modeKey,
     icon: TinestIcons.checklist,
     label: 'Plan',
     tooltip: 'Toggle plan mode',
+    uiSize: TRUiSize.sm,
     onPressed: (_) {},
   ),
 ];
@@ -93,7 +108,7 @@ List<ComposerChipSpec> _chips({required String model}) => <ComposerChipSpec>[
 Future<void> _pump(
   WidgetTester tester, {
   required double width,
-  required List<ComposerChipSpec> chips,
+  required List<Widget> children,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -104,8 +119,7 @@ Future<void> _pump(
           child: SizedBox(
             width: width,
             child: ComposerChipBar(
-              chips: chips,
-              uiSize: TRUiSize.sm,
+              children: children,
             ),
           ),
         ),

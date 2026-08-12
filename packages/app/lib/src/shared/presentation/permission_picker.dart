@@ -1,100 +1,87 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
-import 'package:app/src/shared/presentation/tinest_icons.dart';
-import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// A permission choice, including inheritance when [mode] is null.
-final class PermissionPickerChoice {
-  /// Creates a permission choice.
-  const PermissionPickerChoice(this.mode);
-
-  /// Explicit mode, or null to inherit the next default in the hierarchy.
-  final PermissionMode? mode;
-}
-
-/// Opens the shared, descriptive permission picker.
-Future<PermissionPickerChoice?> showPermissionPicker(
-  BuildContext context, {
-  required PermissionMode? currentMode,
-  String? inheritLabel,
-  PermissionMode? inheritedMode,
-  bool useRootNavigator = true,
-}) => showTinestBottomSheet<PermissionPickerChoice>(
-  context: context,
-  useRootNavigator: useRootNavigator,
-  builder: (context) => PermissionPickerDrawer(
-    currentMode: currentMode,
-    inheritLabel: inheritLabel,
-    inheritedMode: inheritedMode,
-  ),
-);
-
-/// Descriptive permission choices presented in the shared drawer surface.
-class PermissionPickerDrawer extends StatelessWidget {
-  /// Creates a permission picker drawer.
-  const PermissionPickerDrawer({
+/// A descriptive permission Select shared by composer and settings surfaces.
+class PermissionSelect extends StatelessWidget {
+  /// Creates a permission Select, including an optional inherited value.
+  const PermissionSelect({
     required this.currentMode,
+    required this.onValueChange,
     this.inheritLabel,
     this.inheritedMode,
+    this.enabled = true,
+    this.leading,
+    this.appearance = TRFieldAppearance.solid,
+    this.uiSize = TRUiSize.md,
+    this.width,
     super.key,
   });
 
-  /// The selected explicit mode, or null when inheritance is selected.
+  /// Selected explicit mode, or null when inheritance is selected.
   final PermissionMode? currentMode;
 
-  /// Optional label for an inherited-mode choice.
+  /// Optional inherited option label.
   final String? inheritLabel;
 
-  /// Effective inherited mode shown under [inheritLabel].
+  /// Effective inherited mode shown as supporting option text.
   final PermissionMode? inheritedMode;
+
+  /// Called with the explicit mode or null for inheritance.
+  final ValueChanged<PermissionMode?>? onValueChange;
+
+  /// Whether the Select accepts input.
+  final bool enabled;
+
+  /// Optional leading trigger content.
+  final Widget? leading;
+
+  /// Design-system field appearance.
+  final TRFieldAppearance appearance;
+
+  /// Design-system control density.
+  final TRUiSize uiSize;
+
+  /// Optional trigger width.
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final inheritLabel = this.inheritLabel;
-    final inheritedMode = this.inheritedMode;
-    return TinestBottomSheet(
-      title: TRText.inherit(l10n.composerSelectPermissionMode),
-      description: TRText.inherit(l10n.permissionPickerDescription),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (inheritLabel != null)
-            TinestListRow(
-              key: const ValueKey<String>('permission-option-inherit'),
-              selected: currentMode == null,
-              title: TRText.inherit(inheritLabel),
-              subtitle: inheritedMode == null
-                  ? null
-                  : TRText.inherit(permissionModeLabel(l10n, inheritedMode)),
-              trailing: currentMode == null
-                  ? const Icon(TinestIcons.check)
-                  : null,
-              onTap: () => Navigator.pop(
-                context,
-                const PermissionPickerChoice(null),
-              ),
-            ),
-          for (final mode in PermissionMode.values)
-            TinestListRow(
-              key: ValueKey<String>('permission-option-${mode.name}'),
-              selected: currentMode == mode,
-              title: TRText.inherit(permissionModeLabel(l10n, mode)),
-              subtitle: TRText.inherit(permissionModeDescription(l10n, mode)),
-              unboundedSubtitle: true,
-              trailing: currentMode == mode
-                  ? const Icon(TinestIcons.check)
-                  : null,
-              onTap: () => Navigator.pop(
-                context,
-                PermissionPickerChoice(mode),
-              ),
-            ),
-        ],
-      ),
+    return TRSelect<PermissionMode?>.controlled(
+      value: currentMode,
+      enabled: enabled,
+      leading: leading,
+      appearance: appearance,
+      uiSize: uiSize,
+      width: width,
+      searchable: true,
+      searchPlaceholder: l10n.selectSearchPlaceholder,
+      noResultsText: l10n.selectNoResults,
+      // Explicit so the production Select policy can audit adaptation.
+      // ignore: avoid_redundant_argument_values
+      surface: TRSelectSurface.auto,
+      items: <TRSelectItem<PermissionMode?>>[
+        if (inheritLabel != null)
+          TRSelectItem<PermissionMode?>(
+            key: const ValueKey<String>('permission-option-inherit'),
+            value: null,
+            label: inheritLabel,
+            description: inheritedMode == null
+                ? null
+                : permissionModeLabel(l10n, inheritedMode!),
+          ),
+        for (final mode in PermissionMode.values)
+          TRSelectItem<PermissionMode?>(
+            key: ValueKey<String>('permission-option-${mode.name}'),
+            value: mode,
+            label: permissionModeLabel(l10n, mode),
+            description: permissionModeDescription(l10n, mode),
+          ),
+      ],
+      onValueChange: onValueChange,
     );
   }
 }

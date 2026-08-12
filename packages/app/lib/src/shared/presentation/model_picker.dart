@@ -1,16 +1,11 @@
 import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
-import 'package:app/src/shared/presentation/tinest_icons.dart';
-import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
-import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// One model offered by the combined provider model picker.
+/// One model offered by the combined provider model Select.
 final class ModelPickerOption {
   /// Creates a provider-qualified model option.
   const ModelPickerOption({
@@ -30,101 +25,68 @@ final class ModelPickerOption {
   );
 }
 
-/// A typed result from the model picker.
-sealed class ModelPickerChoice {
-  const ModelPickerChoice();
-}
-
-/// Loads the provider-qualified models displayed by a picker.
+/// Loads the provider-qualified models displayed by a Select.
 typedef ModelPickerOptionsLoader = Future<List<ModelPickerOption>> Function();
 
-/// Surface policy used by [showModelPicker].
-enum ModelPickerSurface {
-  /// Uses a dialog on wide viewports and a bottom sheet on compact viewports.
-  auto,
-
-  /// Always uses a bottom sheet, including when opened from another sheet.
-  sheet,
-}
-
-/// An explicitly selected provider-qualified model.
-final class SelectedModelPickerChoice extends ModelPickerChoice {
-  /// Creates a selected model result.
-  const SelectedModelPickerChoice(this.selection);
-
-  /// Chosen model persisted on the session.
-  final SessionModelSelectionDto selection;
-}
-
-/// A request to restore the selected agent's model default.
-final class InheritModelPickerChoice extends ModelPickerChoice {
-  /// Creates an inherit result.
-  const InheritModelPickerChoice();
-}
-
-/// Shows the searchable model list as a dialog or a mobile bottom sheet.
+/// A searchable model Select that owns its catalog loading state.
 ///
-/// Returns the chosen provider-qualified model, an explicit inherit choice,
-/// or null when dismissed.
-Future<ModelPickerChoice?> showModelPicker(
-  BuildContext context, {
-  required ModelPickerOptionsLoader loadOptions,
-  required SessionModelSelectionDto? currentSelection,
-  String? title,
-  String? inheritLabel,
-  ModelPickerSurface surface = ModelPickerSurface.auto,
-  bool useRootNavigator = true,
-}) {
-  final picker = _AsyncModelPicker(
-    loadOptions: loadOptions,
-    currentSelection: currentSelection,
-    title: title,
-    inheritLabel: inheritLabel,
-  );
-  if (surface == ModelPickerSurface.sheet ||
-      MediaQuery.sizeOf(context).width <
-          TinestLayoutMetrics.compactBreakpoint) {
-    return showTinestBottomSheet<ModelPickerChoice>(
-      context: context,
-      useRootNavigator: useRootNavigator,
-      builder: (context) => TinestBottomSheet(
-        semanticLabel: title,
-        content: picker,
-      ),
-    );
-  }
-  return showTRDialog<ModelPickerChoice>(
-    context: context,
-    builder: (context) => TRDialog(
-      semanticLabel: title,
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: TRMeasurements.overlayWidthMd,
-        ),
-        child: picker,
-      ),
-    ),
-  );
-}
-
-class _AsyncModelPicker extends StatefulWidget {
-  const _AsyncModelPicker({
+/// The loaded catalog is shared by the desktop dropdown and mobile sheet
+/// because both surfaces belong to the same [TRSelect].
+class AsyncModelSelect extends StatefulWidget {
+  /// Creates a model Select backed by [loadOptions].
+  const AsyncModelSelect({
     required this.loadOptions,
     required this.currentSelection,
-    this.title,
-    this.inheritLabel,
+    required this.onValueChange,
+    required this.inheritLabel,
+    this.loadKey,
+    this.enabled = true,
+    this.leading,
+    this.appearance = TRFieldAppearance.solid,
+    this.uiSize = TRUiSize.md,
+    this.width,
+    this.placeholder,
+    super.key,
   });
 
+  /// Loads all usable provider models through the typed application port.
   final ModelPickerOptionsLoader loadOptions;
+
+  /// Stable identity that triggers a reload when the owning host changes.
+  final Object? loadKey;
+
+  /// Current explicit selection, or null when the fallback chain is used.
   final SessionModelSelectionDto? currentSelection;
-  final String? title;
+
+  /// Receives the selected option, or null when inheritance is selected.
+  final FutureOr<void> Function(ModelPickerOption? option) onValueChange;
+
+  /// Label of the null/inherited option.
   final String? inheritLabel;
 
+  /// Whether the Select accepts input once loaded.
+  final bool enabled;
+
+  /// Optional leading trigger content.
+  final Widget? leading;
+
+  /// Design-system field appearance.
+  final TRFieldAppearance appearance;
+
+  /// Design-system control density.
+  final TRUiSize uiSize;
+
+  /// Optional trigger width.
+  final double? width;
+
+  /// Trigger placeholder while no explicit option resolves.
+  final String? placeholder;
+
   @override
-  State<_AsyncModelPicker> createState() => _AsyncModelPickerState();
+  State<AsyncModelSelect> createState() => _AsyncModelSelectState();
 }
 
-class _AsyncModelPickerState extends State<_AsyncModelPicker> {
+class _AsyncModelSelectState extends State<AsyncModelSelect> {
   List<ModelPickerOption>? _options;
   Object? _error;
 
@@ -132,6 +94,12 @@ class _AsyncModelPickerState extends State<_AsyncModelPicker> {
   void initState() {
     super.initState();
     unawaited(_load());
+  }
+
+  @override
+  void didUpdateWidget(covariant AsyncModelSelect oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loadKey != widget.loadKey) unawaited(_load());
   }
 
   Future<void> _load() async {
@@ -149,175 +117,70 @@ class _AsyncModelPickerState extends State<_AsyncModelPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final options = _options;
-    if (options != null) {
-      return ModelPicker(
-        options: options,
-        currentSelection: widget.currentSelection,
-        title: widget.title,
-        inheritLabel: widget.inheritLabel,
+    if (options == null) {
+      if (_error != null) {
+        return TRButton(
+          key: const ValueKey<String>('model-select-retry'),
+          appearance: TRAppearance.ghost,
+          uiSize: widget.uiSize,
+          onPressed: widget.enabled ? () => unawaited(_load()) : null,
+          child: TRText.inherit(l10n.commonRetry),
+        );
+      }
+      return Semantics(
+        label: l10n.settingsLoading,
+        child: TRSkeleton(
+          key: const ValueKey<String>('model-select-loading'),
+          width: widget.width ?? TRMeasurements.measureXl,
+        ),
       );
     }
-    final l10n = AppLocalizations.of(context);
-    final error = _error;
-    if (error != null) {
-      return SettingsDialogForm(
-        children: <Widget>[
-          TRAlert(
-            key: const ValueKey<String>('model-picker-load-error'),
-            variant: TRStatusVariant.danger,
-            title: TRText.inherit(l10n.settingsRefreshFailed('$error')),
-            actions: <Widget>[
-              TRButton(
-                intent: TRIntent.primary,
-                onPressed: () => unawaited(_load()),
-                child: TRText.inherit(l10n.commonRetry),
-              ),
-            ],
+    final current = options
+        .where((option) => option.selection == widget.currentSelection)
+        .firstOrNull;
+    return TRSelect<ModelPickerOption?>.controlled(
+      key: const ValueKey<String>('model-select'),
+      value: current,
+      enabled: widget.enabled,
+      leading: widget.leading,
+      appearance: widget.appearance,
+      uiSize: widget.uiSize,
+      width: widget.width,
+      placeholder: widget.placeholder ?? widget.inheritLabel,
+      searchable: true,
+      searchPlaceholder: l10n.selectSearchPlaceholder,
+      noResultsText: l10n.selectNoResults,
+      // Explicit so the production Select policy can audit adaptation.
+      // ignore: avoid_redundant_argument_values
+      surface: TRSelectSurface.auto,
+      items: <TRSelectItem<ModelPickerOption?>>[
+        if (widget.inheritLabel case final inheritLabel?)
+          TRSelectItem<ModelPickerOption?>(
+            key: const ValueKey<String>('model-option-inherit'),
+            value: null,
+            label: inheritLabel,
           ),
-        ],
-      );
-    }
-    return SettingsSkeletonLayout.overlay(
-      semanticLabel: l10n.settingsLoading,
-    );
-  }
-}
-
-/// Searchable list of models across all usable provider connections.
-class ModelPicker extends StatefulWidget {
-  /// Creates a [ModelPicker].
-  const ModelPicker({
-    required this.options,
-    required this.currentSelection,
-    this.title,
-    this.inheritLabel,
-    super.key,
-  });
-
-  /// Provider-qualified models offered to the user.
-  final List<ModelPickerOption> options;
-
-  /// Currently selected model, marked with a check.
-  final SessionModelSelectionDto? currentSelection;
-
-  /// Heading shown above the search field, or null for the default.
-  final String? title;
-
-  /// When set, adds a leading option that clears an explicit selection.
-  final String? inheritLabel;
-
-  @override
-  State<ModelPicker> createState() => _ModelPickerState();
-}
-
-class _ModelPickerState extends State<ModelPicker> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final query = _query.trim().toLowerCase();
-    final ordered = <ModelPickerOption>[
-      ...widget.options.where(_isSelected),
-      ...widget.options.where((option) => !_isSelected(option)),
-    ];
-    final filtered = query.isEmpty
-        ? ordered
-        : ordered
-              .where(
-                (option) =>
-                    option.model.id.toLowerCase().contains(query) ||
-                    option.model.label.toLowerCase().contains(query) ||
-                    option.providerName.toLowerCase().contains(query),
-              )
-              .toList(growable: false);
-    final inheritLabel = widget.inheritLabel;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: TRText(
-                widget.title ?? l10n.modelPickerTitle,
-                variant: TRTextVariant.headingLg,
-              ),
-            ),
-            TRIconButton(
-              appearance: TRAppearance.ghost,
-              label: l10n.commonClose,
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(TinestIcons.close),
-            ),
-          ],
-        ),
-        const SizedBox(height: TRSpacing.small),
-        TRTextField(
-          key: const ValueKey('model-search-field'),
-          autofocus: true,
-          label: l10n.modelPickerSearch,
-          onChanged: (value) => setState(() => _query = value),
-        ),
-        const SizedBox(height: TRSpacing.medium),
-        if (inheritLabel != null && query.isEmpty)
-          TinestListRow(
-            key: const ValueKey('model-option-inherit'),
-            title: TRText.inherit(inheritLabel),
-            trailing: widget.currentSelection == null
-                ? const Icon(TinestIcons.check)
-                : null,
-            onTap: () => Navigator.pop(
-              context,
-              const InheritModelPickerChoice(),
-            ),
-          ),
-        if (filtered.isEmpty)
-          TRText.inherit(l10n.modelPickerNoResults)
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final option = filtered[index];
-              final model = option.model;
-              final providerModelId = model.providerModelId.isEmpty
-                  ? model.id
-                  : model.providerModelId;
-              return TinestListRow(
-                key: ValueKey(
-                  'model-option-${model.connectionId}-'
-                  '$providerModelId',
-                ),
-                title: TRText.inherit(
-                  model.id,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: TRText.inherit(
-                  model.label == model.providerModelId ||
-                          model.label == model.id
-                      ? option.providerName
-                      : '${option.providerName} · ${model.label}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: _isSelected(option)
-                    ? const Icon(TinestIcons.check)
-                    : null,
-                onTap: () => Navigator.pop(
-                  context,
-                  SelectedModelPickerChoice(option.selection),
-                ),
-              );
-            },
+        for (final option in options)
+          TRSelectItem<ModelPickerOption?>(
+            key: ValueKey<String>(_optionKey(option)),
+            value: option,
+            label: option.model.label,
+            description: '${option.providerName} · ${option.model.id}',
           ),
       ],
+      onValueChange: (option) => unawaited(
+        Future<void>.sync(() async => widget.onValueChange(option)),
+      ),
     );
   }
 
-  bool _isSelected(ModelPickerOption option) =>
-      option.model.id == widget.currentSelection?.qualifiedModelId;
+  String _optionKey(ModelPickerOption option) {
+    final model = option.model;
+    final providerModelId = model.providerModelId.isEmpty
+        ? model.id
+        : model.providerModelId;
+    return 'model-option-${model.connectionId}-$providerModelId';
+  }
 }

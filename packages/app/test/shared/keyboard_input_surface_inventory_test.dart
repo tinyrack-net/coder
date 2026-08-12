@@ -42,8 +42,6 @@ void main() {
             'SettingsScaffold(',
         'lib/src/features/workspace/presentation/widgets/directory_browser.dart':
             'showTRDialog<',
-        'lib/src/shared/presentation/model_picker.dart':
-            'showTinestBottomSheet<',
       };
       expect(actual, auditedOwners.keys.toSet());
       for (final MapEntry(:key, :value) in auditedOwners.entries) {

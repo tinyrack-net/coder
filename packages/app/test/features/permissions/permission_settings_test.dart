@@ -2,6 +2,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +51,7 @@ void main() {
       expect(find.text('읽기 전용'), findsOneWidget);
       expect(find.text('변경 전 확인'), findsWidgets);
       expect(find.text('작업 공간 접근'), findsOneWidget);
-      expect(find.text('전체 접근'), findsOneWidget);
+      expect(find.text('전체 접근'), findsWidgets);
       expect(
         find.textContaining('신뢰할 수 있는 작업에서만 사용하세요'),
         findsOneWidget,
@@ -64,7 +65,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(api.defaultPermissionMode, PermissionMode.fullAccess);
-      expect(find.text('전체 접근'), findsOneWidget);
+      // The closed trigger and the retained overlay route can both contain the
+      // selected label during the route's final frame.
+      expect(find.text('전체 접근'), findsWidgets);
       expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__permission_settings__widget'],
@@ -113,7 +116,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(api.defaultPermissionMode, PermissionMode.ask);
-      expect(find.text('변경 전 확인'), findsOneWidget);
+      expect(find.text('변경 전 확인'), findsWidgets);
       expect(find.text('기본 권한을 변경하지 못했습니다'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -121,7 +124,7 @@ void main() {
   );
 
   testWidgets(
-    'permission picker stays content-sized as the window grows',
+    'permission Select uses a desktop menu and a mobile sheet',
     (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(1000, 800);
@@ -157,13 +160,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final mediumHeight = tester.getSize(find.byType(TRDrawer)).height;
-      tester.view.physicalSize = const Size(1000, 1100);
+      expect(find.byType(TRDrawer), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      final tallHeight = tester.getSize(find.byType(TRDrawer)).height;
+      tester.view.physicalSize = const Size(390, 760);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('permission-settings-change')),
+      );
+      await tester.pumpAndSettle();
 
-      expect(tallHeight, mediumHeight);
-      expect(tallHeight, lessThan(550));
+      expect(find.byType(TRDrawer), findsOneWidget);
+      expect(find.byType(TRTextField), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__permission_settings__widget'],

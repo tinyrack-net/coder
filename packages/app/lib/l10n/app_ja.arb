@@ -7,6 +7,8 @@
   "commonConfirm": "OK",
   "commonDelete": "削除",
   "commonRetry": "再試行",
+  "selectSearchPlaceholder": "選択肢を検索",
+  "selectNoResults": "一致する選択肢がありません。",
   "commonClose": "閉じる",
   "commonCopy": "コピー",
   "commonStop": "停止",

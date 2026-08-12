@@ -20,8 +20,10 @@ import 'package:app/src/features/providers/application/model_picker_options.dart
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
+import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
@@ -221,57 +223,41 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final bar = ComposerChipBar(
       // These are settings under the prompt, not the prompt itself, so the row
       // takes the dense size the design system keeps for application chrome.
-      uiSize: TRUiSize.sm,
-      chips: <ComposerChipSpec>[
-        ComposerChipSpec(
-          valueKey: const ValueKey('session-composer-agent'),
-          icon: TinestIcons.agent,
-          label: agent?.name ?? 'Agent',
-          tooltip: agentEnabled
+      children: <Widget>[
+        TRTooltip(
+          message: agentEnabled
               ? l10n.composerSelectAgent
               : l10n.composerAgentLocked,
-          menuChildren: enabled && agentEnabled && definitions.isNotEmpty
-              ? <Widget>[
-                  for (final definition in definitions)
-                    TRMenuItem(
-                      key: ValueKey('session-composer-agent-${definition.id}'),
-                      onPressed: () => widget.onAgentChanged(definition.id),
-                      child: TRText.inherit(definition.name),
-                    ),
-                ]
-              : null,
+          child: _agentSelect(
+            key: const ValueKey<String>('session-composer-agent'),
+            enabled: enabled && agentEnabled,
+            blocked: !agentEnabled,
+            blockedHint: l10n.composerAgentLocked,
+            onBlocked: () => ref
+                .read(toastMessengerProvider)
+                .info(
+                  l10n.composerAgentLocked,
+                  id: 'session-composer-agent-locked',
+                ),
+          ),
         ),
-        ComposerChipSpec(
-          valueKey: const ValueKey('session-composer-model'),
-          icon: TinestIcons.memory,
-          label: selection?.modelId ?? modelLabel ?? l10n.composerModel,
-          tooltip: modelBlocked
-              ? l10n.composerConnectProviderFirst
-              : l10n.composerSelectModel,
-          locked: modelBlocked,
-          lockedHint: modelBlocked ? l10n.composerConnectProviderFirst : null,
-          onLockedPressed: modelBlocked
-              ? (_) => _showProviderRequiredToast(l10n)
-              : null,
-          onPressed: enabled && connections.isNotEmpty ? _chooseModel : null,
+        _modelSelect(
+          key: const ValueKey<String>('session-composer-model'),
+          enabled: enabled && connections.isNotEmpty,
+          blocked: modelBlocked,
+          l10n: l10n,
+          placeholder: selection?.modelId ?? modelLabel ?? l10n.composerModel,
         ),
         for (final control in capabilities.controls)
           _controlChip(control, enabled),
-        ComposerChipSpec(
-          valueKey: const ValueKey('session-composer-permission'),
-          icon: TinestIcons.permission,
-          label: permissionModeLabel(
-            l10n,
-            widget.permissionMode ?? inheritedPermission,
-          ),
-          tooltip: l10n.composerSelectPermissionMode,
-          onPressed: enabled && widget.onPermissionModeChanged != null
-              ? (_) => unawaited(
-                  _choosePermission(context, inheritedPermission),
-                )
-              : null,
+        _permissionSelect(
+          key: const ValueKey<String>('session-composer-permission'),
+          enabled: enabled && widget.onPermissionModeChanged != null,
+          inheritedPermission: inheritedPermission,
+          appearance: TRFieldAppearance.ghost,
+          uiSize: TRUiSize.sm,
         ),
-        ComposerChipSpec(
+        ComposerChip(
           valueKey: const ValueKey('session-composer-mode'),
           icon: TinestIcons.checklist,
           label: planning ? l10n.composerPlan : l10n.composerRun,
@@ -279,6 +265,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
               ? l10n.composerPlanTooltip
               : l10n.composerRunTooltip,
           selected: planning,
+          uiSize: TRUiSize.sm,
           onPressed: enabled
               ? (_) => widget.onModeChanged(
                   planning ? SessionMode.normal : SessionMode.plan,
@@ -303,6 +290,144 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         bar,
       ],
     );
+  }
+
+  Widget _agentSelect({
+    required Key key,
+    required bool enabled,
+    bool blocked = false,
+    String? blockedHint,
+    VoidCallback? onBlocked,
+    VoidCallback? onValueChanged,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final select = LayoutBuilder(
+      builder: (context, constraints) => TRSelect<String>.controlled(
+        key: key,
+        value: widget.agentDefinitionId,
+        enabled: enabled,
+        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        leading: Icon(blocked ? TinestIcons.lock : TinestIcons.agent),
+        appearance: TRFieldAppearance.ghost,
+        uiSize: TRUiSize.sm,
+        searchable: true,
+        searchPlaceholder: l10n.selectSearchPlaceholder,
+        noResultsText: l10n.selectNoResults,
+        // Explicit so the production Select policy can audit adaptation.
+        // ignore: avoid_redundant_argument_values
+        surface: TRSelectSurface.auto,
+        items: <TRSelectItem<String>>[
+          for (final definition in widget.definitions)
+            TRSelectItem<String>(
+              key: ValueKey<String>(
+                'session-composer-agent-${definition.id}',
+              ),
+              value: definition.id,
+              label: definition.name,
+            ),
+        ],
+        onValueChange: (value) {
+          if (value != null) {
+            widget.onAgentChanged(value);
+            onValueChanged?.call();
+          }
+        },
+      ),
+    );
+    if (!blocked || onBlocked == null) return select;
+    return BlockedControl(
+      label: l10n.composerAgent,
+      hint: blockedHint ?? l10n.composerAgentLocked,
+      onTap: onBlocked,
+      child: select,
+    );
+  }
+
+  Widget _modelSelect({
+    required Key key,
+    required bool enabled,
+    required bool blocked,
+    required AppLocalizations l10n,
+    required String placeholder,
+    VoidCallback? onValueChanged,
+  }) {
+    final select = LayoutBuilder(
+      builder: (context, constraints) => AsyncModelSelect(
+        loadKey: widget.hostId,
+        loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
+        currentSelection: widget.selection,
+        inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
+            ? l10n.composerInheritModel
+            : l10n.composerInheritDefaultModel,
+        placeholder: placeholder,
+        enabled: enabled,
+        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
+        appearance: TRFieldAppearance.ghost,
+        uiSize: TRUiSize.sm,
+        onValueChange: (option) async {
+          await _setModelOption(option);
+          onValueChanged?.call();
+        },
+      ),
+    );
+    if (!blocked) return KeyedSubtree(key: key, child: select);
+    return BlockedControl(
+      key: key,
+      label: placeholder,
+      hint: l10n.composerConnectProviderFirst,
+      onTap: () => _showProviderRequiredToast(l10n),
+      child: select,
+    );
+  }
+
+  Widget _permissionSelect({
+    required Key key,
+    required bool enabled,
+    required PermissionMode inheritedPermission,
+    required TRFieldAppearance appearance,
+    required TRUiSize uiSize,
+    VoidCallback? onValueChanged,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) => PermissionSelect(
+        key: key,
+        currentMode: widget.permissionMode,
+        inheritLabel: l10n.composerInheritPermissionMode,
+        inheritedMode: inheritedPermission,
+        enabled: enabled,
+        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        leading: const Icon(TinestIcons.permission),
+        appearance: appearance,
+        uiSize: uiSize,
+        onValueChange: (mode) => unawaited(
+          _setPermission(mode).then((_) => onValueChanged?.call()),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setModelOption(ModelPickerOption? option) async {
+    final allowed =
+        option?.model.capabilities.controls
+            .map((control) => control.id)
+            .toSet() ??
+        const <String>{};
+    final retained = <String, ModelControlValueDto>{
+      for (final entry in widget.modelControls.entries)
+        if (allowed.contains(entry.key)) entry.key: entry.value,
+    };
+    await widget.onModelChanged(option?.selection, retained);
+  }
+
+  Future<void> _setPermission(PermissionMode? mode) async {
+    if (mounted) setState(() => _permissionError = null);
+    try {
+      await widget.onPermissionModeChanged?.call(mode);
+    } on Object catch (error) {
+      if (mounted) setState(() => _permissionError = '$error');
+    }
   }
 
   Future<void> _showSettings() => showTinestBottomSheet<void>(
@@ -331,117 +456,102 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     icon: const Icon(TinestIcons.error),
                     variant: TRStatusVariant.danger,
                   ),
-                _settingsRow(
+                SettingsRow(
                   key: const ValueKey<String>(
                     'session-composer-settings-agent',
                   ),
-                  icon: TinestIcons.agent,
-                  title: l10n.composerAgent,
-                  value: snapshot.agent?.name ?? l10n.composerAgent,
+                  flush: true,
+                  leading: const Icon(TinestIcons.agent),
+                  title: TRText.inherit(
+                    l10n.composerAgent,
+                    color: agentLocked ? TRTextColor.muted : null,
+                  ),
+                  controlLayout: SettingsControlLayout.responsive,
+                  controlOwnsFocus: true,
                   enabled:
                       agentLocked ||
                       (widget.enabled && widget.definitions.isNotEmpty),
-                  locked: agentLocked,
-                  lockedHint: l10n.composerAgentLocked,
-                  onTap: agentLocked
-                      ? () => ref
-                            .read(toastMessengerProvider)
-                            .info(
-                              l10n.composerAgentLocked,
-                              id: 'session-composer-agent-locked',
-                            )
-                      : () async {
-                          final choice = await _showChoiceSheet<String>(
-                            sheetContext,
-                            title: l10n.composerSelectAgent,
-                            choices: <_ComposerSheetOption<String>>[
-                              for (final definition in widget.definitions)
-                                _ComposerSheetOption<String>(
-                                  key: ValueKey<String>(
-                                    'session-composer-agent-'
-                                    '${definition.id}-sheet',
-                                  ),
-                                  value: definition.id,
-                                  label: definition.name,
-                                  selected:
-                                      definition.id == widget.agentDefinitionId,
-                                ),
-                            ],
-                          );
-                          if (choice == null) return;
-                          widget.onAgentChanged(choice.value);
-                          await _refreshSettings(refresh);
-                        },
+                  control: _agentSelect(
+                    key: const ValueKey<String>(
+                      'session-composer-settings-agent-select',
+                    ),
+                    enabled: widget.enabled && !agentLocked,
+                    blocked: agentLocked,
+                    blockedHint: l10n.composerAgentLocked,
+                    onBlocked: () => ref
+                        .read(toastMessengerProvider)
+                        .info(
+                          l10n.composerAgentLocked,
+                          id: 'session-composer-agent-locked',
+                        ),
+                    onValueChanged: () => unawaited(
+                      _refreshSettings(refresh),
+                    ),
+                  ),
                 ),
-                _settingsRow(
+                SettingsRow(
                   key: const ValueKey<String>(
                     'session-composer-settings-model',
                   ),
-                  icon: TinestIcons.memory,
-                  title: l10n.composerModel,
-                  value:
-                      widget.selection?.modelId ??
-                      snapshot.model?.label ??
-                      l10n.composerModel,
-                  enabled: widget.enabled && snapshot.providersResolved,
-                  locked:
-                      widget.enabled &&
-                      snapshot.providersResolved &&
-                      snapshot.connections.isEmpty,
-                  lockedHint:
-                      widget.enabled &&
-                          snapshot.providersResolved &&
-                          snapshot.connections.isEmpty
-                      ? l10n.composerConnectProviderFirst
-                      : null,
-                  onTap:
-                      widget.enabled &&
-                          snapshot.providersResolved &&
-                          snapshot.connections.isEmpty
-                      ? () => _showProviderRequiredToast(l10n)
-                      : () async {
-                          await _chooseModel(
-                            sheetContext,
-                            surface: ModelPickerSurface.sheet,
-                          );
-                          await _refreshSettings(refresh);
-                        },
+                  flush: true,
+                  leading: const Icon(TinestIcons.memory),
+                  title: TRText.inherit(
+                    l10n.composerModel,
+                    color:
+                        widget.enabled &&
+                            snapshot.providersResolved &&
+                            snapshot.connections.isEmpty
+                        ? TRTextColor.muted
+                        : null,
+                  ),
+                  controlLayout: SettingsControlLayout.responsive,
+                  controlOwnsFocus: true,
+                  control: _modelSelect(
+                    key: const ValueKey<String>(
+                      'session-composer-settings-model-select',
+                    ),
+                    enabled: widget.enabled && snapshot.connections.isNotEmpty,
+                    blocked:
+                        widget.enabled &&
+                        snapshot.providersResolved &&
+                        snapshot.connections.isEmpty,
+                    l10n: l10n,
+                    placeholder:
+                        widget.selection?.modelId ??
+                        snapshot.model?.label ??
+                        l10n.composerModel,
+                    onValueChanged: () => unawaited(
+                      _refreshSettings(refresh),
+                    ),
+                  ),
                 ),
                 for (final descriptor in snapshot.capabilities.controls)
-                  _settingsRow(
-                    key: ValueKey<String>(
-                      'session-composer-settings-control-${descriptor.id}',
-                    ),
-                    icon: _controlIcon(descriptor.id),
-                    title: descriptor.label,
-                    value: _controlValueLabel(l10n, descriptor),
-                    enabled:
-                        widget.enabled && widget.onModelControlsChanged != null,
-                    onTap: () async {
-                      await _chooseControlSheet(sheetContext, descriptor);
-                      await _refreshSettings(refresh);
-                    },
-                  ),
-                _settingsRow(
+                  _compactControl(descriptor, l10n, refresh),
+                SettingsRow(
                   key: const ValueKey<String>(
                     'session-composer-settings-permission',
                   ),
-                  icon: TinestIcons.permission,
-                  title: l10n.composerPermissionMode,
-                  value: permissionModeLabel(
-                    l10n,
-                    widget.permissionMode ?? snapshot.inheritedPermission,
+                  flush: true,
+                  leading: const Icon(TinestIcons.permission),
+                  title: TRText.inherit(l10n.composerPermissionMode),
+                  controlLayout: SettingsControlLayout.responsive,
+                  controlOwnsFocus: true,
+                  control: PermissionSelect(
+                    key: const ValueKey<String>(
+                      'session-composer-settings-permission-select',
+                    ),
+                    currentMode: widget.permissionMode,
+                    inheritLabel: l10n.composerInheritPermissionMode,
+                    inheritedMode: snapshot.inheritedPermission,
+                    enabled:
+                        widget.enabled &&
+                        widget.onPermissionModeChanged != null,
+                    onValueChange: (mode) => unawaited(
+                      _setPermission(mode).then(
+                        (_) => _refreshSettings(refresh),
+                      ),
+                    ),
                   ),
-                  enabled:
-                      widget.enabled && widget.onPermissionModeChanged != null,
-                  onTap: () async {
-                    await _choosePermission(
-                      sheetContext,
-                      snapshot.inheritedPermission,
-                      useRootNavigator: false,
-                    );
-                    await _refreshSettings(refresh);
-                  },
                 ),
                 _settingsRow(
                   key: const ValueKey<String>(
@@ -453,32 +563,13 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                       ? l10n.composerPlan
                       : l10n.composerRun,
                   enabled: widget.enabled,
-                  onTap: () async {
-                    final choice = await _showChoiceSheet<SessionMode>(
-                      sheetContext,
-                      title: l10n.composerMode,
-                      choices: <_ComposerSheetOption<SessionMode>>[
-                        _ComposerSheetOption<SessionMode>(
-                          key: const ValueKey<String>(
-                            'session-composer-mode-normal-sheet',
-                          ),
-                          value: SessionMode.normal,
-                          label: l10n.composerRun,
-                          selected: widget.mode == SessionMode.normal,
-                        ),
-                        _ComposerSheetOption<SessionMode>(
-                          key: const ValueKey<String>(
-                            'session-composer-mode-plan-sheet',
-                          ),
-                          value: SessionMode.plan,
-                          label: l10n.composerPlan,
-                          selected: widget.mode == SessionMode.plan,
-                        ),
-                      ],
+                  onTap: () {
+                    widget.onModeChanged(
+                      widget.mode == SessionMode.plan
+                          ? SessionMode.normal
+                          : SessionMode.plan,
                     );
-                    if (choice == null) return;
-                    widget.onModeChanged(choice.value);
-                    await _refreshSettings(refresh);
+                    unawaited(_refreshSettings(refresh));
                   },
                 ),
               ],
@@ -567,99 +658,21 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     );
   }
 
-  Future<_ComposerSheetChoice<T>?> _showChoiceSheet<T>(
-    BuildContext context, {
-    required String title,
-    required List<_ComposerSheetOption<T>> choices,
-  }) => showTinestBottomSheet<_ComposerSheetChoice<T>>(
-    context: context,
-    useRootNavigator: false,
-    builder: (context) => TinestBottomSheet(
-      title: TRText.inherit(title),
-      content: ListView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        children: <Widget>[
-          for (final choice in choices)
-            TinestListRow(
-              key: choice.key,
-              enabled: choice.enabled,
-              selected: choice.selected,
-              title: TRText.inherit(choice.label),
-              subtitle: choice.description == null
-                  ? null
-                  : TRText.inherit(choice.description!),
-              unboundedSubtitle: choice.description != null,
-              trailing: choice.selected ? const Icon(TinestIcons.check) : null,
-              onTap: () => Navigator.pop(
-                context,
-                _ComposerSheetChoice<T>(choice.value),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-
   Future<void> _chooseControlSheet(
     BuildContext context,
     ModelControlDescriptorDto descriptor,
   ) async {
     final current = widget.modelControls[descriptor.id];
-    final l10n = AppLocalizations.of(context);
     switch (descriptor.kind) {
       case ModelControlKind.choice:
-        final chosen = await _showChoiceSheet<ModelControlValueDto?>(
-          context,
-          title: descriptor.label,
-          choices: <_ComposerSheetOption<ModelControlValueDto?>>[
-            _ComposerSheetOption<ModelControlValueDto?>(
-              key: ValueKey<String>(
-                'session-composer-control-${descriptor.id}-default-sheet',
-              ),
-              value: null,
-              label: l10n.composerUseDefault,
-              selected: current == null,
-            ),
-            for (final choice in descriptor.choices)
-              _ComposerSheetOption<ModelControlValueDto?>(
-                key: ValueKey<String>(
-                  'session-composer-control-${descriptor.id}-'
-                  '${choice.id}-sheet',
-                ),
-                value: ModelControlValueDto.stringValue(value: choice.id),
-                label: choice.label,
-                selected:
-                    current is ModelControlStringValueDto &&
-                    current.value == choice.id,
-              ),
-          ],
-        );
-        if (chosen != null) _setControl(descriptor, chosen.value);
+        return;
       case ModelControlKind.toggle:
-        final chosen = await _showChoiceSheet<ModelControlValueDto?>(
-          context,
-          title: descriptor.label,
-          choices: <_ComposerSheetOption<ModelControlValueDto?>>[
-            _ComposerSheetOption<ModelControlValueDto?>(
-              key: ValueKey<String>(
-                'session-composer-control-${descriptor.id}-default-sheet',
-              ),
-              value: null,
-              label: l10n.composerUseDefault,
-              selected: current == null,
-            ),
-            _ComposerSheetOption<ModelControlValueDto?>(
-              key: ValueKey<String>(
-                'session-composer-control-${descriptor.id}-enabled-sheet',
-              ),
-              value: const ModelControlValueDto.boolValue(value: true),
-              label: l10n.composerEnabled,
-              selected: current is ModelControlBoolValueDto && current.value,
-            ),
-          ],
+        _setControl(
+          descriptor,
+          current is ModelControlBoolValueDto && current.value
+              ? null
+              : const ModelControlValueDto.boolValue(value: true),
         );
-        if (chosen != null) _setControl(descriptor, chosen.value);
       case ModelControlKind.integer:
         final chosen = await showTinestBottomSheet<_ComposerSheetChoice<int?>>(
           context: context,
@@ -681,6 +694,112 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     }
   }
 
+  Widget _choiceControlSelect(
+    ModelControlDescriptorDto descriptor, {
+    required bool enabled,
+    required TRFieldAppearance appearance,
+    required TRUiSize uiSize,
+    Key? key,
+    VoidCallback? onValueChanged,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final current = widget.modelControls[descriptor.id];
+    final selectedId = current is ModelControlStringValueDto
+        ? current.value
+        : null;
+    return LayoutBuilder(
+      builder: (context, constraints) => TRSelect<String?>.controlled(
+        key: key,
+        value: selectedId,
+        enabled: enabled,
+        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        leading: Icon(_controlIcon(descriptor.id)),
+        appearance: appearance,
+        uiSize: uiSize,
+        searchable: true,
+        searchPlaceholder: l10n.selectSearchPlaceholder,
+        noResultsText: l10n.selectNoResults,
+        // Explicit so the production Select policy can audit adaptation.
+        // ignore: avoid_redundant_argument_values
+        surface: TRSelectSurface.auto,
+        items: <TRSelectItem<String?>>[
+          TRSelectItem<String?>(
+            key: ValueKey<String>(
+              'session-composer-control-${descriptor.id}-default',
+            ),
+            value: null,
+            label: l10n.composerUseDefault,
+          ),
+          for (final choice in descriptor.choices)
+            TRSelectItem<String?>(
+              key: ValueKey<String>(
+                'session-composer-control-${descriptor.id}-${choice.id}',
+              ),
+              value: choice.id,
+              label: choice.label,
+            ),
+        ],
+        onValueChange: (value) {
+          _setControl(
+            descriptor,
+            value == null
+                ? null
+                : ModelControlValueDto.stringValue(value: value),
+          );
+          onValueChanged?.call();
+        },
+      ),
+    );
+  }
+
+  Widget _compactControl(
+    ModelControlDescriptorDto descriptor,
+    AppLocalizations l10n,
+    StateSetter refresh,
+  ) {
+    final enabled = widget.enabled && widget.onModelControlsChanged != null;
+    if (descriptor.kind == ModelControlKind.choice) {
+      return SettingsRow(
+        key: ValueKey<String>(
+          'session-composer-settings-control-${descriptor.id}',
+        ),
+        flush: true,
+        leading: Icon(_controlIcon(descriptor.id)),
+        title: TRText.inherit(descriptor.label),
+        description: descriptor.description == null
+            ? null
+            : TRText.inherit(descriptor.description!),
+        controlLayout: SettingsControlLayout.responsive,
+        controlOwnsFocus: true,
+        control: _choiceControlSelect(
+          descriptor,
+          key: ValueKey<String>(
+            'session-composer-settings-control-${descriptor.id}-select',
+          ),
+          enabled: enabled,
+          appearance: TRFieldAppearance.solid,
+          uiSize: TRUiSize.md,
+          onValueChanged: () => unawaited(_refreshSettings(refresh)),
+        ),
+      );
+    }
+    return _settingsRow(
+      key: ValueKey<String>(
+        'session-composer-settings-control-${descriptor.id}',
+      ),
+      icon: _controlIcon(descriptor.id),
+      title: descriptor.label,
+      value: _controlValueLabel(l10n, descriptor),
+      enabled: enabled,
+      onTap: () => unawaited(
+        _chooseControlSheet(
+          context,
+          descriptor,
+        ).then((_) => _refreshSettings(refresh)),
+      ),
+    );
+  }
+
   String _controlValueLabel(
     AppLocalizations l10n,
     ModelControlDescriptorDto descriptor,
@@ -697,59 +816,29 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     _ => l10n.composerUseDefault,
   };
 
-  ComposerChipSpec _controlChip(
+  Widget _controlChip(
     ModelControlDescriptorDto descriptor,
     bool enabled,
   ) {
     final value = widget.modelControls[descriptor.id];
     final canChange = enabled && widget.onModelControlsChanged != null;
     return switch (descriptor.kind) {
-      ModelControlKind.choice => ComposerChipSpec(
-        valueKey: ValueKey('session-composer-control-${descriptor.id}'),
-        icon: _controlIcon(descriptor.id),
-        label: switch (value) {
-          ModelControlStringValueDto(:final value) =>
-            descriptor.choices
-                    .where((choice) => choice.id == value)
-                    .firstOrNull
-                    ?.label ??
-                value,
-          _ => descriptor.label,
-        },
-        tooltip: descriptor.description ?? descriptor.label,
-        menuChildren: canChange
-            ? <Widget>[
-                TRMenuItem(
-                  key: ValueKey(
-                    'session-composer-control-${descriptor.id}-default',
-                  ),
-                  onPressed: () => _setControl(descriptor, null),
-                  child: TRText.inherit(
-                    AppLocalizations.of(
-                      context,
-                    ).providerSettingsDefaultModelAutomatic,
-                  ),
-                ),
-                for (final choice in descriptor.choices)
-                  TRMenuItem(
-                    key: ValueKey(
-                      'session-composer-control-${descriptor.id}-${choice.id}',
-                    ),
-                    onPressed: () => _setControl(
-                      descriptor,
-                      ModelControlValueDto.stringValue(value: choice.id),
-                    ),
-                    child: TRText.inherit(choice.label),
-                  ),
-              ]
-            : null,
+      ModelControlKind.choice => _choiceControlSelect(
+        descriptor,
+        key: ValueKey<String>(
+          'session-composer-control-${descriptor.id}',
+        ),
+        enabled: canChange,
+        appearance: TRFieldAppearance.ghost,
+        uiSize: TRUiSize.sm,
       ),
-      ModelControlKind.toggle => ComposerChipSpec(
+      ModelControlKind.toggle => ComposerChip(
         valueKey: ValueKey('session-composer-control-${descriptor.id}'),
         icon: _controlIcon(descriptor.id),
         label: descriptor.label,
         tooltip: descriptor.description ?? descriptor.label,
         selected: value is ModelControlBoolValueDto && value.value,
+        uiSize: TRUiSize.sm,
         onPressed: canChange
             ? (_) => _setControl(
                 descriptor,
@@ -759,7 +848,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
               )
             : null,
       ),
-      ModelControlKind.integer => ComposerChipSpec(
+      ModelControlKind.integer => ComposerChip(
         valueKey: ValueKey('session-composer-control-${descriptor.id}'),
         icon: _controlIcon(descriptor.id),
         label: switch (value) {
@@ -768,6 +857,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           _ => descriptor.label,
         },
         tooltip: descriptor.description ?? descriptor.label,
+        uiSize: TRUiSize.sm,
         onPressed: canChange
             ? (chipContext) => unawaited(
                 _chooseInteger(chipContext, descriptor, value),
@@ -815,27 +905,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     _setControl(descriptor, ModelControlValueDto.intValue(value: value));
   }
 
-  Future<void> _choosePermission(
-    BuildContext context,
-    PermissionMode inheritedMode, {
-    bool useRootNavigator = true,
-  }) async {
-    final choice = await showPermissionPicker(
-      context,
-      currentMode: widget.permissionMode,
-      inheritLabel: AppLocalizations.of(context).composerInheritPermissionMode,
-      inheritedMode: inheritedMode,
-      useRootNavigator: useRootNavigator,
-    );
-    if (choice == null) return;
-    if (mounted) setState(() => _permissionError = null);
-    try {
-      await widget.onPermissionModeChanged?.call(choice.mode);
-    } on Object catch (error) {
-      if (mounted) setState(() => _permissionError = '$error');
-    }
-  }
-
   List<ProviderModelDto>? _loadedModels(String connectionId) => ref
       .read(providerSettingsControllerProvider(widget.hostId))
       .value
@@ -857,64 +926,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         );
   }
 
-  Future<void> _chooseModel(
-    BuildContext context, {
-    ModelPickerSurface surface = ModelPickerSurface.auto,
-  }) async {
-    final l10n = AppLocalizations.of(context);
-    final providersState = ref.read(
-      providerSettingsControllerProvider(widget.hostId),
-    );
-    final providers = providersState.value;
-    if (!providersState.hasValue || providers == null) return;
-    if (usableConnections(providers.connections).isEmpty) {
-      _showProviderRequiredToast(l10n);
-      return;
-    }
-    var options = const <ModelPickerOption>[];
-    // Clearing the override always means "follow the fallback chain"; only the
-    // first step of that chain differs per agent.
-    final chosen = await showModelPicker(
-      context,
-      loadOptions: () async {
-        final loaded = await ref.read(
-          modelPickerOptionsLoaderProvider(widget.hostId),
-        )();
-        options = loaded;
-        return loaded;
-      },
-      currentSelection: widget.selection,
-      title: l10n.composerSelectModel,
-      inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
-          ? l10n.composerInheritModel
-          : l10n.composerInheritDefaultModel,
-      surface: surface,
-      useRootNavigator: surface != ModelPickerSurface.sheet,
-    );
-    if (chosen == null) return;
-    switch (chosen) {
-      case SelectedModelPickerChoice(:final selection):
-        final target = options
-            .where((option) => option.selection == selection)
-            .firstOrNull;
-        final allowed =
-            target?.model.capabilities.controls
-                .map((control) => control.id)
-                .toSet() ??
-            const <String>{};
-        final retained = <String, ModelControlValueDto>{
-          for (final entry in widget.modelControls.entries)
-            if (allowed.contains(entry.key)) entry.key: entry.value,
-        };
-        await widget.onModelChanged(selection, retained);
-      case InheritModelPickerChoice():
-        await widget.onModelChanged(
-          null,
-          const <String, ModelControlValueDto>{},
-        );
-    }
-  }
-
   AgentDefinitionDto? get _selectedAgent => widget.definitions
       .where((definition) => definition.id == widget.agentDefinitionId)
       .firstOrNull;
@@ -925,25 +936,6 @@ final class _ComposerSheetChoice<T> {
   const _ComposerSheetChoice(this.value);
 
   final T value;
-}
-
-@immutable
-final class _ComposerSheetOption<T> {
-  const _ComposerSheetOption({
-    required this.key,
-    required this.value,
-    required this.label,
-    required this.selected,
-    this.description,
-    this.enabled = true,
-  });
-
-  final ValueKey<String> key;
-  final T value;
-  final String label;
-  final String? description;
-  final bool selected;
-  final bool enabled;
 }
 
 class _IntegerControlDrawer extends StatefulWidget {
@@ -1123,90 +1115,22 @@ class _IntegerControlDialogState extends State<_IntegerControlDialog> {
   );
 }
 
-/// One labelled turn setting the wide composer toolbar offers.
-@immutable
-class ComposerChipSpec {
-  /// Creates a [ComposerChipSpec].
-  const ComposerChipSpec({
-    required this.valueKey,
-    required this.icon,
-    required this.label,
-    required this.tooltip,
-    this.onPressed,
-    this.locked = false,
-    this.lockedHint,
-    this.onLockedPressed,
-    this.menuChildren,
-    this.selected = false,
-  });
-
-  /// Stable key used by tests and by the enclosing row.
-  final ValueKey<String> valueKey;
-
-  /// Leading glyph.
-  final IconData icon;
-
-  /// Chip label.
-  final String label;
-
-  /// Hover and long-press description.
-  final String tooltip;
-
-  /// Tap handler receiving the chip's own context.
-  final void Function(BuildContext chipContext)? onPressed;
-
-  /// Whether the chip keeps its disabled appearance while explaining why it
-  /// cannot be activated.
-  final bool locked;
-
-  /// Accessibility explanation for a locked chip.
-  final String? lockedHint;
-
-  /// Tap handler for a locked chip.
-  final void Function(BuildContext chipContext)? onLockedPressed;
-
-  /// Anchored menu entries. When supplied, the chip opens a menu.
-  final List<Widget>? menuChildren;
-
-  /// Whether the chip renders as active.
-  final bool selected;
-
-  /// Renders the setting as a chip.
-  Widget toChip({TRUiSize uiSize = TRUiSize.md}) => ComposerChip(
-    valueKey: valueKey,
-    icon: icon,
-    label: label,
-    tooltip: tooltip,
-    onPressed: onPressed,
-    locked: locked,
-    lockedHint: lockedHint,
-    onLockedPressed: onLockedPressed,
-    menuChildren: menuChildren,
-    selected: selected,
-    uiSize: uiSize,
-  );
-}
-
 /// Labelled settings toolbar shown only above the composer breakpoint.
 class ComposerChipBar extends StatelessWidget {
   /// Creates a [ComposerChipBar].
   const ComposerChipBar({
-    required this.chips,
-    this.uiSize = TRUiSize.md,
+    required this.children,
     super.key,
   });
 
-  /// Control geometry every chip in the row is built and measured with.
-  final TRUiSize uiSize;
-
-  /// Settings to show. The trailing ones give up their labels and room first.
-  final List<ComposerChipSpec> chips;
+  /// Typed controls shown in the composer settings row.
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) => Row(
     spacing: TRSpacing.extraSmall,
     children: <Widget>[
-      for (final chip in chips) Flexible(child: chip.toChip(uiSize: uiSize)),
+      for (final child in children) Flexible(child: child),
     ],
   );
 }
@@ -1219,7 +1143,6 @@ class ComposerChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.tooltip,
-    this.menuChildren,
     this.onPressed,
     this.locked = false,
     this.lockedHint,
@@ -1253,9 +1176,6 @@ class ComposerChip extends StatelessWidget {
 
   /// Tap handler for a locked chip.
   final void Function(BuildContext chipContext)? onLockedPressed;
-
-  /// Anchored menu entries. When supplied, the chip is a [TRMenu] trigger.
-  final List<Widget>? menuChildren;
 
   /// Whether the chip renders as active.
   final bool selected;
@@ -1275,35 +1195,25 @@ class ComposerChip extends StatelessWidget {
         // as wide as the arithmetic that decided it fits.
         Icon(icon, size: TRControlMetrics.iconSizeOf(uiSize)),
         Flexible(child: TRText.inherit(label, truncate: true)),
-        if (menuChildren != null)
-          Icon(TinestIcons.expand, size: TRControlMetrics.iconSizeOf(uiSize)),
       ],
     );
     // Every chip sits inside the composer card, so the toolbar reads as one
     // surface: flat until a chip is active, and never a second nested border.
-    final control = menuChildren == null
-        ? TRButton(
-            key: locked ? null : valueKey,
-            appearance: selected ? TRAppearance.solid : TRAppearance.ghost,
-            intent: selected ? TRIntent.primary : TRIntent.neutral,
-            uiSize: uiSize,
-            onPressed: locked
-                ? null
-                : onPressed == null
-                ? null
-                : () => onPressed!(context),
-            child: content,
-          )
-        : TRMenu(
-            key: valueKey,
-            enabled: menuChildren!.isNotEmpty,
-            uiSize: uiSize,
-            trigger: content,
-            menuChildren: menuChildren!,
-          );
+    final control = TRButton(
+      key: locked ? null : valueKey,
+      appearance: selected ? TRAppearance.solid : TRAppearance.ghost,
+      intent: selected ? TRIntent.primary : TRIntent.neutral,
+      uiSize: uiSize,
+      onPressed: locked
+          ? null
+          : onPressed == null
+          ? null
+          : () => onPressed!(context),
+      child: content,
+    );
     final interactiveLocked = locked && onLockedPressed != null;
     final wrapped = interactiveLocked
-        ? _BlockedComposerChip(
+        ? BlockedControl(
             key: valueKey,
             label: label,
             hint: lockedHint ?? tooltip,
@@ -1313,84 +1223,6 @@ class ComposerChip extends StatelessWidget {
         : control;
     return TRTooltip(message: tooltip, child: wrapped);
   }
-}
-
-/// Keeps a disabled design-system control actionable long enough to explain
-/// why it is unavailable. This is intentionally a product composite: the
-/// visual control remains [TRButton], while this wrapper owns only focus,
-/// keyboard, pointer, and semantics behavior for the locked state.
-class _BlockedComposerChip extends StatefulWidget {
-  const _BlockedComposerChip({
-    required this.label,
-    required this.hint,
-    required this.onTap,
-    required this.child,
-    super.key,
-  });
-
-  final String label;
-  final String hint;
-  final VoidCallback onTap;
-  final Widget child;
-
-  @override
-  State<_BlockedComposerChip> createState() => _BlockedComposerChipState();
-}
-
-class _BlockedComposerChipState extends State<_BlockedComposerChip> {
-  final FocusNode _focusNode = FocusNode();
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_handleFocusChange);
-  }
-
-  @override
-  void dispose() {
-    _focusNode
-      ..removeListener(_handleFocusChange)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _handleFocusChange() {
-    final focused = _focusNode.hasPrimaryFocus;
-    if (focused == _focused || !mounted) return;
-    setState(() => _focused = focused);
-  }
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    button: true,
-    enabled: true,
-    label: widget.label,
-    hint: widget.hint,
-    onTap: widget.onTap,
-    child: CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.enter): widget.onTap,
-        const SingleActivator(LogicalKeyboardKey.space): widget.onTap,
-      },
-      child: Focus(
-        focusNode: _focusNode,
-        canRequestFocus: true,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onTap,
-            child: TRFocusRing(
-              focused: _focused,
-              child: ExcludeSemantics(child: widget.child),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 /// Composer shown when no session is selected; the first prompt creates one.
