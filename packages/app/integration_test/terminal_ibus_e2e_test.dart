@@ -101,7 +101,7 @@ void main() {
       );
       final daemonSession = await launcher.started;
       final setupClient = await _connectToDaemon(
-        daemonSession.endpoint.port,
+        daemonSession.endpoint.websocketUri.port,
         daemonSession.credentials.bearerToken,
       );
       addTearDown(setupClient.close);
