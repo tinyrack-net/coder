@@ -48,10 +48,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('내장 daemon'), findsNothing);
       expect(find.text('기기 연결'), findsOneWidget);
+
+      await tester.tap(find.text('기기 연결'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('connect-daemon-paste')),
+      );
+      await tester.pumpAndSettle();
+
+      final field = find.byKey(const ValueKey<String>('relay-pair-link'));
+      final action = find.byKey(const ValueKey<String>('relay-pair-review'));
+      await tester.tap(field);
+      await tester.showKeyboard(field);
+      await tester.pumpAndSettle();
+
+      final mediaQuery = MediaQuery.of(tester.element(field));
+      expect(mediaQuery.viewInsets.bottom, greaterThan(0));
+      final keyboardTop = mediaQuery.size.height - mediaQuery.viewInsets.bottom;
+      expect(tester.getRect(field).bottom, lessThanOrEqualTo(keyboardTop));
+      expect(tester.getRect(action).bottom, lessThanOrEqualTo(keyboardTop));
     },
     tags: const <String>[
       'feature_test__daemon_management__platformSmoke',
       'feature_test__daemon_relay__platformSmoke',
+      'feature_test__soft_keyboard_visibility__platformSmoke',
     ],
   );
 }

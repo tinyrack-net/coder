@@ -11,6 +11,7 @@ import 'package:app/src/features/conversation/presentation/widgets/session_compo
 import 'package:app/src/shared/domain/fuzzy_match.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
@@ -30,6 +31,40 @@ void main() {
   const inputKey = ValueKey<String>('session-composer-input');
   const sendKey = ValueKey<String>('session-composer-send');
   const stopKey = ValueKey<String>('session-composer-stop');
+
+  testWidgets(
+    'mobile composer input and send action remain above the keyboard',
+    (tester) async {
+      const viewport = Size(390, 760);
+      const keyboardHeight = 300.0;
+      await tester.binding.setSurfaceSize(viewport);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _pageHarness(
+          viewInsets: const EdgeInsets.only(bottom: keyboardHeight),
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.showKeyboard(find.byKey(inputKey));
+      await tester.pumpAndSettle();
+
+      final keyboardTop = viewport.height - keyboardHeight;
+      expect(
+        tester.getRect(find.byKey(inputKey)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(
+        tester.getRect(find.byKey(sendKey)).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__soft_keyboard_visibility__widget'],
+  );
 
   testWidgets(
     'Enter sends, Shift+Enter opens a line, and touch platforms only tap',
@@ -1730,6 +1765,28 @@ Widget _harness({
       child: TinestUiDensity(child: child!),
     ),
     home: Scaffold(
+      body: Align(alignment: Alignment.bottomCenter, child: composer),
+    ),
+  ),
+);
+
+Widget _pageHarness({
+  required Widget composer,
+  required EdgeInsets viewInsets,
+}) => ProviderScope(
+  overrides: [
+    appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
+  ],
+  child: MaterialApp(
+    theme: testLightTheme.copyWith(platform: TargetPlatform.android),
+    locale: testLocale,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(viewInsets: viewInsets),
+      child: TinestUiDensity(child: child!),
+    ),
+    home: TinestPageShell(
       body: Align(alignment: Alignment.bottomCenter, child: composer),
     ),
   ),

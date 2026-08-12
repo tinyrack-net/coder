@@ -56,26 +56,79 @@ void main() {
       Offset.zero & viewport,
     );
   });
+
+  testWidgets(
+    'mobile input and primary action remain above the software keyboard',
+    (tester) async {
+      const viewport = Size(390, 760);
+      const safeArea = EdgeInsets.only(top: 24, bottom: 16);
+      const keyboardHeight = 300.0;
+      const fieldKey = ValueKey<String>('focused-input');
+      const actionKey = ValueKey<String>('primary-action');
+
+      await tester.binding.setSurfaceSize(viewport);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _host(
+          padding: safeArea,
+          viewInsets: const EdgeInsets.only(bottom: keyboardHeight),
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const TRTextField(key: fieldKey),
+                TRButton(
+                  key: actionKey,
+                  onPressed: () {},
+                  child: const Text('Continue'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.showKeyboard(find.byKey(fieldKey));
+      await tester.pump();
+
+      final keyboardTop = viewport.height - safeArea.bottom - keyboardHeight;
+      expect(tester.getTopLeft(find.byKey(const ValueKey('title'))).dy, 28);
+      expect(
+        tester.getBottomLeft(find.byKey(fieldKey)).dy,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(
+        tester.getBottomLeft(find.byKey(actionKey)).dy,
+        lessThanOrEqualTo(keyboardTop),
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__soft_keyboard_visibility__widget'],
+  );
 }
 
-Widget _host({required EdgeInsets padding, required Widget body}) =>
-    MaterialApp(
-      locale: testLocale,
-      localizationsDelegates: testLocalizationsDelegates,
-      supportedLocales: testSupportedLocales,
-      theme: testLightTheme,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          size: const Size(400, 600),
-          padding: padding,
-          viewPadding: padding,
-        ),
-        child: child!,
-      ),
-      home: TinestPageShell(
-        appBar: const TinestPageHeader(
-          title: Text('Title', key: ValueKey<String>('title')),
-        ),
-        body: body,
-      ),
-    );
+Widget _host({
+  required EdgeInsets padding,
+  required Widget body,
+  EdgeInsets viewInsets = EdgeInsets.zero,
+}) => MaterialApp(
+  locale: testLocale,
+  localizationsDelegates: testLocalizationsDelegates,
+  supportedLocales: testSupportedLocales,
+  theme: testLightTheme,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      size: const Size(400, 600),
+      padding: padding,
+      viewPadding: padding,
+      viewInsets: viewInsets,
+    ),
+    child: child!,
+  ),
+  home: TinestPageShell(
+    appBar: const TinestPageHeader(
+      title: Text('Title', key: ValueKey<String>('title')),
+    ),
+    body: body,
+  ),
+);
