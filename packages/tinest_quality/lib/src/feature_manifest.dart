@@ -14,6 +14,16 @@ const Set<FeatureSurface> _allSurfaces = <FeatureSurface>{
 /// Complete traceability manifest for user-visible Tinest capabilities.
 const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
+    id: 'soft.keyboard.visibility',
+    description:
+        'Keeps focused inputs and required actions above the software keyboard '
+        'across pages, dialogs, drawers, settings forms, and terminals.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.platformSmoke,
+    },
+  ),
+  FeatureContract(
     id: 'daemon.management',
     description: 'Starts, connects, edits, and removes daemon hosts.',
     apiMethods: <String>['close'],

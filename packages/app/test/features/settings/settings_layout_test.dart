@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -612,6 +613,71 @@ void main() {
   });
 
   group('SettingsScaffold', () {
+    testWidgets(
+      'scrolls the focused final field above the keyboard and restores',
+      (tester) async {
+        const viewport = Size(390, 760);
+        const keyboardHeight = 300.0;
+        const fieldKey = ValueKey<String>('last-settings-input');
+        final viewInsets = ValueNotifier<EdgeInsets>(EdgeInsets.zero);
+        addTearDown(viewInsets.dispose);
+        await tester.binding.setSurfaceSize(viewport);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: TinyrackTheme.light(),
+            builder: (context, child) => ValueListenableBuilder<EdgeInsets>(
+              valueListenable: viewInsets,
+              builder: (context, insets, _) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  size: viewport,
+                  viewInsets: insets,
+                ),
+                child: child!,
+              ),
+            ),
+            home: TinestPageShell(
+              body: SettingsScaffold(
+                children: <Widget>[
+                  for (var index = 0; index < 2; index += 1)
+                    SettingsSection(
+                      title: 'Section $index',
+                      children: const <Widget>[SizedBox(height: 120)],
+                    ),
+                  const SettingsSection.form(
+                    title: 'Final section',
+                    children: <Widget>[
+                      TRTextField(key: fieldKey, label: 'Endpoint'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byKey(fieldKey), findsOneWidget);
+        await tester.ensureVisible(find.byKey(fieldKey));
+        await tester.showKeyboard(find.byKey(fieldKey));
+        viewInsets.value = const EdgeInsets.only(bottom: keyboardHeight);
+        await tester.pumpAndSettle();
+
+        final keyboardTop = viewport.height - keyboardHeight;
+        expect(
+          tester.getRect(find.byKey(fieldKey)).bottom,
+          lessThanOrEqualTo(keyboardTop),
+        );
+        expect(tester.takeException(), isNull);
+
+        viewInsets.value = EdgeInsets.zero;
+        await tester.pumpAndSettle();
+        expect(tester.getRect(find.byType(TRAppShell)), Offset.zero & viewport);
+        expect(tester.takeException(), isNull);
+      },
+      tags: const <String>['feature_test__soft_keyboard_visibility__widget'],
+    );
+
     testWidgets('caps its content and centres it in a wide pane', (
       tester,
     ) async {
@@ -1357,6 +1423,76 @@ void main() {
   });
 
   group('SettingsDialogForm', () {
+    testWidgets(
+      'keeps the final field and action in the keyboard-visible viewport',
+      (tester) async {
+        const viewport = Size(390, 760);
+        const keyboardHeight = 300.0;
+        const fieldKey = ValueKey<String>('dialog-final-input');
+        const actionKey = ValueKey<String>('dialog-primary-action');
+        await tester.binding.setSurfaceSize(viewport);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: TinyrackTheme.light(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                size: viewport,
+                viewInsets: const EdgeInsets.only(bottom: keyboardHeight),
+              ),
+              child: child!,
+            ),
+            home: Builder(
+              builder: (context) => TRButton(
+                onPressed: () => showTRAlertDialog<void>(
+                  context: context,
+                  builder: (context) => TRAlertDialog(
+                    title: const TRText.inherit('Edit connection'),
+                    content: SettingsDialogForm(
+                      children: <Widget>[
+                        for (var index = 0; index < 7; index += 1)
+                          TRTextField(label: 'Field $index'),
+                        const TRTextField(
+                          key: fieldKey,
+                          label: 'Final field',
+                        ),
+                      ],
+                    ),
+                    actions: <TRButton>[
+                      TRButton(
+                        key: actionKey,
+                        onPressed: () {},
+                        child: const TRText.inherit('Save'),
+                      ),
+                    ],
+                  ),
+                ),
+                child: const TRText.inherit('Open'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(fieldKey));
+        await tester.showKeyboard(find.byKey(fieldKey));
+        await tester.pumpAndSettle();
+
+        final keyboardTop = viewport.height - keyboardHeight;
+        expect(
+          tester.getRect(find.byKey(fieldKey)).bottom,
+          lessThanOrEqualTo(keyboardTop),
+        );
+        expect(
+          tester.getRect(find.byKey(actionKey)).bottom,
+          lessThanOrEqualTo(keyboardTop),
+        );
+        expect(tester.takeException(), isNull);
+      },
+      tags: const <String>['feature_test__soft_keyboard_visibility__widget'],
+    );
+
     testWidgets('uses the overlay token and one gap between fields', (
       tester,
     ) async {

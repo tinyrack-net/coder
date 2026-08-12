@@ -1,4 +1,6 @@
 tags:
+  feature_test__soft_keyboard_visibility__widget:
+  feature_test__soft_keyboard_visibility__platformSmoke:
   ui_journey__conversation_adversity__e2e:
   ui_journey__conversation_long_running__e2e:
   ui_state__global_environment__offline_shell__widget:

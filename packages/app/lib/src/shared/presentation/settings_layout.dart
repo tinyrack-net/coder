@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
@@ -512,12 +514,50 @@ class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
 /// Page padding, content width, and the gap between sections live here rather
 /// than in each page. Eight pages that each laid out their own `ListView` were
 /// free to drift apart, and every one of them did.
-class SettingsScaffold extends StatelessWidget {
+class SettingsScaffold extends StatefulWidget {
   /// Creates a settings pane showing [children] as its sections.
   const SettingsScaffold({required this.children, super.key});
 
   /// Sections shown in order.
   final List<Widget> children;
+
+  @override
+  State<SettingsScaffold> createState() => _SettingsScaffoldState();
+}
+
+class _SettingsScaffoldState extends State<SettingsScaffold> {
+  double _bottomInset = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextBottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    if (nextBottomInset > _bottomInset) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final focusContext = FocusManager.instance.primaryFocus?.context;
+        if (focusContext != null) {
+          var targetContext = focusContext;
+          focusContext.visitAncestorElements((element) {
+            if (element.widget is TRTextField ||
+                element.widget is TRNumberField ||
+                element.widget is TRTextarea) {
+              targetContext = element;
+              return false;
+            }
+            return true;
+          });
+          unawaited(
+            Scrollable.ensureVisible(
+              targetContext,
+              alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            ),
+          );
+        }
+      });
+    }
+    _bottomInset = nextBottomInset;
+  }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -536,7 +576,7 @@ class SettingsScaffold extends StatelessWidget {
           // Folding them into a single child builds every section eagerly, so
           // a finder resolves a section that is scrolled out of view and a tap
           // on it lands outside the viewport and quietly hits nothing.
-          for (final (index, child) in children.indexed)
+          for (final (index, child) in widget.children.indexed)
             Padding(
               // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
               padding: index > 0
