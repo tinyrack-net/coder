@@ -325,7 +325,7 @@ void main() {
     },
   );
 
-  test('Android releases require the private key and publish a signed APK', () {
+  test('Android releases publish signed APK and Play Store bundle', () {
     final release = _job(workflow, 'build-android-release');
     for (final secret in <String>[
       'ANDROID_KEYSTORE_BASE64',
@@ -341,8 +341,15 @@ void main() {
       release,
       contains('flutter build apk --release -t lib/main_mobile.dart'),
     );
+    expect(
+      release,
+      contains('flutter build appbundle --release -t lib/main_mobile.dart'),
+    );
     expect(release, contains('verify --verbose --print-certs'));
+    expect(release, contains('jarsigner -verify -verbose -certs'));
     expect(release, contains('Tinest-android-universal.apk'));
+    expect(release, contains('Tinest-android-play.aab'));
+    expect(release, contains('dist/Tinest-android-play.aab'));
     expect(release, contains('if: always()'));
     expect(release, isNot(contains('pull_request')));
 
