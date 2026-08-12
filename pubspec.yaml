@@ -8,84 +8,22 @@ environment:
 workspace:
   - packages/*
 
-dependencies:
-  # The architecture verifier parses app sources to decide whether a call sits
-  # in a lifecycle method or in a deferred closure. That distinction is not
-  # expressible by matching lines, and a rule the team cannot trust gets
-  # exempted rather than obeyed.
-  analyzer: ^12.1.0
-  path: ^1.9.1
-  yaml: ^3.1.3
-
 dev_dependencies:
-  coverage: ^1.15.1
   dependency_validator: ^5.0.5
   melos: 7.8.1
-  test: ^1.31.0
+  tinest_quality: ^0.1.0
   very_good_analysis: ^10.3.0
 
 melos:
   scripts:
-    analyze:
-      run: dart analyze --fatal-infos
-      description: Analyze the entire workspace.
-    format:
-      run: dart run tool/format_sources.dart
-      description: Format every Dart source Git tracks or does not ignore.
-    format:check:
-      run: dart run tool/format_sources.dart --check
     generate:
-      run: dart run melos exec --flutter --scope=app -c 1 -- flutter gen-l10n && dart run tool/generate_provider_catalog.dart && dart run tool/generate_prompts.dart && dart run melos exec --depends-on=build_runner -c 3 -o -- dart run build_runner build
-    provider-catalog:generate:
-      run: dart run tool/generate_provider_catalog.dart
-    provider-catalog:update:
-      run: dart run tool/generate_provider_catalog.dart --update
-    generate:check:
-      run: dart run tool/generate_check.dart
-    dependencies:check:
-      run: dart run melos exec -c 4 -- dart run dependency_validator
-    tinyrack-sources:check:
-      run: dart run tool/verify_tinyrack_sources.dart
-    architecture:check:
-      run: dart run tool/verify_architecture.dart
-    features:check:
-      run: dart run tool/verify_features.dart
-    embedded-ports:check:
-      run: dart run tool/verify_embedded_ports.dart
-    design-system:check:
-      run: dart run tinyrack_ui:tinyrack_ui_check --root .
+      run: dart run tinest_quality generate
     test:
-      run: dart run tool/verify_workspace.dart fast
-    test:dart:
-      run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
-    test:flutter:
-      run: dart run melos exec --flutter --scope=app -- flutter test test --concurrency=4 --test-randomize-ordering-seed=random
-    test:unit:
-      run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
-    test:widget:
-      run: dart run melos test:flutter
-    test:contract:
-      run: dart run melos exec --no-flutter --scope=protocol --scope=client --scope=cli --scope=daemon -c 4 -- dart test --concurrency=1 --test-randomize-ordering-seed=random
-    test:vertical-slice:
-      run: dart test packages/daemon/test/vertical_slice --test-randomize-ordering-seed=random
-    test:coverage:dart:
-      run: dart test test --concurrency=4 --test-randomize-ordering-seed=random && dart run melos exec --no-flutter --dir-exists=test -c 4 -- dart test --concurrency=1 --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random
-    test:coverage:flutter:
-      run: dart run melos exec --flutter --scope=app -- flutter test --coverage --concurrency=4 --branch-coverage --test-randomize-ordering-seed=random
-    test:coverage:relay:
-      run: dart run melos exec --no-flutter --scope=relay -c 1 -- dart test --concurrency=1 --coverage-path=coverage/lcov.info --coverage-package="\$MELOS_PACKAGE_NAME" --branch-coverage --test-randomize-ordering-seed=random
-    coverage:check:
-      run: dart run tool/verify_coverage.dart
-    test:coverage:
-      run: dart run tool/verify_workspace.dart coverage
-    test:e2e:desktop:
-      run: dart run tool/run_desktop_e2e.dart
-    verify:fast:
-      run: dart run tool/verify_workspace.dart fast
+      run: dart run tinest_quality test
     verify:
-      run: dart run tool/verify_workspace.dart full
+      run: dart run tinest_quality verify
     verify:debug:
-      run: dart run melos test:e2e:desktop
+      run: dart run tinest_quality e2e
     run:daemon:
       # Built, not `dart run`: the CLI hosts the daemon and links the sqlite3
       # and PTY code assets, which only `dart build cli` produces. Under `dart
@@ -101,7 +39,7 @@ melos:
       # `dart build cli` rather than `dart compile exe`: the CLI now hosts the
       # daemon, so it links sqlite3 and the PTY code assets and ships as
       # `dist/bundle/bin` plus `dist/bundle/lib`.
-      run: dart build cli -t packages/cli/bin/tinest_cli.dart -o dist && dart run tool/build_lua_host.dart --destination dist/bundle/bin
+      run: dart build cli -t packages/cli/bin/tinest_cli.dart -o dist && cd packages/daemon && dart run lua_tool_runtime:stage --destination ../../dist/bundle/bin
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.

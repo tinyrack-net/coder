@@ -322,21 +322,23 @@
 		};
 		7A4C0DE42E48A00100C0DE55 /* Bundle Lua Host */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(PROJECT_DIR)/../../../pubspec.lock",
 			);
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Contents/MacOS/lua-tool-runtime-host",
+				"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Contents/Resources/lua_tool_runtime/bootstrap.lua",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nROOT=\"$PROJECT_DIR/../../..\"\nCONTENTS=\"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents\"\nEXECUTABLES=\"$CONTENTS/MacOS\"\nRESOURCES=\"$CONTENTS/Resources\"\ncd \"$ROOT\"\nrm -rf \"$EXECUTABLES/lua_tool_runtime\"\ndart run tool/build_lua_host.dart --destination \"$RESOURCES\" --build-mode release\nmv -f \"$RESOURCES/lua-tool-runtime-host\" \"$EXECUTABLES/lua-tool-runtime-host\"\nif [ \"${CODE_SIGNING_ALLOWED:-YES}\" != \"NO\" ]; then\n  SIGNING_IDENTITY=\"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\n  if [ \"$SIGNING_IDENTITY\" = \"-\" ]; then\n    /usr/bin/codesign --force --sign - --timestamp=none \"$EXECUTABLES/lua-tool-runtime-host\"\n  else\n    /usr/bin/codesign --force --sign \"$SIGNING_IDENTITY\" --timestamp \"$EXECUTABLES/lua-tool-runtime-host\"\n  fi\nfi\n";
+			shellScript = "set -e\nDAEMON=\"$PROJECT_DIR/../../daemon\"\nCONTENTS=\"$TARGET_BUILD_DIR/$PRODUCT_NAME.app/Contents\"\nEXECUTABLES=\"$CONTENTS/MacOS\"\nRESOURCES=\"$CONTENTS/Resources\"\ncd \"$DAEMON\"\nrm -rf \"$EXECUTABLES/lua_tool_runtime\"\ndart run lua_tool_runtime:stage --destination \"$RESOURCES\" --build-mode release\nmv -f \"$RESOURCES/lua-tool-runtime-host\" \"$EXECUTABLES/lua-tool-runtime-host\"\nif [ \"${CODE_SIGNING_ALLOWED:-YES}\" != \"NO\" ]; then\n  SIGNING_IDENTITY=\"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\n  if [ \"$SIGNING_IDENTITY\" = \"-\" ]; then\n    /usr/bin/codesign --force --sign - --timestamp=none \"$EXECUTABLES/lua-tool-runtime-host\"\n  else\n    /usr/bin/codesign --force --sign \"$SIGNING_IDENTITY\" --timestamp \"$EXECUTABLES/lua-tool-runtime-host\"\n  fi\nfi\n";
 		};
 		33CC111E2044C6BF0003C045 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -194,18 +194,20 @@ void main() {
         useEnvironmentCredentials: false,
       );
       final launcher = _IdentityRecordingLauncher(
-        IsolateEmbeddedDaemonLauncher(resolveConfig: () => config),
+        EphemeralEmbeddedDaemonLauncher(
+          IsolateEmbeddedDaemonLauncher(resolveConfig: () => config),
+        ),
       );
       // The reset restores the store's factory defaults and restarts the real
       // daemon on them, so the port after the reset has to be reserved too.
       final store = MemoryAppStore(
-        settings: AppSettings(
-          embeddedDaemonPort: await reserveEphemeralPort(),
+        settings: const AppSettings(
+          embeddedDaemonPort: testEmbeddedDaemonPort,
           localeTag: 'ko',
           sidebarCollapsed: true,
         ),
-        factoryDefaults: AppSettings(
-          embeddedDaemonPort: await reserveEphemeralPort(),
+        factoryDefaults: const AppSettings(
+          embeddedDaemonPort: testEmbeddedDaemonPort + 1,
         ),
       );
       await tester.pumpWidget(
@@ -294,18 +296,22 @@ void main() {
       addTearDown(() => deleteTemporaryDirectory(home));
       final calls = <String>[];
       final launcher = _RecordingEmbeddedLauncher(
-        IsolateEmbeddedDaemonLauncher(
-          resolveConfig: () => DaemonConfig(
-            homeDirectory: home.path,
-            port: 0,
-            bearerToken: 'tray-quit-e2e-token-0123456789abcdef',
-            useEnvironmentCredentials: false,
+        EphemeralEmbeddedDaemonLauncher(
+          IsolateEmbeddedDaemonLauncher(
+            resolveConfig: () => DaemonConfig(
+              homeDirectory: home.path,
+              port: 0,
+              bearerToken: 'tray-quit-e2e-token-0123456789abcdef',
+              useEnvironmentCredentials: false,
+            ),
           ),
         ),
         calls,
       );
       final store = MemoryAppStore(
-        settings: AppSettings(embeddedDaemonPort: await reserveEphemeralPort()),
+        settings: const AppSettings(
+          embeddedDaemonPort: testEmbeddedDaemonPort,
+        ),
       );
       final window = _RecordingWindow(calls);
       final tray = _RecordingTray(calls);

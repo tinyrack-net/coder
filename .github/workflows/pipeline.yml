@@ -87,7 +87,8 @@ jobs:
             if files="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
               --paginate --jq '.[].filename')"; then
               verification_scope="$(
-                printf '%s\n' "$files" | dart run tool/resolve_ci_scope.dart
+                printf '%s\n' "$files" |
+                  dart packages/tinest_quality/bin/ci_scope.dart
               )"
             else
               echo "::warning::Could not read the PR file list; using full scope"
@@ -122,16 +123,17 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos format:check
-      - run: dart run melos analyze
-      - run: dart run melos dependencies:check
-      - run: dart run melos tinyrack-sources:check
-      - run: dart run melos architecture:check
-      - run: dart run melos features:check
-      - run: dart run melos embedded-ports:check
-      - run: dart run melos design-system:check
+      - run: >-
+          dart run tinest_quality _static-checks
+          --report=build/quality/static.json
       - name: Validate the workflow
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-static-linux
+          path: build/quality/static.json
+          if-no-files-found: error
 
   generated-linux:
     name: Generated sources
@@ -145,7 +147,15 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos generate:check
+      - run: >-
+          dart run tinest_quality generate --check
+          --report=build/quality/generated.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-generated-linux
+          path: build/quality/generated.json
+          if-no-files-found: error
 
   # These two re-run on macOS and Windows what `coverage-dart-linux` and
   # `coverage-flutter-linux` already run on Linux; only the host differs. They
@@ -175,7 +185,15 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:dart
+      - run: >-
+          dart run tinest_quality _test-dart
+          --report=build/quality/dart-tests.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-dart-tests-${{ matrix.os }}
+          path: build/quality/dart-tests.json
+          if-no-files-found: error
 
   flutter-tests:
     name: Flutter tests (${{ matrix.os }})
@@ -195,7 +213,15 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:flutter
+      - run: >-
+          dart run tinest_quality _test-flutter
+          --report=build/quality/flutter-tests.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-flutter-tests-${{ matrix.os }}
+          path: build/quality/flutter-tests.json
+          if-no-files-found: error
 
   coverage-dart-linux:
     name: Dart coverage
@@ -209,10 +235,12 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:coverage:dart
+      - run: >-
+          dart run tinest_quality _coverage-dart
+          --report=build/quality/coverage-dart.json
       - name: Enforce Dart package coverage
         run: >-
-          dart run tool/verify_coverage.dart
+          dart run tinyrack_workspace coverage-check --line=90 --branch=80
           --scope=agent
           --scope=cli
           --scope=client
@@ -220,6 +248,13 @@ jobs:
           --scope=protocol
           --scope=relay
           --scope=relay_protocol
+          --scope=tinest_quality
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-coverage-dart-linux
+          path: build/quality/coverage-dart.json
+          if-no-files-found: error
 
   coverage-flutter-linux:
     name: Flutter coverage
@@ -233,8 +268,18 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:coverage:flutter
-      - run: dart run tool/verify_coverage.dart --scope=app
+      - run: >-
+          dart run tinest_quality _coverage-flutter
+          --report=build/quality/coverage-flutter.json
+      - run: >-
+          dart run tinyrack_workspace coverage-check --line=90 --branch=80
+          --scope=app
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-coverage-flutter-linux
+          path: build/quality/coverage-flutter.json
+          if-no-files-found: error
 
   relay-coverage-linux:
     name: Relay coverage
@@ -248,8 +293,18 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: dart run melos test:coverage:relay
-      - run: dart run tool/verify_coverage.dart --scope=relay
+      - run: >-
+          dart run tinest_quality _coverage-dart --scope=relay
+          --report=build/quality/coverage-relay.json
+      - run: >-
+          dart run tinyrack_workspace coverage-check --line=90 --branch=80
+          --scope=relay
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-coverage-relay-linux
+          path: build/quality/coverage-relay.json
+          if-no-files-found: error
 
   relay-smoke-linux:
     name: Relay image smoke
@@ -307,19 +362,23 @@ jobs:
       matrix:
         include:
           - shard: daemon-workspace
-            test: daemon_workspace_e2e_test.dart
+            scenario: daemon-workspace
           - shard: project-worktree
-            test: project_worktree_e2e_test.dart
+            scenario: project-worktree
           - shard: relay
-            test: relay_e2e_test.dart
+            scenario: relay
           - shard: conversation-adversity
-            test: conversation_adversity_e2e_test.dart
-          - shard: session-turn-agent-skill-mcp-provider
-            test: debug_e2e_test.dart
+            scenario: conversation-adversity
+          - shard: conversation
+            scenario: conversation
           - shard: provider
-            test: provider_e2e_test.dart
+            scenario: provider
           - shard: settings-desktop
-            test: settings_desktop_e2e_test.dart
+            scenario: settings-desktop
+          - shard: remote-bootstrap
+            scenario: remote-bootstrap
+          - shard: desktop-shell
+            scenario: desktop-shell
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -330,11 +389,15 @@ jobs:
           extra-packages: xvfb
       - run: dart pub get --enforce-lockfile
       - run: >-
-          xvfb-run -a flutter test
-          integration_test/${{ matrix.test }} -d linux
-        working-directory: packages/app
-        env:
-          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
+          dart run packages/app/tool/run_desktop_e2e.dart
+          --scenario=${{ matrix.scenario }}
+          --jobs=2
+          --report=build/e2e-${{ matrix.scenario }}.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-debug-e2e-${{ matrix.scenario }}
+          path: build/e2e-${{ matrix.scenario }}.json
 
   linux-ibus-terminal-e2e:
     name: Linux IBus Terminal E2E
@@ -366,7 +429,7 @@ jobs:
             "$GITHUB_WORKSPACE/ibus-terminal-artifacts"
           chmod 700 "$XDG_RUNTIME_DIR"
           xvfb-run -a dbus-run-session -- \
-            bash tool/run_linux_ibus_terminal_e2e.sh
+            bash packages/app/tool/run_linux_ibus_terminal_e2e.sh
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -1076,7 +1139,7 @@ jobs:
             --no-open
 
   nightly-desktop-e2e:
-    name: Nightly Desktop E2E (${{ matrix.platform.os }}, ${{ matrix.shard }})
+    name: Nightly Desktop E2E (${{ matrix.platform.os }}, ${{ matrix.scenario }})
     if: github.event_name == 'schedule'
     strategy:
       fail-fast: false
@@ -1086,14 +1149,16 @@ jobs:
             device: macos
           - os: windows-2025
             device: windows
-        shard:
-          - daemon_workspace_e2e_test.dart
-          - project_worktree_e2e_test.dart
-          - relay_e2e_test.dart
-          - conversation_adversity_e2e_test.dart
-          - debug_e2e_test.dart
-          - provider_e2e_test.dart
-          - settings_desktop_e2e_test.dart
+        scenario:
+          - daemon-workspace
+          - project-worktree
+          - relay
+          - conversation-adversity
+          - conversation
+          - provider
+          - settings-desktop
+          - remote-bootstrap
+          - desktop-shell
     runs-on: ${{ matrix.platform.os }}
     timeout-minutes: 45
     steps:
@@ -1101,11 +1166,15 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
       - run: >-
-          flutter test integration_test/${{ matrix.shard }}
-          -d ${{ matrix.platform.device }}
-        working-directory: packages/app
-        env:
-          TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES: '1'
+          dart run packages/app/tool/run_desktop_e2e.dart
+          --scenario=${{ matrix.scenario }}
+          --jobs=2
+          --report=build/e2e-${{ matrix.scenario }}.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-${{ matrix.platform.device }}-${{ matrix.scenario }}
+          path: build/e2e-${{ matrix.scenario }}.json
 
   nightly-android-smoke:
     name: Nightly Android Remote E2E

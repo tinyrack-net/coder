@@ -1,0 +1,356 @@
+import 'dart:async';
+
+/// One process executed as part of workspace verification.
+final class VerificationTask {
+  /// Creates a process-backed verification task.
+  const VerificationTask({
+    required this.name,
+    required this.executable,
+    required this.arguments,
+    this.workingDirectory,
+    this.cpuSlots = 1,
+    this.exclusiveResources = const <String>{},
+    this.testRandomizationSeed,
+  });
+
+  /// Human-readable task name.
+  final String name;
+
+  /// Executable launched for the task.
+  final String executable;
+
+  /// Arguments passed to [executable].
+  final List<String> arguments;
+
+  /// Optional working directory relative to the workspace root.
+  final String? workingDirectory;
+
+  /// Number of jobs reserved while this task is running.
+  final int cpuSlots;
+
+  /// Workspace resources that no other running task may use concurrently.
+  final Set<String> exclusiveResources;
+
+  /// Concrete randomized-order seed passed to a test process, when applicable.
+  final int? testRandomizationSeed;
+}
+
+/// Tasks that may execute concurrently.
+final class VerificationPhase {
+  /// Creates a phase whose [tasks] may run concurrently.
+  const VerificationPhase({required this.tasks});
+
+  /// Tasks in this phase.
+  final List<VerificationTask> tasks;
+}
+
+/// Ordered phases in a verification run.
+final class VerificationPlan {
+  /// Creates an ordered verification plan.
+  const VerificationPlan({required this.phases});
+
+  /// Ordered phases; a failed phase prevents later phases from running.
+  final List<VerificationPhase> phases;
+}
+
+/// Result of running one [VerificationTask].
+final class VerificationTaskResult {
+  /// Creates a completed task result.
+  const VerificationTaskResult({
+    required this.task,
+    required this.exitCode,
+    required this.duration,
+  });
+
+  /// Task that ran.
+  final VerificationTask task;
+
+  /// Process exit code.
+  final int exitCode;
+
+  /// Elapsed execution time.
+  final Duration duration;
+
+  /// Whether the process exited successfully.
+  bool get succeeded => exitCode == 0;
+}
+
+/// Executes one verification task.
+abstract interface class VerificationTaskExecutor {
+  /// Runs [task] and returns its result.
+  Future<VerificationTaskResult> run(VerificationTask task);
+}
+
+/// Results collected from the phases that ran.
+final class VerificationReport {
+  /// Creates an immutable verification report.
+  const VerificationReport(this.results);
+
+  /// Task results in deterministic plan order.
+  final List<VerificationTaskResult> results;
+
+  /// Failed task results.
+  List<VerificationTaskResult> get failures =>
+      results.where((result) => !result.succeeded).toList(growable: false);
+
+  /// Whether every executed task succeeded.
+  bool get succeeded => failures.isEmpty;
+}
+
+/// Executes ordered phases with bounded concurrency inside each phase.
+final class VerificationRunner {
+  /// Creates a runner with bounded phase concurrency.
+  VerificationRunner({required this.executor, required this.maxJobs})
+    : assert(maxJobs > 0, 'maxJobs must be positive');
+
+  /// Task execution boundary.
+  final VerificationTaskExecutor executor;
+
+  /// Maximum tasks running at once in a phase.
+  final int maxJobs;
+
+  /// Runs phases in order and stops after the first failed phase.
+  Future<VerificationReport> run(VerificationPlan plan) async {
+    final allResults = <VerificationTaskResult>[];
+    for (final phase in plan.phases) {
+      final results = await _runPhase(phase);
+      allResults.addAll(results);
+      if (results.any((result) => !result.succeeded)) break;
+    }
+    return VerificationReport(List.unmodifiable(allResults));
+  }
+
+  Future<List<VerificationTaskResult>> _runPhase(
+    VerificationPhase phase,
+  ) async {
+    if (phase.tasks.isEmpty) return const <VerificationTaskResult>[];
+    final results = List<VerificationTaskResult?>.filled(
+      phase.tasks.length,
+      null,
+    );
+    final pending = <int>[
+      for (var index = 0; index < phase.tasks.length; index += 1) index,
+    ];
+    final running = <int, Future<void>>{};
+    final heldResources = <String>{};
+    var usedJobs = 0;
+
+    while (pending.isNotEmpty || running.isNotEmpty) {
+      var launched = false;
+      for (var pendingIndex = 0; pendingIndex < pending.length;) {
+        final index = pending[pendingIndex];
+        final task = phase.tasks[index];
+        if (task.cpuSlots <= 0 || task.cpuSlots > maxJobs) {
+          throw ArgumentError.value(
+            task.cpuSlots,
+            'task.cpuSlots',
+            'must be between 1 and maxJobs ($maxJobs)',
+          );
+        }
+        final hasResourceConflict = task.exclusiveResources.any(
+          heldResources.contains,
+        );
+        if (usedJobs + task.cpuSlots > maxJobs || hasResourceConflict) {
+          pendingIndex += 1;
+          continue;
+        }
+
+        pending.removeAt(pendingIndex);
+        usedJobs += task.cpuSlots;
+        heldResources.addAll(task.exclusiveResources);
+        launched = true;
+        running[index] = executor
+            .run(task)
+            .then((result) {
+              results[index] = result;
+            })
+            .whenComplete(() {
+              usedJobs -= task.cpuSlots;
+              heldResources.removeAll(task.exclusiveResources);
+              unawaited(running.remove(index));
+            });
+      }
+      if (running.isNotEmpty && (!launched || pending.isEmpty)) {
+        await Future.any(running.values.toList(growable: false));
+      }
+    }
+    return results.cast<VerificationTaskResult>();
+  }
+}
+
+VerificationTask _dart(String name, List<String> arguments) =>
+    VerificationTask(name: name, executable: 'dart', arguments: arguments);
+
+/// Canonical plans used by the four public Melos quality commands.
+abstract final class WorkspaceVerificationPlans {
+  static VerificationPhase _generated(int jobs) => VerificationPhase(
+    tasks: <VerificationTask>[
+      VerificationTask(
+        name: 'generated sources',
+        executable: 'dart',
+        arguments: <String>[
+          'run',
+          'tinest_quality',
+          'generate',
+          '--check',
+          '--jobs=$jobs',
+        ],
+        cpuSlots: jobs,
+        exclusiveResources: const <String>{'generated-output'},
+      ),
+    ],
+  );
+
+  static List<VerificationTask> _staticTasks(int jobs) {
+    final analysisJobs = jobs == 1 ? 1 : (jobs / 2).ceil();
+    final dependencyJobs = jobs == 1 ? 1 : jobs - analysisJobs;
+    return <VerificationTask>[
+      _dart('format', <String>[
+        'run',
+        'melos',
+        'format',
+        '--output=none',
+        '--set-exit-if-changed',
+      ]),
+      VerificationTask(
+        name: 'analysis',
+        executable: 'dart',
+        arguments: const <String>['analyze', '--fatal-infos'],
+        cpuSlots: analysisJobs,
+      ),
+      VerificationTask(
+        name: 'dependencies',
+        executable: 'dart',
+        arguments: <String>[
+          'run',
+          'melos',
+          'exec',
+          '-c',
+          '$dependencyJobs',
+          '--',
+          'dart run dependency_validator',
+        ],
+        cpuSlots: dependencyJobs,
+      ),
+      _dart('Tinyrack dependency sources', const <String>[
+        'run',
+        'tinyrack_workspace',
+        'source-check',
+      ]),
+      _dart('architecture', const <String>[
+        'run',
+        'tinest_quality',
+        '_architecture-check',
+      ]),
+      _dart('features', const <String>[
+        'run',
+        'tinest_quality',
+        '_features-check',
+      ]),
+      _dart('Tinyrack design system', const <String>[
+        'run',
+        'tinyrack_ui:tinyrack_ui_check',
+        '--root',
+        '.',
+      ]),
+    ];
+  }
+
+  /// Runs every package test exactly once without coverage collection.
+  static VerificationPlan tests({required int jobs}) {
+    final dartJobs = jobs == 1 ? 1 : (jobs / 2).ceil();
+    final flutterJobs = jobs == 1 ? 1 : jobs - dartJobs;
+    return VerificationPlan(
+      phases: <VerificationPhase>[
+        VerificationPhase(
+          tasks: <VerificationTask>[
+            VerificationTask(
+              name: 'Dart tests',
+              executable: 'dart',
+              arguments: <String>[
+                'run',
+                'tinest_quality',
+                '_test-dart',
+                '--jobs=$dartJobs',
+                '--report=build/quality/internal/test-dart.json',
+              ],
+              cpuSlots: dartJobs,
+            ),
+            VerificationTask(
+              name: 'Flutter tests',
+              executable: 'dart',
+              arguments: <String>[
+                'run',
+                'tinest_quality',
+                '_test-flutter',
+                '--jobs=$flutterJobs',
+                '--report=build/quality/internal/test-flutter.json',
+              ],
+              cpuSlots: flutterJobs,
+              exclusiveResources: const <String>{'flutter-build'},
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Runs the read-only workspace checks without generation or tests.
+  static VerificationPlan staticChecks({required int jobs}) => VerificationPlan(
+    phases: <VerificationPhase>[
+      VerificationPhase(tasks: _staticTasks(jobs)),
+    ],
+  );
+
+  /// Runs the complete static and coverage gates on every supported host.
+  static VerificationPlan full({required int jobs}) => VerificationPlan(
+    phases: <VerificationPhase>[
+      _generated(jobs),
+      ...staticChecks(jobs: jobs).phases,
+      VerificationPhase(
+        tasks: <VerificationTask>[
+          VerificationTask(
+            name: 'Dart coverage',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'tinest_quality',
+              '_coverage-dart',
+              '--jobs=$jobs',
+              '--report=build/quality/internal/coverage-dart.json',
+            ],
+            cpuSlots: jobs,
+          ),
+        ],
+      ),
+      VerificationPhase(
+        tasks: <VerificationTask>[
+          VerificationTask(
+            name: 'Flutter coverage',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'tinest_quality',
+              '_coverage-flutter',
+              '--jobs=$jobs',
+              '--report=build/quality/internal/coverage-flutter.json',
+            ],
+            cpuSlots: jobs,
+            exclusiveResources: const <String>{'flutter-build'},
+          ),
+        ],
+      ),
+      VerificationPhase(
+        tasks: <VerificationTask>[
+          _dart('coverage thresholds', const <String>[
+            'run',
+            'tinyrack_workspace',
+            'coverage-check',
+            '--line=90',
+            '--branch=80',
+          ]),
+        ],
+      ),
+    ],
+  );
+}

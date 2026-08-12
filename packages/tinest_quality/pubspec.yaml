@@ -1,0 +1,21 @@
+name: tinest_quality
+description: Tinest-specific workspace contracts and verification orchestration.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  analyzer: ^12.1.0
+  path: ^1.9.1
+  yaml: ^3.1.3
+
+dev_dependencies:
+  test: ^1.31.0
+  tinyrack_workspace:
+    git:
+      url: https://github.com/tinyrack-net/dart-packages.git
+      ref: d3c17374a4223df2f0d726f1c67e3246c12c385f
+      path: packages/tinyrack_workspace

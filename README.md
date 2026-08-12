@@ -12,8 +12,16 @@ dart run melos verify
 dart run melos verify:debug
 ```
 
-Run `dart run melos list --all` for the individual TDD, contract, widget,
-coverage, architecture, and Debug E2E commands.
+Quality commands use every detected logical processor by default. Limit a run
+with `TINEST_JOBS=8` or invoke the package CLI directly with `--jobs=8`.
+Machine-readable phase timings are available through
+`dart run tinest_quality verify --report=build/quality/verify.json`; focused
+tests stay in the package that owns them.
+
+Desktop Debug E2E uses one lane at `--jobs=1` and at most two isolated,
+staggered lanes otherwise. Capture per-lane build-ready time, seed, duration,
+and exit status with
+`dart run tinest_quality e2e --report=build/quality/e2e.json`.
 
 Run the standalone daemon. The seeded OpenAI provider reads
 `OPENAI_API_KEY`; additional providers can use an environment variable or a
