@@ -440,8 +440,63 @@ branch refs/heads/feature/settings
 
       final external = registered.worktrees.last;
       expect(external.kind, WorktreeKind.external);
+      final branchesBeforeArchive = Set<String>.of(git.localBranches);
+      expect(
+        (await service.previewArchive(external.id)).removesDirectory,
+        isTrue,
+      );
       final archived = await service.archive(external.id, force: false);
       expect(archived.worktree.archivedAt?.toUtc(), _FixedClock.now);
+      expect(git.removed, <String>[external.path]);
+      expect(git.localBranches, branchesBeforeArchive);
+      expect(
+        (await service.catalog()).worktrees.map((item) => item.id),
+        isNot(contains(external.id)),
+      );
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__unit'],
+  );
+
+  test(
+    'a failed external worktree removal leaves its catalog record active',
+    () async {
+      final database = TinestDatabase.forTesting(
+        NativeDatabase.memory(),
+        clock: _FixedClock(),
+      );
+      addTearDown(database.close);
+      final git = _FakeGitGateway()
+        ..removeFailure = const GitCommandException(
+          arguments: <String>['worktree', 'remove', '/other'],
+          workingDirectory: '/repo',
+          exitCode: 128,
+          stderr: 'fatal: removal failed',
+        );
+      final service = _service(database, git: git);
+      final registered = await service.register(
+        const WorkspaceRegisterParamsDto(
+          workspaceId: 'repo-1',
+          checkoutId: 'checkout-1',
+          rootPath: '/repo',
+          name: 'Repository',
+        ),
+      );
+      final external = registered.worktrees.last;
+
+      await expectLater(
+        service.archive(external.id, force: false),
+        throwsA(_failsWith(WorktreeFailureReason.gitFailed)),
+      );
+
+      expect(git.removed, isEmpty);
+      expect(
+        (await database.worktreeDao.getById(external.id))!.archivedAt,
+        isNull,
+      );
+      expect(
+        (await service.catalog()).worktrees.map((item) => item.id),
+        contains(external.id),
+      );
     },
     tags: const <String>['feature_test__worktree_lifecycle__unit'],
   );
@@ -1627,6 +1682,7 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
   ];
   Completer<void>? createdInGit;
   Future<void>? releaseCreation;
+  GitCommandException? removeFailure;
 
   @override
   Future<String?> repositoryRoot(String path) async => root;
@@ -1719,6 +1775,7 @@ final class _FakeGitGateway implements GitWorkspaceGateway {
     bool force = false,
   }) async {
     log.add('git:remove${force ? ':force' : ''}');
+    if (removeFailure case final failure?) throw failure;
     removed.add(path);
     snapshots.removeWhere((snapshot) => snapshot.path == path);
   }

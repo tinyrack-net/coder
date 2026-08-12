@@ -175,6 +175,25 @@ class WorkspaceCatalogController extends _$WorkspaceCatalogController {
       ),
     );
   }
+
+  /// Archives one checkout and refreshes its host catalog as one operation.
+  ///
+  /// The sidebar that starts this mutation may be replaced while teardown
+  /// hooks run. Keeping the refresh in this keep-alive controller prevents a
+  /// successful archive from leaving a stale row behind when that happens.
+  Future<WorktreeResultDto> archiveWorktree(
+    String hostId,
+    String worktreeId, {
+    required bool force,
+  }) async {
+    final api = await requireHostApi(ref, hostId);
+    final archived = await api.workspaces.archiveWorktree(
+      worktreeId,
+      force: force,
+    );
+    if (ref.mounted) await refreshHost(hostId);
+    return archived;
+  }
 }
 
 @riverpod

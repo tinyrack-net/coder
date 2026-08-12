@@ -466,13 +466,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String workspaceArchiveRemovesDirectory(String appName) {
-    return 'The checkout directory created by $appName will be removed.';
-  }
-
-  @override
-  String get workspaceArchiveKeepsDirectory =>
-      'Only the registration is hidden; the checkout stays on disk.';
+  String get workspaceArchiveRemovesDirectory =>
+      'The checkout directory will be removed.';
 
   @override
   String get workspaceArchiveRisky => 'Confirm the risks and archive';

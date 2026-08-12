@@ -439,9 +439,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final unpushedWarning = preview.unpushedCommitCount > 0
         ? l10n.workspaceArchiveUnpushed(preview.unpushedCommitCount)
         : '';
-    final removalWarning = preview.removesDirectory
-        ? l10n.workspaceArchiveRemovesDirectory(AppIdentity.name)
-        : l10n.workspaceArchiveKeepsDirectory;
+    final removalWarning = l10n.workspaceArchiveRemovesDirectory;
     final confirmed = await showTRDialog<bool>(
       context: context,
       builder: (context) => TRAlertDialog(
@@ -469,22 +467,17 @@ class WorkspaceSidebar extends ConsumerWidget {
     final succeeded = await ref
         .read(toastMessengerProvider)
         .run(
-          () async => archived = await entry.api.workspaces.archiveWorktree(
-            worktree.id,
-            force: risky,
-          ),
+          () async => archived = await ref
+              .read(workspaceCatalogControllerProvider.notifier)
+              .archiveWorktree(entry.hostId, worktree.id, force: risky),
           failure: l10n.workspaceArchiveFailed,
           success: l10n.commonDeleted,
           id: 'worktree-archive',
         );
     if (!succeeded || archived == null) return;
-    // Archiving the selected worktree can unmount this sidebar, and reading a
-    // provider after that throws. Whatever replaces it reads the catalog
-    // itself, so an unmounted sidebar has nothing left to do here.
+    // The controller has already refreshed the catalog. Everything below is
+    // presentation-only and must not retain an unmounted sidebar context.
     if (!context.mounted) return;
-    await ref
-        .read(workspaceCatalogControllerProvider.notifier)
-        .refreshHost(entry.hostId);
     // Teardown never blocks the archive, so surface failures afterwards.
     if (context.mounted) {
       reportWorktreeHookFailure(context, archived!.hookRuns);

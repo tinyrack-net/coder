@@ -708,6 +708,58 @@ void _registerWorkspaceControllerTests() {
   );
 
   test(
+    'archiving through the catalog controller refreshes the host snapshot',
+    () async {
+      final external = WorktreeDto(
+        id: 'external',
+        workspaceId: workspace.id,
+        name: 'External',
+        path: '/workspace/external',
+        branch: 'external',
+        kind: WorktreeKind.external,
+        isTinestOwned: false,
+        createdAt: now,
+      );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[worktree, external],
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        workspaceCatalogControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      await container.read(workspaceCatalogControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      expect(api.workspaceCatalogCount, 1);
+
+      final archived = await container
+          .read(workspaceCatalogControllerProvider.notifier)
+          .archiveWorktree('server', external.id, force: false);
+
+      expect(archived.worktree.archivedAt, isNotNull);
+      expect(api.workspaceCatalogCount, 2);
+      expect(
+        container
+            .read(workspaceCatalogControllerProvider)
+            .requireValue
+            .catalogs['server']
+            ?.worktrees
+            .map((item) => item.id),
+        isNot(contains(external.id)),
+      );
+    },
+    tags: const <String>[
+      'feature_test__worktree_lifecycle__unit',
+      'feature_test__workspace_catalog__unit',
+    ],
+  );
+
+  test(
     'saving the tab layout leaves the sidebar catalog and sessions untouched',
     () async {
       final api = FakeTinestApi(

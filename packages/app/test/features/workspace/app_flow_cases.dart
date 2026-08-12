@@ -156,13 +156,13 @@ void _registerWorkspaceAppFlows() {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final managed = WorktreeDto(
-        id: 'managed',
+        id: 'external',
         workspaceId: workspace.id,
         name: 'feature/settings',
         path: '/worktrees/feature-settings',
         branch: 'feature/settings',
-        kind: WorktreeKind.managed,
-        isTinestOwned: true,
+        kind: WorktreeKind.external,
+        isTinestOwned: false,
         createdAt: now,
       );
       final api =
@@ -200,6 +200,10 @@ void _registerWorkspaceAppFlows() {
       await tester.tap(find.text('Archive'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Archive할까요?'), findsOneWidget);
+      expect(
+        find.text('checkout 디렉터리가 제거됩니다.'),
+        findsOneWidget,
+      );
       await tester.tap(find.widgetWithText(TRButton, 'Archive'));
       await tester.pumpAndSettle();
       expect(find.text('feature/settings'), findsNothing);
@@ -253,13 +257,17 @@ void _registerWorkspaceAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, 'Archive'));
       await tester.pump();
 
-      // Archiving the selected worktree tears the sidebar down, so the call
-      // finishes with nothing left to read a provider from.
-      await tester.pumpWidget(const SizedBox.shrink());
+      // A route change removes the sidebar while the daemon operation is still
+      // running, but the keep-alive catalog controller must finish its refresh.
+      router.go(const SettingsHomeRoute().location);
+      await tester.pumpAndSettle();
       gate.complete();
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      router.go(const WorkspaceHomeRoute().location);
+      await tester.pumpAndSettle();
+      expect(find.text('feature/settings'), findsNothing);
     },
     tags: const <String>['feature_test__worktree_lifecycle__widget'],
   );
