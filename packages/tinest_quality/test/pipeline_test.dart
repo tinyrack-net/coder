@@ -22,7 +22,7 @@ void main() {
   ).readAsStringSync();
   final shipworld = File('shipworld.yaml').readAsStringSync();
   final ibusTerminalRunner = File(
-    'packages/app/tool/run_linux_ibus_terminal_e2e.sh',
+    'packages/desktop_app/tool/run_linux_ibus_terminal_e2e.sh',
   ).readAsStringSync();
   final androidBuild = File(
     'packages/app/android/build.gradle.kts',
@@ -48,10 +48,10 @@ void main() {
     'packages/app/android/cargokit-gradle9-compat.gradle',
   );
   final windowsCmake = File(
-    'packages/app/windows/CMakeLists.txt',
+    'packages/desktop_app/windows/CMakeLists.txt',
   ).readAsStringSync();
   final windowsInstaller = File(
-    'packages/app/windows/installer/tinest.iss',
+    'packages/desktop_app/windows/installer/tinest.iss',
   ).readAsStringSync();
   final cliSmoke = File(
     '.github/actions/smoke-cli-bundle/action.yml',
@@ -578,7 +578,6 @@ void main() {
       'conversation',
       'provider',
       'settings-desktop',
-      'remote-bootstrap',
       'desktop-shell',
     ]) {
       expect(
@@ -622,7 +621,10 @@ void main() {
       expect(job, contains(package));
     }
     expect(job, contains('xvfb-run -a dbus-run-session'));
-    expect(job, contains('packages/app/tool/run_linux_ibus_terminal_e2e.sh'));
+    expect(
+      job,
+      contains('packages/desktop_app/tool/run_linux_ibus_terminal_e2e.sh'),
+    );
     expect(job, contains('terminal_ibus_e2e_test.dart'));
     expect(job, isNot(contains('continue-on-error')));
     expect(job, isNot(contains('retry')));
@@ -634,13 +636,13 @@ void main() {
     expect(ibusTerminalRunner, isNot(contains('mise')));
   });
 
-  test('mobile nightly jobs run remote bootstrap and provider E2E', () {
+  test('mobile nightly jobs run the remote-only bootstrap E2E', () {
     for (final job in <String>[
       _job(workflow, 'nightly-android-smoke'),
       _job(workflow, 'nightly-ios-smoke'),
     ]) {
       expect(job, contains('remote_bootstrap_smoke_test.dart'));
-      expect(job, contains('provider_e2e_test.dart'));
+      expect(job, isNot(contains('provider_e2e_test.dart')));
     }
   });
 
@@ -693,11 +695,11 @@ void main() {
     final desktopBuild = _job(workflow, 'desktop-debug-build');
     expect(
       _matrixEntry(desktopBuild, 'macos-26'),
-      contains('flutter build macos --debug -t lib/main_desktop.dart'),
+      contains('flutter build macos --debug -t lib/main.dart'),
     );
     expect(
       _matrixEntry(desktopBuild, 'windows-2025'),
-      contains('flutter build windows --debug -t lib/main_desktop.dart'),
+      contains('flutter build windows --debug -t lib/main.dart'),
     );
     expect(_job(workflow, 'quality-gate'), contains('- desktop-debug-build'));
   });
@@ -754,10 +756,10 @@ void main() {
     );
 
     final release = _job(workflow, 'build-and-package');
-    expect(release, contains(r'$PWD\packages\app\build\windows\'));
+    expect(release, contains(r'$PWD\packages\desktop_app\build\windows\'));
     expect(
       release,
-      contains(r'$PWD\packages\app\windows\installer\tinest.iss'),
+      contains(r'$PWD\packages\desktop_app\windows\installer\tinest.iss'),
     );
     expect(release, isNot(contains(r'$PWD\apps\app\')));
     for (final dll in <String>[

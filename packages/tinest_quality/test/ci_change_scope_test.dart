@@ -50,7 +50,7 @@ void main() {
       expect(
         CiChangeScope.forPullRequest(<String>[
           'packages/app/lib/main_desktop.dart',
-          'packages/app/linux/CMakeLists.txt',
+          'packages/desktop_app/linux/CMakeLists.txt',
         ]),
         CiChangeScope.appOnly,
       );

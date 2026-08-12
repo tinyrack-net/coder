@@ -44,13 +44,13 @@ targets:
         publisher-display-name-env: MSIX_PUBLISHER_DISPLAY_NAME
         display-name-env: MSIX_DISPLAY_NAME
     macos:
-      entitlements: packages/app/macos/Runner/Release.entitlements
+      entitlements: packages/desktop_app/macos/Runner/Release.entitlements
       bundle-name: Tinest
       bundle-id: net.tinyrack.tinest
       # SMAppService, used for the login item, needs macOS 13.
       minimum-version: ventura
     linux:
-      icon: packages/app/assets/brand/tinest.svg
+      icon: packages/desktop_app/assets/brand/tinest.svg
       categories:
         - Development
       terminal: false
@@ -59,10 +59,10 @@ targets:
       vendor: Tinyrack
       app-id: net.tinyrack.tinest
       icons:
-        - { size: 0, path: packages/app/assets/brand/tinest.svg }
-        - { size: 128, path: packages/app/assets/brand/tinest-128.png }
-        - { size: 256, path: packages/app/assets/brand/tinest-256.png }
-        - { size: 512, path: packages/app/assets/brand/tinest-512.png }
+        - { size: 0, path: packages/desktop_app/assets/brand/tinest.svg }
+        - { size: 128, path: packages/desktop_app/assets/brand/tinest-128.png }
+        - { size: 256, path: packages/desktop_app/assets/brand/tinest-256.png }
+        - { size: 512, path: packages/desktop_app/assets/brand/tinest-512.png }
       deb:
         # GTK is the Flutter shell; the indicator library backs the tray icon.
         # Ubuntu 24.04 renamed libgtk-3-0 during the time_t transition.

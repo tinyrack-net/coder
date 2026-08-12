@@ -104,9 +104,12 @@ final class ArchitectureVerifier {
         },
         'app': <String>{
           'client',
-          'daemon',
           'protocol',
         },
+        // The desktop composition root is the only application package that
+        // may host the daemon. Mobile and web remain behind `app`'s client
+        // boundary.
+        'desktop_app': <String>{'app', 'daemon'},
       };
 
   // Vendor identifiers that must never appear outside an adapter package.
@@ -205,6 +208,7 @@ final class ArchitectureVerifier {
       'cli',
       'client',
       'daemon',
+      'desktop_app',
       'protocol',
       'relay',
       'relay_protocol',

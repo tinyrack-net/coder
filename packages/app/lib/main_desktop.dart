@@ -3,7 +3,6 @@ import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/boot/presentation/bootstrap_gate.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/src/features/desktop/application/desktop_startup.dart';
-import 'package:app/src/features/desktop/infrastructure/desktop_bootstrap.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/workspace/infrastructure/directory_picker_io.dart';
 import 'package:cryptography/cryptography.dart';
@@ -40,6 +39,7 @@ class DesktopBoot {
 /// Starts the desktop widget tree with an injectable bootstrap.
 Future<void> runDesktopApp({
   AppServices? services,
+  Future<AppServices> Function()? bootstrapServices,
   List<String> arguments = const <String>[],
   DesktopWindow? window,
   TrayIcon? tray,
@@ -52,7 +52,12 @@ Future<void> runDesktopApp({
     BootstrapGate<DesktopBoot>(
       bootstrap: () async {
         final desktopWindow = window ?? PluginDesktopWindow();
-        final resolved = services ?? await createDesktopServices();
+        final resolved =
+            services ??
+            await (bootstrapServices ??
+                () => throw StateError(
+                  'Desktop production requires an injected service bootstrap.',
+                ))();
         // Visibility is decided before the window is prepared so a login
         // launch never flashes a window on its way to the tray. Preparing it
         // is also what tells the shell which label the tray row starts with.
@@ -83,7 +88,3 @@ Future<void> runDesktopApp({
     ),
   );
 }
-
-/// Starts the production desktop application.
-Future<void> main(List<String> arguments) =>
-    runDesktopApp(arguments: arguments);

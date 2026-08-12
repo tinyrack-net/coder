@@ -44,7 +44,7 @@ final class EmbeddedPortVerifier {
 
   /// Directory whose sources may start a real embedded daemon.
   static const String integrationTestDirectory =
-      'packages/app/integration_test';
+      'packages/desktop_app/integration_test';
 
   /// Runs every check against the workspace and returns all violations.
   List<EmbeddedPortViolation> verify() {

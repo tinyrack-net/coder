@@ -26,7 +26,6 @@ const desktopE2eScenarios = <DesktopE2eScenario>[
   DesktopE2eScenario(id: 'conversation', estimatedSeconds: 84),
   DesktopE2eScenario(id: 'provider', estimatedSeconds: 12),
   DesktopE2eScenario(id: 'settings-desktop', estimatedSeconds: 18),
-  DesktopE2eScenario(id: 'remote-bootstrap', estimatedSeconds: 2),
   DesktopE2eScenario(id: 'desktop-shell', estimatedSeconds: 2),
 ];
 
@@ -194,7 +193,7 @@ final class DesktopE2ePlan {
       arguments: host == DesktopHost.linux
           ? <String>['-a', 'flutter', ...flutterArguments]
           : flutterArguments,
-      workingDirectory: 'packages/app',
+      workingDirectory: 'packages/desktop_app',
       runInShell: host == DesktopHost.windows,
     );
   }

@@ -343,7 +343,7 @@ Future<int> _executeTinestQuality(
           'dart',
           <String>[
             'run',
-            'packages/app/tool/run_desktop_e2e.dart',
+            'packages/desktop_app/tool/run_desktop_e2e.dart',
             '--jobs=${options.jobs}',
             if (options.reportPath case final reportPath?)
               '--report=$reportPath.desktop.json',
@@ -387,15 +387,10 @@ Future<int> _executeTinestQuality(
         jobs: options.jobs,
         reportPath: options.reportPath,
         testRandomizationSeed: seed,
-        body: () => _runProcess(
-          'flutter',
-          <String>[
-            'test',
-            'test',
-            '--concurrency=${options.jobs}',
-            '--test-randomize-ordering-seed=$seed',
-          ],
-          workingDirectory: 'packages/app',
+        body: () => _runFlutterPackageTests(
+          jobs: options.jobs,
+          seed: seed,
+          coverage: false,
           out: out,
           error: writeError,
         ),
@@ -435,21 +430,41 @@ Future<int> _executeTinestQuality(
         jobs: options.jobs,
         reportPath: options.reportPath,
         testRandomizationSeed: seed,
-        body: () => _runProcess(
-          'flutter',
-          <String>[
-            'test',
-            '--coverage',
-            '--concurrency=${options.jobs}',
-            '--branch-coverage',
-            '--test-randomize-ordering-seed=$seed',
-          ],
-          workingDirectory: 'packages/app',
+        body: () => _runFlutterPackageTests(
+          jobs: options.jobs,
+          seed: seed,
+          coverage: true,
           out: out,
           error: writeError,
         ),
       );
   }
+}
+
+Future<int> _runFlutterPackageTests({
+  required int jobs,
+  required int seed,
+  required bool coverage,
+  required QualityOutput out,
+  required QualityOutput error,
+}) async {
+  for (final package in const <String>['app', 'desktop_app']) {
+    final result = await _runProcess(
+      'flutter',
+      <String>[
+        'test',
+        if (!coverage) 'test',
+        if (coverage) ...<String>['--coverage', '--branch-coverage'],
+        '--concurrency=$jobs',
+        '--test-randomize-ordering-seed=$seed',
+      ],
+      workingDirectory: 'packages/$package',
+      out: out,
+      error: error,
+    );
+    if (result != 0) return result;
+  }
+  return 0;
 }
 
 Future<int> _generate({
@@ -468,6 +483,14 @@ Future<int> _generate({
           phases: <VerificationPhase>[
             VerificationPhase(
               tasks: <VerificationTask>[
+                VerificationTask(
+                  name: 'desktop app version',
+                  executable: 'dart',
+                  arguments: <String>[
+                    'run',
+                    'packages/tinest_quality/bin/sync_desktop_version.dart',
+                  ],
+                ),
                 VerificationTask(
                   name: 'Flutter localizations',
                   executable: 'flutter',
@@ -539,6 +562,7 @@ bool _isGeneratedSource(String value) {
   final path = value.replaceAll(r'\', '/');
   return path.endsWith('.g.dart') ||
       path.endsWith('.freezed.dart') ||
+      path.endsWith('/packages/desktop_app/pubspec.yaml') ||
       path.contains('/packages/app/lib/l10n/gen/app_localizations');
 }
 

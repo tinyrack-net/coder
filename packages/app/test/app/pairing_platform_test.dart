@@ -4,9 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final packageRoot = Directory.current;
+  final desktopPackageRoot = Directory(
+    '${packageRoot.parent.path}/desktop_app',
+  );
 
   String packageFile(String path) =>
       File('${packageRoot.path}/$path').readAsStringSync();
+  String desktopPackageFile(String path) =>
+      File('${desktopPackageRoot.path}/$path').readAsStringSync();
 
   test(
     'mobile platforms register the canonical HTTPS pair route',
@@ -25,13 +30,15 @@ void main() {
   test(
     'desktop packages register only the fragment-safe custom protocol',
     () {
+      final ios = packageFile('ios/Runner/Info.plist');
+      expect(ios, contains('tinyrack-tinest'));
+      expect(ios, isNot(contains('?offer=')));
       for (final file in <String>[
-        'ios/Runner/Info.plist',
         'macos/Runner/Info.plist',
         'windows/installer/tinest.iss',
         'linux/net.tinyrack.tinest.desktop',
       ]) {
-        final contents = packageFile(file);
+        final contents = desktopPackageFile(file);
         expect(contents, contains('tinyrack-tinest'), reason: file);
         expect(contents, isNot(contains('?offer=')), reason: file);
       }

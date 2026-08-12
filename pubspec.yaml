@@ -43,26 +43,26 @@ melos:
     run:desktop:
       # `stdio: inherit` gives flutter run a real terminal so r/R/q work; it is
       # incompatible with melos exec, hence the explicit package directory.
-      run: cd packages/app && flutter run -d linux -t lib/main_desktop.dart
+      run: cd packages/desktop_app && flutter run -t lib/main.dart
       stdio: inherit
     run:mobile:
       run: cd packages/app && flutter run -t lib/main_mobile.dart
       stdio: inherit
     build:linux:
-      run: dart run melos exec --scope=app -- flutter build linux --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build linux --debug -t lib/main.dart
     build:android:
       run: dart run melos exec --scope=app -- flutter build apk --debug -t lib/main_mobile.dart
     build:macos:
-      run: dart run melos exec --scope=app -- flutter build macos --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build macos --debug -t lib/main.dart
     build:windows:
-      run: dart run melos exec --scope=app -- flutter build windows --debug -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build windows --debug -t lib/main.dart
     build:web:
       run: dart run melos exec --scope=app -- flutter build web -t lib/main_web.dart
     build:web:release:
       run: dart run melos exec --scope=app -- flutter build web --release -t lib/main_web.dart
     build:linux:release:
-      run: dart run melos exec --scope=app -- flutter build linux --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build linux --release -t lib/main.dart
     build:macos:release:
-      run: dart run melos exec --scope=app -- flutter build macos --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build macos --release -t lib/main.dart
     build:windows:release:
-      run: dart run melos exec --scope=app -- flutter build windows --release -t lib/main_desktop.dart
+      run: dart run melos exec --scope=desktop_app -- flutter build windows --release -t lib/main.dart

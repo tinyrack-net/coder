@@ -14,6 +14,7 @@ void main() {
       'cli',
       'client',
       'daemon',
+      'desktop_app',
       'protocol',
       'relay',
       'relay_protocol',

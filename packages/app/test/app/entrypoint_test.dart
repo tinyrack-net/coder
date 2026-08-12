@@ -1,4 +1,4 @@
-import 'package:app/main.dart' as platform_entry;
+import 'package:app/main.dart' as app_entry;
 import 'package:app/main_desktop.dart' as desktop_entry;
 import 'package:app/main_mobile.dart' as mobile_entry;
 import 'package:app/main_web.dart' as web_entry;
@@ -20,25 +20,13 @@ import '../support/fake_tinest_api.dart';
 import '../support/localization.dart';
 
 void main() {
-  test('platform dispatcher selects exactly one entry point', () async {
-    var desktopCalls = 0;
-    var mobileCalls = 0;
-    Future<void> desktop() async => desktopCalls += 1;
-    Future<void> mobile() async => mobileCalls += 1;
+  testWidgets('the default entrypoint starts the mobile bootstrap', (
+    tester,
+  ) async {
+    await app_entry.main();
+    await tester.pump();
 
-    await platform_entry.runPlatformApp(
-      isMobile: false,
-      runDesktop: desktop,
-      runMobile: mobile,
-    );
-    await platform_entry.runPlatformApp(
-      isMobile: true,
-      runDesktop: desktop,
-      runMobile: mobile,
-    );
-
-    expect(desktopCalls, 1);
-    expect(mobileCalls, 1);
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 
   testWidgets('desktop and mobile runners accept test services', (
