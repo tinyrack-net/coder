@@ -1371,11 +1371,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/tinyrack_workspace"
-      ref: dec43d1c6238a9de01f9a0ab3d8dc95dba98b5f5
-      resolved-ref: dec43d1c6238a9de01f9a0ab3d8dc95dba98b5f5
+      ref: d3c17374a4223df2f0d726f1c67e3246c12c385f
+      resolved-ref: d3c17374a4223df2f0d726f1c67e3246c12c385f
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
-    version: "0.1.0"
+    version: "0.2.0"
   tray_manager:
     dependency: transitive
     description:

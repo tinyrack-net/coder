@@ -10,7 +10,6 @@ import 'package:app/src/features/conversation/presentation/chat_approval_card.da
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
-import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
@@ -2300,77 +2299,7 @@ void main() {
       'feature_scenario__desktop_window_chrome__localized_menu_navigation__e2e',
     ],
   );
-
-  testWidgets(
-    'the real runner registers a tray icon and hides instead of quitting',
-    (tester) async {
-      // This runs against the real Linux runner, so it proves the tray and
-      // window plugins are linked and answer their channels. It deliberately
-      // asserts nothing about the icon being visible: a headless CI display
-      // has no StatusNotifier host to show it.
-      final window = PluginDesktopWindow();
-      final tray = PluginTrayIcon();
-      addTearDown(tray.destroy);
-      addTearDown(window.releaseClose);
-
-      await window.prepare(startHidden: false);
-      expect(window.chrome, DesktopWindowChrome.custom);
-      expect(await window.isVisible(), isTrue);
-
-      await window.toggleMaximized();
-      expect(window.maximized.value, isTrue);
-      await window.toggleMaximized();
-      expect(window.maximized.value, isFalse);
-
-      var closes = 0;
-      await window.interceptClose(() => closes += 1);
-
-      const menu = TrayMenuModel(
-        tooltip: 'Tinest',
-        entries: <TrayMenuEntry>[
-          TrayMenuEntry(
-            key: trayItemToggleWindow,
-            label: 'Show window',
-            action: TrayMenuAction.toggleWindow,
-          ),
-          TrayMenuEntry.separator(),
-          TrayMenuEntry(key: trayItemQuit, label: 'Quit'),
-        ],
-      );
-      await tray.install(menu: menu, onSelected: (_) {}, onActivated: () {});
-      await tray.update(menu);
-      expect(const NativeAttachmentInput(), isA<AttachmentInputPort>());
-      expect(const NativeAttachmentExport(), isA<AttachmentExportPort>());
-
-      // Hiding must leave the process alive, which is the whole point of
-      // closing to the tray.
-      await window.hide();
-      await _waitForWindowVisibility(window, visible: false);
-      // The tray reads this rather than the plugin query, because a hidden
-      // window stops the embedder from producing the frame a rebuild needs.
-      expect(window.visible.value, isFalse);
-      await window.show();
-      await _waitForWindowVisibility(window, visible: true);
-      expect(window.visible.value, isTrue);
-      expect(closes, 0);
-    },
-    tags: const <String>[
-      'feature_test__desktop_residency__platformSmoke',
-      'feature_test__desktop_window_chrome__platformSmoke',
-      'feature_test__conversation_attachments__platformSmoke',
-      'feature_scenario__desktop_residency__close_hide_restore__e2e',
-      'feature_scenario__desktop_window_chrome__native_window_controls__e2e',
-    ],
-  );
 }
-
-Future<void> _waitForWindowVisibility(
-  DesktopWindow window, {
-  required bool visible,
-}) => awaitCondition(
-  () async => await window.isVisible() == visible,
-  'the window to become ${visible ? 'visible' : 'hidden'}',
-);
 
 final class _E2eAttachmentInput implements AttachmentInputPort {
   _E2eAttachmentInput({

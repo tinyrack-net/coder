@@ -85,7 +85,7 @@ final class EmbeddedPortVerifier {
     ];
     if (!source.contains('IsolateEmbeddedDaemonLauncher')) return violations;
     return violations
-      ..addAll(_verifyReservedPortHelper(path: path, source: source))
+      ..addAll(_verifyEphemeralLauncher(path: path, source: source))
       ..addAll(_verifyPinnedSettingsPort(path: path, source: source))
       ..addAll(_verifyInjectedConfig(path: path, source: source));
   }
@@ -105,28 +105,27 @@ final class EmbeddedPortVerifier {
             line: index + 1,
             rule: 'fixed_embedded_daemon_port',
             message:
-                'Port 7337 is machine-global. Use reserveEphemeralPort() so '
-                'parallel checkouts and a running `melos run:daemon` never '
-                'collide with this test.',
+                'Port 7337 is machine-global. Use the ephemeral embedded '
+                'daemon launcher so parallel runs cannot collide.',
           ),
     ];
   }
 
-  List<EmbeddedPortViolation> _verifyReservedPortHelper({
+  List<EmbeddedPortViolation> _verifyEphemeralLauncher({
     required String path,
     required String source,
   }) {
-    if (source.contains('reserveEphemeralPort')) {
+    if (source.contains('EphemeralEmbeddedDaemonLauncher')) {
       return const <EmbeddedPortViolation>[];
     }
     return <EmbeddedPortViolation>[
       EmbeddedPortViolation(
         path: path,
         line: _lineOf(source, 'IsolateEmbeddedDaemonLauncher'),
-        rule: 'unreserved_embedded_daemon_port',
+        rule: 'non_ephemeral_embedded_daemon_port',
         message:
-            'A file that starts the real embedded daemon must take its port '
-            'from reserveEphemeralPort() in support/ephemeral_port.dart.',
+            'A file that starts the real embedded daemon must wrap its '
+            'launcher with EphemeralEmbeddedDaemonLauncher.',
       ),
     ];
   }

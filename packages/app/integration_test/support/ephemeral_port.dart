@@ -1,18 +1,26 @@
-import 'dart:io';
+import 'package:app/src/features/hosts/domain/host_models.dart';
+import 'package:app/src/features/hosts/domain/host_ports.dart';
 
-/// Reserves a loopback TCP port that no process currently owns.
+/// Stable settings value that is never bound by an ephemeral test launcher.
+const int testEmbeddedDaemonPort = 49152;
+
+/// Starts a real embedded daemon on an OS-assigned port.
 ///
 /// The app-owned daemon binds whatever `AppSettings.embeddedDaemonPort` says,
-/// so a test that leaves the default in place binds the machine-global product
-/// port. A second checkout verifying in parallel, or a developer running
-/// `melos run:daemon`, then fails with `embeddedPortInUse`. Ask the operating
-/// system for a port instead: it draws from the ephemeral range and does not
-/// immediately reissue one it just released.
+/// but reserving and releasing a port before startup leaves a race. This typed
+/// test adapter ignores the display setting and passes zero to the production
+/// launcher, which keeps the socket allocation and readiness message inside
+/// the daemon lifecycle.
 ///
 /// The app-owned embedded-port contract keeps every real-daemon E2E here.
-Future<int> reserveEphemeralPort() async {
-  final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-  final port = socket.port;
-  await socket.close();
-  return port;
+final class EphemeralEmbeddedDaemonLauncher implements EmbeddedDaemonLauncher {
+  const EphemeralEmbeddedDaemonLauncher(this.delegate);
+
+  final EmbeddedDaemonLauncher delegate;
+
+  @override
+  Future<EmbeddedDaemonSession> start({
+    required EmbeddedDaemonExposure exposure,
+    required int port,
+  }) => delegate.start(exposure: exposure, port: 0);
 }

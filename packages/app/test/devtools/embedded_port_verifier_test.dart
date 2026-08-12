@@ -11,17 +11,19 @@ void main() {
   const compliant =
       "import 'support/ephemeral_port.dart';\n"
       'Future<void> main() async {\n'
-      '  final launcher = IsolateEmbeddedDaemonLauncher(\n'
-      '    resolveConfig: () => DaemonConfig(homeDirectory: home.path),\n'
+      '  final launcher = EphemeralEmbeddedDaemonLauncher(\n'
+      '    IsolateEmbeddedDaemonLauncher(\n'
+      '      resolveConfig: () => DaemonConfig(homeDirectory: home.path),\n'
+      '    ),\n'
       '  );\n'
       '  final store = MemoryAppStore(\n'
       '    settings: AppSettings(\n'
-      '      embeddedDaemonPort: await reserveEphemeralPort(),\n'
+      '      embeddedDaemonPort: testEmbeddedDaemonPort,\n'
       '    ),\n'
       '  );\n'
       '}\n';
 
-  test('a fixture that reserves a port for every store passes', () {
+  test('a fixture that lets the daemon bind every store port passes', () {
     expect(
       verifier.verifySource(path: path, source: compliant),
       isEmpty,
@@ -32,19 +34,28 @@ void main() {
     final violations = verifier.verifySource(
       path: path,
       source: compliant.replaceAll(
-        '      embeddedDaemonPort: await reserveEphemeralPort(),\n',
+        '      embeddedDaemonPort: testEmbeddedDaemonPort,\n',
         '      localeTag: null,\n',
       ),
     );
 
     expect(
       violations.map((violation) => violation.rule),
-      containsAll(<String>[
-        'unreserved_embedded_daemon_port',
-        'unpinned_embedded_daemon_port',
-      ]),
+      contains('unpinned_embedded_daemon_port'),
     );
     expect(violations.first.path, path);
+  });
+
+  test('a real launcher without the ephemeral adapter is reported', () {
+    final violations = verifier.verifySource(
+      path: path,
+      source: compliant.replaceFirst(
+        'EphemeralEmbeddedDaemonLauncher(',
+        'passthrough(',
+      ),
+    );
+
+    expect(violations.single.rule, 'non_ephemeral_embedded_daemon_port');
   });
 
   test('a second unpinned store in a compliant file is still reported', () {
@@ -86,7 +97,7 @@ void main() {
     final violations = verifier.verifySource(
       path: path,
       source: compliant.replaceAll(
-        '    resolveConfig: () => DaemonConfig(homeDirectory: home.path),\n',
+        '      resolveConfig: () => DaemonConfig(homeDirectory: home.path),\n',
         '',
       ),
     );

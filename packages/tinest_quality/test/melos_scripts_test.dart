@@ -42,7 +42,7 @@ void main() {
       isTrue,
     );
     final commands = <String>[
-      for (final phase in WorkspaceVerificationPlans.tests().phases)
+      for (final phase in WorkspaceVerificationPlans.tests(jobs: 4).phases)
         for (final task in phase.tasks) task.arguments.join(' '),
     ];
     expect(
@@ -57,11 +57,21 @@ void main() {
 
   test('full verification delegates shared policy upstream', () {
     final commands = <String>[
-      for (final phase in WorkspaceVerificationPlans.full().phases)
+      for (final phase in WorkspaceVerificationPlans.full(jobs: 4).phases)
         for (final task in phase.tasks) task.arguments.join(' '),
     ];
     expect(commands, contains(contains('tinyrack_workspace source-check')));
     expect(commands, contains(contains('tinyrack_workspace coverage-check')));
     expect(commands, contains(contains('tinyrack_ui:tinyrack_ui_check')));
+  });
+
+  test('coverage uses one kernel runner per package cache', () {
+    final application = File(
+      'packages/tinest_quality/bin/src/application.dart',
+    ).readAsStringSync();
+
+    expect(application, contains('incremental_kernel'));
+    expect(application, isNot(contains("'--total-shards='")));
+    expect(application, contains("'testRandomizationSeeds'"));
   });
 }

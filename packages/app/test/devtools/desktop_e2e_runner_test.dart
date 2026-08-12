@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:app/src/devtools/desktop_e2e_runner.dart';
 import 'package:app/src/devtools/desktop_host.dart';
 import 'package:test/test.dart';
@@ -7,120 +10,220 @@ void main() {
     final linux = DesktopE2ePlan.forHost(DesktopHost.linux);
     final macos = DesktopE2ePlan.forHost(DesktopHost.macos);
     final windows = DesktopE2ePlan.forHost(DesktopHost.windows);
+    final lane = windows.lanes(jobs: 1).single;
 
-    expect(linux.device, 'linux');
-    expect(linux.commandFor('debug_e2e_test.dart').executable, 'xvfb-run');
-    expect(linux.commandFor('debug_e2e_test.dart').arguments, <String>[
-      '-a',
-      'flutter',
-      'test',
-      'integration_test/debug_e2e_test.dart',
-      '-d',
-      'linux',
-    ]);
-    expect(macos.device, 'macos');
-    expect(macos.commandFor('debug_e2e_test.dart').executable, 'flutter');
-    expect(windows.device, 'windows');
-    expect(windows.commandFor('debug_e2e_test.dart').executable, 'flutter');
-    expect(windows.commandFor('debug_e2e_test.dart').runInShell, isTrue);
-    expect(macos.commandFor('debug_e2e_test.dart').runInShell, isFalse);
-    expect(linux.commandFor('debug_e2e_test.dart').runInShell, isFalse);
+    expect(linux.commandForLane(lane, seed: 7).executable, 'xvfb-run');
+    expect(macos.commandForLane(lane, seed: 7).executable, 'flutter');
+    expect(windows.commandForLane(lane, seed: 7).executable, 'flutter');
+    expect(windows.commandForLane(lane, seed: 7).runInShell, isTrue);
+    expect(macos.commandForLane(lane, seed: 7).runInShell, isFalse);
     expect(
-      windows.commandFor('debug_e2e_test.dart').arguments,
-      containsAllInOrder(<String>['-d', 'windows']),
+      windows.commandForLane(lane, seed: 7).arguments,
+      containsAll(<String>[
+        '-d',
+        'windows',
+        '--test-randomize-ordering-seed=7',
+      ]),
     );
   });
 
-  test('every supported desktop host runs the complete shard list', () {
-    for (final host in DesktopHost.values) {
-      expect(DesktopE2ePlan.forHost(host).shards, <String>[
-        'daemon_workspace_e2e_test.dart',
-        'project_worktree_e2e_test.dart',
-        'relay_e2e_test.dart',
-        'conversation_adversity_e2e_test.dart',
-        'debug_e2e_test.dart',
-        'provider_e2e_test.dart',
-        'settings_desktop_e2e_test.dart',
-        'remote_bootstrap_smoke_test.dart',
-      ]);
+  test('jobs adapt to one or two exact-once deterministic lanes', () {
+    for (final jobs in <int>[1, 2, 4, 8, 32]) {
+      final plan = DesktopE2ePlan.forHost(DesktopHost.windows);
+      final first = plan.lanes(jobs: jobs);
+      final second = plan.lanes(jobs: jobs);
+      expect(first, hasLength(jobs == 1 ? 1 : 2));
+      expect(
+        first.expand((lane) => lane.scenarios).map((scenario) => scenario.id),
+        unorderedEquals(desktopE2eScenarios.map((scenario) => scenario.id)),
+      );
+      expect(
+        first.map((lane) => lane.scenarios.map((item) => item.id).toList()),
+        second.map((lane) => lane.scenarios.map((item) => item.id).toList()),
+      );
     }
   });
 
-  test('desktop host parsing rejects unsupported operating systems', () {
-    expect(DesktopHost.fromOperatingSystem('linux'), DesktopHost.linux);
-    expect(DesktopHost.fromOperatingSystem('macos'), DesktopHost.macos);
-    expect(DesktopHost.fromOperatingSystem('windows'), DesktopHost.windows);
-    expect(DesktopHost.fromOperatingSystem('android'), isNull);
-  });
-
-  test('runner isolates every shard and cleans its temporary home', () async {
-    final runtime = _FakeDesktopE2eRuntime();
-    final result =
-        await DesktopE2eRunner(
-          runtime: runtime,
-          environment: const <String, String>{'PATH': 'build-tools'},
-        ).run(
-          DesktopE2ePlan.forHost(DesktopHost.windows),
-        );
-
-    expect(result, 0);
-    expect(runtime.commands, hasLength(8));
-    for (final command in runtime.commands) {
-      expect(command.workingDirectory, 'packages/app');
-      expect(command.environment, <String, String>{
-        'PATH': 'build-tools',
-        'TINYRACK_TINEST_HOME': r'C:\temp\tinest-e2e',
-        'TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES': '1',
-      });
+  test('integration dispatcher registers every catalog scenario once', () {
+    final dispatcher = File(
+      'integration_test/desktop_e2e_suite_test.dart',
+    ).readAsStringSync();
+    for (final scenario in desktopE2eScenarios) {
+      expect(
+        RegExp("'${RegExp.escape(scenario.id)}':").allMatches(dispatcher),
+        hasLength(1),
+        reason: scenario.id,
+      );
     }
-    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
   });
 
-  test('runner stops at the first failed shard and still cleans up', () async {
-    final runtime = _FakeDesktopE2eRuntime(exitCodes: <int>[0, 69, 0]);
-    final result = await DesktopE2eRunner(runtime: runtime).run(
-      DesktopE2ePlan.forHost(DesktopHost.windows),
+  test('longest scenario is isolated from the remaining measured work', () {
+    final lanes = DesktopE2ePlan.forHost(
+      DesktopHost.windows,
+    ).lanes(jobs: 32);
+    expect(lanes.first.scenarios.map((scenario) => scenario.id), <String>[
+      'conversation',
+    ]);
+    expect(lanes.last.estimatedSeconds, 70);
+  });
+
+  test('options parse jobs, scenario, seed, and report strictly', () {
+    final options = DesktopE2eOptions.parse(
+      <String>[
+        '--jobs=8',
+        '--scenario=conversation',
+        '--seed=42',
+        '--report=timing.json',
+      ],
+      detectedJobs: 32,
+      defaultSeed: 1,
     );
-
-    expect(result, 69);
-    expect(runtime.commands, hasLength(2));
-    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
-  });
-
-  test('runner cleans up when process execution throws', () async {
-    final runtime = _FakeDesktopE2eRuntime(error: StateError('launch failed'));
-
-    await expectLater(
-      DesktopE2eRunner(runtime: runtime).run(
-        DesktopE2ePlan.forHost(DesktopHost.windows),
+    expect(options.jobs, 8);
+    expect(options.scenario, 'conversation');
+    expect(options.seed, 42);
+    expect(options.reportPath, 'timing.json');
+    expect(
+      () => DesktopE2eOptions.parse(
+        <String>['--scenario=missing'],
+        detectedJobs: 4,
+        defaultSeed: 1,
       ),
-      throwsStateError,
+      throwsFormatException,
     );
-    expect(runtime.deletedHomes, <String>[r'C:\temp\tinest-e2e']);
+  });
+
+  test('second lane waits for application readiness', () async {
+    final runtime = _FakeDesktopE2eRuntime();
+    final future = DesktopE2eRunner(runtime: runtime).run(
+      DesktopE2ePlan.forHost(DesktopHost.windows),
+      jobs: 4,
+      seed: 100,
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(runtime.commands, hasLength(1));
+
+    runtime.processes.first.markReady();
+    await Future<void>.delayed(Duration.zero);
+    expect(runtime.commands, hasLength(2));
+    runtime.processes.first.finish(0);
+    runtime.processes.last
+      ..markReady()
+      ..finish(0);
+
+    final result = await future;
+    expect(result.exitCode, 0);
+    expect(result.lanes.map((lane) => lane.seed), <int>[100, 101]);
+    expect(runtime.deleted, <int>[0, 1]);
+  });
+
+  test('early failure still launches and completes the other lane', () async {
+    final runtime = _FakeDesktopE2eRuntime();
+    final future = DesktopE2eRunner(runtime: runtime).run(
+      DesktopE2ePlan.forHost(DesktopHost.windows),
+      jobs: 8,
+      seed: 9,
+    );
+    await Future<void>.delayed(Duration.zero);
+    runtime.processes.first.finish(69);
+    await Future<void>.delayed(Duration.zero);
+    expect(runtime.commands, hasLength(2));
+    runtime.processes.last
+      ..markReady()
+      ..finish(70);
+
+    final result = await future;
+    expect(result.exitCode, 69);
+    expect(result.lanes.map((lane) => lane.exitCode), <int>[69, 70]);
+    expect(runtime.deleted, <int>[0, 1]);
+  });
+
+  test(
+    'lanes use independent home config readiness and build directories',
+    () async {
+      final runtime = _FakeDesktopE2eRuntime();
+      final future = DesktopE2eRunner(runtime: runtime).run(
+        DesktopE2ePlan.forHost(DesktopHost.windows),
+        jobs: 2,
+        seed: 2,
+      );
+      await Future<void>.delayed(Duration.zero);
+      runtime.processes.first.markReady();
+      await Future<void>.delayed(Duration.zero);
+      for (final process in runtime.processes) {
+        process
+          ..markReady()
+          ..finish(0);
+      }
+      await future;
+
+      expect(
+        runtime.commands.map((command) => command.environment['APPDATA']),
+        <String>[r'C:\config\lane-0', r'C:\config\lane-1'],
+      );
+      expect(
+        runtime.commands.map(
+          (command) => command.environment['TINYRACK_TINEST_HOME'],
+        ),
+        <String>[r'C:\home\lane-0', r'C:\home\lane-1'],
+      );
+    },
+  );
+
+  test('macOS Lua host phase is incremental', () {
+    final project = File(
+      'macos/Runner.xcodeproj/project.pbxproj',
+    ).readAsStringSync();
+    final start = project.indexOf('/* Bundle Lua Host */ = {');
+    final end = project.indexOf('\n\t\t};', start);
+    final phase = project.substring(start, end);
+    expect(phase, isNot(contains('alwaysOutOfDate = 1')));
+    expect(phase, contains(r'$(PROJECT_DIR)/../../../pubspec.lock'));
+    expect(phase, contains('lua-tool-runtime-host'));
   });
 }
 
 final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
-  _FakeDesktopE2eRuntime({this.exitCodes = const <int>[], this.error});
-
-  final List<int> exitCodes;
-  final Error? error;
   final List<DesktopE2eCommand> commands = <DesktopE2eCommand>[];
-  final List<String> deletedHomes = <String>[];
+  final List<_FakeProcess> processes = <_FakeProcess>[];
+  final List<int> deleted = <int>[];
 
   @override
-  Future<String> createTemporaryHome() async => r'C:\temp\tinest-e2e';
+  Future<DesktopE2eLaneResources> createLaneResources(int laneIndex) async =>
+      DesktopE2eLaneResources(
+        home: 'C:\\home\\lane-$laneIndex',
+        configHome: 'C:\\config\\lane-$laneIndex',
+        readinessMarker: 'C:\\ready\\lane-$laneIndex',
+      );
 
   @override
-  Future<void> deleteTemporaryHome(String path) async {
-    deletedHomes.add(path);
+  Future<void> deleteLaneResources(DesktopE2eLaneResources resources) async {
+    deleted.add(int.parse(resources.home.substring(resources.home.length - 1)));
   }
 
   @override
-  Future<int> run(DesktopE2eCommand command) async {
+  Future<DesktopE2eProcess> start(DesktopE2eCommand command) async {
     commands.add(command);
-    if (error case final error?) throw error;
-    final index = commands.length - 1;
-    return index < exitCodes.length ? exitCodes[index] : 0;
+    final process = _FakeProcess();
+    processes.add(process);
+    return process;
+  }
+}
+
+final class _FakeProcess implements DesktopE2eProcess {
+  final Completer<void> _ready = Completer<void>();
+  final Completer<int> _exitCode = Completer<int>();
+
+  @override
+  Future<void> get ready => _ready.future;
+
+  @override
+  Future<int> get exitCode => _exitCode.future;
+
+  void markReady() {
+    if (!_ready.isCompleted) _ready.complete();
+  }
+
+  void finish(int code) {
+    if (!_exitCode.isCompleted) _exitCode.complete(code);
   }
 }

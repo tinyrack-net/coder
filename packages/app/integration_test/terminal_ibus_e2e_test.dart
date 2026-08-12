@@ -39,7 +39,7 @@ void main() {
         'tinest-ibus-workspace-',
       );
       await _initializeGitRepository(workspace.path);
-      final port = await reserveEphemeralPort();
+      const port = testEmbeddedDaemonPort;
       const token = 'ibus-e2e-token-0123456789abcdef0123456789';
       final config = DaemonConfig(
         homeDirectory: daemonHome.path,
@@ -49,8 +49,8 @@ void main() {
         bearerToken: token,
         useEnvironmentCredentials: false,
       );
-      final launcher = IsolateEmbeddedDaemonLauncher(
-        resolveConfig: () => config,
+      final launcher = EphemeralEmbeddedDaemonLauncher(
+        IsolateEmbeddedDaemonLauncher(resolveConfig: () => config),
       );
       Process? clipboard;
       addTearDown(() async {
@@ -84,7 +84,7 @@ void main() {
       final modeReady = File('${workspace.path}/ibus-mode-ready');
       final ready = File('${workspace.path}/ibus-ready');
       final store = MemoryAppStore(
-        settings: AppSettings(embeddedDaemonPort: port),
+        settings: const AppSettings(embeddedDaemonPort: port),
       );
       await tester.pumpWidget(
         TinestApp(

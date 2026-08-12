@@ -322,17 +322,19 @@
 		};
 		7A4C0DE42E48A00100C0DE55 /* Bundle Lua Host */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(PROJECT_DIR)/../../../pubspec.lock",
 			);
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Contents/MacOS/lua-tool-runtime-host",
+				"$(TARGET_BUILD_DIR)/$(PRODUCT_NAME).app/Contents/Resources/lua_tool_runtime/bootstrap.lua",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

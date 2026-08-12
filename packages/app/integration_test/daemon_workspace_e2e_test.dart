@@ -217,17 +217,21 @@ void main() {
       addTearDown(() => deleteTemporaryDirectory(home));
       const token = 'embedded-e2e-token-0123456789abcdef0123456789';
       final launcher = _ControlledEmbeddedLauncher(
-        IsolateEmbeddedDaemonLauncher(
-          resolveConfig: () => DaemonConfig(
-            homeDirectory: home.path,
-            port: 0,
-            bearerToken: token,
-            useEnvironmentCredentials: false,
+        EphemeralEmbeddedDaemonLauncher(
+          IsolateEmbeddedDaemonLauncher(
+            resolveConfig: () => DaemonConfig(
+              homeDirectory: home.path,
+              port: 0,
+              bearerToken: token,
+              useEnvironmentCredentials: false,
+            ),
           ),
         ),
       );
       final store = MemoryAppStore(
-        settings: AppSettings(embeddedDaemonPort: await reserveEphemeralPort()),
+        settings: const AppSettings(
+          embeddedDaemonPort: testEmbeddedDaemonPort,
+        ),
       );
       await tester.pumpWidget(
         TinestApp(
@@ -250,7 +254,7 @@ void main() {
       await tester.pumpAndSettle();
       await _pumpUntil(tester, find.textContaining('온라인'));
 
-      final changedPort = await reserveEphemeralPort();
+      const changedPort = testEmbeddedDaemonPort + 1;
       final portField = find.descendant(
         of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
         matching: find.byType(EditableText),

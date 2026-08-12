@@ -12,7 +12,7 @@ const _task = VerificationTask(
 void main() {
   test('runs phases in order and tasks within a phase concurrently', () async {
     final executor = _ControlledExecutor();
-    final run = VerificationRunner(executor: executor, maxConcurrency: 2).run(
+    final run = VerificationRunner(executor: executor, maxJobs: 2).run(
       const VerificationPlan(
         phases: <VerificationPhase>[
           VerificationPhase(
@@ -70,7 +70,7 @@ void main() {
     final report =
         await VerificationRunner(
           executor: executor,
-          maxConcurrency: 4,
+          maxJobs: 4,
         ).run(
           const VerificationPlan(
             phases: <VerificationPhase>[
@@ -98,9 +98,75 @@ void main() {
     expect(executor.started, <String>['analyze', 'tests']);
   });
 
+  test('never exceeds the job budget and honors exclusive resources', () async {
+    final executor = _ControlledExecutor();
+    final run = VerificationRunner(executor: executor, maxJobs: 4).run(
+      const VerificationPlan(
+        phases: <VerificationPhase>[
+          VerificationPhase(
+            tasks: <VerificationTask>[
+              VerificationTask(
+                name: 'heavy',
+                executable: 'dart',
+                arguments: <String>['test'],
+                cpuSlots: 3,
+              ),
+              VerificationTask(
+                name: 'small',
+                executable: 'dart',
+                arguments: <String>['test'],
+              ),
+              VerificationTask(
+                name: 'flutter one',
+                executable: 'flutter',
+                arguments: <String>['test'],
+                exclusiveResources: <String>{'flutter-build'},
+              ),
+              VerificationTask(
+                name: 'flutter two',
+                executable: 'flutter',
+                arguments: <String>['test'],
+                exclusiveResources: <String>{'flutter-build'},
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(executor.started, <String>['heavy', 'small']);
+    expect(executor.activeSlots, 4);
+    executor.complete('small');
+    await pumpEventQueue();
+    expect(executor.started, contains('flutter one'));
+    expect(executor.started, isNot(contains('flutter two')));
+    executor.complete('heavy');
+    await pumpEventQueue();
+    expect(executor.started, isNot(contains('flutter two')));
+    executor.complete('flutter one');
+    await pumpEventQueue();
+    expect(executor.started.last, 'flutter two');
+    executor.complete('flutter two');
+
+    expect((await run).succeeded, isTrue);
+    expect(executor.maximumActiveSlots, 4);
+  });
+
+  test('canonical plans derive child concurrency from the job budget', () {
+    final tests = WorkspaceVerificationPlans.tests(jobs: 8);
+    final full = WorkspaceVerificationPlans.full(jobs: 32);
+
+    expect(_commands(tests), contains(contains('_test-dart --jobs=4')));
+    expect(_commands(tests), contains(contains('_test-flutter --jobs=4')));
+    expect(_commands(tests), everyElement(contains('--report=')));
+    expect(_commands(full), contains(contains('_coverage-dart --jobs=32')));
+    expect(_commands(full), contains(contains('_coverage-flutter --jobs=32')));
+    expect(_commands(full), contains(contains('exec -c 16')));
+  });
+
   test('canonical plans run each suite once on every host', () {
-    final tests = WorkspaceVerificationPlans.tests();
-    final full = WorkspaceVerificationPlans.full();
+    final tests = WorkspaceVerificationPlans.tests(jobs: 4);
+    final full = WorkspaceVerificationPlans.full(jobs: 4);
 
     expect(
       _commands(tests).where((value) => value.contains('_test-dart')),
@@ -154,15 +220,24 @@ final class _ControlledExecutor implements VerificationTaskExecutor {
   final Map<String, Completer<VerificationTaskResult>> _completers = {};
   var _active = 0;
   int maximumActive = 0;
+  int activeSlots = 0;
+  int maximumActiveSlots = 0;
 
   @override
   Future<VerificationTaskResult> run(VerificationTask task) {
     started.add(task.name);
     _active += 1;
+    activeSlots += task.cpuSlots;
     if (_active > maximumActive) maximumActive = _active;
+    if (activeSlots > maximumActiveSlots) {
+      maximumActiveSlots = activeSlots;
+    }
     final completer = Completer<VerificationTaskResult>();
     _completers[task.name] = completer;
-    return completer.future.whenComplete(() => _active -= 1);
+    return completer.future.whenComplete(() {
+      _active -= 1;
+      activeSlots -= task.cpuSlots;
+    });
   }
 
   void complete(String name) {

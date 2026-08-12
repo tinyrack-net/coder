@@ -90,10 +90,25 @@ void main() {
   });
 
   test('static checks enforce the Tinyrack design system', () {
-    expect(
-      _job(workflow, 'static-linux'),
-      contains('dart run tinyrack_ui:tinyrack_ui_check'),
-    );
+    final job = _job(workflow, 'static-linux');
+    expect(job, contains('tinest_quality _static-checks'));
+    expect(job, isNot(contains('exec -c 4')));
+  });
+
+  test('quality jobs retain machine-readable timing reports', () {
+    for (final name in <String>[
+      'static-linux',
+      'generated-linux',
+      'dart-tests',
+      'flutter-tests',
+      'coverage-dart-linux',
+      'coverage-flutter-linux',
+      'relay-coverage-linux',
+    ]) {
+      final job = _job(workflow, name);
+      expect(job, contains('--report=build/quality/'), reason: name);
+      expect(job, contains('actions/upload-artifact@v4'), reason: name);
+    }
   });
 
   test('the cross-platform suites stay in separate parallel jobs', () {
@@ -548,23 +563,40 @@ void main() {
     expect(_job(workflow, 'publish-release'), contains('- quality-gate'));
   });
 
-  test('desktop E2E jobs execute every domain shard', () {
+  test('desktop E2E jobs execute every catalog scenario exactly once', () {
     final linux = _job(workflow, 'debug-e2e-linux');
     final nightly = _job(workflow, 'nightly-desktop-e2e');
-    for (final testFile in <String>[
-      'daemon_workspace_e2e_test.dart',
-      'project_worktree_e2e_test.dart',
-      'relay_e2e_test.dart',
-      'conversation_adversity_e2e_test.dart',
-      'debug_e2e_test.dart',
-      'provider_e2e_test.dart',
-      'settings_desktop_e2e_test.dart',
+    for (final scenario in <String>[
+      'daemon-workspace',
+      'project-worktree',
+      'relay',
+      'conversation-adversity',
+      'conversation',
+      'provider',
+      'settings-desktop',
+      'remote-bootstrap',
+      'desktop-shell',
     ]) {
-      expect(linux, contains(testFile));
-      expect(nightly, contains(testFile));
+      expect(
+        RegExp(
+          '^\\s+scenario: ${RegExp.escape(scenario)}\\s*\$',
+          multiLine: true,
+        ).allMatches(linux),
+        hasLength(1),
+      );
+      expect(
+        RegExp(
+          '^\\s+- ${RegExp.escape(scenario)}\\s*\$',
+          multiLine: true,
+        ).allMatches(nightly),
+        hasLength(1),
+      );
     }
     expect(linux, contains('fail-fast: false'));
-    expect(nightly, contains(r'-d ${{ matrix.platform.device }}'));
+    expect(linux, contains('run_desktop_e2e.dart'));
+    expect(nightly, contains('run_desktop_e2e.dart'));
+    expect(linux, contains('actions/upload-artifact@v4'));
+    expect(nightly, contains('actions/upload-artifact@v4'));
   });
 
   test('Linux IBus terminal E2E is a required real desktop job', () {
