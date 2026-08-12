@@ -87,7 +87,8 @@ jobs:
             if files="$(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" \
               --paginate --jq '.[].filename')"; then
               verification_scope="$(
-                printf '%s\n' "$files" | dart run tinest_quality ci-scope
+                printf '%s\n' "$files" |
+                  dart packages/tinest_quality/bin/ci_scope.dart
               )"
             else
               echo "::warning::Could not read the PR file list; using full scope"

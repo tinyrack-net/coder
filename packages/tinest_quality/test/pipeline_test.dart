@@ -232,7 +232,11 @@ void main() {
   test('pull request jobs follow the conservative change scope', () {
     final scope = _job(workflow, 'changes');
     expect(scope, contains('scope='));
-    expect(scope, contains('tinest_quality ci-scope'));
+    expect(
+      scope,
+      contains('dart packages/tinest_quality/bin/ci_scope.dart'),
+    );
+    expect(scope, isNot(contains('dart run tinest_quality ci-scope')));
 
     expect(
       _job(workflow, 'relay-coverage-linux'),

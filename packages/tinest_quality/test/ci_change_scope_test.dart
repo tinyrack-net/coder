@@ -1,9 +1,30 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 import 'package:tinest_quality/tinest_quality.dart';
 
 void main() {
   group('CI change scope', () {
+    test(
+      'standalone entrypoint runs without Pub workspace resolution',
+      () async {
+        final process = await Process.start(
+          Platform.resolvedExecutable,
+          <String>['packages/tinest_quality/bin/ci_scope.dart'],
+        );
+        process.stdin.write('packages/app/lib/main_desktop.dart\n');
+        await process.stdin.close();
+        final output = await process.stdout.transform(utf8.decoder).join();
+        final error = await process.stderr.transform(utf8.decoder).join();
+
+        expect(await process.exitCode, 0, reason: error);
+        expect(output.trim(), 'app-only');
+        expect(error, isEmpty);
+      },
+    );
+
     test('classifies documentation-only pull requests', () {
       expect(
         CiChangeScope.forPullRequest(<String>[
