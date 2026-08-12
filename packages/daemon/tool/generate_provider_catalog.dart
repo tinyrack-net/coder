@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'src/provider_catalog_cli.dart';
+
 const _providerIds = <String>{
   'openai',
   'anthropic',
@@ -23,7 +25,13 @@ final _generatedFile = File(
 );
 
 Future<void> main(List<String> arguments) async {
-  final update = arguments.contains('--update');
+  exitCode = await runProviderCatalogCli(
+    arguments,
+    generate: _generateProviderCatalog,
+  );
+}
+
+Future<void> _generateProviderCatalog({required bool update}) async {
   final lock = Map<String, dynamic>.from(
     jsonDecode(await _lockFile.readAsString()) as Map,
   );

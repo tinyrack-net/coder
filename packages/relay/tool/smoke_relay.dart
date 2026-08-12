@@ -4,16 +4,13 @@ import 'dart:typed_data';
 
 import 'package:relay_protocol/relay_protocol.dart';
 
+import 'src/smoke_relay_cli.dart';
+
 Future<void> main(List<String> arguments) async {
-  if (arguments.isEmpty || arguments.length > 2) {
-    stderr.writeln(
-      'Usage: dart run packages/relay/tool/smoke_relay.dart '
-      '<base-url> [ready-file]',
-    );
-    exitCode = 64;
-    return;
-  }
-  final base = Uri.parse(arguments.first);
+  exitCode = await runRelaySmokeCli(arguments, execute: _smokeRelay);
+}
+
+Future<void> _smokeRelay(Uri base, String? readyFile) async {
   final live = await _get(base.resolve('/health/live'));
   final ready = await _get(base.resolve('/health/ready'));
   if (live != 'live\n' || ready != 'ready\n') {
@@ -47,8 +44,8 @@ Future<void> main(List<String> arguments) async {
     throw StateError('Relay did not return the daemon frame to the client.');
   }
 
-  if (arguments.length == 2) {
-    await File(arguments[1]).writeAsString('ready\n', flush: true);
+  if (readyFile != null) {
+    await File(readyFile).writeAsString('ready\n', flush: true);
     final drained = await Future.wait<bool>(<Future<bool>>[
       daemonMessages.moveNext(),
       clientMessages.moveNext(),

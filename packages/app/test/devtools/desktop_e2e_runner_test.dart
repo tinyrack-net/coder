@@ -72,31 +72,6 @@ void main() {
     expect(lanes.last.estimatedSeconds, 70);
   });
 
-  test('options parse jobs, scenario, seed, and report strictly', () {
-    final options = DesktopE2eOptions.parse(
-      <String>[
-        '--jobs=8',
-        '--scenario=conversation',
-        '--seed=42',
-        '--report=timing.json',
-      ],
-      detectedJobs: 32,
-      defaultSeed: 1,
-    );
-    expect(options.jobs, 8);
-    expect(options.scenario, 'conversation');
-    expect(options.seed, 42);
-    expect(options.reportPath, 'timing.json');
-    expect(
-      () => DesktopE2eOptions.parse(
-        <String>['--scenario=missing'],
-        detectedJobs: 4,
-        defaultSeed: 1,
-      ),
-      throwsFormatException,
-    );
-  });
-
   test('second lane waits for application readiness', () async {
     final runtime = _FakeDesktopE2eRuntime();
     final future = DesktopE2eRunner(runtime: runtime).run(

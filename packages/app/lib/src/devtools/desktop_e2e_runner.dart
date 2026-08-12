@@ -40,47 +40,6 @@ final class DesktopE2eOptions {
     this.reportPath,
   });
 
-  /// Parses strict `--name=value` arguments.
-  factory DesktopE2eOptions.parse(
-    List<String> arguments, {
-    required int detectedJobs,
-    required int defaultSeed,
-  }) {
-    var jobs = detectedJobs;
-    var seed = defaultSeed;
-    String? scenario;
-    String? reportPath;
-    for (final argument in arguments) {
-      final parts = argument.split('=');
-      if (parts.length != 2) {
-        throw FormatException('Expected --name=value, received $argument.');
-      }
-      switch (parts.first) {
-        case '--jobs':
-          jobs = int.parse(parts.last);
-        case '--seed':
-          seed = int.parse(parts.last);
-        case '--scenario':
-          scenario = parts.last;
-        case '--report':
-          reportPath = parts.last;
-        default:
-          throw FormatException('Unknown option ${parts.first}.');
-      }
-    }
-    if (jobs < 1) throw const FormatException('--jobs must be positive.');
-    if (scenario != null &&
-        !desktopE2eScenarios.any((item) => item.id == scenario)) {
-      throw FormatException('Unknown scenario $scenario.');
-    }
-    return DesktopE2eOptions(
-      jobs: jobs,
-      seed: seed,
-      scenario: scenario,
-      reportPath: reportPath,
-    );
-  }
-
   /// Global CPU budget requested by the caller.
   final int jobs;
 
