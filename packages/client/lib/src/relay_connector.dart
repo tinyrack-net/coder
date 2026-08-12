@@ -184,6 +184,11 @@ final class _RelayClientChannel {
         }
         final plaintext = await _incoming.decrypt(frame.payload);
         final record = RelayRecord.decode(plaintext);
+        if (record.type == RelayRecordType.close &&
+            record.streamId == 0 &&
+            record.payload.isEmpty) {
+          return;
+        }
         if (record.type == RelayRecordType.rpc) {
           final complete = _assembler.add(record);
           if (complete != null) {

@@ -135,7 +135,7 @@ final class DaemonRelayTransport {
         .toList(growable: false);
     for (final entry in matches) {
       _sessions.remove(entry.key);
-      await entry.value.close();
+      await entry.value.terminate();
     }
   }
 
@@ -494,6 +494,23 @@ final class _DaemonRelaySession {
     await _outboundSubscription.cancel();
     await _outbound.close();
     await _messages.close();
+  }
+
+  Future<void> terminate() async {
+    if (_closed) {
+      return;
+    }
+    try {
+      await _sendRecord(
+        RelayRecord(
+          type: RelayRecordType.close,
+          streamId: 0,
+          payload: const <int>[],
+        ),
+      );
+    } finally {
+      await close();
+    }
   }
 }
 

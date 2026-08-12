@@ -21,7 +21,7 @@ enum RelayRecordType {
   /// Grants attachment sender credit.
   attachmentCredit,
 
-  /// Closes a logical stream.
+  /// Closes a logical stream, or the authenticated session at stream zero.
   close,
 }
 

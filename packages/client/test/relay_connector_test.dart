@@ -116,6 +116,36 @@ void main() {
       throwsA(isA<RelaySecurityException>()),
     );
   });
+
+  test('authenticated session close ends the inner RPC channel', () async {
+    final device = await RelayIdentity.fromSeed(List<int>.filled(32, 1));
+    final daemon = await RelayIdentity.fromSeed(List<int>.filled(32, 2));
+    final connector = RelayWebSocketConnector(
+      connection: RelayHostConnection(
+        id: 'relay',
+        credentialKey: 'relay-key',
+        serverId: 'daemon-1',
+        relayUri: Uri.parse('wss://relay.example/v1/ws'),
+        daemonIdentityPublicKey: daemon.publicKey,
+      ),
+      credential: RelayHostCredential(
+        deviceId: 'phone',
+        privateKey: List<int>.filled(32, 1),
+      ),
+      socketConnector: _RelayDaemonHarness(
+        daemonIdentity: daemon,
+        devicePublicKey: device.publicKey,
+        terminateAfterHandshake: true,
+      ),
+    );
+
+    final channel = await connector.connect(
+      Uri(),
+      headers: const <String, String>{},
+    );
+
+    await expectLater(channel.stream, emitsDone);
+  });
 }
 
 final class _HandshakeResponseConnector implements WebSocketConnector {
@@ -146,10 +176,12 @@ final class _RelayDaemonHarness implements WebSocketConnector {
   _RelayDaemonHarness({
     required this.daemonIdentity,
     required this.devicePublicKey,
+    this.terminateAfterHandshake = false,
   });
 
   final RelayIdentity daemonIdentity;
   final List<int> devicePublicKey;
+  final bool terminateAfterHandshake;
   final List<int> uploaded = <int>[];
   late Uri connectedUri;
 
@@ -194,6 +226,18 @@ final class _RelayDaemonHarness implements WebSocketConnector {
       transcript: response.result.transcript,
       direction: RelayDirection.daemonToClient,
     );
+    if (terminateAfterHandshake) {
+      await _send(
+        socket,
+        outgoing,
+        RelayRecord(
+          type: RelayRecordType.close,
+          streamId: 0,
+          payload: const <int>[],
+        ),
+      );
+      return;
+    }
     while (await iterator.moveNext()) {
       final frame = RelayWireFrame.decode(iterator.current! as List<int>);
       final record = RelayRecord.decode(await incoming.decrypt(frame.payload));
