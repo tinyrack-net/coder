@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:tinest_workspace/src/desktop_host.dart';
 import 'package:tinest_workspace/src/verification_runner.dart';
 import 'package:tinest_workspace/src/windows_build_environment.dart';
 
@@ -13,9 +12,6 @@ Future<void> main(List<String> arguments) async {
     return;
   }
   final profile = arguments.first;
-  final hostPlatform = DesktopHost.fromOperatingSystem(
-    Platform.operatingSystem,
-  );
   final jobsArgument = arguments.where(
     (argument) => argument.startsWith('--jobs='),
   );
@@ -35,19 +31,11 @@ Future<void> main(List<String> arguments) async {
   }
   final plan = switch (profile) {
     'fast' => WorkspaceVerificationPlans.fast(),
-    'full' when hostPlatform != null => WorkspaceVerificationPlans.full(
-      hostPlatform: hostPlatform,
-    ),
+    'full' => WorkspaceVerificationPlans.full(),
     'coverage' => WorkspaceVerificationPlans.coverage(),
     _ => null,
   };
   if (plan == null) {
-    if (profile == 'full' && hostPlatform == null) {
-      stderr.writeln(
-        'Full verification is supported only on Linux, macOS, and Windows; '
-        'found ${Platform.operatingSystem}.',
-      );
-    }
     _usage();
     exitCode = 64;
     return;

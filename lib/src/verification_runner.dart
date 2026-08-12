@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:tinest_workspace/src/desktop_host.dart';
-
 /// One Melos script executed as part of workspace verification.
 final class VerificationTask {
   /// Creates a task with a human-readable [name] and Melos [script].
@@ -186,27 +184,19 @@ abstract final class WorkspaceVerificationPlans {
   );
 
   /// Full plan in which coverage is the canonical execution of the tests.
-  static VerificationPlan full({
-    required DesktopHost hostPlatform,
-  }) => VerificationPlan(
+  ///
+  /// Takes no host: every gate runs on Linux, macOS, and Windows alike, so a
+  /// passing run means the same thing everywhere.
+  static VerificationPlan full() => const VerificationPlan(
     phases: <VerificationPhase>[
       _generated,
-      const VerificationPhase(
+      VerificationPhase(
         tasks: <VerificationTask>[
           ..._staticTasks,
           ..._coverageTasks,
         ],
       ),
-      if (hostPlatform == DesktopHost.linux)
-        const VerificationPhase(
-          tasks: <VerificationTask>[
-            // Flutter coverage and golden tests both own
-            // build/unit_test_assets. Run them in separate phases so their
-            // cleanup cannot race. Linux is the canonical rendering host.
-            VerificationTask(name: 'goldens', script: 'test:golden'),
-          ],
-        ),
-      const VerificationPhase(
+      VerificationPhase(
         tasks: <VerificationTask>[
           VerificationTask(
             name: 'coverage thresholds',

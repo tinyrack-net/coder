@@ -1,21 +1,16 @@
-import 'package:alchemist/alchemist.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/golden_config.dart';
 import 'support/localization.dart';
 
-/// Configures Linux as the single canonical golden rendering environment.
+/// Pins the platform locale for the app test suite.
 ///
-/// The platform locale is pinned too, so tests that build the real app
-/// resolve the same strings on every machine instead of following the host.
-/// Tests that exercise the language setting override it themselves.
+/// Tests that build the real app then resolve the same strings on every
+/// machine instead of following the host. Tests that exercise the language
+/// setting override it themselves.
 Future<void> testExecutable(Future<void> Function() testMain) {
   TestWidgetsFlutterBinding.ensureInitialized().platformDispatcher
     ..localeTestValue = testLocale
     ..localesTestValue = <Locale>[testLocale];
-  return AlchemistConfig.runWithConfig(
-    config: goldenAlchemistConfig(HostPlatform.current()),
-    run: testMain,
-  );
+  return testMain();
 }

@@ -5,8 +5,8 @@ description: Select, run, and report the correct test, coverage, generated-code,
 
 # Verify Tinest Workspace
 
-Read `AGENTS.md` and `docs/testing.md` before changing code. Treat them as the
-source of truth when this skill and the repository diverge.
+Read `AGENTS.md` before changing code. Treat it as the source of truth when
+this skill and the repository diverge.
 
 ## Develop with the right evidence
 
@@ -25,7 +25,6 @@ dart run melos test:dart
 dart run melos test:flutter
 dart run melos test:contract
 dart run melos test:vertical-slice
-dart run melos test:golden
 dart run melos test:coverage
 ```
 
@@ -35,8 +34,8 @@ the same package tests.
 
 ## Apply change-specific gates
 
-- Run widget tests for UI behavior changes. If pixels change, update and verify
-  the canonical Linux golden.
+- Run widget tests for UI behavior changes. Assert the layout, spacing, and
+  colour values that changed; there is no pixel gate to fall back on.
 - Run contract and real-daemon vertical-slice tests for protocol or daemon
   changes.
 - Provide contract, real-daemon vertical-slice, and widget evidence for
@@ -54,10 +53,17 @@ dart run melos verify
 dart run melos verify:debug
 ```
 
-`verify` runs generated-source drift first, then static checks and coverage.
-Linux additionally runs the canonical goldens before the coverage threshold
-check. Coverage is the canonical execution of package and app tests, so do not
-run an additional aggregate suite merely to duplicate it.
+`verify` runs generated-source drift first, then static checks and coverage,
+then the coverage threshold check. Every one of its gates
+runs natively on Linux, macOS, and Windows, so a passing run means the same
+thing on every host. Coverage is the canonical execution of package and app
+tests, so do not run an additional aggregate suite merely to duplicate it.
+
+Never emulate a host. Do not use Docker, Podman, a container, WSL, a virtual
+machine, or a remote Linux machine to run a gate the local host cannot run. The
+only such gate is the native IBus terminal E2E, which needs a live `ibus-daemon`
+and an X11 session; report it as owned by `linux-ibus-terminal-e2e` rather than
+reproducing it.
 
 `verify:debug` delegates to `test:e2e:desktop`, which selects the current Linux,
 macOS, or Windows Flutter device and runs every shard with an isolated temporary
@@ -78,8 +84,8 @@ Include:
 - line and branch coverage for every package;
 - the Debug target that ran;
 - platforms or checks not run locally and the CI jobs responsible for them;
-- on non-Linux hosts, the canonical goldens and Linux IBus E2E as CI-owned
-  evidence rather than local failures.
+- the native IBus terminal E2E as evidence owned by `linux-ibus-terminal-e2e`,
+  which no host runs locally.
 
 Do not report success when analysis has diagnostics, generated sources drift,
 feature evidence is missing, any package is below 90% line or 80% branch

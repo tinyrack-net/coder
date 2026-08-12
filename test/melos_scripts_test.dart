@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:tinest_workspace/src/desktop_host.dart';
 import 'package:tinest_workspace/src/verification_runner.dart';
 
 void main() {
@@ -77,11 +76,7 @@ void main() {
       contains('embedded-ports:check'),
     );
     expect(
-      _scripts(
-        WorkspaceVerificationPlans.full(
-          hostPlatform: DesktopHost.linux,
-        ),
-      ),
+      _scripts(WorkspaceVerificationPlans.full()),
       contains('embedded-ports:check'),
     );
   });
@@ -96,11 +91,7 @@ void main() {
       contains('design-system:check'),
     );
     expect(
-      _scripts(
-        WorkspaceVerificationPlans.full(
-          hostPlatform: DesktopHost.linux,
-        ),
-      ),
+      _scripts(WorkspaceVerificationPlans.full()),
       contains('design-system:check'),
     );
   });

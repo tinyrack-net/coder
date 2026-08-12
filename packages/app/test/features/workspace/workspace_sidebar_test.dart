@@ -454,7 +454,7 @@ void main() {
   );
 
   // The row paints its own background and focus ring, so both are read off the
-  // AnimatedContainer that wraps the row content rather than off a golden.
+  // AnimatedContainer that wraps the row content.
   AnimatedContainer rowSurface(WidgetTester tester, String label) =>
       tester.widget<AnimatedContainer>(
         find

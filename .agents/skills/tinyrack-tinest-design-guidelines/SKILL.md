@@ -139,11 +139,12 @@ failure would require an unrelated product decision.
 
 ## Verify the Consumer
 
-- Add widget coverage for UI behavior and update the canonical Linux golden
-  whenever pixels change.
+- Add widget coverage for UI behavior whenever pixels change. There is no
+  pixel gate, so assert the token-derived layout, spacing, and colour values
+  directly on the widgets that changed.
 - Verify relevant light/dark, English/Korean/Japanese, text-scale, keyboard,
   pointer, focus, semantics, loading, error, and constrained-layout states.
-- Follow `AGENTS.md`, `docs/testing.md`, and `$verify-tinest-workspace` for the
+- Follow `AGENTS.md` and `$verify-tinest-workspace` for the
   complete Tinest gates. Do not report completion while token literals, private
   package imports, or local recreations of public TR components remain in the
   changed surface.

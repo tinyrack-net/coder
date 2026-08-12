@@ -4,6 +4,7 @@ import 'package:app/src/features/boot/presentation/boot_splash.dart';
 import 'package:app/src/features/boot/presentation/bootstrap_gate.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -114,6 +115,28 @@ void main() {
       final mark = tester.widget<Image>(find.byType(Image));
       expect((mark.image as AssetImage).assetName, contains('brand/tinest'));
       expect(mark.width, TinestLayoutMetrics.bootBrandMarkSize);
+    });
+
+    testWidgets('resolves the brand mark instead of painting a bare surface', (
+      tester,
+    ) async {
+      // An asset image resolves off the test's fake async, so a splash that
+      // never drives a real async frame paints the surface with the mark
+      // still missing. Declaring the widget is not enough: this asserts the
+      // render object actually holds decoded pixels.
+      await tester.pumpWidget(const MaterialApp(home: BootSplash()));
+
+      await tester.runAsync(() async {
+        for (final element in find.byType(Image).evaluate()) {
+          await precacheImage((element.widget as Image).image, element);
+        }
+      });
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.renderObject<RenderImage>(find.byType(RawImage)).image,
+        isNotNull,
+      );
     });
   });
 }

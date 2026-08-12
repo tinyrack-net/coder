@@ -4,7 +4,6 @@
 .DS_Store
 build/
 coverage/
-**/test/golden/failures/
 *.iml
 *.log
 **/.flutter-plugins-dependencies

@@ -12,8 +12,8 @@ dart run melos verify
 dart run melos verify:debug
 ```
 
-See [`docs/testing.md`](docs/testing.md) for the individual TDD, contract,
-widget, golden, coverage, architecture, and Debug E2E commands.
+Run `dart run melos list --all` for the individual TDD, contract, widget,
+coverage, architecture, and Debug E2E commands.
 
 Run the standalone daemon. The seeded OpenAI provider reads
 `OPENAI_API_KEY`; additional providers can use an environment variable or a
@@ -67,23 +67,19 @@ flutter run -d chrome -t lib/main_web.dart
 The web build is a client only, hosted at `https://tinest.tinyrack.net`. It
 connects to a daemon you run yourself, which has to allow the page's origin
 first. A daemon on your own machine also works, after granting the browser's
-Local Network Access permission once. See
-[`docs/remote-daemon.md`](docs/remote-daemon.md).
+Local Network Access permission once.
 
-Release builds, packaging, and the winget and Homebrew channels are described
-in [`docs/releasing.md`](docs/releasing.md).
+Release builds, packaging, and the winget and Homebrew channels are driven by
+`.github/workflows/pipeline.yml`.
 
-[`docs/dependencies.md`](docs/dependencies.md) explains how the single-lockfile
-workspace resolves, and which upgrades `flutter pub outdated` offers that are
-actually blocked by the Flutter SDK or an upstream package.
+`flutter pub outdated` offers upgrades that are actually blocked by the Flutter
+SDK or an upstream package; check the real constraint before bumping anything.
 
 The daemon intentionally does not implement TLS or certificate bypasses. Keep
 it bound to loopback when terminating TLS in a local reverse proxy. Binding to
 all interfaces exposes the plain daemon port, which must be isolated by the
-operator's firewall when TLS is mandatory. See
-[`docs/remote-daemon.md`](docs/remote-daemon.md) for Caddy/Nginx WebSocket,
-authentication-header, and development-data reset examples.
+operator's firewall when TLS is mandatory.
 
-See [`docs/mcp.md`](docs/mcp.md) for configuring external MCP servers, the
-secret reference syntax, and the trust implications of a repository-declared
-`.tinest/config.json`.
+External MCP servers are configured through the Settings screen or a
+repository-declared `.tinest/config.json`, which is trusted code and should be
+reviewed like any other dependency.
