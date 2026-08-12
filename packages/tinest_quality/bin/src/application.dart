@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cliweave/cliweave.dart';
 import 'package:tinest_quality/src/architecture_verifier.dart';
 import 'package:tinest_quality/src/ci_change_scope.dart';
 import 'package:tinest_quality/src/feature_manifest.dart';
@@ -33,14 +34,239 @@ enum _TinestQualityCommand {
   const _TinestQualityCommand(this.cliName);
 
   final String cliName;
+}
 
-  static _TinestQualityCommand? parse(String value) {
-    for (final command in values) {
-      if (command.cliName == value) return command;
-    }
-    return null;
+typedef _CommonFlags = ({int? jobs, String? reportPath});
+
+final class _QualityInvocation {
+  const _QualityInvocation({
+    required this.command,
+    required this.options,
+    this.check = false,
+    this.scopes = const <String>{},
+  });
+
+  final _TinestQualityCommand command;
+  final QualityCommandOptions options;
+  final bool check;
+  final Set<String> scopes;
+}
+
+final class _QualityCliContext implements CommandContext {
+  const _QualityCliContext({
+    required this.process,
+    required this.environment,
+    required this.detectedJobs,
+    required this.out,
+    required this.error,
+  });
+
+  @override
+  final RunProcess process;
+  final Map<String, String> environment;
+  final int detectedJobs;
+  final QualityOutput out;
+  final QualityOutput error;
+
+  Future<void> execute(
+    _TinestQualityCommand command,
+    _CommonFlags common, {
+    bool check = false,
+    List<String> scopes = const <String>[],
+  }) async {
+    final options = QualityCommandOptions(
+      jobs: resolveQualityJobs(
+        cliJobs: common.jobs,
+        environment: environment,
+        detectedJobs: detectedJobs,
+      ),
+      reportPath: common.reportPath,
+    );
+    process.exitCode = await _executeTinestQuality(
+      _QualityInvocation(
+        command: command,
+        options: options,
+        check: check,
+        scopes: Set<String>.unmodifiable(scopes),
+      ),
+      out: out,
+      error: error,
+    );
   }
 }
+
+final class _CallbackWriteStream implements WriteStream {
+  const _CallbackWriteStream(this.output);
+
+  final QualityOutput output;
+
+  @override
+  bool get isTTY => false;
+
+  @override
+  void clearLine(int dir) {}
+
+  @override
+  void cursorTo(int column) {}
+
+  @override
+  void write(String chunk) => output(chunk);
+}
+
+int _positiveInt(_QualityCliContext _, String value) {
+  final parsed = int.tryParse(value);
+  if (parsed == null || parsed < 1) {
+    throw const FormatException('Value must be a positive integer.');
+  }
+  return parsed;
+}
+
+String _nonEmptyString(_QualityCliContext _, String value) {
+  if (value.isEmpty) throw const FormatException('Value must not be empty.');
+  return value;
+}
+
+FlagSet<_CommonFlags, _QualityCliContext> _commonFlags() =>
+    FlagSet.one(
+          ParsedFlag.optional<int, _QualityCliContext>(
+            name: 'jobs',
+            brief: 'Maximum concurrent job count',
+            parse: _positiveInt,
+            placeholder: 'count',
+          ),
+        )
+        .and(
+          ParsedFlag.optional<String, _QualityCliContext>(
+            name: 'report',
+            brief: 'Write a machine-readable timing report',
+            parse: _nonEmptyString,
+            placeholder: 'path',
+          ),
+        )
+        .map((values) => (jobs: values.$1, reportPath: values.$2));
+
+Command<_QualityCliContext> _plainCommand(
+  _TinestQualityCommand command,
+  String brief,
+) => buildCommand(
+  docs: CommandDocs(brief: brief),
+  parameters: CommandParameters(
+    flags: _commonFlags(),
+    positional: PositionalSet.none(),
+  ),
+  func: (context, flags, _) => context.execute(command, flags),
+);
+
+final Command<_QualityCliContext> _generateCommand = buildCommand(
+  docs: const CommandDocs(brief: 'Regenerate checked-in sources'),
+  parameters: CommandParameters(
+    flags: _commonFlags()
+        .and(
+          BooleanFlag.required<_QualityCliContext>(
+            name: 'check',
+            brief: 'Fail when generated sources are stale',
+            withNegated: false,
+          ),
+        )
+        .map((values) => (common: values.$1, check: values.$2)),
+    positional: PositionalSet.none(),
+  ),
+  func: (context, flags, _) => context.execute(
+    _TinestQualityCommand.generate,
+    flags.common,
+    check: flags.check,
+  ),
+);
+
+Command<_QualityCliContext> _scopedCommand(
+  _TinestQualityCommand command,
+  String brief,
+) => buildCommand(
+  docs: CommandDocs(brief: brief),
+  parameters: CommandParameters(
+    flags: _commonFlags()
+        .and(
+          ParsedFlag.variadic<String, _QualityCliContext>(
+            name: 'scope',
+            brief: 'Limit execution to a workspace package',
+            parse: _nonEmptyString,
+            placeholder: 'package',
+          ),
+        )
+        .map((values) => (common: values.$1, scopes: values.$2)),
+    positional: PositionalSet.none(),
+  ),
+  func: (context, flags, _) => context.execute(
+    command,
+    flags.common,
+    scopes: flags.scopes,
+  ),
+);
+
+RouteMap<_QualityCliContext> _qualityRoutes() => buildRouteMap(
+  docs: RouteMapDocs(
+    brief: 'Tinest workspace quality commands',
+    hideRoute: <String, bool>{
+      for (final command in _TinestQualityCommand.values)
+        if (command.cliName.startsWith('_')) command.cliName: true,
+    },
+  ),
+  routes: <String, RoutingTarget<_QualityCliContext>>{
+    'generate': _generateCommand,
+    'test': _plainCommand(_TinestQualityCommand.test, 'Run workspace tests'),
+    'verify': _plainCommand(
+      _TinestQualityCommand.verify,
+      'Run the complete workspace verification suite',
+    ),
+    'e2e': _plainCommand(
+      _TinestQualityCommand.e2e,
+      'Run the desktop Debug E2E suite',
+    ),
+    'ci-scope': _plainCommand(
+      _TinestQualityCommand.ciScope,
+      'Resolve the conservative pull-request scope',
+    ),
+    '_static-checks': _plainCommand(
+      _TinestQualityCommand.staticChecks,
+      'Run static workspace checks',
+    ),
+    '_architecture-check': _plainCommand(
+      _TinestQualityCommand.architectureCheck,
+      'Verify package architecture',
+    ),
+    '_features-check': _plainCommand(
+      _TinestQualityCommand.featuresCheck,
+      'Verify feature evidence',
+    ),
+    '_test-dart': _scopedCommand(
+      _TinestQualityCommand.testDart,
+      'Run Dart package tests',
+    ),
+    '_test-flutter': _plainCommand(
+      _TinestQualityCommand.testFlutter,
+      'Run Flutter package tests',
+    ),
+    '_coverage-dart': _scopedCommand(
+      _TinestQualityCommand.coverageDart,
+      'Run Dart package coverage',
+    ),
+    '_coverage-dart-package': _plainCommand(
+      _TinestQualityCommand.coverageDartPackage,
+      'Run coverage for the current Dart package',
+    ),
+    '_coverage-flutter': _plainCommand(
+      _TinestQualityCommand.coverageFlutter,
+      'Run Flutter package coverage',
+    ),
+  },
+);
+
+int _normalizeCliExitCode(int? code) => switch (code) {
+  null || ExitCode.success => 0,
+  ExitCode.unknownCommand || ExitCode.invalidArgument => 64,
+  final int value when value < 0 => 70,
+  final int value => value,
+};
 
 /// Runs the Tinest repository-quality command and returns a process exit code.
 Future<int> runTinestQuality(
@@ -49,39 +275,50 @@ Future<int> runTinestQuality(
   QualityOutput? error,
 }) async {
   final writeError = error ?? _writeError;
-  if (arguments.isEmpty) return _usage(writeError);
-  final command = _TinestQualityCommand.parse(arguments.first);
-  if (command == null) return _usage(writeError);
-  late final QualityCommandOptions options;
-  try {
-    options = QualityCommandOptions.parse(
-      arguments.skip(1).toList(growable: false),
-      environment: Platform.environment,
-      detectedJobs: Platform.numberOfProcessors,
-    );
-  } on FormatException catch (failure) {
-    writeError(failure.message);
-    return _usage(writeError);
-  }
-  final rest = options.remaining;
+  final process = RunProcess(
+    stdout: _CallbackWriteStream(out),
+    stderr: _CallbackWriteStream(writeError),
+  );
+  final context = _QualityCliContext(
+    process: process,
+    environment: Platform.environment,
+    detectedJobs: Platform.numberOfProcessors,
+    out: out,
+    error: writeError,
+  );
+  final application = buildApplication(
+    _qualityRoutes(),
+    ApplicationConfiguration(
+      name: 'tinest-quality',
+      determineExitCode: (failure) => failure is FormatException ? 64 : 70,
+    ),
+  );
+  await run(application, arguments, RunContext.direct(context));
+  return _normalizeCliExitCode(process.exitCode);
+}
+
+Future<int> _executeTinestQuality(
+  _QualityInvocation invocation, {
+  required QualityOutput out,
+  required QualityOutput error,
+}) async {
+  final writeError = error;
+  final command = invocation.command;
+  final options = invocation.options;
   switch (command) {
     case _TinestQualityCommand.generate:
-      if (rest.any((argument) => argument != '--check')) {
-        return _usage(writeError);
-      }
       return _runMeasured(
         name: 'generate',
         jobs: options.jobs,
         reportPath: options.reportPath,
         body: () => _generate(
-          check: rest.contains('--check'),
+          check: invocation.check,
           jobs: options.jobs,
           out: out,
           error: writeError,
         ),
       );
     case _TinestQualityCommand.test:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _runPlan(
         WorkspaceVerificationPlans.tests(jobs: options.jobs),
         jobs: options.jobs,
@@ -90,7 +327,6 @@ Future<int> runTinestQuality(
         error: writeError,
       );
     case _TinestQualityCommand.verify:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _runPlan(
         WorkspaceVerificationPlans.full(jobs: options.jobs),
         jobs: options.jobs,
@@ -99,7 +335,6 @@ Future<int> runTinestQuality(
         error: writeError,
       );
     case _TinestQualityCommand.e2e:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _runMeasured(
         name: 'e2e',
         jobs: options.jobs,
@@ -118,7 +353,6 @@ Future<int> runTinestQuality(
         ),
       );
     case _TinestQualityCommand.ciScope:
-      if (rest.isNotEmpty) return _usage(writeError);
       final files = await stdin
           .transform(utf8.decoder)
           .transform(const LineSplitter())
@@ -126,7 +360,6 @@ Future<int> runTinestQuality(
       out(CiChangeScope.forPullRequest(files).outputValue);
       return 0;
     case _TinestQualityCommand.staticChecks:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _runPlan(
         WorkspaceVerificationPlans.staticChecks(jobs: options.jobs),
         jobs: options.jobs,
@@ -135,25 +368,19 @@ Future<int> runTinestQuality(
         error: writeError,
       );
     case _TinestQualityCommand.architectureCheck:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _architectureCheck(out, writeError);
     case _TinestQualityCommand.featuresCheck:
-      if (rest.isNotEmpty) return _usage(writeError);
       return _featuresCheck(out, writeError);
     case _TinestQualityCommand.testDart:
-      if (rest.any((argument) => !argument.startsWith('--scope='))) {
-        return _usage(writeError);
-      }
       return _runDartPackages(
         jobs: options.jobs,
-        scopes: _scopes(rest),
+        scopes: invocation.scopes,
         coverage: false,
         reportPath: options.reportPath,
         out: out,
         error: writeError,
       );
     case _TinestQualityCommand.testFlutter:
-      if (rest.isNotEmpty) return _usage(writeError);
       final seed = _newTestSeed();
       return _runMeasured(
         name: 'Flutter tests',
@@ -174,19 +401,15 @@ Future<int> runTinestQuality(
         ),
       );
     case _TinestQualityCommand.coverageDart:
-      if (rest.any((argument) => !argument.startsWith('--scope='))) {
-        return _usage(writeError);
-      }
       return _runDartPackages(
         jobs: options.jobs,
-        scopes: _scopes(rest),
+        scopes: invocation.scopes,
         coverage: true,
         reportPath: options.reportPath,
         out: out,
         error: writeError,
       );
     case _TinestQualityCommand.coverageDartPackage:
-      if (rest.isNotEmpty) return _usage(writeError);
       final seed = _newTestSeed();
       Directory('coverage').createSync(recursive: true);
       final packageName =
@@ -206,7 +429,6 @@ Future<int> runTinestQuality(
         error: writeError,
       );
     case _TinestQualityCommand.coverageFlutter:
-      if (rest.isNotEmpty) return _usage(writeError);
       final seed = _newTestSeed();
       return _runMeasured(
         name: 'Flutter coverage',
@@ -349,10 +571,6 @@ int _featuresCheck(QualityOutput out, QualityOutput error) {
   }
   return 1;
 }
-
-Set<String> _scopes(List<String> arguments) => <String>{
-  for (final argument in arguments) argument.substring('--scope='.length),
-};
 
 Future<int> _runDartPackages({
   required int jobs,
@@ -706,15 +924,6 @@ Future<int> _runProcess(
     error(failure);
     return 127;
   }
-}
-
-int _usage(QualityOutput error) {
-  error(
-    'Usage: dart run tinest_quality '
-    '<generate|test|verify|e2e|ci-scope> '
-    '[--jobs=N] [--report=path]',
-  );
-  return 64;
 }
 
 void _writeOutput(Object? value) => stdout.writeln(value);

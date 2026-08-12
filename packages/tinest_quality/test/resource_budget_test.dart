@@ -2,47 +2,43 @@ import 'package:test/test.dart';
 import 'package:tinest_quality/src/resource_budget.dart';
 
 void main() {
-  group('QualityCommandOptions', () {
+  group('resolveQualityJobs', () {
     test('uses detected logical processors by default', () {
-      final options = QualityCommandOptions.parse(
-        const <String>['--check'],
+      final jobs = resolveQualityJobs(
+        cliJobs: null,
         environment: const <String, String>{},
         detectedJobs: 32,
       );
 
-      expect(options.jobs, 32);
-      expect(options.remaining, const <String>['--check']);
-      expect(options.reportPath, isNull);
+      expect(jobs, 32);
     });
 
     test('CLI jobs override the environment', () {
-      final options = QualityCommandOptions.parse(
-        const <String>['--jobs=8', '--report=timings.json', '--check'],
+      final jobs = resolveQualityJobs(
+        cliJobs: 8,
         environment: const <String, String>{'TINEST_JOBS': '4'},
         detectedJobs: 32,
       );
 
-      expect(options.jobs, 8);
-      expect(options.reportPath, 'timings.json');
-      expect(options.remaining, const <String>['--check']);
+      expect(jobs, 8);
     });
 
     test('uses a positive environment override', () {
-      final options = QualityCommandOptions.parse(
-        const <String>[],
+      final jobs = resolveQualityJobs(
+        cliJobs: null,
         environment: const <String, String>{'TINEST_JOBS': '4'},
         detectedJobs: 32,
       );
 
-      expect(options.jobs, 4);
+      expect(jobs, 4);
     });
 
-    test('rejects zero, negative, and non-numeric job counts', () {
+    test('rejects invalid environment job counts', () {
       for (final value in <String>['0', '-1', 'many']) {
         expect(
-          () => QualityCommandOptions.parse(
-            <String>['--jobs=$value'],
-            environment: const <String, String>{},
+          () => resolveQualityJobs(
+            cliJobs: null,
+            environment: <String, String>{'TINEST_JOBS': value},
             detectedJobs: 8,
           ),
           throwsFormatException,

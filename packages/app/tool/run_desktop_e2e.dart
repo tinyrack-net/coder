@@ -7,24 +7,22 @@ import 'package:app/src/devtools/desktop_host.dart';
 import 'package:app/src/devtools/io_windows_build_environment.dart';
 import 'package:app/src/devtools/windows_build_environment.dart';
 
+import 'src/desktop_e2e_cli.dart';
+
 Future<void> main(List<String> arguments) async {
+  exitCode = await runDesktopE2eCli(
+    arguments,
+    detectedJobs: Platform.numberOfProcessors,
+    defaultSeed: DateTime.now().microsecondsSinceEpoch & 0x7fffffff,
+    execute: _runDesktopE2e,
+  );
+}
+
+Future<int> _runDesktopE2e(DesktopE2eOptions options) async {
   final host = DesktopHost.fromOperatingSystem(Platform.operatingSystem);
   if (host == null) {
     stderr.writeln('Desktop E2E does not support ${Platform.operatingSystem}.');
-    exitCode = 64;
-    return;
-  }
-  late final DesktopE2eOptions options;
-  try {
-    options = DesktopE2eOptions.parse(
-      arguments,
-      detectedJobs: Platform.numberOfProcessors,
-      defaultSeed: DateTime.now().microsecondsSinceEpoch & 0x7fffffff,
-    );
-  } on Object catch (error) {
-    stderr.writeln(error);
-    exitCode = 64;
-    return;
+    return 64;
   }
 
   late final Map<String, String> environment;
@@ -32,8 +30,7 @@ Future<void> main(List<String> arguments) async {
     environment = await resolveWindowsBuildEnvironment();
   } on WindowsBuildToolsException catch (error) {
     stderr.writeln(error);
-    exitCode = 78;
-    return;
+    return 78;
   }
 
   final stopwatch = Stopwatch()..start();
@@ -84,7 +81,7 @@ Future<void> main(List<String> arguments) async {
       }),
     );
   }
-  if (result.exitCode != 0) exitCode = result.exitCode;
+  return result.exitCode;
 }
 
 final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
