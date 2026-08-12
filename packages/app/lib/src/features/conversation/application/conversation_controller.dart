@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/composer_controller.dart';
+import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:client/client.dart';
 import 'package:protocol/protocol.dart';
@@ -133,6 +134,7 @@ class ConversationController extends _$ConversationController {
     // Install notification listeners before the snapshot read so an update
     // cannot land in the reconnect gap between those two operations.
     final goal = await api.sessions.getGoal(sessionId);
+    _syncPendingFirstTurn(timeline);
     ref
       ..onDispose(() => unawaited(_timelineEvents?.cancel()))
       ..onDispose(() => unawaited(_approvalEvents?.cancel()))
@@ -481,10 +483,11 @@ class ConversationController extends _$ConversationController {
   }
 
   void _handleTimeline(TimelineEventDto event) {
+    if (event.sessionId != _sessionId) return;
+    _syncPendingFirstTurn(<TimelineEventDto>[event]);
     final current = _currentEventState;
     if (current == null) return;
-    if (event.sessionId != _sessionId ||
-        current.timeline.any((item) => item.sequence == event.sequence)) {
+    if (current.timeline.any((item) => item.sequence == event.sequence)) {
       return;
     }
     final approvals = Map<String, ApprovalRequestDto>.of(current.approvals);
@@ -501,6 +504,27 @@ class ConversationController extends _$ConversationController {
         questions: _pendingQuestions(timeline),
       ),
     );
+  }
+
+  /// Resolves the optimistic first prompt from durable timeline evidence.
+  ///
+  /// The start-turn RPC only means that the daemon accepted the request. The
+  /// user bubble is authoritative once the timeline echoes `user.message`,
+  /// while a terminal turn event is the authoritative pre-echo failure.
+  void _syncPendingFirstTurn(Iterable<TimelineEventDto> events) {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    final pending = ref.read(pendingFirstTurnsProvider)[sessionId];
+    if (pending == null) return;
+    if (events.any((event) => event.type == 'user.message')) {
+      ref.read(pendingFirstTurnsProvider.notifier).clear(sessionId);
+      return;
+    }
+    if (events.any(
+      (event) => event.type == 'turn.failed' || event.type == 'turn.cancelled',
+    )) {
+      ref.read(pendingFirstTurnsProvider.notifier).markFailed(sessionId);
+    }
   }
 
   void _handleApproval(ApprovalRequestDto approval) {

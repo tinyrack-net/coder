@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:app/src/app/composition/app_primitives.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:dropwell/dropwell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protocol/protocol.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
@@ -38,12 +43,17 @@ void main() {
     worktreeId: checkout.id,
   ).location;
 
-  Future<GoRouter> pumpDraft(WidgetTester tester, FakeTinestApi api) async {
+  Future<GoRouter> pumpDraft(
+    WidgetTester tester,
+    FakeTinestApi api, {
+    AttachmentInputPort? attachmentInput,
+  }) async {
     final router = GoRouter(initialLocation: location, routes: $appRoutes);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          attachmentInputProvider.overrideWithValue(attachmentInput),
         ],
         child: MediaQuery(
           data: MediaQueryData(
@@ -66,7 +76,7 @@ void main() {
   }
 
   testWidgets(
-    'a failed first turn keeps the prompt in the queued list',
+    'a failed first turn restores the prompt instead of queueing it',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -74,7 +84,11 @@ void main() {
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
       )..startTurnError = Exception('daemon rejected the turn');
-      final router = await pumpDraft(tester, api);
+      final router = await pumpDraft(
+        tester,
+        api,
+        attachmentInput: const _FailedTurnAttachmentInput(),
+      );
       addTearDown(router.dispose);
 
       const prompt = 'Prompt that must not be lost';
@@ -82,22 +96,37 @@ void main() {
         find.byKey(const ValueKey('session-composer-input')),
         prompt,
       );
+      await tester.tap(find.byKey(const ValueKey('session-composer-attach')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('fixture.txt'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       for (var frame = 0; frame < 8; frame += 1) {
         await tester.pump();
       }
 
-      // The chat room opened despite the failure, and the prompt survived
-      // into the queued-turn list rather than disappearing.
+      // The chat room opened despite the failure, and the prompt returned to
+      // the composer rather than becoming a normal follow-up queue entry.
       expect(find.byType(ChatTimelineView).hitTestable(), findsOneWidget);
       expect(api.attemptedPrompts, contains(prompt));
       expect(
         find.byKey(const ValueKey<String>('queued-turn-0')).hitTestable(),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text(prompt, findRichText: true), findsWidgets);
+      expect(
+        tester
+            .widget<TRTextField>(
+              find.byKey(const ValueKey('session-composer-input')),
+            )
+            .controller!
+            .text,
+        prompt,
+      );
+      expect(find.textContaining('fixture.txt'), findsOneWidget);
     },
-    tags: const <String>['feature_test__workspace_async_loading__widget'],
+    tags: const <String>[
+      'feature_test__workspace_async_loading__widget',
+      'feature_test__turn_execution__widget',
+    ],
   );
 
   test('the pending first-turn registry records and forgets prompts', () {
@@ -136,4 +165,29 @@ final class _FixedClock implements AppClock {
 
   @override
   DateTime nowUtc() => value;
+}
+
+final class _FailedTurnAttachmentInput implements AttachmentInputPort {
+  const _FailedTurnAttachmentInput();
+
+  @override
+  bool get supportsDrop => false;
+
+  @override
+  Future<List<PendingAttachment>> pickFiles() async => <PendingAttachment>[
+    PendingAttachment.fromBytes(
+      fileName: 'fixture.txt',
+      mimeType: 'text/plain',
+      bytes: Uint8List.fromList(<int>[1, 2, 3]),
+    ),
+  ];
+
+  @override
+  Future<List<PendingAttachment>> pasteFiles() async =>
+      const <PendingAttachment>[];
+
+  @override
+  Future<List<PendingAttachment>> droppedFiles(
+    List<DropwellFile> files,
+  ) async => const <PendingAttachment>[];
 }

@@ -93,14 +93,15 @@ final class SessionStarter {
       await _ref.read(conversation.future);
       await _ref
           .read(conversation.notifier)
-          .startTurn(prompt, attachments: attachments);
-      _ref.read(pendingFirstTurnsProvider.notifier).clear(session.id);
+          .startTurn(
+            prompt,
+            attachments: attachments,
+            queueWhenBusy: false,
+          );
     } on Exception {
       // The session exists but its first turn did not start. The conversation
-      // state auto-disposes with this temporary listener, so the prompt is
-      // kept in the pending registry; the mounted conversation pane converts
-      // it into a queued turn, whose error and retry affordances become the
-      // visible failure surface instead of a silent drop.
+      // state auto-disposes with this temporary listener, so the prompt stays
+      // in the pending registry until the mounted composer restores it.
       _ref.read(pendingFirstTurnsProvider.notifier).markFailed(session.id);
     } finally {
       conversationHandle.close();

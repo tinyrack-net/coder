@@ -125,6 +125,58 @@ void _registerConversationControllerTests() {
   );
 
   test(
+    'pending first prompts follow terminal timeline events',
+    () async {
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+      container
+          .read(pendingFirstTurnsProvider.notifier)
+          .put(agent.id, 'first prompt');
+
+      api.emit(
+        TimelineClientEvent(
+          TimelineEventDto(
+            sessionId: agent.id,
+            sequence: 1,
+            turnId: 'first-turn',
+            type: 'turn.failed',
+            data: const <String, dynamic>{'error': 'runner setup failed'},
+            createdAt: now,
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(pendingFirstTurnsProvider)[agent.id]!.failed,
+        isTrue,
+      );
+
+      api.emit(
+        TimelineClientEvent(
+          TimelineEventDto(
+            sessionId: agent.id,
+            sequence: 2,
+            turnId: 'retry-turn',
+            type: 'user.message',
+            data: const <String, dynamic>{'text': 'first prompt'},
+            createdAt: now,
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(pendingFirstTurnsProvider), isEmpty);
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
     'queued prompts start one per turn and survive a failed send',
     () async {
       final api = FakeTinestApi(agents: <SessionDto>[agent]);

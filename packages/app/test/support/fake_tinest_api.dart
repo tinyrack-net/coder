@@ -637,8 +637,18 @@ final class FakeTinestApi
   /// Awaited before a turn starts, to hold one send in flight.
   Completer<void>? startTurnGate;
 
-  /// Emits the daemon notifications that make a newly-started turn visible.
+  /// Whether [startTurn] emits the session-running notification.
+  ///
+  /// Tests that need to hold a session in its busy state can opt in without
+  /// suppressing the durable user-message echo below.
   bool emitTurnStartEvents = false;
+
+  /// Whether a successful turn emits its durable user-message echo.
+  ///
+  /// The real daemon writes this event for every accepted turn. Keeping it
+  /// enabled by default makes widget tests exercise the same optimistic
+  /// message lifecycle as the production client.
+  bool emitUserMessageEcho = true;
 
   /// Thrown instead of noting pending input.
   Exception? notePendingInputError;
@@ -2064,6 +2074,8 @@ final class FakeTinestApi
           ),
         );
       }
+    }
+    if (emitUserMessageEcho) {
       emitTimeline(sessionId, 'user.message', <String, dynamic>{
         'text': prompt,
         'attachments': const <Map<String, dynamic>>[],
