@@ -1329,11 +1329,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/termworld"
-      ref: bd114b5c46c3848bc5e8cf5fd5263004329b2879
-      resolved-ref: bd114b5c46c3848bc5e8cf5fd5263004329b2879
+      ref: be4187bfb087e9b4e559b27efc233522bf7c9fd1
+      resolved-ref: be4187bfb087e9b4e559b27efc233522bf7c9fd1
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
-    version: "0.4.1"
+    version: "0.4.2"
   test:
     dependency: transitive
     description:
