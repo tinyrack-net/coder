@@ -159,9 +159,28 @@ void main() {
     expect(_commands(tests), contains(contains('_test-dart --jobs=4')));
     expect(_commands(tests), contains(contains('_test-flutter --jobs=4')));
     expect(_commands(tests), everyElement(contains('--report=')));
-    expect(_commands(full), contains(contains('_coverage-dart --jobs=32')));
-    expect(_commands(full), contains(contains('_coverage-flutter --jobs=32')));
+    expect(_commands(full), contains(contains('_coverage-dart --jobs=21')));
+    expect(_commands(full), contains(contains('_coverage-flutter --jobs=11')));
     expect(_commands(full), contains(contains('exec -c 16')));
+  });
+
+  test('full verification overlaps Dart and Flutter coverage', () {
+    final full = WorkspaceVerificationPlans.full(jobs: 8);
+    final coveragePhase = full.phases.singleWhere(
+      (phase) => phase.tasks.any((task) => task.name == 'Dart coverage'),
+    );
+
+    expect(
+      coveragePhase.tasks.map((task) => task.name),
+      <String>['Dart coverage', 'Flutter coverage'],
+    );
+    expect(
+      coveragePhase.tasks.fold<int>(
+        0,
+        (slots, task) => slots + task.cpuSlots,
+      ),
+      8,
+    );
   });
 
   test('canonical plans run each suite once on every host', () {

@@ -181,6 +181,14 @@ final class VerificationRunner {
 VerificationTask _dart(String name, List<String> arguments) =>
     VerificationTask(name: name, executable: 'dart', arguments: arguments);
 
+({int dart, int flutter}) _splitCoverageJobs(int jobs) {
+  // Dart owns several package runners and the longest coverage suite, so keep
+  // twice the capacity there while Flutter runs concurrently.
+  final flutterJobs = jobs == 1 ? 1 : (jobs / 3).ceil();
+  final dartJobs = jobs == 1 ? 1 : jobs - flutterJobs;
+  return (dart: dartJobs, flutter: flutterJobs);
+}
+
 /// Canonical plans used by the four public Melos quality commands.
 abstract final class WorkspaceVerificationPlans {
   static VerificationPhase _generated(int jobs) => VerificationPhase(
@@ -303,54 +311,53 @@ abstract final class WorkspaceVerificationPlans {
   );
 
   /// Runs the complete static and coverage gates on every supported host.
-  static VerificationPlan full({required int jobs}) => VerificationPlan(
-    phases: <VerificationPhase>[
-      _generated(jobs),
-      ...staticChecks(jobs: jobs).phases,
-      VerificationPhase(
-        tasks: <VerificationTask>[
-          VerificationTask(
-            name: 'Dart coverage',
-            executable: 'dart',
-            arguments: <String>[
+  static VerificationPlan full({required int jobs}) {
+    final (dart: dartJobs, flutter: flutterJobs) = _splitCoverageJobs(jobs);
+    return VerificationPlan(
+      phases: <VerificationPhase>[
+        _generated(jobs),
+        ...staticChecks(jobs: jobs).phases,
+        VerificationPhase(
+          tasks: <VerificationTask>[
+            VerificationTask(
+              name: 'Dart coverage',
+              executable: 'dart',
+              arguments: <String>[
+                'run',
+                'tinest_quality',
+                '_coverage-dart',
+                '--jobs=$dartJobs',
+                '--report=build/quality/internal/coverage-dart.json',
+              ],
+              cpuSlots: dartJobs,
+            ),
+            VerificationTask(
+              name: 'Flutter coverage',
+              executable: 'dart',
+              arguments: <String>[
+                'run',
+                'tinest_quality',
+                '_coverage-flutter',
+                '--jobs=$flutterJobs',
+                '--report=build/quality/internal/coverage-flutter.json',
+              ],
+              cpuSlots: flutterJobs,
+              exclusiveResources: const <String>{'flutter-build'},
+            ),
+          ],
+        ),
+        VerificationPhase(
+          tasks: <VerificationTask>[
+            _dart('coverage thresholds', const <String>[
               'run',
-              'tinest_quality',
-              '_coverage-dart',
-              '--jobs=$jobs',
-              '--report=build/quality/internal/coverage-dart.json',
-            ],
-            cpuSlots: jobs,
-          ),
-        ],
-      ),
-      VerificationPhase(
-        tasks: <VerificationTask>[
-          VerificationTask(
-            name: 'Flutter coverage',
-            executable: 'dart',
-            arguments: <String>[
-              'run',
-              'tinest_quality',
-              '_coverage-flutter',
-              '--jobs=$jobs',
-              '--report=build/quality/internal/coverage-flutter.json',
-            ],
-            cpuSlots: jobs,
-            exclusiveResources: const <String>{'flutter-build'},
-          ),
-        ],
-      ),
-      VerificationPhase(
-        tasks: <VerificationTask>[
-          _dart('coverage thresholds', const <String>[
-            'run',
-            'tinyrack_workspace',
-            'coverage-check',
-            '--line=90',
-            '--branch=80',
-          ]),
-        ],
-      ),
-    ],
-  );
+              'tinyrack_workspace',
+              'coverage-check',
+              '--line=90',
+              '--branch=80',
+            ]),
+          ],
+        ),
+      ],
+    );
+  }
 }
