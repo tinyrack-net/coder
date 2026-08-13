@@ -4316,12 +4316,11 @@ class _ExecProvider implements ModelProvider {
   ) async* {
     Map<String, dynamic> resultFor(String callId) => Map<String, dynamic>.from(
       jsonDecode(
-            request.history
-                .whereType<ToolResultConversationItem>()
-                .firstWhere((item) => item.callId == callId)
-                .output,
-          )
-          as Map,
+        request.history
+            .whereType<ToolResultConversationItem>()
+            .firstWhere((item) => item.callId == callId)
+            .output,
+      ) as Map,
     );
 
     if (_round++ == 0) {

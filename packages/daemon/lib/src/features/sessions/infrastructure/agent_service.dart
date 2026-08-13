@@ -32,11 +32,10 @@ abstract interface class ExternalToolSource {
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
 /// Resolves the Lua cells one tinest session owns in its current worktree.
-typedef LuaHostFactory =
-    LuaCodeModeHost Function(
-      String sessionId,
-      String workingDirectory,
-    );
+typedef LuaHostFactory = LuaCodeModeHost Function(
+  String sessionId,
+  String workingDirectory,
+);
 
 /// Coordinates model-turn execution and lifecycle for tinest sessions.
 class SessionTurnCoordinator implements SessionTurnPort {

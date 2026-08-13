@@ -260,24 +260,20 @@ void main() {
         onSurfaced: (_) {},
       );
 
-      final patch =
-          jsonDecode(
-                (await tool.execute(<String, dynamic>{
-                  'query': 'grammar patch',
-                }, context())).output,
-              )
-              as Map<String, dynamic>;
+      final patch = jsonDecode(
+        (await tool.execute(<String, dynamic>{
+          'query': 'grammar patch',
+        }, context())).output,
+      ) as Map<String, dynamic>;
       final patchSpec = (patch['tools']! as List<dynamic>).first as Map;
       expect(patchSpec['type'], 'custom');
       expect((patchSpec['format']! as Map)['syntax'], 'lark');
 
-      final clock =
-          jsonDecode(
-                (await tool.execute(<String, dynamic>{
-                  'query': 'namespaced clock',
-                }, context())).output,
-              )
-              as Map<String, dynamic>;
+      final clock = jsonDecode(
+        (await tool.execute(<String, dynamic>{
+          'query': 'namespaced clock',
+        }, context())).output,
+      ) as Map<String, dynamic>;
       final clockSpec = (clock['tools']! as List<dynamic>).first as Map;
       expect(clockSpec['type'], 'namespace');
       expect(((clockSpec['tools']! as List).first as Map)['name'], 'curr_time');

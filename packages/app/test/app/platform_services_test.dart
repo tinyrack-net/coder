@@ -51,13 +51,12 @@ void main() {
     );
     const credential = DirectHostCredential(credentials);
     final success = WebSocketHostClientFactory(
-      openClient:
-          ({
-            required endpoint,
-            required credentials,
-            required clientId,
-            required clientKind,
-          }) async => api,
+      openClient: ({
+        required endpoint,
+        required credentials,
+        required clientId,
+        required clientKind,
+      }) async => api,
     );
     expect(
       await success.connect(
@@ -71,13 +70,12 @@ void main() {
 
     Future<TinestApi> connectWith(Object error) =>
         WebSocketHostClientFactory(
-          openClient:
-              ({
-                required endpoint,
-                required credentials,
-                required clientId,
-                required clientKind,
-              }) => Future<TinestApi>.error(error),
+          openClient: ({
+            required endpoint,
+            required credentials,
+            required clientId,
+            required clientKind,
+          }) => Future<TinestApi>.error(error),
         ).connect(
           connection: connection,
           credential: credential,

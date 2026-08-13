@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:cliweave/cliweave.dart';
 
 /// Generates the provider catalog, optionally refreshing upstream metadata.
-typedef ProviderCatalogGenerator =
-    Future<void> Function({required bool update});
+typedef ProviderCatalogGenerator = Future<void> Function({
+  required bool update,
+});
 
 final class _ProviderCatalogContext implements CommandContext {
   const _ProviderCatalogContext({

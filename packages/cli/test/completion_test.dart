@@ -23,13 +23,12 @@ void main() {
       stderr: CaptureStream(),
       environment: const <String, String>{},
       directories: directories,
-      connectClient:
-          ({
-            required host,
-            required port,
-            required bearerToken,
-            required clientId,
-          }) async => fail('completion must never connect to a daemon'),
+      connectClient: ({
+        required host,
+        required port,
+        required bearerToken,
+        required clientId,
+      }) async => fail('completion must never connect to a daemon'),
       readSecret: () async => fail('completion must never prompt'),
       readFile: (_) async => fail('completion must never read files'),
     );

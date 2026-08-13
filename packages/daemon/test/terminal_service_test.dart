@@ -127,8 +127,9 @@ void main() {
       final chunks = <String>[];
       for (var i = 0; i < 400; i++) {
         final chunk = String.fromCharCodes(<int>[
-          for (var j = 0; j < 1 + random.nextInt(40); j++)
-            random.nextBool() ? 0x61 + random.nextInt(26) : 0xAC00 + j,
+          for (var j = 0; j < 1 + random.nextInt(40); j++) ...<int>[
+            if (random.nextBool()) 0x61 + random.nextInt(26) else 0xAC00 + j,
+          ],
         ]);
         chunks.add(chunk);
         process.output.add(chunk);

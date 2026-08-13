@@ -473,7 +473,7 @@ Future<int> _generate({
   required QualityOutput out,
   required QualityOutput error,
 }) async {
-  final before = check ? _generatedSources() : const <String, String>{};
+  final before = check ? await _generatedSources() : const <String, String>{};
   final generatorReport =
       await VerificationRunner(
         executor: _ProcessTaskExecutor(out, error),
@@ -537,8 +537,13 @@ Future<int> _generate({
     error: error,
   );
   if (buildRunnerResult != 0) return buildRunnerResult;
+  final generatedFormatResult = await _formatGeneratedDartSources(
+    out: out,
+    error: error,
+  );
+  if (generatedFormatResult != 0) return generatedFormatResult;
   if (!check) return 0;
-  final after = _generatedSources();
+  final after = await _generatedSources();
   final changed = <String>{
     ...before.keys,
     ...after.keys,
@@ -552,11 +557,48 @@ Future<int> _generate({
   return 1;
 }
 
-Map<String, String> _generatedSources() => <String, String>{
-  for (final entity in Directory.current.listSync(recursive: true))
-    if (entity is File && _isGeneratedSource(entity.path))
-      entity.path: entity.readAsStringSync(),
-};
+Future<int> _formatGeneratedDartSources({
+  required QualityOutput out,
+  required QualityOutput error,
+}) async {
+  final sources =
+      (await _generatedSources()).keys
+          .where((path) => path.endsWith('.dart'))
+          .toList()
+        ..sort();
+  if (sources.isEmpty) return 0;
+  return _runProcess(
+    'dart',
+    <String>['format', ...sources],
+    out: out,
+    error: error,
+  );
+}
+
+Future<Map<String, String>> _generatedSources() async {
+  final sources = <String, String>{};
+  final packagesDirectory = Directory('packages');
+  await for (final package in packagesDirectory.list(followLinks: false)) {
+    if (package is! Directory) continue;
+    final sourceDirectory = Directory(
+      '${package.path}${Platform.pathSeparator}lib',
+    );
+    if (!sourceDirectory.existsSync()) continue;
+    await for (final entity in sourceDirectory.list(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is File && _isGeneratedSource(entity.path)) {
+        sources[entity.path] = entity.readAsStringSync();
+      }
+    }
+  }
+  final desktopPubspec = File('packages/desktop_app/pubspec.yaml');
+  if (desktopPubspec.existsSync()) {
+    sources[desktopPubspec.path] = desktopPubspec.readAsStringSync();
+  }
+  return sources;
+}
 
 bool _isGeneratedSource(String value) {
   final path = value.replaceAll(r'\', '/');
@@ -645,6 +687,12 @@ Future<int> _runDartPackages({
           ],
           workingDirectory: target.path,
           cpuSlots: concurrency,
+          // Dart 3.13 places native assets in the workspace-wide `.dart_tool`
+          // bundle. Windows cannot replace an in-use sqlite3.dll, so coverage
+          // package runners must not overlap while that bundle is in use.
+          exclusiveResources: Platform.isWindows
+              ? const <String>{'native-assets'}
+              : const <String>{},
           testRandomizationSeed: seed,
         ),
       );
@@ -943,7 +991,7 @@ Future<int> _runProcess(
       mode: ProcessStartMode.inheritStdio,
       runInShell: Platform.isWindows && executable == 'flutter',
     );
-    return process.exitCode;
+    return await process.exitCode;
   } on ProcessException catch (failure) {
     error(failure);
     return 127;

@@ -534,9 +534,9 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
           ? null
           : SessionModelSelectionDto(modelId: modelId),
       modelControls: <String, ModelControlValueDto>{
-        for (final entry
-            in (jsonDecode(row.modelControlsJson) as Map<String, dynamic>)
-                .entries)
+        for (final entry in (jsonDecode(
+          row.modelControlsJson,
+        ) as Map<String, dynamic>).entries)
           entry.key: ModelControlValueDto.fromJson(
             Map<String, dynamic>.from(entry.value as Map),
           ),

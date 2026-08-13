@@ -81,7 +81,7 @@ Future<String> _get(Uri uri) async {
     if (response.statusCode != HttpStatus.ok) {
       throw HttpException('GET $uri returned ${response.statusCode}.');
     }
-    return response.transform(const SystemEncoding().decoder).join();
+    return await response.transform(const SystemEncoding().decoder).join();
   } finally {
     client.close();
   }

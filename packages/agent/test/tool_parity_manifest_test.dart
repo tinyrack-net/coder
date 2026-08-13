@@ -11,11 +11,9 @@ void main() {
   test(
     'pinned Codex v2 manifest separates core, exclusions, and extensions',
     () {
-      final manifest =
-          jsonDecode(
-                _fixture().readAsStringSync(),
-              )
-              as Map<String, dynamic>;
+      final manifest = jsonDecode(
+        _fixture().readAsStringSync(),
+      ) as Map<String, dynamic>;
       final source = manifest['source']! as Map<String, dynamic>;
       expect(
         source['commit'],

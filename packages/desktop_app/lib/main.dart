@@ -3,11 +3,10 @@ import 'package:desktop_app/src/embedded_daemon.dart';
 import 'package:flutter/widgets.dart';
 
 /// Injectable desktop runner used to verify the production composition root.
-typedef DesktopAppRunner =
-    Future<void> Function({
-      required List<String> arguments,
-      required Future<AppServices> Function() bootstrapServices,
-    });
+typedef DesktopAppRunner = Future<void> Function({
+  required List<String> arguments,
+  required Future<AppServices> Function() bootstrapServices,
+});
 
 /// Builds desktop services with one shared daemon configuration resolution.
 Future<AppServices> createProductionDesktopServices() {

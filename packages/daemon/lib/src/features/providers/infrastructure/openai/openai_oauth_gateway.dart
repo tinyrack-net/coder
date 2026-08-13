@@ -272,7 +272,7 @@ final class OpenAIOAuthGateway implements ProviderOAuthGateway {
         if (code is! String || verifier is! String) {
           throw const FormatException('Invalid OpenAI device token data.');
         }
-        return _exchangeCode(
+        return await _exchangeCode(
           code: code,
           verifier: verifier,
           redirectUri: '$_issuer/deviceauth/callback',

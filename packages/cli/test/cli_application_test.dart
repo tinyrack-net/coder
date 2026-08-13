@@ -112,13 +112,12 @@ void main() {
   test('an unreachable daemon exits 69 rather than crashing', () async {
     final code = await run(
       <String>['provider', 'list', '--token', 'secret'],
-      connectClient:
-          ({
-            required host,
-            required port,
-            required bearerToken,
-            required clientId,
-          }) async => throw const SocketException('connection refused'),
+      connectClient: ({
+        required host,
+        required port,
+        required bearerToken,
+        required clientId,
+      }) async => throw const SocketException('connection refused'),
     );
 
     expect(code, 69);
@@ -128,13 +127,12 @@ void main() {
   test('a wrapped socket failure is reported the same way', () async {
     final code = await run(
       <String>['agent', 'list', '--token', 'secret'],
-      connectClient:
-          ({
-            required host,
-            required port,
-            required bearerToken,
-            required clientId,
-          }) async => throw WebSocketChannelException('handshake failed'),
+      connectClient: ({
+        required host,
+        required port,
+        required bearerToken,
+        required clientId,
+      }) async => throw WebSocketChannelException('handshake failed'),
     );
 
     expect(code, 69);

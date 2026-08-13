@@ -30,13 +30,11 @@ void main() {
     Future<Map<String, dynamic>> page(
       SkillCatalog catalog,
       String? cursor,
-    ) async =>
-        jsonDecode(
-              (await ListSkillsTool(catalog).execute(<String, dynamic>{
-                'cursor': cursor,
-              }, context())).output,
-            )
-            as Map<String, dynamic>;
+    ) async => jsonDecode(
+      (await ListSkillsTool(catalog).execute(<String, dynamic>{
+        'cursor': cursor,
+      }, context())).output,
+    ) as Map<String, dynamic>;
 
     test('a short catalog comes back in one sorted page', () async {
       final result = await page(_CountedCatalog(3), null);

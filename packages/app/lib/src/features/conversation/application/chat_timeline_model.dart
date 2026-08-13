@@ -6,16 +6,14 @@ import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:protocol/protocol.dart';
 
 /// Loads authenticated attachment bytes for preview.
-typedef ChatAttachmentLoader =
-    Future<Uint8List> Function(
-      ChatAttachment attachment,
-    );
+typedef ChatAttachmentLoader = Future<Uint8List> Function(
+  ChatAttachment attachment,
+);
 
 /// Exports an authenticated attachment through the platform adapter.
-typedef ChatAttachmentExporter =
-    Future<void> Function(
-      ChatAttachment attachment,
-    );
+typedef ChatAttachmentExporter = Future<void> Function(
+  ChatAttachment attachment,
+);
 
 /// One renderable entry of a session conversation.
 ///

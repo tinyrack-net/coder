@@ -74,4 +74,22 @@ void main() {
     expect(application, isNot(contains("'--total-shards='")));
     expect(application, contains("'testRandomizationSeeds'"));
   });
+
+  test('Windows coverage serializes workspace-native assets', () {
+    final application = File(
+      'packages/tinest_quality/bin/src/application.dart',
+    ).readAsStringSync();
+
+    expect(application, contains("const <String>{'native-assets'}"));
+    expect(application, contains('Platform.isWindows'));
+  });
+
+  test('generation normalizes Dart sources emitted by code generators', () {
+    final application = File(
+      'packages/tinest_quality/bin/src/application.dart',
+    ).readAsStringSync();
+
+    expect(application, contains('_formatGeneratedDartSources'));
+    expect(application, contains("<String>['format', ...sources]"));
+  });
 }
