@@ -22,10 +22,6 @@ void main() {
       await _waitForWindowVisibility(window, visible: true);
       expect(window.chrome, DesktopWindowChrome.custom);
       expect(await window.isVisible(), isTrue);
-      await window.toggleMaximized();
-      expect(window.maximized.value, isTrue);
-      await window.toggleMaximized();
-      expect(window.maximized.value, isFalse);
 
       var closes = 0;
       await window.interceptClose(() => closes += 1);
@@ -53,6 +49,15 @@ void main() {
       await _waitForWindowVisibility(window, visible: true);
       expect(window.visible.value, isTrue);
       expect(closes, 0);
+
+      // Exercise maximize transitions after the hide/restore contract. Linux
+      // window managers can still be completing an unmaximize animation after
+      // the plugin future resolves; issuing hide during that transition makes
+      // this independent residency assertion depend on compositor timing.
+      await window.toggleMaximized();
+      expect(window.maximized.value, isTrue);
+      await window.toggleMaximized();
+      expect(window.maximized.value, isFalse);
     },
     tags: const <String>[
       'feature_test__desktop_residency__platformSmoke',
