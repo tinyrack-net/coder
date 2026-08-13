@@ -32,7 +32,7 @@ import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart' as standalone show Theme;
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -2075,7 +2075,7 @@ class _SessionComposerState extends State<SessionComposer> {
   ///
   /// A touch keyboard has no comfortable Shift+Enter, and its Enter key is
   /// where people reach for a line break, so those platforms send by button.
-  bool get _submitsOnEnter => switch (standalone.Theme.of(context).platform) {
+  bool get _submitsOnEnter => switch (Theme.of(context).platform) {
     TargetPlatform.android || TargetPlatform.iOS => false,
     _ => true,
   };
