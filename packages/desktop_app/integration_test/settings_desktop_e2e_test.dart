@@ -44,14 +44,9 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       await _pumpApp(tester, fixture);
-      await tester.tap(
-        find.byKey(const ValueKey<String>('workspace-settings-button')),
-      );
-      await tester.pumpAndSettle();
+      await _openGeneralSettings(tester);
       expect(find.text('Settings'), findsOneWidget);
 
-      await tester.tap(find.text('General'));
-      await tester.pumpAndSettle();
       await tester.tap(_selectTrigger('general-settings-language'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('System default').last);
@@ -248,12 +243,7 @@ void main() {
         isTrue,
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('workspace-settings-button')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('고급'));
-      await tester.pumpAndSettle();
+      await _openAdvancedSettings(tester);
       await tester.tap(
         find.byKey(const ValueKey<String>('advanced-settings-reset-button')),
       );
@@ -400,13 +390,37 @@ Future<void> _pumpApp(
   await tester.pumpAndSettle();
 }
 
-Future<void> _openGeneralSettings(WidgetTester tester) async {
+Future<void> _openGeneralSettings(WidgetTester tester) => _openSettingsCategory(
+  tester,
+  categoryKey: const ValueKey<String>('settings-category-row-general'),
+  contentKey: const ValueKey<String>('general-settings-language'),
+);
+
+Future<void> _openAdvancedSettings(WidgetTester tester) =>
+    _openSettingsCategory(
+      tester,
+      categoryKey: const ValueKey<String>('settings-category-row-advanced'),
+      contentKey: const ValueKey<String>('advanced-settings-reset-button'),
+    );
+
+Future<void> _openSettingsCategory(
+  WidgetTester tester, {
+  required ValueKey<String> categoryKey,
+  required ValueKey<String> contentKey,
+}) async {
   await tester.tap(
     find.byKey(const ValueKey<String>('workspace-settings-button')),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('General'));
+
+  final content = find.byKey(contentKey);
+  if (content.evaluate().isNotEmpty) return;
+
+  final category = find.byKey(categoryKey);
+  expect(category, findsOneWidget);
+  await tester.tap(category);
   await tester.pumpAndSettle();
+  expect(content, findsOneWidget);
 }
 
 Finder _selectTrigger(String key) => find.descendant(

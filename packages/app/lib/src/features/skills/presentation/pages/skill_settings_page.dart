@@ -4,6 +4,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/skills/application/skills_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
@@ -15,10 +16,12 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Skill manager for one connected daemon, optionally scoped to a project.
-class SkillSettingsPage extends ConsumerStatefulWidget {
+class SkillSettingsPage extends ConsumerWidget {
   /// Creates a skill settings page.
   const SkillSettingsPage({
     required this.hostId,
+    required this.paneController,
+    required this.slot,
     this.workspaceId,
     this.onWorkspaceChanged,
     super.key,
@@ -33,198 +36,210 @@ class SkillSettingsPage extends ConsumerStatefulWidget {
   /// Called when the user picks a different project.
   final ValueChanged<String?>? onWorkspaceChanged;
 
-  @override
-  ConsumerState<SkillSettingsPage> createState() => _SkillSettingsPageState();
-}
+  /// Selection shared by the collection and detail scaffold slots.
+  final SkillSettingsPaneController paneController;
 
-class _SkillSettingsPageState extends ConsumerState<SkillSettingsPage> {
-  String? _selectedId;
-  bool _creating = false;
+  /// Which scaffold slot this widget supplies.
+  final SettingsPaneSlot slot;
 
   @override
-  void didUpdateWidget(SkillSettingsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId ||
-        oldWidget.workspaceId != widget.workspaceId) {
-      _selectedId = null;
-      _creating = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final widthClass = settingsAdaptiveWidthClassOf(context);
+    final showsSplit =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
     final provider = skillsControllerProvider(
-      widget.hostId,
-      widget.workspaceId,
+      hostId,
+      workspaceId,
     );
     final state = ref.watch(provider);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact =
-            constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
-        if (compact) {
-          return Column(
-            children: <Widget>[
-              _ProjectSelector(
-                hostId: widget.hostId,
-                workspaceId: widget.workspaceId,
-                onChanged: widget.onWorkspaceChanged,
-              ),
-              const TRSeparator(variant: TRSeparatorVariant.muted),
-              Expanded(
-                child: SettingsAsyncContent<List<SkillDto>>(
-                  state: state,
-                  loading: SettingsSkeletonLayout.listDetail(
-                    semanticLabel: AppLocalizations.of(
-                      context,
-                    ).settingsLoading,
-                  ),
-                  error: (error, _) => _SkillSettingsError(
-                    error: error,
-                    onRetry: () => ref.invalidate(provider),
-                  ),
-                  data: (skills) => _buildCatalog(skills, compact: true),
+    return ListenableBuilder(
+      listenable: paneController,
+      builder: (context, _) => SettingsAsyncContent<List<SkillDto>>(
+        state: state,
+        loading: _slotSurface(
+          settingsPaneSkeleton(
+            slot,
+            semanticLabel: AppLocalizations.of(context).settingsLoading,
+          ),
+        ),
+        error: (error, _) => slot == SettingsPaneSlot.collection
+            ? _slotSurface(
+                SettingsCollectionErrorState(
+                  title: AppLocalizations.of(context).skillSettingsHeading,
+                  error: error,
+                  onRetry: () => ref.invalidate(provider),
                 ),
+              )
+            : SettingsEmptyState(
+                title: AppLocalizations.of(context).skillSettingsSelectSkill,
+                icon: const Icon(TinestIcons.sparkle),
               ),
-            ],
-          );
-        }
-        return SettingsAsyncContent<List<SkillDto>>(
-          state: state,
-          loading: _buildDesktopSurface(
-            collection: SettingsSkeletonLayout.form(
-              semanticLabel: AppLocalizations.of(context).settingsLoading,
-            ),
-          ),
-          error: (error, _) => _buildDesktopSurface(
-            collection: _SkillSettingsError(
-              error: error,
-              onRetry: () => ref.invalidate(provider),
-            ),
-          ),
-          data: (skills) => _buildCatalog(skills, compact: false),
-        );
-      },
+        data: (skills) => _buildCatalog(
+          context,
+          ref,
+          skills,
+          showsSplit: showsSplit,
+        ),
+      ),
     );
   }
 
-  Widget _buildCatalog(List<SkillDto> skills, {required bool compact}) {
-    if (!_creating &&
-        !compact &&
-        !skills.any((skill) => skill.id == _selectedId)) {
-      _selectedId = skills.firstOrNull?.id;
+  Widget _buildCatalog(
+    BuildContext context,
+    WidgetRef ref,
+    List<SkillDto> skills, {
+    required bool showsSplit,
+  }) {
+    final selected = skills
+        .where((skill) => skill.id == paneController.selectedId)
+        .firstOrNull;
+    if (slot == SettingsPaneSlot.collection &&
+        !paneController.creating &&
+        showsSplit &&
+        paneController.canAutoSelect &&
+        selected == null &&
+        skills.isNotEmpty) {
+      _scheduleInitialSelection(skills.first.id);
+    } else if (!paneController.creating &&
+        paneController.hasDetail &&
+        selected == null) {
+      _scheduleCollection();
     }
-    final selected = _creating
-        ? null
-        : skills.where((skill) => skill.id == _selectedId).firstOrNull;
-    final list = _SkillList(
-      hostId: widget.hostId,
-      workspaceId: widget.workspaceId,
-      skills: skills,
-      selectedId: _selectedId,
-      onSelected: (id) => setState(() {
-        _creating = false;
-        _selectedId = id;
-      }),
-      onCreate: () => _create(skills),
-    );
-    final detail = _creating
-        ? _CreateSkillPane(
-            existingIds: skills.map((skill) => skill.id).toSet(),
-            allowProject: widget.workspaceId != null,
-            onCancel: _showSkillList,
-            onCreate: (input) => ref
-                .read(
-                  skillsControllerProvider(
-                    widget.hostId,
-                    widget.workspaceId,
-                  ).notifier,
-                )
-                .create(
-                  id: input.id,
-                  source: input.source,
-                  name: input.name,
-                  description: input.description,
-                  body: '',
-                ),
-            onCreated: (created) => setState(() {
-              _creating = false;
-              _selectedId = created.id;
-            }),
-          )
-        : selected == null
+    if (slot == SettingsPaneSlot.collection) {
+      return _slotSurface(
+        _SkillList(
+          hostId: hostId,
+          workspaceId: workspaceId,
+          skills: skills,
+          selectedId: paneController.selectedId,
+          onSelected: paneController.select,
+          onCreate: paneController.create,
+        ),
+      );
+    }
+    if (paneController.creating) {
+      return _CreateSkillPane(
+        existingIds: skills.map((skill) => skill.id).toSet(),
+        allowProject: workspaceId != null,
+        onCancel: paneController.showCollection,
+        onCreate: (input) => ref
+            .read(skillsControllerProvider(hostId, workspaceId).notifier)
+            .create(
+              id: input.id,
+              source: input.source,
+              name: input.name,
+              description: input.description,
+              body: '',
+            ),
+        onCreated: (created) => paneController.select(created.id),
+      );
+    }
+    return selected == null
         ? SettingsEmptyState(
             title: AppLocalizations.of(context).skillSettingsSelectSkill,
             icon: const Icon(TinestIcons.sparkle),
           )
         : _SkillEditor(
             key: ValueKey<String>('${selected.id}:${selected.contentHash}'),
-            hostId: widget.hostId,
-            workspaceId: widget.workspaceId,
+            hostId: hostId,
+            workspaceId: workspaceId,
             skill: selected,
-            onDeleted: () => setState(() => _selectedId = null),
+            onDeleted: paneController.showCollection,
           );
-    return SettingsListDetailLayout(
-      collection: compact
-          ? list
-          : Column(
-              children: <Widget>[
-                _ProjectSelector(
-                  hostId: widget.hostId,
-                  workspaceId: widget.workspaceId,
-                  onChanged: widget.onWorkspaceChanged,
-                ),
-                const TRSeparator(variant: TRSeparatorVariant.muted),
-                Expanded(child: list),
-              ],
-            ),
-      detail: detail,
-      detailVisible: selected != null || _creating,
-      onBack: _showSkillList,
+  }
+
+  Widget _slotSurface(Widget child) {
+    if (slot == SettingsPaneSlot.detail) return child;
+    return Column(
+      children: <Widget>[
+        _ProjectSelector(
+          hostId: hostId,
+          workspaceId: workspaceId,
+          onChanged: onWorkspaceChanged,
+        ),
+        const TRSeparator(variant: TRSeparatorVariant.muted),
+        Expanded(child: child),
+      ],
     );
   }
 
-  Widget _buildDesktopSurface({required Widget collection, Widget? detail}) =>
-      Row(
-        children: <Widget>[
-          SizedBox(
-            width: TinestLayoutMetrics.settingsCollectionWidth,
-            child: Column(
-              children: <Widget>[
-                _ProjectSelector(
-                  hostId: widget.hostId,
-                  workspaceId: widget.workspaceId,
-                  onChanged: widget.onWorkspaceChanged,
-                ),
-                const TRSeparator(variant: TRSeparatorVariant.muted),
-                Expanded(child: collection),
-              ],
-            ),
-          ),
-          const TRSeparator(
-            orientation: TRSeparatorOrientation.vertical,
-            variant: TRSeparatorVariant.muted,
-          ),
-          Expanded(
-            child:
-                detail ??
-                SettingsEmptyState(
-                  title: AppLocalizations.of(context).skillSettingsSelectSkill,
-                  icon: const Icon(TinestIcons.sparkle),
-                ),
-          ),
-        ],
-      );
+  void _scheduleInitialSelection(String skillId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.selectInitial(skillId);
+    });
+  }
 
-  void _create(List<SkillDto> _) => setState(() {
+  void _scheduleCollection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.showCollection();
+    });
+  }
+}
+
+/// Owns Skill collection selection independently from either rendered slot.
+class SkillSettingsPaneController extends SettingsPaneCoordinatorBase {
+  String? _selectedId;
+  bool _creating = false;
+
+  /// Selected Skill ID, when an existing skill is active.
+  String? get selectedId => _selectedId;
+
+  /// Whether the create destination is active.
+  bool get creating => _creating;
+
+  @override
+  bool get hasDetail => _creating || _selectedId != null;
+
+  @override
+  String? get destinationId => _creating
+      ? 'skill-create'
+      : _selectedId == null
+      ? null
+      : 'skill-$_selectedId';
+
+  /// Shows the first Skill on initial desktop entry.
+  void selectInitial(String id) {
+    if (!consumeInitialSelection()) return;
+    _selectedId = id;
+    notifyListeners();
+  }
+
+  /// Shows an existing Skill.
+  void select(String id) {
+    consumeExplicitNavigation();
+    if (!_creating && _selectedId == id) return;
+    _creating = false;
+    _selectedId = id;
+    notifyListeners();
+  }
+
+  /// Shows the create Skill destination.
+  void create() {
+    consumeExplicitNavigation();
+    if (_creating) return;
     _creating = true;
     _selectedId = null;
-  });
+    notifyListeners();
+  }
 
-  void _showSkillList() => setState(() {
+  @override
+  void showCollection() {
+    consumeExplicitNavigation();
+    if (!hasDetail) return;
     _creating = false;
     _selectedId = null;
-  });
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    final hadDetail = hasDetail;
+    resetInitialSelection();
+    _creating = false;
+    _selectedId = null;
+    if (hadDetail) notifyListeners();
+  }
 }
 
 /// Chooses which project's skills layer on top of the global sources.
@@ -303,9 +318,9 @@ class _SkillList extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.collection(
-          title: l10n.skillSettingsHeading,
-          subtitle: l10n.skillSettingsCount(skills.length),
+        TRPaneHeader(
+          title: TRText.inherit(l10n.skillSettingsHeading),
+          description: TRText.inherit(l10n.skillSettingsCount(skills.length)),
           actions: <Widget>[
             TRIconButton(
               key: const ValueKey<String>('skill-add-button'),
@@ -317,41 +332,48 @@ class _SkillList extends ConsumerWidget {
           ],
         ),
         Expanded(
-          child: SettingsCollectionList(
-            children: <Widget>[
-              for (final skill in skills)
-                SettingsRow.collection(
-                  selected: skill.id == selectedId && !skill.isShadowed,
-                  enabled: !skill.isShadowed,
-                  title: TRText.inherit(skill.name),
-                  description: TRText.inherit(
-                    skillSourceLabel(l10n, skill.source),
-                  ),
-                  leading: skill.isShadowed || skill.isStale
-                      ? TRTooltip(
-                          message: skill.isShadowed
-                              ? l10n.skillSettingsShadowed
-                              : l10n.skillSettingsStale,
-                          child: const Icon(TinestIcons.warning),
-                        )
-                      : null,
-                  control: TRSwitch(
-                    checked: skill.isEnabled,
-                    onCheckedChange: skill.isMandatory || skill.isShadowed
-                        ? null
-                        : (enabled) => ref
-                              .read(
-                                skillsControllerProvider(
-                                  hostId,
-                                  workspaceId,
-                                ).notifier,
+          child: skills.isEmpty
+              ? SettingsEmptyState(
+                  title: l10n.skillSettingsEmpty,
+                  icon: const Icon(TinestIcons.sparkle),
+                )
+              : SettingsCollectionList(
+                  children: <Widget>[
+                    for (final skill in skills)
+                      SettingsNavigationRow(
+                        selected: skill.id == selectedId && !skill.isShadowed,
+                        enabled: !skill.isShadowed,
+                        title: TRText.inherit(skill.name),
+                        description: TRText.inherit(
+                          skillSourceLabel(l10n, skill.source),
+                        ),
+                        leading: skill.isShadowed || skill.isStale
+                            ? TRTooltip(
+                                message: skill.isShadowed
+                                    ? l10n.skillSettingsShadowed
+                                    : l10n.skillSettingsStale,
+                                child: const Icon(TinestIcons.warning),
                               )
-                              .setEnabled(skill.id, enabled: enabled),
-                  ),
-                  onTap: skill.isShadowed ? null : () => onSelected(skill.id),
+                            : null,
+                        trailing: TRSwitch(
+                          checked: skill.isEnabled,
+                          onCheckedChange: skill.isMandatory || skill.isShadowed
+                              ? null
+                              : (enabled) => ref
+                                    .read(
+                                      skillsControllerProvider(
+                                        hostId,
+                                        workspaceId,
+                                      ).notifier,
+                                    )
+                                    .setEnabled(skill.id, enabled: enabled),
+                        ),
+                        onPressed: skill.isShadowed
+                            ? null
+                            : () => onSelected(skill.id),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );
@@ -414,11 +436,14 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
     final editable = skill.isEditable && !_saving;
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: skill.name,
-          subtitle: skill.sourcePath.isEmpty
-              ? skillSourceLabel(l10n, skill.source)
-              : skill.sourcePath,
+        TRPaneHeader(
+          title: TRText.inherit(skill.name),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+          description: TRText.inherit(
+            skill.sourcePath.isEmpty
+                ? skillSourceLabel(l10n, skill.source)
+                : skill.sourcePath,
+          ),
           actions: <Widget>[
             if (skill.sourcePath.isNotEmpty)
               TRIconButton(
@@ -439,14 +464,6 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                       ),
                 ),
                 icon: const Icon(TinestIcons.copy),
-              ),
-            if (skill.isEditable)
-              TRIconButton(
-                key: const ValueKey<String>('skill-delete-button'),
-                appearance: TRAppearance.ghost,
-                label: l10n.skillSettingsDelete,
-                onPressed: editable ? _delete : null,
-                icon: const Icon(TinestIcons.delete),
               ),
             if (skill.isEditable)
               TRButton(
@@ -542,6 +559,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     label: l10n.commonDescription,
                   ),
                   TRTextField(
+                    key: const ValueKey<String>('skill-instructions-field'),
                     controller: _body,
                     enabled: editable,
                     minLines: 8,
@@ -565,6 +583,24 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
                     ),
                 ],
               ),
+              if (skill.isEditable)
+                SettingsSection(
+                  title: l10n.skillSettingsDelete,
+                  children: <Widget>[
+                    SettingsRow(
+                      title: TRText.inherit(
+                        l10n.skillSettingsDeleteMessage,
+                      ),
+                      control: TRButton(
+                        key: const ValueKey<String>('skill-delete-button'),
+                        appearance: TRAppearance.ghost,
+                        intent: TRIntent.danger,
+                        onPressed: editable ? _delete : null,
+                        child: TRText.inherit(l10n.skillSettingsDelete),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -636,7 +672,7 @@ class _SkillEditorState extends ConsumerState<_SkillEditor> {
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.commonDelete),
           ),
@@ -742,8 +778,9 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
     ];
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: l10n.skillSettingsAddTitle,
+        TRPaneHeader(
+          title: TRText.inherit(l10n.skillSettingsAddTitle),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRButton(
               appearance: TRAppearance.ghost,
@@ -763,7 +800,6 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
           child: SettingsScaffold(
             children: <Widget>[
               SettingsSection.form(
-                title: l10n.skillSettingsAddTitle,
                 children: <Widget>[
                   TRTextField(
                     controller: _id,
@@ -811,7 +847,10 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
                         : (value) => setState(() => _source = value!),
                   ),
                   if (_error case final error?)
-                    TRText('$error', color: TRTextColor.danger),
+                    TRAlert(
+                      variant: TRStatusVariant.danger,
+                      title: TRText.inherit('$error'),
+                    ),
                 ],
               ),
             ],
@@ -845,27 +884,4 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
       }
     }
   }
-}
-
-class _SkillSettingsError extends StatelessWidget {
-  const _SkillSettingsError({required this.error, required this.onRetry});
-
-  final Object error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        TRText('$error'),
-        const SizedBox(height: TRSpacing.medium),
-        TRButton(
-          intent: TRIntent.primary,
-          onPressed: onRetry,
-          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
-        ),
-      ],
-    ),
-  );
 }

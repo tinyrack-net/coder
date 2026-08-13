@@ -8,7 +8,6 @@ import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -271,10 +270,8 @@ class ChatAssistantMessageView extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            MarkdownBody(
+            ChatMarkdownBody(
               data: message.markdown,
-              builders: chatMarkdownBuilders(),
-              styleSheet: chatMarkdownStyleSheet(context),
               onTapLink: (text, href, title) => openChatLink(
                 ref.read(externalUrlOpenerProvider),
                 href,

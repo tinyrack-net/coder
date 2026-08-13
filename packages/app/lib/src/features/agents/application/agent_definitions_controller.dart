@@ -21,7 +21,7 @@ final class AgentDefinitionsState {
   final List<AgentToolDefinitionDto> tools;
 }
 
-@riverpod
+@Riverpod(retry: noAutomaticRetry)
 /// Loads and edits one daemon's Markdown agent files.
 class AgentDefinitionsController extends _$AgentDefinitionsController {
   final List<StreamSubscription<void>> _events = <StreamSubscription<void>>[];

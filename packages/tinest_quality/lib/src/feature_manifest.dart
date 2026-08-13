@@ -169,7 +169,8 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'settings.async.loading',
     description:
         'Keeps settings navigation usable while asynchronous reads show '
-        'shape-preserving skeletons and transition to loaded content.',
+        'shape-preserving skeletons, transition to loaded content, or surface '
+        'failures with an explicit Retry action.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.widget,
     },
@@ -325,6 +326,7 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
         'still closes to a sensible destination when entered by deep link.',
     routes: <String>['SettingsHomeRoute', 'DaemonCategoriesRoute'],
     requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
       FeatureVerificationLayer.widget,
     },
   ),

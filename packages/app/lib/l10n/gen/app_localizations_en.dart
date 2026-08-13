@@ -979,6 +979,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsSelectAgent => 'Select an agent.';
 
   @override
+  String get agentSettingsEmpty => 'No agents are configured.';
+
+  @override
   String agentSettingsCount(int count) {
     return '$count definitions';
   }
@@ -2044,6 +2047,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillSettingsSelectSkill => 'Select a skill.';
+
+  @override
+  String get skillSettingsEmpty => 'No skills are configured.';
 
   @override
   String get skillSettingsList => 'Skill list';

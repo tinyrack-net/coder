@@ -43,7 +43,7 @@ class AsyncModelSelect extends StatefulWidget {
     this.enabled = true,
     this.leading,
     this.appearance = TRFieldAppearance.solid,
-    this.uiSize = TRUiSize.md,
+    this.uiSize,
     this.width,
     this.placeholder,
     super.key,
@@ -74,7 +74,7 @@ class AsyncModelSelect extends StatefulWidget {
   final TRFieldAppearance appearance;
 
   /// Design-system control density.
-  final TRUiSize uiSize;
+  final TRUiSize? uiSize;
 
   /// Optional trigger width.
   final double? width;

@@ -4,7 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'permission_settings_controller.g.dart';
 
-@riverpod
+@Riverpod(retry: noAutomaticRetry)
 /// Owns the daemon-global permission default for one connected host.
 class PermissionSettingsController extends _$PermissionSettingsController {
   @override

@@ -6,6 +6,7 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_desktop_ports.dart';
 
@@ -30,9 +31,20 @@ void main() {
       await tester.pumpWidget(_app(store, eraser: eraser));
       await openAdvanced(tester);
 
+      expect(tester.widget<TRButton>(_resetButton).intent, TRIntent.danger);
       await tester.tap(_resetButton);
       await tester.pumpAndSettle();
       expect(_confirmDialog, findsOneWidget);
+      expect(
+        tester
+            .widget<TRButton>(
+              find.byKey(
+                const ValueKey<String>('advanced-reset-confirm-accept'),
+              ),
+            )
+            .intent,
+        TRIntent.danger,
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('advanced-reset-confirm-cancel')),

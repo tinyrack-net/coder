@@ -297,7 +297,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons').last);
+      await _openSettingsCategory(tester, 'daemon');
       final exposureToggle = find.byKey(
         const ValueKey<String>('embedded-daemon-exposure'),
       );
@@ -343,8 +343,7 @@ void main() {
         clientId: 'e2e-setup-reconnected',
         clientKind: 'integration-test',
       );
-      await tester.tap(find.text('Agent'));
-      await pumpUntil(tester, find.text('Agents'));
+      await _openSettingsCategory(tester, 'agent');
       await _selectDaemon(tester, 'Remote daemon');
       final addAgent = find.byKey(const ValueKey('agent-add-button'));
       await pumpUntil(tester, addAgent);
@@ -450,7 +449,11 @@ void main() {
       await tester.tap(createTemporary);
       await pumpUntilGone(tester, find.text('Agent 추가'));
       await _waitForAgentDefinition(setupClient, 'temporary');
-      await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
+      final archiveAgent = find.byKey(
+        const ValueKey('agent-archive-button'),
+      );
+      await _centerSettingsAction(tester, archiveAgent);
+      await tester.tap(archiveAgent);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-archive-confirm')),
@@ -465,7 +468,9 @@ void main() {
 
       await tester.tap(find.text('Tinest').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
+      final resetAgent = find.byKey(const ValueKey('agent-reset-button'));
+      await _centerSettingsAction(tester, resetAgent);
+      await tester.tap(resetAgent);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-reset-confirm')),
@@ -525,9 +530,8 @@ void main() {
       expect(collaboratingTinest.callableAgentIds, <String>['reviewer']);
       expect(collaboratingTinest.toolIds, contains('collaboration'));
 
-      await tester.tap(find.text('Agent'));
-      await pumpUntil(tester, find.text('Agents'));
-      await tester.tap(find.text('스킬'));
+      await _openSettingsCategory(tester, 'agent');
+      await _openSettingsCategory(tester, 'skill');
       final skillAddButton = find.byKey(
         const ValueKey<String>('skill-add-button'),
       );
@@ -581,9 +585,11 @@ void main() {
 
       await tester.tap(find.text('e2e-skill').first);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey<String>('skill-delete-button')),
+      final deleteSkill = find.byKey(
+        const ValueKey<String>('skill-delete-button'),
       );
+      await _centerSettingsAction(tester, deleteSkill);
+      await tester.tap(deleteSkill);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await pumpUntilCondition(
@@ -611,19 +617,12 @@ void main() {
       );
       expect(await invokedSkillFile.readAsString(), validSkillSource);
 
-      await tester.tap(find.text('Agent'));
-      await pumpUntil(tester, find.text('Agents'));
-      await tester.pumpAndSettle();
+      await _openSettingsCategory(tester, 'agent');
       // MCP: expose a real child-process failure, repair its command and
       // secret through the UI, test discovery, then remove it again.
       // Scoped to the sidebar: the agent editor behind it also has a row
       // labelled MCP, the group its resource tools are toggled in.
-      await tester.tap(
-        find.descendant(
-          of: find.byKey(const ValueKey<String>('settings-sidebar-surface')),
-          matching: find.text('MCP'),
-        ),
-      );
+      await _openSettingsCategory(tester, 'mcp');
       await pumpUntil(tester, find.text('MCP 서버'));
       await tester.pumpAndSettle();
       expect(
@@ -758,8 +757,7 @@ void main() {
         'mcp__e2e__echo',
       );
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
-      await tester.ensureVisible(deleteServer);
-      await tester.pumpAndSettle();
+      await _centerSettingsAction(tester, deleteServer);
       // The save reported itself over the bottom-trailing corner, which is
       // where this button sits. Waiting the report out is what a user does
       // before reaching underneath it, and it doubles as proof that a toast
@@ -1900,7 +1898,7 @@ void main() {
       await tester.tap(addCustom);
       await tester.pumpAndSettle();
       await tester.enterText(_trTextInput('이름'), '');
-      await tester.enterText(_trTextInput('Base URL'), '');
+      await tester.enterText(_trTextInput('기본 URL'), '');
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-custom-save')),
       );
@@ -1911,7 +1909,7 @@ void main() {
         'E2E Provider',
       );
       await tester.enterText(
-        _trTextInput('Base URL'),
+        _trTextInput('기본 URL'),
         'http://127.0.0.1:${modelServer.port}/unavailable/v1',
       );
       await tester.enterText(_trTextInput('API 키'), 'valid-key');
@@ -1944,7 +1942,7 @@ void main() {
 
       await tester.enterText(_trTextInput('이름'), 'E2E Provider Edited');
       await tester.enterText(
-        _trTextInput('Base URL'),
+        _trTextInput('기본 URL'),
         'http://127.0.0.1:${modelServer.port}/v1',
       );
       await tester.pump();
@@ -1972,6 +1970,7 @@ void main() {
       );
       expect(find.text('E2E Provider Edited'), findsWidgets);
       const customDelete = ValueKey<String>('provider-custom-delete');
+      await _centerSettingsAction(tester, find.byKey(customDelete));
       await pumpUntilCondition(
         tester,
         () =>
@@ -1993,6 +1992,7 @@ void main() {
         ),
         hasLength(1),
       );
+      await _centerSettingsAction(tester, find.byKey(customDelete));
       await tester.tap(find.byKey(customDelete));
       await pumpUntil(tester, find.byType(TRAlertDialog));
       await tester.tap(
@@ -2413,7 +2413,11 @@ Future<void> _disconnectProviderConnection(
     ValueKey<String>('provider-detail-$connectionId'),
   );
   await pumpUntil(tester, detail);
-  await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
+  final disconnect = find.byKey(
+    const ValueKey<String>('provider-connection-disconnect'),
+  );
+  await _centerSettingsAction(tester, disconnect);
+  await tester.tap(disconnect);
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
@@ -2443,6 +2447,36 @@ Finder _trTextInput(String label) => find.descendant(
   ),
   matching: find.byType(EditableText),
 );
+
+Future<void> _openSettingsCategory(
+  WidgetTester tester,
+  String category,
+) async {
+  final row = find.byKey(
+    ValueKey<String>('settings-category-row-$category'),
+  );
+  await pumpUntil(tester, row.hitTestable());
+  await tester.tap(row.hitTestable());
+  await tester.pumpAndSettle();
+}
+
+Future<void> _centerSettingsAction(
+  WidgetTester tester,
+  Finder action,
+) async {
+  await tester.scrollUntilVisible(
+    action,
+    TRSpacing.fourExtraLarge,
+    scrollable: find
+        .descendant(
+          of: find.byType(ListView).last,
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  await Scrollable.ensureVisible(tester.element(action), alignment: 0.5);
+  await tester.pumpAndSettle();
+}
 
 Finder _approvalForCall(String toolCallId) => find.byWidgetPredicate(
   (widget) =>

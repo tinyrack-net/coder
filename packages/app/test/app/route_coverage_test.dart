@@ -49,7 +49,7 @@ void main() {
   );
 
   testWidgets(
-    'WorkspaceHomeRoute renders at desktop and mobile sizes',
+    'WorkspaceHomeRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -64,7 +64,7 @@ void main() {
   );
 
   testWidgets(
-    'WorktreeRoute renders at desktop and mobile sizes',
+    'WorktreeRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -83,7 +83,7 @@ void main() {
   );
 
   testWidgets(
-    'SessionRoute renders at desktop and mobile sizes',
+    'SessionRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -103,7 +103,8 @@ void main() {
   );
 
   testWidgets(
-    'every workspace route shares one page at desktop and mobile sizes',
+    'every workspace route shares one page at desktop, tablet, and '
+    'mobile sizes',
     (tester) async {
       const terminal = TerminalDto(
         id: 'terminal',
@@ -201,7 +202,7 @@ void main() {
   );
 
   testWidgets(
-    'SettingsHomeRoute renders at desktop and mobile sizes',
+    'SettingsHomeRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -216,12 +217,12 @@ void main() {
   );
 
   testWidgets(
-    'DaemonCategoriesRoute renders at desktop and mobile sizes',
+    'DaemonCategoriesRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
       const DaemonCategoriesRoute(hostId: 'server').location,
-      find.text('Provider'),
+      find.text('프로바이더'),
     ),
     tags: const <String>[
       'route_test__daemon_categories_route__widget',
@@ -233,7 +234,7 @@ void main() {
   );
 
   testWidgets(
-    'GeneralSettingsRoute renders at desktop and mobile sizes',
+    'GeneralSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -249,7 +250,7 @@ void main() {
   );
 
   testWidgets(
-    'McpSettingsRoute renders at desktop and mobile sizes',
+    'McpSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -265,7 +266,7 @@ void main() {
   );
 
   testWidgets(
-    'ProviderSettingsRoute renders at desktop and mobile sizes',
+    'ProviderSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -282,7 +283,7 @@ void main() {
   );
 
   testWidgets(
-    'PermissionSettingsRoute renders at desktop and mobile sizes',
+    'PermissionSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -300,12 +301,12 @@ void main() {
   );
 
   testWidgets(
-    'ProjectSettingsRoute renders at desktop and mobile sizes',
+    'ProjectSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
       const ProjectSettingsRoute(hostId: 'server').location,
-      find.text('Projects'),
+      find.text('프로젝트'),
     ),
     tags: const <String>[
       'route_test__project_settings_route__widget',
@@ -315,12 +316,12 @@ void main() {
   );
 
   testWidgets(
-    'AgentSettingsRoute renders at desktop and mobile sizes',
+    'AgentSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
       const AgentSettingsRoute(hostId: 'server').location,
-      find.text('Agents'),
+      find.text('에이전트'),
     ),
     tags: const <String>[
       'route_test__agent_settings_route__widget',
@@ -330,7 +331,7 @@ void main() {
   );
 
   testWidgets(
-    'SkillSettingsRoute renders at desktop and mobile sizes',
+    'SkillSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -345,7 +346,7 @@ void main() {
   );
 
   testWidgets(
-    'DaemonSettingsRoute renders at desktop and mobile sizes',
+    'DaemonSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -360,7 +361,7 @@ void main() {
   );
 
   testWidgets(
-    'AdvancedSettingsRoute renders at desktop and mobile sizes',
+    'AdvancedSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -378,7 +379,7 @@ void main() {
   );
 
   testWidgets(
-    'ConnectDaemonRoute renders at desktop and mobile sizes',
+    'ConnectDaemonRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -394,7 +395,7 @@ void main() {
   );
 
   testWidgets(
-    'PairingLinkRoute renders at desktop and mobile sizes',
+    'PairingLinkRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -410,7 +411,7 @@ void main() {
   );
 
   testWidgets(
-    'PairingScanRoute renders at desktop and mobile sizes',
+    'PairingScanRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -426,7 +427,7 @@ void main() {
   );
 
   testWidgets(
-    'PairOfferRoute renders at desktop and mobile sizes',
+    'PairOfferRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -442,7 +443,7 @@ void main() {
   );
 
   testWidgets(
-    'AdvancedNewHostRoute renders at desktop and mobile sizes',
+    'AdvancedNewHostRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -459,7 +460,7 @@ void main() {
   );
 
   testWidgets(
-    'DaemonConnectionsRoute renders at desktop and mobile sizes',
+    'DaemonConnectionsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,
@@ -478,7 +479,7 @@ void main() {
   );
 
   testWidgets(
-    'EditHostRoute renders at desktop and mobile sizes',
+    'EditHostRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,
       api,

@@ -3,6 +3,64 @@ part of '../../app/app_flows_test.dart';
 void _registerSettingsAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   testWidgets(
+    'simple mobile settings categories share pane header chrome',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const GeneralSettingsRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      final header = find.byType(TRPaneHeader);
+      expect(header, findsOneWidget);
+      final title = find.descendant(of: header, matching: find.text('일반'));
+      expect(title, findsOneWidget);
+      expect(tester.getRect(title).left, TRSpacing.extraLarge);
+      expect(
+        find.descendant(of: header, matching: find.byType(TRSeparator)),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'desktop settings header shares the form content rail',
+    (tester) async {
+      await _setTestViewport(tester, const Size(1440, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const GeneralSettingsRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      final headerFinder = find.byType(TRPaneHeader);
+      expect(headerFinder, findsOneWidget);
+      final headerTitle = find.descendant(
+        of: headerFinder,
+        matching: find.text('일반'),
+      );
+      final firstSectionTitle = find.text('외관');
+      expect(headerTitle, findsOneWidget);
+      expect(firstSectionTitle, findsOneWidget);
+      expect(
+        tester.getRect(headerTitle).left,
+        tester.getRect(firstSectionTitle).left,
+      );
+      expect(
+        tester.widget<TRPaneHeader>(headerFinder).contentMaxWidth,
+        TinestLayoutMetrics.settingsContentMaxWidth,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
     'host-scoped settings keep the selected daemon across categories',
     (tester) async {
       await _setTestViewport(tester, const Size(1200, 800));
@@ -71,7 +129,7 @@ void _registerSettingsAppFlows() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Agent'));
+      await tester.tap(find.text('에이전트'));
       await tester.pumpAndSettle();
 
       final daemonSelect = find.byKey(
@@ -89,9 +147,9 @@ void _registerSettingsAppFlows() {
 
       // App-wide categories carry no daemon, so passing through one used to
       // drop the selection back to the first online daemon.
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Projects'));
+      await tester.tap(find.text('프로젝트'));
       await tester.pumpAndSettle();
       expect(tester.widget<TRSelect<String>>(daemonSelect).value, 'second');
 
@@ -100,7 +158,11 @@ void _registerSettingsAppFlows() {
       // page outlives the change and has to adopt each daemon a later location
       // names, not only the first.
       Future<void> openProviderShortcut(String hostLabel) async {
-        await tester.tap(find.text('Daemons'));
+        await tester.tap(
+          find.byKey(
+            const ValueKey<String>('settings-category-row-daemon'),
+          ),
+        );
         await tester.pumpAndSettle();
         final shortcut = find.descendant(
           of: find
@@ -146,8 +208,21 @@ void _registerSettingsAppFlows() {
             createdAt: now,
             updatedAt: now,
           ),
+          RemoteDaemonProfile(
+            id: 'manual',
+            label: 'Manual daemon',
+            connections: directHostConnections(
+              Uri.parse('ws://manual.test/ws'),
+            ),
+            autoConnect: false,
+            createdAt: now,
+            updatedAt: now,
+          ),
         ],
-        tokens: const <String, String>{'only': 'only-token'},
+        tokens: const <String, String>{
+          'only': 'only-token',
+          'manual': 'manual-token',
+        },
       );
       await tester.pumpWidget(
         TinestApp(
@@ -175,6 +250,17 @@ void _registerSettingsAppFlows() {
         tester.widget<TRSelect<String>>(daemonSelect).appearance,
         TRFieldAppearance.ghost,
       );
+      final select = tester.widget<TRSelect<String>>(daemonSelect);
+      expect(select.helperText, testL10n.hostStatusOnline);
+      expect((select.leading! as Icon).icon, TinestIcons.success);
+      expect(
+        select.items.singleWhere((item) => item.value == 'only').description,
+        testL10n.hostStatusOnline,
+      );
+      expect(
+        select.items.singleWhere((item) => item.value == 'manual').description,
+        testL10n.hostStatusIdle,
+      );
 
       final trigger = find.descendant(
         of: daemonSelect,
@@ -192,6 +278,17 @@ void _registerSettingsAppFlows() {
         colors.surfaceSelected,
       );
       expect(button.style!.side!.resolve(states)!.color, isNot(colors.focus));
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('settings-daemon-option-manual'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final manualSelect = tester.widget<TRSelect<String>>(daemonSelect);
+      expect(manualSelect.value, 'manual');
+      expect(manualSelect.helperText, testL10n.hostStatusIdle);
+      expect((manualSelect.leading! as Icon).icon, TinestIcons.paused);
     },
     tags: const <String>['feature_test__daemon_management__widget'],
   );
@@ -220,18 +317,22 @@ void _registerSettingsAppFlows() {
       find.byKey(const ValueKey<String>('settings-sidebar-tree-daemon')),
       findsOneWidget,
     );
-    expect(find.text('Projects'), findsOneWidget);
-    expect(find.text('Agent'), findsOneWidget);
-    expect(find.text('Provider'), findsOneWidget);
-    expect(find.text('Daemons'), findsOneWidget);
+    expect(find.text('프로젝트'), findsOneWidget);
+    expect(find.text('에이전트'), findsOneWidget);
+    expect(find.text('프로바이더'), findsOneWidget);
+    expect(find.text(testL10n.settingsSectionDaemon), findsWidgets);
     expect(find.text('Test daemon'), findsWidgets);
-    await tester.tap(find.text('Projects'));
+    await tester.tap(find.text('프로젝트'));
     await tester.pumpAndSettle();
     expect(
       router.routeInformationProvider.value.uri.toString(),
       const ProjectSettingsRoute().location,
     );
-    await tester.tap(find.text('Daemons'));
+    await tester.tap(
+      find.byKey(
+        const ValueKey<String>('settings-category-row-daemon'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('원격 daemons'), findsOneWidget);
   });
@@ -358,9 +459,9 @@ void _registerSettingsAppFlows() {
         return (surface.decoration! as BoxDecoration).color;
       }
 
-      final theme = tester.element(find.text('General')).tinyrackTheme;
-      final generalSemantics = tester.getSemantics(find.text('General'));
-      expect(generalSemantics.label, 'General');
+      final theme = tester.element(find.text('일반')).tinyrackTheme;
+      final generalSemantics = tester.getSemantics(find.text('일반'));
+      expect(generalSemantics.label, '일반');
       expect(
         generalSemantics.getSemanticsData().hasAction(ui.SemanticsAction.tap),
         isTrue,
@@ -370,15 +471,15 @@ void _registerSettingsAppFlows() {
       addTearDown(mouse.removePointer);
 
       expect(find.byType(TRTreeNav<SettingsCategory>), findsOneWidget);
-      await mouse.moveTo(tester.getCenter(find.text('General')));
+      await mouse.moveTo(tester.getCenter(find.text('일반')));
       await tester.pumpAndSettle();
-      expect(rowBackground('General'), theme.surfaceHover);
-      await mouse.down(tester.getCenter(find.text('General')));
+      expect(rowBackground('일반'), theme.surfaceHover);
+      await mouse.down(tester.getCenter(find.text('일반')));
       await tester.pump();
-      expect(rowBackground('General'), theme.surfacePressed);
+      expect(rowBackground('일반'), theme.surfacePressed);
       await mouse.cancel();
       await tester.pumpAndSettle();
-      expect(rowBackground('General'), theme.surfaceHover);
+      expect(rowBackground('일반'), theme.surfaceHover);
 
       await tester.tap(find.text('Test daemon'));
       await tester.pumpAndSettle();
@@ -396,6 +497,139 @@ void _registerSettingsAppFlows() {
       await mouse.cancel();
       await tester.pumpAndSettle();
       expect(rowBackground('MCP'), theme.surfaceHover);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile settings navigation uses comfortable row targets',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      final general = find.text('일반');
+      final surface = find
+          .ancestor(of: general, matching: find.byType(AnimatedContainer))
+          .first;
+      expect(
+        tester.getRect(surface).height,
+        greaterThanOrEqualTo(TRControlMetrics.heightOf(TRUiSize.xl)),
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile settings navigation uses comfortable label typography',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      final general = find.text('일반');
+      final paragraph = tester.renderObject<RenderParagraph>(general);
+      expect(
+        paragraph.text.style?.fontSize,
+        TRControlMetrics.fontSizeOf(TRUiSize.xl),
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile settings root section shares the navigation content line',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const SettingsHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      Rect navigationSurface(String label) => tester.getRect(
+        find
+            .ancestor(
+              of: find.text(label),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+
+      final rootSurface = navigationSurface('일반');
+      expect(rootSurface.left, TRSpacing.medium);
+      expect(rootSurface.right, 390 - TRSpacing.medium);
+      expect(
+        tester.getRect(find.text('앱')).left,
+        moreOrLessEquals(
+          rootSurface.left + TRSpacing.medium,
+          epsilon: 0.5,
+        ),
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile daemon categories use the settings root surface inset',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const DaemonCategoriesRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      final daemonSurface = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('MCP'),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+      expect(daemonSurface.left, TRSpacing.medium);
+      expect(daemonSurface.right, 390 - TRSpacing.medium);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'mobile daemon header shares its navigation content line',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const DaemonCategoriesRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      final daemonSurface = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('MCP'),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+      expect(
+        tester.getRect(find.text('Test daemon')).left,
+        moreOrLessEquals(
+          daemonSurface.left + TRSpacing.medium,
+          epsilon: 0.5,
+        ),
+      );
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
@@ -422,11 +656,19 @@ void _registerSettingsAppFlows() {
         find.byKey(const ValueKey<String>('settings-daemon-select')),
         findsNothing,
       );
-      expect(find.text('General'), findsOneWidget);
+      expect(find.text('일반'), findsOneWidget);
       expect(find.text('Test daemon'), findsOneWidget);
 
       await tester.tap(find.text('Test daemon'));
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-home-pane')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
+        findsOneWidget,
+      );
       expect(
         router.routeInformationProvider.value.uri.path,
         '/settings/daemons/server/categories',
@@ -435,20 +677,27 @@ void _registerSettingsAppFlows() {
 
       await tester.tap(find.text('MCP'));
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-mcp')),
+        findsOneWidget,
+      );
       expect(router.routeInformationProvider.value.uri.path, '/settings/mcp');
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
 
       await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey<String>('settings-list-collection-pane')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('settings-list-detail-pane')),
-        findsOneWidget,
-      );
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.primary)),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.secondary)),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey<String>('mcp-server-editor-new')),
         findsOne,
@@ -457,21 +706,28 @@ void _registerSettingsAppFlows() {
 
       final back = find.byKey(const ValueKey<String>('settings-back-button'));
       await tester.binding.handlePopRoute();
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey<String>('settings-list-detail-pane')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('settings-list-collection-pane')),
-        findsOneWidget,
-      );
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.secondary)),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.primary)),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
       expect(find.byKey(const ValueKey<String>('mcp-field-id')), findsNothing);
 
       await tester.tap(back);
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-mcp')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
+        findsOneWidget,
+      );
       expect(find.text('MCP'), findsOneWidget);
       expect(
         router.routeInformationProvider.value.uri.path,
@@ -480,8 +736,147 @@ void _registerSettingsAppFlows() {
 
       await tester.tap(back);
       await tester.pumpAndSettle();
-      expect(find.text('General'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-categories-pane')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-home-pane')),
+        findsOneWidget,
+      );
+      expect(find.text('일반'), findsOneWidget);
       expect(router.routeInformationProvider.value.uri.path, '/settings');
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'settings pane roles change only at the shared adaptive boundaries',
+    (tester) async {
+      await _setTestViewport(tester, const Size(599, 800));
+      final api = FakeTinestApi();
+      api.mcpServers['github'] = const McpServerStateDto(
+        config: McpServerConfigDto(
+          id: 'github',
+          transport: McpTransportKind.stdio,
+          command: 'npx',
+        ),
+        status: McpServerStatus.ready,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const McpSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      Future<void> expectRoles(
+        double width, {
+        required Set<TRPaneRole> roles,
+        required TRPaneRole activeRole,
+        required bool collection,
+        required bool detail,
+      }) async {
+        tester.view.physicalSize = Size(width, 800);
+        await tester.pumpAndSettle();
+        final scope = tester.widget<TRAdaptivePaneScope>(
+          find.byType(TRAdaptivePaneScope),
+        );
+        expect(
+          scope.visibleRoles,
+          roles,
+          reason: 'visible roles at $width logical pixels',
+        );
+        expect(
+          scope.activeRole,
+          activeRole,
+          reason: 'active role at $width logical pixels',
+        );
+        expect(
+          find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+          roles.contains(TRPaneRole.navigation) ? findsOneWidget : findsNothing,
+          reason: 'navigation role at $width logical pixels',
+        );
+        expect(
+          find.byKey(const ValueKey<String>('mcp-server-list')),
+          collection ? findsOneWidget : findsNothing,
+          reason: 'collection role at $width logical pixels',
+        );
+        expect(
+          find.byKey(const ValueKey<String>('mcp-server-editor-github')),
+          detail ? findsOneWidget : findsNothing,
+          reason: 'detail role at $width logical pixels',
+        );
+      }
+
+      await expectRoles(
+        599,
+        roles: const <TRPaneRole>{TRPaneRole.primary},
+        activeRole: TRPaneRole.primary,
+        collection: true,
+        detail: false,
+      );
+      for (final width in <double>[600, 839, 840, 1199]) {
+        await expectRoles(
+          width,
+          roles: const <TRPaneRole>{
+            TRPaneRole.navigation,
+            TRPaneRole.primary,
+          },
+          activeRole: TRPaneRole.primary,
+          collection: true,
+          detail: false,
+        );
+      }
+      await expectRoles(
+        1200,
+        roles: const <TRPaneRole>{
+          TRPaneRole.navigation,
+          TRPaneRole.primary,
+          TRPaneRole.secondary,
+        },
+        activeRole: TRPaneRole.secondary,
+        collection: true,
+        detail: true,
+      );
+
+      // Resizing keeps the selected server active. Narrow layouts replace the
+      // collection with the secondary role rather than reclassifying the
+      // already allocated content pane.
+      for (final width in <double>[1199, 840, 839, 600]) {
+        await expectRoles(
+          width,
+          roles: const <TRPaneRole>{
+            TRPaneRole.navigation,
+            TRPaneRole.secondary,
+          },
+          activeRole: TRPaneRole.secondary,
+          collection: false,
+          detail: true,
+        );
+      }
+      await expectRoles(
+        599,
+        roles: const <TRPaneRole>{TRPaneRole.secondary},
+        activeRole: TRPaneRole.secondary,
+        collection: false,
+        detail: true,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      final scope = tester.widget<TRAdaptivePaneScope>(
+        find.byType(TRAdaptivePaneScope),
+      );
+      expect(scope.activeRole, TRPaneRole.primary);
+      expect(scope.visibleRoles, const <TRPaneRole>{TRPaneRole.primary});
+      expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
+      expect(
+        find.byKey(const ValueKey<String>('mcp-server-editor-github')),
+        findsNothing,
+      );
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );

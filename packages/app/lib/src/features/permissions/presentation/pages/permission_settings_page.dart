@@ -27,15 +27,18 @@ class _PermissionSettingsPageState
     extends ConsumerState<PermissionSettingsPage> {
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(
-      permissionSettingsControllerProvider(widget.hostId),
-    );
+    final provider = permissionSettingsControllerProvider(widget.hostId);
+    final state = ref.watch(provider);
     return SettingsAsyncContent<PermissionSettingsDto>(
       state: state,
       loading: SettingsSkeletonLayout.form(
         semanticLabel: AppLocalizations.of(context).settingsLoading,
       ),
-      error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
+      error: (error, stackTrace) => SettingsErrorState(
+        key: const ValueKey<String>('permission-settings-error'),
+        error: error,
+        onRetry: () => ref.invalidate(provider),
+      ),
       data: (settings) {
         final l10n = AppLocalizations.of(context);
         return SettingsScaffold(

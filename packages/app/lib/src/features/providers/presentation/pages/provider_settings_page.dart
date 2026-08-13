@@ -5,6 +5,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -19,170 +20,401 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Provider connection settings for one daemon host.
-class SettingsPage extends ConsumerStatefulWidget {
+class SettingsPage extends StatefulWidget {
   /// Creates a provider connection settings page.
-  const SettingsPage({required this.hostId, this.embedded = false, super.key});
+  const SettingsPage({
+    required this.hostId,
+    this.paneController,
+    this.slot,
+    this.embedded = false,
+    super.key,
+  }) : assert(
+         (paneController == null) == (slot == null),
+         'paneController and slot must be supplied together.',
+       );
 
   /// Route host identifier.
   final String hostId;
+
+  /// Selection shared by the collection and detail scaffold slots.
+  final ProviderSettingsPaneController? paneController;
+
+  /// Which scaffold slot this widget supplies.
+  final SettingsPaneSlot? slot;
 
   /// Whether the unified settings shell supplies navigation chrome.
   final bool embedded;
 
   @override
-  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-enum _ProviderPane { empty, catalog, preset, custom, connection }
-
-class _SettingsPageState extends ConsumerState<SettingsPage> {
-  String? _selectedId;
-  String? _reauthConnectionId;
-  ProviderDefinitionDto? _draftDefinition;
-  _ProviderPane _pane = _ProviderPane.empty;
-
-  ProviderSettingsControllerProvider get _provider =>
-      providerSettingsControllerProvider(widget.hostId);
+class _SettingsPageState extends State<SettingsPage> {
+  late final ProviderSettingsPaneController _paneController;
+  TRThreePaneNavigator<String>? _standaloneNavigator;
 
   @override
-  void didUpdateWidget(SettingsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId) _showList();
+  void initState() {
+    super.initState();
+    _paneController = widget.paneController ?? ProviderSettingsPaneController();
+    if (widget.slot == null) {
+      _standaloneNavigator = TRThreePaneNavigator<String>(
+        initialDestination: const TRPaneDestination<String>(
+          role: TRPaneRole.navigation,
+          value: 'provider-collection',
+        ),
+      );
+      _paneController.addListener(_syncStandaloneDestination);
+    }
+  }
+
+  @override
+  void dispose() {
+    _paneController.removeListener(_syncStandaloneDestination);
+    _standaloneNavigator?.dispose();
+    if (widget.paneController == null) _paneController.dispose();
+    super.dispose();
+  }
+
+  void _syncStandaloneDestination() {
+    final navigator = _standaloneNavigator;
+    if (navigator == null) return;
+    final destinationId = _paneController.destinationId;
+    if (destinationId == null) {
+      navigator.pop();
+      return;
+    }
+    final destination = TRPaneDestination<String>(
+      role: TRPaneRole.primary,
+      value: destinationId,
+    );
+    if (navigator.currentDestination.role == TRPaneRole.primary) {
+      navigator.replace(destination);
+    } else {
+      navigator.push(destination);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final body = SettingsAsyncContent<ProviderSettingsState?>(
-      state: ref.watch(_provider),
-      loading: SettingsSkeletonLayout.listDetail(
-        semanticLabel: l10n.settingsLoading,
-      ),
-      error: (error, _) => Center(child: TRText.inherit('$error')),
-      data: (state) => state == null
-          ? Center(child: TRText.inherit(l10n.providerSettingsRequiresDaemon))
-          : _body(state),
-    );
+    final slot = widget.slot;
+    final body = slot == null
+        ? TRNavigableThreePaneScaffold<String>(
+            navigator: _standaloneNavigator!,
+            navigationPane: _ProviderSettingsSlot(
+              hostId: widget.hostId,
+              paneController: _paneController,
+              slot: SettingsPaneSlot.collection,
+            ),
+            primaryPane: _ProviderSettingsSlot(
+              hostId: widget.hostId,
+              paneController: _paneController,
+              slot: SettingsPaneSlot.detail,
+            ),
+          )
+        : _ProviderSettingsSlot(
+            hostId: widget.hostId,
+            paneController: _paneController,
+            slot: slot,
+          );
     if (widget.embedded) return body;
-    return TinestPageShell(
-      appBar: TinestPageHeader(
-        leading: TRIconButton(
-          appearance: TRAppearance.ghost,
-          label: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: context.pop,
-          icon: const Icon(TinestIcons.back),
+    return PopScope<Object?>(
+      canPop: !_paneController.hasDetail,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _paneController.showCollection();
+      },
+      child: TinestPageShell(
+        appBar: TinestPageHeader(
+          leading: TRIconButton(
+            appearance: TRAppearance.ghost,
+            label: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: _paneController.hasDetail
+                ? _paneController.showCollection
+                : context.pop,
+            icon: Icon(TinestIcons.backFor(context)),
+          ),
+          title: TRText.inherit(l10n.providerSettingsTitle),
         ),
-        title: TRText.inherit(l10n.providerSettingsTitle),
+        body: body,
       ),
-      body: body,
+    );
+  }
+}
+
+class _ProviderSettingsSlot extends ConsumerWidget {
+  const _ProviderSettingsSlot({
+    required this.hostId,
+    required this.paneController,
+    required this.slot,
+  });
+
+  final String hostId;
+  final ProviderSettingsPaneController paneController;
+  final SettingsPaneSlot slot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final provider = providerSettingsControllerProvider(hostId);
+    final state = ref.watch(provider);
+    return ListenableBuilder(
+      listenable: paneController,
+      builder: (context, _) => SettingsAsyncContent<ProviderSettingsState?>(
+        state: state,
+        loading: settingsPaneSkeleton(
+          slot,
+          semanticLabel: l10n.settingsLoading,
+        ),
+        error: (error, _) => slot == SettingsPaneSlot.collection
+            ? SettingsCollectionErrorState(
+                key: const ValueKey<String>('provider-settings-error'),
+                title: l10n.providerSettingsConnected,
+                error: error,
+                onRetry: () => ref.invalidate(provider),
+              )
+            : SettingsEmptyState(
+                title: l10n.providerSettingsSelectConnection,
+                icon: const Icon(TinestIcons.network),
+              ),
+        data: (state) => state == null
+            ? SettingsEmptyState(
+                title: slot == SettingsPaneSlot.collection
+                    ? l10n.providerSettingsRequiresDaemon
+                    : l10n.providerSettingsSelectConnection,
+                icon: Icon(
+                  slot == SettingsPaneSlot.collection
+                      ? TinestIcons.daemon
+                      : TinestIcons.network,
+                ),
+              )
+            : _body(context, state),
+      ),
     );
   }
 
-  Widget _body(ProviderSettingsState state) {
+  Widget _body(BuildContext context, ProviderSettingsState state) {
+    final widthClass = settingsAdaptiveWidthClassOf(context);
+    final showsSplit =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
+    if (slot == SettingsPaneSlot.collection &&
+        paneController._pane == _ProviderPane.empty &&
+        showsSplit &&
+        paneController.canAutoSelect &&
+        state.connections.isNotEmpty) {
+      _scheduleInitialSelection(state.connections.first.id);
+    }
     final selected = state.connections
-        .where((connection) => connection.id == _selectedId)
+        .where((connection) => connection.id == paneController.selectedId)
         .firstOrNull;
     final reauthConnection = state.connections
-        .where((connection) => connection.id == _reauthConnectionId)
+        .where(
+          (connection) => connection.id == paneController.reauthConnectionId,
+        )
         .firstOrNull;
-    if (_pane == _ProviderPane.connection && selected == null) {
-      _pane = _ProviderPane.empty;
-      _selectedId = null;
+    if (paneController._pane == _ProviderPane.connection && selected == null) {
+      _scheduleCollection();
     }
-    final collection = _ProviderCollection(
-      connections: state.connections,
-      selectedId: _pane == _ProviderPane.connection ? _selectedId : null,
-      onSelected: (id) => setState(() {
-        _selectedId = id;
-        _draftDefinition = null;
-        _reauthConnectionId = null;
-        _pane = _ProviderPane.connection;
-      }),
-      onAdd: () => setState(() {
-        _selectedId = null;
-        _draftDefinition = null;
-        _reauthConnectionId = null;
-        _pane = _ProviderPane.catalog;
-      }),
-    );
-    final detail = switch (_pane) {
+    if (slot == SettingsPaneSlot.collection) {
+      return _ProviderCollection(
+        connections: state.connections,
+        selectedId: paneController._pane == _ProviderPane.connection
+            ? paneController.selectedId
+            : null,
+        onSelected: paneController.selectConnectionId,
+        onAdd: paneController.showCatalog,
+      );
+    }
+    return switch (paneController._pane) {
       _ProviderPane.empty => SettingsEmptyState(
         title: AppLocalizations.of(context).providerSettingsSelectConnection,
         icon: const Icon(TinestIcons.network),
       ),
       _ProviderPane.catalog => _ProviderCatalogPane(
-        hostId: widget.hostId,
+        hostId: hostId,
         state: state,
-        onPreset: (definition) => setState(() {
-          _draftDefinition = definition;
-          _pane = _ProviderPane.preset;
-        }),
-        onCustom: () => setState(() => _pane = _ProviderPane.custom),
+        onPreset: paneController.showPreset,
+        onCustom: paneController.showCustom,
       ),
       _ProviderPane.preset => _PresetProviderPane(
-        key: ValueKey<String>('provider-preset-${_draftDefinition!.id}'),
-        hostId: widget.hostId,
+        key: ValueKey<String>(
+          'provider-preset-${paneController.draftDefinition!.id}',
+        ),
+        hostId: hostId,
         state: state,
-        definition: _draftDefinition!,
+        definition: paneController.draftDefinition!,
         existing: reauthConnection,
         onCancel: reauthConnection == null
-            ? () => setState(() => _pane = _ProviderPane.catalog)
-            : () => _selectConnection(reauthConnection),
-        onConnected: _selectConnection,
+            ? paneController.showCatalog
+            : () => paneController.selectConnection(reauthConnection),
+        onConnected: paneController.selectConnection,
       ),
       _ProviderPane.custom => _CustomProviderPane(
-        hostId: widget.hostId,
+        hostId: hostId,
         state: state,
-        onCancel: () => setState(() => _pane = _ProviderPane.catalog),
-        onSaved: _selectConnection,
+        onCancel: paneController.showCatalog,
+        onSaved: paneController.selectConnection,
       ),
       _ProviderPane.connection =>
         selected!.customConfig == null
             ? _ProviderConnectionPane(
                 key: ValueKey<String>('provider-detail-${selected.id}'),
-                hostId: widget.hostId,
+                hostId: hostId,
                 state: state,
                 connection: selected,
-                onChanged: _selectConnection,
-                onRemoved: _showList,
-                onReauth: (definition) => setState(() {
-                  _reauthConnectionId = selected.id;
-                  _draftDefinition = definition;
-                  _pane = _ProviderPane.preset;
-                }),
+                onChanged: paneController.selectConnection,
+                onRemoved: paneController.showCollection,
+                onReauth: (definition) => paneController.showReauthentication(
+                  selected.id,
+                  definition,
+                ),
               )
             : _CustomProviderPane(
                 key: ValueKey<String>('provider-detail-${selected.id}'),
-                hostId: widget.hostId,
+                hostId: hostId,
                 state: state,
                 existing: selected,
-                onCancel: _showList,
-                onSaved: _selectConnection,
-                onRemoved: _showList,
+                onCancel: paneController.showCollection,
+                onSaved: paneController.selectConnection,
+                onRemoved: paneController.showCollection,
               ),
     };
-    return SettingsListDetailLayout(
-      key: const ValueKey<String>('provider-settings-list-detail'),
-      collection: collection,
-      detail: detail,
-      detailVisible: _pane != _ProviderPane.empty,
-      onBack: _showList,
-    );
   }
 
-  void _selectConnection(ProviderConnectionDto connection) => setState(() {
-    _selectedId = connection.id;
+  void _scheduleInitialSelection(String connectionId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.selectInitialConnectionId(connectionId);
+    });
+  }
+
+  void _scheduleCollection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.showCollection();
+    });
+  }
+}
+
+enum _ProviderPane { empty, catalog, preset, custom, connection }
+
+/// Owns Provider selection and creation flow independently from pane slots.
+class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
+  String? _selectedId;
+  String? _reauthConnectionId;
+  ProviderDefinitionDto? _draftDefinition;
+  _ProviderPane _pane = _ProviderPane.empty;
+
+  /// Selected provider connection ID, when an existing connection is active.
+  String? get selectedId => _selectedId;
+
+  /// Connection being reauthenticated, when the preset flow is a retry.
+  String? get reauthConnectionId => _reauthConnectionId;
+
+  /// Provider definition selected from the catalog.
+  ProviderDefinitionDto? get draftDefinition => _draftDefinition;
+
+  @override
+  bool get hasDetail => _pane != _ProviderPane.empty;
+
+  @override
+  String? get destinationId => switch (_pane) {
+    _ProviderPane.empty => null,
+    _ProviderPane.catalog => 'provider-catalog',
+    _ProviderPane.preset =>
+      'provider-preset-${_draftDefinition!.id}-${_reauthConnectionId ?? 'new'}',
+    _ProviderPane.custom => 'provider-custom-new',
+    _ProviderPane.connection => 'provider-connection-$_selectedId',
+  };
+
+  /// Shows the first connection on initial desktop entry.
+  void selectInitialConnectionId(String id) {
+    if (!consumeInitialSelection()) return;
+    _selectedId = id;
+    _pane = _ProviderPane.connection;
+    notifyListeners();
+  }
+
+  /// Shows an existing provider connection.
+  void selectConnection(ProviderConnectionDto connection) =>
+      selectConnectionId(connection.id);
+
+  /// Shows an existing provider connection by ID.
+  void selectConnectionId(String id) {
+    consumeExplicitNavigation();
+    if (_pane == _ProviderPane.connection && _selectedId == id) return;
+    _selectedId = id;
     _draftDefinition = null;
     _reauthConnectionId = null;
     _pane = _ProviderPane.connection;
-  });
+    notifyListeners();
+  }
 
-  void _showList() => setState(() {
+  /// Shows the provider catalog.
+  void showCatalog() {
+    consumeExplicitNavigation();
+    if (_pane == _ProviderPane.catalog) return;
+    _selectedId = null;
+    _draftDefinition = null;
+    _reauthConnectionId = null;
+    _pane = _ProviderPane.catalog;
+    notifyListeners();
+  }
+
+  /// Shows the connection flow for a catalog definition.
+  void showPreset(ProviderDefinitionDto definition) {
+    consumeExplicitNavigation();
+    _selectedId = null;
+    _draftDefinition = definition;
+    _reauthConnectionId = null;
+    _pane = _ProviderPane.preset;
+    notifyListeners();
+  }
+
+  /// Shows the preset flow for an existing connection retry.
+  void showReauthentication(
+    String connectionId,
+    ProviderDefinitionDto definition,
+  ) {
+    consumeExplicitNavigation();
+    _selectedId = null;
+    _reauthConnectionId = connectionId;
+    _draftDefinition = definition;
+    _pane = _ProviderPane.preset;
+    notifyListeners();
+  }
+
+  /// Shows the custom provider creator.
+  void showCustom() {
+    consumeExplicitNavigation();
+    if (_pane == _ProviderPane.custom) return;
+    _selectedId = null;
+    _draftDefinition = null;
+    _reauthConnectionId = null;
+    _pane = _ProviderPane.custom;
+    notifyListeners();
+  }
+
+  @override
+  void showCollection() {
+    consumeExplicitNavigation();
+    if (!hasDetail) return;
     _selectedId = null;
     _draftDefinition = null;
     _reauthConnectionId = null;
     _pane = _ProviderPane.empty;
-  });
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    final hadDetail = hasDetail;
+    resetInitialSelection();
+    _selectedId = null;
+    _draftDefinition = null;
+    _reauthConnectionId = null;
+    _pane = _ProviderPane.empty;
+    if (hadDetail) notifyListeners();
+  }
 }
 
 class _ProviderCollection extends StatelessWidget {
@@ -203,9 +435,9 @@ class _ProviderCollection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.collection(
-          title: l10n.providerSettingsConnected,
-          subtitle: '${connections.length}',
+        TRPaneHeader(
+          title: TRText.inherit(l10n.providerSettingsConnected),
+          description: TRText.inherit('${connections.length}'),
           actions: <Widget>[
             TRIconButton(
               key: const ValueKey<String>('provider-add-button'),
@@ -217,27 +449,30 @@ class _ProviderCollection extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: SettingsCollectionList(
-            children: <Widget>[
-              if (connections.isEmpty)
-                SettingsRow.collection(
+          child: connections.isEmpty
+              ? SettingsEmptyState(
                   key: const ValueKey<String>('provider-list-empty'),
-                  title: TRText.inherit(l10n.providerSettingsNoConnections),
+                  title: l10n.providerSettingsNoConnections,
+                  icon: const Icon(TinestIcons.network),
+                )
+              : SettingsCollectionList(
+                  children: <Widget>[
+                    for (final connection in connections)
+                      SettingsNavigationRow(
+                        key: ValueKey<String>(
+                          'provider-connection-${connection.id}',
+                        ),
+                        selected: connection.id == selectedId,
+                        leading: Icon(_statusIcon(connection.status)),
+                        title: TRText.inherit(connection.displayName),
+                        description: TRText.inherit(
+                          '${connection.modelPrefix} · '
+                          '${_statusLabel(l10n, connection.status)}',
+                        ),
+                        onPressed: () => onSelected(connection.id),
+                      ),
+                  ],
                 ),
-              for (final connection in connections)
-                SettingsRow.collection(
-                  key: ValueKey<String>('provider-connection-${connection.id}'),
-                  selected: connection.id == selectedId,
-                  leading: Icon(_statusIcon(connection.status)),
-                  title: TRText.inherit(connection.displayName),
-                  description: TRText.inherit(
-                    '${connection.modelPrefix} · '
-                    '${_statusLabel(l10n, connection.status)}',
-                  ),
-                  onTap: () => onSelected(connection.id),
-                ),
-            ],
-          ),
         ),
       ],
     );
@@ -272,8 +507,9 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
     final catalog = widget.state.catalog;
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: l10n.providerSettingsAdd,
+        TRPaneHeader(
+          title: TRText.inherit(l10n.providerSettingsAdd),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRButton(
               key: const ValueKey<String>('provider-catalog-refresh'),
@@ -306,23 +542,21 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
                     ),
                   ),
                   for (final definition in catalog.definitions)
-                    SettingsRow(
+                    SettingsNavigationRow(
                       key: ValueKey<String>('provider-add-${definition.id}'),
                       leading: const Icon(TinestIcons.network),
                       title: TRText.inherit(definition.name),
                       description: TRText.inherit(definition.description),
-                      control: const Icon(TinestIcons.chevronRight),
-                      onTap: () => widget.onPreset(definition),
+                      onPressed: () => widget.onPreset(definition),
                     ),
-                  SettingsRow(
+                  SettingsNavigationRow(
                     key: const ValueKey<String>('provider-add-custom'),
                     leading: const Icon(TinestIcons.tune),
                     title: TRText.inherit(l10n.providerSettingsCustomName),
                     description: TRText.inherit(
                       l10n.providerSettingsCustomSubtitle,
                     ),
-                    control: const Icon(TinestIcons.chevronRight),
-                    onTap: widget.onCustom,
+                    onPressed: widget.onCustom,
                   ),
                 ],
               ),
@@ -417,10 +651,13 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: widget.existing == null
-              ? l10n.providerSettingsConnectTitle(widget.definition.name)
-              : widget.definition.name,
+        TRPaneHeader(
+          title: TRText.inherit(
+            widget.existing == null
+                ? l10n.providerSettingsConnectTitle(widget.definition.name)
+                : widget.definition.name,
+          ),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRButton(
               appearance: TRAppearance.ghost,
@@ -497,7 +734,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                         l10n.providerSettingsExperimental,
                       ),
                     ),
-                  if (_error case final error?)
+                  if (_unexpectedError case final error?)
                     TRAlert(
                       variant: TRStatusVariant.danger,
                       title: TRText.inherit('$error'),
@@ -519,8 +756,9 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
         attempt.status == ProviderAuthAttemptStatus.cancelled;
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: l10n.providerSettingsOAuthPending,
+        TRPaneHeader(
+          title: TRText.inherit(l10n.providerSettingsOAuthPending),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             if (!terminal)
               TRButton(
@@ -552,12 +790,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
             children: <Widget>[
               SettingsSection(
                 title: _authStatusLabel(l10n, attempt.status),
-                banner: attempt.error == null
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit(attempt.error!),
-                      ),
+                banner: _oauthErrorBanner(attempt),
                 children: <Widget>[
                   if (attempt.instructions != null)
                     SettingsRow(
@@ -602,16 +835,35 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                         icon: const Icon(TinestIcons.copy),
                       ),
                     ),
-                  if (_openError case final error?)
-                    SettingsRow(
-                      leading: const Icon(TinestIcons.warning),
-                      title: TRText('$error', color: TRTextColor.danger),
-                    ),
                 ],
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget? _oauthErrorBanner(ProviderAuthAttemptDto attempt) {
+    final authError = attempt.error;
+    final openError = _openError;
+    if (authError == null && openError == null) return null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (authError != null)
+          TRAlert(
+            variant: TRStatusVariant.danger,
+            title: TRText.inherit(authError),
+          ),
+        if (authError != null && openError != null)
+          const SizedBox(height: TRSpacing.medium),
+        if (openError != null)
+          TRAlert(
+            key: const ValueKey<String>('provider-oauth-open-error'),
+            variant: TRStatusVariant.danger,
+            title: TRText.inherit('$openError'),
+          ),
       ],
     );
   }
@@ -635,6 +887,8 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
     }
     return l10n.providerSettingsModelPrefixInvalid;
   }
+
+  Object? get _unexpectedError => _isPrefixConflict(_error) ? null : _error;
 
   ProviderAuthMethodDto _initialMethod() {
     final existing = widget.existing;
@@ -780,7 +1034,6 @@ class _ProviderConnectionPaneState
   late final TextEditingController _prefix = TextEditingController(
     text: widget.connection.modelPrefix,
   );
-  bool _loadingModels = false;
   Object? _error;
 
   @override
@@ -807,9 +1060,12 @@ class _ProviderConnectionPaneState
         widget.state.models[widget.connection.id] ?? const <ProviderModelDto>[];
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: widget.connection.displayName,
-          subtitle: _statusLabel(l10n, widget.connection.status),
+        TRPaneHeader(
+          title: TRText.inherit(widget.connection.displayName),
+          description: TRText.inherit(
+            _statusLabel(l10n, widget.connection.status),
+          ),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             if (definition != null)
               TRButton(
@@ -818,9 +1074,10 @@ class _ProviderConnectionPaneState
                 child: TRText.inherit(l10n.providerSettingsReconnect),
               ),
             TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: _disconnect,
-              child: TRText.inherit(l10n.providerSettingsDisconnect),
+              key: const ValueKey<String>('provider-prefix-save'),
+              intent: TRIntent.primary,
+              onPressed: _savePrefix,
+              child: TRText.inherit(l10n.commonSave),
             ),
           ],
         ),
@@ -829,7 +1086,7 @@ class _ProviderConnectionPaneState
             children: <Widget>[
               SettingsSection.form(
                 title: l10n.providerSettingsModelPrefix,
-                banner: _error == null
+                banner: _error == null || _isPrefixConflict(_error)
                     ? null
                     : TRAlert(
                         variant: TRStatusVariant.danger,
@@ -841,22 +1098,15 @@ class _ProviderConnectionPaneState
                     controller: _prefix,
                     label: l10n.providerSettingsModelPrefix,
                     helperText: l10n.providerSettingsModelPrefixHelp,
-                  ),
-                  TRButton(
-                    onPressed: _savePrefix,
-                    child: TRText.inherit(l10n.commonSave),
+                    errorText: _isPrefixConflict(_error)
+                        ? l10n.providerSettingsModelPrefixConflict
+                        : null,
+                    onChanged: (_) => setState(() => _error = null),
                   ),
                 ],
               ),
               SettingsSection.form(
                 title: l10n.providerSettingsDefaultModelTitle,
-                action: _loadingModels
-                    ? null
-                    : TRButton(
-                        appearance: TRAppearance.outline,
-                        onPressed: _loadModels,
-                        child: TRText.inherit(l10n.commonRetry),
-                      ),
                 children: <Widget>[
                   TRSelect<String?>.controlled(
                     key: const ValueKey<String>('provider-default-model'),
@@ -899,6 +1149,29 @@ class _ProviderConnectionPaneState
                   ),
                 ],
               ),
+              SettingsSection(
+                title: l10n.providerSettingsDisconnectTitle,
+                children: <Widget>[
+                  SettingsRow(
+                    title: TRText.inherit(
+                      l10n.providerSettingsDisconnectBody(
+                        widget.connection.displayName,
+                      ),
+                    ),
+                    control: TRButton(
+                      key: const ValueKey<String>(
+                        'provider-connection-disconnect',
+                      ),
+                      appearance: TRAppearance.ghost,
+                      intent: TRIntent.danger,
+                      onPressed: _disconnect,
+                      child: TRText.inherit(
+                        l10n.providerSettingsDisconnect,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -926,10 +1199,7 @@ class _ProviderConnectionPaneState
   }
 
   Future<void> _loadModels() async {
-    setState(() {
-      _loadingModels = true;
-      _error = null;
-    });
+    setState(() => _error = null);
     try {
       await ref
           .read(
@@ -938,8 +1208,6 @@ class _ProviderConnectionPaneState
           .loadModels(widget.connection.id);
     } on Object catch (error) {
       if (mounted) setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _loadingModels = false);
     }
   }
 
@@ -959,7 +1227,7 @@ class _ProviderConnectionPaneState
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.providerSettingsDisconnect),
           ),
@@ -980,6 +1248,9 @@ class _ProviderConnectionPaneState
     if (disconnected) widget.onRemoved();
   }
 }
+
+bool _isPrefixConflict(Object? error) =>
+    error is TinestClientException && error.code == 'model_prefix_conflict';
 
 class _CustomProviderPane extends ConsumerStatefulWidget {
   const _CustomProviderPane({
@@ -1081,35 +1352,31 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: widget.existing == null
-              ? l10n.providerSettingsCustomTitle
-              : widget.existing!.displayName,
+        TRPaneHeader(
+          title: TRText.inherit(
+            widget.existing == null
+                ? l10n.providerSettingsCustomTitle
+                : widget.existing!.displayName,
+          ),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRButton(
               appearance: TRAppearance.ghost,
               onPressed: _busy ? null : widget.onCancel,
               child: TRText.inherit(l10n.commonCancel),
             ),
-            if (widget.existing != null)
-              TRButton(
-                appearance: TRAppearance.ghost,
-                onPressed: _busy ? null : _disconnect,
-                child: TRText.inherit(l10n.providerSettingsDisconnect),
-              ),
-            if (widget.existing != null)
-              TRButton(
-                key: const ValueKey<String>('provider-custom-delete'),
-                appearance: TRAppearance.ghost,
-                onPressed: _busy ? null : _delete,
-                child: TRText.inherit(l10n.commonDelete),
-              ),
             TRButton(
               key: const ValueKey<String>('provider-custom-save'),
               intent: TRIntent.primary,
               onPressed: _busy ? null : _save,
               child: TRText.inherit(
-                _busy ? l10n.commonSaving : l10n.commonSave,
+                widget.existing == null
+                    ? _busy
+                          ? l10n.commonCreating
+                          : l10n.commonCreate
+                    : _busy
+                    ? l10n.commonSaving
+                    : l10n.commonSave,
               ),
             ),
           ],
@@ -1118,7 +1385,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
           child: SettingsScaffold(
             children: <Widget>[
               SettingsSection.form(
-                title: l10n.providerSettingsCustomTitle,
                 banner: _error == null
                     ? null
                     : TRAlert(
@@ -1243,6 +1509,46 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                     ),
                   ],
                 ),
+              if (widget.existing case final existing?)
+                SettingsSection(
+                  title: l10n.providerSettingsActions,
+                  children: <Widget>[
+                    SettingsRow(
+                      title: TRText.inherit(
+                        l10n.providerSettingsDisconnectBody(
+                          existing.displayName,
+                        ),
+                      ),
+                      control: TRButton(
+                        key: const ValueKey<String>(
+                          'provider-custom-disconnect',
+                        ),
+                        appearance: TRAppearance.ghost,
+                        intent: TRIntent.danger,
+                        onPressed: _busy ? null : _disconnect,
+                        child: TRText.inherit(
+                          l10n.providerSettingsDisconnect,
+                        ),
+                      ),
+                    ),
+                    SettingsRow(
+                      title: TRText.inherit(
+                        l10n.providerSettingsDeleteCustomBody(
+                          existing.displayName,
+                        ),
+                      ),
+                      control: TRButton(
+                        key: const ValueKey<String>(
+                          'provider-custom-delete',
+                        ),
+                        appearance: TRAppearance.ghost,
+                        intent: TRIntent.danger,
+                        onPressed: _busy ? null : _delete,
+                        child: TRText.inherit(l10n.commonDelete),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1358,7 +1664,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.commonDelete),
           ),
@@ -1414,7 +1720,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.providerSettingsDisconnect),
           ),

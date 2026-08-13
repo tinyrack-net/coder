@@ -26,7 +26,7 @@ final class PermissionSettingsControllerProvider
     required PermissionSettingsControllerFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
+         retry: noAutomaticRetry,
          name: r'permissionSettingsControllerProvider',
          isAutoDispose: true,
          dependencies: null,
@@ -60,7 +60,7 @@ final class PermissionSettingsControllerProvider
 }
 
 String _$permissionSettingsControllerHash() =>
-    r'976f4c94f2fcdb6d8b0b2e6985d4c31926126a1d';
+    r'fac724f680c2ff932d00e8d06f41f40eda9946c4';
 
 /// Owns the daemon-global permission default for one connected host.
 
@@ -75,7 +75,7 @@ final class PermissionSettingsControllerFamily extends $Family
         > {
   PermissionSettingsControllerFamily._()
     : super(
-        retry: null,
+        retry: noAutomaticRetry,
         name: r'permissionSettingsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,

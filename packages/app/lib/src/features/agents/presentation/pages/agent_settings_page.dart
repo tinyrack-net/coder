@@ -10,6 +10,7 @@ import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
@@ -21,143 +22,208 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Markdown-backed agent manager for one connected daemon.
-class AgentSettingsPage extends ConsumerStatefulWidget {
+class AgentSettingsPage extends ConsumerWidget {
   /// Creates an agent settings page.
-  const AgentSettingsPage({required this.hostId, super.key});
+  const AgentSettingsPage({
+    required this.hostId,
+    required this.paneController,
+    required this.slot,
+    super.key,
+  });
 
   /// App-local daemon profile identifier.
   final String hostId;
 
-  @override
-  ConsumerState<AgentSettingsPage> createState() => _AgentSettingsPageState();
-}
+  /// Selection shared by the collection and detail scaffold slots.
+  final AgentSettingsPaneController paneController;
 
-class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
-  String? _selectedId;
-  bool _creating = false;
+  /// Which scaffold slot this widget supplies.
+  final SettingsPaneSlot slot;
 
   @override
-  void didUpdateWidget(AgentSettingsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId) {
-      _selectedId = null;
-      _creating = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(agentDefinitionsControllerProvider(widget.hostId));
-    return SettingsAsyncContent<AgentDefinitionsState>(
-      state: state,
-      loading: SettingsSkeletonLayout.listDetail(
-        semanticLabel: AppLocalizations.of(context).settingsLoading,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final widthClass = settingsAdaptiveWidthClassOf(context);
+    final showsSplit =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
+    final state = ref.watch(agentDefinitionsControllerProvider(hostId));
+    return ListenableBuilder(
+      listenable: paneController,
+      builder: (context, _) => SettingsAsyncContent<AgentDefinitionsState>(
+        state: state,
+        loading: settingsPaneSkeleton(
+          slot,
+          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        ),
+        error: (error, _) => slot == SettingsPaneSlot.collection
+            ? SettingsCollectionErrorState(
+                title: AppLocalizations.of(context).agentSettingsHeading,
+                error: error,
+                onRetry: () =>
+                    ref.invalidate(agentDefinitionsControllerProvider(hostId)),
+              )
+            : SettingsEmptyState(
+                title: AppLocalizations.of(context).agentSettingsSelectAgent,
+                icon: const Icon(TinestIcons.agent),
+              ),
+        data: (value) =>
+            _buildPane(context, ref, value, showsSplit: showsSplit),
       ),
-      error: (error, _) => _AgentSettingsError(
-        error: error,
-        onRetry: () =>
-            ref.invalidate(agentDefinitionsControllerProvider(widget.hostId)),
-      ),
-      data: (value) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final compact =
-                constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
-            if (!_creating &&
-                !compact &&
-                !value.definitions.any(
-                  (definition) => definition.id == _selectedId,
-                )) {
-              _selectedId = value.definitions.firstOrNull?.id;
-            }
-            final selected = _creating
-                ? null
-                : value.definitions
-                      .where((definition) => definition.id == _selectedId)
-                      .firstOrNull;
-            final list = _AgentDefinitionList(
-              state: value,
-              selectedId: _selectedId,
-              onSelected: (id) => setState(() {
-                _creating = false;
-                _selectedId = id;
-              }),
-              onCreate: () => _create(value),
-            );
-            final detail = _creating
-                ? _CreateAgentPane(
-                    existingIds: value.definitions
-                        .map((definition) => definition.id)
-                        .toSet(),
-                    onCancel: _showAgentList,
-                    onCreate: (input) {
-                      final template = value.definitions
-                          .where((definition) => definition.id == 'tinest')
-                          .first;
-                      final definition = template.copyWith(
-                        id: input.id,
-                        name: input.name,
-                        description: '',
-                        mode: input.mode,
-                        // A new agent starts without a prompt, so the override
-                        // stays off regardless of the template's own setting.
-                        promptEnabled: false,
-                        systemPrompt: '',
-                        callableAgentIds: const <String>[],
-                        contentHash: '',
-                        sourcePath: '',
-                        isBuiltIn: false,
-                        isArchived: false,
-                        diagnostics: const <AgentDefinitionDiagnosticDto>[],
-                      );
-                      return ref
-                          .read(
-                            agentDefinitionsControllerProvider(
-                              widget.hostId,
-                            ).notifier,
-                          )
-                          .create(input.id, definition);
-                    },
-                    onCreated: (created) => setState(() {
-                      _creating = false;
-                      _selectedId = created.id;
-                    }),
-                  )
-                : selected == null
-                ? SettingsEmptyState(
-                    title: AppLocalizations.of(
-                      context,
-                    ).agentSettingsSelectAgent,
-                    icon: const Icon(TinestIcons.agent),
-                  )
-                : _AgentEditor(
-                    key: ValueKey<String>(selected.contentHash),
-                    hostId: widget.hostId,
-                    state: value,
-                    definition: selected,
-                    onArchived: () => setState(() => _selectedId = null),
-                  );
-            return SettingsListDetailLayout(
-              collection: list,
-              detail: detail,
-              detailVisible: selected != null || _creating,
-              onBack: _showAgentList,
-            );
-          },
-        );
-      },
     );
   }
 
-  void _create(AgentDefinitionsState _) => setState(() {
+  Widget _buildPane(
+    BuildContext context,
+    WidgetRef ref,
+    AgentDefinitionsState value, {
+    required bool showsSplit,
+  }) {
+    final selected = value.definitions
+        .where((definition) => definition.id == paneController.selectedId)
+        .firstOrNull;
+    if (slot == SettingsPaneSlot.collection &&
+        !paneController.creating &&
+        showsSplit &&
+        paneController.canAutoSelect &&
+        selected == null &&
+        value.definitions.isNotEmpty) {
+      _scheduleInitialSelection(value.definitions.first.id);
+    } else if (!paneController.creating &&
+        paneController.hasDetail &&
+        selected == null) {
+      _scheduleCollection();
+    }
+    if (slot == SettingsPaneSlot.collection) {
+      return _AgentDefinitionList(
+        state: value,
+        selectedId: paneController.selectedId,
+        onSelected: paneController.select,
+        onCreate: paneController.create,
+      );
+    }
+    if (paneController.creating) {
+      return _CreateAgentPane(
+        existingIds: value.definitions
+            .map((definition) => definition.id)
+            .toSet(),
+        onCancel: paneController.showCollection,
+        onCreate: (input) {
+          final template = value.definitions
+              .where((definition) => definition.id == 'tinest')
+              .first;
+          final definition = template.copyWith(
+            id: input.id,
+            name: input.name,
+            description: '',
+            mode: input.mode,
+            // A new agent starts without a prompt, so the override stays off
+            // regardless of the template's own setting.
+            promptEnabled: false,
+            systemPrompt: '',
+            callableAgentIds: const <String>[],
+            contentHash: '',
+            sourcePath: '',
+            isBuiltIn: false,
+            isArchived: false,
+            diagnostics: const <AgentDefinitionDiagnosticDto>[],
+          );
+          return ref
+              .read(agentDefinitionsControllerProvider(hostId).notifier)
+              .create(input.id, definition);
+        },
+        onCreated: (created) => paneController.select(created.id),
+      );
+    }
+    return selected == null
+        ? SettingsEmptyState(
+            title: AppLocalizations.of(context).agentSettingsSelectAgent,
+            icon: const Icon(TinestIcons.agent),
+          )
+        : _AgentEditor(
+            key: ValueKey<String>(selected.contentHash),
+            hostId: hostId,
+            state: value,
+            definition: selected,
+            onArchived: paneController.showCollection,
+          );
+  }
+
+  void _scheduleInitialSelection(String agentId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.selectInitial(agentId);
+    });
+  }
+
+  void _scheduleCollection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.showCollection();
+    });
+  }
+}
+
+/// Owns Agent collection selection independently from either rendered slot.
+class AgentSettingsPaneController extends SettingsPaneCoordinatorBase {
+  String? _selectedId;
+  bool _creating = false;
+
+  /// Selected Agent ID, when an existing definition is active.
+  String? get selectedId => _selectedId;
+
+  /// Whether the create destination is active.
+  bool get creating => _creating;
+
+  @override
+  bool get hasDetail => _creating || _selectedId != null;
+
+  @override
+  String? get destinationId => _creating
+      ? 'agent-create'
+      : _selectedId == null
+      ? null
+      : 'agent-$_selectedId';
+
+  /// Shows the first Agent on initial desktop entry.
+  void selectInitial(String id) {
+    if (!consumeInitialSelection()) return;
+    _selectedId = id;
+    notifyListeners();
+  }
+
+  /// Shows an existing Agent definition.
+  void select(String id) {
+    consumeExplicitNavigation();
+    if (!_creating && _selectedId == id) return;
+    _creating = false;
+    _selectedId = id;
+    notifyListeners();
+  }
+
+  /// Shows the create Agent destination.
+  void create() {
+    consumeExplicitNavigation();
+    if (_creating) return;
     _creating = true;
     _selectedId = null;
-  });
+    notifyListeners();
+  }
 
-  void _showAgentList() => setState(() {
+  @override
+  void showCollection() {
+    consumeExplicitNavigation();
+    if (!hasDetail) return;
     _creating = false;
     _selectedId = null;
-  });
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    final hadDetail = hasDetail;
+    resetInitialSelection();
+    _creating = false;
+    _selectedId = null;
+    if (hadDetail) notifyListeners();
+  }
 }
 
 class _AgentDefinitionList extends StatelessWidget {
@@ -178,9 +244,11 @@ class _AgentDefinitionList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.collection(
-          title: l10n.agentSettingsHeading,
-          subtitle: l10n.agentSettingsCount(state.definitions.length),
+        TRPaneHeader(
+          title: TRText.inherit(l10n.agentSettingsHeading),
+          description: TRText.inherit(
+            l10n.agentSettingsCount(state.definitions.length),
+          ),
           actions: <Widget>[
             TRIconButton(
               key: const ValueKey('agent-add-button'),
@@ -192,29 +260,36 @@ class _AgentDefinitionList extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: SettingsCollectionList(
-            children: <Widget>[
-              for (final definition in state.definitions)
-                SettingsRow.collection(
-                  selected: definition.id == selectedId,
-                  leading: Icon(
-                    definition.mode == AgentMode.primary
-                        ? TinestIcons.agent
-                        : TinestIcons.branch,
-                  ),
-                  title: TRText.inherit(definition.name),
-                  description: TRText.inherit(
-                    definition.isStale
-                        ? l10n.agentSettingsModeStale(definition.mode.name)
-                        : definition.mode.name,
-                  ),
-                  control: definition.diagnostics.isEmpty
-                      ? null
-                      : const Icon(TinestIcons.warning),
-                  onTap: () => onSelected(definition.id),
+          child: state.definitions.isEmpty
+              ? SettingsEmptyState(
+                  title: l10n.agentSettingsEmpty,
+                  icon: const Icon(TinestIcons.agent),
+                )
+              : SettingsCollectionList(
+                  children: <Widget>[
+                    for (final definition in state.definitions)
+                      SettingsNavigationRow(
+                        selected: definition.id == selectedId,
+                        leading: Icon(
+                          definition.mode == AgentMode.primary
+                              ? TinestIcons.agent
+                              : TinestIcons.branch,
+                        ),
+                        title: TRText.inherit(definition.name),
+                        description: TRText.inherit(
+                          definition.isStale
+                              ? l10n.agentSettingsModeStale(
+                                  definition.mode.name,
+                                )
+                              : definition.mode.name,
+                        ),
+                        trailing: definition.diagnostics.isEmpty
+                            ? null
+                            : const Icon(TinestIcons.warning),
+                        onPressed: () => onSelected(definition.id),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );
@@ -305,9 +380,10 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     );
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: definition.name,
-          subtitle: definition.sourcePath,
+        TRPaneHeader(
+          title: TRText.inherit(definition.name),
+          description: TRText.inherit(definition.sourcePath),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRIconButton(
               key: const ValueKey('agent-copy-path-button'),
@@ -317,22 +393,6 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                   Clipboard.setData(ClipboardData(text: definition.sourcePath)),
               icon: const Icon(TinestIcons.copy),
             ),
-            if (definition.isBuiltIn)
-              TRIconButton(
-                key: const ValueKey('agent-reset-button'),
-                appearance: TRAppearance.ghost,
-                label: l10n.agentSettingsReset,
-                onPressed: editable ? _reset : null,
-                icon: const Icon(TinestIcons.restore),
-              )
-            else
-              TRIconButton(
-                key: const ValueKey('agent-archive-button'),
-                appearance: TRAppearance.ghost,
-                label: l10n.workspaceArchive,
-                onPressed: editable ? _archive : null,
-                icon: const Icon(TinestIcons.archive),
-              ),
             TRButton(
               intent: TRIntent.primary,
               onPressed: editable ? () => _save(force: false) : null,
@@ -433,6 +493,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                           ? l10n.composerConnectProviderFirst
                           : null,
                       child: SettingsRow(
+                        flush: true,
                         // A providerless selector remains actionable so the
                         // product wrapper can explain how to unlock it.
                         enabled: modelSelectionEnabled || modelBlocked,
@@ -539,6 +600,39 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                       ),
                   ],
                 ),
+              SettingsSection(
+                title: definition.isBuiltIn
+                    ? l10n.agentSettingsReset
+                    : l10n.workspaceArchive,
+                children: <Widget>[
+                  SettingsRow(
+                    title: TRText.inherit(
+                      definition.isBuiltIn
+                          ? l10n.agentSettingsResetBody
+                          : l10n.agentSettingsArchiveBody,
+                    ),
+                    control: TRButton(
+                      key: ValueKey<String>(
+                        definition.isBuiltIn
+                            ? 'agent-reset-button'
+                            : 'agent-archive-button',
+                      ),
+                      appearance: TRAppearance.ghost,
+                      intent: TRIntent.danger,
+                      onPressed: editable
+                          ? definition.isBuiltIn
+                                ? _reset
+                                : _archive
+                          : null,
+                      child: TRText.inherit(
+                        definition.isBuiltIn
+                            ? l10n.agentSettingsReset
+                            : l10n.workspaceArchive,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -712,7 +806,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
           ),
           TRButton(
             key: ValueKey<String>(confirmKey),
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(accept),
           ),
@@ -839,8 +933,9 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.detail(
-          title: l10n.agentSettingsAddTitle,
+        TRPaneHeader(
+          title: TRText.inherit(l10n.agentSettingsAddTitle),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
           actions: <Widget>[
             TRButton(
               appearance: TRAppearance.ghost,
@@ -860,7 +955,6 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
           child: SettingsScaffold(
             children: <Widget>[
               SettingsSection.form(
-                title: l10n.agentSettingsAddTitle,
                 children: <Widget>[
                   TRTextField(
                     controller: _id,
@@ -906,7 +1000,10 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
                         : (value) => setState(() => _mode = value!),
                   ),
                   if (_error case final error?)
-                    TRText('$error', color: TRTextColor.danger),
+                    TRAlert(
+                      variant: TRStatusVariant.danger,
+                      title: TRText.inherit('$error'),
+                    ),
                 ],
               ),
             ],
@@ -939,27 +1036,4 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
       }
     }
   }
-}
-
-class _AgentSettingsError extends StatelessWidget {
-  const _AgentSettingsError({required this.error, required this.onRetry});
-
-  final Object error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        TRText('$error'),
-        const SizedBox(height: TRSpacing.medium),
-        TRButton(
-          intent: TRIntent.primary,
-          onPressed: onRetry,
-          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
-        ),
-      ],
-    ),
-  );
 }

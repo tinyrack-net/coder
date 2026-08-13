@@ -28,6 +28,46 @@ Set<String> _messageKeys(String source) {
   return decoded.keys.where((key) => !key.startsWith('@')).toSet();
 }
 
+const _settingsTermsByLocale = <String, Map<String, String>>{
+  'app_ja.arb': {
+    'settingsSectionApp': 'アプリ',
+    'settingsSectionDaemon': 'デーモン',
+    'settingsDaemonSelectLabel': 'デーモン',
+    'settingsCategoryGeneral': '一般',
+    'settingsCategoryProjects': 'プロジェクト',
+    'settingsCategoryAgent': 'エージェント',
+    'settingsCategoryProvider': 'プロバイダー',
+    'settingsCategoryDaemon': 'デーモン',
+    'projectSettingsHeading': 'プロジェクト',
+    'agentSettingsHeading': 'エージェント',
+    'appSettingsRemoteDetails': 'デーモン',
+    'relayConfirmDaemon': 'デーモン ID',
+    'relayPathRelay': 'リレー',
+  },
+  'app_ko.arb': {
+    'settingsSectionApp': '앱',
+    'settingsSectionDaemon': '데몬',
+    'settingsDaemonSelectLabel': '데몬',
+    'settingsCategoryGeneral': '일반',
+    'settingsCategoryProjects': '프로젝트',
+    'settingsCategoryAgent': '에이전트',
+    'settingsCategoryProvider': '프로바이더',
+    'settingsCategoryDaemon': '데몬',
+    'projectSettingsHeading': '프로젝트',
+    'projectSettingsCount': '프로젝트 {count}개',
+    'agentSettingsHeading': '에이전트',
+    'agentSettingsCount': '정의 {count}개',
+    'agentSettingsModelId': '모델 ID',
+    'agentSettingsOverwrite': '덮어쓰기',
+    'agentSettingsReload': '다시 불러오기',
+    'appSettingsBearerToken': 'Bearer 토큰',
+    'appSettingsRemoteDetails': '데몬',
+    'providerSettingsBaseUrl': '기본 URL',
+    'relayConfirmDaemon': '데몬 ID',
+    'relayPathRelay': '릴레이',
+  },
+};
+
 void main() {
   final arbFiles = Directory('lib/l10n')
       .listSync()
@@ -69,6 +109,24 @@ void main() {
       final decoded = jsonDecode(file.readAsStringSync());
       expect(decoded, isA<Map<String, dynamic>>());
     });
+
+    final expectedSettingsTerms = _settingsTermsByLocale[name];
+    if (expectedSettingsTerms != null) {
+      test('$name localizes core Settings terms consistently', () {
+        final table =
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        expect(
+          <String, String>{
+            for (final key in expectedSettingsTerms.keys)
+              key: table[key]! as String,
+          },
+          expectedSettingsTerms,
+          reason:
+              'Settings navigation and pane chrome must not switch back to '
+              'English within a localized flow.',
+        );
+      });
+    }
 
     if (name == templateName) continue;
 

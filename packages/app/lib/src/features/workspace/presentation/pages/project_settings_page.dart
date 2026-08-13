@@ -4,6 +4,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
@@ -23,105 +24,127 @@ List<String> parseHookCommands(String value) => <String>[
 String formatHookCommands(List<String> commands) => commands.join('\n');
 
 /// Per-project settings manager for one connected daemon.
-class ProjectSettingsPage extends ConsumerStatefulWidget {
+class ProjectSettingsPage extends ConsumerWidget {
   /// Creates a project settings page.
-  const ProjectSettingsPage({required this.hostId, super.key});
+  const ProjectSettingsPage({
+    required this.hostId,
+    required this.paneController,
+    required this.slot,
+    super.key,
+  });
 
   /// App-local daemon profile identifier.
   final String hostId;
 
-  @override
-  ConsumerState<ProjectSettingsPage> createState() =>
-      _ProjectSettingsPageState();
-}
+  /// Selection shared by the collection and detail scaffold slots.
+  final ProjectSettingsPaneController paneController;
 
-class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
-  String? _selectedId;
+  /// Which scaffold slot this widget supplies.
+  final SettingsPaneSlot slot;
 
   @override
-  void didUpdateWidget(ProjectSettingsPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hostId != widget.hostId) _selectedId = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final widthClass = settingsAdaptiveWidthClassOf(context);
+    final showsSplit =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
     final state = ref.watch(workspaceCatalogControllerProvider);
     // Catalogs merge per host, so this host's section can still be on its way
     // even though the unified state already has a value. An empty project
     // list must not render for a catalog that has simply not arrived.
-    if (state.value?.isHostPending(widget.hostId) ?? false) {
-      return SettingsSkeletonLayout.listDetail(
+    if (state.value?.isHostPending(hostId) ?? false) {
+      return settingsPaneSkeleton(
+        slot,
         semanticLabel: AppLocalizations.of(context).settingsLoading,
       );
     }
-    return SettingsAsyncContent<UnifiedWorkspaceCatalogState>(
-      state: state,
-      loading: SettingsSkeletonLayout.listDetail(
-        semanticLabel: AppLocalizations.of(context).settingsLoading,
-      ),
-      error: (error, _) => _ProjectSettingsError(
-        error: error,
-        onRetry: () => ref.invalidate(workspaceCatalogControllerProvider),
-      ),
-      data: (value) {
-        final projects = _projects(value);
-        if (projects.isEmpty) {
-          return SettingsEmptyState(
-            title: AppLocalizations.of(context).projectSettingsNoProjects,
-            icon: const Icon(TinestIcons.folder),
-          );
-        }
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final compact =
-                constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
-            if (!compact &&
-                !projects.any((project) => project.id == _selectedId)) {
-              _selectedId = projects.first.id;
-            }
-            final selected = projects
-                .where((project) => project.id == _selectedId)
-                .firstOrNull;
-            final list = _ProjectList(
-              projects: projects,
-              selectedId: _selectedId,
-              onSelected: (id) => setState(() => _selectedId = id),
-            );
-            final detail = selected == null
-                ? SettingsEmptyState(
+    return ListenableBuilder(
+      listenable: paneController,
+      builder: (context, _) =>
+          SettingsAsyncContent<UnifiedWorkspaceCatalogState>(
+            state: state,
+            loading: settingsPaneSkeleton(
+              slot,
+              semanticLabel: AppLocalizations.of(context).settingsLoading,
+            ),
+            error: (error, _) => slot == SettingsPaneSlot.collection
+                ? SettingsCollectionErrorState(
+                    title: AppLocalizations.of(context).projectSettingsHeading,
+                    error: error,
+                    onRetry: () =>
+                        ref.invalidate(workspaceCatalogControllerProvider),
+                  )
+                : SettingsEmptyState(
                     title: AppLocalizations.of(
                       context,
                     ).projectSettingsSelectProject,
                     icon: const Icon(TinestIcons.folder),
-                  )
-                : _ProjectEditor(
-                    key: ValueKey<String>(
-                      '${widget.hostId} ${selected.id}',
-                    ),
-                    hostId: widget.hostId,
-                    workspace: selected,
-                  );
-            return SettingsListDetailLayout(
-              collection: list,
-              detail: detail,
-              detailVisible: selected != null,
-              onBack: _showProjectList,
-            );
-          },
-        );
-      },
+                  ),
+            data: (value) {
+              final projects = _projects(value);
+              final selectedId = paneController.destination;
+              final selected = projects
+                  .where((project) => project.id == selectedId)
+                  .firstOrNull;
+              if (slot == SettingsPaneSlot.collection &&
+                  showsSplit &&
+                  paneController.canAutoSelect &&
+                  projects.isNotEmpty &&
+                  selected == null) {
+                _scheduleInitialSelection(projects.first.id);
+              } else if (paneController.hasDetail && selected == null) {
+                _scheduleCollection();
+              }
+              return switch (slot) {
+                SettingsPaneSlot.collection => _ProjectList(
+                  projects: projects,
+                  selectedId: selectedId,
+                  onSelected: paneController.showDetail,
+                ),
+                SettingsPaneSlot.detail =>
+                  selected == null
+                      ? SettingsEmptyState(
+                          title: AppLocalizations.of(
+                            context,
+                          ).projectSettingsSelectProject,
+                          icon: const Icon(TinestIcons.folder),
+                        )
+                      : _ProjectEditor(
+                          key: ValueKey<String>('$hostId ${selected.id}'),
+                          hostId: hostId,
+                          workspace: selected,
+                        ),
+              };
+            },
+          ),
     );
   }
 
   List<WorkspaceDto> _projects(UnifiedWorkspaceCatalogState state) =>
       <WorkspaceDto>[
-        ...?state.catalogs[widget.hostId]?.workspaces,
+        ...?state.catalogs[hostId]?.workspaces,
       ]..sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
-  void _showProjectList() => setState(() => _selectedId = null);
+  void _scheduleInitialSelection(String projectId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.showInitialDetail(projectId);
+    });
+  }
+
+  void _scheduleCollection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      paneController.showCollection();
+    });
+  }
+}
+
+/// Owns the selected project independently from either rendered pane slot.
+class ProjectSettingsPaneController extends SettingsPaneController<String> {
+  /// Creates a project pane controller.
+  ProjectSettingsPaneController()
+    : super(destinationIdFor: (projectId) => 'project-$projectId');
 }
 
 class _ProjectList extends StatelessWidget {
@@ -140,29 +163,35 @@ class _ProjectList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.collection(
-          title: l10n.projectSettingsHeading,
-          subtitle: l10n.projectSettingsCount(projects.length),
+        TRPaneHeader(
+          title: TRText.inherit(l10n.projectSettingsHeading),
+          description: TRText.inherit(
+            l10n.projectSettingsCount(projects.length),
+          ),
         ),
         Expanded(
-          child: SettingsCollectionList(
-            children: <Widget>[
-              for (final project in projects)
-                SettingsRow.collection(
-                  selected: project.id == selectedId,
-                  leading: Icon(
-                    project.kind == WorkspaceKind.git
-                        ? TinestIcons.worktree
-                        : TinestIcons.folder,
-                  ),
-                  title: TRText.inherit(project.name),
-                  // The row already caps and ellipsizes its description.
-                  description: TRText.inherit(project.rootPath),
-                  control: const Icon(TinestIcons.chevronRight),
-                  onTap: () => onSelected(project.id),
+          child: projects.isEmpty
+              ? SettingsEmptyState(
+                  title: l10n.projectSettingsNoProjects,
+                  icon: const Icon(TinestIcons.folder),
+                )
+              : SettingsCollectionList(
+                  children: <Widget>[
+                    for (final project in projects)
+                      SettingsNavigationRow(
+                        selected: project.id == selectedId,
+                        leading: Icon(
+                          project.kind == WorkspaceKind.git
+                              ? TinestIcons.worktree
+                              : TinestIcons.folder,
+                        ),
+                        title: TRText.inherit(project.name),
+                        // The row already caps and ellipsizes its description.
+                        description: TRText.inherit(project.rootPath),
+                        onPressed: () => onSelected(project.id),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );
@@ -222,7 +251,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
       loading: SettingsSkeletonLayout.form(
         semanticLabel: l10n.settingsLoading,
       ),
-      error: (error, _) => _ProjectSettingsError(
+      error: (error, _) => SettingsErrorState(
         error: error,
         onRetry: () => ref.invalidate(provider),
       ),
@@ -246,9 +275,10 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         }
         return Column(
           children: <Widget>[
-            SettingsPaneHeader.detail(
-              title: widget.workspace.name,
-              subtitle: value.sourcePath,
+            TRPaneHeader(
+              title: TRText.inherit(widget.workspace.name),
+              description: TRText.inherit(value.sourcePath),
+              contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
               actions: <Widget>[
                 TRIconButton(
                   appearance: TRAppearance.ghost,
@@ -426,27 +456,4 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
           );
     }
   }
-}
-
-class _ProjectSettingsError extends StatelessWidget {
-  const _ProjectSettingsError({required this.error, required this.onRetry});
-
-  final Object error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        TRText('$error'),
-        const SizedBox(height: TRSpacing.medium),
-        TRButton(
-          intent: TRIntent.primary,
-          onPressed: onRetry,
-          child: TRText.inherit(AppLocalizations.of(context).commonRetry),
-        ),
-      ],
-    ),
-  );
 }

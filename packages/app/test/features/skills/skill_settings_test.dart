@@ -1,8 +1,8 @@
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
-import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +34,26 @@ void main() {
   );
 
   testWidgets(
+    'skill collection explains that no skills are configured',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        skills: const <SkillDto>[],
+      );
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      expect(find.text('설정된 스킬이 없습니다.'), findsOneWidget);
+      // The detail destination still explains that it needs a selection; the
+      // collection itself owns the distinct no-data copy above.
+      expect(find.text('스킬을 선택하세요.'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__skill_management__widget'],
+  );
+
+  testWidgets(
     'skill settings shows every source with its badge and toggles one skill',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 900));
@@ -50,11 +70,11 @@ void main() {
 
       // The mandatory built-in cannot be turned off.
       final mandatory = find.descendant(
-        of: find.widgetWithText(TinestListRow, 'coding-conventions'),
+        of: find.widgetWithText(SettingsNavigationRow, 'coding-conventions'),
         matching: find.byType(TRSwitch),
       );
       final toggleable = find.descendant(
-        of: find.widgetWithText(TinestListRow, 'commit'),
+        of: find.widgetWithText(SettingsNavigationRow, 'commit'),
         matching: find.byType(TRSwitch),
       );
       expect(tester.widget<TRSwitch>(mandatory).onCheckedChange, isNull);
@@ -86,12 +106,12 @@ void main() {
       expect(selector, findsOneWidget);
       expect(
         tester.getSize(selector).width,
-        TinestLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.large,
+        TinestLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.extraLarge,
       );
       expect(
         tester.getTopLeft(selector).dx,
-        tester.getTopLeft(find.byType(SettingsPaneHeader).first).dx +
-            TRSpacing.large,
+        tester.getTopLeft(find.byType(TRPaneHeader).first).dx +
+            TRSpacing.extraLarge,
       );
     },
     tags: const <String>['feature_test__skill_management__widget'],
@@ -184,6 +204,7 @@ void main() {
 
       await tester.tap(findAccessibleAction('스킬 추가'));
       await tester.pumpAndSettle();
+      expect(find.text('스킬 추가'), findsOneWidget);
       expect(find.byType(TRAlertDialog), findsNothing);
       await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
       await tester.enterText(_textInput('이름').last, 'release-notes');
@@ -207,6 +228,39 @@ void main() {
     tags: const <String>['feature_test__skill_management__widget'],
   );
 
+  testWidgets('skill create failures use the shared danger alert', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = FakeTinestApi(
+      workspaces: <WorkspaceDto>[workspace],
+      failNextSkillCreate: true,
+    );
+    final router = await _pumpSkills(tester, api);
+    addTearDown(router.dispose);
+
+    await tester.tap(findAccessibleAction('스킬 추가'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
+    await tester.enterText(_textInput('이름').last, 'release-notes');
+    await tester.enterText(_textInput('설명'), 'Release note workflow');
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    final create = find.widgetWithText(TRButton, '생성');
+    await tester.ensureVisible(create);
+    await tester.tap(create);
+    await tester.pumpAndSettle();
+
+    final errorText = find.textContaining('skill_create_failed');
+    final errorAlert = find.ancestor(
+      of: errorText,
+      matching: find.byType(TRAlert),
+    );
+    expect(errorAlert, findsOneWidget);
+    expect(tester.widget<TRAlert>(errorAlert).variant, TRStatusVariant.danger);
+  }, tags: const <String>['feature_test__skill_management__widget']);
+
   testWidgets(
     'deleting a skill asks for confirmation first',
     (tester) async {
@@ -218,7 +272,22 @@ void main() {
 
       await tester.tap(find.text('commit').first);
       await tester.pumpAndSettle();
-      await tester.tap(findAccessibleAction('스킬 삭제'));
+      final delete = find.byKey(
+        const ValueKey<String>('skill-delete-button'),
+      );
+      await tester.scrollUntilVisible(
+        delete,
+        TRSpacing.fourExtraLarge,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsScaffold),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.ensureVisible(delete);
+      await tester.pumpAndSettle();
+      await tester.tap(delete);
       await tester.pumpAndSettle();
       expect(find.text('commit 을(를) 삭제할까요?'), findsOneWidget);
 
@@ -226,7 +295,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(await api.prompts.listSkills(), hasLength(2));
 
-      await tester.tap(findAccessibleAction('스킬 삭제'));
+      await tester.ensureVisible(delete);
+      await tester.pumpAndSettle();
+      await tester.tap(delete);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제'));
       await tester.pumpAndSettle();
@@ -253,7 +324,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('commit'), findsWidgets);
     },
-    tags: const <String>['feature_test__skill_management__widget'],
+    tags: const <String>[
+      'feature_test__skill_management__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
   );
 
   testWidgets(

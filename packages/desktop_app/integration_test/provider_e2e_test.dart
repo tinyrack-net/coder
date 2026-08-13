@@ -185,7 +185,11 @@ Future<void> _pumpProviderSettings(
     find.byKey(const ValueKey<String>('workspace-settings-button')),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Provider'));
+  final providerCategory = find.byKey(
+    const ValueKey<String>('settings-category-row-provider'),
+  );
+  await pumpUntil(tester, providerCategory);
+  await tester.tap(providerCategory);
   await tester.pumpAndSettle();
 }
 

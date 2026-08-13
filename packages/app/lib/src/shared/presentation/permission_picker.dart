@@ -14,7 +14,7 @@ class PermissionSelect extends StatelessWidget {
     this.enabled = true,
     this.leading,
     this.appearance = TRFieldAppearance.solid,
-    this.uiSize = TRUiSize.md,
+    this.uiSize,
     this.width,
     super.key,
   });
@@ -41,7 +41,7 @@ class PermissionSelect extends StatelessWidget {
   final TRFieldAppearance appearance;
 
   /// Design-system control density.
-  final TRUiSize uiSize;
+  final TRUiSize? uiSize;
 
   /// Optional trigger width.
   final double? width;

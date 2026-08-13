@@ -86,6 +86,14 @@ void main() {
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const ProviderSettingsRoute(hostId: 'server').location,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
       expect(currentLocation(router), worktreeLocation);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
@@ -127,13 +135,18 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Projects'));
+      await tester.tap(find.text('프로젝트'));
       await tester.pumpAndSettle();
       expect(currentLocation(router), const ProjectSettingsRoute().location);
       expect(router.canPop(), isTrue);
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const ProjectSettingsRoute().location);
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
@@ -320,7 +333,7 @@ void main() {
       expect(find.byType(Navigator), findsOneWidget);
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
       expect(currentLocation(router), const GeneralSettingsRoute().location);
       expect(find.byType(Navigator), findsOneWidget);

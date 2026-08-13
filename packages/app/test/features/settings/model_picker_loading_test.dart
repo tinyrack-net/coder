@@ -57,6 +57,32 @@ void main() {
     },
   );
 
+  testWidgets('model Select inherits the comfortable mobile control size', (
+    tester,
+  ) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(390, 760);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _host(
+        () async => const <ModelPickerOption>[_option],
+        density: TRUiDensity.comfortable,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final trigger = find.descendant(
+      of: find.byKey(const ValueKey<String>('model-select')),
+      matching: find.byType(TextButton),
+    );
+    expect(trigger, findsOneWidget);
+    expect(
+      tester.getRect(trigger).height,
+      TRControlMetrics.heightOf(TRUiSize.xl),
+    );
+  });
+
   for (final (width, expectsSheet) in <(double, bool)>[
     (1000, false),
     (320, true),
@@ -101,11 +127,20 @@ const _option = ModelPickerOption(
   ),
 );
 
-Widget _host(ModelPickerOptionsLoader loader) => MaterialApp(
+Widget _host(
+  ModelPickerOptionsLoader loader, {
+  TRUiDensity? density,
+}) => MaterialApp(
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,
   supportedLocales: testSupportedLocales,
   theme: testLightTheme,
+  builder: (context, child) => density == null
+      ? child ?? const SizedBox.shrink()
+      : TRUiDensityScope(
+          density: density,
+          child: child ?? const SizedBox.shrink(),
+        ),
   home: Scaffold(
     body: Center(
       child: AsyncModelSelect(
