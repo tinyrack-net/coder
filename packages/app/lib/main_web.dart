@@ -5,7 +5,7 @@ import 'package:app/src/features/conversation/infrastructure/attachment_web.dart
 import 'package:app/src/features/hosts/infrastructure/remote_bootstrap.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography_flutter/cryptography_flutter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Starts the web widget tree with an injectable remote-only bootstrap.
 ///

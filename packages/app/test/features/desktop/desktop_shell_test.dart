@@ -200,6 +200,31 @@ void main() {
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );
+
+    test(
+      'Linux hide retries while the native window remains visible',
+      () async {
+        var hidden = 0;
+        var nativeVisible = true;
+        final waits = <Duration>[];
+        final window = PluginDesktopWindow(
+          platform: TargetPlatform.linux,
+          hideWindow: () async {
+            hidden += 1;
+            if (hidden == 3) nativeVisible = false;
+          },
+          windowIsVisible: () async => nativeVisible,
+          waitForWindowState: (duration) async => waits.add(duration),
+        );
+
+        await window.hide();
+
+        expect(hidden, 3);
+        expect(waits, hasLength(2));
+        expect(window.visible.value, isFalse);
+      },
+      tags: const <String>['feature_test__desktop_residency__unit'],
+    );
   });
 
   group('process terminator', () {

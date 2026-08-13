@@ -7,7 +7,7 @@ import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/src/features/workspace/infrastructure/directory_picker_io.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography_flutter/cryptography_flutter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Everything the desktop entrypoint resolves before it can build [TinestApp].
 class DesktopBoot {

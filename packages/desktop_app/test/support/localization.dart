@@ -1,6 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Light Tinyrack theme used by every widget-test harness.
@@ -28,7 +28,10 @@ final AppLocalizations testL10n = lookupAppLocalizations(testLocale);
 
 /// Delegates every test app needs to resolve [AppLocalizations].
 const Iterable<LocalizationsDelegate<dynamic>> testLocalizationsDelegates =
-    AppLocalizations.localizationsDelegates;
+    <LocalizationsDelegate<dynamic>>[
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ];
 
 /// Locales every test app supports.
 const Iterable<Locale> testSupportedLocales = AppLocalizations.supportedLocales;

@@ -32,6 +32,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  material_ui: ^1.0.0
   protocol: ^0.1.0
   relay: ^0.4.0
   relay_protocol: ^0.1.0
@@ -46,7 +47,7 @@ dev_dependencies:
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: fb5bb97b5f20ab466b69be8a8160dc29fae90825
+      ref: 5eff13cd98ffc4f661d65d19e96f08ca1e9472a9
       path: packages/ui_flutter
 
 flutter:

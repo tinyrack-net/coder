@@ -3,7 +3,7 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/presentation/chat_first_line_alignment.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders the plan the agent recorded with `update_plan`.

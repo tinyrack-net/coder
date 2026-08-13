@@ -4,8 +4,8 @@ library;
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -99,7 +99,7 @@ void main() {
 Widget _harness(Widget child) => MaterialApp(
   theme: testLightTheme,
   locale: testLocale,
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: testLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: TinestUiDensity(child: Scaffold(body: child)),
 );

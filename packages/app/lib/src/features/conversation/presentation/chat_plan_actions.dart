@@ -9,8 +9,8 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/sessions/application/session_starter.dart';
 import 'package:app/src/features/sessions/application/sessions_controller.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 

@@ -11,10 +11,10 @@ import 'package:app/src/features/desktop/presentation/desktop_title_bar.dart';
 import 'package:app/src/features/desktop/presentation/tray_menu.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// How long quitting waits for the app and its daemon to tear themselves down.

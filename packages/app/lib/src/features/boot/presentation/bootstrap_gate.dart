@@ -1,5 +1,5 @@
 import 'package:app/src/features/boot/presentation/boot_splash.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Paints [splash] at once and swaps to [builder] when [bootstrap] resolves.
 ///

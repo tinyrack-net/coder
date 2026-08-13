@@ -31,6 +31,7 @@ dependencies:
   # `MarkdownElementBuilder` hands out `markdown` AST nodes, so a custom block
   # renderer has to name the package it is given.
   markdown: ^7.3.1
+  material_ui: ^1.0.0
   meta: ^1.17.0
   mobile_scanner: ^7.4.0
   path: ^1.9.1
@@ -46,7 +47,7 @@ dependencies:
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: fb5bb97b5f20ab466b69be8a8160dc29fae90825
+      ref: 5eff13cd98ffc4f661d65d19e96f08ca1e9472a9
       path: packages/ui_flutter
   tray_manager: ^0.5.3
   url_launcher: ^6.3.2

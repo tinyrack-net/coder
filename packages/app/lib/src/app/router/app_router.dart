@@ -6,8 +6,8 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/pages/host_settings_page.dart';
 import 'package:app/src/features/hosts/presentation/pages/relay_pairing_pages.dart';
 import 'package:app/src/features/settings/domain/settings_category.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'app_router.g.dart';
 

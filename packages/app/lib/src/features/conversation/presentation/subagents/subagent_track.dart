@@ -2,7 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// The collapsible subagent drawer docked on top of the chat composer.

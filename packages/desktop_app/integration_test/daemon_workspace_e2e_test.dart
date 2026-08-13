@@ -10,9 +10,9 @@ import 'package:app/testing/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:desktop_app/src/embedded_daemon.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/ephemeral_port.dart';

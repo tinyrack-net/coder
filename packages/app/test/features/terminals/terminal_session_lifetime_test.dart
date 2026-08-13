@@ -9,9 +9,9 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
 import 'package:app/src/features/terminals/application/terminal_session_controller.dart';
 import 'package:app/src/features/terminals/application/terminal_session_leases.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:termworld/termworld.dart';
 

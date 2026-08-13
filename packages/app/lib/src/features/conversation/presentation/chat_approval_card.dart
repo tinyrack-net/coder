@@ -6,8 +6,8 @@ import 'package:app/src/features/conversation/application/chat_timeline_model.da
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 

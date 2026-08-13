@@ -4,7 +4,7 @@ import 'package:app/src/features/conversation/application/chat_tool_presentation
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
 import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Maps a tool glyph to its semantic Lucide icon.

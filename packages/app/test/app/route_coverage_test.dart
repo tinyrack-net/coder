@@ -4,10 +4,10 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 
 import '../support/fake_tinest_api.dart';

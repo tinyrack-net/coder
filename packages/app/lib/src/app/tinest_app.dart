@@ -12,9 +12,9 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Tinest application composition.
@@ -119,7 +119,10 @@ class _TinestAppView extends ConsumerWidget {
       // A null locale lets Flutter resolve the system locale against
       // [AppLocalizations.supportedLocales], which falls back to English.
       locale: localeTag == null ? null : Locale(localeTag),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
@@ -128,12 +131,13 @@ class _TinestAppView extends ConsumerWidget {
         child: TRContextMenuPresenterScope(
           // The one place a concrete presenter is named. A widget test that
           // omits this scope gets the deterministic Flutter presentation
-          // instead of a menu the operating system would draw outside the tree.
+          // instead of a menu the operating system would draw outside the
+          // tree.
           presenter: const TRNativeContextMenuPresenter(),
           child: TRTooltipProvider(
-            // Outside the desktop shell rather than inside it: that shell only
-            // builds where the platform has a window to dress, so a report
-            // placed within it would never reach mobile or the web.
+            // Outside the desktop shell rather than inside it: that shell
+            // only builds where the platform has a window to dress, so a
+            // report placed within it would never reach mobile or the web.
             child: TinestToastScope(
               child: !resident
                   ? child ?? const SizedBox.shrink()
