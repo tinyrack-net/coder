@@ -1,12 +1,11 @@
-import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Selects Tinest's semantic UI density from the available window width.
 ///
 /// The product owns the responsive policy while `tinyrack_ui` owns the
-/// geometry of each density. This deliberately follows the existing compact
-/// breakpoint on every platform instead of guessing from an input device.
+/// geometry of each density. This follows the shared adaptive width class so
+/// comfortable density starts exactly when navigation shows one pane.
 class TinestUiDensity extends StatelessWidget {
   /// Creates the responsive density boundary around [child].
   const TinestUiDensity({required this.child, super.key});
@@ -33,7 +32,8 @@ class TinestUiDensity extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TRUiDensityScope(
     density:
-        MediaQuery.sizeOf(context).width < TinestLayoutMetrics.compactBreakpoint
+        TRAdaptiveWidthClass.fromWidth(MediaQuery.sizeOf(context).width) ==
+            TRAdaptiveWidthClass.compact
         ? TRUiDensity.comfortable
         : TRUiDensity.standard,
     child: child,

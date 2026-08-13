@@ -2464,15 +2464,19 @@ Future<void> _centerSettingsAction(
   WidgetTester tester,
   Finder action,
 ) async {
+  final scrollable = find
+      .descendant(
+        of: find.byType(ListView).last,
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  // Saving can briefly replace the editor with its loading state. Wait for the
+  // settings scrollable to remount before revealing the trailing action.
+  await pumpUntil(tester, scrollable);
   await tester.scrollUntilVisible(
     action,
     TRSpacing.fourExtraLarge,
-    scrollable: find
-        .descendant(
-          of: find.byType(ListView).last,
-          matching: find.byType(Scrollable),
-        )
-        .first,
+    scrollable: scrollable,
   );
   await Scrollable.ensureVisible(tester.element(action), alignment: 0.5);
   await tester.pumpAndSettle();

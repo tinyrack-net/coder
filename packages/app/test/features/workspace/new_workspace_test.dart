@@ -139,14 +139,14 @@ void main() {
       expect(agent, findsOneWidget);
       expect(model, findsOneWidget);
 
-      await tester.binding.setSurfaceSize(const Size(768, 900));
-      tester.view.physicalSize = const Size(768, 900);
+      await tester.binding.setSurfaceSize(const Size(600, 900));
+      tester.view.physicalSize = const Size(600, 900);
       await tester.pumpAndSettle();
       expect(settings, findsNothing);
       expect(agent, findsOneWidget);
 
-      await tester.binding.setSurfaceSize(const Size(767, 900));
-      tester.view.physicalSize = const Size(767, 900);
+      await tester.binding.setSurfaceSize(const Size(599, 900));
+      tester.view.physicalSize = const Size(599, 900);
       await tester.pumpAndSettle();
       expect(settings, findsOneWidget);
       expect(agent, findsNothing);

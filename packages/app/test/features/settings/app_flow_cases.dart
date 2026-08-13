@@ -790,6 +790,11 @@ void _registerSettingsAppFlows() {
           reason: 'visible roles at $width logical pixels',
         );
         expect(
+          TRUiDensityScope.of(tester.element(find.byType(TRAdaptivePaneScope))),
+          roles.length == 1 ? TRUiDensity.comfortable : TRUiDensity.standard,
+          reason: 'UI density at $width logical pixels',
+        );
+        expect(
           scope.activeRole,
           activeRole,
           reason: 'active role at $width logical pixels',
