@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/presentation/new_workspace_pane.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
+import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -108,10 +110,12 @@ void main() {
   );
 
   testWidgets(
-    'new workspace switches between selector bar and compact settings by width',
+    'new workspace follows the application UI density boundary',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1100, 900);
       final router = await _pump(
         tester,
         FakeTinestApi(
@@ -135,12 +139,14 @@ void main() {
       expect(agent, findsOneWidget);
       expect(model, findsOneWidget);
 
-      await tester.binding.setSurfaceSize(const Size(640, 900));
+      await tester.binding.setSurfaceSize(const Size(768, 900));
+      tester.view.physicalSize = const Size(768, 900);
       await tester.pumpAndSettle();
       expect(settings, findsOneWidget);
       expect(agent, findsNothing);
 
-      await tester.binding.setSurfaceSize(const Size(390, 900));
+      await tester.binding.setSurfaceSize(const Size(767, 900));
+      tester.view.physicalSize = const Size(767, 900);
       await tester.pumpAndSettle();
       expect(settings, findsOneWidget);
       expect(agent, findsNothing);
@@ -522,10 +528,8 @@ void main() {
       expect(projectRect.bottom, lessThan(worktreeRect.top));
       expect(worktreeRect.bottom, lessThan(branchRect.top));
 
-      final composer = tester.getRect(
-        find.byKey(const ValueKey('session-composer-input')),
-      );
-      expect(composer.bottom, greaterThan(700));
+      final composer = tester.getRect(find.byType(SessionComposer));
+      expect(composer.bottom, 780);
       expect(
         tester.getTopLeft(find.text('New workspace').first).dy,
         greaterThan(250),
@@ -1007,6 +1011,17 @@ Future<GoRouter> _pump(
   bool connected = true,
   bool settle = true,
 }) async {
+  final logicalSize = tester
+      .binding
+      .renderViews
+      .single
+      .configuration
+      .logicalConstraints
+      .biggest;
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = logicalSize;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   final router = GoRouter(
     initialLocation: const WorkspaceHomeRoute(compose: true).location,
     routes: $appRoutes,
@@ -1025,7 +1040,9 @@ Future<GoRouter> _pump(
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
-        builder: (context, child) => TRTooltipProvider(child: child!),
+        builder: (context, child) => TinestUiDensity(
+          child: TRTooltipProvider(child: child!),
+        ),
       ),
     ),
   );

@@ -90,6 +90,17 @@ Future<GoRouter> _pumpRoute(
   bool disableAnimations = false,
   bool settle = true,
 }) async {
+  final logicalSize = tester
+      .binding
+      .renderViews
+      .single
+      .configuration
+      .logicalConstraints
+      .biggest;
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = logicalSize;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   final router = GoRouter(initialLocation: location, routes: $appRoutes);
   final app = MaterialApp.router(
     theme: testLightTheme,

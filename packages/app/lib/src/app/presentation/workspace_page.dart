@@ -1463,8 +1463,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         worktreeId: widget.selection.worktreeId,
                         builder: (context, completion) => SessionComposer(
                           controller: _dropController,
-                          settingsBreakpoint:
-                              TinestLayoutMetrics.conversationContentMaxWidth,
                           header: subagentRows.isEmpty
                               ? null
                               : SubagentTrack(

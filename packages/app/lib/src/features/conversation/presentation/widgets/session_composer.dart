@@ -36,9 +36,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-const double _composerSettingsBreakpoint =
-    TRMeasurements.measureXl * 2 + TRMeasurements.measureLg;
-
 /// Turn settings shown in the composer toolbar row.
 class SessionComposerBar extends ConsumerStatefulWidget {
   /// Creates a [SessionComposerBar].
@@ -1115,7 +1112,7 @@ class _IntegerControlDialogState extends State<_IntegerControlDialog> {
   );
 }
 
-/// Labelled settings toolbar shown only above the composer breakpoint.
+/// Labelled settings toolbar shown at standard application density.
 class ComposerChipBar extends StatelessWidget {
   /// Creates a [ComposerChipBar].
   const ComposerChipBar({
@@ -1127,11 +1124,38 @@ class ComposerChipBar extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Row(
-    spacing: TRSpacing.extraSmall,
-    children: <Widget>[
-      for (final child in children) Flexible(child: child),
-    ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const spacing = TRSpacing.extraSmall;
+      const uiSize = TRUiSize.sm;
+      final iconWidth = TRControlMetrics.iconSizeOf(uiSize);
+      final inset =
+          TRControlMetrics.inlinePaddingOf(uiSize) +
+          TRControlMetrics.borderWidth;
+      final minimumWidth = inset * 2 + iconWidth * 2 + spacing * 2;
+      final availablePerChild = children.isEmpty
+          ? constraints.maxWidth
+          : (constraints.maxWidth - spacing * (children.length - 1)) /
+                children.length;
+      final childWidth = availablePerChild < minimumWidth
+          ? minimumWidth
+          : availablePerChild;
+
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: <Widget>[
+          for (final child in children)
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: minimumWidth,
+                maxWidth: childWidth,
+              ),
+              child: child,
+            ),
+        ],
+      );
+    },
   );
 }
 
@@ -1553,7 +1577,6 @@ class SessionComposer extends StatefulWidget {
     this.onCompletionQueryChanged,
     this.onClientCommand,
     this.controller,
-    this.settingsBreakpoint = _composerSettingsBreakpoint,
     super.key,
   });
 
@@ -1584,9 +1607,6 @@ class SessionComposer extends StatefulWidget {
 
   /// Connects this composer to a pane-owned native drop target.
   final SessionComposerController? controller;
-
-  /// Width below which turn settings collapse into one settings action.
-  final double settingsBreakpoint;
 
   /// Whether a turn is running, so a new prompt has to wait its turn.
   final bool busy;
@@ -1867,11 +1887,9 @@ class _SessionComposerState extends State<SessionComposer> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => _buildContent(
-      context,
-      compactSettings: constraints.maxWidth < widget.settingsBreakpoint,
-    ),
+  Widget build(BuildContext context) => _buildContent(
+    context,
+    compactSettings: TRUiDensityScope.of(context) == TRUiDensity.comfortable,
   );
 
   Widget _buildContent(
