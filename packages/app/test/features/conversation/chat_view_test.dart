@@ -187,7 +187,10 @@ void main() {
       expect(find.textContaining('flutter test'), findsWidgets);
       expect(find.textContaining('exitCode'), findsNothing);
 
-      await tester.tap(findAccessibleAction('복사').last);
+      final copyAction = findAccessibleAction('복사').last;
+      await tester.ensureVisible(copyAction);
+      await tester.pumpAndSettle();
+      await tester.tap(copyAction);
       await tester.pumpAndSettle();
       expect(clipboard, <String>['All tests passed!\ndone']);
 

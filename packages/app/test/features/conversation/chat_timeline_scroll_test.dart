@@ -178,7 +178,7 @@ void main() {
         sessionId: 'anchor-session',
         busy: true,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(
         find.byKey(const ValueKey<String>('chat-running')),
         findsOneWidget,
@@ -240,7 +240,7 @@ void main() {
         sessionId: 'pinned-session',
         busy: true,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(
         find.byKey(const ValueKey<String>('chat-running')),
         findsOneWidget,
