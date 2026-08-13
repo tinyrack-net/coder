@@ -10,7 +10,7 @@ import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart' as standalone;
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
@@ -344,7 +344,7 @@ void main() {
         find
             .ancestor(
               of: find.widgetWithText(TRMenuItem, 'Quit'),
-              matching: find.byType(standalone.Material),
+              matching: find.byType(Material),
             )
             .first,
       );
