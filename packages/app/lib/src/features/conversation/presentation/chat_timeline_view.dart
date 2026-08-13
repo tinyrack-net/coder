@@ -165,14 +165,15 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           ),
         };
         return Padding(
-          padding: EdgeInsets.only(
-            left: TRSpacing.extraLarge,
-            top: index == 0 ? TRSpacing.large : 0,
-            right: TRSpacing.extraLarge,
-            bottom: index == entries.length - 1
-                ? TRSpacing.large
-                : TRSpacing.small,
-          ),
+          // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
+          padding:
+              const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
+              (index == 0
+                  ? const EdgeInsets.only(top: TRSpacing.large)
+                  : EdgeInsets.zero) +
+              (index == entries.length - 1
+                  ? const EdgeInsets.only(bottom: TRSpacing.large)
+                  : const EdgeInsets.only(bottom: TRSpacing.small)),
           child: KeyedSubtree(
             key: ValueKey<String>(entry.key),
             child: content,
