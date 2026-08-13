@@ -11,7 +11,7 @@ import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' as standalone;
 
 import '../../support/fake_desktop_ports.dart';
 import '../../support/localization.dart';
@@ -267,7 +267,7 @@ void main() {
           of: find.byKey(
             const ValueKey<String>('general-settings-theme-mode'),
           ),
-          matching: find.byType(TextButton),
+          matching: find.byType(standalone.TextButton),
         ),
       );
       await tester.pumpAndSettle();
