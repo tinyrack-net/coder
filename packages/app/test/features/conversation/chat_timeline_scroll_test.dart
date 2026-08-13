@@ -2,9 +2,9 @@ import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/localization.dart';
@@ -404,7 +404,8 @@ void main() {
   );
 
   testWidgets(
-    'switching sessions clears disclosure state retained by the timeline widget',
+    'switching sessions clears disclosure state retained by the timeline '
+    'widget',
     tags: const <String>[
       'feature_test__turn_execution__widget',
       'ui_state__conversation_timeline__history_anchored__widget',
