@@ -230,6 +230,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             enabled: enabled && agentEnabled,
             blocked: !agentEnabled,
             blockedHint: l10n.composerAgentLocked,
+            appearance: TRFieldAppearance.ghost,
+            uiSize: TRUiSize.sm,
             onBlocked: () => ref
                 .read(toastMessengerProvider)
                 .info(
@@ -244,6 +246,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           blocked: modelBlocked,
           l10n: l10n,
           placeholder: selection?.modelId ?? modelLabel ?? l10n.composerModel,
+          appearance: TRFieldAppearance.ghost,
+          uiSize: TRUiSize.sm,
         ),
         for (final control in capabilities.controls)
           _controlChip(control, enabled),
@@ -294,6 +298,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required bool enabled,
     bool blocked = false,
     String? blockedHint,
+    TRFieldAppearance appearance = TRFieldAppearance.solid,
+    TRUiSize? uiSize,
     VoidCallback? onBlocked,
     VoidCallback? onValueChanged,
   }) {
@@ -305,8 +311,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         enabled: enabled,
         width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
         leading: Icon(blocked ? TinestIcons.lock : TinestIcons.agent),
-        appearance: TRFieldAppearance.ghost,
-        uiSize: TRUiSize.sm,
+        appearance: appearance,
+        uiSize: uiSize,
         searchable: true,
         searchPlaceholder: l10n.selectSearchPlaceholder,
         noResultsText: l10n.selectNoResults,
@@ -346,6 +352,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required bool blocked,
     required AppLocalizations l10n,
     required String placeholder,
+    TRFieldAppearance appearance = TRFieldAppearance.solid,
+    TRUiSize? uiSize,
     VoidCallback? onValueChanged,
   }) {
     final select = LayoutBuilder(
@@ -360,8 +368,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         enabled: enabled,
         width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
         leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
-        appearance: TRFieldAppearance.ghost,
-        uiSize: TRUiSize.sm,
+        appearance: appearance,
+        uiSize: uiSize,
         onValueChange: (option) async {
           await _setModelOption(option);
           onValueChanged?.call();
@@ -695,7 +703,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     ModelControlDescriptorDto descriptor, {
     required bool enabled,
     required TRFieldAppearance appearance,
-    required TRUiSize uiSize,
+    TRUiSize? uiSize,
     Key? key,
     VoidCallback? onValueChanged,
   }) {
@@ -775,7 +783,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           ),
           enabled: enabled,
           appearance: TRFieldAppearance.solid,
-          uiSize: TRUiSize.md,
           onValueChanged: () => unawaited(_refreshSettings(refresh)),
         ),
       );
