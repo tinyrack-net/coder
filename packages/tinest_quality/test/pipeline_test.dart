@@ -131,6 +131,13 @@ void main() {
     expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
   });
 
+  test('macOS Dart suites serialize native-asset installation', () {
+    final dart = _job(workflow, 'dart-tests');
+    expect(dart, contains("matrix.os == 'macos-26'"));
+    expect(dart, contains('dart run tinest_quality _test-dart --jobs=1'));
+    expect(dart, contains("matrix.os != 'macos-26'"));
+  });
+
   test('Windows fetches the SDK archive instead of the Actions cache', () {
     // The cached blob and the published archive are the same size on every
     // host (Windows 1.81 GB against 1.8, macOS 2.08 against 2.1, Linux 1.69
