@@ -1,6 +1,6 @@
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/localization.dart';

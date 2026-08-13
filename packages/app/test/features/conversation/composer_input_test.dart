@@ -17,10 +17,10 @@ import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/src/internal/focus_source.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -1786,7 +1786,7 @@ Widget _harness({
   child: MaterialApp(
     theme: testLightTheme.copyWith(platform: platform),
     locale: testLocale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: testLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(
@@ -1810,7 +1810,7 @@ Widget _pageHarness({
   child: MaterialApp(
     theme: testLightTheme.copyWith(platform: TargetPlatform.android),
     locale: testLocale,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: testLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(viewInsets: viewInsets),

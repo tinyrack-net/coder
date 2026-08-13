@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:app/src/features/workspace/presentation/widgets/directory_browser.dart';
 import 'package:client/client.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_tinest_api.dart';
-
 import '../../support/localization.dart';
 
 void main() {

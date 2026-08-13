@@ -1,5 +1,5 @@
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// The surface the bootstrap gate paints while startup work is still running.

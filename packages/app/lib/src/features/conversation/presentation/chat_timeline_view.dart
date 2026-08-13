@@ -10,7 +10,7 @@ import 'package:app/src/features/conversation/presentation/chat_reasoning_card.d
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Builds the controls belonging to one actionable plan row.

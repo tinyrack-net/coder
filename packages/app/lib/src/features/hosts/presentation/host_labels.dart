@@ -2,7 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Returns the name to show for one daemon.
 ///

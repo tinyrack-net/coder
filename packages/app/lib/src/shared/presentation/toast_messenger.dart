@@ -1,7 +1,7 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:client/client.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Longest failure detail a toast repeats back to the user.

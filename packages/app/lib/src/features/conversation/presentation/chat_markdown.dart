@@ -1,9 +1,10 @@
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy_material;
 import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Schemes a chat link is allowed to open.
@@ -50,7 +51,32 @@ class _ChatFencedCodeBuilder extends MarkdownElementBuilder {
 /// API. Every value here still comes from a token.
 MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
   final colors = context.tinyrackTheme;
-  final base = MarkdownStyleSheet.fromTheme(Theme.of(context));
+  final brightness = Theme.of(context).brightness;
+  // flutter_markdown_plus has not migrated to Flutter 3.47's material_ui
+  // package yet. Map only public Tinyrack theme values into the legacy type
+  // its API requires; this adapter owns no independent visual decisions.
+  final legacyTheme = legacy_material.ThemeData(
+    brightness: brightness,
+    primaryColor: colors.primary,
+    cardColor: colors.surfaceMuted,
+    dividerColor: colors.border,
+    colorScheme:
+        legacy_material.ColorScheme.fromSeed(
+          seedColor: colors.primary,
+          brightness: brightness,
+        ).copyWith(
+          primary: colors.primary,
+          surfaceContainerHighest: colors.surfaceMuted,
+        ),
+    textTheme: legacy_material.TextTheme(
+      bodyMedium: TRTypography.resolve(context, TRTextVariant.body),
+      bodyLarge: TRTypography.resolve(context, TRTextVariant.body),
+      headlineSmall: TRTypography.resolve(context, TRTextVariant.headingLg),
+      titleLarge: TRTypography.resolve(context, TRTextVariant.headingMd),
+      titleMedium: TRTypography.resolve(context, TRTextVariant.headingSm),
+    ),
+  );
+  final base = MarkdownStyleSheet.fromTheme(legacyTheme);
   return base.copyWith(
     p: TRTypography.resolve(
       context,

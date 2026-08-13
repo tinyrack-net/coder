@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// How often the countdown redraws while a sleep is running.

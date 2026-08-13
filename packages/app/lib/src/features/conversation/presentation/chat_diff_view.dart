@@ -1,7 +1,7 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_diff.dart';
 import 'package:app/src/features/conversation/presentation/chat_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Renders parsed unified-diff files with added and removed lines colored.

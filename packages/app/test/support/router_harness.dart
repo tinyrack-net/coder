@@ -4,10 +4,10 @@ import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart' show Override;
 
 import 'build_phase_provider_guard.dart';
