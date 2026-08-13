@@ -548,6 +548,76 @@ void main() {
   );
 
   testWidgets(
+    'mobile branch sheet scrolls options from its fixed search field',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 780);
+      addTearDown(tester.view.reset);
+      final api =
+          FakeTinestApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+            )
+            ..branches = <GitBranchDto>[
+              const GitBranchDto(
+                name: 'origin/main',
+                current: false,
+                checkedOut: false,
+                isRemote: true,
+                isDefault: true,
+              ),
+              for (var index = 0; index < 30; index += 1)
+                GitBranchDto(
+                  name: 'origin/feature-$index',
+                  current: false,
+                  checkedOut: false,
+                  isRemote: true,
+                ),
+            ];
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+
+      await tester.tap(
+        find.byKey(const ValueKey('new-workspace-branch')),
+      );
+      await tester.pumpAndSettle();
+
+      final drawer = find.byType(TRDrawer);
+      final search = find.descendant(
+        of: drawer,
+        matching: find.byType(TRTextField),
+      );
+      final optionsScroll = find.descendant(
+        of: drawer,
+        matching: find.byType(SingleChildScrollView),
+      );
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: optionsScroll,
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      final drawerRect = tester.getRect(drawer);
+      final searchRect = tester.getRect(search);
+
+      await tester.trackpadFling(search, const Offset(0, -1000), 1000);
+      await tester.pumpAndSettle();
+
+      expect(position.pixels, greaterThan(0));
+      expect(tester.getRect(drawer), drawerRect);
+      expect(tester.getRect(search), searchRect);
+      expect(
+        tester.getRect(find.text('origin/feature-29')).bottom,
+        lessThanOrEqualTo(drawerRect.bottom),
+      );
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
+  );
+
+  testWidgets(
     'activating a hovered project chip dismisses its tooltip',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
