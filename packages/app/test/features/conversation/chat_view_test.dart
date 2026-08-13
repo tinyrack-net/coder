@@ -1024,7 +1024,7 @@ void main() {
   );
 
   testWidgets(
-    'a mixed-height timeline premeasures nearby rows without losing laziness',
+    'a mixed-height timeline stays forward ordered and lazily builds history',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1040,26 +1040,41 @@ void main() {
       await pump(tester, events);
       await tester.pumpAndSettle();
 
-      final list = tester.widget<ListView>(find.byType(ListView));
-      final viewportHeight = tester.getSize(find.byType(ListView)).height;
-      expect(list.scrollCacheExtent?.value, 4);
+      final scrollable = find
+          .descendant(
+            of: find.byType(ChatTimelineView),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final viewportHeight = tester.getSize(scrollable).height;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      expect(position.axisDirection, AxisDirection.down);
+      expect(position.extentAfter, closeTo(0, 0.01));
       expect(find.text('short 79'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('short 78')).dy,
+        lessThan(tester.getTopLeft(find.text('short 79')).dy),
+      );
       expect(find.textContaining('long 0'), findsNothing);
+      expect(
+        find.byType(ChatUserLine).evaluate().length,
+        lessThan(events.length),
+      );
 
-      final position = tester
-          .state<ScrollableState>(find.byType(Scrollable).first)
-          .position;
-      final initialMaxExtent = position.maxScrollExtent;
-      position.jumpTo(viewportHeight);
+      position.jumpTo(
+        (position.maxScrollExtent - viewportHeight).clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        ),
+      );
       await tester.pumpAndSettle();
-      final extentChange =
-          (position.maxScrollExtent - initialMaxExtent).abs() /
-          initialMaxExtent;
 
-      expect(extentChange, lessThanOrEqualTo(0.12));
       expect(find.textContaining('long 0'), findsNothing);
     },
-    tags: const <String>['feature_test__turn_execution__widget'],
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
   );
 
   testWidgets(

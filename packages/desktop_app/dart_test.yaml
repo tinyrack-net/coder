@@ -8,6 +8,7 @@ tags:
   ui_state__conversation_timeline__loading__widget:
   ui_state__conversation_timeline__empty__widget:
   ui_state__conversation_timeline__streaming__widget:
+  ui_state__conversation_timeline__history_anchored__widget:
   ui_state__conversation_timeline__approval_pending__widget:
   ui_state__conversation_timeline__question_pending__widget:
   ui_state__conversation_timeline__queued_error__widget:
