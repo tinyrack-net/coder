@@ -519,37 +519,34 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
         SettingsSection(
           title: l10n.settingsCategoryConnection,
           children: <Widget>[
-            TRCard(
-              padding: TRCardPadding.none,
-              child: SettingsRow(
-                leading: const Icon(TinestIcons.network),
-                title: TRText.inherit(runtime?.label ?? widget.hostId),
-                description: TRText.inherit(hostStatusText(l10n, runtime)),
-                wrapsDescription: true,
-                controlLayout: SettingsControlLayout.responsive,
-                control: pathLabel == null && profile == null
-                    ? null
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (pathLabel != null)
-                            TRBadge(
-                              variant: TRStatusVariant.info,
-                              child: TRText.inherit(pathLabel),
+            SettingsRow(
+              leading: const Icon(TinestIcons.network),
+              title: TRText.inherit(runtime?.label ?? widget.hostId),
+              description: TRText.inherit(hostStatusText(l10n, runtime)),
+              wrapsDescription: true,
+              controlLayout: SettingsControlLayout.responsive,
+              control: pathLabel == null && profile == null
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (pathLabel != null)
+                          TRBadge(
+                            variant: TRStatusVariant.info,
+                            child: TRText.inherit(pathLabel),
+                          ),
+                        if (profile != null)
+                          TRButton(
+                            appearance: TRAppearance.ghost,
+                            onPressed: () => EditHostRoute(
+                              hostId: profile.id,
+                            ).push<void>(context),
+                            child: TRText.inherit(
+                              l10n.appSettingsEditConnection,
                             ),
-                          if (profile != null)
-                            TRButton(
-                              appearance: TRAppearance.ghost,
-                              onPressed: () => EditHostRoute(
-                                hostId: profile.id,
-                              ).push<void>(context),
-                              child: TRText.inherit(
-                                l10n.appSettingsEditConnection,
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
+                          ),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -564,52 +561,43 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                   variant: TRStatusVariant.danger,
                 ),
           children: <Widget>[
-            TRCard(
-              padding: TRCardPadding.none,
-              child: SettingsRow(
-                key: const ValueKey<String>('relay-pair-device'),
-                title: TRText.inherit(l10n.relayPairTitle),
-                description: TRText.inherit(
-                  l10n.relayPairDeviceDescription,
-                ),
-                wrapsDescription: true,
-                control: _busy
-                    ? const TRSpinner()
-                    : const Icon(TinestIcons.chevronRight),
-                onTap: _busy ? null : _openPairDialog,
+            SettingsRow(
+              key: const ValueKey<String>('relay-pair-device'),
+              title: TRText.inherit(l10n.relayPairTitle),
+              description: TRText.inherit(
+                l10n.relayPairDeviceDescription,
               ),
+              wrapsDescription: true,
+              control: _busy
+                  ? const TRSpinner()
+                  : const Icon(TinestIcons.chevronRight),
+              onTap: _busy ? null : _openPairDialog,
             ),
           ],
         ),
         SettingsSection(
           title: l10n.settingsCategoryAdvanced,
           children: <Widget>[
-            TRCard(
-              padding: TRCardPadding.none,
-              child: SettingsRow(
-                key: const ValueKey<String>('relay-advanced-endpoint'),
-                leading: const Icon(TinestIcons.cloud),
-                title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
-                description: _status == null
-                    ? null
-                    : TRText.inherit(_status!.endpoint),
-                wrapsDescription: true,
-                control: const Icon(TinestIcons.chevronRight),
-                onTap: _busy ? null : _openRelayEndpointEditor,
-              ),
+            SettingsRow(
+              key: const ValueKey<String>('relay-advanced-endpoint'),
+              leading: const Icon(TinestIcons.cloud),
+              title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
+              description: _status == null
+                  ? null
+                  : TRText.inherit(_status!.endpoint),
+              wrapsDescription: true,
+              control: const Icon(TinestIcons.chevronRight),
+              onTap: _busy ? null : _openRelayEndpointEditor,
             ),
-            TRCard(
-              padding: TRCardPadding.none,
-              child: SettingsRow(
-                key: const ValueKey<String>('relay-advanced-direct'),
-                leading: const Icon(TinestIcons.link),
-                title: TRText.inherit(l10n.relayAdvancedDirect),
-                description: TRText.inherit(
-                  l10n.relayConnectDirectDescription,
-                ),
-                control: const Icon(TinestIcons.chevronRight),
-                onTap: () => const AdvancedNewHostRoute().push<void>(context),
+            SettingsRow(
+              key: const ValueKey<String>('relay-advanced-direct'),
+              leading: const Icon(TinestIcons.link),
+              title: TRText.inherit(l10n.relayAdvancedDirect),
+              description: TRText.inherit(
+                l10n.relayConnectDirectDescription,
               ),
+              control: const Icon(TinestIcons.chevronRight),
+              onTap: () => const AdvancedNewHostRoute().push<void>(context),
             ),
           ],
         ),
@@ -640,42 +628,30 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
       title: l10n.relayApprovedDevices,
       children: <Widget>[
         if (!devicesAsync.hasValue && devicesAsync.hasError)
-          TRCard(
-            padding: TRCardPadding.none,
-            child: SettingsRow(
-              title: TRText.inherit(l10n.appSettingsConnectionFailed),
-              description: TRText.inherit('${devicesAsync.error}'),
-            ),
+          SettingsRow(
+            title: TRText.inherit(l10n.appSettingsConnectionFailed),
+            description: TRText.inherit('${devicesAsync.error}'),
           )
         else if (!devicesAsync.hasValue)
-          TRCard(
-            padding: TRCardPadding.none,
-            child: Padding(
-              padding: SettingsRow.contentPadding,
-              child: ListRowsSkeleton(
-                semanticLabel: l10n.settingsLoading,
-                rows: 3,
-              ),
+          Padding(
+            padding: SettingsRow.contentPadding,
+            child: ListRowsSkeleton(
+              semanticLabel: l10n.settingsLoading,
+              rows: 3,
             ),
           )
         else if (devicesAsync.requireValue.isEmpty)
-          TRCard(
-            padding: TRCardPadding.none,
-            child: SettingsRow(title: TRText.inherit(l10n.relayNoDevices)),
-          )
+          SettingsRow(title: TRText.inherit(l10n.relayNoDevices))
         else
           for (final device in devicesAsync.requireValue)
-            TRCard(
-              padding: TRCardPadding.none,
-              child: SettingsRow(
-                leading: const Icon(TinestIcons.computer),
-                title: TRText.inherit(device.name),
-                controlLayout: SettingsControlLayout.responsive,
-                control: TRButton(
-                  appearance: TRAppearance.ghost,
-                  onPressed: _busy ? null : () => _revoke(device),
-                  child: TRText.inherit(l10n.relayRevoke),
-                ),
+            SettingsRow(
+              leading: const Icon(TinestIcons.computer),
+              title: TRText.inherit(device.name),
+              controlLayout: SettingsControlLayout.responsive,
+              control: TRButton(
+                appearance: TRAppearance.ghost,
+                onPressed: _busy ? null : () => _revoke(device),
+                child: TRText.inherit(l10n.relayRevoke),
               ),
             ),
       ],
