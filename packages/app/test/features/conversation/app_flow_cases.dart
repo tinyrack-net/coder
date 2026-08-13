@@ -104,7 +104,7 @@ void _registerConversationAppFlows() {
         findsOneWidget,
       );
 
-      await _setTestViewport(tester, const Size(700, 900));
+      await _setTestViewport(tester, const Size(599, 900));
       await tester.pumpAndSettle();
       final narrowPane = tester.getRect(pane);
       for (final content in <Finder>[timeline, composer, goalBar]) {

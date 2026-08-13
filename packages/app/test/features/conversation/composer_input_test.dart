@@ -471,7 +471,7 @@ void main() {
 
       // Exactly at the application density boundary, turn settings stay as
       // individual controls.
-      await pumpAt(768);
+      await pumpAt(600);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
@@ -481,7 +481,7 @@ void main() {
       expect(find.text(testL10n.composerRun), findsOneWidget);
 
       // Local composer width does not override the application density.
-      await pumpAt(768, composerWidth: 600);
+      await pumpAt(600, composerWidth: 500);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
@@ -490,7 +490,7 @@ void main() {
 
       // One logical pixel below the density boundary the settings are
       // represented by one ghost action.
-      await pumpAt(767);
+      await pumpAt(599);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsNothing);

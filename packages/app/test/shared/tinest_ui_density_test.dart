@@ -1,37 +1,27 @@
-import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 void main() {
-  testWidgets('uses comfortable UI only below the compact breakpoint', (
+  testWidgets('uses comfortable UI only while one adaptive pane is visible', (
     tester,
   ) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     tester.view.devicePixelRatio = 1;
 
-    tester.view.physicalSize = const Size(
-      TinestLayoutMetrics.compactBreakpoint - 1,
-      600,
-    );
+    tester.view.physicalSize = const Size(599, 600);
     await tester.pumpWidget(_host());
     expect(_buttonHeight(tester), TRControlMetrics.heightOf(TRUiSize.xl));
     expect(_bodyFontSize(tester), 18);
 
-    tester.view.physicalSize = const Size(
-      TinestLayoutMetrics.compactBreakpoint,
-      600,
-    );
+    tester.view.physicalSize = const Size(600, 600);
     await tester.pump();
     expect(_buttonHeight(tester), TRControlMetrics.heightOf(TRUiSize.md));
     expect(_bodyFontSize(tester), TRTypography.body.fontSize);
 
-    tester.view.physicalSize = const Size(
-      TinestLayoutMetrics.compactBreakpoint + 1,
-      600,
-    );
+    tester.view.physicalSize = const Size(601, 600);
     await tester.pump();
     expect(_buttonHeight(tester), TRControlMetrics.heightOf(TRUiSize.md));
   });
