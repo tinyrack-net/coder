@@ -76,7 +76,7 @@ Future<void> _pumpTimeline(
         body: PageStorage(
           bucket: bucket,
           child: ChatTimelineView(
-            key: PageStorageKey<String>(sessionId),
+            pageStorageId: sessionId,
             items: items,
             busy: false,
           ),
@@ -113,6 +113,53 @@ ScrollPosition _scrollPosition(WidgetTester tester) =>
 }
 
 void main() {
+  testWidgets(
+    'timeline rows use shared horizontal, gap, and trailing padding tokens',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final history = _messages(2);
+      await _pumpTimeline(
+        tester,
+        items: history,
+        bucket: PageStorageBucket(),
+        sessionId: 'spacing-session',
+      );
+      await tester.pumpAndSettle();
+
+      final first = find.byKey(const ValueKey<String>('message-0'));
+      final last = find.byKey(const ValueKey<String>('message-1'));
+      final viewport = tester.getRect(_scrollable);
+      expect(
+        tester.getTopLeft(last).dy - tester.getBottomLeft(first).dy,
+        closeTo(TRSpacing.small, _geometryTolerance),
+      );
+      expect(
+        viewport.bottom - tester.getBottomLeft(last).dy,
+        closeTo(TRSpacing.large, _geometryTolerance),
+      );
+
+      final rowPadding = tester
+          .widgetList<Padding>(
+            find.ancestor(of: first, matching: find.byType(Padding)),
+          )
+          .map((widget) => widget.padding)
+          .whereType<EdgeInsets>()
+          .singleWhere(
+            (padding) =>
+                padding.left == TRSpacing.extraLarge &&
+                padding.right == TRSpacing.extraLarge &&
+                padding.top == TRSpacing.large &&
+                padding.bottom == TRSpacing.small,
+          );
+      expect(rowPadding.left, TRSpacing.extraLarge);
+      expect(rowPadding.right, TRSpacing.extraLarge);
+    },
+  );
+
   testWidgets(
     'streaming below scrolled-up history retains the visible anchor',
     tags: const <String>[
@@ -297,6 +344,38 @@ void main() {
       final viewport = tester.getRect(_scrollable);
       expect(tester.getRect(latestRow).bottom, lessThan(viewport.bottom));
       expect(tester.getRect(latestRow).bottom, greaterThan(viewport.center.dy));
+    },
+  );
+
+  testWidgets(
+    'switching sessions clears disclosure state retained by the timeline widget',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final bucket = PageStorageBucket();
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[_disclosure()],
+        bucket: bucket,
+        sessionId: 'first-disclosure-session',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TRChatToolDisclosure));
+      await tester.pump();
+      expect(find.textContaining('output line 10'), findsOneWidget);
+
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[_disclosure()],
+        bucket: bucket,
+        sessionId: 'second-disclosure-session',
+      );
+      await tester.pump();
+
+      expect(find.textContaining('output line 10'), findsNothing);
     },
   );
 

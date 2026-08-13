@@ -68,6 +68,7 @@ void main() {
         ),
         home: Scaffold(
           body: ChatTimelineView(
+            pageStorageId: 'chat-view-test',
             items: projectChatTimeline(events),
             busy: busy,
           ),

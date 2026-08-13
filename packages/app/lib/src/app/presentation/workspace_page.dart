@@ -1398,6 +1398,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             Expanded(
               child: _ConversationContentColumn(
                 child: ChatTimelineView(
+                  pageStorageId:
+                      'conversation:${widget.selection.hostId}:${current.id}',
                   items: visibleItems,
                   busy: busy || optimistic,
                   loading: conversation.isLoading && !conversation.hasValue,
