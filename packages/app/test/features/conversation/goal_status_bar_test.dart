@@ -1,7 +1,6 @@
 @Tags(<String>['feature_test__session_goal__widget'])
 library;
 
-import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,6 +99,6 @@ Widget _harness(Widget child) => MaterialApp(
   theme: testLightTheme,
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
+  supportedLocales: testSupportedLocales,
   home: TinestUiDensity(child: Scaffold(body: child)),
 );

@@ -1,4 +1,3 @@
-import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/composer_controller.dart';
@@ -1787,7 +1786,7 @@ Widget _harness({
     theme: testLightTheme.copyWith(platform: platform),
     locale: testLocale,
     localizationsDelegates: testLocalizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
+    supportedLocales: testSupportedLocales,
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(
         context,
@@ -1811,7 +1810,7 @@ Widget _pageHarness({
     theme: testLightTheme.copyWith(platform: TargetPlatform.android),
     locale: testLocale,
     localizationsDelegates: testLocalizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
+    supportedLocales: testSupportedLocales,
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(viewInsets: viewInsets),
       child: TinestUiDensity(child: child!),
