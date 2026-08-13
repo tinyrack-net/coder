@@ -60,6 +60,7 @@ Future<void> _pumpTimeline(
   required List<ChatItem> items,
   required PageStorageBucket bucket,
   required String sessionId,
+  bool busy = false,
 }) => tester.pumpWidget(
   ProviderScope(
     overrides: [
@@ -78,7 +79,7 @@ Future<void> _pumpTimeline(
           child: ChatTimelineView(
             pageStorageId: sessionId,
             items: items,
-            busy: false,
+            busy: busy,
           ),
         ),
       ),
@@ -175,8 +176,13 @@ void main() {
         items: <ChatItem>[...history, _streamingMessage('Starting')],
         bucket: bucket,
         sessionId: 'anchor-session',
+        busy: true,
       );
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('chat-running')),
+        findsOneWidget,
+      );
 
       final position = _scrollPosition(tester);
       position.jumpTo(position.maxScrollExtent * 0.45);
@@ -196,6 +202,7 @@ void main() {
         ],
         bucket: bucket,
         sessionId: 'anchor-session',
+        busy: true,
       );
 
       final anchorRow = find.byKey(ValueKey<String>(anchor.key));
@@ -206,6 +213,10 @@ void main() {
       );
       expect(
         find.byKey(const ValueKey<String>('streaming-response')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('chat-running')),
         findsNothing,
       );
     },
@@ -227,8 +238,13 @@ void main() {
         items: <ChatItem>[...history, _streamingMessage('Starting')],
         bucket: bucket,
         sessionId: 'pinned-session',
+        busy: true,
       );
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('chat-running')),
+        findsOneWidget,
+      );
 
       final viewport = tester.getRect(_scrollable);
       final initialGap =
@@ -247,11 +263,16 @@ void main() {
         ],
         bucket: bucket,
         sessionId: 'pinned-session',
+        busy: true,
       );
 
       expect(
         viewport.bottom - tester.getRect(find.byKey(responseKey)).bottom,
         closeTo(initialGap, _geometryTolerance),
+      );
+      expect(
+        find.byKey(const ValueKey<String>('chat-running')),
+        findsOneWidget,
       );
     },
   );
@@ -286,6 +307,41 @@ void main() {
       expect(
         tester.getTopLeft(disclosure).dy,
         closeTo(afterExpansionPump, _geometryTolerance),
+      );
+    },
+  );
+
+  testWidgets(
+    'an underfilled disclosure expands without losing its trailing anchor',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[_disclosure()],
+        bucket: PageStorageBucket(),
+        sessionId: 'underfilled-disclosure-session',
+      );
+      await tester.pumpAndSettle();
+
+      final disclosure = find.byType(TRChatToolDisclosure);
+      final before = tester.getTopLeft(disclosure).dy;
+      await tester.tap(disclosure);
+      await tester.pump();
+
+      expect(
+        tester.getTopLeft(disclosure).dy,
+        closeTo(before, _geometryTolerance),
+      );
+      expect(find.textContaining('output line 10'), findsOneWidget);
+
+      await tester.pump();
+      expect(
+        tester.getTopLeft(disclosure).dy,
+        closeTo(before, _geometryTolerance),
       );
     },
   );
