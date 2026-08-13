@@ -8,6 +8,7 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';

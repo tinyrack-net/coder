@@ -31,7 +31,7 @@ void _registerConversationAppFlows() {
     updatedAt: now,
   );
   testWidgets(
-    'conversation content is capped and centered while its header stays wide',
+    'conversation scrollbar spans the pane while its content stays capped',
     (tester) async {
       await _setTestViewport(tester, const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -55,6 +55,21 @@ void _registerConversationAppFlows() {
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[root, child],
         goals: <String, GoalDto>{root.id: goal},
+        timelines: <String, List<TimelineEventDto>>{
+          root.id: <TimelineEventDto>[
+            for (var index = 0; index < 24; index += 1)
+              TimelineEventDto(
+                sessionId: root.id,
+                sequence: index + 1,
+                turnId: 'layout-turn-$index',
+                type: 'user.message',
+                data: <String, dynamic>{
+                  'text': 'Layout message $index\nline two\nline three',
+                },
+                createdAt: now.add(Duration(seconds: index)),
+              ),
+          ],
+        },
       );
       final router = await _pumpRoute(
         tester,
@@ -73,6 +88,11 @@ void _registerConversationAppFlows() {
         ValueKey<String>('conversation-pane-session:${root.id}'),
       );
       final timeline = find.byType(ChatTimelineView);
+      final scrollbar = find.descendant(
+        of: timeline,
+        matching: find.byType(Scrollbar),
+      );
+      final message = find.byType(ChatUserLine).last;
       final composer = find.byType(SessionComposer);
       final goalBar = find.byType(GoalStatusBar);
       final subagents = find.byType(SubagentTrack);
@@ -84,12 +104,22 @@ void _registerConversationAppFlows() {
           .first;
 
       final paneRect = tester.getRect(pane);
-      for (final content in <Finder>[timeline, composer, goalBar]) {
+      final timelineRect = tester.getRect(timeline);
+      expect(timelineRect.width, paneRect.width);
+      expect(timelineRect.center.dx, closeTo(paneRect.center.dx, 0.5));
+      final scrollbarRect = tester.getRect(scrollbar);
+      expect(scrollbarRect.width, paneRect.width);
+      expect(scrollbarRect.right, closeTo(paneRect.right, 0.5));
+      final messageRect = tester.getRect(message);
+      expect(
+        messageRect.width,
+        TinestLayoutMetrics.conversationContentMaxWidth -
+            TRSpacing.extraLarge * 2,
+      );
+      expect(messageRect.center.dx, closeTo(paneRect.center.dx, 0.5));
+      for (final content in <Finder>[composer, goalBar]) {
         final rect = tester.getRect(content);
-        expect(
-          rect.width,
-          TRMeasurements.measureXl * 2 + TRSpacing.extraLarge * 2,
-        );
+        expect(rect.width, TinestLayoutMetrics.conversationContentMaxWidth);
         expect(rect.center.dx, closeTo(paneRect.center.dx, 0.5));
       }
       final subagentRect = tester.getRect(subagents);
@@ -107,7 +137,19 @@ void _registerConversationAppFlows() {
       await _setTestViewport(tester, const Size(599, 900));
       await tester.pumpAndSettle();
       final narrowPane = tester.getRect(pane);
-      for (final content in <Finder>[timeline, composer, goalBar]) {
+      final narrowTimeline = tester.getRect(timeline);
+      expect(narrowTimeline.width, narrowPane.width);
+      expect(narrowTimeline.center.dx, closeTo(narrowPane.center.dx, 0.5));
+      final narrowScrollbar = tester.getRect(scrollbar);
+      expect(narrowScrollbar.width, narrowPane.width);
+      expect(narrowScrollbar.right, closeTo(narrowPane.right, 0.5));
+      final narrowMessage = tester.getRect(message);
+      expect(
+        narrowMessage.width,
+        narrowPane.width - TRSpacing.extraLarge * 2,
+      );
+      expect(narrowMessage.center.dx, closeTo(narrowPane.center.dx, 0.5));
+      for (final content in <Finder>[composer, goalBar]) {
         final rect = tester.getRect(content);
         expect(rect.width, narrowPane.width);
         expect(rect.center.dx, closeTo(narrowPane.center.dx, 0.5));
@@ -124,7 +166,10 @@ void _registerConversationAppFlows() {
       );
       expect(tester.takeException(), isNull);
     },
-    tags: const <String>['feature_test__session_lifecycle__widget'],
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__turn_execution__widget',
+    ],
   );
 
   testWidgets(
