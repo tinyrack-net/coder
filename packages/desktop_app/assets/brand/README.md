@@ -17,6 +17,11 @@ so a new accent color or a moved row belongs there, not here.
 rasterized from it and are what `shipworld.yaml` ships as the Linux desktop
 icon.
 
+The shared brand directory also mirrors `tinest-launcher-icon-1024.png` and
+`tinest-adaptive-foreground-1024.png` from upstream. They are the mobile-safe
+launcher sources; keeping the copies here preserves the mobile/desktop brand
+asset synchronization contract. Desktop launcher generation remains unchanged.
+
 ## Native launcher icons
 
 `tinest-1024.png` is the source for the macOS and Windows launcher icons.

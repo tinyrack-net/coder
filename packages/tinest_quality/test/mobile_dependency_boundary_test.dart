@@ -111,4 +111,59 @@ void main() {
       }
     }
   });
+
+  test('mobile launcher icons use the upstream safe-area assets', () {
+    final pubspec =
+        loadYaml(
+              workspaceFile('packages/app/pubspec.yaml').readAsStringSync(),
+            )
+            as YamlMap;
+    final icons = pubspec['flutter_launcher_icons'] as YamlMap;
+    const launcherPath = 'assets/brand/tinest-launcher-icon-1024.png';
+    const adaptiveForegroundPath =
+        'assets/brand/tinest-adaptive-foreground-1024.png';
+
+    expect(icons['image_path_android'], launcherPath);
+    expect(icons['image_path_ios'], launcherPath);
+    expect(icons['adaptive_icon_foreground'], adaptiveForegroundPath);
+    expect(
+      (icons['web'] as YamlMap)['image_path'],
+      'assets/brand/tinest-1024.png',
+    );
+
+    for (final relativePath in const <String>[
+      launcherPath,
+      adaptiveForegroundPath,
+    ]) {
+      final mobileFile = workspaceFile('packages/app/$relativePath');
+      final desktopFile = workspaceFile('packages/desktop_app/$relativePath');
+      expect(mobileFile.existsSync(), isTrue, reason: relativePath);
+      expect(desktopFile.existsSync(), isTrue, reason: relativePath);
+      expect(
+        _pngDimensions(mobileFile),
+        const (width: 1024, height: 1024),
+        reason: relativePath,
+      );
+      expect(
+        desktopFile.readAsBytesSync(),
+        mobileFile.readAsBytesSync(),
+        reason: relativePath,
+      );
+    }
+  });
+}
+
+({int width, int height}) _pngDimensions(File file) {
+  final bytes = file.readAsBytesSync();
+  const pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
+  expect(bytes, hasLength(greaterThanOrEqualTo(24)), reason: file.path);
+  expect(bytes.take(8), orderedEquals(pngSignature), reason: file.path);
+
+  int unsigned32(int offset) =>
+      bytes[offset] << 24 |
+      bytes[offset + 1] << 16 |
+      bytes[offset + 2] << 8 |
+      bytes[offset + 3];
+
+  return (width: unsigned32(16), height: unsigned32(20));
 }
