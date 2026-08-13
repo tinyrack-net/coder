@@ -1148,7 +1148,9 @@ class ComposerChipBar extends StatelessWidget {
           for (final child in children)
             ConstrainedBox(
               constraints: BoxConstraints(
+                // tinyrack-check-ignore-next-line tokens/no-literal -- computed solely from public control metrics and spacing
                 minWidth: minimumWidth,
+                // tinyrack-check-ignore-next-line tokens/no-literal -- clamped from that token-derived minimum and parent width
                 maxWidth: childWidth,
               ),
               child: child,

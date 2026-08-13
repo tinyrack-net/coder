@@ -1226,7 +1226,10 @@ void main() {
       // the exact tool event below without depending on virtual-list details.
       await pumpUntilCondition(
         tester,
-        () => tester.widget<TRIconButton>(find.byKey(send)).onPressed != null,
+        () {
+          final button = find.byKey(send).evaluate().singleOrNull?.widget;
+          return button is TRIconButton && button.onPressed != null;
+        },
         'the failed delegation turn to release the composer',
       );
 
