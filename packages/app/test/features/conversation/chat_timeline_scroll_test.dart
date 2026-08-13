@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
@@ -10,6 +13,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 import '../../support/localization.dart';
 
 const _geometryTolerance = 0.01;
+const _hostId = 'host-scroll-contract';
 final _createdAt = DateTime.utc(2026, 8, 13);
 
 final class _NoopUrlOpener implements ExternalUrlOpener {
@@ -61,6 +65,7 @@ Future<void> _pumpTimeline(
   required PageStorageBucket bucket,
   required String sessionId,
   bool busy = false,
+  ChatAttachmentLoader? loadAttachment,
 }) => tester.pumpWidget(
   ProviderScope(
     overrides: [
@@ -77,9 +82,11 @@ Future<void> _pumpTimeline(
         body: PageStorage(
           bucket: bucket,
           child: ChatTimelineView(
-            pageStorageId: sessionId,
+            pageStorageId: 'conversation:$_hostId:$sessionId',
             items: items,
             busy: busy,
+            hostId: _hostId,
+            loadAttachment: loadAttachment,
           ),
         ),
       ),
@@ -118,7 +125,6 @@ void main() {
     'timeline rows use shared horizontal, gap, and trailing padding tokens',
     tags: const <String>[
       'feature_test__turn_execution__widget',
-      'ui_state__conversation_timeline__history_anchored__widget',
     ],
     (tester) async {
       await _useDesktopViewport(tester);
@@ -367,6 +373,7 @@ void main() {
       var position = _scrollPosition(tester);
       position.jumpTo(position.maxScrollExtent * 0.45);
       await tester.pump();
+      final anchor = _visibleAnchor(tester, history);
       final withFirstAppend = <ChatItem>[
         ...history,
         ..._messages(1, prefix: 'new'),
@@ -378,6 +385,12 @@ void main() {
         bucket: bucket,
         sessionId: 'follow-session',
       );
+
+      expect(
+        tester.getTopLeft(find.byKey(ValueKey<String>(anchor.key))).dy,
+        closeTo(anchor.top, _geometryTolerance),
+      );
+      expect(find.byKey(const ValueKey<String>('new-0')), findsNothing);
 
       position = _scrollPosition(tester);
       position.jumpTo(position.maxScrollExtent);
@@ -398,8 +411,15 @@ void main() {
       final latestRow = find.byKey(ValueKey<String>(latest.key));
       expect(latestRow, findsOneWidget);
       final viewport = tester.getRect(_scrollable);
-      expect(tester.getRect(latestRow).bottom, lessThan(viewport.bottom));
-      expect(tester.getRect(latestRow).bottom, greaterThan(viewport.center.dy));
+      position = _scrollPosition(tester);
+      expect(
+        position.pixels,
+        closeTo(position.maxScrollExtent, _geometryTolerance),
+      );
+      expect(
+        viewport.bottom - tester.getRect(latestRow).bottom,
+        closeTo(TRSpacing.large, _geometryTolerance),
+      );
     },
   );
 
@@ -408,7 +428,6 @@ void main() {
     'widget',
     tags: const <String>[
       'feature_test__turn_execution__widget',
-      'ui_state__conversation_timeline__history_anchored__widget',
     ],
     (tester) async {
       await _useDesktopViewport(tester);
@@ -437,6 +456,60 @@ void main() {
   );
 
   testWidgets(
+    'switching sessions discards attachment state with colliding item IDs',
+    tags: const <String>['feature_test__conversation_attachments__widget'],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final bucket = PageStorageBucket();
+      final firstBytes = Completer<Uint8List>();
+      final secondBytes = Completer<Uint8List>();
+      var firstLoads = 0;
+      var secondLoads = 0;
+      final items = <ChatItem>[
+        ChatAttachmentMessage(
+          key: 'shared-attachment-row',
+          turnId: 'turn',
+          createdAt: _createdAt,
+          attachment: const ChatAttachment(
+            id: 'shared-attachment',
+            fileName: 'preview.png',
+            mimeType: 'image/png',
+            byteSize: 1,
+          ),
+        ),
+      ];
+
+      await _pumpTimeline(
+        tester,
+        items: items,
+        bucket: bucket,
+        sessionId: 'first-attachment-session',
+        loadAttachment: (_) {
+          firstLoads += 1;
+          return firstBytes.future;
+        },
+      );
+      await tester.pump();
+      expect(firstLoads, 1);
+
+      await _pumpTimeline(
+        tester,
+        items: items,
+        bucket: bucket,
+        sessionId: 'second-attachment-session',
+        loadAttachment: (_) {
+          secondLoads += 1;
+          return secondBytes.future;
+        },
+      );
+      await tester.pump();
+
+      expect(secondLoads, 1);
+      expect(find.byType(TRSkeleton), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'switching sessions restores each PageStorage history anchor',
     tags: const <String>[
       'feature_test__turn_execution__widget',
@@ -459,6 +532,9 @@ void main() {
       await tester.pumpAndSettle();
       final saved = _visibleAnchor(tester, firstSession);
 
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
       final secondSession = _messages(36, prefix: 'second');
       await _pumpTimeline(
         tester,
@@ -468,6 +544,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey<String>('second-35')), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
 
       await _pumpTimeline(
         tester,

@@ -1461,7 +1461,7 @@ tinestUiReachabilityManifest = <UiReachabilityContract>[
         id: 'history_anchored',
         description:
             'Streaming, disclosure growth, and session restoration preserve '
-            'the reader\'s visible history anchor.',
+            "the reader's visible history anchor.",
       ),
       UiStateContract(
         id: 'approval_pending',

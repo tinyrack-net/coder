@@ -175,8 +175,11 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
                   ? const EdgeInsets.only(bottom: TRSpacing.large)
                   : const EdgeInsets.only(bottom: TRSpacing.small)),
           child: KeyedSubtree(
-            key: ValueKey<String>(entry.key),
-            child: content,
+            key: ValueKey<String>(widget.pageStorageId),
+            child: KeyedSubtree(
+              key: ValueKey<String>(entry.key),
+              child: content,
+            ),
           ),
         );
       },

@@ -562,7 +562,7 @@ List<ChatItem> projectChatTimeline(
           // A pending question renders from conversation state, so a tool row
           // beside it would only duplicate it; the answer replaces both.
           final builder = _QuestionBuilder(
-            key: 'question-$callId-${event.sequence}',
+            key: _questionKey(turnId, callId),
             turnId: turnId,
             createdAt: event.createdAt,
             callId: callId,
@@ -825,7 +825,7 @@ List<ChatItem> projectChatTimeline(
     builders.add(
       _StaticBuilder(
         ChatQuestionInteraction(
-          key: 'question-${request.toolCallId}',
+          key: _questionKey(request.turnId, request.toolCallId),
           turnId: request.turnId,
           createdAt: request.createdAt,
           request: request,
@@ -867,6 +867,11 @@ List<ChatItem> projectChatTimeline(
 }
 
 String? _string(Object? value) => value is String ? value : null;
+
+String _questionKey(String? turnId, String callId) {
+  final scope = turnId ?? '';
+  return 'question:${scope.length}:$scope:$callId';
+}
 
 Map<String, dynamic> _map(Object? value) => value is Map<String, dynamic>
     ? Map<String, dynamic>.unmodifiable(value)
