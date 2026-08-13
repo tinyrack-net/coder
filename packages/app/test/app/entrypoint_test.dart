@@ -11,8 +11,9 @@ import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:dropwell/dropwell.dart';
+import 'package:flutter/material.dart' as flutter_material;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart' as standalone_material;
 import 'package:protocol/protocol.dart';
 
 import '../support/fake_desktop_ports.dart';
@@ -26,7 +27,7 @@ void main() {
     await app_entry.main();
     await tester.pump();
 
-    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.byType(flutter_material.MaterialApp), findsOneWidget);
   });
 
   testWidgets('desktop and mobile runners accept test services', (
@@ -53,7 +54,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      tester.widget<MaterialApp>(find.byType(MaterialApp)).title,
+      tester
+          .widget<standalone_material.MaterialApp>(
+            find.byType(standalone_material.MaterialApp),
+          )
+          .title,
       AppIdentity.displayName,
     );
     // The injected daemon names the workspace row it serves.
