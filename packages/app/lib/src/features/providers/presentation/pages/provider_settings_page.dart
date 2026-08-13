@@ -64,6 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
           value: 'provider-collection',
         ),
       );
+      _standaloneNavigator!.addListener(_standaloneNavigationChanged);
       _paneController.addListener(_syncStandaloneDestination);
     }
   }
@@ -95,49 +96,77 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void _standaloneNavigationChanged() {
+    final navigator = _standaloneNavigator;
+    if (navigator?.lastChange?.operation != TRPaneNavigationOperation.pop) {
+      return;
+    }
+    if (_paneController.hasDetail) _paneController.showCollection();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final slot = widget.slot;
-    final body = slot == null
-        ? TRNavigableThreePaneScaffold<String>(
-            navigator: _standaloneNavigator!,
-            navigationPane: _ProviderSettingsSlot(
-              hostId: widget.hostId,
-              paneController: _paneController,
-              slot: SettingsPaneSlot.collection,
-            ),
-            primaryPane: _ProviderSettingsSlot(
-              hostId: widget.hostId,
-              paneController: _paneController,
-              slot: SettingsPaneSlot.detail,
-            ),
-          )
+    final embeddedBody = slot == null
+        ? null
         : _ProviderSettingsSlot(
             hostId: widget.hostId,
             paneController: _paneController,
             slot: slot,
           );
-    if (widget.embedded) return body;
-    return PopScope<Object?>(
-      canPop: !_paneController.hasDetail,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _paneController.showCollection();
-      },
-      child: TinestPageShell(
+    if (embeddedBody != null && widget.embedded) return embeddedBody;
+    if (slot != null) {
+      return TinestPageShell(
         appBar: TinestPageHeader(
           leading: TRIconButton(
             appearance: TRAppearance.ghost,
             label: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: _paneController.hasDetail
-                ? _paneController.showCollection
-                : context.pop,
+            onPressed: context.pop,
             icon: Icon(TinestIcons.backFor(context)),
           ),
           title: TRText.inherit(l10n.providerSettingsTitle),
         ),
-        body: body,
-      ),
+        body: embeddedBody!,
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final widthClass = TRAdaptiveWidthClass.fromWidth(constraints.maxWidth);
+        final body = TRNavigableThreePaneScaffold<String>(
+          navigator: _standaloneNavigator!,
+          navigationPane: _ProviderSettingsSlot(
+            hostId: widget.hostId,
+            paneController: _paneController,
+            slot: SettingsPaneSlot.collection,
+          ),
+          primaryPane: _ProviderSettingsSlot(
+            hostId: widget.hostId,
+            paneController: _paneController,
+            slot: SettingsPaneSlot.detail,
+          ),
+        );
+        return TinestPageShell(
+          appBar: TinestPageHeader(
+            leading: TRIconButton(
+              appearance: TRAppearance.ghost,
+              label: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: () {
+                if (_standaloneNavigator!.popUntilScaffoldValueChange(
+                  widthClass,
+                  hasSecondaryPane: false,
+                )) {
+                  return;
+                }
+                context.pop();
+              },
+              icon: Icon(TinestIcons.backFor(context)),
+            ),
+            title: TRText.inherit(l10n.providerSettingsTitle),
+          ),
+          body: body,
+        );
+      },
     );
   }
 }
