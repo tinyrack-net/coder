@@ -182,4 +182,52 @@ void _registerProvidersControllerTests() {
     },
     tags: const <String>['feature_test__mcp_server_management__unit'],
   );
+
+  test(
+    'MCP add exposes the created server before a newer reload finishes',
+    () async {
+      const config = McpServerConfigDto(
+        id: 'e2e',
+        transport: McpTransportKind.stdio,
+        command: 'dart',
+      );
+      const created = McpServerStateDto(
+        config: config,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+        status: McpServerStatus.ready,
+        serverName: 'e2e',
+      );
+      final api = FakeTinestApi();
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = mcpServersControllerProvider('server', null);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      await container.read(provider.future);
+
+      final mutationReload = Completer<List<McpServerStateDto>>();
+      final eventReload = Completer<List<McpServerStateDto>>();
+      api.mcpListResponses.addAll(<Future<List<McpServerStateDto>>>[
+        mutationReload.future,
+        eventReload.future,
+      ]);
+      final adding = container.read(provider.notifier).add(config);
+      await Future<void>.delayed(Duration.zero);
+      final eventRefresh = container.read(provider.notifier).refresh();
+      mutationReload.complete(const <McpServerStateDto>[created]);
+      await adding;
+
+      final visible = container.read(provider).requireValue.servers;
+      expect(visible, hasLength(1));
+      expect(visible.single.config, config);
+      expect(visible.single.status, McpServerStatus.ready);
+
+      eventReload.complete(const <McpServerStateDto>[created]);
+      await eventRefresh;
+    },
+    tags: const <String>['feature_test__mcp_server_management__unit'],
+  );
 }

@@ -15,6 +15,21 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
 
+final String _firstStreamChunk = List<String>.generate(
+  36,
+  (index) => '스트림 청크 1-$index',
+).join('\n\n');
+final String _secondStreamChunk =
+    '\n\n${List<String>.generate(
+      12,
+      (index) => '스트림 청크 2-$index',
+    ).join('\n\n')}';
+final String _thirdStreamChunk =
+    '\n\n${List<String>.generate(
+      12,
+      (index) => '스트림 청크 3-$index',
+    ).join('\n\n')}';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -90,7 +105,12 @@ void main() {
       );
       await pumpUntil(
         tester,
-        find.textContaining('첫 번째 청크', findRichText: true),
+        find.textContaining('스트림 청크 1-35', findRichText: true),
+      );
+      _expectTimelineTrailing(
+        tester,
+        find.textContaining('스트림 청크 1-35', findRichText: true),
+        phase: 'first overflowing stream chunk',
       );
 
       await _submit(tester, composerKey, sendKey, 'Ask then patch');
@@ -100,6 +120,36 @@ void main() {
       );
       expect(find.text('Ask then patch'), findsWidgets);
       provider.releaseFirstTurn.complete();
+
+      await provider.secondStreamChunkStarted.future.timeout(
+        const Duration(minutes: 1),
+      );
+      final secondChunk = find.textContaining(
+        '스트림 청크 2-11',
+        findRichText: true,
+      );
+      await pumpUntil(tester, secondChunk);
+      _expectTimelineTrailing(
+        tester,
+        secondChunk,
+        phase: 'second stream chunk',
+      );
+      provider.releaseSecondStreamChunk.complete();
+
+      await provider.thirdStreamChunkStarted.future.timeout(
+        const Duration(minutes: 1),
+      );
+      final thirdChunk = find.textContaining(
+        '스트림 청크 3-11',
+        findRichText: true,
+      );
+      await pumpUntil(tester, thirdChunk);
+      _expectTimelineTrailing(
+        tester,
+        thirdChunk,
+        phase: 'third stream chunk',
+      );
+      provider.releaseThirdStreamChunk.complete();
 
       await pumpUntil(tester, find.text('Storage'));
       expect(find.text('Which store should the cache use?'), findsOneWidget);
@@ -255,6 +305,22 @@ Future<void> _submit(
   await tester.pump();
 }
 
+void _expectTimelineTrailing(
+  WidgetTester tester,
+  Finder streamedContent, {
+  required String phase,
+}) {
+  final scrollable = find
+      .ancestor(of: streamedContent, matching: find.byType(Scrollable))
+      .first;
+  final position = tester.state<ScrollableState>(scrollable).position;
+  expect(
+    position.extentAfter,
+    closeTo(0, 0.01),
+    reason: 'conversation timeline after $phase',
+  );
+}
+
 final class _AdversityModelDiscovery implements ProviderModelDiscovery {
   const _AdversityModelDiscovery();
 
@@ -268,6 +334,10 @@ final class _AdversityModelDiscovery implements ProviderModelDiscovery {
 final class _AdversityProvider implements ModelProvider {
   final Completer<void> firstTurnStarted = Completer<void>();
   final Completer<void> releaseFirstTurn = Completer<void>();
+  final Completer<void> secondStreamChunkStarted = Completer<void>();
+  final Completer<void> releaseSecondStreamChunk = Completer<void>();
+  final Completer<void> thirdStreamChunkStarted = Completer<void>();
+  final Completer<void> releaseThirdStreamChunk = Completer<void>();
 
   @override
   String get id => 'conversation-adversity';
@@ -281,14 +351,27 @@ final class _AdversityProvider implements ModelProvider {
     final latestUser = request.history.whereType<UserConversationItem>().last;
     if (latestUser.text == 'Stream first') {
       yield const ModelReasoningDelta('첫 번째 추론 청크');
-      yield const ModelTextDelta('첫 번째 청크');
+      yield ModelTextDelta(_firstStreamChunk);
       if (!firstTurnStarted.isCompleted) firstTurnStarted.complete();
       await releaseFirstTurn.future;
       cancellation.throwIfCancelled();
       yield const ModelReasoningDelta('두 번째 추론 청크');
-      yield const ModelTextDelta(' 스트림 완료');
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: '첫 번째 청크 스트림 완료'),
+      yield ModelTextDelta(_secondStreamChunk);
+      if (!secondStreamChunkStarted.isCompleted) {
+        secondStreamChunkStarted.complete();
+      }
+      await releaseSecondStreamChunk.future;
+      cancellation.throwIfCancelled();
+      yield ModelTextDelta(_thirdStreamChunk);
+      if (!thirdStreamChunkStarted.isCompleted) {
+        thirdStreamChunkStarted.complete();
+      }
+      await releaseThirdStreamChunk.future;
+      cancellation.throwIfCancelled();
+      yield ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '$_firstStreamChunk$_secondStreamChunk$_thirdStreamChunk',
+        ),
       );
       return;
     }

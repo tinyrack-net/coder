@@ -54,7 +54,7 @@ final class McpServersControllerProvider
 }
 
 String _$mcpServersControllerHash() =>
-    r'd79c56687bd73179bbb18628e1c5716b38efdfb6';
+    r'2869fa9f921dfdb3e84a6052cedfd86527c8da68';
 
 /// Loads and edits one daemon's MCP server configuration.
 

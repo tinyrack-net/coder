@@ -20,6 +20,40 @@ Future<void> _centerAgentSettingsAction(
 
 void _registerAgentsAppFlows() {
   testWidgets(
+    'agent event refresh does not leak a client error after disposal',
+    (tester) async {
+      await _setTestViewport(tester, const Size(1200, 900));
+      final api = FakeTinestApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      final refreshGate = Completer<void>();
+      api.agentDefinitionsGate = refreshGate.future;
+      final callsBeforeEvent = api.agentDefinitionsListCount;
+      api.emit(const McpServersChangedClientEvent());
+      await tester.pump();
+      expect(api.agentDefinitionsListCount, callsBeforeEvent + 1);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      refreshGate.completeError(
+        const TinestClientException(
+          'The client closed with a pending request.',
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+    ],
+  );
+
+  testWidgets(
     'agent collection explains that no definitions are configured',
     (tester) async {
       await _setTestViewport(tester, const Size(1200, 900));

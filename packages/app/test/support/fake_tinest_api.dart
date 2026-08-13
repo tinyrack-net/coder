@@ -437,8 +437,11 @@ final class FakeTinestApi
   final Future<void>? workspaceCatalogGate;
 
   /// Optional gate used to keep agent definition discovery in its loading
-  /// state.
-  final Future<void>? agentDefinitionsGate;
+  /// state. Tests may replace it after the initial catalog has loaded.
+  Future<void>? agentDefinitionsGate;
+
+  /// Number of agent definition catalog reads.
+  int agentDefinitionsListCount = 0;
 
   /// Optional gate used to keep daemon shell settings in their loading state.
   final Future<void>? terminalShellGate;
@@ -1481,6 +1484,7 @@ final class FakeTinestApi
 
   @override
   Future<List<AgentDefinitionDto>> listAgentDefinitions() async {
+    agentDefinitionsListCount += 1;
     await agentDefinitionsGate;
     final error = agentListError;
     if (error != null) throw error;
