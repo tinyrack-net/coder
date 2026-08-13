@@ -55,6 +55,8 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
+  late final TRThreePaneNavigator<String> _adaptiveNavigation;
+  bool _adaptiveSyncScheduled = false;
   final SettingsPaneNavigationController _paneNavigation =
       SettingsPaneNavigationController();
 
@@ -69,6 +71,9 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   @override
   void initState() {
     super.initState();
+    _adaptiveNavigation = TRThreePaneNavigator<String>(
+      initialDestination: _settingsDestination(widget),
+    );
     _paneNavigation.addListener(_paneNavigationChanged);
     // A deep link naming a daemon wins once, then the persisted selection
     // takes over so switching categories never resets it.
@@ -77,10 +82,32 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 
   @override
   void dispose() {
+    _adaptiveNavigation.dispose();
     _paneNavigation
       ..removeListener(_paneNavigationChanged)
       ..dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(UnifiedSettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleAdaptiveDestinationSync();
+  }
+
+  void _scheduleAdaptiveDestinationSync() {
+    if (_adaptiveSyncScheduled) return;
+    _adaptiveSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _adaptiveSyncScheduled = false;
+      if (!mounted) return;
+      final destination = _settingsDestination(widget);
+      final current = _adaptiveNavigation.currentDestination;
+      if (current.value != destination.value ||
+          current.role != destination.role) {
+        _adaptiveNavigation.replace(destination);
+      }
+    });
   }
 
   void _paneNavigationChanged() {
@@ -188,68 +215,62 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.daemon => const AppSettingsPage(embedded: true),
       SettingsCategory.advanced => const AdvancedSettingsPage(embedded: true),
     };
+    final primary = switch ((widget.category, widget.hostId)) {
+      (null, final String requestedHostId) => _MobileDaemonCategories(
+        host: registry?.runtimes[requestedHostId],
+      ),
+      _ => SettingsPaneNavigationScope(
+        controller: _paneNavigation,
+        child: detail,
+      ),
+    };
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact =
-            constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
-        final body = compact
-            ? SettingsCompactPaneTransition(
-                paneKey: _compactSettingsPaneKey(
-                  category: widget.category,
-                  hostId: widget.hostId,
+        final widthClass = TRAdaptiveWidthClass.fromWidth(
+          constraints.maxWidth,
+        );
+        final compact = widthClass == TRAdaptiveWidthClass.compact;
+        final body = TRNavigableThreePaneScaffold<String>(
+          navigator: _adaptiveNavigation,
+          navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
+          navigationPane: compact
+              ? _MobileSettingsHome(hosts: hosts)
+              : KeyedSubtree(
+                  key: const ValueKey<String>('settings-sidebar-surface'),
+                  child: _SettingsSidebar(
+                    selected: category,
+                    hosts: hosts,
+                    hostId: hostId,
+                    loading: registryLoading,
+                  ),
                 ),
-                child: switch ((widget.category, widget.hostId)) {
-                  (null, null) => _MobileSettingsHome(hosts: hosts),
-                  (null, final String requestedHostId) =>
-                    _MobileDaemonCategories(
-                      host: registry?.runtimes[requestedHostId],
-                    ),
-                  _ => SettingsPaneNavigationScope(
-                    controller: _paneNavigation,
-                    child: detail,
-                  ),
-                },
-              )
-            : Row(
-                children: <Widget>[
-                  TRAppShellSidebar(
-                    key: const ValueKey<String>('settings-sidebar-surface'),
-                    scroll: false,
-                    // The sidebar lays content out at the width it is given,
-                    // so the width belongs here rather than on an outer box.
-                    width: TinestLayoutMetrics.settingsSidebarWidth,
-                    child: _SettingsSidebar(
-                      selected: category,
-                      hosts: hosts,
-                      hostId: hostId,
-                      loading: registryLoading,
-                    ),
-                  ),
-                  Expanded(child: detail),
-                ],
-              );
+          primaryPane: primary,
+        );
         final hasLogicalParent =
-            compact &&
-            (_paneNavigation.canGoBack ||
-                widget.category != null ||
-                widget.hostId != null);
-        return PopScope<Object?>(
-          canPop: !hasLogicalParent && Navigator.of(context).canPop(),
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _goBack(compact: compact, hostId: hostId);
-          },
-          child: TinestPageShell(
-            appBar: TinestPageHeader(
-              leading: TRIconButton(
-                key: const ValueKey<String>('settings-back-button'),
-                appearance: TRAppearance.ghost,
-                label: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => _goBack(compact: compact, hostId: hostId),
-                icon: const Icon(TinestIcons.back),
+            _paneNavigation.canGoBack ||
+            (compact && (widget.category != null || widget.hostId != null));
+        return SettingsAdaptiveWidthScope(
+          widthClass: widthClass,
+          child: PopScope<Object?>(
+            canPop: !hasLogicalParent && Navigator.of(context).canPop(),
+            onPopInvokedWithResult: (didPop, _) {
+              if (!didPop) _goBack(compact: compact, hostId: hostId);
+            },
+            child: TinestPageShell(
+              appBar: TinestPageHeader(
+                leading: TRIconButton(
+                  key: const ValueKey<String>('settings-back-button'),
+                  appearance: TRAppearance.ghost,
+                  label: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => _goBack(compact: compact, hostId: hostId),
+                  icon: const Icon(TinestIcons.back),
+                ),
+                title: TRText.inherit(
+                  AppLocalizations.of(context).settingsTitle,
+                ),
               ),
-              title: TRText.inherit(AppLocalizations.of(context).settingsTitle),
+              body: body,
             ),
-            body: body,
           ),
         );
       },
@@ -257,7 +278,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   }
 
   void _goBack({required bool compact, required String? hostId}) {
-    if (compact && _paneNavigation.canGoBack) {
+    if (_paneNavigation.canGoBack) {
       _paneNavigation.goBack();
       return;
     }
@@ -280,17 +301,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   }
 }
 
-Key _compactSettingsPaneKey({
-  required SettingsCategory? category,
-  required String? hostId,
-}) {
+TRPaneDestination<String> _settingsDestination(UnifiedSettingsPage page) {
+  final category = page.category;
   if (category != null) {
-    return ValueKey<String>('settings-category-pane-${category.name}');
+    return TRPaneDestination<String>(
+      role: TRPaneRole.primary,
+      value: 'settings-category-pane-${category.name}',
+    );
   }
-  if (hostId != null) {
-    return const ValueKey<String>('settings-daemon-categories-pane');
+  if (page.hostId != null) {
+    return const TRPaneDestination<String>(
+      role: TRPaneRole.primary,
+      value: 'settings-daemon-categories-pane',
+    );
   }
-  return const ValueKey<String>('settings-home-pane');
+  return const TRPaneDestination<String>(
+    role: TRPaneRole.navigation,
+    value: 'settings-home-pane',
+  );
 }
 
 class _MobileSettingsHome extends StatelessWidget {
@@ -301,51 +329,55 @@ class _MobileSettingsHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(TRSpacing.medium),
+    return TRNavigationPane(
       children: <Widget>[
-        _SettingsSectionLabel(text: l10n.settingsSectionApp),
-        TRTreeNav<SettingsCategory>.controlled(
-          value: null,
-          semanticLabel: l10n.settingsSectionApp,
-          itemSpacing: TRSpacing.extraSmall,
-          items: <TRTreeNavItem<SettingsCategory>>[
-            for (final category in _categoriesInScope(
-              SettingsCategoryScope.app,
-            ))
-              TRTreeNavLeaf<SettingsCategory>(
-                value: category,
-                leading: Icon(_settingsCategoryIcon(category)),
-                label: TRText.inherit(_settingsCategoryLabel(l10n, category)),
-                trailing: const Icon(TinestIcons.chevronRight),
-              ),
-          ],
-          onValueChange: (category) {
-            if (category == null) return;
-            _goToSettingsCategory(context, category);
-          },
+        TRNavigationSection(
+          label: Text(l10n.settingsSectionApp),
+          child: TRTreeNav<SettingsCategory>.controlled(
+            value: null,
+            semanticLabel: l10n.settingsSectionApp,
+            itemSpacing: TRSpacing.extraSmall,
+            items: <TRTreeNavItem<SettingsCategory>>[
+              for (final category in _categoriesInScope(
+                SettingsCategoryScope.app,
+              ))
+                TRTreeNavLeaf<SettingsCategory>(
+                  value: category,
+                  leading: Icon(_settingsCategoryIcon(category)),
+                  label: TRText.inherit(
+                    _settingsCategoryLabel(l10n, category),
+                  ),
+                  trailing: const Icon(TinestIcons.chevronRight),
+                ),
+            ],
+            onValueChange: (category) {
+              if (category == null) return;
+              _goToSettingsCategory(context, category);
+            },
+          ),
         ),
-        const SizedBox(height: TRSpacing.large),
-        _SettingsSectionLabel(text: l10n.settingsSectionDaemon),
-        TRTreeNav<String>.controlled(
-          value: null,
-          semanticLabel: l10n.settingsSectionDaemon,
-          itemSpacing: TRSpacing.extraSmall,
-          items: <TRTreeNavItem<String>>[
-            for (final host in hosts)
-              TRTreeNavLeaf<String>(
-                key: ValueKey<String>('settings-daemon-row-${host.id}'),
-                value: host.id,
-                leading: Icon(hostStatusIcon(host.status)),
-                label: TRText.inherit(hostLabel(l10n, host)),
-                description: TRText.inherit(hostStatusText(l10n, host)),
-                trailing: const Icon(TinestIcons.chevronRight),
-              ),
-          ],
-          onValueChange: (hostId) {
-            if (hostId == null) return;
-            unawaited(_openDaemonCategories(context, hostId));
-          },
+        TRNavigationSection(
+          label: Text(l10n.settingsSectionDaemon),
+          child: TRTreeNav<String>.controlled(
+            value: null,
+            semanticLabel: l10n.settingsSectionDaemon,
+            itemSpacing: TRSpacing.extraSmall,
+            items: <TRTreeNavItem<String>>[
+              for (final host in hosts)
+                TRTreeNavLeaf<String>(
+                  key: ValueKey<String>('settings-daemon-row-${host.id}'),
+                  value: host.id,
+                  leading: Icon(hostStatusIcon(host.status)),
+                  label: TRText.inherit(hostLabel(l10n, host)),
+                  description: TRText.inherit(hostStatusText(l10n, host)),
+                  trailing: const Icon(TinestIcons.chevronRight),
+                ),
+            ],
+            onValueChange: (hostId) {
+              if (hostId == null) return;
+              unawaited(_openDaemonCategories(context, hostId));
+            },
+          ),
         ),
       ],
     );
@@ -439,25 +471,31 @@ class _SettingsSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return ListView(
-      padding: const EdgeInsets.all(TRSpacing.medium),
+    return TRNavigationPane(
       children: <Widget>[
-        _SettingsSectionLabel(text: l10n.settingsSectionApp),
-        _scopeNav(context, l10n, SettingsCategoryScope.app),
-        const SizedBox(height: TRSpacing.large),
-        _SettingsSectionLabel(text: l10n.settingsSectionDaemon),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: TRSpacing.extraSmall,
-            vertical: TRSpacing.extraSmall,
-          ),
-          child: _DaemonSelect(
-            hosts: hosts,
-            hostId: hostId,
-            loading: loading,
+        TRNavigationSection(
+          label: Text(l10n.settingsSectionApp),
+          child: _scopeNav(context, l10n, SettingsCategoryScope.app),
+        ),
+        TRNavigationSection(
+          label: Text(l10n.settingsSectionDaemon),
+          child: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: TRSpacing.extraSmall,
+                  vertical: TRSpacing.extraSmall,
+                ),
+                child: _DaemonSelect(
+                  hosts: hosts,
+                  hostId: hostId,
+                  loading: loading,
+                ),
+              ),
+              _scopeNav(context, l10n, SettingsCategoryScope.daemon),
+            ],
           ),
         ),
-        _scopeNav(context, l10n, SettingsCategoryScope.daemon),
       ],
     );
   }
@@ -498,26 +536,6 @@ class _SettingsSidebar extends StatelessWidget {
       },
     );
   }
-}
-
-class _SettingsSectionLabel extends StatelessWidget {
-  const _SettingsSectionLabel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    // The nav rows below sit a single extraSmall step apart, so the label
-    // needs a wider step beneath it to read as their header rather than as
-    // another row.
-    padding: const EdgeInsets.fromLTRB(
-      TRSpacing.small,
-      TRSpacing.small,
-      TRSpacing.small,
-      TRSpacing.medium,
-    ),
-    child: TRText(text, variant: TRTextVariant.label, color: TRTextColor.muted),
-  );
 }
 
 /// Picks the daemon that every host-scoped settings page edits.

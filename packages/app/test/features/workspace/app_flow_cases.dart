@@ -31,13 +31,13 @@ void _registerWorkspaceAppFlows() {
     updatedAt: now,
   );
   for (final testCase in <({String name, Size size})>[
-    (name: 'desktop', size: const Size(1100, 760)),
+    (name: 'desktop', size: const Size(1400, 760)),
     (name: 'mobile', size: const Size(390, 780)),
   ]) {
     testWidgets(
       '${testCase.name} replaces a route whose worktree left the catalog',
       (tester) async {
-        await tester.binding.setSurfaceSize(testCase.size);
+        await _setTestViewport(tester, testCase.size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final api = FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
@@ -65,7 +65,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'a transient stale catalog does not eject a newly created worktree route',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -100,7 +100,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'desktop workspace uses a flat workspace tree and session tabs',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      await _setTestViewport(tester, const Size(1280, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
       final second = session('two');
@@ -153,7 +153,7 @@ void _registerWorkspaceAppFlows() {
     (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final managed = WorktreeDto(
         id: 'external',
@@ -221,7 +221,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'an archive that outlives its sidebar finishes without throwing',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final managed = WorktreeDto(
         id: 'managed',
@@ -275,7 +275,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'the project select registers a project through the daemon browser',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         directories: const <String, List<String>>{
@@ -319,7 +319,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'the sidebar collapses and restores from persisted settings',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -360,9 +360,9 @@ void _registerWorkspaceAppFlows() {
   );
 
   testWidgets(
-    'the sidebar animates between its expanded and collapsed widths',
+    'the desktop sidebar collapses and restores without reserving a pane',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -378,28 +378,15 @@ void _registerWorkspaceAppFlows() {
       await tester.pumpAndSettle();
 
       final surface = find.byKey(const ValueKey('workspace-sidebar-surface'));
-      final expanded = tester.getSize(surface).width;
-      expect(expanded, greaterThan(0));
+      expect(tester.getSize(surface).width, greaterThan(0));
 
       await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
-      await tester.pump();
-      await tester.pump(TRMotion.normal ~/ 2);
-      final collapsing = tester.getSize(surface).width;
-      expect(collapsing, greaterThan(0));
-      expect(collapsing, lessThan(expanded));
-
       await tester.pumpAndSettle();
-      expect(tester.getSize(surface).width, 0);
+      expect(surface, findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
-      await tester.pump();
-      await tester.pump(TRMotion.normal ~/ 2);
-      final expanding = tester.getSize(surface).width;
-      expect(expanding, greaterThan(0));
-      expect(expanding, lessThan(expanded));
-
       await tester.pumpAndSettle();
-      expect(tester.getSize(surface).width, expanded);
+      expect(tester.getSize(surface).width, greaterThan(0));
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
@@ -407,7 +394,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'reduced motion collapses the sidebar without animating',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -429,7 +416,7 @@ void _registerWorkspaceAppFlows() {
       await tester.tap(find.byKey(const ValueKey('workspace-sidebar-toggle')));
       // One frame settles the persisted flag and the collapse together.
       await tester.pump();
-      expect(tester.getSize(surface).width, 0);
+      expect(surface, findsNothing);
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );
@@ -437,7 +424,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets(
     'a collapsed sidebar is unreachable by pointer, semantics, and keyboard',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final semantics = tester.ensureSemantics();
       final api = FakeTinestApi(
@@ -492,7 +479,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets('mobile opens selected worktree as a session-only detail', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 780));
+    await _setTestViewport(tester, const Size(390, 780));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final api = FakeTinestApi(
       workspaces: <WorkspaceDto>[workspace],
@@ -528,7 +515,7 @@ void _registerWorkspaceAppFlows() {
   testWidgets('mobile new-workspace composer backs from the page header', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 780));
+    await _setTestViewport(tester, const Size(390, 780));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final router = await _pumpRoute(
       tester,

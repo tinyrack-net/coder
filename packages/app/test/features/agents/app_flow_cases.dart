@@ -4,7 +4,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'agent settings edits Markdown definitions and creates subagents',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi();
       final router = await _pumpRoute(
@@ -111,7 +111,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'agent create validates input and keeps daemon failures in the pane',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(failNextAgentCreate: true);
       final router = await _pumpRoute(
@@ -170,7 +170,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'fixed agent model explains the missing provider without opening a picker',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const fixedAgent = AgentDefinitionDto(
         id: 'tinest',
@@ -265,7 +265,7 @@ void _registerAgentsAppFlows() {
   testWidgets('mobile agent settings navigates from list to Markdown detail', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 780));
+    await _setTestViewport(tester, const Size(390, 780));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final api = FakeTinestApi();
     final router = await _pumpRoute(
@@ -291,7 +291,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'agent editor handles conflicts, policy controls, reset, and archive',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const tinest = AgentDefinitionDto(
         id: 'tinest',
@@ -411,7 +411,7 @@ void _registerAgentsAppFlows() {
   testWidgets('remote agent settings stays editable and exposes load errors', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
+    await _setTestViewport(tester, const Size(1400, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     const remoteInfo = ServerInfoDto(
       serverId: 'server',
@@ -452,7 +452,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'resetting a built-in agent asks first and reports what it did',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi();
       final router = await _pumpRoute(
@@ -501,7 +501,7 @@ void _registerAgentsAppFlows() {
   testWidgets(
     'a tool group header turns its whole group on and off at once',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi();
       final router = await _pumpRoute(

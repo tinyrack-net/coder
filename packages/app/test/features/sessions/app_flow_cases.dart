@@ -33,7 +33,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'the draft composer stays quiet while agent discovery is still loading',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
       final api = FakeTinestApi(
@@ -70,7 +70,7 @@ void _registerSessionsAppFlows() {
     'the first turn and assistant response preserve the chat surface',
     (tester) async {
       Future<void> verifyAt(Size size) async {
-        await tester.binding.setSurfaceSize(size);
+        await _setTestViewport(tester, size);
         final startGate = Completer<void>();
         final api =
             FakeTinestApi(
@@ -165,7 +165,7 @@ void _registerSessionsAppFlows() {
       }
 
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await verifyAt(const Size(1100, 760));
+      await verifyAt(const Size(1400, 760));
       await verifyAt(const Size(390, 760));
     },
     tags: const <String>[
@@ -178,7 +178,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'session tab strip uses fixed-width tabs and covers the hover seam',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
       final api = FakeTinestApi(
@@ -273,7 +273,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'one mouse click switches tabs despite pointer drift and tab padding',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
       final api = FakeTinestApi(
@@ -332,10 +332,12 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'desktop workspace splits panes and mobile scrolls every tab inline',
+    'workspace caps desktop splits and stacks the focused pane when narrow',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1400, 760);
+      addTearDown(tester.view.reset);
       final first = session('one');
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -365,6 +367,10 @@ void _registerSessionsAppFlows() {
       await tester.tap(draftClose);
       await tester.pumpAndSettle();
 
+      expect(
+        find.byKey(const ValueKey('workspace-mobile-tab-strip')),
+        findsNothing,
+      );
       expect(
         find.byKey(const ValueKey('workspace-split-right')),
         findsOneWidget,
@@ -397,33 +403,21 @@ void _registerSessionsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('workspace-split-right')));
       await tester.pumpAndSettle();
       expect(find.byType(TRSplitView), findsOneWidget);
+      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(2));
+      expect(
+        find.byKey(const ValueKey('workspace-split-down')),
+        findsNothing,
+      );
 
-      final splitDown = find.byWidgetPredicate(
-        (widget) =>
-            widget.key is ValueKey<String> &&
-            (widget.key! as ValueKey<String>).value.startsWith(
-              'workspace-split-down',
-            ),
-      );
-      await tester.tap(splitDown.last);
+      tester.view.physicalSize = const Size(1199, 760);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('workspace-pane')), findsNWidgets(3));
-      expect(find.byType(TRSplitView), findsNWidgets(2));
-      final verticalSplit = find.byWidgetPredicate(
-        (widget) => widget is TRSplitView && widget.axis == Axis.vertical,
+      expect(find.byType(TRSplitView), findsNothing);
+      expect(
+        find.byKey(const ValueKey('workspace-mobile-tab-strip')),
+        findsOneWidget,
       );
-      final verticalSeparator = find.descendant(
-        of: verticalSplit,
-        matching: find.byKey(const ValueKey<String>('tr-split-view-separator')),
-      );
-      await tester.drag(
-        verticalSeparator,
-        const Offset(0, TRSpacing.threeExtraLarge),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.widget<TRSplitView>(verticalSplit).ratio, greaterThan(0.5));
 
-      await tester.binding.setSurfaceSize(const Size(390, 760));
+      tester.view.physicalSize = const Size(390, 760);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-split-right')), findsNothing);
       final mobileStrip = find.byKey(
@@ -432,9 +426,9 @@ void _registerSessionsAppFlows() {
       expect(mobileStrip, findsOneWidget);
       final tabs = tester.widget<TRTabs>(mobileStrip);
       expect(tabs.tabWidth, TRTabsWidth.fixed);
-      expect(tabs.tabs, hasLength(4));
+      expect(tabs.tabs, hasLength(3));
       expect(tabs.tabs.map((tab) => tab.value), contains('one'));
-      expect(tabs.tabs.where((tab) => tab.onClose != null), hasLength(4));
+      expect(tabs.tabs.where((tab) => tab.onClose != null), hasLength(3));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-tab-sheet')), findsNothing);
 
@@ -486,7 +480,7 @@ void _registerSessionsAppFlows() {
     (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = session('one');
       final api = FakeTinestApi(
@@ -535,7 +529,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'switching between tab kinds leaves the sidebar exactly as it was',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final docs = WorkspaceDto(
         id: 'docs',
@@ -620,7 +614,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'new-tab menu creates a terminal and confirms termination on close',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -673,7 +667,7 @@ void _registerSessionsAppFlows() {
     'new-tab menu reports terminal creation failures without an exception',
     (tester) async {
       final semantics = tester.ensureSemantics();
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -737,7 +731,7 @@ void _registerSessionsAppFlows() {
       (
         tester,
       ) async {
-        await tester.binding.setSurfaceSize(const Size(1100, 760));
+        await _setTestViewport(tester, const Size(1400, 760));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final router = await _pumpRoute(
           tester,
@@ -773,7 +767,7 @@ void _registerSessionsAppFlows() {
   testWidgets('terminal tab shows attach failures and closes exited shells', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
+    await _setTestViewport(tester, const Size(1400, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     const terminal = TerminalDto(
       id: 'terminal-failed-attach',
@@ -815,7 +809,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal deep link restores the requested live terminal',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const terminal = TerminalDto(
         id: 'terminal-deep-link',
@@ -867,7 +861,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal sends a Hangul word the input method composes exactly once',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -942,7 +936,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal ignores the duplicate commit a sticky input method repeats',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -1002,7 +996,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal context menu closes on a terminal click and on Escape',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -1065,7 +1059,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal context menu copies the selection and pastes the clipboard',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       String? clipboard;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -1169,7 +1163,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'creates a session and sends a coding request',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1500, 760));
+      await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const planner = AgentDefinitionDto(
         id: 'planner',
@@ -1292,7 +1286,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'composer pins a model at creation and clears it mid-session',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1500, 760));
+      await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const fast = ProviderModelDto(
         connectionId: 'openai',
@@ -1441,7 +1435,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'composer turn settings follow model capabilities and return to inherit',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1400, 760));
+      await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -1634,7 +1628,7 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'the draft composer runs a client command instead of sending it',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1500, 760));
+      await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],

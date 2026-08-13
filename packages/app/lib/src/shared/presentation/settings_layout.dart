@@ -316,11 +316,11 @@ class SettingsPaneNavigationController extends ChangeNotifier {
   }
 
   /// Removes the handler when [owner] returns to its list pane or disposes.
-  void clearBackHandler(Object owner) {
+  void clearBackHandler(Object owner, {bool notify = true}) {
     if (!identical(_owner, owner)) return;
     _owner = null;
     _onBack = null;
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   /// Leaves the deepest locally managed pane.
@@ -348,6 +348,33 @@ class SettingsPaneNavigationScope extends InheritedWidget {
   @override
   bool updateShouldNotify(SettingsPaneNavigationScope oldWidget) =>
       !identical(controller, oldWidget.controller);
+}
+
+/// Supplies the settings shell's top-level adaptive width classification.
+///
+/// List-detail descendants are narrower than the application viewport because
+/// the navigation pane has already been allocated. They must still follow the
+/// shell's one, two, or three-pane policy instead of reclassifying that inner
+/// width as a smaller window.
+class SettingsAdaptiveWidthScope extends InheritedWidget {
+  /// Creates a scope for one settings shell.
+  const SettingsAdaptiveWidthScope({
+    required this.widthClass,
+    required super.child,
+    super.key,
+  });
+
+  /// Width class computed from the settings shell's logical constraints.
+  final TRAdaptiveWidthClass widthClass;
+
+  /// Returns the nearest settings shell width class, when one exists.
+  static TRAdaptiveWidthClass? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<SettingsAdaptiveWidthScope>()
+      ?.widthClass;
+
+  @override
+  bool updateShouldNotify(SettingsAdaptiveWidthScope oldWidget) =>
+      widthClass != oldWidget.widthClass;
 }
 
 /// Synchronizes a list-detail feature with the shared compact page header.
@@ -465,23 +492,27 @@ class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
 
   @override
   void dispose() {
-    _navigation?.clearBackHandler(this);
+    _navigation?.clearBackHandler(this, notify: false);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final compact =
-          constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint;
+      final widthClass =
+          SettingsAdaptiveWidthScope.maybeOf(context) ??
+          TRAdaptiveWidthClass.fromWidth(constraints.maxWidth);
+      final stacked =
+          widthClass != TRAdaptiveWidthClass.large &&
+          widthClass != TRAdaptiveWidthClass.extraLarge;
       _navigation = SettingsPaneNavigationScope.maybeOf(context);
       syncSettingsPaneBackHandler(
         context,
         owner: this,
-        active: compact && widget.detailVisible,
+        active: stacked && widget.detailVisible,
         onBack: widget.onBack,
       );
-      if (compact) {
+      if (stacked) {
         return SettingsCompactPaneTransition(
           paneKey: ValueKey<String>(
             widget.detailVisible

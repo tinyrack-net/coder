@@ -582,6 +582,12 @@ void _registerWorkspaceControllerTests() {
 
       await container
           .read(provider.notifier)
+          .split(current.focusedPaneId, WorkspaceSplitAxis.horizontal);
+      current = container.read(provider).requireValue;
+      expect(current.panes, hasLength(2));
+
+      await container
+          .read(provider.notifier)
           .moveTab(
             tabId: initial.focusedTabId,
             sourcePaneId: originalPane,
@@ -600,8 +606,14 @@ void _registerWorkspaceControllerTests() {
           .read(provider.notifier)
           .split(current.focusedPaneId, WorkspaceSplitAxis.vertical);
       current = container.read(provider).requireValue;
-      final vertical = current.root as WorkspaceSplitNode;
-      await container.read(provider.notifier).resize(vertical.id, 0.7);
+      expect(current.panes, hasLength(1));
+      await container
+          .read(provider.notifier)
+          .split(current.focusedPaneId, WorkspaceSplitAxis.horizontal);
+      current = container.read(provider).requireValue;
+      final horizontal = current.root as WorkspaceSplitNode;
+      expect(horizontal.axis, WorkspaceSplitAxis.horizontal);
+      await container.read(provider.notifier).resize(horizontal.id, 0.7);
       await container.read(provider.notifier).commitResize();
       expect(
         store.settings.sessionTabs[selection.storageKey]?.root,
@@ -613,6 +625,52 @@ void _registerWorkspaceControllerTests() {
             .ratio,
         0.7,
       );
+    },
+    tags: const <String>['feature_test__session_tabs__unit'],
+  );
+
+  test(
+    'saved workspace layouts normalize to two panes without losing tabs',
+    () {
+      const first = PaneNode(
+        id: 'first',
+        tabIds: <String>['a'],
+        activeTabId: 'a',
+      );
+      const middle = PaneNode(
+        id: 'middle',
+        tabIds: <String>['b', 'c'],
+        activeTabId: 'c',
+      );
+      const focused = PaneNode(
+        id: 'focused',
+        tabIds: <String>['d', 'e'],
+        activeTabId: 'e',
+      );
+      const root = WorkspaceSplitNode(
+        id: 'outer',
+        axis: WorkspaceSplitAxis.vertical,
+        ratio: 0.4,
+        first: first,
+        second: WorkspaceSplitNode(
+          id: 'inner',
+          axis: WorkspaceSplitAxis.horizontal,
+          ratio: 0.6,
+          first: middle,
+          second: focused,
+        ),
+      );
+
+      final normalized = normalizeWorkspacePaneCount(root, focused.id);
+      final split = normalized as WorkspaceSplitNode;
+      final firstPane = split.first as PaneNode;
+      final secondPane = split.second as PaneNode;
+
+      expect(firstPane.id, first.id);
+      expect(secondPane.id, focused.id);
+      expect(secondPane.tabIds, <String>['b', 'c', 'd', 'e']);
+      expect(secondPane.activeTabId, 'e');
+      expect(split.axis, WorkspaceSplitAxis.horizontal);
     },
     tags: const <String>['feature_test__session_tabs__unit'],
   );

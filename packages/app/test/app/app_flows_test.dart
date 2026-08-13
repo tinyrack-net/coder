@@ -75,6 +75,13 @@ void main() {
   _registerConversationAppFlows();
 }
 
+Future<void> _setTestViewport(WidgetTester tester, Size size) async {
+  tester.view
+    ..devicePixelRatio = 1
+    ..physicalSize = size;
+  addTearDown(tester.view.reset);
+}
+
 Future<GoRouter> _pumpRoute(
   WidgetTester tester,
   FakeTinestApi api,

@@ -137,8 +137,8 @@ void main() {
 
       await tester.binding.setSurfaceSize(const Size(640, 900));
       await tester.pumpAndSettle();
-      expect(settings, findsNothing);
-      expect(agent, findsOneWidget);
+      expect(settings, findsOneWidget);
+      expect(agent, findsNothing);
 
       await tester.binding.setSurfaceSize(const Size(390, 900));
       await tester.pumpAndSettle();

@@ -1362,11 +1362,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: "6c7a379f7c6b49df629ce2504846af29e68de779"
-      resolved-ref: "6c7a379f7c6b49df629ce2504846af29e68de779"
+      ref: fb5bb97b5f20ab466b69be8a8160dc29fae90825
+      resolved-ref: fb5bb97b5f20ab466b69be8a8160dc29fae90825
       url: "https://github.com/tinyrack-net/design.git"
     source: git
-    version: "0.57.0"
+    version: "0.57.1"
   tinyrack_workspace:
     dependency: transitive
     description:
