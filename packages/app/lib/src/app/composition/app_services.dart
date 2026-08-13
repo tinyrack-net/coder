@@ -3,22 +3,20 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 
 /// Opens and handshakes one daemon client.
-typedef TinestClientOpener =
-    Future<TinestApi> Function({
-      required HostEndpoint endpoint,
-      required DaemonCredentials credentials,
-      required String clientId,
-      required String clientKind,
-    });
+typedef TinestClientOpener = Future<TinestApi> Function({
+  required HostEndpoint endpoint,
+  required DaemonCredentials credentials,
+  required String clientId,
+  required String clientKind,
+});
 
 /// Injectable relay client opener used by the production composition root.
-typedef RelayTinestClientOpener =
-    Future<TinestApi> Function({
-      required RelayHostConnection connection,
-      required RelayHostCredential credential,
-      required String clientId,
-      required String clientKind,
-    });
+typedef RelayTinestClientOpener = Future<TinestApi> Function({
+  required RelayHostConnection connection,
+  required RelayHostCredential credential,
+  required String clientId,
+  required String clientKind,
+});
 
 /// Composition-root dependencies required by the daemon-independent app shell.
 final class AppServices {

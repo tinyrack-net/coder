@@ -299,11 +299,10 @@ final class DaemonRelayTransport {
   }
 }
 
-typedef _RelayFrameSender =
-    Future<void> Function(
-      String connectionId,
-      Uint8List payload,
-    );
+typedef _RelayFrameSender = Future<void> Function(
+  String connectionId,
+  Uint8List payload,
+);
 
 final class _DaemonRelaySession {
   _DaemonRelaySession._({

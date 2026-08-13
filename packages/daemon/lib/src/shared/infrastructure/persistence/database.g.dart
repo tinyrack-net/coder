@@ -8619,24 +8619,22 @@ abstract class _$TinestDatabase extends GeneratedDatabase {
   ]);
 }
 
-typedef $$WorkspacesTableCreateCompanionBuilder =
-    WorkspacesCompanion Function({
-      required String id,
-      required String name,
-      required String rootPath,
-      required String kind,
-      required DateTime createdAt,
-      Value<int> rowid,
-    });
-typedef $$WorkspacesTableUpdateCompanionBuilder =
-    WorkspacesCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<String> rootPath,
-      Value<String> kind,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
+typedef $$WorkspacesTableCreateCompanionBuilder = WorkspacesCompanion Function({
+  required String id,
+  required String name,
+  required String rootPath,
+  required String kind,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$WorkspacesTableUpdateCompanionBuilder = WorkspacesCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> rootPath,
+  Value<String> kind,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
 
 final class $$WorkspacesTableReferences
     extends BaseReferences<_$TinestDatabase, $WorkspacesTable, Workspace> {
@@ -8922,34 +8920,32 @@ typedef $$WorkspacesTableProcessedTableManager =
       Workspace,
       PrefetchHooks Function({bool worktreesRefs})
     >;
-typedef $$WorktreesTableCreateCompanionBuilder =
-    WorktreesCompanion Function({
-      required String id,
-      required String workspaceId,
-      required String name,
-      required String path,
-      Value<String?> branch,
-      Value<String?> head,
-      required String kind,
-      required bool isTinestOwned,
-      Value<DateTime?> archivedAt,
-      required DateTime createdAt,
-      Value<int> rowid,
-    });
-typedef $$WorktreesTableUpdateCompanionBuilder =
-    WorktreesCompanion Function({
-      Value<String> id,
-      Value<String> workspaceId,
-      Value<String> name,
-      Value<String> path,
-      Value<String?> branch,
-      Value<String?> head,
-      Value<String> kind,
-      Value<bool> isTinestOwned,
-      Value<DateTime?> archivedAt,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
+typedef $$WorktreesTableCreateCompanionBuilder = WorktreesCompanion Function({
+  required String id,
+  required String workspaceId,
+  required String name,
+  required String path,
+  Value<String?> branch,
+  Value<String?> head,
+  required String kind,
+  required bool isTinestOwned,
+  Value<DateTime?> archivedAt,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$WorktreesTableUpdateCompanionBuilder = WorktreesCompanion Function({
+  Value<String> id,
+  Value<String> workspaceId,
+  Value<String> name,
+  Value<String> path,
+  Value<String?> branch,
+  Value<String?> head,
+  Value<String> kind,
+  Value<bool> isTinestOwned,
+  Value<DateTime?> archivedAt,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
 
 final class $$WorktreesTableReferences
     extends BaseReferences<_$TinestDatabase, $WorktreesTable, Worktree> {
@@ -9369,17 +9365,15 @@ class $$WorktreesTableTableManager
                     >
                   >(state) {
                     if (workspaceId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.workspaceId,
-                                referencedTable: $$WorktreesTableReferences
-                                    ._workspaceIdTable(db),
-                                referencedColumn: $$WorktreesTableReferences
-                                    ._workspaceIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.workspaceId,
+                        referencedTable: $$WorktreesTableReferences
+                            ._workspaceIdTable(db),
+                        referencedColumn: $$WorktreesTableReferences
+                            ._workspaceIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -9427,62 +9421,60 @@ typedef $$WorktreesTableProcessedTableManager =
       Worktree,
       PrefetchHooks Function({bool workspaceId, bool sessionsRefs})
     >;
-typedef $$SessionsTableCreateCompanionBuilder =
-    SessionsCompanion Function({
-      required String id,
-      required String worktreeId,
-      required String title,
-      required String agentDefinitionId,
-      required String origin,
-      Value<String?> parentSessionId,
-      Value<String?> taskName,
-      Value<String?> agentPath,
-      Value<String?> rootSessionId,
-      Value<String?> lifecycle,
-      required String status,
-      Value<String?> activeTurnId,
-      Value<String?> lastError,
-      Value<String> mode,
-      Value<String?> modelId,
-      Value<String> modelControlsJson,
-      Value<String?> permissionMode,
-      Value<int> currentContextEpoch,
-      Value<int> contextTokensUsed,
-      Value<int?> contextWindowTokens,
-      Value<double> totalCostUsd,
-      Value<bool> hasCompleteCost,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$SessionsTableUpdateCompanionBuilder =
-    SessionsCompanion Function({
-      Value<String> id,
-      Value<String> worktreeId,
-      Value<String> title,
-      Value<String> agentDefinitionId,
-      Value<String> origin,
-      Value<String?> parentSessionId,
-      Value<String?> taskName,
-      Value<String?> agentPath,
-      Value<String?> rootSessionId,
-      Value<String?> lifecycle,
-      Value<String> status,
-      Value<String?> activeTurnId,
-      Value<String?> lastError,
-      Value<String> mode,
-      Value<String?> modelId,
-      Value<String> modelControlsJson,
-      Value<String?> permissionMode,
-      Value<int> currentContextEpoch,
-      Value<int> contextTokensUsed,
-      Value<int?> contextWindowTokens,
-      Value<double> totalCostUsd,
-      Value<bool> hasCompleteCost,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
+  required String id,
+  required String worktreeId,
+  required String title,
+  required String agentDefinitionId,
+  required String origin,
+  Value<String?> parentSessionId,
+  Value<String?> taskName,
+  Value<String?> agentPath,
+  Value<String?> rootSessionId,
+  Value<String?> lifecycle,
+  required String status,
+  Value<String?> activeTurnId,
+  Value<String?> lastError,
+  Value<String> mode,
+  Value<String?> modelId,
+  Value<String> modelControlsJson,
+  Value<String?> permissionMode,
+  Value<int> currentContextEpoch,
+  Value<int> contextTokensUsed,
+  Value<int?> contextWindowTokens,
+  Value<double> totalCostUsd,
+  Value<bool> hasCompleteCost,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
+  Value<String> id,
+  Value<String> worktreeId,
+  Value<String> title,
+  Value<String> agentDefinitionId,
+  Value<String> origin,
+  Value<String?> parentSessionId,
+  Value<String?> taskName,
+  Value<String?> agentPath,
+  Value<String?> rootSessionId,
+  Value<String?> lifecycle,
+  Value<String> status,
+  Value<String?> activeTurnId,
+  Value<String?> lastError,
+  Value<String> mode,
+  Value<String?> modelId,
+  Value<String> modelControlsJson,
+  Value<String?> permissionMode,
+  Value<int> currentContextEpoch,
+  Value<int> contextTokensUsed,
+  Value<int?> contextWindowTokens,
+  Value<double> totalCostUsd,
+  Value<bool> hasCompleteCost,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$SessionsTableReferences
     extends BaseReferences<_$TinestDatabase, $SessionsTable, Session> {
@@ -10753,43 +10745,37 @@ class $$SessionsTableTableManager
                         >
                       >(state) {
                         if (worktreeId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.worktreeId,
-                                    referencedTable: $$SessionsTableReferences
-                                        ._worktreeIdTable(db),
-                                    referencedColumn: $$SessionsTableReferences
-                                        ._worktreeIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.worktreeId,
+                            referencedTable: $$SessionsTableReferences
+                                ._worktreeIdTable(db),
+                            referencedColumn: $$SessionsTableReferences
+                                ._worktreeIdTable(db)
+                                .id,
+                          ) as T;
                         }
                         if (parentSessionId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.parentSessionId,
-                                    referencedTable: $$SessionsTableReferences
-                                        ._parentSessionIdTable(db),
-                                    referencedColumn: $$SessionsTableReferences
-                                        ._parentSessionIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.parentSessionId,
+                            referencedTable: $$SessionsTableReferences
+                                ._parentSessionIdTable(db),
+                            referencedColumn: $$SessionsTableReferences
+                                ._parentSessionIdTable(db)
+                                .id,
+                          ) as T;
                         }
                         if (rootSessionId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.rootSessionId,
-                                    referencedTable: $$SessionsTableReferences
-                                        ._rootSessionIdTable(db),
-                                    referencedColumn: $$SessionsTableReferences
-                                        ._rootSessionIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.rootSessionId,
+                            referencedTable: $$SessionsTableReferences
+                                ._rootSessionIdTable(db),
+                            referencedColumn: $$SessionsTableReferences
+                                ._rootSessionIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -10976,28 +10962,26 @@ typedef $$SessionsTableProcessedTableManager =
         bool providerStatesRefs,
       })
     >;
-typedef $$TurnsTableCreateCompanionBuilder =
-    TurnsCompanion Function({
-      required String id,
-      required String sessionId,
-      required String prompt,
-      required String status,
-      Value<String?> error,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$TurnsTableUpdateCompanionBuilder =
-    TurnsCompanion Function({
-      Value<String> id,
-      Value<String> sessionId,
-      Value<String> prompt,
-      Value<String> status,
-      Value<String?> error,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$TurnsTableCreateCompanionBuilder = TurnsCompanion Function({
+  required String id,
+  required String sessionId,
+  required String prompt,
+  required String status,
+  Value<String?> error,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$TurnsTableUpdateCompanionBuilder = TurnsCompanion Function({
+  Value<String> id,
+  Value<String> sessionId,
+  Value<String> prompt,
+  Value<String> status,
+  Value<String?> error,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$TurnsTableReferences
     extends BaseReferences<_$TinestDatabase, $TurnsTable, Turn> {
@@ -11516,17 +11500,15 @@ class $$TurnsTableTableManager
                         >
                       >(state) {
                         if (sessionId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.sessionId,
-                                    referencedTable: $$TurnsTableReferences
-                                        ._sessionIdTable(db),
-                                    referencedColumn: $$TurnsTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.sessionId,
+                            referencedTable: $$TurnsTableReferences
+                                ._sessionIdTable(db),
+                            referencedColumn: $$TurnsTableReferences
+                                ._sessionIdTable(db)
+                                .id,
+                          ) as T;
                         }
 
                         return state;
@@ -11623,32 +11605,30 @@ typedef $$TurnsTableProcessedTableManager =
         bool userQuestionsRefs,
       })
     >;
-typedef $$GoalsTableCreateCompanionBuilder =
-    GoalsCompanion Function({
-      required String sessionId,
-      required String goalId,
-      required String objective,
-      required String status,
-      Value<int?> tokenBudget,
-      Value<int> tokensUsed,
-      Value<int> timeUsedSeconds,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<int> rowid,
-    });
-typedef $$GoalsTableUpdateCompanionBuilder =
-    GoalsCompanion Function({
-      Value<String> sessionId,
-      Value<String> goalId,
-      Value<String> objective,
-      Value<String> status,
-      Value<int?> tokenBudget,
-      Value<int> tokensUsed,
-      Value<int> timeUsedSeconds,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<int> rowid,
-    });
+typedef $$GoalsTableCreateCompanionBuilder = GoalsCompanion Function({
+  required String sessionId,
+  required String goalId,
+  required String objective,
+  required String status,
+  Value<int?> tokenBudget,
+  Value<int> tokensUsed,
+  Value<int> timeUsedSeconds,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$GoalsTableUpdateCompanionBuilder = GoalsCompanion Function({
+  Value<String> sessionId,
+  Value<String> goalId,
+  Value<String> objective,
+  Value<String> status,
+  Value<int?> tokenBudget,
+  Value<int> tokensUsed,
+  Value<int> timeUsedSeconds,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
 
 final class $$GoalsTableReferences
     extends BaseReferences<_$TinestDatabase, $GoalsTable, Goal> {
@@ -11982,17 +11962,16 @@ class $$GoalsTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable: $$GoalsTableReferences
-                                    ._sessionIdTable(db),
-                                referencedColumn: $$GoalsTableReferences
-                                    ._sessionIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$GoalsTableReferences._sessionIdTable(
+                          db,
+                        ),
+                        referencedColumn: $$GoalsTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -12423,19 +12402,15 @@ class $$AgentMailboxMessagesTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable:
-                                    $$AgentMailboxMessagesTableReferences
-                                        ._sessionIdTable(db),
-                                referencedColumn:
-                                    $$AgentMailboxMessagesTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$AgentMailboxMessagesTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$AgentMailboxMessagesTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -13154,34 +13129,26 @@ class $$TurnAttachmentsTableTableManager
                     >
                   >(state) {
                     if (turnId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.turnId,
-                                referencedTable:
-                                    $$TurnAttachmentsTableReferences
-                                        ._turnIdTable(db),
-                                referencedColumn:
-                                    $$TurnAttachmentsTableReferences
-                                        ._turnIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.turnId,
+                        referencedTable: $$TurnAttachmentsTableReferences
+                            ._turnIdTable(db),
+                        referencedColumn: $$TurnAttachmentsTableReferences
+                            ._turnIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (attachmentId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.attachmentId,
-                                referencedTable:
-                                    $$TurnAttachmentsTableReferences
-                                        ._attachmentIdTable(db),
-                                referencedColumn:
-                                    $$TurnAttachmentsTableReferences
-                                        ._attachmentIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.attachmentId,
+                        referencedTable: $$TurnAttachmentsTableReferences
+                            ._attachmentIdTable(db),
+                        referencedColumn: $$TurnAttachmentsTableReferences
+                            ._attachmentIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -13514,18 +13481,15 @@ class $$TimelineEventsTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable: $$TimelineEventsTableReferences
-                                    ._sessionIdTable(db),
-                                referencedColumn:
-                                    $$TimelineEventsTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$TimelineEventsTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$TimelineEventsTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -14015,34 +13979,26 @@ class $$ApprovalRequestsTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable:
-                                    $$ApprovalRequestsTableReferences
-                                        ._sessionIdTable(db),
-                                referencedColumn:
-                                    $$ApprovalRequestsTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$ApprovalRequestsTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$ApprovalRequestsTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (turnId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.turnId,
-                                referencedTable:
-                                    $$ApprovalRequestsTableReferences
-                                        ._turnIdTable(db),
-                                referencedColumn:
-                                    $$ApprovalRequestsTableReferences
-                                        ._turnIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.turnId,
+                        referencedTable: $$ApprovalRequestsTableReferences
+                            ._turnIdTable(db),
+                        referencedColumn: $$ApprovalRequestsTableReferences
+                            ._turnIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -14492,30 +14448,26 @@ class $$UserQuestionsTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable: $$UserQuestionsTableReferences
-                                    ._sessionIdTable(db),
-                                referencedColumn: $$UserQuestionsTableReferences
-                                    ._sessionIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$UserQuestionsTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$UserQuestionsTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
                     if (turnId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.turnId,
-                                referencedTable: $$UserQuestionsTableReferences
-                                    ._turnIdTable(db),
-                                referencedColumn: $$UserQuestionsTableReferences
-                                    ._turnIdTable(db)
-                                    .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.turnId,
+                        referencedTable: $$UserQuestionsTableReferences
+                            ._turnIdTable(db),
+                        referencedColumn: $$UserQuestionsTableReferences
+                            ._turnIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -14831,18 +14783,15 @@ class $$ProviderStatesTableTableManager
                     >
                   >(state) {
                     if (sessionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sessionId,
-                                referencedTable: $$ProviderStatesTableReferences
-                                    ._sessionIdTable(db),
-                                referencedColumn:
-                                    $$ProviderStatesTableReferences
-                                        ._sessionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$ProviderStatesTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$ProviderStatesTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;
@@ -14870,18 +14819,16 @@ typedef $$ProviderStatesTableProcessedTableManager =
       ProviderState,
       PrefetchHooks Function({bool sessionId})
     >;
-typedef $$SettingsTableCreateCompanionBuilder =
-    SettingsCompanion Function({
-      required String key,
-      required String value,
-      Value<int> rowid,
-    });
-typedef $$SettingsTableUpdateCompanionBuilder =
-    SettingsCompanion Function({
-      Value<String> key,
-      Value<String> value,
-      Value<int> rowid,
-    });
+typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
+  required String key,
+  required String value,
+  Value<int> rowid,
+});
+typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
+  Value<String> key,
+  Value<String> value,
+  Value<int> rowid,
+});
 
 class $$SettingsTableFilterComposer
     extends Composer<_$TinestDatabase, $SettingsTable> {
@@ -14965,12 +14912,11 @@ class $$SettingsTableTableManager
               $$SettingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$SettingsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> key = const Value.absent(),
-                Value<String> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SettingsCompanion(key: key, value: value, rowid: rowid),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) => SettingsCompanion(key: key, value: value, rowid: rowid),
           createCompanionCallback:
               ({
                 required String key,
@@ -15867,18 +15813,15 @@ class $$ProviderModelsTableTableManager
                     >
                   >(state) {
                     if (connectionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.connectionId,
-                                referencedTable: $$ProviderModelsTableReferences
-                                    ._connectionIdTable(db),
-                                referencedColumn:
-                                    $$ProviderModelsTableReferences
-                                        ._connectionIdTable(db)
-                                        .id,
-                              )
-                              as T;
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.connectionId,
+                        referencedTable: $$ProviderModelsTableReferences
+                            ._connectionIdTable(db),
+                        referencedColumn: $$ProviderModelsTableReferences
+                            ._connectionIdTable(db)
+                            .id,
+                      ) as T;
                     }
 
                     return state;

@@ -48,13 +48,12 @@ void main() {
       directories: directories,
       readFile: readFile ?? (_) async => 'markdown',
       readSecret: readSecret ?? () async => 'prompted-secret',
-      connectClient:
-          ({
-            required host,
-            required port,
-            required bearerToken,
-            required clientId,
-          }) async => client,
+      connectClient: ({
+        required host,
+        required port,
+        required bearerToken,
+        required clientId,
+      }) async => client,
     );
   }
 
@@ -206,13 +205,12 @@ void main() {
         stderr: err,
         environment: const <String, String>{},
         directories: directories,
-        connectClient:
-            ({
-              required host,
-              required port,
-              required bearerToken,
-              required clientId,
-            }) async => client,
+        connectClient: ({
+          required host,
+          required port,
+          required bearerToken,
+          required clientId,
+        }) async => client,
       );
 
       expect(code, 0);

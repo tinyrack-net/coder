@@ -57,13 +57,12 @@ final class SpinnerCliProgress implements CliProgress {
 }
 
 /// How a command reaches a running daemon.
-typedef DaemonClientFactory =
-    Future<TinestClient> Function({
-      required String host,
-      required int port,
-      required String bearerToken,
-      required String clientId,
-    });
+typedef DaemonClientFactory = Future<TinestClient> Function({
+  required String host,
+  required int port,
+  required String bearerToken,
+  required String clientId,
+});
 
 /// Everything a `tinest-cli` command needs that touches the outside world.
 ///

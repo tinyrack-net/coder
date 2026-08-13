@@ -46,14 +46,11 @@ String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
   // before the runner measured the span at all.
   final generationMs = count('generationMs');
   final parts = <String>[
-    if (input > 0)
-      cached > 0
-          ? l10n.usageInputCached(input, cached)
-          : l10n.usageInput(input),
-    if (output > 0)
-      reasoning > 0
-          ? l10n.usageOutputReasoning(output, reasoning)
-          : l10n.usageOutput(output),
+    if (input > 0 && cached > 0) l10n.usageInputCached(input, cached),
+    if (input > 0 && cached == 0) l10n.usageInput(input),
+    if (output > 0 && reasoning > 0)
+      l10n.usageOutputReasoning(output, reasoning),
+    if (output > 0 && reasoning == 0) l10n.usageOutput(output),
     if (total > 0) l10n.usageTotal(total),
     if (output > 0 && generationMs > 0)
       // Rounded here because `decimalPattern` only localizes the separators;

@@ -2,8 +2,9 @@ import 'package:app/desktop.dart';
 import 'package:daemon/daemon.dart';
 
 /// Starts one embedded daemon from a resolved configuration.
-typedef EmbeddedDaemonStarter =
-    Future<DaemonHandle> Function(DaemonConfig config);
+typedef EmbeddedDaemonStarter = Future<DaemonHandle> Function(
+  DaemonConfig config,
+);
 
 /// Resolves the directories and listener the embedded daemon owns.
 typedef DaemonConfigResolver = DaemonConfig Function();

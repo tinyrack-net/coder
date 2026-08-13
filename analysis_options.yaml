@@ -10,6 +10,12 @@ analyzer:
     - "**/*.freezed.dart"
     - "**/*.g.dart"
     - "**/l10n/gen/**"
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   language:
     strict-casts: true
     strict-inference: true
@@ -26,9 +32,10 @@ analyzer:
     public_member_api_docs: error
     unawaited_futures: error
     use_build_context_synchronously: error
+    # Typed ports intentionally model single capabilities. Dart 3.13
+    # deprecates disabling this lint through `linter.rules`.
+    one_member_abstracts: ignore
 
 linter:
   rules:
-    # Single-method interfaces are intentional dependency-injection ports.
-    one_member_abstracts: false
     public_member_api_docs: true

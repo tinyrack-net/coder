@@ -1317,12 +1317,9 @@ void main() {
         attachmentCapture.exists,
         'the provider to receive hydrated attachments',
       );
-      final providerAttachments =
-          (jsonDecode(
-                    await attachmentCapture.readAsString(),
-                  )
-                  as List<dynamic>)
-              .cast<Map<String, dynamic>>();
+      final providerAttachments = (jsonDecode(
+        await attachmentCapture.readAsString(),
+      ) as List<dynamic>).cast<Map<String, dynamic>>();
       expect(
         providerAttachments.map((attachment) => attachment['fileName']),
         orderedEquals(<String>['fixture.png', 'fixture.txt']),

@@ -35,11 +35,9 @@ void main() {
     expect(Directory('apps').existsSync(), isFalse);
 
     for (final package in expectedPackages) {
-      final pubspec =
-          loadYaml(
-                File('packages/$package/pubspec.yaml').readAsStringSync(),
-              )
-              as YamlMap;
+      final pubspec = loadYaml(
+        File('packages/$package/pubspec.yaml').readAsStringSync(),
+      ) as YamlMap;
       expect(
         pubspec['name'],
         package,

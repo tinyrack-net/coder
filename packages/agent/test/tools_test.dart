@@ -225,14 +225,12 @@ void main() {
     expect(bare.imageDetail, isNull);
 
     // A user item carries its attachments across the same round trip.
-    final item =
-        ConversationItem.fromJson(
-              UserConversationItem(
-                'look',
-                attachments: <ConversationAttachment>[attachment],
-              ).toJson(),
-            )
-            as UserConversationItem;
+    final item = ConversationItem.fromJson(
+      UserConversationItem(
+        'look',
+        attachments: <ConversationAttachment>[attachment],
+      ).toJson(),
+    ) as UserConversationItem;
     expect(item.attachments.single.imageDetail, 'high');
   });
 

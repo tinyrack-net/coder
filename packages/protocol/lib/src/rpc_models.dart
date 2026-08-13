@@ -1,3 +1,5 @@
+// @dart=3.12
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:protocol/src/models.dart';
 import 'package:protocol/src/protocol.dart';

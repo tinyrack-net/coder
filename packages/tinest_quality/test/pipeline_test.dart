@@ -6,9 +6,9 @@ import 'package:test/test.dart';
 import 'support/repo_root.dart';
 
 /// Matrix entries `changes` narrows for a pull request and expands otherwise.
-final Map<String, dynamic> _matrices =
-    jsonDecode(File('.github/ci-matrices.json').readAsStringSync())
-        as Map<String, dynamic>;
+final Map<String, dynamic> _matrices = jsonDecode(
+  File('.github/ci-matrices.json').readAsStringSync(),
+) as Map<String, dynamic>;
 
 void main() {
   useRepositoryRoot();
@@ -485,7 +485,16 @@ void main() {
     expect(shipworld, contains('source: packages/relay/pubspec.yaml'));
     expect(shipworld, contains('tag: "relay-v{version}"'));
 
-    expect(relayDockerfile, contains('dart:3.12.2@sha256:'));
+    expect(workflow, contains('FLUTTER_VERSION: 3.47.0'));
+    expect(workflow, contains('sdk: 3.13.0'));
+    expect(relayWorkflow, contains('FLUTTER_VERSION: 3.47.0'));
+    expect(
+      relayDockerfile,
+      contains(
+        'dart:3.13.0@sha256:'
+        'e76b27eb060d2b0767f04ca696e6e8c1ef949131f306c74706444724599c930e',
+      ),
+    );
     expect(relayDockerfile, contains('cc-debian12:nonroot@sha256:'));
     expect(relayDockerfile, contains('docker/pubspec.lock pubspec.lock'));
     expect(relayDockerfile, contains('dart pub get --enforce-lockfile'));

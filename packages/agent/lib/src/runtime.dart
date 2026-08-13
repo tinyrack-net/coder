@@ -12,16 +12,21 @@ import 'package:agent/src/tools/tool_search.dart';
 import 'package:agent/src/usage.dart';
 
 /// Signature used by AgentEventCallback.
-typedef AgentEventCallback =
-    FutureOr<void> Function(String type, Map<String, dynamic> data);
+typedef AgentEventCallback = FutureOr<void> Function(
+  String type,
+  Map<String, dynamic> data,
+);
 
 /// Signature used by SessionStatusCallback.
-typedef SessionStatusCallback =
-    FutureOr<void> Function(AgentSessionStatus status, {String? error});
+typedef SessionStatusCallback = FutureOr<void> Function(
+  AgentSessionStatus status, {
+  String? error,
+});
 
 /// Signature used by ProviderItemsCallback.
-typedef ProviderItemsCallback =
-    FutureOr<void> Function(List<ConversationItem> items);
+typedef ProviderItemsCallback = FutureOr<void> Function(
+  List<ConversationItem> items,
+);
 
 /// Supplies ephemeral daemon-owned instructions for the next model request.
 ///

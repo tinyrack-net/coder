@@ -102,9 +102,9 @@ void main() {
       // 'MCP', 'URL', and the slash-command names the user types.
       final cjk = RegExp('[぀-ヿ㐀-鿿가-힯]');
       final table = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-      final template =
-          jsonDecode(File('lib/l10n/$templateName').readAsStringSync())
-              as Map<String, dynamic>;
+      final template = jsonDecode(
+        File('lib/l10n/$templateName').readAsStringSync(),
+      ) as Map<String, dynamic>;
       final untranslated = <String>[
         for (final key in templateKeys)
           if (table[key] == template[key] &&

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
@@ -578,11 +576,9 @@ class _SettingsScaffoldState extends State<SettingsScaffold> {
             }
             return true;
           });
-          unawaited(
-            Scrollable.ensureVisible(
-              targetContext,
-              alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-            ),
+          Scrollable.ensureVisible(
+            targetContext,
+            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
           );
         }
       });

@@ -1,4 +1,5 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// @dart=3.12
 
 part of 'rpc_models.dart';
 

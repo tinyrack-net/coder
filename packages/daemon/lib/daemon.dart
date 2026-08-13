@@ -3,6 +3,7 @@ library;
 
 export 'package:agent/agent.dart'
     show Clock, GitignoreEnvironment, ModelProvider, ProviderOAuthGateway;
+
 export 'src/bootstrap/application.dart'
     show
         DaemonAlreadyRunningException,

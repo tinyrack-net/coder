@@ -74,11 +74,9 @@ void main() {
   });
 
   test('desktop composition has its own package and matching version', () {
-    final mobile =
-        loadYaml(
-              workspaceFile('packages/app/pubspec.yaml').readAsStringSync(),
-            )
-            as YamlMap;
+    final mobile = loadYaml(
+      workspaceFile('packages/app/pubspec.yaml').readAsStringSync(),
+    ) as YamlMap;
     final desktopFile = workspaceFile('packages/desktop_app/pubspec.yaml');
 
     expect(desktopFile.existsSync(), isTrue);
@@ -113,11 +111,9 @@ void main() {
   });
 
   test('mobile launcher icons use the upstream safe-area assets', () {
-    final pubspec =
-        loadYaml(
-              workspaceFile('packages/app/pubspec.yaml').readAsStringSync(),
-            )
-            as YamlMap;
+    final pubspec = loadYaml(
+      workspaceFile('packages/app/pubspec.yaml').readAsStringSync(),
+    ) as YamlMap;
     final icons = pubspec['flutter_launcher_icons'] as YamlMap;
     const launcherPath = 'assets/brand/tinest-launcher-icon-1024.png';
     const adaptiveForegroundPath =

@@ -56,13 +56,11 @@ void main() {
         fileSystem: fileSystem,
         platform: platform,
       );
-      final listed =
-          jsonDecode(
-                (await list.execute(const <String, dynamic>{
-                  'path': '.',
-                }, context)).output,
-              )
-              as List<dynamic>;
+      final listed = jsonDecode(
+        (await list.execute(const <String, dynamic>{
+          'path': '.',
+        }, context)).output,
+      ) as List<dynamic>;
       expect(
         listed.map((item) => (item as Map<String, dynamic>)['name']),
         <String>['.git', 'a.txt', 'lib', 'link'],
@@ -143,17 +141,15 @@ void main() {
       final longLine = '${List<String>.filled(550, 'x').join()}needle';
       fileSystem.file('/workspace/long.txt').writeAsStringSync(longLine);
       final tool = SearchTextTool(fileSystem: fileSystem, platform: platform);
-      final result =
-          jsonDecode(
-                (await tool.execute(
-                  _search(<String, dynamic>{
-                    'query': 'needle',
-                    'max_results': 20,
-                  }),
-                  context,
-                )).output,
-              )
-              as Map<String, dynamic>;
+      final result = jsonDecode(
+        (await tool.execute(
+          _search(<String, dynamic>{
+            'query': 'needle',
+            'max_results': 20,
+          }),
+          context,
+        )).output,
+      ) as Map<String, dynamic>;
       final matches = result['matches']! as List;
       expect(
         (matches.single! as Map<String, dynamic>)['text'],
@@ -184,12 +180,11 @@ void main() {
 
     Future<Map<String, dynamic>> run(Map<String, dynamic> overrides) async =>
         jsonDecode(
-              (await SearchTextTool(
-                fileSystem: fileSystem,
-                platform: platform,
-              ).execute(_search(overrides), context)).output,
-            )
-            as Map<String, dynamic>;
+          (await SearchTextTool(
+            fileSystem: fileSystem,
+            platform: platform,
+          ).execute(_search(overrides), context)).output,
+        ) as Map<String, dynamic>;
 
     List<String> pathsOf(Map<String, dynamic> result) =>
         (result['matches']! as List)
@@ -293,18 +288,17 @@ void main() {
 
     Future<Map<String, dynamic>> run(Map<String, dynamic> overrides) async =>
         jsonDecode(
-              (await GlobTool(
-                    fileSystem: fileSystem,
-                    platform: platform,
-                  ).execute(<String, dynamic>{
-                    'pattern': overrides['pattern'],
-                    'path': overrides['path'],
-                    'include_ignored': overrides['include_ignored'],
-                    'max_results': overrides['max_results'],
-                  }, context))
-                  .output,
-            )
-            as Map<String, dynamic>;
+          (await GlobTool(
+                fileSystem: fileSystem,
+                platform: platform,
+              ).execute(<String, dynamic>{
+                'pattern': overrides['pattern'],
+                'path': overrides['path'],
+                'include_ignored': overrides['include_ignored'],
+                'max_results': overrides['max_results'],
+              }, context))
+              .output,
+        ) as Map<String, dynamic>;
 
     test('a recursive pattern finds files at any depth, sorted', () async {
       final result = await run(<String, dynamic>{'pattern': '**/*.dart'});
@@ -467,9 +461,9 @@ void main() {
         await tool.previewFreeform(patch, context),
         patch,
       );
-      final output =
-          jsonDecode((await tool.executeFreeform(patch, context)).output)
-              as Map<String, dynamic>;
+      final output = jsonDecode(
+        (await tool.executeFreeform(patch, context)).output,
+      ) as Map<String, dynamic>;
       expect(output['changed_files'], 3);
       expect(
         fileSystem.file('/workspace/update.txt').readAsStringSync(),
