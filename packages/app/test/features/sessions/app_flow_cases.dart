@@ -612,6 +612,58 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
+    'new-tab popup rows follow the narrow and wide workspace density',
+    (tester) async {
+      Future<void> verifyAt(Size viewport, TRUiSize expectedRowSize) async {
+        await _setTestViewport(tester, viewport);
+        final api = FakeTinestApi(
+          workspaces: <WorkspaceDto>[workspace],
+          worktrees: <WorktreeDto>[checkout],
+        );
+        final router = await _pumpRoute(
+          tester,
+          api,
+          WorktreeRoute(
+            hostId: 'server',
+            workspaceId: workspace.id,
+            worktreeId: checkout.id,
+          ).location,
+        );
+        addTearDown(router.dispose);
+
+        await tester.tap(
+          find.byKey(const ValueKey('workspace-new-tab-menu')),
+        );
+        await tester.pumpAndSettle();
+
+        for (final label in const <String>['새 session', '새 터미널']) {
+          final row = find.widgetWithText(MenuItemButton, label);
+          expect(row, findsOneWidget, reason: '$viewport: $label');
+          expect(
+            tester.getSize(row).height,
+            TRControlMetrics.heightOf(expectedRowSize),
+            reason: '$viewport: $label row height',
+          );
+          expect(
+            tester
+                .widget<MenuItemButton>(row)
+                .style
+                ?.textStyle
+                ?.resolve({})
+                ?.fontSize,
+            TRControlMetrics.fontSizeOf(expectedRowSize),
+            reason: '$viewport: $label font size',
+          );
+        }
+      }
+
+      await verifyAt(const Size(390, 760), TRUiSize.lg);
+      await verifyAt(const Size(1400, 760), TRUiSize.sm);
+    },
+    tags: const <String>['feature_test__session_tabs__widget'],
+  );
+
+  testWidgets(
     'new-tab menu creates a terminal and confirms termination on close',
     (tester) async {
       await _setTestViewport(tester, const Size(1400, 760));
