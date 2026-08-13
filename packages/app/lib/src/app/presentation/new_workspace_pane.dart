@@ -450,6 +450,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         onOpenChange: (open) => setState(() => _projectTooltipOpen = open),
         child: TRSelect<_ProjectTarget>.controlled(
           key: const ValueKey('new-workspace-project'),
+          searchable: true,
+          searchPlaceholder: l10n.selectSearchPlaceholder,
+          noResultsText: l10n.selectNoResults,
+          // Explicit so the production Select policy can audit adaptation.
+          // ignore: avoid_redundant_argument_values
+          surface: TRSelectSurface.auto,
           value: (projectKey: project?.key, addProject: false),
           leading: const Icon(TinestIcons.folder),
           placeholder:
@@ -502,6 +508,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           onOpenChange: (open) => setState(() => _worktreeTooltipOpen = open),
           child: TRSelect<String?>.controlled(
             key: const ValueKey('new-workspace-worktree'),
+            searchable: true,
+            searchPlaceholder: l10n.selectSearchPlaceholder,
+            noResultsText: l10n.selectNoResults,
+            // Explicit so the production Select policy can audit adaptation.
+            // ignore: avoid_redundant_argument_values
+            surface: TRSelectSurface.auto,
             value: worktree?.id,
             leading: const Icon(TinestIcons.branch),
             placeholder: worktree == null
@@ -537,6 +549,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           onOpenChange: (open) => setState(() => _branchTooltipOpen = open),
           child: TRSelect<String>.controlled(
             key: const ValueKey('new-workspace-branch'),
+            searchable: true,
+            searchPlaceholder: l10n.selectSearchPlaceholder,
+            noResultsText: l10n.selectNoResults,
+            // Explicit so the production Select policy can audit adaptation.
+            // ignore: avoid_redundant_argument_values
+            surface: TRSelectSurface.auto,
             value: baseBranch,
             leading: const Icon(TinestIcons.check),
             placeholder: baseBranch ?? l10n.workspaceBaseBranchChip,

@@ -7,6 +7,8 @@
   "commonConfirm": "확인",
   "commonDelete": "삭제",
   "commonRetry": "다시 시도",
+  "selectSearchPlaceholder": "선택지 검색",
+  "selectNoResults": "일치하는 선택지가 없습니다.",
   "commonClose": "닫기",
   "commonCopy": "복사",
   "commonStop": "중지",

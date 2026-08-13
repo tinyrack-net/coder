@@ -33,6 +33,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonRetry => '다시 시도';
 
   @override
+  String get selectSearchPlaceholder => '선택지 검색';
+
+  @override
+  String get selectNoResults => '일치하는 선택지가 없습니다.';
+
+  @override
   String get commonClose => '닫기';
 
   @override

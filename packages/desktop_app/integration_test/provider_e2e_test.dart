@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:protocol/protocol.dart';
-import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
@@ -87,6 +86,13 @@ void main() {
             .evaluate()
             .isNotEmpty,
         'the failed authorization message',
+      );
+      // The failure text can paint one frame before the terminal attempt
+      // action replaces Cancel. Wait for the retry contract before starting
+      // the next authorization attempt.
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('provider-auth-retry')),
       );
       // The tile shows the reason itself, never a transport exception name.
       expect(find.textContaining('Exception'), findsNothing);
@@ -168,6 +174,8 @@ Future<void> _pumpProviderSettings(
   WidgetTester tester,
   RealDaemonFixture fixture,
 ) async {
+  await tester.binding.setSurfaceSize(const Size(1400, 1000));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   tester.binding.platformDispatcher.localeTestValue = const Locale('en');
   addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
   await tester.pumpWidget(TinestApp(services: fixture.services));
@@ -182,7 +190,7 @@ Future<void> _pumpProviderSettings(
 }
 
 Future<void> _startDeviceOAuth(WidgetTester tester) async {
-  final retry = find.widgetWithText(TRButton, 'Retry');
+  final retry = find.byKey(const ValueKey<String>('provider-auth-retry'));
   if (retry.evaluate().isNotEmpty) {
     await tester.tap(retry);
     await tester.pumpAndSettle();
@@ -205,7 +213,11 @@ Future<void> _startDeviceOAuth(WidgetTester tester) async {
     find.byKey(const ValueKey<String>('provider-auth-method')),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Sign in with device code'));
+  await tester.tap(
+    find.byKey(
+      const ValueKey<String>('provider-auth-method-chatgpt-device'),
+    ),
+  );
   await tester.pumpAndSettle();
   await tester.tap(
     find.byKey(const ValueKey<String>('provider-connect-submit')),

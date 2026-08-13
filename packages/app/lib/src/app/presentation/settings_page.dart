@@ -560,6 +560,12 @@ class _DaemonSelect extends ConsumerWidget {
       child: LayoutBuilder(
         builder: (context, constraints) => TRSelect<String>.controlled(
           key: const ValueKey<String>('settings-daemon-select'),
+          searchable: true,
+          searchPlaceholder: l10n.selectSearchPlaceholder,
+          noResultsText: l10n.selectNoResults,
+          // Explicit so the production Select policy can audit adaptation.
+          // ignore: avoid_redundant_argument_values
+          surface: TRSelectSurface.auto,
           value: hostId,
           // The sidebar is a flat list of borderless nav rows, so the trigger
           // takes its frame from the sidebar rather than drawing its own.

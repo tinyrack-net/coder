@@ -34,9 +34,7 @@ void main() {
                     icon: TinestIcons.folder,
                     label: 'Project',
                     tooltip: 'Select a project',
-                    menuChildren: <Widget>[
-                      TRMenuItem(onPressed: () {}, child: const Text('Add')),
-                    ],
+                    onPressed: (_) {},
                   ),
                 ],
               ),

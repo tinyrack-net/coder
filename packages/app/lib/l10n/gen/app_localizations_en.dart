@@ -33,6 +33,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRetry => 'Retry';
 
   @override
+  String get selectSearchPlaceholder => 'Search options';
+
+  @override
+  String get selectNoResults => 'No matching options.';
+
+  @override
   String get commonClose => 'Close';
 
   @override

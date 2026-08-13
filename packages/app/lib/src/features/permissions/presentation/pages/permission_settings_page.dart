@@ -53,15 +53,15 @@ class _PermissionSettingsPageState
                   ),
                   unboundedDescription: true,
                   controlLayout: SettingsControlLayout.responsive,
-                  control: TRButton(
+                  controlOwnsFocus: true,
+                  control: PermissionSelect(
                     key: const ValueKey<String>(
                       'permission-settings-change',
                     ),
-                    appearance: TRAppearance.outline,
-                    onPressed: () => unawaited(
-                      _choose(context, settings.defaultMode),
-                    ),
-                    child: TRText.inherit(l10n.permissionSettingsChange),
+                    currentMode: settings.defaultMode,
+                    onValueChange: (mode) {
+                      if (mode != null) unawaited(_set(context, mode));
+                    },
                   ),
                 ),
               ],
@@ -72,31 +72,25 @@ class _PermissionSettingsPageState
     );
   }
 
-  Future<void> _choose(
+  Future<void> _set(
     BuildContext context,
-    PermissionMode currentMode,
+    PermissionMode mode,
   ) async {
-    final choice = await showPermissionPicker(
-      context,
-      currentMode: currentMode,
-    );
-    if (choice?.mode case final mode?) {
-      if (!context.mounted) return;
-      // Resolved before the write: the messenger keeps no context of its own,
-      // which is what lets its report outlive this screen.
-      final l10n = AppLocalizations.of(context);
-      await ref
-          .read(toastMessengerProvider)
-          .run(
-            () => ref
-                .read(
-                  permissionSettingsControllerProvider(widget.hostId).notifier,
-                )
-                .setDefaultMode(mode),
-            failure: l10n.permissionSettingsSaveFailed,
-            success: l10n.commonSaved,
-            id: 'permission-settings-default-mode',
-          );
-    }
+    if (!context.mounted) return;
+    // Resolved before the write: the messenger keeps no context of its own,
+    // which is what lets its report outlive this screen.
+    final l10n = AppLocalizations.of(context);
+    await ref
+        .read(toastMessengerProvider)
+        .run(
+          () => ref
+              .read(
+                permissionSettingsControllerProvider(widget.hostId).notifier,
+              )
+              .setDefaultMode(mode),
+          failure: l10n.permissionSettingsSaveFailed,
+          success: l10n.commonSaved,
+          id: 'permission-settings-default-mode',
+        );
   }
 }

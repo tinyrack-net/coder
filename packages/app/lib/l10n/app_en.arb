@@ -32,6 +32,14 @@
   "@commonRetry": {
     "description": "Runs a failed load again."
   },
+  "selectSearchPlaceholder": "Search options",
+  "@selectSearchPlaceholder": {
+    "description": "Search field placeholder shared by Select controls."
+  },
+  "selectNoResults": "No matching options.",
+  "@selectNoResults": {
+    "description": "Empty result shown by searchable Select controls."
+  },
   "commonClose": "Close",
   "@commonClose": {
     "description": "Closes a sheet or dialog."

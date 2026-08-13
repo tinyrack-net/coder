@@ -255,6 +255,9 @@ class _ProjectSelector extends ConsumerWidget {
       builder: (width) => <Widget>[
         TRSelectFormField<String?>(
           initialValue: selected?.id,
+          // Explicit so the production Select policy can audit adaptation.
+          // ignore: avoid_redundant_argument_values
+          surface: TRSelectSurface.auto,
           label: l10n.skillSettingsProject,
           width: width,
           helperText: l10n.skillSettingsProjectHint,
@@ -787,6 +790,12 @@ class _CreateSkillPaneState extends State<_CreateSkillPane> {
                   ),
                   TRSelectFormField<SkillSource>(
                     initialValue: _source,
+                    searchable: true,
+                    searchPlaceholder: l10n.selectSearchPlaceholder,
+                    noResultsText: l10n.selectNoResults,
+                    // Explicit for the auditable adaptive Select contract.
+                    // ignore: avoid_redundant_argument_values
+                    surface: TRSelectSurface.auto,
                     label: l10n.skillSettingsSource,
                     width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: sources

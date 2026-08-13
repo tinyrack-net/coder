@@ -153,6 +153,12 @@ void main() {
 
       expect(_field('모델 Prefix'), findsOneWidget);
       expect(find.text('자동'), findsOneWidget);
+      final defaultModel = find.byKey(
+        const ValueKey<String>('provider-default-model'),
+      );
+      await tester.ensureVisible(defaultModel);
+      await tester.tap(defaultModel);
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey<String>('provider-model-openai/gpt-5.6-sol')),
         findsOneWidget,

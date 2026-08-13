@@ -228,10 +228,15 @@ void _registerAgentsAppFlows() {
       final container = ProviderScope.containerOf(tester.element(modelRow));
       final toasts = container.read(appToastControllerProvider);
 
-      await tester.tap(modelRow);
+      final lockIcon = find.descendant(
+        of: modelRow,
+        matching: find.byIcon(TinestIcons.lock),
+      );
+      await tester.ensureVisible(lockIcon);
+      await tester.tap(lockIcon);
       await tester.pumpAndSettle();
 
-      expect(find.byType(ModelPicker), findsNothing);
+      expect(find.byType(AsyncModelSelect), findsOneWidget);
       expect(toasts.toasts, hasLength(1));
       expect(toasts.toasts.single.variant, TRStatusVariant.info);
       expect(
@@ -352,12 +357,11 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('고정 provider/model'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '변경').last);
+      await tester.tap(find.byType(TRSelect<ModelPickerOption?>).last);
       await tester.pumpAndSettle();
       await tester.tap(
-        find.descendant(
-          of: find.byType(ModelPicker),
-          matching: find.text('openai/gpt-5.6-sol'),
+        find.byKey(
+          const ValueKey<String>('model-option-openai-gpt-5.6-sol'),
         ),
       );
       await tester.pumpAndSettle();

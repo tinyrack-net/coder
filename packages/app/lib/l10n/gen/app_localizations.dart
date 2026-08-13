@@ -148,6 +148,18 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetry;
 
+  /// Search field placeholder shared by Select controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Search options'**
+  String get selectSearchPlaceholder;
+
+  /// Empty result shown by searchable Select controls.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching options.'**
+  String get selectNoResults;
+
   /// Closes a sheet or dialog.
   ///
   /// In en, this message translates to:

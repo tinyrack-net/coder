@@ -1251,34 +1251,18 @@ void _registerSessionsAppFlows() {
       );
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
-      final picker = find.byType(ModelPicker);
-      expect(
-        find.descendant(
-          of: picker,
-          matching: find.text('openai/gpt-5.6-sol'),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: picker,
-          matching: find.text('deepseek/gpt-5.6-sol'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.textContaining('openai/gpt-5.6-sol'), findsOneWidget);
+      expect(find.textContaining('deepseek/gpt-5.6-sol'), findsOneWidget);
       await tester.enterText(
-        find.byKey(const ValueKey('model-search-field')),
+        find.byType(TRTextField).last,
         'DeepSeek',
       );
       await tester.pumpAndSettle();
+      expect(find.textContaining('openai/gpt-5.6-sol'), findsNothing);
       expect(
-        find.descendant(
-          of: picker,
-          matching: find.text('openai/gpt-5.6-sol'),
-        ),
-        findsNothing,
+        find.text('DeepSeek · deepseek/gpt-5.6-sol'),
+        findsOneWidget,
       );
-      expect(find.text('DeepSeek · Shared Model'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('model-option-deepseek-gpt-5.6-sol')),
       );
@@ -1416,7 +1400,7 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-fast')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('openai/gpt-5.6-fast'), findsOneWidget);
+      expect(find.text('GPT-5.6 Fast'), findsOneWidget);
 
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),

@@ -33,6 +33,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonRetry => '再試行';
 
   @override
+  String get selectSearchPlaceholder => '選択肢を検索';
+
+  @override
+  String get selectNoResults => '一致する選択肢がありません。';
+
+  @override
   String get commonClose => '閉じる';
 
   @override

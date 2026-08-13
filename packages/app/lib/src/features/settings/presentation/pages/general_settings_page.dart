@@ -162,6 +162,12 @@ class _AppearanceSection extends ConsumerWidget {
             container: true,
             child: TRSelect<AppThemeMode>.controlled(
               key: const ValueKey<String>('general-settings-theme-mode'),
+              searchable: true,
+              searchPlaceholder: l10n.selectSearchPlaceholder,
+              noResultsText: l10n.selectNoResults,
+              // Explicit for the auditable adaptive Select contract.
+              // ignore: avoid_redundant_argument_values
+              surface: TRSelectSurface.auto,
               value: settings?.themeMode ?? AppThemeMode.system,
               enabled: settings != null,
               items: <TRSelectItem<AppThemeMode>>[
@@ -223,6 +229,12 @@ class _LanguageSection extends ConsumerWidget {
             container: true,
             child: TRSelect<String?>.controlled(
               key: const ValueKey<String>('general-settings-language'),
+              searchable: true,
+              searchPlaceholder: l10n.selectSearchPlaceholder,
+              noResultsText: l10n.selectNoResults,
+              // Explicit for the auditable adaptive Select contract.
+              // ignore: avoid_redundant_argument_values
+              surface: TRSelectSurface.auto,
               value: settings?.localeTag,
               enabled: settings != null,
               placeholder: l10n.generalLanguageSystem,

@@ -6,6 +6,7 @@ import 'package:app/src/features/agents/presentation/tool_groups.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
+import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
@@ -432,34 +433,20 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                           ? l10n.composerConnectProviderFirst
                           : null,
                       child: SettingsRow(
-                        enabled: modelSelectionEnabled,
-                        onTap: modelBlocked
-                            ? () => _showProviderRequiredToast(l10n)
-                            : modelSelectionEnabled
-                            ? _chooseModel
-                            : null,
+                        // A providerless selector remains actionable so the
+                        // product wrapper can explain how to unlock it.
+                        enabled: modelSelectionEnabled || modelBlocked,
                         title: TRText.inherit(
                           l10n.agentSettingsModelId,
                           color: modelBlocked ? TRTextColor.muted : null,
                         ),
-                        description: TRText.inherit(
-                          _modelId.text.isEmpty ? '—' : _modelId.text,
-                        ),
                         controlLayout: SettingsControlLayout.responsive,
-                        control: modelBlocked
-                            ? Icon(
-                                TinestIcons.lock,
-                                color: context.tinyrackTheme.textMuted,
-                              )
-                            : TRButton(
-                                appearance: TRAppearance.outline,
-                                onPressed: modelSelectionEnabled
-                                    ? _chooseModel
-                                    : null,
-                                child: TRText.inherit(
-                                  l10n.providerSettingsDefaultModelChoose,
-                                ),
-                              ),
+                        controlOwnsFocus: true,
+                        control: _agentModelSelect(
+                          l10n,
+                          enabled: modelSelectionEnabled,
+                          blocked: modelBlocked,
+                        ),
                       ),
                     ),
                   ],
@@ -477,16 +464,14 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                     ),
                     unboundedDescription: true,
                     controlLayout: SettingsControlLayout.responsive,
-                    control: TRButton(
+                    controlOwnsFocus: true,
+                    control: PermissionSelect(
                       key: const ValueKey<String>('agent-permission-change'),
-                      appearance: TRAppearance.outline,
-                      onPressed: editable
-                          ? () => unawaited(_choosePermission())
-                          : null,
-                      child: TRText.inherit(
-                        _permissionMode == null
-                            ? l10n.permissionSettingsDaemonDefault
-                            : permissionModeLabel(l10n, _permissionMode!),
+                      currentMode: _permissionMode,
+                      inheritLabel: l10n.permissionSettingsDaemonDefault,
+                      enabled: editable,
+                      onValueChange: (mode) => setState(
+                        () => _permissionMode = mode,
                       ),
                     ),
                   ),
@@ -635,39 +620,34 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
         );
   }
 
-  Future<void> _chooseModel() async {
-    final providersState = ref.read(
-      providerSettingsControllerProvider(widget.hostId),
-    );
-    final providers = providersState.value;
-    if (!providersState.hasValue || providers == null) return;
-    if (usableConnections(providers.connections).isEmpty) {
-      _showProviderRequiredToast(AppLocalizations.of(context));
-      return;
-    }
-    final choice = await showModelPicker(
-      context,
+  Widget _agentModelSelect(
+    AppLocalizations l10n, {
+    required bool enabled,
+    required bool blocked,
+  }) {
+    final select = AsyncModelSelect(
+      loadKey: widget.hostId,
       loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
       currentSelection: _modelId.text.isEmpty
           ? null
           : SessionModelSelectionDto(modelId: _modelId.text),
+      inheritLabel: null,
+      placeholder: _modelId.text.isEmpty
+          ? l10n.providerSettingsDefaultModelChoose
+          : _modelId.text,
+      enabled: enabled,
+      leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
+      onValueChange: (option) {
+        if (option != null) setState(() => _modelId.text = option.model.id);
+      },
     );
-    if (choice case SelectedModelPickerChoice(:final selection)) {
-      setState(() => _modelId.text = selection.modelId);
-    }
-  }
-
-  Future<void> _choosePermission() async {
-    final choice = await showPermissionPicker(
-      context,
-      currentMode: _permissionMode,
-      inheritLabel: AppLocalizations.of(
-        context,
-      ).permissionSettingsDaemonDefault,
+    if (!blocked) return select;
+    return BlockedControl(
+      label: l10n.agentSettingsModelId,
+      hint: l10n.composerConnectProviderFirst,
+      onTap: () => _showProviderRequiredToast(l10n),
+      child: select,
     );
-    if (choice != null && mounted) {
-      setState(() => _permissionMode = choice.mode);
-    }
   }
 
   Future<void> _save({required bool force}) async {
@@ -905,6 +885,12 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
                   ),
                   TRSelectFormField<AgentMode>(
                     initialValue: _mode,
+                    searchable: true,
+                    searchPlaceholder: l10n.selectSearchPlaceholder,
+                    noResultsText: l10n.selectNoResults,
+                    // Explicit for the auditable adaptive Select contract.
+                    // ignore: avoid_redundant_argument_values
+                    surface: TRSelectSurface.auto,
                     label: l10n.commonKind,
                     width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: AgentMode.values
