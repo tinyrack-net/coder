@@ -159,6 +159,7 @@ final class PluginDesktopWindow implements DesktopWindow {
     this.preventClose = _setPreventClose,
     this.addWindowListener = _addWindowListener,
     this.removeWindowListener = _removeWindowListener,
+    this.waitForWindowState = _waitForWindowState,
   }) : platform = platform ?? defaultTargetPlatform;
 
   /// Platform used to select native or custom window chrome.
@@ -220,6 +221,9 @@ final class PluginDesktopWindow implements DesktopWindow {
   /// Injected listener removal.
   final void Function(WindowListener) removeWindowListener;
 
+  /// Injected pause between Linux native-window command retries.
+  final Future<void> Function(Duration) waitForWindowState;
+
   _WindowCloseRelay? _relay;
 
   @override
@@ -249,6 +253,17 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   Future<void> hide() async {
     await hideWindow();
+    // Some Linux window managers acknowledge the method call before applying
+    // it, and can drop that first request while the compositor is busy. Hide
+    // is idempotent, so confirm the native state and retry briefly before
+    // publishing the app-level state.
+    if (platform == TargetPlatform.linux) {
+      for (var attempt = 0; attempt < 10; attempt += 1) {
+        if (!await windowIsVisible()) break;
+        await waitForWindowState(const Duration(milliseconds: 50));
+        await hideWindow();
+      }
+    }
     _setVisible(false);
   }
 
@@ -572,6 +587,9 @@ Future<void> _unmaximizeWindow() => windowManager.unmaximize();
 
 Future<void> _setPreventClose({required bool prevent}) =>
     windowManager.setPreventClose(prevent);
+
+Future<void> _waitForWindowState(Duration duration) =>
+    Future<void>.delayed(duration);
 
 void _addWindowListener(WindowListener listener) =>
     windowManager.addListener(listener);
