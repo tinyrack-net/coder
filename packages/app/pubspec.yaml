@@ -11,6 +11,7 @@ dependencies:
   client: ^0.1.0
   cryptography: ^2.9.0
   cryptography_flutter: ^2.3.4
+  cupertino_ui: ^1.0.0
   dropwell:
     git:
       url: https://github.com/tinyrack-net/flutter-packages.git

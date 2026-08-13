@@ -1,3 +1,4 @@
+import 'package:app/l10n/app_localization_config.dart';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/app/composition/app_providers.dart';
@@ -119,10 +120,7 @@ class _TinestAppView extends ConsumerWidget {
       // A null locale lets Flutter resolve the system locale against
       // [AppLocalizations.supportedLocales], which falls back to English.
       locale: localeTag == null ? null : Locale(localeTag),
-      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-        AppLocalizations.delegate,
-        ...GlobalMaterialLocalizations.delegates,
-      ],
+      localizationsDelegates: tinestLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
       // The shell sits below Localizations and the router so tray labels
