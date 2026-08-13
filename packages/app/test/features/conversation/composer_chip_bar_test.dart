@@ -62,6 +62,36 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'narrow standard-density bars wrap controls without overflowing',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await _pump(
+        tester,
+        width: 220,
+        children: <Widget>[
+          for (var index = 0; index < 6; index += 1)
+            ComposerChip(
+              valueKey: ValueKey<String>('composer-chip-$index'),
+              icon: TinestIcons.checklist,
+              label: 'Control $index',
+              tooltip: 'Control $index',
+              uiSize: TRUiSize.sm,
+              onPressed: (_) {},
+            ),
+        ],
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ComposerChip), findsNWidgets(6));
+      final tops = <double>{
+        for (var index = 0; index < 6; index += 1)
+          tester.getTopLeft(find.byType(ComposerChip).at(index)).dy,
+      };
+      expect(tops.length, greaterThan(1));
+    },
+  );
 }
 
 const _agentKey = ValueKey<String>('composer-chip-agent');

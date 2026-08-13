@@ -450,26 +450,29 @@ void main() {
       const overflowKey = ValueKey<String>('session-composer-overflow');
       const settingsKey = ValueKey<String>('session-composer-settings');
 
-      Future<void> pumpAt(double width) async {
+      Future<void> pumpAt(double width, {double? composerWidth}) async {
         tester.view.physicalSize = Size(width, 800);
+        final composer = SessionComposer(
+          key: ValueKey<String>('$width-$composerWidth'),
+          enabled: true,
+          contextTokens: 100000,
+          contextWindow: 200000,
+          onSubmit: (_) {},
+          bar: _bar(),
+        );
         await tester.pumpWidget(
           _harness(
-            composer: SessionComposer(
-              key: ValueKey<double>(width),
-              enabled: true,
-              contextTokens: 100000,
-              contextWindow: 200000,
-              onSubmit: (_) {},
-              bar: _bar(),
-            ),
+            composer: composerWidth == null
+                ? composer
+                : SizedBox(width: composerWidth, child: composer),
           ),
         );
         await tester.pumpAndSettle();
       }
 
-      // The composer breakpoint is based on the width this widget receives,
-      // not the window class around it.
-      await pumpAt(1024);
+      // Exactly at the application density boundary, turn settings stay as
+      // individual controls.
+      await pumpAt(768);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
@@ -478,9 +481,17 @@ void main() {
       expect(find.byKey(settingsKey), findsNothing);
       expect(find.text(testL10n.composerRun), findsOneWidget);
 
-      // One logical pixel below the boundary the settings are represented by
-      // one ghost action. No individual chip or overflow action survives.
-      await pumpAt(1023);
+      // Local composer width does not override the application density.
+      await pumpAt(768, composerWidth: 600);
+      expect(tester.takeException(), isNull);
+      for (final chip in chips) {
+        expect(find.byKey(ValueKey<String>(chip)), findsOneWidget);
+      }
+      expect(find.byKey(settingsKey), findsNothing);
+
+      // One logical pixel below the density boundary the settings are
+      // represented by one ghost action.
+      await pumpAt(767);
       expect(tester.takeException(), isNull);
       for (final chip in chips) {
         expect(find.byKey(ValueKey<String>(chip)), findsNothing);
@@ -489,7 +500,7 @@ void main() {
       expect(find.byKey(settingsKey), findsOneWidget);
       expect(
         tester.getSize(find.byKey(settingsKey)).height,
-        TRControlMetrics.heightOf(TRUiSize.sm),
+        TRControlMetrics.heightOf(TRUiSize.xl),
       );
       expect(
         find.byKey(
@@ -573,7 +584,10 @@ void main() {
       await tester.pumpWidget(
         _harness(
           api: api,
-          composer: _CompactSettingsHost(key: hostKey),
+          composer: TRUiDensityScope(
+            density: TRUiDensity.comfortable,
+            child: _CompactSettingsHost(key: hostKey),
+          ),
           mediaPadding: const EdgeInsets.only(top: 24, bottom: 34),
         ),
       );
@@ -747,7 +761,10 @@ void main() {
       await tester.pumpWidget(
         _harness(
           api: FakeTinestApi(agentDefinitions: _compactAgentDefinitions),
-          composer: const _CompactSettingsHost(agentEnabled: false),
+          composer: const TRUiDensityScope(
+            density: TRUiDensity.comfortable,
+            child: _CompactSettingsHost(agentEnabled: false),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -829,7 +846,10 @@ void main() {
           api: FakeTinestApi(
             connections: const <ProviderConnectionDto>[],
           ),
-          composer: const _CompactSettingsHost(),
+          composer: const TRUiDensityScope(
+            density: TRUiDensity.comfortable,
+            child: _CompactSettingsHost(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
