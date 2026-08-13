@@ -27,6 +27,11 @@ void main() {
     tags: const <String>['feature_test__daemon_relay__platformSmoke'],
   );
 
+  test('Android delegates Back progress to Flutter', () {
+    final android = packageFile('android/app/src/main/AndroidManifest.xml');
+    expect(android, contains('android:enableOnBackInvokedCallback="true"'));
+  });
+
   test(
     'desktop packages register only the fragment-safe custom protocol',
     () {

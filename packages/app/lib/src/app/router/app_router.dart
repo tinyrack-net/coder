@@ -24,6 +24,14 @@ part 'app_router.g.dart';
 /// Whether [uri] addresses any settings surface.
 bool _isSettingsLocation(Uri uri) => uri.path.startsWith('/settings');
 
+/// Page identity shared by every route rendered inside the Settings shell.
+MaterialPage<void> _settingsShellPage(Widget child) => MaterialPage<void>(
+  key: const ValueKey<String>('settings-shell'),
+  name: 'settings-shell',
+  restorationId: 'settings-shell',
+  child: child,
+);
+
 /// Page identity shared by every route that paints the workspace shell.
 ///
 /// go_router keys a page by the matched path pattern, so the home, checkout,
@@ -76,8 +84,8 @@ class SettingsHomeRoute extends GoRouteData with $SettingsHomeRoute {
   const SettingsHomeRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const UnifiedSettingsPage();
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(const UnifiedSettingsPage());
 }
 
 @TypedGoRoute<DaemonCategoriesRoute>(
@@ -92,8 +100,8 @@ class DaemonCategoriesRoute extends GoRouteData with $DaemonCategoriesRoute {
   final String hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(UnifiedSettingsPage(hostId: hostId));
 }
 
 @TypedGoRoute<WorkspaceHomeRoute>(path: '/')
@@ -229,8 +237,10 @@ class GeneralSettingsRoute extends GoRouteData with $GeneralSettingsRoute {
   const GeneralSettingsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const UnifiedSettingsPage(category: SettingsCategory.general);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        const UnifiedSettingsPage(category: SettingsCategory.general),
+      );
 }
 
 @TypedGoRoute<ProviderSettingsRoute>(path: '/settings/providers')
@@ -243,8 +253,13 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(category: SettingsCategory.provider, hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.provider,
+          hostId: hostId,
+        ),
+      );
 }
 
 @TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions')
@@ -258,10 +273,12 @@ class PermissionSettingsRoute extends GoRouteData
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(
-        category: SettingsCategory.permission,
-        hostId: hostId,
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.permission,
+          hostId: hostId,
+        ),
       );
 }
 
@@ -275,8 +292,13 @@ class ProjectSettingsRoute extends GoRouteData with $ProjectSettingsRoute {
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(category: SettingsCategory.project, hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.project,
+          hostId: hostId,
+        ),
+      );
 }
 
 @TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents')
@@ -289,8 +311,10 @@ class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId),
+      );
 }
 
 @TypedGoRoute<McpSettingsRoute>(path: '/settings/mcp')
@@ -303,8 +327,10 @@ class McpSettingsRoute extends GoRouteData with $McpSettingsRoute {
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(category: SettingsCategory.mcp, hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(category: SettingsCategory.mcp, hostId: hostId),
+      );
 }
 
 @TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills')
@@ -320,11 +346,13 @@ class SkillSettingsRoute extends GoRouteData with $SkillSettingsRoute {
   final String? workspaceId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(
-        category: SettingsCategory.skill,
-        hostId: hostId,
-        workspaceId: workspaceId,
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.skill,
+          hostId: hostId,
+          workspaceId: workspaceId,
+        ),
       );
 }
 
@@ -335,8 +363,10 @@ class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
   const DaemonSettingsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const UnifiedSettingsPage(category: SettingsCategory.daemon);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        const UnifiedSettingsPage(category: SettingsCategory.daemon),
+      );
 }
 
 @TypedGoRoute<AdvancedSettingsRoute>(path: '/settings/advanced')
@@ -346,8 +376,10 @@ class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
   const AdvancedSettingsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const UnifiedSettingsPage(category: SettingsCategory.advanced);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        const UnifiedSettingsPage(category: SettingsCategory.advanced),
+      );
 }
 
 @TypedGoRoute<ConnectDaemonRoute>(path: '/connect')
@@ -417,10 +449,12 @@ class DaemonConnectionsRoute extends GoRouteData with $DaemonConnectionsRoute {
   final String hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(
-        category: SettingsCategory.connection,
-        hostId: hostId,
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.connection,
+          hostId: hostId,
+        ),
       );
 }
 

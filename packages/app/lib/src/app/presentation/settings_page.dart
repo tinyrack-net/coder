@@ -91,6 +91,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.skill: _skillPanes,
       SettingsCategory.provider: _providerPanes,
     };
+    _adaptiveNavigation.addListener(_adaptiveNavigationChanged);
     for (final MapEntry(key: category, value: controller)
         in _paneControllers.entries) {
       controller.addListener(
@@ -123,10 +124,10 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         controller.reset();
       }
     }
-    _scheduleAdaptiveDestinationSync();
+    _scheduleAdaptiveDestinationReset();
   }
 
-  void _scheduleAdaptiveDestinationSync() {
+  void _scheduleAdaptiveDestinationReset() {
     if (_adaptiveSyncScheduled) return;
     _adaptiveSyncScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -139,6 +140,31 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         _adaptiveNavigation.reset(destination);
       }
     });
+  }
+
+  void _adaptiveNavigationChanged() {
+    if (!mounted ||
+        _adaptiveNavigation.lastChange?.operation !=
+            TRPaneNavigationOperation.pop) {
+      return;
+    }
+    final destination = _adaptiveNavigation.currentDestination;
+    if (destination.role == TRPaneRole.secondary) return;
+    if (destination.value == 'settings-daemon-categories-pane') {
+      final hostId = widget.hostId;
+      if (hostId != null) {
+        DaemonCategoriesRoute(hostId: hostId).replace(context);
+      }
+      return;
+    }
+    if (destination.role == TRPaneRole.primary) {
+      final paneController = _paneControllers[widget.category];
+      if (paneController?.hasDetail ?? false) {
+        paneController!.showCollection();
+      }
+      return;
+    }
+    const SettingsHomeRoute().replace(context);
   }
 
   void _paneDestinationChanged(
@@ -316,6 +342,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     final primary = switch ((widget.category, widget.hostId)) {
       (null, final String requestedHostId) => _MobileDaemonCategories(
         host: registry?.runtimes[requestedHostId],
+        onCategorySelected: _selectCategory,
       ),
       _ => panes.primary,
     };
@@ -325,11 +352,17 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           constraints.maxWidth,
         );
         final compact = widthClass == TRAdaptiveWidthClass.compact;
+        final hasSecondaryPane =
+            widget.category != null && panes.secondary != null;
         final body = TRNavigableThreePaneScaffold<String>(
           navigator: _adaptiveNavigation,
           navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
           navigationPane: compact
-              ? _MobileSettingsHome(hosts: hosts)
+              ? _MobileSettingsHome(
+                  hosts: hosts,
+                  onCategorySelected: _selectCategory,
+                  onDaemonSelected: _selectDaemon,
+                )
               : KeyedSubtree(
                   key: const ValueKey<String>('settings-sidebar-surface'),
                   child: _SettingsSidebar(
@@ -337,35 +370,29 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                     hosts: hosts,
                     hostId: hostId,
                     loading: registryLoading,
+                    onCategorySelected: _selectCategory,
                   ),
                 ),
           primaryPane: primary,
-          secondaryPane: widget.category == null ? null : panes.secondary,
+          secondaryPane: hasSecondaryPane ? panes.secondary : null,
         );
-        final paneController = _paneControllers[widget.category];
-        final hasLogicalParent =
-            (paneController?.hasDetail ?? false) ||
-            (compact && (widget.category != null || widget.hostId != null));
-        return PopScope<Object?>(
-          canPop: !hasLogicalParent && Navigator.of(context).canPop(),
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _goBack(compact: compact, hostId: hostId);
-          },
-          child: TinestPageShell(
-            appBar: TinestPageHeader(
-              leading: TRIconButton(
-                key: const ValueKey<String>('settings-back-button'),
-                appearance: TRAppearance.ghost,
-                label: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => _goBack(compact: compact, hostId: hostId),
-                icon: Icon(TinestIcons.backFor(context)),
+        return TinestPageShell(
+          appBar: TinestPageHeader(
+            leading: TRIconButton(
+              key: const ValueKey<String>('settings-back-button'),
+              appearance: TRAppearance.ghost,
+              label: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: () => _goBack(
+                widthClass: widthClass,
+                hasSecondaryPane: hasSecondaryPane,
               ),
-              title: TRText.inherit(
-                AppLocalizations.of(context).settingsTitle,
-              ),
+              icon: Icon(TinestIcons.backFor(context)),
             ),
-            body: body,
+            title: TRText.inherit(
+              AppLocalizations.of(context).settingsTitle,
+            ),
           ),
+          body: body,
         );
       },
     );
@@ -395,28 +422,44 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     ),
   );
 
-  void _goBack({required bool compact, required String? hostId}) {
-    final paneController = _paneControllers[widget.category];
-    if (paneController?.hasDetail ?? false) {
-      paneController!.showCollection();
+  void _goBack({
+    required TRAdaptiveWidthClass widthClass,
+    required bool hasSecondaryPane,
+  }) {
+    if (_adaptiveNavigation.popUntilScaffoldValueChange(
+      widthClass,
+      hasSecondaryPane: hasSecondaryPane,
+    )) {
       return;
     }
-    if (compact) {
-      final category = widget.category;
-      if (category != null) {
-        if (category.scope == SettingsCategoryScope.daemon && hostId != null) {
-          DaemonCategoriesRoute(hostId: hostId).replace(context);
-        } else {
-          const SettingsHomeRoute().replace(context);
-        }
-        return;
-      }
-      if (widget.hostId != null) {
-        const SettingsHomeRoute().replace(context);
-        return;
-      }
-    }
     closeTask(context, () => const WorkspaceHomeRoute().go(context));
+  }
+
+  void _selectCategory(SettingsCategory category, {String? hostId}) {
+    final destination = TRPaneDestination<String>(
+      role: TRPaneRole.primary,
+      value: 'settings-category-pane-${category.name}',
+    );
+    final current = _adaptiveNavigation.currentDestination;
+    if (current.role == TRPaneRole.navigation ||
+        current.value == 'settings-daemon-categories-pane') {
+      _adaptiveNavigation.push(destination);
+    } else {
+      _adaptiveNavigation.replace(destination);
+    }
+    _goToSettingsCategory(context, category, hostId: hostId);
+  }
+
+  Future<void> _selectDaemon(String hostId) async {
+    await ref.read(hostRegistryControllerProvider.notifier).selectHost(hostId);
+    if (!mounted) return;
+    _adaptiveNavigation.push(
+      const TRPaneDestination<String>(
+        role: TRPaneRole.primary,
+        value: 'settings-daemon-categories-pane',
+      ),
+    );
+    DaemonCategoriesRoute(hostId: hostId).replace(context);
   }
 }
 
@@ -467,9 +510,16 @@ TRPaneDestination<String> _settingsDestination(UnifiedSettingsPage page) {
 }
 
 class _MobileSettingsHome extends StatelessWidget {
-  const _MobileSettingsHome({required this.hosts});
+  const _MobileSettingsHome({
+    required this.hosts,
+    required this.onCategorySelected,
+    required this.onDaemonSelected,
+  });
 
   final List<HostRuntimeSnapshot> hosts;
+  final void Function(SettingsCategory category, {String? hostId})
+  onCategorySelected;
+  final Future<void> Function(String hostId) onDaemonSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -500,7 +550,7 @@ class _MobileSettingsHome extends StatelessWidget {
             ],
             onValueChange: (category) {
               if (category == null) return;
-              _goToSettingsCategory(context, category);
+              onCategorySelected(category);
             },
           ),
         ),
@@ -535,32 +585,24 @@ class _MobileSettingsHome extends StatelessWidget {
                   ],
                   onValueChange: (hostId) {
                     if (hostId == null) return;
-                    unawaited(_openDaemonCategories(context, hostId));
+                    unawaited(onDaemonSelected(hostId));
                   },
                 ),
         ),
       ],
     );
   }
-
-  Future<void> _openDaemonCategories(
-    BuildContext context,
-    String hostId,
-  ) async {
-    final container = ProviderScope.containerOf(context);
-    await container
-        .read(hostRegistryControllerProvider.notifier)
-        .selectHost(hostId);
-    if (context.mounted) {
-      DaemonCategoriesRoute(hostId: hostId).replace(context);
-    }
-  }
 }
 
 class _MobileDaemonCategories extends StatelessWidget {
-  const _MobileDaemonCategories({required this.host});
+  const _MobileDaemonCategories({
+    required this.host,
+    required this.onCategorySelected,
+  });
 
   final HostRuntimeSnapshot? host;
+  final void Function(SettingsCategory category, {String? hostId})
+  onCategorySelected;
 
   @override
   Widget build(BuildContext context) {
@@ -603,11 +645,7 @@ class _MobileDaemonCategories extends StatelessWidget {
                 ],
                 onValueChange: (category) {
                   if (category == null) return;
-                  _goToSettingsCategory(
-                    context,
-                    category,
-                    hostId: host.id,
-                  );
+                  onCategorySelected(category, hostId: host.id);
                 },
               ),
             ],
@@ -624,12 +662,15 @@ class _SettingsSidebar extends StatelessWidget {
     required this.hosts,
     required this.hostId,
     required this.loading,
+    required this.onCategorySelected,
   });
 
   final SettingsCategory selected;
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
   final bool loading;
+  final void Function(SettingsCategory category, {String? hostId})
+  onCategorySelected;
 
   @override
   Widget build(BuildContext context) {
@@ -693,8 +734,7 @@ class _SettingsSidebar extends StatelessWidget {
       ],
       onValueChange: (category) {
         if (category == null) return;
-        _goToSettingsCategory(
-          context,
+        onCategorySelected(
           category,
           hostId: category == SettingsCategory.connection ? hostId : null,
         );
