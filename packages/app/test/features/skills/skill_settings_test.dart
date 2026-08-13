@@ -1,8 +1,8 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
-import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
-import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -22,295 +22,214 @@ void main() {
     kind: WorkspaceKind.git,
     createdAt: now,
   );
-  const projectSkill = SkillDto(
+  final home = WorkspaceDto(
+    id: 'home',
+    name: 'Home',
+    rootPath: '/home/user',
+    kind: WorkspaceKind.home,
+    createdAt: now,
+  );
+  const projectSkill = SkillSummaryDto(
     id: 'migrate',
     name: 'migrate',
-    description: 'Runs the migration.',
-    source: SkillSource.project,
-    sourcePath: '/repos/tinest/.agents/skills/migrate/SKILL.md',
-    contentHash: 'migrate-hash',
-    body: 'Run the migration script.',
-    isEditable: true,
+    description: 'Runs the migration from the selected project.',
+    isImplicit: false,
   );
 
   testWidgets(
-    'skill collection explains that no skills are configured',
+    'global catalog exposes only title and full description in two panes',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeTinestApi(
-        workspaces: <WorkspaceDto>[workspace],
-        skills: const <SkillDto>[],
-      );
-      final router = await _pumpSkills(tester, api);
-      addTearDown(router.dispose);
-
-      expect(find.text('설정된 스킬이 없습니다.'), findsOneWidget);
-      // The detail destination still explains that it needs a selection; the
-      // collection itself owns the distinct no-data copy above.
-      expect(find.text('스킬을 선택하세요.'), findsOneWidget);
-    },
-    tags: const <String>['feature_test__skill_management__widget'],
-  );
-
-  testWidgets(
-    'skill settings shows every source with its badge and toggles one skill',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setViewport(tester, const Size(1200, 900));
       final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
-      expect(find.text('스킬'), findsWidgets);
-      expect(find.text('coding-conventions'), findsWidgets);
-      expect(find.text('commit'), findsWidgets);
-      expect(find.text('내장'), findsWidgets);
-      expect(find.text('설정'), findsWidgets);
-
-      // The mandatory built-in cannot be turned off.
-      final mandatory = find.descendant(
-        of: find.widgetWithText(SettingsNavigationRow, 'coding-conventions'),
-        matching: find.byType(TRSwitch),
+      expect(find.text('전역 스킬 2개'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-coding-conventions')),
+        findsOneWidget,
       );
-      final toggleable = find.descendant(
-        of: find.widgetWithText(SettingsNavigationRow, 'commit'),
-        matching: find.byType(TRSwitch),
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-commit')),
+        findsOneWidget,
       );
-      expect(tester.widget<TRSwitch>(mandatory).onCheckedChange, isNull);
-      expect(tester.widget<TRSwitch>(toggleable).onCheckedChange, isNotNull);
+      final skillRowSemantics = tester.getSemantics(
+        find.byKey(const ValueKey<String>('skill-row-commit')),
+      );
+      expect(skillRowSemantics.flagsCollection.isButton, isFalse);
+      expect(skillRowSemantics.flagsCollection.isFocused, ui.Tristate.none);
+      final skillRowSemanticsData = skillRowSemantics.getSemanticsData();
+      expect(skillRowSemanticsData.hasAction(ui.SemanticsAction.tap), isFalse);
+      expect(
+        skillRowSemanticsData.hasAction(ui.SemanticsAction.focus),
+        isFalse,
+      );
+      expect(find.text('Match the surrounding code.'), findsOneWidget);
+      expect(find.text('Writes atomic commits.'), findsOneWidget);
+      expect(find.byType(TRSwitch), findsNothing);
+      expect(find.byType(TRTextField), findsNothing);
+      expect(find.byType(TRTextarea), findsNothing);
+      expect(
+        find.byKey(const ValueKey<String>('skill-add-button')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('skill-delete-button')),
+        findsNothing,
+      );
+      expect(find.text('스킬 추가'), findsNothing);
+      expect(find.text('스킬 삭제'), findsNothing);
 
-      await tester.tap(toggleable);
+      final paneScope = tester.widget<TRAdaptivePaneScope>(
+        find.byType(TRAdaptivePaneScope),
+      );
+      expect(
+        paneScope.visibleRoles,
+        const <TRPaneRole>{TRPaneRole.navigation, TRPaneRole.primary},
+      );
+      expect(api.skillListRequests, hasLength(1));
+      expect(api.skillListRequests.single.view, SkillListView.global);
+      expect(api.skillListRequests.single.workspaceId, isNull);
+    },
+    tags: const <String>['feature_test__skill_catalog__widget'],
+  );
+
+  testWidgets(
+    'project scope shows only project skills and excludes home workspaces',
+    (tester) async {
+      await _setViewport(tester, const Size(1200, 900));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[home, workspace],
+        projectSkills: const <SkillSummaryDto>[projectSkill],
+      );
+      final router = await _pumpSkills(tester, api);
+      addTearDown(router.dispose);
+
+      await tester.tap(_scopeTrigger);
       await tester.pumpAndSettle();
-      expect((await api.prompts.getSkill('commit')).isEnabled, isFalse);
+      expect(find.widgetWithText(MenuItemButton, 'Tinest'), findsOneWidget);
+      expect(find.widgetWithText(MenuItemButton, 'Home'), findsNothing);
+      expect(find.text('/repos/tinest'), findsOneWidget);
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Tinest'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('프로젝트 스킬 1개'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-migrate')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Runs the migration from the selected project.'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-commit')),
+        findsNothing,
+      );
+      expect(api.skillListRequests.last.view, SkillListView.project);
+      expect(api.skillListRequests.last.workspaceId, workspace.id);
     },
     tags: const <String>[
-      'feature_test__skill_management__widget',
-      'feature_test__skill_invocation__widget',
+      'feature_test__skill_catalog__widget',
     ],
   );
 
   testWidgets(
-    'the desktop project selector stays inset inside the collection pane',
+    'an invalid project route normalizes before listing skills',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setViewport(tester, const Size(1200, 900));
       final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
-      final router = await _pumpSkills(tester, api);
+      final router = await _pumpSkills(
+        tester,
+        api,
+        workspaceId: 'removed-project',
+      );
       addTearDown(router.dispose);
 
-      final selector = find.descendant(
-        of: find.byType(TRSelectFormField<String?>),
-        matching: find.byType(TextButton),
-      );
-      expect(selector, findsOneWidget);
       expect(
-        tester.getSize(selector).width,
-        TinestLayoutMetrics.settingsCollectionWidth - 2 * TRSpacing.extraLarge,
+        router
+            .routeInformationProvider
+            .value
+            .uri
+            .queryParameters['workspace-id'],
+        isNull,
       );
+      expect(api.skillListRequests, isNotEmpty);
       expect(
-        tester.getTopLeft(selector).dx,
-        tester.getTopLeft(find.byType(TRPaneHeader).first).dx +
-            TRSpacing.extraLarge,
-      );
-    },
-    tags: const <String>['feature_test__skill_management__widget'],
-  );
-
-  testWidgets(
-    'built-in skills are read-only while config skills can be edited',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
-      final router = await _pumpSkills(tester, api);
-      addTearDown(router.dispose);
-
-      // The first entry sorts to coding-conventions, the mandatory built-in.
-      expect(find.text('내장 스킬은 앱에 포함되어 있어 편집할 수 없습니다.'), findsOneWidget);
-      expect(find.widgetWithText(TRButton, '저장'), findsNothing);
-
-      await tester.tap(find.text('commit').first);
-      await tester.pumpAndSettle();
-      expect(find.text('포함된 파일'), findsOneWidget);
-      expect(find.text('scripts/split.sh'), findsOneWidget);
-
-      await tester.enterText(
-        _textInput('지시문 (Markdown)'),
-        'Stage each purpose on its own.',
-      );
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await tester.pumpAndSettle();
-      expect(
-        (await api.prompts.getSkill('commit')).body,
-        'Stage each purpose on its own.',
-      );
-    },
-    tags: const <String>['feature_test__skill_management__widget'],
-  );
-
-  testWidgets(
-    'a save conflict offers reload or overwrite',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeTinestApi(
-        workspaces: <WorkspaceDto>[workspace],
-        failNextSkillUpdate: true,
-      );
-      final router = await _pumpSkills(tester, api);
-      addTearDown(router.dispose);
-
-      await tester.tap(find.text('commit').first);
-      await tester.pumpAndSettle();
-      await tester.enterText(_textInput('지시문 (Markdown)'), 'Forced body.');
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('스킬을 저장하지 못했습니다'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TRButton, '덮어쓰기'));
-      await tester.pumpAndSettle();
-      expect((await api.prompts.getSkill('commit')).body, 'Forced body.');
-    },
-    tags: const <String>['feature_test__skill_management__widget'],
-  );
-
-  testWidgets(
-    'picking a project reveals its skills and allows creating one there',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeTinestApi(
-        workspaces: <WorkspaceDto>[workspace],
-        projectSkills: <SkillDto>[projectSkill],
-      );
-      final router = await _pumpSkills(tester, api);
-      addTearDown(router.dispose);
-
-      expect(find.text('migrate'), findsNothing);
-
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TRSelectFormField<String?>),
-          matching: find.byType(TextButton),
+        api.skillListRequests,
+        everyElement(
+          isA<SkillListParamsDto>()
+              .having((request) => request.view, 'view', SkillListView.global)
+              .having((request) => request.workspaceId, 'workspaceId', isNull),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Tinest').last);
-      await tester.pumpAndSettle();
-
-      expect(find.text('migrate'), findsWidgets);
-      expect(find.text('프로젝트'), findsWidgets);
-
-      await tester.tap(findAccessibleAction('스킬 추가'));
-      await tester.pumpAndSettle();
-      expect(find.text('스킬 추가'), findsOneWidget);
-      expect(find.byType(TRAlertDialog), findsNothing);
-      await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
-      await tester.enterText(_textInput('이름').last, 'release-notes');
-      await tester.enterText(_textInput('설명').last, 'Writes release notes.');
-      tester.testTextInput.hide();
-      await tester.pumpAndSettle();
-      final create = find.widgetWithText(TRButton, '생성');
-      await tester.ensureVisible(create);
-      await tester.tap(create);
-      await tester.pumpAndSettle();
-
-      expect(find.text('release-notes'), findsWidgets);
-      expect(
-        (await api.prompts.getSkill(
-          'release-notes',
-          workspaceId: workspace.id,
-        )).source,
-        SkillSource.config,
-      );
     },
-    tags: const <String>['feature_test__skill_management__widget'],
+    tags: const <String>['feature_test__skill_catalog__widget'],
   );
 
-  testWidgets('skill create failures use the shared danger alert', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeTinestApi(
-      workspaces: <WorkspaceDto>[workspace],
-      failNextSkillCreate: true,
-    );
-    final router = await _pumpSkills(tester, api);
-    addTearDown(router.dispose);
+  testWidgets(
+    'initial catalog loading uses the shared form skeleton',
+    (tester) async {
+      await _setViewport(tester, const Size(1200, 900));
+      final gate = Completer<void>();
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        skillListGate: gate.future,
+      );
+      final router = await _pumpSkills(tester, api, settle: false);
+      addTearDown(router.dispose);
+      await tester.pump();
+      await tester.pump();
 
-    await tester.tap(findAccessibleAction('스킬 추가'));
-    await tester.pumpAndSettle();
-    await tester.enterText(_textInput('ID (디렉터리 이름)'), 'release-notes');
-    await tester.enterText(_textInput('이름').last, 'release-notes');
-    await tester.enterText(_textInput('설명'), 'Release note workflow');
-    tester.testTextInput.hide();
-    await tester.pumpAndSettle();
-    final create = find.widgetWithText(TRButton, '생성');
-    await tester.ensureVisible(create);
-    await tester.tap(create);
-    await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('settings-skeleton-form')),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('설정 불러오는 중'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('skill-scope-select')),
+        findsNothing,
+      );
 
-    final errorText = find.textContaining('skill_create_failed');
-    final errorAlert = find.ancestor(
-      of: errorText,
-      matching: find.byType(TRAlert),
-    );
-    expect(errorAlert, findsOneWidget);
-    expect(tester.widget<TRAlert>(errorAlert).variant, TRStatusVariant.danger);
-  }, tags: const <String>['feature_test__skill_management__widget']);
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('전역 스킬 2개'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__skill_catalog__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
+  );
 
   testWidgets(
-    'deleting a skill asks for confirmation first',
+    'global and project catalogs use distinct empty states',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
+      await _setViewport(tester, const Size(1200, 900));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        skills: const <SkillSummaryDto>[],
+        projectSkills: const <SkillSummaryDto>[],
+      );
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
-      await tester.tap(find.text('commit').first);
+      expect(find.text('사용 가능한 전역 스킬이 없습니다.'), findsOneWidget);
+      await tester.tap(_scopeTrigger);
       await tester.pumpAndSettle();
-      final delete = find.byKey(
-        const ValueKey<String>('skill-delete-button'),
+      await tester.tap(find.widgetWithText(MenuItemButton, 'Tinest'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('이 프로젝트에 사용 가능한 스킬이 없습니다.'),
+        findsOneWidget,
       );
-      await tester.scrollUntilVisible(
-        delete,
-        TRSpacing.fourExtraLarge,
-        scrollable: find
-            .descendant(
-              of: find.byType(SettingsScaffold),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.ensureVisible(delete);
-      await tester.pumpAndSettle();
-      await tester.tap(delete);
-      await tester.pumpAndSettle();
-      expect(find.text('commit 을(를) 삭제할까요?'), findsOneWidget);
-
-      await tester.tap(find.widgetWithText(TRButton, '취소'));
-      await tester.pumpAndSettle();
-      expect(await api.prompts.listSkills(), hasLength(2));
-
-      await tester.ensureVisible(delete);
-      await tester.pumpAndSettle();
-      await tester.tap(delete);
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제'));
-      await tester.pumpAndSettle();
-      expect(await api.prompts.listSkills(), hasLength(1));
     },
-    tags: const <String>['feature_test__skill_management__widget'],
+    tags: const <String>['feature_test__skill_catalog__widget'],
   );
 
   testWidgets(
-    'a failing catalog load offers a retry',
+    'a failed catalog load keeps the scope and offers retry',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setViewport(tester, const Size(1200, 900));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         skillListError: Exception('daemon offline'),
@@ -319,104 +238,108 @@ void main() {
       addTearDown(router.dispose);
 
       expect(find.textContaining('daemon offline'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('skill-scope-select')),
+        findsOneWidget,
+      );
       api.skillListError = null;
       await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
       await tester.pumpAndSettle();
-      expect(find.text('commit'), findsWidgets);
+      expect(find.text('전역 스킬 2개'), findsOneWidget);
     },
     tags: const <String>[
-      'feature_test__skill_management__widget',
+      'feature_test__skill_catalog__widget',
       'feature_test__settings_async_loading__widget',
     ],
   );
 
   testWidgets(
-    'the narrow layout opens one skill and returns to the list',
+    'a failed external refresh keeps the catalog and shows an alert',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 760));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setViewport(tester, const Size(1200, 900));
       final api = FakeTinestApi(workspaces: <WorkspaceDto>[workspace]);
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
-      expect(findAccessibleAction('스킬 목록'), findsNothing);
-      await tester.tap(find.text('commit').first);
+      api
+        ..skillListError = Exception('refresh failed')
+        ..emit(const SkillsChangedClientEvent());
       await tester.pumpAndSettle();
-      expect(findAccessibleAction('스킬 목록'), findsNothing);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-back-button')),
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-commit')),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
-      expect(findAccessibleAction('스킬 추가'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-refresh-error')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('refresh failed'), findsOneWidget);
     },
-    tags: const <String>['feature_test__skill_management__widget'],
+    tags: const <String>[
+      'feature_test__skill_catalog__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
   );
 
   testWidgets(
-    'the desktop project selector filters its projects in a dropdown',
+    'the controlled scope selector adapts to a mobile sheet',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      _sizeViewport(tester, const Size(1200, 900));
-      final api = FakeTinestApi(workspaces: _manyWorkspaces(now));
+      await _setViewport(tester, const Size(390, 760));
+      final api = FakeTinestApi(
+        workspaces: _manyWorkspaces(now),
+        projectSkills: const <SkillSummaryDto>[projectSkill],
+      );
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
-      await tester.tap(_projectSelectorTrigger);
-      await tester.pumpAndSettle();
-      expect(find.byType(TRDrawer), findsNothing);
-      expect(find.widgetWithText(MenuItemButton, 'Termworld'), findsOneWidget);
+      final paneScope = tester.widget<TRAdaptivePaneScope>(
+        find.byType(TRAdaptivePaneScope),
+      );
+      expect(paneScope.activeRole, TRPaneRole.primary);
+      expect(
+        paneScope.visibleRoles,
+        const <TRPaneRole>{TRPaneRole.primary},
+      );
 
-      await tester.enterText(_searchInput('프로젝트 검색'), 'drop');
-      await tester.pumpAndSettle();
-
-      expect(find.widgetWithText(MenuItemButton, 'Dropwell'), findsOneWidget);
-      expect(find.widgetWithText(MenuItemButton, 'Termworld'), findsNothing);
-
-      await tester.enterText(_searchInput('프로젝트 검색'), 'zzz');
-      await tester.pumpAndSettle();
-      expect(find.text('일치하는 프로젝트가 없습니다'), findsOneWidget);
-    },
-    tags: const <String>['feature_test__skill_management__widget'],
-  );
-
-  testWidgets(
-    'the narrow project selector opens a sheet and commits a project',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 760));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      _sizeViewport(tester, const Size(390, 760));
-      final api = FakeTinestApi(workspaces: _manyWorkspaces(now));
-      final router = await _pumpSkills(tester, api);
-      addTearDown(router.dispose);
-
-      await tester.tap(_projectSelectorTrigger);
+      await tester.tap(_scopeTrigger);
       await tester.pumpAndSettle();
       expect(find.byType(TRDrawer), findsOneWidget);
-
       await tester.enterText(_searchInput('프로젝트 검색'), 'drop');
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(MenuItemButton, 'Dropwell'));
       await tester.pumpAndSettle();
 
       expect(find.byType(TRDrawer), findsNothing);
-      expect(
-        tester.widget<TextButton>(_projectSelectorTrigger).enabled,
-        isTrue,
-      );
-      expect(find.text('Dropwell'), findsWidgets);
+      expect(api.skillListRequests.last.view, SkillListView.project);
+      expect(api.skillListRequests.last.workspaceId, 'dropwell');
     },
-    tags: const <String>['feature_test__skill_management__widget'],
+    tags: const <String>['feature_test__skill_catalog__widget'],
   );
+
+  testWidgets('English and Japanese catalog copy is available', (tester) async {
+    await _setViewport(tester, const Size(1200, 900));
+    final api = FakeTinestApi(
+      workspaces: <WorkspaceDto>[workspace],
+      skills: const <SkillSummaryDto>[],
+    );
+    var router = await _pumpSkills(tester, api, locale: const Locale('en'));
+    expect(find.text('Skill scope'), findsOneWidget);
+    expect(find.text('No global skills are available.'), findsOneWidget);
+    router.dispose();
+
+    router = await _pumpSkills(tester, api, locale: const Locale('ja'));
+    addTearDown(router.dispose);
+    expect(find.text('スキルの範囲'), findsOneWidget);
+    expect(find.text('利用可能なグローバルスキルはありません。'), findsOneWidget);
+  }, tags: const <String>['feature_test__skill_catalog__widget']);
 }
 
-Finder get _projectSelectorTrigger => find.descendant(
-  of: find.byType(TRSelectFormField<String?>),
+Finder get _scopeTrigger => find.descendant(
+  of: find.byKey(const ValueKey<String>('skill-scope-select')),
   matching: find.byType(TextButton),
 );
 
-/// The select's filter field, which carries a placeholder rather than a label.
 Finder _searchInput(String placeholder) => find.descendant(
   of: find.byWidgetPredicate(
     (widget) => widget is TRTextField && widget.placeholder == placeholder,
@@ -424,17 +347,16 @@ Finder _searchInput(String placeholder) => find.descendant(
   matching: find.byType(EditableText),
 );
 
-/// Sizes the viewport a select reads to choose between dropdown and sheet.
-///
-/// `setSurfaceSize` lays the render tree out at a size without moving the view
-/// metrics `MediaQuery` is built from, so both have to be set.
-void _sizeViewport(WidgetTester tester, Size size) {
+Future<void> _setViewport(WidgetTester tester, Size size) async {
+  await tester.binding.setSurfaceSize(size);
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
-  addTearDown(tester.view.reset);
+  addTearDown(() async {
+    await tester.binding.setSurfaceSize(null);
+    tester.view.reset();
+  });
 }
 
-/// Enough projects that the selector is worth filtering.
 List<WorkspaceDto> _manyWorkspaces(DateTime now) => <WorkspaceDto>[
   for (final name in const <String>[
     'Tinest',
@@ -452,16 +374,18 @@ List<WorkspaceDto> _manyWorkspaces(DateTime now) => <WorkspaceDto>[
     ),
 ];
 
-Finder _textInput(String label) => find.descendant(
-  of: find.byWidgetPredicate(
-    (widget) => widget is TRTextField && widget.label == label,
-  ),
-  matching: find.byType(EditableText),
-);
-
-Future<GoRouter> _pumpSkills(WidgetTester tester, FakeTinestApi api) async {
+Future<GoRouter> _pumpSkills(
+  WidgetTester tester,
+  FakeTinestApi api, {
+  String? workspaceId,
+  Locale locale = testLocale,
+  bool settle = true,
+}) async {
   final router = GoRouter(
-    initialLocation: const SkillSettingsRoute(hostId: 'server').location,
+    initialLocation: SkillSettingsRoute(
+      hostId: 'server',
+      workspaceId: workspaceId,
+    ).location,
     routes: $appRoutes,
   );
   await tester.pumpWidget(
@@ -470,13 +394,13 @@ Future<GoRouter> _pumpSkills(WidgetTester tester, FakeTinestApi api) async {
       child: MaterialApp.router(
         theme: testLightTheme,
         darkTheme: testDarkTheme,
-        locale: testLocale,
+        locale: locale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
   return router;
 }

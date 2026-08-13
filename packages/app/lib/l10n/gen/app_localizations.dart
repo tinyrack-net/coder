@@ -3514,235 +3514,55 @@ abstract class AppLocalizations {
   /// **'Skill'**
   String get settingsCategorySkill;
 
-  /// Heading above the skill list.
+  /// Heading above the read-only skill catalog.
   ///
   /// In en, this message translates to:
   /// **'Skills'**
   String get skillSettingsHeading;
 
-  /// Number of skills visible in the current scope.
+  /// Label for choosing the global or project skill catalog.
   ///
   /// In en, this message translates to:
-  /// **'{count} skills'**
-  String skillSettingsCount(int count);
+  /// **'Skill scope'**
+  String get skillSettingsScope;
 
-  /// Placeholder shown before a skill is selected.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a skill.'**
-  String get skillSettingsSelectSkill;
-
-  /// Empty state shown when the current scope has no skills.
-  ///
-  /// In en, this message translates to:
-  /// **'No skills are configured.'**
-  String get skillSettingsEmpty;
-
-  /// Tooltip for returning to the skill list on narrow layouts.
-  ///
-  /// In en, this message translates to:
-  /// **'Skill list'**
-  String get skillSettingsList;
-
-  /// Tooltip for the add-skill button.
-  ///
-  /// In en, this message translates to:
-  /// **'Add skill'**
-  String get skillSettingsAdd;
-
-  /// Title of the add-skill dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Add skill'**
-  String get skillSettingsAddTitle;
-
-  /// Label for the skill ID field, which names the directory.
-  ///
-  /// In en, this message translates to:
-  /// **'ID (directory name)'**
-  String get skillSettingsIdLabel;
-
-  /// Validation error for a malformed skill ID.
-  ///
-  /// In en, this message translates to:
-  /// **'Only lowercase letters, digits, -, and _ are allowed.'**
-  String get skillSettingsIdInvalid;
-
-  /// Validation error for a skill ID already in use.
-  ///
-  /// In en, this message translates to:
-  /// **'That skill ID already exists.'**
-  String get skillSettingsIdTaken;
-
-  /// Validation error for an empty skill name.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a name.'**
-  String get skillSettingsNameRequired;
-
-  /// Tooltip for copying the skill file path.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy file location'**
-  String get skillSettingsCopyPath;
-
-  /// Tooltip for deleting a skill.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete skill'**
-  String get skillSettingsDelete;
-
-  /// Reported when a skill could not be removed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not delete the skill.'**
-  String get skillSettingsDeleteFailed;
-
-  /// Reported when a skill's enabled state could not be stored.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not change whether the skill is enabled.'**
-  String get skillSettingsToggleFailed;
-
-  /// Title of the delete confirmation dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete {name}?'**
-  String skillSettingsDeleteTitle(String name);
-
-  /// Explains that deleting archives the directory.
-  ///
-  /// In en, this message translates to:
-  /// **'The skill directory moves to .archive next to it.'**
-  String get skillSettingsDeleteMessage;
-
-  /// Label for the per-skill enable switch.
-  ///
-  /// In en, this message translates to:
-  /// **'Enabled'**
-  String get skillSettingsEnabled;
-
-  /// Tooltip explaining why a built-in skill cannot be turned off.
-  ///
-  /// In en, this message translates to:
-  /// **'This built-in skill is always enabled.'**
-  String get skillSettingsMandatory;
-
-  /// Explains that built-in skills are read-only.
-  ///
-  /// In en, this message translates to:
-  /// **'Built-in skills ship with the app and cannot be edited.'**
-  String get skillSettingsReadOnly;
-
-  /// Label for the skill body editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Instructions (Markdown)'**
-  String get skillSettingsInstructions;
-
-  /// Section heading for whether a skill is enabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Availability'**
-  String get skillSettingsStateHeading;
-
-  /// Section heading for a skill's editable fields.
-  ///
-  /// In en, this message translates to:
-  /// **'Definition'**
-  String get skillSettingsDefinitionHeading;
-
-  /// Heading above the bundled file list.
-  ///
-  /// In en, this message translates to:
-  /// **'Bundled files'**
-  String get skillSettingsResources;
-
-  /// Shown when a skill bundles no extra files.
-  ///
-  /// In en, this message translates to:
-  /// **'No files are bundled with this skill.'**
-  String get skillSettingsNoResources;
-
-  /// Title of the save-conflict dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not save the skill'**
-  String get skillSettingsSaveFailedTitle;
-
-  /// Discards the edit and reloads the file.
-  ///
-  /// In en, this message translates to:
-  /// **'Reload'**
-  String get skillSettingsReload;
-
-  /// Saves over the external change.
-  ///
-  /// In en, this message translates to:
-  /// **'Overwrite'**
-  String get skillSettingsOverwrite;
-
-  /// Explains that a higher-precedence source wins.
-  ///
-  /// In en, this message translates to:
-  /// **'Another source overrides this skill.'**
-  String get skillSettingsShadowed;
-
-  /// Explains that the file failed to parse.
-  ///
-  /// In en, this message translates to:
-  /// **'This file no longer parses; the last good version is shown.'**
-  String get skillSettingsStale;
-
-  /// Label for the source a skill was loaded from.
-  ///
-  /// In en, this message translates to:
-  /// **'Source'**
-  String get skillSettingsSource;
-
-  /// Source badge for skills shipped with the app.
-  ///
-  /// In en, this message translates to:
-  /// **'Built-in'**
-  String get skillSettingsSourceBuiltIn;
-
-  /// Source badge for skills in the shared user home tree.
+  /// Scope option showing skills defined outside a project.
   ///
   /// In en, this message translates to:
   /// **'Global'**
-  String get skillSettingsSourceUserHome;
+  String get skillSettingsScopeGlobal;
 
-  /// Source badge for skills in the daemon configuration directory.
+  /// Explains that inherited and shadowed skills are omitted.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
-  String get skillSettingsSourceConfig;
+  /// **'Shows only effective skills defined in the selected scope.'**
+  String get skillSettingsScopeHint;
 
-  /// Source badge for skills committed to a project.
+  /// Number of effective global skills.
   ///
   /// In en, this message translates to:
-  /// **'Project'**
-  String get skillSettingsSourceProject;
+  /// **'{count} global skills'**
+  String skillSettingsGlobalCount(int count);
 
-  /// Label for the project selector on the skill page.
+  /// Number of effective skills defined by the selected project.
   ///
   /// In en, this message translates to:
-  /// **'Project'**
-  String get skillSettingsProject;
+  /// **'{count} project skills'**
+  String skillSettingsProjectCount(int count);
 
-  /// Project selector entry that shows only global skills.
+  /// Empty state for the global skill catalog.
   ///
   /// In en, this message translates to:
-  /// **'Global skills only'**
-  String get skillSettingsProjectNone;
+  /// **'No global skills are available.'**
+  String get skillSettingsGlobalEmpty;
 
-  /// Explains what picking a project adds to the list.
+  /// Empty state for a project's own effective skills.
   ///
   /// In en, this message translates to:
-  /// **'Pick a project to see and edit the skills committed to it.'**
-  String get skillSettingsProjectHint;
+  /// **'No skills are available in this project.'**
+  String get skillSettingsProjectEmpty;
 
-  /// Placeholder for the filter field in the project selector.
+  /// Placeholder for filtering the project scope options.
   ///
   /// In en, this message translates to:
   /// **'Search projects'**

@@ -906,7 +906,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // All three sources reach the one catalog: the app's own commands, the
-      // daemon's authored commands, and its enabled skills.
+      // daemon's authored commands, and its effective skills.
       expect(find.text('mode'), findsOneWidget);
       expect(find.text('agents'), findsOneWidget);
       expect(find.text('review'), findsOneWidget);

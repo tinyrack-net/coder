@@ -14,60 +14,11 @@ final promptsListCommandsProcedure =
 
 /// Typed v4 transport descriptor.
 final promptsListSkillsProcedure =
-    RpcProcedure<SkillScopeParamsDto, SkillListResultDto>(
+    RpcProcedure<SkillListParamsDto, SkillListResultDto>(
       name: 'prompts.listSkills',
-      decodeParams: SkillScopeParamsDto.fromJson,
+      decodeParams: SkillListParamsDto.fromJson,
       encodeParams: (value) => value.toJson(),
       decodeResult: SkillListResultDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
-final promptsGetSkillProcedure = RpcProcedure<SkillIdParamsDto, SkillResultDto>(
-  name: 'prompts.getSkill',
-  decodeParams: SkillIdParamsDto.fromJson,
-  encodeParams: (value) => value.toJson(),
-  decodeResult: SkillResultDto.fromJson,
-  encodeResult: (value) => value.toJson(),
-);
-
-/// Typed v4 transport descriptor.
-final promptsCreateSkillProcedure =
-    RpcProcedure<SkillCreateParamsDto, SkillResultDto>(
-      name: 'prompts.createSkill',
-      decodeParams: SkillCreateParamsDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: SkillResultDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
-final promptsUpdateSkillProcedure =
-    RpcProcedure<SkillUpdateParamsDto, SkillResultDto>(
-      name: 'prompts.updateSkill',
-      decodeParams: SkillUpdateParamsDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: SkillResultDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
-final promptsDeleteSkillProcedure =
-    RpcProcedure<SkillIdParamsDto, EmptyResultDto>(
-      name: 'prompts.deleteSkill',
-      decodeParams: SkillIdParamsDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: EmptyResultDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
-final promptsSetSkillEnabledProcedure =
-    RpcProcedure<SkillSetEnabledParamsDto, SkillResultDto>(
-      name: 'prompts.setSkillEnabled',
-      decodeParams: SkillSetEnabledParamsDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: SkillResultDto.fromJson,
       encodeResult: (value) => value.toJson(),
     );
 
@@ -89,11 +40,6 @@ final promptsCommandsChangedNotification = RpcNotification<EmptyResultDto>(
 final promptsProcedures = <RpcProcedureDescriptor>[
   promptsListCommandsProcedure,
   promptsListSkillsProcedure,
-  promptsGetSkillProcedure,
-  promptsCreateSkillProcedure,
-  promptsUpdateSkillProcedure,
-  promptsDeleteSkillProcedure,
-  promptsSetSkillEnabledProcedure,
 ];
 
 /// Feature-owned descriptor catalog.

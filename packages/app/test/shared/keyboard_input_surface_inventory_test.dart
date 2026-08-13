@@ -36,8 +36,6 @@ void main() {
             'showTRDialog<',
         'lib/src/features/providers/presentation/pages/provider_settings_page.dart':
             'SettingsScaffold(',
-        'lib/src/features/skills/presentation/pages/skill_settings_page.dart':
-            'SettingsScaffold(',
         'lib/src/features/workspace/presentation/pages/project_settings_page.dart':
             'SettingsScaffold(',
         'lib/src/features/workspace/presentation/widgets/directory_browser.dart':

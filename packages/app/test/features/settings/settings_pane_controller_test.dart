@@ -1,7 +1,6 @@
 import 'package:app/src/features/agents/presentation/pages/agent_settings_page.dart';
 import 'package:app/src/features/mcp/presentation/pages/mcp_settings_page.dart';
 import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
-import 'package:app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter/foundation.dart';
@@ -12,12 +11,10 @@ void main() {
     final projects = ProjectSettingsPaneController();
     final agents = AgentSettingsPaneController();
     final mcp = McpSettingsPaneController();
-    final skills = SkillSettingsPaneController();
     final providers = ProviderSettingsPaneController();
     addTearDown(projects.dispose);
     addTearDown(agents.dispose);
     addTearDown(mcp.dispose);
-    addTearDown(skills.dispose);
     addTearDown(providers.dispose);
 
     _expectInitialSelectionIsConsumed(
@@ -31,10 +28,6 @@ void main() {
     _expectInitialSelectionIsConsumed(
       mcp,
       () => mcp.selectInitial('server'),
-    );
-    _expectInitialSelectionIsConsumed(
-      skills,
-      () => skills.selectInitial('skill'),
     );
     _expectInitialSelectionIsConsumed(
       providers,

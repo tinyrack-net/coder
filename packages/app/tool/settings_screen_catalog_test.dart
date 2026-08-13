@@ -76,7 +76,6 @@ enum _CatalogPreparation {
   agentCreateError,
   agentReadOnly,
   skillError,
-  skillConflict,
   mcpError,
   mcpDiagnostic,
   mcpResources,
@@ -111,12 +110,6 @@ enum _CatalogAction {
   openAgentReadOnly,
   openAgentArchiveDialog,
   openAgentResetDialog,
-  openSkillCreate,
-  validateSkillCreate,
-  openSkillDetail,
-  openSkillReadOnly,
-  openSkillConflict,
-  openSkillDeleteDialog,
   openMcpCreate,
   validateMcpCreate,
   openMcpDiagnostic,
@@ -162,8 +155,6 @@ enum _CatalogScrollTarget {
   projectEditor('project-editor'),
   agentModel('agent-model'),
   agentDanger('agent-danger'),
-  skillInstructions('skill-instructions'),
-  skillDanger('skill-danger'),
   mcpDiagnostics('mcp-diagnostics'),
   mcpResources('mcp-resources'),
   mcpResourceTemplates('mcp-resource-templates'),
@@ -297,6 +288,7 @@ FakeTinestApi _defaultApi() {
     ],
     agentDefinitions: _agentDefinitions,
     skills: _skills,
+    projectSkills: _projectSkills,
     connections: _providerConnections,
   );
   api.mcpServers.addEntries(
@@ -316,7 +308,8 @@ FakeTinestApi _emptyApi() => FakeTinestApi(
   workspaces: const <WorkspaceDto>[],
   worktrees: const <WorktreeDto>[],
   agentDefinitions: const <AgentDefinitionDto>[],
-  skills: const <SkillDto>[],
+  skills: const <SkillSummaryDto>[],
+  projectSkills: const <SkillSummaryDto>[],
   connections: const <ProviderConnectionDto>[],
 );
 
@@ -389,10 +382,6 @@ _PreparedScenario _prepareScenario(_CatalogPreparation preparation) {
             'Skills unavailable: deterministic catalog failure',
           ),
         ),
-      );
-    case _CatalogPreparation.skillConflict:
-      return _PreparedScenario(
-        api: FakeTinestApi(skills: _skills, failNextSkillUpdate: true),
       );
     case _CatalogPreparation.mcpError:
       final failure = _catalogFailure(
@@ -725,20 +714,22 @@ final _agentDefinitions = List<AgentDefinitionDto>.unmodifiable(
       ),
   ],
 );
-final _skills = List<SkillDto>.unmodifiable(<SkillDto>[
+final _skills = List<SkillSummaryDto>.unmodifiable(<SkillSummaryDto>[
   for (var index = 0; index < 18; index += 1)
-    SkillDto(
+    SkillSummaryDto(
       id: 'catalog-skill-$index',
       name: 'catalog-skill-$index',
       description: 'Deterministic catalog skill $index.',
-      source: index == 0 ? SkillSource.builtIn : SkillSource.config,
-      sourcePath: index == 0
-          ? ''
-          : '/config/skills/catalog-skill-$index/SKILL.md',
-      contentHash: 'skill-$index-hash',
-      body: 'Exercise the settings visual system.',
-      isMandatory: index == 0,
-      isEditable: index != 0,
+      isImplicit: index == 0,
+    ),
+]);
+final _projectSkills = List<SkillSummaryDto>.unmodifiable(<SkillSummaryDto>[
+  for (var index = 0; index < 6; index += 1)
+    SkillSummaryDto(
+      id: 'project-skill-$index',
+      name: 'project-skill-$index',
+      description: 'Deterministic project skill $index.',
+      isImplicit: false,
     ),
 ]);
 final _providerConnections = List<ProviderConnectionDto>.unmodifiable(
@@ -912,6 +903,18 @@ final _scenarios = <_Scenario>[
   _Scenario(
     id: 'skills',
     location: const SkillSettingsRoute(hostId: 'server').location,
+  ),
+  _Scenario(
+    id: 'skills-project',
+    location: const SkillSettingsRoute(
+      hostId: 'server',
+      workspaceId: 'tinest',
+    ).location,
+    expected: const _ExpectedFrame(
+      state: 'project-only',
+      key: 'skill-row-project-skill-0',
+      text: 'project-skill-0',
+    ),
   ),
   _Scenario(
     id: 'skills-empty',
@@ -1105,75 +1108,6 @@ final _scenarios = <_Scenario>[
       overlay: _ExpectedOverlay.dialog,
       key: 'agent-reset-confirm',
       scrollTarget: _CatalogScrollTarget.agentDanger,
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-create',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.openSkillCreate,
-    expected: const _ExpectedFrame(
-      destination: 'skill-create',
-      text: 'Add skill',
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-create-validation',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.validateSkillCreate,
-    expected: const _ExpectedFrame(
-      destination: 'skill-create',
-      state: 'validation-error',
-      text: 'Only lowercase letters',
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-detail',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.openSkillDetail,
-    expected: const _ExpectedFrame(
-      destination: 'skill-detail',
-      key: 'skill-instructions-field',
-      scrollTarget: _CatalogScrollTarget.skillInstructions,
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-read-only',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.openSkillReadOnly,
-    expected: const _ExpectedFrame(
-      destination: 'skill-detail',
-      state: 'read-only',
-      text: 'Built-in skills ship with the app',
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-conflict',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    preparation: _CatalogPreparation.skillConflict,
-    action: _CatalogAction.openSkillConflict,
-    expected: const _ExpectedFrame(
-      destination: 'skill-detail',
-      state: 'conflict',
-      overlay: _ExpectedOverlay.dialog,
-      text: 'Could not save the skill',
-    ),
-    matrixOnly: true,
-  ),
-  _Scenario(
-    id: 'skill-delete-confirm',
-    location: const SkillSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.openSkillDeleteDialog,
-    expected: const _ExpectedFrame(
-      destination: 'skill-detail',
-      state: 'destructive-confirm',
-      overlay: _ExpectedOverlay.dialog,
-      text: 'Delete catalog-skill-1?',
-      scrollTarget: _CatalogScrollTarget.skillDanger,
     ),
     matrixOnly: true,
   ),
@@ -2417,28 +2351,6 @@ Future<void> _applyScenarioAction(
     case _CatalogAction.openAgentResetDialog:
       await _tapText(tester, 'Tinest');
       await _tapKey(tester, 'agent-reset-button');
-    case _CatalogAction.openSkillCreate:
-      await _tapKey(tester, 'skill-add-button');
-    case _CatalogAction.validateSkillCreate:
-      await _tapKey(tester, 'skill-add-button');
-      await tester.enterText(_textField('ID (directory name)'), 'Invalid ID');
-      await tester.enterText(_textField('Name'), 'Catalog skill');
-      await _pumpCatalogFrame(tester);
-    case _CatalogAction.openSkillDetail:
-      await _tapText(tester, 'catalog-skill-1');
-      await _ensureVisibleKey(tester, 'skill-instructions-field');
-    case _CatalogAction.openSkillReadOnly:
-      await _tapText(tester, 'catalog-skill-0');
-    case _CatalogAction.openSkillConflict:
-      await _tapText(tester, 'catalog-skill-1');
-      await tester.enterText(
-        _textField('Instructions (Markdown)'),
-        'Force a deterministic catalog conflict.',
-      );
-      await _tapButton(tester, 'Save');
-    case _CatalogAction.openSkillDeleteDialog:
-      await _tapText(tester, 'catalog-skill-1');
-      await _tapKey(tester, 'skill-delete-button');
     case _CatalogAction.openMcpCreate:
       await _tapKey(tester, 'mcp-server-add');
     case _CatalogAction.validateMcpCreate:

@@ -1995,119 +1995,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get skillSettingsHeading => '스킬';
 
   @override
-  String skillSettingsCount(int count) {
-    return '스킬 $count개';
+  String get skillSettingsScope => '스킬 범위';
+
+  @override
+  String get skillSettingsScopeGlobal => '전역';
+
+  @override
+  String get skillSettingsScopeHint => '선택한 범위에서 정의되고 실제 적용되는 스킬만 표시합니다.';
+
+  @override
+  String skillSettingsGlobalCount(int count) {
+    return '전역 스킬 $count개';
   }
 
   @override
-  String get skillSettingsSelectSkill => '스킬을 선택하세요.';
-
-  @override
-  String get skillSettingsEmpty => '설정된 스킬이 없습니다.';
-
-  @override
-  String get skillSettingsList => '스킬 목록';
-
-  @override
-  String get skillSettingsAdd => '스킬 추가';
-
-  @override
-  String get skillSettingsAddTitle => '스킬 추가';
-
-  @override
-  String get skillSettingsIdLabel => 'ID (디렉터리 이름)';
-
-  @override
-  String get skillSettingsIdInvalid => '영문 소문자, 숫자, -, _ 만 쓸 수 있습니다.';
-
-  @override
-  String get skillSettingsIdTaken => '이미 있는 스킬 ID입니다.';
-
-  @override
-  String get skillSettingsNameRequired => '이름을 입력하세요.';
-
-  @override
-  String get skillSettingsCopyPath => '파일 위치 복사';
-
-  @override
-  String get skillSettingsDelete => '스킬 삭제';
-
-  @override
-  String get skillSettingsDeleteFailed => '스킬을 삭제하지 못했습니다.';
-
-  @override
-  String get skillSettingsToggleFailed => '스킬 사용 여부를 바꾸지 못했습니다.';
-
-  @override
-  String skillSettingsDeleteTitle(String name) {
-    return '$name 을(를) 삭제할까요?';
+  String skillSettingsProjectCount(int count) {
+    return '프로젝트 스킬 $count개';
   }
 
   @override
-  String get skillSettingsDeleteMessage => '스킬 디렉터리는 옆의 .archive 로 이동합니다.';
+  String get skillSettingsGlobalEmpty => '사용 가능한 전역 스킬이 없습니다.';
 
   @override
-  String get skillSettingsEnabled => '사용';
-
-  @override
-  String get skillSettingsMandatory => '이 내장 스킬은 항상 켜져 있습니다.';
-
-  @override
-  String get skillSettingsReadOnly => '내장 스킬은 앱에 포함되어 있어 편집할 수 없습니다.';
-
-  @override
-  String get skillSettingsInstructions => '지시문 (Markdown)';
-
-  @override
-  String get skillSettingsStateHeading => '사용 여부';
-
-  @override
-  String get skillSettingsDefinitionHeading => '정의';
-
-  @override
-  String get skillSettingsResources => '포함된 파일';
-
-  @override
-  String get skillSettingsNoResources => '이 스킬에 포함된 파일이 없습니다.';
-
-  @override
-  String get skillSettingsSaveFailedTitle => '스킬을 저장하지 못했습니다';
-
-  @override
-  String get skillSettingsReload => '다시 불러오기';
-
-  @override
-  String get skillSettingsOverwrite => '덮어쓰기';
-
-  @override
-  String get skillSettingsShadowed => '다른 소스가 이 스킬을 덮어씁니다.';
-
-  @override
-  String get skillSettingsStale => '파일을 해석할 수 없어 마지막 정상 버전을 표시합니다.';
-
-  @override
-  String get skillSettingsSource => '소속';
-
-  @override
-  String get skillSettingsSourceBuiltIn => '내장';
-
-  @override
-  String get skillSettingsSourceUserHome => '글로벌';
-
-  @override
-  String get skillSettingsSourceConfig => '설정';
-
-  @override
-  String get skillSettingsSourceProject => '프로젝트';
-
-  @override
-  String get skillSettingsProject => '프로젝트';
-
-  @override
-  String get skillSettingsProjectNone => '전역 스킬만';
-
-  @override
-  String get skillSettingsProjectHint => '프로젝트를 고르면 그 프로젝트에 커밋된 스킬이 함께 보입니다.';
+  String get skillSettingsProjectEmpty => '이 프로젝트에 사용 가능한 스킬이 없습니다.';
 
   @override
   String get skillSettingsProjectSearch => '프로젝트 검색';

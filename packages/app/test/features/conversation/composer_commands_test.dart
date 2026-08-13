@@ -19,27 +19,21 @@ void main() {
     argumentHint: argumentHint,
   );
 
-  SkillDto skill({
+  SkillSummaryDto skill({
     String id = 'commit',
     String name = 'commit',
-    bool isEnabled = true,
-    bool isMandatory = false,
-  }) => SkillDto(
+    bool isImplicit = false,
+  }) => SkillSummaryDto(
     id: id,
     name: name,
     description: 'Writes atomic commits.',
-    source: SkillSource.config,
-    sourcePath: '/config/skills/$id/SKILL.md',
-    contentHash: 'hash',
-    body: 'Stage related changes together.',
-    isEnabled: isEnabled,
-    isMandatory: isMandatory,
+    isImplicit: isImplicit,
   );
 
   List<ComposerCommand> merge({
     List<ComposerCommand> client = const <ComposerCommand>[],
     List<AgentCommandDto> agent = const <AgentCommandDto>[],
-    List<SkillDto> skills = const <SkillDto>[],
+    List<SkillSummaryDto> skills = const <SkillSummaryDto>[],
   }) => mergeComposerCommands(client: client, agent: agent, skills: skills);
 
   group('withoutClientActions', () {
@@ -49,7 +43,7 @@ void main() {
         final merged = merge(
           client: clientComposerCommands,
           agent: <AgentCommandDto>[agentCommand()],
-          skills: <SkillDto>[skill()],
+          skills: <SkillSummaryDto>[skill()],
         );
 
         final filtered = withoutClientActions(
@@ -78,7 +72,7 @@ void main() {
       () {
         final merged = merge(
           agent: <AgentCommandDto>[agentCommand(name: 'new')],
-          skills: <SkillDto>[skill(id: 'clear', name: 'clear')],
+          skills: <SkillSummaryDto>[skill(id: 'clear', name: 'clear')],
         );
 
         final filtered = withoutClientActions(
@@ -115,7 +109,7 @@ void main() {
         final merged = merge(
           client: clientComposerCommands,
           agent: <AgentCommandDto>[agentCommand()],
-          skills: <SkillDto>[skill()],
+          skills: <SkillSummaryDto>[skill()],
         );
 
         expect(
@@ -158,7 +152,7 @@ void main() {
       () {
         final merged = merge(
           agent: <AgentCommandDto>[agentCommand(id: 'commit', name: 'commit')],
-          skills: <SkillDto>[skill()],
+          skills: <SkillSummaryDto>[skill()],
         );
 
         expect(merged.single.kind, ComposerCommandKind.agent);
@@ -167,17 +161,12 @@ void main() {
     );
 
     test(
-      'excludes a disabled skill',
+      'excludes an implicit skill the agent already receives',
       () {
-        expect(merge(skills: <SkillDto>[skill(isEnabled: false)]), isEmpty);
-      },
-      tags: const <String>['feature_test__composer_slash_command__unit'],
-    );
-
-    test(
-      'excludes a mandatory skill the agent already receives',
-      () {
-        expect(merge(skills: <SkillDto>[skill(isMandatory: true)]), isEmpty);
+        expect(
+          merge(skills: <SkillSummaryDto>[skill(isImplicit: true)]),
+          isEmpty,
+        );
       },
       tags: const <String>['feature_test__composer_slash_command__unit'],
     );
@@ -185,7 +174,9 @@ void main() {
     test(
       'falls back to the skill id when it has no name',
       () {
-        final merged = merge(skills: <SkillDto>[skill(name: '   ')]);
+        final merged = merge(
+          skills: <SkillSummaryDto>[skill(name: '   ')],
+        );
 
         expect(merged.single.name, 'commit');
       },
@@ -372,7 +363,7 @@ void main() {
     test(
       'names a skill for the agent to load',
       () {
-        final commands = merge(skills: <SkillDto>[skill()]);
+        final commands = merge(skills: <SkillSummaryDto>[skill()]);
 
         expect(
           renderComposerPrompt('/commit', commands),
@@ -385,7 +376,7 @@ void main() {
     test(
       'appends skill arguments below the instruction',
       () {
-        final commands = merge(skills: <SkillDto>[skill()]);
+        final commands = merge(skills: <SkillSummaryDto>[skill()]);
 
         expect(
           renderComposerPrompt('/commit split the refactor', commands),

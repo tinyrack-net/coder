@@ -40,15 +40,11 @@ void main() {
     updatedAt: now,
     model: selectedModel,
   );
-  const skill = SkillDto(
+  const skill = SkillSummaryDto(
     id: 'commit',
     name: 'commit',
     description: 'Writes atomic commits.',
-    source: SkillSource.config,
-    sourcePath: '/config/skills/commit/SKILL.md',
-    contentHash: 'skill-hash',
-    body: 'Stage related changes together.',
-    isEditable: true,
+    isImplicit: false,
   );
   const agentDefinition = AgentDefinitionDto(
     id: 'tinest',
@@ -671,34 +667,53 @@ void main() {
             .payload,
         const CommandListParamsDto(workspaceId: 'workspace').toJson(),
       );
-      expect(await client.listSkills(), <SkillDto>[skill]);
       expect(
-        await client.listSkills(workspaceId: 'workspace'),
-        <SkillDto>[skill],
+        await client.listSkills(view: SkillListView.global),
+        <SkillSummaryDto>[skill],
       );
-      expect(await client.getSkill('commit'), skill);
       expect(
-        await client.createSkill(
-          id: 'commit',
-          source: SkillSource.project,
-          name: 'commit',
-          description: 'Writes atomic commits.',
-          body: 'Stage related changes together.',
+        connector.requests
+            .lastWhere(
+              (request) => request.method == promptsListSkillsProcedure.name,
+            )
+            .payload,
+        const SkillListParamsDto(view: SkillListView.global).toJson(),
+      );
+      expect(
+        await client.listSkills(
+          view: SkillListView.project,
           workspaceId: 'workspace',
         ),
-        skill,
+        <SkillSummaryDto>[skill],
       );
       expect(
-        await client.updateSkill(
-          skill,
-          expectedContentHash: skill.contentHash,
+        connector.requests
+            .lastWhere(
+              (request) => request.method == promptsListSkillsProcedure.name,
+            )
+            .payload,
+        const SkillListParamsDto(
+          view: SkillListView.project,
+          workspaceId: 'workspace',
+        ).toJson(),
+      );
+      expect(
+        await client.listSkills(
+          view: SkillListView.effective,
+          workspaceId: 'workspace',
         ),
-        skill,
+        <SkillSummaryDto>[skill],
       );
-      await client.deleteSkill('commit', workspaceId: 'workspace');
       expect(
-        await client.setSkillEnabled('commit', enabled: false),
-        skill,
+        connector.requests
+            .lastWhere(
+              (request) => request.method == promptsListSkillsProcedure.name,
+            )
+            .payload,
+        const SkillListParamsDto(
+          view: SkillListView.effective,
+          workspaceId: 'workspace',
+        ).toJson(),
       );
       final catalog = await client.listProviderCatalog();
       expect(catalog.definitions, <ProviderDefinitionDto>[definition]);
@@ -948,11 +963,6 @@ void main() {
           mcpSetSecretProcedure.name,
           promptsListCommandsProcedure.name,
           promptsListSkillsProcedure.name,
-          promptsGetSkillProcedure.name,
-          promptsCreateSkillProcedure.name,
-          promptsUpdateSkillProcedure.name,
-          promptsDeleteSkillProcedure.name,
-          promptsSetSkillEnabledProcedure.name,
           providersCatalogProcedure.name,
           providersListConnectionsProcedure.name,
           providersListUsageProcedure.name,
@@ -993,7 +1003,7 @@ void main() {
       'feature_test__conversation_turn_queue__contract',
       'feature_test__agent_definition_management__contract',
       'feature_test__mcp_server_management__contract',
-      'feature_test__skill_management__contract',
+      'feature_test__skill_catalog__contract',
       'feature_test__composer_file_mention__contract',
       'feature_test__composer_slash_command__contract',
       'feature_test__provider_catalog__contract',
@@ -1464,7 +1474,7 @@ void _registerFixtureMethods(
   required AgentDefinitionDto agentDefinition,
   required AgentToolDefinitionDto agentTool,
   required McpServerStateDto mcpServer,
-  required SkillDto skill,
+  required SkillSummaryDto skill,
   required ProviderDefinitionDto definition,
   required ProviderConnectionDto connection,
   required ProviderModelDto model,
@@ -1654,13 +1664,8 @@ void _registerFixtureMethods(
     ).toJson(),
     mcpSetSecretProcedure.name: const <String, dynamic>{},
     promptsListSkillsProcedure.name: SkillListResultDto(
-      skills: <SkillDto>[skill],
+      skills: <SkillSummaryDto>[skill],
     ).toJson(),
-    promptsGetSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
-    promptsCreateSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
-    promptsUpdateSkillProcedure.name: SkillResultDto(skill: skill).toJson(),
-    promptsDeleteSkillProcedure.name: const <String, dynamic>{},
-    promptsSetSkillEnabledProcedure.name: SkillResultDto(skill: skill).toJson(),
     providersCatalogProcedure.name: ProviderCatalogResultDto(
       catalog: ProviderCatalogDto(
         definitions: <ProviderDefinitionDto>[definition],

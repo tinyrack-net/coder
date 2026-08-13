@@ -263,37 +263,9 @@ abstract interface class PromptsApi {
   /// Lists commands visible in a workspace.
   Future<List<AgentCommandDto>> listCommands({String? workspaceId});
 
-  /// Lists skills visible in a workspace.
-  Future<List<SkillDto>> listSkills({String? workspaceId});
-
-  /// Reads a skill.
-  Future<SkillDto> getSkill(String id, {String? workspaceId});
-
-  /// Creates a skill.
-  Future<SkillDto> createSkill({
-    required String id,
-    required SkillSource source,
-    required String name,
-    required String description,
-    required String body,
-    String? workspaceId,
-  });
-
-  /// Updates a skill.
-  Future<SkillDto> updateSkill(
-    SkillDto skill, {
-    required String expectedContentHash,
-    bool force = false,
-    String? workspaceId,
-  });
-
-  /// Archives a skill.
-  Future<void> deleteSkill(String id, {String? workspaceId});
-
-  /// Changes whether a skill is enabled.
-  Future<SkillDto> setSkillEnabled(
-    String id, {
-    required bool enabled,
+  /// Lists effective skill metadata for one catalog view.
+  Future<List<SkillSummaryDto>> listSkills({
+    required SkillListView view,
     String? workspaceId,
   });
 }

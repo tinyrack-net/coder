@@ -1002,18 +1002,11 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
-    id: 'skill.management',
+    id: 'skill.catalog',
     description:
-        'Lists, creates, edits, toggles, and deletes skills from built-in, '
-        'user-home, config, and project sources.',
-    apiMethods: <String>[
-      'prompts.listSkills',
-      'prompts.getSkill',
-      'prompts.createSkill',
-      'prompts.updateSkill',
-      'prompts.deleteSkill',
-      'prompts.setSkillEnabled',
-    ],
+        'Lists the effective read-only skill catalog for global and project '
+        'scopes.',
+    apiMethods: <String>['prompts.listSkills'],
     routes: <String>['SkillSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1024,13 +1017,15 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     },
     e2eScenarios: <FeatureScenario>[
       FeatureScenario(
-        id: 'source_crud_toggle',
-        description: 'Manages and toggles skills from every supported source.',
+        id: 'global_project_partition',
+        description:
+            'Separates effective global skills from project-defined skills.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(
-        id: 'invalid_edit_preserves_file',
-        description: 'Rejects invalid edits without corrupting the skill.',
+        id: 'external_file_refresh',
+        description:
+            'Refreshes the effective catalog after external file changes.',
         surfaces: _allSurfaces,
       ),
     ],
@@ -1038,7 +1033,7 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'skill.invocation',
     description:
-        'Injects the enabled skill catalog into a turn and loads skill '
+        'Injects the effective skill catalog into a turn and loads skill '
         'instructions through the skill tool.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1048,13 +1043,13 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     },
     e2eScenarios: <FeatureScenario>[
       FeatureScenario(
-        id: 'enabled_injection_and_load',
-        description: 'Injects enabled skills and loads their instructions.',
+        id: 'effective_catalog_load',
+        description: 'Injects effective skills and loads their instructions.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(
-        id: 'disabled_skill_excluded',
-        description: 'Excludes a disabled skill from a subsequent turn.',
+        id: 'shadowed_invalid_excluded',
+        description: 'Excludes shadowed and invalid skills from the catalog.',
         surfaces: _allSurfaces,
       ),
     ],
@@ -1389,8 +1384,8 @@ _uiRouteRegistrations = <({String id, String featureId, String description})>[
   ),
   (
     id: 'skill_settings_route',
-    featureId: 'skill.management',
-    description: 'Skill source management.',
+    featureId: 'skill.catalog',
+    description: 'Read-only effective skill catalog.',
   ),
   (
     id: 'daemon_settings_route',

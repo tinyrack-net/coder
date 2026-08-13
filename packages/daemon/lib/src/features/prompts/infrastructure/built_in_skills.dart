@@ -1,7 +1,7 @@
 /// One skill that ships inside the daemon binary.
 ///
-/// Built-ins have no files on disk, so they carry prose only. A user skill
-/// with the same ID shadows a toggleable built-in but never a mandatory one.
+/// Built-ins have no files on disk, so they carry prose only. An implicit
+/// built-in is always injected and cannot be shadowed by a filesystem skill.
 final class BuiltInSkill {
   /// Creates a built-in skill.
   const BuiltInSkill({
@@ -9,8 +9,7 @@ final class BuiltInSkill {
     required this.name,
     required this.description,
     required this.body,
-    this.isMandatory = false,
-    this.defaultEnabled = true,
+    this.isImplicit = false,
   });
 
   /// Stable identifier shared with user-authored skills.
@@ -25,11 +24,8 @@ final class BuiltInSkill {
   /// Markdown instructions handed to the model on demand.
   final String body;
 
-  /// Whether the skill is always active and cannot be shadowed.
-  final bool isMandatory;
-
-  /// Whether a toggleable skill starts enabled.
-  final bool defaultEnabled;
+  /// Whether the skill is injected implicitly and cannot be shadowed.
+  final bool isImplicit;
 }
 
 /// Skills every daemon offers before any user directory is read.
@@ -52,7 +48,7 @@ Before writing code, read the files around the change and match what they do.
 - Read a file before editing it, and validate the behaviour you changed before
   reporting the work as done.
 ''',
-    isMandatory: true,
+    isImplicit: true,
   ),
   BuiltInSkill(
     id: 'commit',

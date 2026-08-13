@@ -393,76 +393,17 @@ abstract class AgentDefinitionValidateParamsDto
 }
 
 @freezed
-/// Scopes a skill request to the global sources plus one workspace.
-abstract class SkillScopeParamsDto with _$SkillScopeParamsDto {
-  /// Creates skill scope parameters.
-  const factory SkillScopeParamsDto({String? workspaceId}) =
-      _SkillScopeParamsDto;
-
-  /// Decodes skill scope parameters.
-  factory SkillScopeParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillScopeParamsDtoFromJson(json);
-}
-
-@freezed
-/// Identifies one skill within a scope.
-abstract class SkillIdParamsDto with _$SkillIdParamsDto {
-  /// Creates skill identifier parameters.
-  const factory SkillIdParamsDto({required String id, String? workspaceId}) =
-      _SkillIdParamsDto;
-
-  /// Decodes skill identifier parameters.
-  factory SkillIdParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillIdParamsDtoFromJson(json);
-}
-
-@freezed
-/// Creates one skill in a writable source.
-abstract class SkillCreateParamsDto with _$SkillCreateParamsDto {
-  /// Creates skill creation parameters.
-  const factory SkillCreateParamsDto({
-    required String id,
-    required SkillSource source,
-    required String name,
-    required String description,
-    required String body,
+/// Selects one read-only view of the skill catalog.
+abstract class SkillListParamsDto with _$SkillListParamsDto {
+  /// Creates skill list parameters.
+  const factory SkillListParamsDto({
+    required SkillListView view,
     String? workspaceId,
-  }) = _SkillCreateParamsDto;
+  }) = _SkillListParamsDto;
 
-  /// Decodes skill creation parameters.
-  factory SkillCreateParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillCreateParamsDtoFromJson(json);
-}
-
-@freezed
-/// Updates one skill with optimistic concurrency.
-abstract class SkillUpdateParamsDto with _$SkillUpdateParamsDto {
-  /// Creates skill update parameters.
-  const factory SkillUpdateParamsDto({
-    required SkillDto skill,
-    required String expectedContentHash,
-    String? workspaceId,
-    @Default(false) bool force,
-  }) = _SkillUpdateParamsDto;
-
-  /// Decodes skill update parameters.
-  factory SkillUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillUpdateParamsDtoFromJson(json);
-}
-
-@freezed
-/// Turns one skill on or off.
-abstract class SkillSetEnabledParamsDto with _$SkillSetEnabledParamsDto {
-  /// Creates skill enablement parameters.
-  const factory SkillSetEnabledParamsDto({
-    required String id,
-    required bool enabled,
-    String? workspaceId,
-  }) = _SkillSetEnabledParamsDto;
-
-  /// Decodes skill enablement parameters.
-  factory SkillSetEnabledParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillSetEnabledParamsDtoFromJson(json);
+  /// Decodes skill list parameters.
+  factory SkillListParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SkillListParamsDtoFromJson(json);
 }
 
 @freezed
@@ -1227,7 +1168,7 @@ abstract class AgentToolCatalogResultDto with _$AgentToolCatalogResultDto {
 /// Returns every skill visible in one scope.
 abstract class SkillListResultDto with _$SkillListResultDto {
   /// Creates a skill list result.
-  const factory SkillListResultDto({required List<SkillDto> skills}) =
+  const factory SkillListResultDto({required List<SkillSummaryDto> skills}) =
       _SkillListResultDto;
 
   /// Decodes a skill list result.
@@ -1246,17 +1187,6 @@ abstract class CommandListResultDto with _$CommandListResultDto {
   /// Decodes a command list result.
   factory CommandListResultDto.fromJson(Map<String, dynamic> json) =>
       _$CommandListResultDtoFromJson(json);
-}
-
-@freezed
-/// Returns one skill.
-abstract class SkillResultDto with _$SkillResultDto {
-  /// Creates a skill result.
-  const factory SkillResultDto({required SkillDto skill}) = _SkillResultDto;
-
-  /// Decodes a skill result.
-  factory SkillResultDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillResultDtoFromJson(json);
 }
 
 @freezed

@@ -72,6 +72,55 @@ void main() {
           'vendor/reasoning-model-with-an-extremely-long-identifier';
       await _initializeGitRepository(workspace.path);
       await _writeProjectCommand(workspace.path);
+      final globalSkillsRoot = '${home.path}/v4/skills';
+      final userSkillsRoot = '${userHome.path}/.agents/skills';
+      final projectSkillsRoot = '${workspace.path}/.agents/skills';
+      await _writeSkill(
+        globalSkillsRoot,
+        id: 'global-e2e',
+        description: 'Visible only in the global catalog.',
+        instructions: 'Use the global E2E instructions.',
+      );
+      await _writeSkill(
+        globalSkillsRoot,
+        id: 'invoke-e2e',
+        description: 'Loaded during an end-to-end turn.',
+        instructions: 'Use the deterministic E2E instructions.',
+      );
+      await _writeSkill(
+        globalSkillsRoot,
+        id: 'fallback-e2e',
+        description: 'Global fallback remains available.',
+        instructions: 'Use the valid global fallback.',
+      );
+      await _writeSkill(
+        userSkillsRoot,
+        id: 'legacy-enabled-e2e',
+        description: 'Legacy enablement settings cannot hide this skill.',
+        instructions: 'Ignore any stored disabled bit.',
+      );
+      await _writeSkill(
+        globalSkillsRoot,
+        id: 'shadow-global-e2e',
+        name: 'shared-e2e',
+        description: 'Shadowed global skill must stay hidden.',
+        instructions: 'This global collision must not load.',
+      );
+      await _writeSkill(
+        projectSkillsRoot,
+        id: 'project-e2e',
+        description: 'Visible only in the project catalog.',
+        instructions: 'Use the project E2E instructions.',
+      );
+      await _writeSkill(
+        projectSkillsRoot,
+        id: 'shadow-project-e2e',
+        name: 'shared-e2e',
+        description: 'Winning project skill.',
+        instructions: 'Use the project collision winner.',
+      );
+      await _writeInvalidSkill(projectSkillsRoot, id: 'fallback-e2e');
+      await _writeInvalidSkill(projectSkillsRoot, id: 'invalid-e2e');
       final modelServer = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
         0,
@@ -533,90 +582,105 @@ void main() {
 
       await _openSettingsCategory(tester, 'agent');
       await _openSettingsCategory(tester, 'skill');
-      final skillAddButton = find.byKey(
-        const ValueKey<String>('skill-add-button'),
-      );
-      await pumpUntil(tester, skillAddButton);
-      await tester.tap(skillAddButton);
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        _trTextInput('ID (디렉터리 이름)'),
-        'e2e-skill',
-      );
-      await tester.enterText(
-        _trTextInput('이름').last,
-        'e2e-skill',
-      );
-      await tester.enterText(
-        _trTextInput('설명').last,
-        'Explains the end-to-end flow.',
-      );
-      FocusManager.instance.primaryFocus?.unfocus();
-      final createSkill = find.widgetWithText(TRButton, '생성');
-      await tester.ensureVisible(createSkill);
-      await tester.pumpAndSettle();
-      await tester.tap(createSkill);
-      await pumpUntilGone(tester, find.text('스킬 추가'));
-      await pumpUntilCondition(
+      await pumpUntil(
         tester,
-        () async => (await setupClient.prompts.listSkills()).any(
-          (skill) => skill.id == 'e2e-skill',
-        ),
-        'the new skill to reach the daemon',
+        find.byKey(const ValueKey<String>('skill-row-global-e2e')),
       );
       expect(
-        (await setupClient.prompts.getSkill('e2e-skill')).sourcePath,
-        startsWith(home.path),
+        find.byKey(const ValueKey<String>('skill-row-project-e2e')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('skill-add-button')),
+        findsNothing,
       );
 
-      // A toggleable built-in can be turned off, and the daemon remembers it.
-      await tester.tap(find.text('commit').first);
-      await tester.pumpAndSettle();
-      final commitSwitch = find.byKey(
-        const ValueKey<String>('skill-enabled-commit'),
+      final globalSkills = await setupClient.prompts.listSkills(
+        view: SkillListView.global,
       );
-      await tester.ensureVisible(commitSwitch);
-      await tester.pumpAndSettle();
-      await tester.tap(commitSwitch);
-      await pumpUntilCondition(
-        tester,
-        () async => !(await setupClient.prompts.getSkill('commit')).isEnabled,
-        'the built-in skill to turn off',
+      expect(globalSkills.map((skill) => skill.id), contains('global-e2e'));
+      expect(
+        globalSkills.map((skill) => skill.id),
+        isNot(contains('project-e2e')),
       );
 
-      await tester.tap(find.text('e2e-skill').first);
-      await tester.pumpAndSettle();
-      final deleteSkill = find.byKey(
-        const ValueKey<String>('skill-delete-button'),
+      await tester.tap(
+        find.byKey(const ValueKey<String>('skill-scope-select')),
       );
-      await _centerSettingsAction(tester, deleteSkill);
-      await tester.tap(deleteSkill);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제'));
-      await pumpUntilCondition(
+      await tester.tap(find.text('E2E Workspace').last);
+      await pumpUntil(
         tester,
-        () async => (await setupClient.prompts.listSkills()).every(
-          (skill) => skill.id != 'e2e-skill',
-        ),
-        'the skill to be archived',
+        find.byKey(const ValueKey<String>('skill-row-project-e2e')),
       );
-      final invokedSkill = await setupClient.prompts.createSkill(
-        id: 'invoke-e2e',
-        source: SkillSource.config,
-        name: 'invoke-e2e',
-        description: 'Loaded during an end-to-end turn.',
-        body: 'Use the deterministic E2E instructions.',
+      expect(
+        find.byKey(const ValueKey<String>('skill-row-global-e2e')),
+        findsNothing,
       );
-      final invokedSkillFile = File(invokedSkill.sourcePath);
-      final validSkillSource = await invokedSkillFile.readAsString();
-      await expectLater(
-        setupClient.prompts.updateSkill(
-          invokedSkill.copyWith(body: 'must not overwrite'),
-          expectedContentHash: 'stale-content-hash',
-        ),
-        throwsA(isA<TinestClientException>()),
+
+      final projectSkills = await setupClient.prompts.listSkills(
+        view: SkillListView.project,
+        workspaceId: 'workspace-e2e',
       );
-      expect(await invokedSkillFile.readAsString(), validSkillSource);
+      expect(projectSkills.map((skill) => skill.id), contains('project-e2e'));
+      expect(
+        projectSkills.map((skill) => skill.id),
+        isNot(contains('global-e2e')),
+      );
+      expect(
+        projectSkills.map((skill) => skill.id),
+        isNot(contains('fallback-e2e')),
+      );
+      expect(
+        projectSkills.map((skill) => skill.id),
+        isNot(contains('invalid-e2e')),
+      );
+
+      final effectiveSkills = await setupClient.prompts.listSkills(
+        view: SkillListView.effective,
+        workspaceId: 'workspace-e2e',
+      );
+      expect(effectiveSkills.map((skill) => skill.id), contains('global-e2e'));
+      expect(effectiveSkills.map((skill) => skill.id), contains('project-e2e'));
+      expect(
+        effectiveSkills.singleWhere((skill) => skill.name == 'shared-e2e').id,
+        'shadow-project-e2e',
+      );
+      expect(
+        effectiveSkills
+            .singleWhere((skill) => skill.id == 'fallback-e2e')
+            .description,
+        'Global fallback remains available.',
+      );
+      expect(
+        effectiveSkills.map((skill) => skill.id),
+        isNot(contains('invalid-e2e')),
+      );
+
+      await _writeSkill(
+        projectSkillsRoot,
+        id: 'external-e2e',
+        description: 'Added outside Tinest.',
+        instructions: 'Observe the external skill.',
+      );
+      await pumpUntil(
+        tester,
+        find.byKey(const ValueKey<String>('skill-row-external-e2e')),
+      );
+      await _writeSkill(
+        projectSkillsRoot,
+        id: 'external-e2e',
+        description: 'Updated outside Tinest.',
+        instructions: 'Observe the updated external skill.',
+      );
+      await pumpUntil(tester, find.text('Updated outside Tinest.'));
+      await Directory('$projectSkillsRoot/external-e2e').delete(
+        recursive: true,
+      );
+      await pumpUntilGone(
+        tester,
+        find.byKey(const ValueKey<String>('skill-row-external-e2e')),
+      );
 
       await _openSettingsCategory(tester, 'agent');
       // MCP: expose a real child-process failure, repair its command and
@@ -757,6 +821,15 @@ void main() {
         (await setupClient.mcp.listMcpServers()).single.tools.single.toolId,
         'mcp__e2e__echo',
       );
+      // The server refresh can briefly remove the selected row while the
+      // daemon replaces its loading snapshot with the ready one. Re-select
+      // the persisted server before exercising its detail-only actions.
+      final savedServerTile = find.byKey(
+        const ValueKey('mcp-server-tile-e2e'),
+      );
+      await pumpUntil(tester, savedServerTile.hitTestable());
+      await tester.tap(savedServerTile.hitTestable());
+      await tester.pumpAndSettle();
       final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
       await _centerSettingsAction(tester, deleteServer);
       // The save reported itself over the bottom-trailing corner, which is
@@ -892,6 +965,17 @@ void main() {
         tester,
         search: 'gpt-5.2',
         modelId: 'openai-gpt-5.2',
+      );
+      await awaitCondition(
+        () async =>
+            (await setupClient.workspaces.searchFiles(
+              worktreeId: 'checkout-e2e',
+              query: 'READ',
+            )).matches.any(
+              (match) =>
+                  match.relativePath == 'README.md' && !match.isDirectory,
+            ),
+        'README.md to become searchable through the real daemon',
       );
 
       // An @ token completes into a worktree-relative path rather than
@@ -1476,11 +1560,15 @@ void main() {
         tester,
         find.text('Skill loaded', findRichText: true),
       );
-      await setupClient.prompts.setSkillEnabled('invoke-e2e', enabled: false);
-      await _submitComposerPrompt(tester, composer, send, 'Disabled E2E skill');
+      await _submitComposerPrompt(
+        tester,
+        composer,
+        send,
+        'Check excluded E2E skills',
+      );
       await pumpUntil(
         tester,
-        find.text('Disabled skill excluded', findRichText: true),
+        find.text('Excluded skills absent', findRichText: true),
       );
 
       await _submitComposerPrompt(tester, composer, send, 'Cancel streaming');
@@ -2252,7 +2340,7 @@ void main() {
       'feature_scenario__turn_question__ask_and_answer__e2e',
       'feature_test__agent_definition_management__e2e',
       'feature_test__mcp_server_management__e2e',
-      'feature_test__skill_management__e2e',
+      'feature_test__skill_catalog__e2e',
       'feature_test__agent_collaboration__e2e',
       'feature_test__provider_catalog__e2e',
       'feature_test__provider_usage__e2e',
@@ -2291,16 +2379,16 @@ void main() {
       'feature_scenario__mcp_server_management__offline_and_secret_recovery__e2e',
       'feature_scenario__mcp_tool_execution__approve_execute_result__e2e',
       'feature_scenario__mcp_tool_execution__reject_and_offline__e2e',
-      'feature_scenario__skill_management__source_crud_toggle__e2e',
-      'feature_scenario__skill_management__invalid_edit_preserves_file__e2e',
+      'feature_scenario__skill_catalog__global_project_partition__e2e',
+      'feature_scenario__skill_catalog__external_file_refresh__e2e',
       'feature_test__composer_file_mention__e2e',
       'feature_test__composer_slash_command__e2e',
       'feature_scenario__composer_file_mention__mention_insert_path__e2e',
       'feature_scenario__composer_file_mention__no_match_dismiss__e2e',
       'feature_scenario__composer_slash_command__client_command_dispatch__e2e',
       'feature_scenario__composer_slash_command__agent_command_prompt__e2e',
-      'feature_scenario__skill_invocation__enabled_injection_and_load__e2e',
-      'feature_scenario__skill_invocation__disabled_skill_excluded__e2e',
+      'feature_scenario__skill_invocation__effective_catalog_load__e2e',
+      'feature_scenario__skill_invocation__shadowed_invalid_excluded__e2e',
       'feature_scenario__agent_collaboration__spawn_child_final_answer__e2e',
       // The scenario tag mirrors its typed manifest ID exactly.
       // ignore: lines_longer_than_80_chars
@@ -2478,34 +2566,26 @@ Future<void> _centerSettingsAction(
   WidgetTester tester,
   Finder action,
 ) async {
-  final settingsScrollables = find.descendant(
-    of: find.byType(SettingsScaffold),
-    matching: find.byType(Scrollable),
-  );
   // Saving can briefly replace the editor with its loading state. Wait for the
   // settings scrollable to remount before revealing the trailing action.
-  await pumpUntil(tester, settingsScrollables);
-  final scrollable = settingsScrollables.first;
-
-  // Settings sections are separate lazy ListView children, so a trailing
-  // action may not have an element until its section enters the cache extent.
-  // Scroll the real surface until the target is built before asking Flutter to
-  // align that element precisely.
+  // Re-resolve the real settings surface after every drag because the editor
+  // can remount between frames.
   for (var attempt = 0; action.evaluate().isEmpty; attempt += 1) {
     if (attempt >= 50) {
       throw TestFailure('Settings action was not built after scrolling.');
     }
+    final settingsScrollables = find.descendant(
+      of: find.byType(SettingsScaffold),
+      matching: find.byType(Scrollable),
+    );
+    await pumpUntil(tester, settingsScrollables);
     await tester.drag(
-      scrollable,
+      settingsScrollables.first,
       const Offset(0, -TRSpacing.fourExtraLarge),
     );
     await tester.pumpAndSettle();
   }
-  await tester.scrollUntilVisible(
-    action,
-    TRSpacing.fourExtraLarge,
-    scrollable: scrollable,
-  );
+  await pumpUntil(tester, action);
   await Scrollable.ensureVisible(tester.element(action), alignment: 0.5);
   await tester.pumpAndSettle();
 }
@@ -2544,6 +2624,34 @@ Future<void> _writeProjectCommand(String path) async {
     '---\n\n'
     r'Review $ARGUMENTS for the E2E fixture.'
     '\n',
+  );
+}
+
+/// Seeds one externally managed skill directory.
+Future<void> _writeSkill(
+  String root, {
+  required String id,
+  required String description,
+  required String instructions,
+  String? name,
+}) async {
+  final directory = Directory('$root/$id');
+  await directory.create(recursive: true);
+  await File('${directory.path}/SKILL.md').writeAsString(
+    '---\n'
+    'name: ${name ?? id}\n'
+    'description: $description\n'
+    '---\n\n'
+    '$instructions\n',
+  );
+}
+
+/// Seeds malformed project input that must not displace a valid candidate.
+Future<void> _writeInvalidSkill(String root, {required String id}) async {
+  final directory = Directory('$root/$id');
+  await directory.create(recursive: true);
+  await File('${directory.path}/SKILL.md').writeAsString(
+    '---\nname: $id\n---\n\nMissing the required description.\n',
   );
 }
 
@@ -3257,6 +3365,11 @@ final class _AgentE2eProvider implements ModelProvider {
         .where((item) => item.callId == 'skill-list-call')
         .map((item) => item.output)
         .firstOrNull;
+    final excludedSkillListing = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'excluded-skill-list-call')
+        .map((item) => item.output)
+        .firstOrNull;
     final hasDisallowedDelegationResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'disallowed-delegate-call');
@@ -3328,11 +3441,10 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
     if (latestPrompt == 'Use E2E skill' && !hasSkillResult) {
-      // The catalog now lives in the listing, so that is where an enabled
-      // skill must appear and a disabled one must not.
-      if (!skillListing!.contains('invoke-e2e') ||
-          skillListing.contains('"commit"')) {
-        throw StateError('enabled and disabled skill catalog was incorrect');
+      // The catalog lives behind the listing tool and every effective skill is
+      // available without a separate enablement state.
+      if (!skillListing!.contains('invoke-e2e')) {
+        throw StateError('effective skill catalog was incorrect');
       }
       const arguments = <String, dynamic>{
         'name': 'invoke-e2e',
@@ -3364,17 +3476,39 @@ final class _AgentE2eProvider implements ModelProvider {
       );
       return;
     }
-    if (latestPrompt == 'Disabled E2E skill') {
-      // The prompt carries no skill text at all now, so this only guards
-      // against a regression that puts the catalog back. That a disabled
-      // skill leaves the catalog is pinned by the daemon vertical slice,
-      // which asserts on the listing the tool actually returns.
-      if (request.instructions.contains('Loaded during an end-to-end turn.')) {
-        throw StateError('disabled skill remained in the turn catalog');
-      }
-      yield const ModelTextDelta('Disabled skill excluded');
+    if (latestPrompt == 'Check excluded E2E skills' &&
+        excludedSkillListing == null) {
+      const listArguments = <String, dynamic>{'cursor': null};
+      yield const ModelFunctionCall(
+        callId: 'excluded-skill-list-call',
+        name: 'list_skills',
+        arguments: listArguments,
+      );
       yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(text: 'Disabled skill excluded'),
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.function(
+              callId: 'excluded-skill-list-call',
+              name: 'list_skills',
+              arguments: listArguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (latestPrompt == 'Check excluded E2E skills') {
+      final listing = excludedSkillListing!;
+      if (!listing.contains('fallback-e2e') ||
+          !listing.contains('Winning project skill.') ||
+          listing.contains('invalid-e2e') ||
+          listing.contains('Shadowed global skill must stay hidden.')) {
+        throw StateError('shadowed or invalid skill catalog was incorrect');
+      }
+      yield const ModelTextDelta('Excluded skills absent');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Excluded skills absent'),
       );
       return;
     }

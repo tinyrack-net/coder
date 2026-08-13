@@ -9,6 +9,7 @@ import 'package:agent/agent.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/openai.dart';
+import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
@@ -2268,7 +2269,7 @@ void main() {
   );
 
   test(
-    'skills merge across sources, drive a turn, and stay editable over RPC',
+    'skill catalog partitions scopes, refreshes, and drives a turn',
     () async {
       final home = await Directory.systemTemp.createTemp('tinest-skill-home-');
       final agentsHome = await Directory.systemTemp.createTemp(
@@ -2297,6 +2298,18 @@ void main() {
         body: 'Project instructions.',
       );
 
+      // Development databases may still contain values written by the
+      // removed enablement API. The read-only catalog never consults them.
+      final state = Directory(p.join(home.path, 'v4'))..createSync();
+      final legacyDatabase = TinestDatabase(
+        p.join(state.path, 'tinest.sqlite'),
+      );
+      await legacyDatabase.settingsDao.setValue(
+        'skills.enablement',
+        jsonEncode(<String, bool>{'commit': false, 'shared': false}),
+      );
+      await legacyDatabase.close();
+
       final handle = await DaemonApplication.start(
         DaemonConfig(
           homeDirectory: home.path,
@@ -2318,7 +2331,7 @@ void main() {
 
       expect(client.serverInfo.features['skills'], isTrue);
 
-      final global = await client.listSkills();
+      final global = await client.listSkills(view: SkillListView.global);
       expect(
         global.map((skill) => skill.id),
         containsAll(<String>['coding-conventions', 'commit', 'shared']),
@@ -2334,48 +2347,67 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
-      final scoped = await client.listSkills(workspaceId: 'workspace');
-      final projectSkill = scoped.singleWhere(
-        (skill) => skill.id == 'shared' && !skill.isShadowed,
+      await expectLater(
+        client.listSkills(
+          view: SkillListView.global,
+          workspaceId: 'workspace',
+        ),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            RpcErrorCodes.invalidParams,
+          ),
+        ),
       );
-      expect(projectSkill.source, SkillSource.project);
+      await expectLater(
+        client.listSkills(view: SkillListView.project),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            RpcErrorCodes.invalidParams,
+          ),
+        ),
+      );
+      final projectSkills = await client.listSkills(
+        view: SkillListView.project,
+        workspaceId: 'workspace',
+      );
+      final projectSkill = projectSkills.singleWhere(
+        (skill) => skill.id == 'shared',
+      );
       expect(projectSkill.description, 'From the project.');
       expect(
-        scoped
-            .where((skill) => skill.id == 'shared' && skill.isShadowed)
-            .single
-            .source,
-        SkillSource.userHome,
+        projectSkills.map((skill) => skill.id),
+        isNot(contains('commit')),
       );
 
-      // Creating, editing, and deleting reach the daemon's own directory.
-      final created = await client.createSkill(
-        id: 'release',
-        source: SkillSource.config,
-        name: 'release',
+      final effective = await client.listSkills(
+        view: SkillListView.effective,
+        workspaceId: 'workspace',
+      );
+      expect(effective.map((skill) => skill.id), contains('commit'));
+      expect(
+        effective.singleWhere((skill) => skill.id == 'shared').description,
+        'From the project.',
+      );
+
+      // External files are now the only management boundary. A file created
+      // after daemon startup must refresh the RPC catalog through its watcher.
+      final changed = client.skillChanges.first;
+      await _writeSkill(
+        p.join(home.path, 'v4', 'skills', 'release'),
         description: 'Ships a release.',
         body: 'Tag, build, publish.',
       );
+      await changed.timeout(_eventTimeout);
       expect(
-        File(
-          p.join(home.path, 'v4', 'skills', 'release', 'SKILL.md'),
-        ).existsSync(),
-        isTrue,
+        (await client.listSkills(view: SkillListView.global)).map(
+          (skill) => skill.id,
+        ),
+        contains('release'),
       );
-      final updated = await client.updateSkill(
-        created.copyWith(description: 'Ships a signed release.'),
-        expectedContentHash: created.contentHash,
-      );
-      expect(updated.description, 'Ships a signed release.');
-      await client.deleteSkill('release');
-      expect(
-        (await client.listSkills()).map((skill) => skill.id),
-        isNot(contains('release')),
-      );
-
-      // The disabled skill must disappear from the catalog handed to a turn.
-      await client.setSkillEnabled('commit', enabled: false);
-      expect((await client.getSkill('commit')).isEnabled, isFalse);
 
       final session = await client.createSession(
         id: 'skill-session',
@@ -2411,7 +2443,7 @@ void main() {
       expect(output, isNot(contains('Global instructions.')));
     },
     tags: const <String>[
-      'feature_test__skill_management__verticalSlice',
+      'feature_test__skill_catalog__verticalSlice',
       'feature_test__skill_invocation__verticalSlice',
     ],
   );
@@ -4774,6 +4806,9 @@ final class _SkillProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
+    expect(request.instructions, contains('## Implicit skills'));
+    expect(request.instructions, contains('Before writing code'));
+    expect(request.instructions, isNot(contains('Project instructions.')));
     String? outputFor(String callId) {
       for (final item
           in request.history.whereType<ToolResultConversationItem>()) {
@@ -4816,14 +4851,14 @@ final class _SkillProvider implements ModelProvider {
       return;
     }
     if (outputFor('skill-call') == null) {
-      // A disabled skill must not reach the model through the listing either,
-      // which is where the catalog now lives.
+      // The turn catalog is the same effective projection as the RPC catalog:
+      // global skills remain available alongside the winning project skill.
       final page = jsonDecode(listed) as Map<String, dynamic>;
       final names = (page['skills']! as List)
           .map((skill) => (skill! as Map<String, dynamic>)['name'])
           .toList();
       expect(names, contains('shared'));
-      expect(names, isNot(contains('commit')));
+      expect(names, contains('commit'));
       expect(page['total'], names.length);
       yield* call('skill-call', 'skill', <String, dynamic>{
         'name': 'shared',
