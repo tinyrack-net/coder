@@ -122,6 +122,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsCategoryProvider => '프로바이더';
 
   @override
+  String get settingsCategoryModel => '모델';
+
+  @override
   String get settingsCategoryPermission => '권한';
 
   @override
@@ -984,10 +987,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsCustomPrompt => 'Custom system prompt 사용';
 
   @override
-  String get agentSettingsSessionModel => '세션마다 선택';
+  String get agentSettingsUseModel => '이 Agent에 모델 지정';
 
   @override
-  String get agentSettingsPinnedModel => '고정 provider/model';
+  String get agentSettingsUseModelDescription => '끄면 데몬 기본 모델을 사용합니다.';
 
   @override
   String get agentSettingsDefinitionHeading => '정의';
@@ -1130,25 +1133,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsCatalogStale => '갱신 필요 · 로컬 메타데이터 사용 가능';
 
   @override
-  String get providerSettingsDefaultModelTitle => '기본 모델';
+  String get modelSettingsSection => '데몬 기본 모델';
 
   @override
-  String get providerSettingsDefaultModelDescription =>
-      '세션과 Agent 모두 모델을 지정하지 않았을 때 사용합니다.';
+  String get modelSettingsSectionDescription =>
+      '채팅과 Agent 모두 모델을 지정하지 않았을 때 새 채팅이 사용할 모델입니다.';
 
   @override
-  String get providerSettingsDefaultModelAutomatic => '자동';
+  String get modelSettingsUnavailableTitle => '저장된 모델을 사용할 수 없음';
 
   @override
-  String get providerSettingsDefaultModelNone =>
-      '연동된 프로바이더에 사용할 수 있는 모델이 없습니다.';
+  String modelSettingsUnavailableDescription(String modelId) {
+    return '$modelId 모델을 실행할 수 없습니다. 채팅을 시작하기 전에 다른 모델을 선택하세요.';
+  }
 
   @override
-  String get providerSettingsDefaultModelUnavailable =>
-      '이 모델을 사용할 수 없어 세션은 첫 번째 사용 가능한 모델을 사용합니다.';
-
-  @override
-  String get providerSettingsDefaultModelChoose => '변경';
+  String get modelSettingsSaveFailed => '데몬 기본 모델을 변경하지 못했습니다';
 
   @override
   String providerSettingsAuthTitle(String name) {
@@ -1344,12 +1344,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerSelectModel => '모델 선택';
-
-  @override
-  String get composerInheritModel => 'Agent 기본값 사용';
-
-  @override
-  String get composerInheritDefaultModel => '기본 모델 사용';
 
   @override
   String get composerStartHint => '코딩 요청으로 새 session을 시작하세요.';
@@ -2234,9 +2228,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerSettingsDeleteFailed => '프로바이더를 삭제하지 못했습니다.';
-
-  @override
-  String get providerSettingsDefaultModelFailed => '기본 모델을 바꾸지 못했습니다.';
 
   @override
   String get providerSettingsDisconnected => '연결을 해제했습니다.';

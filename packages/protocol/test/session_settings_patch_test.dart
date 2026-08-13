@@ -4,19 +4,23 @@ import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('session settings patch preserves omitted and explicit-null fields', () {
+  test('session settings only carries a concrete model replacement', () {
     const patch = SessionSettingsPatchDto(
-      hasModel: true,
+      model: ModelSelectionDto(modelId: 'openai/gpt-5.2'),
       hasModelControls: true,
       mode: SessionMode.plan,
     );
 
+    final encoded = patch.toJson();
     final decoded = SessionSettingsPatchDto.fromJson(
-      jsonDecode(jsonEncode(patch.toJson())) as Map<String, dynamic>,
+      jsonDecode(jsonEncode(encoded)) as Map<String, dynamic>,
     );
 
-    expect(decoded.hasModel, isTrue);
-    expect(decoded.model, isNull);
+    expect(encoded, isNot(contains('hasModel')));
+    expect(
+      decoded.model,
+      const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
+    );
     expect(decoded.hasModelControls, isTrue);
     expect(decoded.modelControls, isEmpty);
     expect(decoded.hasPermissionMode, isFalse);

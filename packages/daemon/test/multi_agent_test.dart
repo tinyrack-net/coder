@@ -68,10 +68,6 @@ const AgentDefinitionDto _tinestDefinition = AgentDefinitionDto(
   mode: AgentMode.primary,
   promptEnabled: false,
   systemPrompt: '',
-  model: AgentModelSelectionDto(source: AgentModelSource.session),
-  modelControls: <String, ModelControlValueDto>{
-    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-  },
   permissionMode: PermissionMode.workspaceWrite,
   toolIds: <String>[collaborationCapabilityId],
   callableAgentIds: <String>['reviewer'],
@@ -86,7 +82,7 @@ const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
   mode: AgentMode.subagent,
   promptEnabled: false,
   systemPrompt: '',
-  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  model: ModelSelectionDto(modelId: 'anthropic/claude-reviewer'),
   modelControls: <String, ModelControlValueDto>{
     'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
   },
@@ -112,7 +108,7 @@ void main() {
     String? agentPath,
     String? rootSessionId,
     AgentLifecycle? lifecycle,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     String agentDefinitionId = 'tinest',
   }) => SessionDto(
     id: id,
@@ -130,7 +126,7 @@ void main() {
     lifecycle: lifecycle,
     model:
         model ??
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'openai/gpt-test',
         ),
     createdAt: now,
@@ -174,7 +170,9 @@ void main() {
         'reviewer' => _reviewerDefinition,
         _ => throw const FormatException('Unknown agent definition.'),
       },
-      fallbackModel: () async => null,
+      defaultModel: () async => const ModelSelectionDto(
+        modelId: 'openai/gpt-default',
+      ),
       validateModel: (modelId) async {
         validatedModels.add(('', modelId));
         if (modelId == 'missing-model') {
@@ -239,7 +237,8 @@ void main() {
       expect(child.taskName, 'review_task');
       expect(child.lifecycle, AgentLifecycle.pendingInit);
       expect(child.agentDefinitionId, 'reviewer');
-      expect(child.model, root.model);
+      expect(child.model, _reviewerDefinition.model);
+      expect(child.modelControls, _reviewerDefinition.modelControls);
       expect(child.origin, SessionOrigin.delegated);
 
       // NEW_TASK mail is queued for the child and its delivery turn started.
@@ -313,6 +312,39 @@ void main() {
       );
     });
 
+    test(
+      'full-history fork copies the parent model snapshot and controls',
+      () async {
+        final root = await database.sessionDao.create(
+          session(
+            'root',
+            model: const ModelSelectionDto(modelId: 'openai/parent-snapshot'),
+          ).copyWith(
+            modelControls: const <String, ModelControlValueDto>{
+              'reasoning_effort': ModelControlValueDto.stringValue(
+                value: 'low',
+              ),
+            },
+          ),
+        );
+        await service.spawn(
+          caller: root,
+          callerDefinition: _tinestDefinition,
+          turnId: 'turn-1',
+          taskName: 'forked',
+          message: 'Continue.',
+          forkTurns: 'all',
+        );
+
+        final child = (await database.sessionDao.getByAgentPath(
+          'root',
+          '/root/forked',
+        ))!;
+        expect(child.model, root.model);
+        expect(child.modelControls, root.modelControls);
+      },
+    );
+
     test('persists explicit model controls on a non-full fork', () async {
       final root = await database.sessionDao.create(session('root'));
       await service.spawn(
@@ -328,6 +360,10 @@ void main() {
         'root',
         '/root/controlled',
       ))!;
+      expect(
+        child.model,
+        const ModelSelectionDto(modelId: 'openai/gpt-default'),
+      );
       expect(
         child.modelControls,
         <String, ModelControlValueDto>{
@@ -370,6 +406,7 @@ void main() {
         turnId: 'turn-1',
         taskName: 'fast_task',
         message: 'Work.',
+        agentType: 'reviewer',
         model: 'openai/gpt-cheap',
       );
       expect(validatedModels.single, ('', 'openai/gpt-cheap'));
@@ -377,7 +414,7 @@ void main() {
         'root',
         '/root/fast_task',
       ))!;
-      expect(child.model?.modelId, 'openai/gpt-cheap');
+      expect(child.model.modelId, 'openai/gpt-cheap');
       await expectLater(
         service.spawn(
           caller: root,

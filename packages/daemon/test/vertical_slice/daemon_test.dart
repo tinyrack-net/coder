@@ -69,7 +69,7 @@ void main() {
         worktreeId: catalog.worktrees.single.id,
         title: 'Shutdown session',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
       );
       await client.startTurn(
         sessionId: session.id,
@@ -381,30 +381,43 @@ void main() {
 
       await client.terminateTerminal(terminal.id);
 
-      // The built-in agent picks no model of its own, so creation now falls
-      // back to the daemon default and leaves the session without an override.
-      expect(await client.getDefaultModel(), isNull);
-      const wireDefault = SessionModelSelectionDto(
+      const wireDefault = ModelSelectionDto(
         modelId: 'local-test/test-model',
       );
-      await client.setDefaultModel(wireDefault);
-      expect(await client.getDefaultModel(), wireDefault);
+      expect(
+        (await client.models.getSettings()).defaultModel,
+        const ModelSelectionDto(modelId: 'openai/gpt-4'),
+      );
+      expect(
+        (await client.models.setDefaultModel(wireDefault)).defaultModel,
+        wireDefault,
+      );
       final inherited = await client.createSession(
         id: 'model-inherited',
         worktreeId: checkout.id,
         title: 'Model inherited',
         agentDefinitionId: 'tinest',
       );
-      expect(inherited.model, isNull);
-      await client.setDefaultModel(null);
-      expect(await client.getDefaultModel(), isNull);
+      expect(inherited.model, wireDefault);
+      await expectLater(
+        client.models.setDefaultModel(
+          const ModelSelectionDto(modelId: 'local-test/missing-model'),
+        ),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
+      );
       await expectLater(
         client.createSession(
           id: 'agent-rejected',
           worktreeId: checkout.id,
           title: 'Rejected',
           agentDefinitionId: 'tinest',
-          model: const SessionModelSelectionDto(
+          model: const ModelSelectionDto(
             modelId: 'missing-connection/test-model',
           ),
         ),
@@ -412,7 +425,7 @@ void main() {
           isA<TinestClientException>().having(
             (error) => error.code,
             'code',
-            'provider_not_connected',
+            'model_unavailable',
           ),
         ),
       );
@@ -422,14 +435,14 @@ void main() {
         title: 'Session',
         agentDefinitionId: 'tinest',
         mode: SessionMode.plan,
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
       );
       expect(agent.status, SessionStatus.idle);
       expect(
         agent.model,
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
       );
@@ -460,19 +473,40 @@ void main() {
       final tinest = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
         tinest.copyWith(
-          model: const AgentModelSelectionDto(
-            source: AgentModelSource.fixed,
+          model: const ModelSelectionDto(
             modelId: 'local-test/test-model',
           ),
           modelControls: const <String, ModelControlValueDto>{},
         ),
         expectedContentHash: tinest.contentHash,
       );
-      expect(configuredDefinition.model.source, AgentModelSource.fixed);
+      expect(configuredDefinition.model!.modelId, 'local-test/test-model');
       expect(
         await client.sessions.listSessions(worktreeId: checkout.id),
         hasLength(2),
       );
+      await client.models.setDefaultModel(
+        const ModelSelectionDto(modelId: 'openai/gpt-4'),
+      );
+      final agentPriority = await client.createSession(
+        id: 'agent-priority',
+        worktreeId: checkout.id,
+        title: 'Agent priority',
+        agentDefinitionId: 'tinest',
+      );
+      expect(agentPriority.model, wireDefault);
+      final chatPriority = await client.createSession(
+        id: 'chat-priority',
+        worktreeId: checkout.id,
+        title: 'Chat priority',
+        agentDefinitionId: 'tinest',
+        model: const ModelSelectionDto(modelId: 'openai/gpt-4'),
+      );
+      expect(
+        chatPriority.model,
+        const ModelSelectionDto(modelId: 'openai/gpt-4'),
+      );
+      await client.models.setDefaultModel(wireDefault);
       expect(await client.subscribeTimeline(agent.id), isEmpty);
 
       final approvalFuture = client.sessions.approvalRequests.first.timeout(
@@ -504,29 +538,19 @@ void main() {
         (await client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasModel: true,
-            model: SessionModelSelectionDto(
+            model: ModelSelectionDto(
               modelId: 'local-test/test-model',
             ),
           ),
         )).model,
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
       );
-      // Clearing the override is always legal now: the model resolves through
-      // the fallback chain when the turn starts.
       expect(
         (await client.sessions.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasModel: true),
-        )).model,
-        isNull,
-      );
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          SessionSettingsPatchDto(hasModel: true, model: agent.model),
+          SessionSettingsPatchDto(model: agent.model),
         )).model,
         agent.model,
       );
@@ -540,13 +564,18 @@ void main() {
         client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasModel: true,
-            model: SessionModelSelectionDto(
+            model: ModelSelectionDto(
               modelId: 'local-test/missing-model',
             ),
           ),
         ),
-        throwsA(isA<TinestClientException>()),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
       );
 
       // Model controls are persisted atomically with other session settings.
@@ -602,7 +631,38 @@ void main() {
           'Checking the patch result.',
         ]),
       );
+      final invalidAgentDefinition = await client.updateAgentDefinition(
+        afterTurn.copyWith(
+          model: const ModelSelectionDto(
+            modelId: 'local-test/missing-model',
+          ),
+        ),
+        expectedContentHash: afterTurn.contentHash,
+      );
+      await expectLater(
+        client.createSession(
+          id: 'invalid-agent-model',
+          worktreeId: checkout.id,
+          title: 'Invalid agent model',
+          agentDefinitionId: 'tinest',
+        ),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
+      );
+      final restoredAgentDefinition = await client.updateAgentDefinition(
+        invalidAgentDefinition.copyWith(model: wireDefault),
+        expectedContentHash: invalidAgentDefinition.contentHash,
+      );
       await client.disconnectProvider(custom.id);
+      expect(
+        (await client.models.getSettings()).defaultModel,
+        wireDefault,
+      );
       await expectLater(
         client.startTurn(
           sessionId: agent.id,
@@ -623,6 +683,55 @@ void main() {
         )).singleWhere((session) => session.id == agent.id).status,
         SessionStatus.idle,
       );
+      final withoutAgentModel = await client.updateAgentDefinition(
+        restoredAgentDefinition.copyWith(
+          model: null,
+          modelControls: const <String, ModelControlValueDto>{},
+        ),
+        expectedContentHash: restoredAgentDefinition.contentHash,
+      );
+      await expectLater(
+        client.createSession(
+          id: 'invalid-daemon-default',
+          worktreeId: checkout.id,
+          title: 'Invalid daemon default',
+          agentDefinitionId: 'tinest',
+        ),
+        throwsA(
+          isA<TinestClientException>().having(
+            (error) => error.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
+      );
+      await client.updateAgentDefinition(
+        withoutAgentModel.copyWith(model: wireDefault),
+        expectedContentHash: withoutAgentModel.contentHash,
+      );
+      final renamed = await client.updateProviderModelPrefix(
+        custom.id,
+        'local-renamed',
+      );
+      expect(renamed.modelPrefix, 'local-renamed');
+      expect(
+        (await client.models.getSettings()).defaultModel,
+        const ModelSelectionDto(modelId: 'local-renamed/test-model'),
+      );
+      expect(
+        (await client.listAgentDefinitions()).single.model,
+        const ModelSelectionDto(modelId: 'local-renamed/test-model'),
+      );
+      final renamedSessions = <String, String>{
+        for (final session in await client.sessions.listSessions(
+          worktreeId: checkout.id,
+        ))
+          session.id: session.model.modelId,
+      };
+      expect(renamedSessions['model-inherited'], 'local-renamed/test-model');
+      expect(renamedSessions['agent-1'], 'local-renamed/test-model');
+      expect(renamedSessions['agent-priority'], 'local-renamed/test-model');
+      expect(renamedSessions['chat-priority'], 'openai/gpt-4');
     },
     tags: const <String>[
       'feature_test__workspace_catalog__verticalSlice',
@@ -635,7 +744,7 @@ void main() {
       'feature_test__provider_usage__verticalSlice',
       'feature_test__provider_connection_management__verticalSlice',
       'feature_test__provider_custom__verticalSlice',
-      'feature_test__provider_default_model__verticalSlice',
+      'feature_test__model_settings__verticalSlice',
       'feature_test__permission_settings__verticalSlice',
     ],
   );
@@ -704,7 +813,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           // Collaboration is the subject of this slice. Lua orchestration has
           // its own vertical slice and must not add a native cold start here.
           modelId: 'openai/gpt-5.2',
@@ -754,7 +863,11 @@ void main() {
       expect(child.agentPath, '/root/review_task');
       expect(child.lifecycle, AgentLifecycle.completed);
       expect(child.agentDefinitionId, reviewer.id);
-      expect(child.model, parent.model);
+      expect(
+        child.model,
+        (await client.models.getSettings()).defaultModel,
+      );
+      expect(child.model, isNot(parent.model));
 
       // The read-only clamp still denies the child's write attempt.
       final childTimeline = await client.subscribeTimeline(child.id);
@@ -870,7 +983,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
       );
       final finalAnswerMailed = client.sessions.timelineEvents
           .firstWhere(
@@ -985,7 +1098,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1109,7 +1222,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'MCP',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1319,7 +1432,7 @@ void main() {
           worktreeId: registered.worktrees.single.id,
           title: 'Exec',
           agentDefinitionId: 'tinest',
-          model: const SessionModelSelectionDto(
+          model: const ModelSelectionDto(
             modelId: 'openai/gpt-5.2',
           ),
         );
@@ -1413,7 +1526,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Image',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1487,7 +1600,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Sleep',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1562,7 +1675,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Busy',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
       );
       await client.subscribeTimeline(session.id);
       await client.startTurn(
@@ -1654,7 +1767,7 @@ void main() {
         worktreeId: worktreeId,
         title: 'Reset',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1770,7 +1883,7 @@ void main() {
         worktreeId: worktreeId,
         title: 'Compact',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1888,7 +2001,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Search',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -1959,7 +2072,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Ask',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -2115,7 +2228,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Broken',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -2269,7 +2382,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Skills',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'openai/gpt-5.2',
         ),
       );
@@ -2617,7 +2730,7 @@ void main() {
         worktreeId: homeCheckout.id,
         title: 'No project',
         agentDefinitionId: 'tinest',
-        model: const SessionModelSelectionDto(
+        model: const ModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
       );
@@ -3134,7 +3247,7 @@ void main() {
         worktreeId: catalog.worktrees.single.id,
         title: 'Attachment session',
         agentDefinitionId: 'tinest',
-        model: SessionModelSelectionDto(
+        model: ModelSelectionDto(
           modelId: runnableModel.id,
         ),
       );
@@ -3296,7 +3409,7 @@ void main() {
         worktreeId: catalog.worktrees.single.id,
         title: 'Pre-launch failure',
         agentDefinitionId: 'tinest',
-        model: SessionModelSelectionDto(modelId: runnableModel.id),
+        model: ModelSelectionDto(modelId: runnableModel.id),
       );
 
       await expectLater(
@@ -3475,7 +3588,7 @@ void main() {
         worktreeId: catalog.worktrees.single.id,
         title: 'Queue session',
         agentDefinitionId: 'tinest',
-        model: SessionModelSelectionDto(
+        model: ModelSelectionDto(
           modelId: runnableModel.id,
         ),
       );

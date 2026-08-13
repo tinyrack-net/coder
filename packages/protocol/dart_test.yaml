@@ -3,7 +3,7 @@ tags:
   feature_test__permission_settings__contract:
   feature_test__terminal_lifecycle__contract:
   feature_test__terminal_settings__contract:
-  feature_test__provider_default_model__contract:
+  feature_test__model_settings__contract:
   feature_test__conversation_attachments__contract:
   feature_test__composer_file_mention__contract:
   feature_test__composer_slash_command__contract:

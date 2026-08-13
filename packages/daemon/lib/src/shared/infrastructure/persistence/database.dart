@@ -109,8 +109,8 @@ class Sessions extends Table {
   /// Collaboration mode: `plan` proposes work, `normal` performs it.
   TextColumn get mode => text().withDefault(const Constant('normal'))();
 
-  /// Qualified model pinned for this session; null inherits the agent.
-  TextColumn get modelId => text().nullable()();
+  /// Concrete qualified model snapshotted for this session.
+  TextColumn get modelId => text()();
 
   /// JSON-encoded typed model-control values for this session.
   TextColumn get modelControlsJson =>
@@ -550,7 +550,7 @@ class TinestDatabase extends _$TinestDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

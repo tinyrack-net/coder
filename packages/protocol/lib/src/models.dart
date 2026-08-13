@@ -122,15 +122,6 @@ enum AgentMode {
   subagent,
 }
 
-/// Determines how an agent definition resolves its provider and model.
-enum AgentModelSource {
-  /// Requires each manually created session to select a provider and model.
-  session,
-
-  /// Uses one explicit provider connection and model.
-  fixed,
-}
-
 /// Describes whether a session was created by a user or an agent.
 enum SessionOrigin {
   /// The user explicitly created the session.
@@ -716,22 +707,20 @@ abstract class GitBranchDto with _$GitBranchDto {
 }
 
 @freezed
-/// Provider and model selection stored in an agent Markdown file.
-abstract class AgentModelSelectionDto with _$AgentModelSelectionDto {
-  /// Creates an agent model selection.
-  const factory AgentModelSelectionDto({
-    required AgentModelSource source,
-    String? modelId,
-  }) = _AgentModelSelectionDto;
+/// One concrete provider-qualified model selection.
+abstract class ModelSelectionDto with _$ModelSelectionDto {
+  /// Creates a concrete model selection.
+  const factory ModelSelectionDto({required String modelId}) =
+      _ModelSelectionDto;
 
-  const AgentModelSelectionDto._();
+  const ModelSelectionDto._();
 
-  /// Decodes an agent model selection.
-  factory AgentModelSelectionDto.fromJson(Map<String, dynamic> json) =>
-      _$AgentModelSelectionDtoFromJson(json);
+  /// Decodes a model selection.
+  factory ModelSelectionDto.fromJson(Map<String, dynamic> json) =>
+      _$ModelSelectionDtoFromJson(json);
 
-  /// Canonical model identifier used by current protocol consumers.
-  String? get qualifiedModelId => modelId;
+  /// Canonical qualified model identifier.
+  String get qualifiedModelId => modelId;
 }
 
 @freezed
@@ -762,11 +751,11 @@ abstract class AgentDefinitionDto with _$AgentDefinitionDto {
     required AgentMode mode,
     required bool promptEnabled,
     required String systemPrompt,
-    required AgentModelSelectionDto model,
     required List<String> toolIds,
     required List<String> callableAgentIds,
     required String contentHash,
     required String sourcePath,
+    ModelSelectionDto? model,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
     PermissionMode? permissionMode,
@@ -1049,28 +1038,6 @@ enum SessionMode {
 }
 
 @freezed
-/// Explicit provider and model chosen for one session.
-///
-/// A session without this override inherits the model selection of its agent
-/// definition. Both fields are required so a half-specified override cannot be
-/// represented.
-abstract class SessionModelSelectionDto with _$SessionModelSelectionDto {
-  /// Creates a session model selection.
-  const factory SessionModelSelectionDto({
-    required String modelId,
-  }) = _SessionModelSelectionDto;
-
-  const SessionModelSelectionDto._();
-
-  /// Decodes a session model selection.
-  factory SessionModelSelectionDto.fromJson(Map<String, dynamic> json) =>
-      _$SessionModelSelectionDtoFromJson(json);
-
-  /// Canonical model identifier used by current protocol consumers.
-  String get qualifiedModelId => modelId;
-}
-
-@freezed
 /// Persistent conversation session using a Markdown agent definition.
 abstract class SessionDto with _$SessionDto {
   /// Creates a session descriptor.
@@ -1083,8 +1050,8 @@ abstract class SessionDto with _$SessionDto {
     required SessionStatus status,
     required DateTime createdAt,
     required DateTime updatedAt,
+    required ModelSelectionDto model,
     @Default(SessionMode.normal) SessionMode mode,
-    SessionModelSelectionDto? model,
 
     /// Values explicitly selected for the resolved provider model.
     @Default(<String, ModelControlValueDto>{})

@@ -191,7 +191,7 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String title,
     required String agentDefinitionId,
     @Default(SessionMode.normal) SessionMode mode,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
     PermissionMode? permissionMode,
@@ -203,16 +203,12 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
 }
 
 @freezed
-/// Nullable changes to session execution settings.
-///
-/// Each `has*` flag distinguishes an omitted field from an explicit null that
-/// clears an inherited override.
+/// Changes to session execution settings.
 abstract class SessionSettingsPatchDto with _$SessionSettingsPatchDto {
   /// Creates an atomic session settings patch.
   const factory SessionSettingsPatchDto({
     SessionMode? mode,
-    @Default(false) bool hasModel,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     @Default(false) bool hasModelControls,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
@@ -1075,18 +1071,29 @@ abstract class PermissionSettingsDto with _$PermissionSettingsDto {
 }
 
 @freezed
-/// Reads or writes the daemon-global default model.
-///
-/// A null [model] means the daemon resolves the first usable provider model
-/// instead of a stored preference.
-abstract class DefaultModelDto with _$DefaultModelDto {
-  /// Creates a default-model payload.
-  const factory DefaultModelDto({SessionModelSelectionDto? model}) =
-      _DefaultModelDto;
+/// Daemon-owned model settings.
+abstract class DaemonModelSettingsDto with _$DaemonModelSettingsDto {
+  /// Creates daemon model settings.
+  const factory DaemonModelSettingsDto({ModelSelectionDto? defaultModel}) =
+      _DaemonModelSettingsDto;
 
-  /// Decodes a default-model payload.
-  factory DefaultModelDto.fromJson(Map<String, dynamic> json) =>
-      _$DefaultModelDtoFromJson(json);
+  /// Decodes daemon model settings.
+  factory DaemonModelSettingsDto.fromJson(Map<String, dynamic> json) =>
+      _$DaemonModelSettingsDtoFromJson(json);
+}
+
+@freezed
+/// Replaces the daemon default with one concrete model.
+abstract class SetDaemonDefaultModelParamsDto
+    with _$SetDaemonDefaultModelParamsDto {
+  /// Creates daemon-default update parameters.
+  const factory SetDaemonDefaultModelParamsDto({
+    required ModelSelectionDto model,
+  }) = _SetDaemonDefaultModelParamsDto;
+
+  /// Decodes daemon-default update parameters.
+  factory SetDaemonDefaultModelParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$SetDaemonDefaultModelParamsDtoFromJson(json);
 }
 
 @freezed

@@ -70,7 +70,7 @@ void main() {
           worktreeId: 'adversity-checkout',
           title: 'Adversity conversation',
           agentDefinitionId: 'tinest',
-          model: SessionModelSelectionDto(modelId: model.id),
+          model: ModelSelectionDto(modelId: model.id),
         );
       } on TinestClientException catch (error) {
         throw TestFailure('Session setup failed: ${error.details}');

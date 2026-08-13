@@ -154,6 +154,10 @@
   "@settingsCategoryProvider": {
     "description": "Settings sidebar entry for provider connections."
   },
+  "settingsCategoryModel": "Model",
+  "@settingsCategoryModel": {
+    "description": "Settings sidebar entry for the daemon default model."
+  },
   "settingsCategoryPermission": "Permissions",
   "@settingsCategoryPermission": {
     "description": "Settings sidebar entry for daemon permission defaults."
@@ -1118,13 +1122,13 @@
   "@agentSettingsCustomPrompt": {
     "description": "Toggle that overrides the built-in system prompt."
   },
-  "agentSettingsSessionModel": "Choose for each session",
-  "@agentSettingsSessionModel": {
-    "description": "Model mode that requires each session to select a provider and model."
+  "agentSettingsUseModel": "Set a model for this agent",
+  "@agentSettingsUseModel": {
+    "description": "Toggle that gives an agent its own concrete model."
   },
-  "agentSettingsPinnedModel": "Pinned provider/model",
-  "@agentSettingsPinnedModel": {
-    "description": "Model mode that pins one provider and model."
+  "agentSettingsUseModelDescription": "When off, this agent uses the daemon default model.",
+  "@agentSettingsUseModelDescription": {
+    "description": "Explains the disabled state of the agent model toggle."
   },
   "agentSettingsDefinitionHeading": "Definition",
   "@agentSettingsDefinitionHeading": {
@@ -1302,29 +1306,30 @@
   "providerSettingsCatalogCached": "Last-known-good cache",
   "providerSettingsCatalogFresh": "Recently refreshed",
   "providerSettingsCatalogStale": "Refresh due; local metadata remains available",
-  "providerSettingsDefaultModelTitle": "Default model",
-  "@providerSettingsDefaultModelTitle": {
-    "description": "Section title of the daemon-wide default model."
+  "modelSettingsSection": "Daemon default model",
+  "@modelSettingsSection": {
+    "description": "Section title of the daemon-wide concrete model."
   },
-  "providerSettingsDefaultModelDescription": "Used when a session and its agent do not pin a model.",
-  "@providerSettingsDefaultModelDescription": {
-    "description": "Explains when the daemon default model applies."
+  "modelSettingsSectionDescription": "New chats use this model when neither the chat nor its agent specifies one.",
+  "@modelSettingsSectionDescription": {
+    "description": "Explains the daemon model priority."
   },
-  "providerSettingsDefaultModelAutomatic": "Automatic",
-  "@providerSettingsDefaultModelAutomatic": {
-    "description": "Label for letting the daemon pick the first usable model."
+  "modelSettingsUnavailableTitle": "Saved model unavailable",
+  "@modelSettingsUnavailableTitle": {
+    "description": "Warning title for a concrete model that cannot currently run."
   },
-  "providerSettingsDefaultModelNone": "No connected provider offers a usable model.",
-  "@providerSettingsDefaultModelNone": {
-    "description": "Shown when automatic selection cannot resolve a model."
+  "modelSettingsUnavailableDescription": "{modelId} cannot run. Choose another model before starting a chat.",
+  "@modelSettingsUnavailableDescription": {
+    "description": "Warning for an unavailable saved model.",
+    "placeholders": {
+      "modelId": {
+        "type": "String"
+      }
+    }
   },
-  "providerSettingsDefaultModelUnavailable": "This model is unavailable, so sessions use the first usable model.",
-  "@providerSettingsDefaultModelUnavailable": {
-    "description": "Shown when the stored default model can no longer run."
-  },
-  "providerSettingsDefaultModelChoose": "Change",
-  "@providerSettingsDefaultModelChoose": {
-    "description": "Button that opens the default model picker."
+  "modelSettingsSaveFailed": "Could not update the daemon default model",
+  "@modelSettingsSaveFailed": {
+    "description": "Reported when the daemon default model could not be stored."
   },
   "@providerSettingsRefreshCatalog": {
     "description": "Tooltip that reloads the provider catalog."
@@ -1583,14 +1588,6 @@
   "composerSelectModel": "Select a model",
   "@composerSelectModel": {
     "description": "Tooltip and title of the model selector."
-  },
-  "composerInheritModel": "Use the agent default",
-  "@composerInheritModel": {
-    "description": "Model picker entry that inherits the agent default."
-  },
-  "composerInheritDefaultModel": "Use the default model",
-  "@composerInheritDefaultModel": {
-    "description": "Model picker entry that clears the session model override."
   },
   "composerStartHint": "Start a new session with a coding request.",
   "@composerStartHint": {
@@ -2928,10 +2925,6 @@
   "providerSettingsDeleteFailed": "Could not delete the provider.",
   "@providerSettingsDeleteFailed": {
     "description": "Reported when a custom provider could not be deleted."
-  },
-  "providerSettingsDefaultModelFailed": "Could not change the default model.",
-  "@providerSettingsDefaultModelFailed": {
-    "description": "Reported when the default model could not be stored."
   },
   "providerSettingsDisconnected": "Disconnected.",
   "@providerSettingsDisconnected": {

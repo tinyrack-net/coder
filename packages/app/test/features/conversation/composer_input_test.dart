@@ -991,10 +991,10 @@ void main() {
       );
       expect(
         tester
-            .widget<TRSelect<ModelPickerOption?>>(
+            .widget<TRSelect<ModelPickerOption>>(
               find.descendant(
                 of: modelChip,
-                matching: find.byType(TRSelect<ModelPickerOption?>),
+                matching: find.byType(TRSelect<ModelPickerOption>),
               ),
             )
             .enabled,
@@ -1717,7 +1717,6 @@ const _compactAgentDefinitions = <AgentDefinitionDto>[
     mode: AgentMode.primary,
     promptEnabled: true,
     systemPrompt: 'Code.',
-    model: AgentModelSelectionDto(source: AgentModelSource.session),
     toolIds: <String>[],
     callableAgentIds: <String>[],
     contentHash: 'tinest-hash',
@@ -1731,7 +1730,6 @@ const _compactAgentDefinitions = <AgentDefinitionDto>[
     mode: AgentMode.primary,
     promptEnabled: true,
     systemPrompt: 'Plan.',
-    model: AgentModelSelectionDto(source: AgentModelSource.session),
     toolIds: <String>[],
     callableAgentIds: <String>[],
     contentHash: 'planner-hash',
@@ -1746,6 +1744,8 @@ const _compactSettingsModel = ProviderModelDto(
   label: 'GPT Settings',
   source: ProviderModelSource.bundled,
   capabilities: ModelCapabilitiesDto(
+    streaming: CapabilitySupport.supported,
+    toolCalling: CapabilitySupport.supported,
     controls: <ModelControlDescriptorDto>[
       ModelControlDescriptorDto(
         id: 'reasoning_effort',
@@ -1799,7 +1799,7 @@ class _CompactSettingsHostState extends State<_CompactSettingsHost> {
       hostId: 'server',
       definitions: _compactAgentDefinitions,
       agentDefinitionId: agentId,
-      selection: const SessionModelSelectionDto(
+      selection: const ModelSelectionDto(
         modelId: 'openai/gpt-settings',
       ),
       onAgentChanged: (value) => setState(() => agentId = value),

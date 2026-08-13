@@ -3658,42 +3658,42 @@ as bool,
 
 
 /// @nodoc
-mixin _$AgentModelSelectionDto {
+mixin _$ModelSelectionDto {
 
- AgentModelSource get source; String? get modelId;
-/// Create a copy of AgentModelSelectionDto
+ String get modelId;
+/// Create a copy of ModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AgentModelSelectionDtoCopyWith<AgentModelSelectionDto> get copyWith => _$AgentModelSelectionDtoCopyWithImpl<AgentModelSelectionDto>(this as AgentModelSelectionDto, _$identity);
+$ModelSelectionDtoCopyWith<ModelSelectionDto> get copyWith => _$ModelSelectionDtoCopyWithImpl<ModelSelectionDto>(this as ModelSelectionDto, _$identity);
 
-  /// Serializes this AgentModelSelectionDto to a JSON map.
+  /// Serializes this ModelSelectionDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,modelId);
+int get hashCode => Object.hash(runtimeType,modelId);
 
 @override
 String toString() {
-  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
+  return 'ModelSelectionDto(modelId: $modelId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AgentModelSelectionDtoCopyWith<$Res>  {
-  factory $AgentModelSelectionDtoCopyWith(AgentModelSelectionDto value, $Res Function(AgentModelSelectionDto) _then) = _$AgentModelSelectionDtoCopyWithImpl;
+abstract mixin class $ModelSelectionDtoCopyWith<$Res>  {
+  factory $ModelSelectionDtoCopyWith(ModelSelectionDto value, $Res Function(ModelSelectionDto) _then) = _$ModelSelectionDtoCopyWithImpl;
 @useResult
 $Res call({
- AgentModelSource source, String? modelId
+ String modelId
 });
 
 
@@ -3701,28 +3701,27 @@ $Res call({
 
 }
 /// @nodoc
-class _$AgentModelSelectionDtoCopyWithImpl<$Res>
-    implements $AgentModelSelectionDtoCopyWith<$Res> {
-  _$AgentModelSelectionDtoCopyWithImpl(this._self, this._then);
+class _$ModelSelectionDtoCopyWithImpl<$Res>
+    implements $ModelSelectionDtoCopyWith<$Res> {
+  _$ModelSelectionDtoCopyWithImpl(this._self, this._then);
 
-  final AgentModelSelectionDto _self;
-  final $Res Function(AgentModelSelectionDto) _then;
+  final ModelSelectionDto _self;
+  final $Res Function(ModelSelectionDto) _then;
 
-/// Create a copy of AgentModelSelectionDto
+/// Create a copy of ModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? modelId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? modelId = null,}) {
   return _then(_self.copyWith(
-source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String?,
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [AgentModelSelectionDto].
-extension AgentModelSelectionDtoPatterns on AgentModelSelectionDto {
+/// Adds pattern-matching-related methods to [ModelSelectionDto].
+extension ModelSelectionDtoPatterns on ModelSelectionDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -3735,10 +3734,10 @@ extension AgentModelSelectionDtoPatterns on AgentModelSelectionDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentModelSelectionDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ModelSelectionDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto() when $default != null:
+case _ModelSelectionDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -3757,10 +3756,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentModelSelectionDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ModelSelectionDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto():
+case _ModelSelectionDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -3778,10 +3777,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentModelSelectionDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ModelSelectionDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto() when $default != null:
+case _ModelSelectionDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -3799,10 +3798,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto() when $default != null:
-return $default(_that.source,_that.modelId);case _:
+case _ModelSelectionDto() when $default != null:
+return $default(_that.modelId);case _:
   return orElse();
 
 }
@@ -3820,10 +3819,10 @@ return $default(_that.source,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String modelId)  $default,) {final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto():
-return $default(_that.source,_that.modelId);case _:
+case _ModelSelectionDto():
+return $default(_that.modelId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3840,10 +3839,10 @@ return $default(_that.source,_that.modelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentModelSource source,  String? modelId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String modelId)?  $default,) {final _that = this;
 switch (_that) {
-case _AgentModelSelectionDto() when $default != null:
-return $default(_that.source,_that.modelId);case _:
+case _ModelSelectionDto() when $default != null:
+return $default(_that.modelId);case _:
   return null;
 
 }
@@ -3854,47 +3853,46 @@ return $default(_that.source,_that.modelId);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AgentModelSelectionDto extends AgentModelSelectionDto {
-  const _AgentModelSelectionDto({required this.source, this.modelId}): super._();
-  factory _AgentModelSelectionDto.fromJson(Map<String, dynamic> json) => _$AgentModelSelectionDtoFromJson(json);
+class _ModelSelectionDto extends ModelSelectionDto {
+  const _ModelSelectionDto({required this.modelId}): super._();
+  factory _ModelSelectionDto.fromJson(Map<String, dynamic> json) => _$ModelSelectionDtoFromJson(json);
 
-@override final  AgentModelSource source;
-@override final  String? modelId;
+@override final  String modelId;
 
-/// Create a copy of AgentModelSelectionDto
+/// Create a copy of ModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AgentModelSelectionDtoCopyWith<_AgentModelSelectionDto> get copyWith => __$AgentModelSelectionDtoCopyWithImpl<_AgentModelSelectionDto>(this, _$identity);
+_$ModelSelectionDtoCopyWith<_ModelSelectionDto> get copyWith => __$ModelSelectionDtoCopyWithImpl<_ModelSelectionDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AgentModelSelectionDtoToJson(this, );
+  return _$ModelSelectionDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,modelId);
+int get hashCode => Object.hash(runtimeType,modelId);
 
 @override
 String toString() {
-  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
+  return 'ModelSelectionDto(modelId: $modelId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AgentModelSelectionDtoCopyWith<$Res> implements $AgentModelSelectionDtoCopyWith<$Res> {
-  factory _$AgentModelSelectionDtoCopyWith(_AgentModelSelectionDto value, $Res Function(_AgentModelSelectionDto) _then) = __$AgentModelSelectionDtoCopyWithImpl;
+abstract mixin class _$ModelSelectionDtoCopyWith<$Res> implements $ModelSelectionDtoCopyWith<$Res> {
+  factory _$ModelSelectionDtoCopyWith(_ModelSelectionDto value, $Res Function(_ModelSelectionDto) _then) = __$ModelSelectionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- AgentModelSource source, String? modelId
+ String modelId
 });
 
 
@@ -3902,20 +3900,19 @@ $Res call({
 
 }
 /// @nodoc
-class __$AgentModelSelectionDtoCopyWithImpl<$Res>
-    implements _$AgentModelSelectionDtoCopyWith<$Res> {
-  __$AgentModelSelectionDtoCopyWithImpl(this._self, this._then);
+class __$ModelSelectionDtoCopyWithImpl<$Res>
+    implements _$ModelSelectionDtoCopyWith<$Res> {
+  __$ModelSelectionDtoCopyWithImpl(this._self, this._then);
 
-  final _AgentModelSelectionDto _self;
-  final $Res Function(_AgentModelSelectionDto) _then;
+  final _ModelSelectionDto _self;
+  final $Res Function(_ModelSelectionDto) _then;
 
-/// Create a copy of AgentModelSelectionDto
+/// Create a copy of ModelSelectionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? modelId = freezed,}) {
-  return _then(_AgentModelSelectionDto(
-source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String?,
+@override @pragma('vm:prefer-inline') $Res call({Object? modelId = null,}) {
+  return _then(_ModelSelectionDto(
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -4198,7 +4195,7 @@ as int?,
 /// @nodoc
 mixin _$AgentDefinitionDto {
 
- String get id; String get name; String get description; AgentMode get mode; bool get promptEnabled; String get systemPrompt; AgentModelSelectionDto get model; List<String> get toolIds; List<String> get callableAgentIds; String get contentHash; String get sourcePath; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
+ String get id; String get name; String get description; AgentMode get mode; bool get promptEnabled; String get systemPrompt; List<String> get toolIds; List<String> get callableAgentIds; String get contentHash; String get sourcePath; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4211,16 +4208,16 @@ $AgentDefinitionDtoCopyWith<AgentDefinitionDto> get copyWith => _$AgentDefinitio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(callableAgentIds),contentHash,sourcePath,const DeepCollectionEquality().hash(modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
+int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(callableAgentIds),contentHash,sourcePath,model,const DeepCollectionEquality().hash(modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4231,11 +4228,11 @@ abstract mixin class $AgentDefinitionDtoCopyWith<$Res>  {
   factory $AgentDefinitionDtoCopyWith(AgentDefinitionDto value, $Res Function(AgentDefinitionDto) _then) = _$AgentDefinitionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
-$AgentModelSelectionDtoCopyWith<$Res> get model;
+$ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -4248,7 +4245,7 @@ class _$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -4256,12 +4253,12 @@ as String,description: null == description ? _self.description : description // 
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : promptEnabled // ignore: cast_nullable_to_non_nullable
 as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as AgentModelSelectionDto,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as String,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
 as List<String>,callableAgentIds: null == callableAgentIds ? _self.callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
 as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
@@ -4274,9 +4271,12 @@ as List<AgentDefinitionDiagnosticDto>,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AgentModelSelectionDtoCopyWith<$Res> get model {
-  
-  return $AgentModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
+$ModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -4361,10 +4361,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return orElse();
 
 }
@@ -4382,10 +4382,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto():
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4402,10 +4402,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  AgentModelSelectionDto model,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.model,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return null;
 
 }
@@ -4417,7 +4417,7 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 @JsonSerializable()
 
 class _AgentDefinitionDto implements AgentDefinitionDto {
-  const _AgentDefinitionDto({required this.id, required this.name, required this.description, required this.mode, required this.promptEnabled, required this.systemPrompt, required this.model, required final  List<String> toolIds, required final  List<String> callableAgentIds, required this.contentHash, required this.sourcePath, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _toolIds = toolIds,_callableAgentIds = callableAgentIds,_modelControls = modelControls,_diagnostics = diagnostics;
+  const _AgentDefinitionDto({required this.id, required this.name, required this.description, required this.mode, required this.promptEnabled, required this.systemPrompt, required final  List<String> toolIds, required final  List<String> callableAgentIds, required this.contentHash, required this.sourcePath, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _toolIds = toolIds,_callableAgentIds = callableAgentIds,_modelControls = modelControls,_diagnostics = diagnostics;
   factory _AgentDefinitionDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionDtoFromJson(json);
 
 @override final  String id;
@@ -4426,7 +4426,6 @@ class _AgentDefinitionDto implements AgentDefinitionDto {
 @override final  AgentMode mode;
 @override final  bool promptEnabled;
 @override final  String systemPrompt;
-@override final  AgentModelSelectionDto model;
  final  List<String> _toolIds;
 @override List<String> get toolIds {
   if (_toolIds is EqualUnmodifiableListView) return _toolIds;
@@ -4443,6 +4442,7 @@ class _AgentDefinitionDto implements AgentDefinitionDto {
 
 @override final  String contentHash;
 @override final  String sourcePath;
+@override final  ModelSelectionDto? model;
  final  Map<String, ModelControlValueDto> _modelControls;
 @override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
   if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
@@ -4475,16 +4475,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,model,const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_callableAgentIds),contentHash,sourcePath,const DeepCollectionEquality().hash(_modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
+int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_callableAgentIds),contentHash,sourcePath,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, model: $model, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4495,11 +4495,11 @@ abstract mixin class _$AgentDefinitionDtoCopyWith<$Res> implements $AgentDefinit
   factory _$AgentDefinitionDtoCopyWith(_AgentDefinitionDto value, $Res Function(_AgentDefinitionDto) _then) = __$AgentDefinitionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, AgentModelSelectionDto model, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
-@override $AgentModelSelectionDtoCopyWith<$Res> get model;
+@override $ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -4512,7 +4512,7 @@ class __$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? model = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_AgentDefinitionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -4520,12 +4520,12 @@ as String,description: null == description ? _self.description : description // 
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : promptEnabled // ignore: cast_nullable_to_non_nullable
 as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
-as String,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as AgentModelSelectionDto,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as String,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
 as List<String>,callableAgentIds: null == callableAgentIds ? _self._callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
 as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
@@ -4539,9 +4539,12 @@ as List<AgentDefinitionDiagnosticDto>,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AgentModelSelectionDtoCopyWith<$Res> get model {
-  
-  return $AgentModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
+$ModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -7437,272 +7440,9 @@ as List<SkillDiagnosticDto>,
 
 
 /// @nodoc
-mixin _$SessionModelSelectionDto {
-
- String get modelId;
-/// Create a copy of SessionModelSelectionDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<SessionModelSelectionDto> get copyWith => _$SessionModelSelectionDtoCopyWithImpl<SessionModelSelectionDto>(this as SessionModelSelectionDto, _$identity);
-
-  /// Serializes this SessionModelSelectionDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,modelId);
-
-@override
-String toString() {
-  return 'SessionModelSelectionDto(modelId: $modelId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $SessionModelSelectionDtoCopyWith<$Res>  {
-  factory $SessionModelSelectionDtoCopyWith(SessionModelSelectionDto value, $Res Function(SessionModelSelectionDto) _then) = _$SessionModelSelectionDtoCopyWithImpl;
-@useResult
-$Res call({
- String modelId
-});
-
-
-
-
-}
-/// @nodoc
-class _$SessionModelSelectionDtoCopyWithImpl<$Res>
-    implements $SessionModelSelectionDtoCopyWith<$Res> {
-  _$SessionModelSelectionDtoCopyWithImpl(this._self, this._then);
-
-  final SessionModelSelectionDto _self;
-  final $Res Function(SessionModelSelectionDto) _then;
-
-/// Create a copy of SessionModelSelectionDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? modelId = null,}) {
-  return _then(_self.copyWith(
-modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [SessionModelSelectionDto].
-extension SessionModelSelectionDtoPatterns on SessionModelSelectionDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SessionModelSelectionDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SessionModelSelectionDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SessionModelSelectionDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String modelId)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto() when $default != null:
-return $default(_that.modelId);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String modelId)  $default,) {final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto():
-return $default(_that.modelId);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String modelId)?  $default,) {final _that = this;
-switch (_that) {
-case _SessionModelSelectionDto() when $default != null:
-return $default(_that.modelId);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _SessionModelSelectionDto extends SessionModelSelectionDto {
-  const _SessionModelSelectionDto({required this.modelId}): super._();
-  factory _SessionModelSelectionDto.fromJson(Map<String, dynamic> json) => _$SessionModelSelectionDtoFromJson(json);
-
-@override final  String modelId;
-
-/// Create a copy of SessionModelSelectionDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$SessionModelSelectionDtoCopyWith<_SessionModelSelectionDto> get copyWith => __$SessionModelSelectionDtoCopyWithImpl<_SessionModelSelectionDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$SessionModelSelectionDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionModelSelectionDto&&(identical(other.modelId, modelId) || other.modelId == modelId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,modelId);
-
-@override
-String toString() {
-  return 'SessionModelSelectionDto(modelId: $modelId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$SessionModelSelectionDtoCopyWith<$Res> implements $SessionModelSelectionDtoCopyWith<$Res> {
-  factory _$SessionModelSelectionDtoCopyWith(_SessionModelSelectionDto value, $Res Function(_SessionModelSelectionDto) _then) = __$SessionModelSelectionDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String modelId
-});
-
-
-
-
-}
-/// @nodoc
-class __$SessionModelSelectionDtoCopyWithImpl<$Res>
-    implements _$SessionModelSelectionDtoCopyWith<$Res> {
-  __$SessionModelSelectionDtoCopyWithImpl(this._self, this._then);
-
-  final _SessionModelSelectionDto _self;
-  final $Res Function(_SessionModelSelectionDto) _then;
-
-/// Create a copy of SessionModelSelectionDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? modelId = null,}) {
-  return _then(_SessionModelSelectionDto(
-modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
 mixin _$SessionDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; SessionMode get mode; SessionModelSelectionDto? get model;/// Values explicitly selected for the resolved provider model.
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; ModelSelectionDto get model; SessionMode get mode;/// Values explicitly selected for the resolved provider model.
  Map<String, ModelControlValueDto> get modelControls;/// Overrides the permission mode of the agent definition; null inherits.
  PermissionMode? get permissionMode; String? get parentSessionId;/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
  String? get taskName;/// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
@@ -7725,16 +7465,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.mode, mode) || other.mode == mode)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,mode,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, mode: $mode, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -7745,11 +7485,11 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto model, SessionMode mode, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
-$SessionModelSelectionDtoCopyWith<$Res>? get model;
+$ModelSelectionDtoCopyWith<$Res> get model;
 
 }
 /// @nodoc
@@ -7762,7 +7502,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = null,Object? mode = null,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7772,9 +7512,9 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as DateTime,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as SessionMode,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
@@ -7793,12 +7533,9 @@ as double?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
-    return null;
-  }
-
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+$ModelSelectionDtoCopyWith<$Res> get model {
+  
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -7883,10 +7620,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return orElse();
 
 }
@@ -7904,10 +7641,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7924,10 +7661,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.mode,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return null;
 
 }
@@ -7939,7 +7676,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, required this.model, this.mode = SessionMode.normal, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -7950,8 +7687,8 @@ class _SessionDto implements SessionDto {
 @override final  SessionStatus status;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
+@override final  ModelSelectionDto model;
 @override@JsonKey() final  SessionMode mode;
-@override final  SessionModelSelectionDto? model;
 /// Values explicitly selected for the resolved provider model.
  final  Map<String, ModelControlValueDto> _modelControls;
 /// Values explicitly selected for the resolved provider model.
@@ -7995,16 +7732,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.mode, mode) || other.mode == mode)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,mode,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, mode: $mode, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -8015,11 +7752,11 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto model, SessionMode mode, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
-@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
+@override $ModelSelectionDtoCopyWith<$Res> get model;
 
 }
 /// @nodoc
@@ -8032,7 +7769,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = null,Object? mode = null,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -8042,9 +7779,9 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as DateTime,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as SessionMode,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
@@ -8064,12 +7801,9 @@ as double?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
-    return null;
-  }
-
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+$ModelSelectionDtoCopyWith<$Res> get model {
+  
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
 }

@@ -14,6 +14,7 @@ import 'package:app/src/features/conversation/presentation/widgets/session_compo
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
+import 'package:app/src/features/models/application/model_settings_controller.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
@@ -204,6 +205,13 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         connectionsAsync != null &&
         connectionsAsync.isLoading &&
         !connectionsAsync.hasValue;
+    final modelSettingsAsync = hostId == null
+        ? null
+        : ref.watch(modelSettingsControllerProvider(hostId));
+    final modelSettingsLoading =
+        modelSettingsAsync != null &&
+        modelSettingsAsync.isLoading &&
+        !modelSettingsAsync.hasValue;
     final draft = _draft(hostId);
     final effective =
         draft?.model ??
@@ -213,8 +221,23 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           models:
               connectionsAsync?.value?.models ??
               const <String, List<ProviderModelDto>>{},
-          defaultModel: connectionsAsync?.value?.defaultModel,
+          defaultModel: modelSettingsAsync?.value?.defaultModel,
         );
+    final effectiveRunnable =
+        effective != null &&
+        isRunnableSelection(
+          effective,
+          connections ?? const <ProviderConnectionDto>[],
+          connectionsAsync?.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+        );
+    final hasRunnableModel =
+        firstUsableModel(
+          connections ?? const <ProviderConnectionDto>[],
+          connectionsAsync?.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+        ) !=
+        null;
     // A Git project can create the checkout on submit; every other target has
     // to already exist.
     final target = project == null
@@ -224,7 +247,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         hostId != null &&
         target &&
         agent != null &&
-        effective != null &&
+        effectiveRunnable &&
         !_submitting;
     void toggleMode() => _notifier(hostId)?.selectMode(
       draft?.mode == SessionMode.plan ? SessionMode.normal : SessionMode.plan,
@@ -241,8 +264,14 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         worktree,
         agent,
         effective,
+        modelRunnable: effectiveRunnable,
+        hasRunnableModel: hasRunnableModel,
         home: home,
-        loading: catalogLoading || agentsLoading || connectionsLoading,
+        loading:
+            catalogLoading ||
+            agentsLoading ||
+            connectionsLoading ||
+            modelSettingsLoading,
       ),
       failure: _failure == null
           ? null
@@ -276,8 +305,13 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         onModeChanged: (mode) => _notifier(hostId)?.selectMode(mode),
         modelControls:
             draft?.modelControls ?? const <String, ModelControlValueDto>{},
-        onModelControlsChanged: (controls) =>
-            _notifier(hostId)?.selectModelControls(controls),
+        onModelControlsChanged: (controls) {
+          final notifier = _notifier(hostId);
+          if (notifier == null || effective == null) return;
+          notifier
+            ..selectModel(effective)
+            ..selectModelControls(controls);
+        },
         permissionMode: draft?.permissionMode,
         onPermissionModeChanged: (mode) =>
             _notifier(hostId)?.selectPermissionMode(mode),
@@ -408,7 +442,9 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
     NewWorkspaceProject? project,
     WorktreeDto? worktree,
     AgentDefinitionDto? agent,
-    SessionModelSelectionDto? model, {
+    ModelSelectionDto? model, {
+    required bool modelRunnable,
+    required bool hasRunnableModel,
     required WorkspaceSelection? home,
     required bool loading,
   }) {
@@ -426,7 +462,16 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       return l10n.workspaceCheckoutMissing;
     }
     if (agent == null) return l10n.composerNoPrimaryAgent;
-    if (model == null) return l10n.composerSelectProviderModel;
+    if (model == null) {
+      return hasRunnableModel
+          ? l10n.composerSelectProviderModel
+          : l10n.composerConnectProviderFirst;
+    }
+    if (!modelRunnable) {
+      return hasRunnableModel
+          ? l10n.modelSettingsUnavailableDescription(model.modelId)
+          : l10n.composerConnectProviderFirst;
+    }
     return null;
   }
 

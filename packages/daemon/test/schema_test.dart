@@ -189,7 +189,7 @@ void main() {
       final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 17);
+      expect(database.schemaVersion, 18);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),
@@ -197,6 +197,13 @@ void main() {
       );
       expect(await database.workspaceDao.list(), isEmpty);
       expect(await database.worktreeDao.list(), isEmpty);
+      final sessionColumns = await database
+          .customSelect("PRAGMA table_info('sessions')")
+          .get();
+      final modelColumn = sessionColumns.singleWhere(
+        (row) => row.read<String>('name') == 'model_id',
+      );
+      expect(modelColumn.read<int>('notnull'), 1);
     },
   );
 }

@@ -2157,6 +2157,19 @@ void main() {
         )).any((session) => session.title == 'Directory e2e'),
         'the directory checkout session to start',
       );
+      final daemonDefaultModel =
+          (await setupClient.models.getSettings()).defaultModel;
+      expect(daemonDefaultModel, isNotNull);
+      final directorySession = (await setupClient.sessions.listSessions(
+        worktreeId: 'directory-checkout-e2e',
+      )).singleWhere((session) => session.title == 'Directory e2e');
+      // The new-workspace draft intentionally keeps its explicit chat model
+      // across sessions, and that override must outrank the daemon default.
+      const retainedChatOverride = ModelSelectionDto(
+        modelId: 'openai/gpt-5.2',
+      );
+      expect(daemonDefaultModel, isNot(retainedChatOverride));
+      expect(directorySession.model, retainedChatOverride);
       final directoryWorktrees =
           (await setupClient.workspaces.getWorkspaceCatalog()).worktrees.where(
             (item) => item.workspaceId == 'directory-workspace-e2e',

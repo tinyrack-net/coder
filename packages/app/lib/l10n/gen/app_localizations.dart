@@ -316,6 +316,12 @@ abstract class AppLocalizations {
   /// **'Provider'**
   String get settingsCategoryProvider;
 
+  /// Settings sidebar entry for the daemon default model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get settingsCategoryModel;
+
   /// Settings sidebar entry for daemon permission defaults.
   ///
   /// In en, this message translates to:
@@ -1876,17 +1882,17 @@ abstract class AppLocalizations {
   /// **'Use a custom system prompt'**
   String get agentSettingsCustomPrompt;
 
-  /// Model mode that requires each session to select a provider and model.
+  /// Toggle that gives an agent its own concrete model.
   ///
   /// In en, this message translates to:
-  /// **'Choose for each session'**
-  String get agentSettingsSessionModel;
+  /// **'Set a model for this agent'**
+  String get agentSettingsUseModel;
 
-  /// Model mode that pins one provider and model.
+  /// Explains the disabled state of the agent model toggle.
   ///
   /// In en, this message translates to:
-  /// **'Pinned provider/model'**
-  String get agentSettingsPinnedModel;
+  /// **'When off, this agent uses the daemon default model.'**
+  String get agentSettingsUseModelDescription;
 
   /// Section heading for an agent's identity fields.
   ///
@@ -2152,41 +2158,35 @@ abstract class AppLocalizations {
   /// **'Refresh due; local metadata remains available'**
   String get providerSettingsCatalogStale;
 
-  /// Section title of the daemon-wide default model.
+  /// Section title of the daemon-wide concrete model.
   ///
   /// In en, this message translates to:
-  /// **'Default model'**
-  String get providerSettingsDefaultModelTitle;
+  /// **'Daemon default model'**
+  String get modelSettingsSection;
 
-  /// Explains when the daemon default model applies.
+  /// Explains the daemon model priority.
   ///
   /// In en, this message translates to:
-  /// **'Used when a session and its agent do not pin a model.'**
-  String get providerSettingsDefaultModelDescription;
+  /// **'New chats use this model when neither the chat nor its agent specifies one.'**
+  String get modelSettingsSectionDescription;
 
-  /// Label for letting the daemon pick the first usable model.
+  /// Warning title for a concrete model that cannot currently run.
   ///
   /// In en, this message translates to:
-  /// **'Automatic'**
-  String get providerSettingsDefaultModelAutomatic;
+  /// **'Saved model unavailable'**
+  String get modelSettingsUnavailableTitle;
 
-  /// Shown when automatic selection cannot resolve a model.
+  /// Warning for an unavailable saved model.
   ///
   /// In en, this message translates to:
-  /// **'No connected provider offers a usable model.'**
-  String get providerSettingsDefaultModelNone;
+  /// **'{modelId} cannot run. Choose another model before starting a chat.'**
+  String modelSettingsUnavailableDescription(String modelId);
 
-  /// Shown when the stored default model can no longer run.
+  /// Reported when the daemon default model could not be stored.
   ///
   /// In en, this message translates to:
-  /// **'This model is unavailable, so sessions use the first usable model.'**
-  String get providerSettingsDefaultModelUnavailable;
-
-  /// Button that opens the default model picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Change'**
-  String get providerSettingsDefaultModelChoose;
+  /// **'Could not update the daemon default model'**
+  String get modelSettingsSaveFailed;
 
   /// Title of the sheet choosing how to connect one provider.
   ///
@@ -2553,18 +2553,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a model'**
   String get composerSelectModel;
-
-  /// Model picker entry that inherits the agent default.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the agent default'**
-  String get composerInheritModel;
-
-  /// Model picker entry that clears the session model override.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the default model'**
-  String get composerInheritDefaultModel;
 
   /// Placeholder shown before the first session exists.
   ///
@@ -3975,12 +3963,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the provider.'**
   String get providerSettingsDeleteFailed;
-
-  /// Reported when the default model could not be stored.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not change the default model.'**
-  String get providerSettingsDefaultModelFailed;
 
   /// Reported after a provider connection is removed.
   ///

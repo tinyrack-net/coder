@@ -122,6 +122,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryProvider => 'Provider';
 
   @override
+  String get settingsCategoryModel => 'Model';
+
+  @override
   String get settingsCategoryPermission => 'Permissions';
 
   @override
@@ -1010,10 +1013,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsCustomPrompt => 'Use a custom system prompt';
 
   @override
-  String get agentSettingsSessionModel => 'Choose for each session';
+  String get agentSettingsUseModel => 'Set a model for this agent';
 
   @override
-  String get agentSettingsPinnedModel => 'Pinned provider/model';
+  String get agentSettingsUseModelDescription =>
+      'When off, this agent uses the daemon default model.';
 
   @override
   String get agentSettingsDefinitionHeading => 'Definition';
@@ -1159,25 +1163,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Refresh due; local metadata remains available';
 
   @override
-  String get providerSettingsDefaultModelTitle => 'Default model';
+  String get modelSettingsSection => 'Daemon default model';
 
   @override
-  String get providerSettingsDefaultModelDescription =>
-      'Used when a session and its agent do not pin a model.';
+  String get modelSettingsSectionDescription =>
+      'New chats use this model when neither the chat nor its agent specifies one.';
 
   @override
-  String get providerSettingsDefaultModelAutomatic => 'Automatic';
+  String get modelSettingsUnavailableTitle => 'Saved model unavailable';
 
   @override
-  String get providerSettingsDefaultModelNone =>
-      'No connected provider offers a usable model.';
+  String modelSettingsUnavailableDescription(String modelId) {
+    return '$modelId cannot run. Choose another model before starting a chat.';
+  }
 
   @override
-  String get providerSettingsDefaultModelUnavailable =>
-      'This model is unavailable, so sessions use the first usable model.';
-
-  @override
-  String get providerSettingsDefaultModelChoose => 'Change';
+  String get modelSettingsSaveFailed =>
+      'Could not update the daemon default model';
 
   @override
   String providerSettingsAuthTitle(String name) {
@@ -1378,12 +1380,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSelectModel => 'Select a model';
-
-  @override
-  String get composerInheritModel => 'Use the agent default';
-
-  @override
-  String get composerInheritDefaultModel => 'Use the default model';
 
   @override
   String get composerStartHint => 'Start a new session with a coding request.';
@@ -2284,10 +2280,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerSettingsDeleteFailed => 'Could not delete the provider.';
-
-  @override
-  String get providerSettingsDefaultModelFailed =>
-      'Could not change the default model.';
 
   @override
   String get providerSettingsDisconnected => 'Disconnected.';

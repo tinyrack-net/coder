@@ -15,6 +15,7 @@ import 'package:app/src/features/conversation/presentation/composer_trigger.dart
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
+import 'package:app/src/features/models/application/model_settings_controller.dart';
 import 'package:app/src/features/permissions/application/permission_settings_controller.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
@@ -88,14 +89,14 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   final String? agentDefinitionId;
 
   /// Provider-qualified model currently in effect, if any resolves.
-  final SessionModelSelectionDto? selection;
+  final ModelSelectionDto? selection;
 
   /// Called with the newly chosen agent definition id.
   final ValueChanged<String> onAgentChanged;
 
-  /// Called with the chosen override, or null to inherit the agent definition.
+  /// Called with one concrete chosen model.
   final FutureOr<void> Function(
-    SessionModelSelectionDto? selection,
+    ModelSelectionDto selection,
     Map<String, ModelControlValueDto> controls,
   )
   onModelChanged;
@@ -200,7 +201,13 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .where((item) => item.id == selection?.modelId)
         .firstOrNull;
     final modelLabel = model?.label;
-    final modelBlocked = enabled && providersResolved && connections.isEmpty;
+    final hasRunnableModel =
+        firstUsableModel(
+          providers?.connections ?? const <ProviderConnectionDto>[],
+          providers?.models ?? const <String, List<ProviderModelDto>>{},
+        ) !=
+        null;
+    final modelBlocked = enabled && providersResolved && !hasRunnableModel;
     // The catalog decides which turn settings the chosen model can honour, so
     // an unsupported control is hidden rather than shown and ignored.
     final capabilities = model?.capabilities ?? const ModelCapabilitiesDto();
@@ -242,10 +249,10 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         ),
         _modelSelect(
           key: const ValueKey<String>('session-composer-model'),
-          enabled: enabled && connections.isNotEmpty,
+          enabled: enabled && hasRunnableModel,
           blocked: modelBlocked,
           l10n: l10n,
-          placeholder: selection?.modelId ?? modelLabel ?? l10n.composerModel,
+          placeholder: modelLabel ?? selection?.modelId ?? l10n.composerModel,
           appearance: TRFieldAppearance.ghost,
           uiSize: TRUiSize.sm,
         ),
@@ -361,9 +368,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         loadKey: widget.hostId,
         loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
         currentSelection: widget.selection,
-        inheritLabel: _selectedAgent?.model.source == AgentModelSource.fixed
-            ? l10n.composerInheritModel
-            : l10n.composerInheritDefaultModel,
         placeholder: placeholder,
         enabled: enabled,
         width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
@@ -413,17 +417,15 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     );
   }
 
-  Future<void> _setModelOption(ModelPickerOption? option) async {
-    final allowed =
-        option?.model.capabilities.controls
-            .map((control) => control.id)
-            .toSet() ??
-        const <String>{};
+  Future<void> _setModelOption(ModelPickerOption option) async {
+    final allowed = option.model.capabilities.controls
+        .map((control) => control.id)
+        .toSet();
     final retained = <String, ModelControlValueDto>{
       for (final entry in widget.modelControls.entries)
         if (allowed.contains(entry.key)) entry.key: entry.value,
     };
-    await widget.onModelChanged(option?.selection, retained);
+    await widget.onModelChanged(option.selection, retained);
   }
 
   Future<void> _setPermission(PermissionMode? mode) async {
@@ -505,7 +507,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     color:
                         widget.enabled &&
                             snapshot.providersResolved &&
-                            snapshot.connections.isEmpty
+                            !snapshot.hasRunnableModel
                         ? TRTextColor.muted
                         : null,
                   ),
@@ -515,15 +517,15 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     key: const ValueKey<String>(
                       'session-composer-settings-model-select',
                     ),
-                    enabled: widget.enabled && snapshot.connections.isNotEmpty,
+                    enabled: widget.enabled && snapshot.hasRunnableModel,
                     blocked:
                         widget.enabled &&
                         snapshot.providersResolved &&
-                        snapshot.connections.isEmpty,
+                        !snapshot.hasRunnableModel,
                     l10n: l10n,
                     placeholder:
-                        widget.selection?.modelId ??
                         snapshot.model?.label ??
+                        widget.selection?.modelId ??
                         l10n.composerModel,
                     onValueChanged: () => unawaited(
                       _refreshSettings(refresh),
@@ -622,6 +624,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     AgentDefinitionDto? agent,
     List<ProviderConnectionDto> connections,
     bool providersResolved,
+    bool hasRunnableModel,
     ProviderModelDto? model,
     ModelCapabilitiesDto capabilities,
     PermissionMode inheritedPermission,
@@ -656,6 +659,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
       agent: agent,
       connections: connections,
       providersResolved: providersState.hasValue && providers != null,
+      hasRunnableModel:
+          firstUsableModel(
+            providers?.connections ?? const <ProviderConnectionDto>[],
+            providers?.models ?? const <String, List<ProviderModelDto>>{},
+          ) !=
+          null,
       model: model,
       capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
       inheritedPermission:
@@ -1307,6 +1316,11 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
     final providers = providersAsync.value;
     final providersLoading =
         providersAsync.isLoading && !providersAsync.hasValue;
+    final modelSettingsAsync = ref.watch(
+      modelSettingsControllerProvider(selection.hostId),
+    );
+    final modelSettingsLoading =
+        modelSettingsAsync.isLoading && !modelSettingsAsync.hasValue;
     final draft = ref.watch(
       sessionComposerDraftControllerProvider(
         selection.hostId,
@@ -1331,8 +1345,21 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
           definition: agent,
           connections: connections,
           models: providers?.models ?? const <String, List<ProviderModelDto>>{},
-          defaultModel: providers?.defaultModel,
+          defaultModel: modelSettingsAsync.value?.defaultModel,
         );
+    final effectiveRunnable =
+        effective != null &&
+        isRunnableSelection(
+          effective,
+          connections,
+          providers?.models ?? const <String, List<ProviderModelDto>>{},
+        );
+    final hasRunnableModel =
+        firstUsableModel(
+          connections,
+          providers?.models ?? const <String, List<ProviderModelDto>>{},
+        ) !=
+        null;
     final notifier = ref.read(
       sessionComposerDraftControllerProvider(
         selection.hostId,
@@ -1367,13 +1394,17 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
                       : SessionMode.plan,
                 ),
               ),
-              enabled: agent != null && effective != null,
-              hint: (agentsLoading || providersLoading)
+              enabled: agent != null && effectiveRunnable,
+              hint: (agentsLoading || providersLoading || modelSettingsLoading)
                   ? null
                   : (agent == null
                         ? l10n.composerNoPrimaryAgent
-                        : (effective == null
-                              ? l10n.composerConnectProviderFirst
+                        : (!effectiveRunnable
+                              ? hasRunnableModel && effective != null
+                                    ? l10n.modelSettingsUnavailableDescription(
+                                        effective.modelId,
+                                      )
+                                    : l10n.composerConnectProviderFirst
                               : null)),
               bar: SessionComposerBar(
                 hostId: selection.hostId,
@@ -1389,7 +1420,12 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
                 mode: draft.mode,
                 onModeChanged: notifier.selectMode,
                 modelControls: draft.modelControls,
-                onModelControlsChanged: notifier.selectModelControls,
+                onModelControlsChanged: (controls) {
+                  if (effective == null) return;
+                  notifier
+                    ..selectModel(effective)
+                    ..selectModelControls(controls);
+                },
                 permissionMode: draft.permissionMode,
                 onPermissionModeChanged: notifier.selectPermissionMode,
               ),

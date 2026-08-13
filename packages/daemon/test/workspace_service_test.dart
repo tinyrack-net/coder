@@ -1079,6 +1079,7 @@ branch refs/heads/feature/settings
         agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.running,
+        model: const ModelSelectionDto(modelId: 'local-test/test-model'),
         createdAt: _FixedClock.now,
         updatedAt: _FixedClock.now,
       ),

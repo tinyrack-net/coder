@@ -50,6 +50,11 @@ void main() {
           api: (gate) => FakeTinestApi(providerConnectionsGate: gate),
         ),
         (
+          name: 'models',
+          location: const ModelSettingsRoute(hostId: 'server').location,
+          api: (gate) => FakeTinestApi(modelSettingsGate: gate),
+        ),
+        (
           name: 'permissions',
           location: const PermissionSettingsRoute(hostId: 'server').location,
           api: (gate) => FakeTinestApi(permissionSettingsGate: gate),

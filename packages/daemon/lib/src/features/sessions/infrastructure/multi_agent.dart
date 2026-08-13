@@ -90,9 +90,8 @@ typedef AgentDefinitionLookup = Future<AgentDefinitionDto> Function(String id);
 /// Validates that a model exists on a provider connection.
 typedef AgentModelValidator = Future<void> Function(String modelId);
 
-/// Resolves the daemon-wide fallback model, mirroring the chat composer's
-/// four-step chain; null when no connected provider offers a usable model.
-typedef AgentModelFallback = Future<SessionModelSelectionDto?> Function();
+/// Resolves the concrete daemon default model.
+typedef AgentDefaultModelResolver = Future<ModelSelectionDto> Function();
 
 /// Turn control the collaboration layer needs from the session service.
 abstract interface class SessionTurnPort {
@@ -129,7 +128,7 @@ class MultiAgentService {
     required this._timeline,
     required this._getDefinition,
     required this._validateModel,
-    required this._fallbackModel,
+    required this._defaultModel,
     required this._events,
     required this._clock,
     required this._ids,
@@ -140,7 +139,7 @@ class MultiAgentService {
   final TimelineRepository _timeline;
   final AgentDefinitionLookup _getDefinition;
   final AgentModelValidator _validateModel;
-  final AgentModelFallback _fallbackModel;
+  final AgentDefaultModelResolver _defaultModel;
   final void Function(OutboundNotification event) _events;
   final Clock _clock;
   final IdGenerator _ids;
@@ -497,19 +496,22 @@ $role''';
       }
     }
 
-    SessionModelSelectionDto? childModel;
-    if (model != null) {
-      if (await _effectiveModelOf(caller, callerDefinition) == null) {
-        throw const CollaborationException(
-          'No connected provider offers a usable model to override.',
-        );
-      }
+    final ModelSelectionDto childModel;
+    final Map<String, ModelControlValueDto> inheritedControls;
+    if (fullFork) {
+      childModel = caller.model;
+      inheritedControls = caller.modelControls;
+    } else if (model != null) {
       await _validateModel(model);
-      childModel = SessionModelSelectionDto(modelId: model);
-    } else if (childDefinition.model.source == AgentModelSource.session) {
-      // May stay null: the child's turn start then resolves the same
-      // fallback chain the chat composer uses.
-      childModel = await _effectiveModelOf(caller, callerDefinition);
+      childModel = ModelSelectionDto(modelId: model);
+      inheritedControls = const <String, ModelControlValueDto>{};
+    } else if (childDefinition.model case final agentModel?) {
+      await _validateModel(agentModel.qualifiedModelId);
+      childModel = agentModel;
+      inheritedControls = childDefinition.modelControls;
+    } else {
+      childModel = await _defaultModel();
+      inheritedControls = const <String, ModelControlValueDto>{};
     }
 
     final now = _clock.nowUtc();
@@ -530,6 +532,7 @@ $role''';
         status: SessionStatus.idle,
         model: childModel,
         modelControls: <String, ModelControlValueDto>{
+          ...inheritedControls,
           if (reasoningEffort != null)
             'reasoning_effort': ModelControlValueDto.stringValue(
               value: reasoningEffort,
@@ -797,20 +800,6 @@ $role''';
     }
     if (sliced.isEmpty) return;
     await _timeline.appendProviderItems(childSessionId, sliced);
-  }
-
-  /// The model a session effectively runs on, for inheritance by a child.
-  Future<SessionModelSelectionDto?> _effectiveModelOf(
-    SessionDto session,
-    AgentDefinitionDto definition,
-  ) async {
-    final selected = session.model;
-    if (selected != null) return selected;
-    final modelId = definition.model.modelId;
-    if (definition.model.source == AgentModelSource.fixed && modelId != null) {
-      return SessionModelSelectionDto(modelId: modelId);
-    }
-    return _fallbackModel();
   }
 
   Future<void> _appendEvent({

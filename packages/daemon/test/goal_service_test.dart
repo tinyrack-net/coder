@@ -93,6 +93,7 @@ void main() {
         agentDefinitionId: 'tinest',
         origin: SessionOrigin.manual,
         status: SessionStatus.idle,
+        model: const ModelSelectionDto(modelId: 'local-test/test-model'),
         createdAt: now,
         updatedAt: now,
       ),

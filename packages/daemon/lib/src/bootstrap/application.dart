@@ -17,6 +17,8 @@ import 'package:daemon/src/features/mcp/infrastructure/mcp_server_service.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_service.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_transports.dart';
 import 'package:daemon/src/features/mcp/transport/rpc_bindings.dart';
+import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
+import 'package:daemon/src/features/models/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:daemon/src/features/prompts/transport/rpc_bindings.dart';
@@ -337,7 +339,6 @@ abstract final class DaemonApplication {
       final providers = ProviderConnectionService(
         repository: database.providerDao,
         credentials: credentials,
-        settings: database.settingsDao,
         ids: effectiveIds,
         clock: effectiveClock,
         registry: providerRegistry,
@@ -351,6 +352,11 @@ abstract final class DaemonApplication {
         fixedProvider: effectiveProvider,
       );
       await providers.initialize();
+      final modelSettings = DaemonModelSettingsService(
+        settings: database.settingsDao,
+        catalog: providers,
+      );
+      await modelSettings.initialize();
       final providerUsage = ProviderUsageService(
         repository: database.providerDao,
         credentials: credentials,
@@ -418,6 +424,7 @@ abstract final class DaemonApplication {
       providers.referenceUpdater = _StoredProviderModelReferenceUpdater(
         database.sessionDao,
         agentDefinitions,
+        modelSettings,
       );
       final userHome = config.userHomeDirectory;
       final skills = SkillCatalogService(
@@ -520,7 +527,13 @@ abstract final class DaemonApplication {
         timeline: database.timelineDao,
         getDefinition: agentDefinitions.get,
         validateModel: models.validateQualifiedModel,
-        fallbackModel: models.fallbackModel,
+        defaultModel: () async {
+          try {
+            return await modelSettings.requireDefaultModel();
+          } on ModelSettingsFailure catch (error) {
+            throw CollaborationException(error.message);
+          }
+        },
         events: events.add,
         clock: effectiveClock,
         ids: effectiveIds,
@@ -713,6 +726,7 @@ abstract final class DaemonApplication {
             commands: commands,
             workspaces: workspaceCatalog,
           ),
+          ...modelRpcBindings(modelSettings),
           ...providerRpcBindings(
             providers: providers,
             usage: providerUsage,
@@ -733,6 +747,7 @@ abstract final class DaemonApplication {
             interactions: sessionInteractions,
             agentDefinitions: agentDefinitions,
             models: models,
+            modelSettings: modelSettings,
             clock: effectiveClock,
             goals: goalService,
           ),
@@ -799,6 +814,7 @@ abstract final class DaemonApplication {
         luaCodeMode: luaCodeMode,
         providerAuth: providerAuth,
         providers: providers,
+        modelSettings: modelSettings,
         terminals: terminals,
         relay: relay,
         relayTransport: relayTransport,
@@ -834,6 +850,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._luaCodeMode,
     required this._providerAuth,
     required this._providers,
+    required this._modelSettings,
     required this._terminals,
     required this._relay,
     required this._relayTransport,
@@ -859,6 +876,7 @@ class _LocalDaemonHandle implements DaemonHandle {
   final LuaCodeModeService _luaCodeMode;
   final ProviderAuthCoordinator _providerAuth;
   final ProviderConnectionService _providers;
+  final DaemonModelSettingsService _modelSettings;
   final TerminalService _terminals;
   final RelayControlService _relay;
   final DaemonRelayTransport _relayTransport;
@@ -893,6 +911,7 @@ class _LocalDaemonHandle implements DaemonHandle {
     await _relayTransport.close();
     await _relay.close();
     await _providerAuth.close();
+    await _modelSettings.close();
     await _providers.close();
     await _mcp.close();
     await _agentDefinitions.close();
@@ -906,18 +925,30 @@ class _LocalDaemonHandle implements DaemonHandle {
 
 final class _StoredProviderModelReferenceUpdater
     implements ProviderModelReferenceUpdater {
-  const _StoredProviderModelReferenceUpdater(this._sessions, this._agents);
+  const _StoredProviderModelReferenceUpdater(
+    this._sessions,
+    this._agents,
+    this._models,
+  );
 
   final SessionRepository _sessions;
   final AgentDefinitionService _agents;
+  final DaemonModelSettingsService _models;
 
   @override
   Future<void> rewrite(String oldPrefix, String newPrefix) async {
-    await _agents.rewriteModelPrefix(oldPrefix, newPrefix);
+    await _models.rewriteModelPrefix(oldPrefix, newPrefix);
+    try {
+      await _agents.rewriteModelPrefix(oldPrefix, newPrefix);
+    } catch (_) {
+      await _models.rewriteModelPrefix(newPrefix, oldPrefix);
+      rethrow;
+    }
     try {
       await _sessions.rewriteModelPrefix(oldPrefix, newPrefix);
     } catch (_) {
       await _agents.rewriteModelPrefix(newPrefix, oldPrefix);
+      await _models.rewriteModelPrefix(newPrefix, oldPrefix);
       rethrow;
     }
   }

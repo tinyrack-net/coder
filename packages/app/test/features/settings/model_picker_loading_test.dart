@@ -20,13 +20,13 @@ void main() {
         find.byKey(const ValueKey<String>('model-select-loading')),
         findsOneWidget,
       );
-      expect(find.byType(TRSelect<ModelPickerOption?>), findsNothing);
+      expect(find.byType(TRSelect<ModelPickerOption>), findsNothing);
 
       gate.complete(const <ModelPickerOption>[_option]);
       await tester.pumpAndSettle();
 
-      final select = tester.widget<TRSelect<ModelPickerOption?>>(
-        find.byType(TRSelect<ModelPickerOption?>),
+      final select = tester.widget<TRSelect<ModelPickerOption>>(
+        find.byType(TRSelect<ModelPickerOption>),
       );
       expect(select.searchable, isTrue);
       expect(select.surface, TRSelectSurface.auto);
@@ -53,7 +53,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(calls, 2);
-      expect(find.byType(TRSelect<ModelPickerOption?>), findsOneWidget);
+      expect(find.byType(TRSelect<ModelPickerOption>), findsOneWidget);
     },
   );
 
@@ -99,7 +99,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(TRSelect<ModelPickerOption?>));
+        await tester.tap(find.byType(TRSelect<ModelPickerOption>));
         await tester.pumpAndSettle();
 
         expect(
@@ -109,7 +109,12 @@ void main() {
         expect(find.text('Test provider · provider/gpt-test'), findsOneWidget);
         await tester.enterText(find.byType(TRTextField), 'provider/gpt');
         await tester.pumpAndSettle();
-        expect(find.text('GPT Test'), findsOneWidget);
+        expect(
+          find.byKey(
+            const ValueKey<String>('model-option-provider-gpt-test'),
+          ),
+          findsOneWidget,
+        );
       },
     );
   }
@@ -145,8 +150,9 @@ Widget _host(
     body: Center(
       child: AsyncModelSelect(
         loadOptions: loader,
-        currentSelection: null,
-        inheritLabel: 'Automatic',
+        currentSelection: const ModelSelectionDto(
+          modelId: 'provider/gpt-test',
+        ),
         onValueChange: (_) {},
       ),
     ),

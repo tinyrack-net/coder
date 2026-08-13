@@ -28,13 +28,12 @@ class SessionsController extends _$SessionsController {
 
   /// The create public API member.
   ///
-  /// A non-null [model] pins the session to one provider connection and model
-  /// instead of inheriting the model of its agent definition.
+  /// A non-null [model] is the chat-level override captured by the session.
   Future<SessionDto> create({
     required String title,
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
@@ -86,10 +85,10 @@ class SessionsController extends _$SessionsController {
     await api.sessions.compactSession(sessionId);
   }
 
-  /// Sets or clears the provider and model override of one session.
+  /// Replaces the concrete provider and model snapshot of one session.
   Future<SessionDto> setModel(
     String sessionId,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto model,
     Map<String, ModelControlValueDto> modelControls,
   ) => _apply(
     sessionId,
@@ -100,7 +99,6 @@ class SessionsController extends _$SessionsController {
     (api) => api.sessions.updateSettings(
       sessionId,
       SessionSettingsPatchDto(
-        hasModel: true,
         model: model,
         hasModelControls: true,
         modelControls: modelControls,

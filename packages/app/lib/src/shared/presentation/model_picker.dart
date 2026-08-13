@@ -20,7 +20,7 @@ final class ModelPickerOption {
   final ProviderModelDto model;
 
   /// Selection persisted on the session.
-  SessionModelSelectionDto get selection => SessionModelSelectionDto(
+  ModelSelectionDto get selection => ModelSelectionDto(
     modelId: model.id,
   );
 }
@@ -38,7 +38,6 @@ class AsyncModelSelect extends StatefulWidget {
     required this.loadOptions,
     required this.currentSelection,
     required this.onValueChange,
-    required this.inheritLabel,
     this.loadKey,
     this.enabled = true,
     this.leading,
@@ -55,14 +54,11 @@ class AsyncModelSelect extends StatefulWidget {
   /// Stable identity that triggers a reload when the owning host changes.
   final Object? loadKey;
 
-  /// Current explicit selection, or null when the fallback chain is used.
-  final SessionModelSelectionDto? currentSelection;
+  /// Current effective selection, or null when no model can run.
+  final ModelSelectionDto? currentSelection;
 
-  /// Receives the selected option, or null when inheritance is selected.
-  final FutureOr<void> Function(ModelPickerOption? option) onValueChange;
-
-  /// Label of the null/inherited option.
-  final String? inheritLabel;
+  /// Receives one concrete selected option.
+  final FutureOr<void> Function(ModelPickerOption option) onValueChange;
 
   /// Whether the Select accepts input once loaded.
   final bool enabled;
@@ -140,7 +136,7 @@ class _AsyncModelSelectState extends State<AsyncModelSelect> {
     final current = options
         .where((option) => option.selection == widget.currentSelection)
         .firstOrNull;
-    return TRSelect<ModelPickerOption?>.controlled(
+    return TRSelect<ModelPickerOption>.controlled(
       key: const ValueKey<String>('model-select'),
       value: current,
       enabled: widget.enabled,
@@ -148,31 +144,29 @@ class _AsyncModelSelectState extends State<AsyncModelSelect> {
       appearance: widget.appearance,
       uiSize: widget.uiSize,
       width: widget.width,
-      placeholder: widget.placeholder ?? widget.inheritLabel,
+      placeholder: widget.placeholder ?? widget.currentSelection?.modelId,
       searchable: true,
       searchPlaceholder: l10n.selectSearchPlaceholder,
       noResultsText: l10n.selectNoResults,
       // Explicit so the production Select policy can audit adaptation.
       // ignore: avoid_redundant_argument_values
       surface: TRSelectSurface.auto,
-      items: <TRSelectItem<ModelPickerOption?>>[
-        if (widget.inheritLabel case final inheritLabel?)
-          TRSelectItem<ModelPickerOption?>(
-            key: const ValueKey<String>('model-option-inherit'),
-            value: null,
-            label: inheritLabel,
-          ),
+      items: <TRSelectItem<ModelPickerOption>>[
         for (final option in options)
-          TRSelectItem<ModelPickerOption?>(
+          TRSelectItem<ModelPickerOption>(
             key: ValueKey<String>(_optionKey(option)),
             value: option,
             label: option.model.label,
             description: '${option.providerName} · ${option.model.id}',
           ),
       ],
-      onValueChange: (option) => unawaited(
-        Future<void>.sync(() async => widget.onValueChange(option)),
-      ),
+      onValueChange: (option) {
+        if (option != null) {
+          unawaited(
+            Future<void>.sync(() async => widget.onValueChange(option)),
+          );
+        }
+      },
     );
   }
 

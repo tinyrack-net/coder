@@ -8,13 +8,12 @@ void main() {
   const source = '''
 ---
 # User comment must survive GUI edits.
-version: 4
+version: 5
 name: Reviewer
 description: Reviews code
 mode: subagent
 promptEnabled: true
-model:
-  source: session
+model: deepseek/deepseek-chat
 permissionMode: readOnly
 tools:
   - read_file
@@ -49,7 +48,7 @@ Review the requested code without modifying it.
 
     expect(parsed.id, 'reviewer');
     expect(parsed.mode, AgentMode.subagent);
-    expect(parsed.model.source, AgentModelSource.session);
+    expect(parsed.model!.modelId, 'deepseek/deepseek-chat');
     expect(parsed.toolIds, <String>['read_file', 'future_tool']);
     expect(parsed.systemPrompt, contains('Review the requested code'));
     expect(parsed.contentHash, isNotEmpty);
@@ -105,12 +104,29 @@ Review the requested code without modifying it.
     expect(updated, endsWith('Audit security boundaries.\n'));
   });
 
-  test('rejects fixed model settings without provider and model IDs', () {
+  test('omits model and controls when the agent uses the daemon default', () {
+    const codec = AgentMarkdownCodec();
+    final withoutModel = codec.decode(
+      id: 'reviewer',
+      sourcePath: '/config/agents/reviewer.md',
+      source: source.replaceFirst('model: deepseek/deepseek-chat\n', ''),
+    );
+
+    expect(withoutModel.model, isNull);
+    expect(withoutModel.modelControls, isEmpty);
+    expect(codec.encodeNew(withoutModel), isNot(contains('\nmodel:')));
+    expect(codec.encodeNew(withoutModel), isNot(contains('modelControls:')));
+  });
+
+  test('rejects controls when no concrete model is configured', () {
     expect(
       () => const AgentMarkdownCodec().decode(
         id: 'broken',
         sourcePath: '/config/agents/broken.md',
-        source: source.replaceFirst('session', 'fixed'),
+        source: source.replaceFirst(
+          'model: deepseek/deepseek-chat',
+          'modelControls:\n  reasoning_effort: high',
+        ),
       ),
       throwsA(isA<FormatException>()),
     );
@@ -141,20 +157,20 @@ Review the requested code without modifying it.
       'name: no-frontmatter',
       '---\nname: unclosed',
       '---\n- not\n- a-map\n---\n',
-      source.replaceFirst('version: 4', 'version: 1'),
+      source.replaceFirst('version: 5', 'version: 4'),
       source.replaceFirst('mode: subagent', 'mode: unknown'),
       source
           .replaceFirst('mode: subagent', 'mode: subagent')
           .replaceFirst('callableAgents: []', 'callableAgents: [tinest]'),
       source.replaceFirst(
-        'model:\n  source: session',
-        'model: invalid',
+        'model: deepseek/deepseek-chat',
+        'model: [invalid]',
       ),
       source.replaceFirst('name: Reviewer', 'name: ""'),
       source.replaceFirst('name: Reviewer\n', ''),
       source.replaceFirst('promptEnabled: true', 'promptEnabled: yes'),
       source.replaceFirst('tools:\n  - read_file\n  - future_tool', 'tools: 4'),
-      source.replaceFirst('version: 4', 'version: one'),
+      source.replaceFirst('version: 5', 'version: one'),
       source.replaceFirst(
         'permissionMode: readOnly',
         'modelControls: []\npermissionMode: readOnly',
@@ -504,8 +520,7 @@ Review the requested code without modifying it.
           id: 'fixed',
           name: 'Fixed',
           mode: AgentMode.subagent,
-          model: const AgentModelSelectionDto(
-            source: AgentModelSource.fixed,
+          model: const ModelSelectionDto(
             modelId: 'connection/model',
           ),
           toolIds: const <String>['a_tool'],

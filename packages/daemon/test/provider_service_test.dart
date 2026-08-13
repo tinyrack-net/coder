@@ -222,7 +222,7 @@ void main() {
     expect(replacement.modelPrefix, 'openai');
   });
 
-  test('prefix rename cascades models, defaults, and references', () async {
+  test('prefix rename cascades models and external references', () async {
     final updater = _ReferenceUpdater();
     final fixture = _ServiceFixture(now, referenceUpdater: updater);
     fixture.discovery.ids = <String>['deepseek-v4-pro'];
@@ -230,12 +230,6 @@ void main() {
       'deepseek',
       'secret',
     );
-    await fixture.service.setDefaultModel(
-      const SessionModelSelectionDto(
-        modelId: 'deepseek/deepseek-v4-pro',
-      ),
-    );
-
     final renamed = await fixture.service.updateModelPrefix(
       connection.id,
       'deepseek-new',
@@ -247,10 +241,6 @@ void main() {
       (await fixture.service.listModels(
         connection.id,
       )).singleWhere((model) => model.providerModelId == 'deepseek-v4-pro').id,
-      'deepseek-new/deepseek-v4-pro',
-    );
-    expect(
-      (await fixture.service.storedDefaultModel())!.modelId,
       'deepseek-new/deepseek-v4-pro',
     );
   });
@@ -314,13 +304,10 @@ void main() {
     final resolver = ProviderModelResolver(fixture.service);
     const modelId = 'deepseek/deepseek-chat';
 
-    expect((await resolver.fallbackModel())!.modelId, modelId);
+    expect((await fixture.service.listRunnableModels()).first.modelId, modelId);
     expect(
-      (await resolver.resolveAgentModel(
-        const AgentModelSelectionDto(
-          source: AgentModelSource.fixed,
-          modelId: modelId,
-        ),
+      (await resolver.resolveSelection(
+        const ModelSelectionDto(modelId: modelId),
       )).connectionId,
       connection.id,
     );
@@ -529,7 +516,13 @@ void main() {
       );
       await expectLater(
         fixture.service.validateAgentModel(connection.id, 'missing'),
-        throwsA(isA<StateError>()),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (failure) => failure.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
       );
     },
   );
@@ -826,75 +819,43 @@ void main() {
   );
 
   test(
-    'default model round-trips and clears back to automatic',
-    () async {
-      final fixture = _ServiceFixture(now);
-      const selection = SessionModelSelectionDto(
-        modelId: 'deepseek/deepseek-v4-pro',
-      );
-
-      expect(await fixture.service.storedDefaultModel(), isNull);
-
-      await fixture.service.setDefaultModel(selection);
-      expect(await fixture.service.storedDefaultModel(), selection);
-
-      await fixture.service.setDefaultModel(null);
-      expect(await fixture.service.storedDefaultModel(), isNull);
-    },
-    tags: const <String>['feature_test__provider_default_model__unit'],
-  );
-
-  test(
-    'fallback prefers the stored default and keeps it when unusable',
+    'runnable models follow connection and model ordering',
     () async {
       final fixture = _ServiceFixture(now);
       fixture.discovery.ids = <String>[];
-      final deepseek = await fixture.service.connectApiKey(
-        'deepseek',
-        'secret',
-      );
-      const stored = SessionModelSelectionDto(
-        modelId: 'deepseek/deepseek-v4-pro',
-      );
-      await fixture.service.setDefaultModel(stored);
-
-      expect(await fixture.service.fallbackModel(), stored);
-
-      // A model the catalog no longer offers must not block resolution.
-      await fixture.service.setDefaultModel(
-        const SessionModelSelectionDto(
-          modelId: 'deepseek/retired-model',
+      await fixture.repository.upsertConnection(
+        ProviderConnectionDto(
+          id: 'empty-first',
+          definitionId: 'custom',
+          modelPrefix: 'empty',
+          displayName: 'Aardvark',
+          status: ProviderConnectionStatus.connected,
+          authKind: ProviderAuthKind.none,
+          credentialOrigin: ProviderCredentialOrigin.none,
+          createdAt: now,
+          updatedAt: now,
         ),
       );
-      expect(
-        await fixture.service.fallbackModel(),
-        const SessionModelSelectionDto(
-          modelId: 'deepseek/deepseek-chat',
+      await fixture.repository.upsertModel(
+        const ProviderModelDto(
+          connectionId: 'empty-first',
+          id: 'empty/not-runnable',
+          providerModelId: 'not-runnable',
+          label: 'Not runnable',
+          source: ProviderModelSource.manual,
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.unsupported,
+            toolCalling: CapabilitySupport.supported,
+          ),
         ),
       );
-
-      // Nor must a connection that can no longer run.
-      await fixture.service.setDefaultModel(stored);
-      await fixture.service.disconnect(deepseek.id);
-      expect(await fixture.service.fallbackModel(), isNull);
-
-      // The unusable default survives so the settings page can surface it.
-      expect(await fixture.service.storedDefaultModel(), stored);
-    },
-    tags: const <String>['feature_test__provider_default_model__unit'],
-  );
-
-  test(
-    'first usable model follows connection and model ordering',
-    () async {
-      final fixture = _ServiceFixture(now);
-      fixture.discovery.ids = <String>[];
       final xai = await fixture.service.connectApiKey('xai', 'secret');
 
+      // The first provider has no runnable model, so selection advances.
       expect(
-        await fixture.service.firstUsableModel(),
-        const SessionModelSelectionDto(
-          modelId: 'xai/grok-4.3',
+        (await fixture.service.listRunnableModels()).first,
+        const ModelSelectionDto(
+          modelId: 'xai/grok-4.20-0309-non-reasoning',
         ),
       );
 
@@ -904,8 +865,8 @@ void main() {
         'secret',
       );
       expect(
-        await fixture.service.firstUsableModel(),
-        const SessionModelSelectionDto(
+        (await fixture.service.listRunnableModels()).first,
+        const ModelSelectionDto(
           modelId: 'deepseek/deepseek-chat',
         ),
       );
@@ -925,65 +886,17 @@ void main() {
         ),
       );
       expect(
-        await fixture.service.firstUsableModel(),
-        const SessionModelSelectionDto(
+        (await fixture.service.listRunnableModels()).first,
+        const ModelSelectionDto(
           modelId: 'deepseek/deepseek-chat',
         ),
       );
 
       await fixture.service.disconnect(deepseek.id);
       await fixture.service.disconnect(xai.id);
-      expect(await fixture.service.firstUsableModel(), isNull);
+      expect(await fixture.service.listRunnableModels(), isEmpty);
     },
-    tags: const <String>['feature_test__provider_default_model__unit'],
-  );
-
-  test(
-    'agent model resolution falls back for session and unusable pins',
-    () async {
-      final fixture = _ServiceFixture(now);
-      fixture.discovery.ids = <String>[];
-      final deepseek = await fixture.service.connectApiKey(
-        'deepseek',
-        'secret',
-      );
-
-      final sessionSourced = await fixture.service.resolveAgentModel(
-        const AgentModelSelectionDto(source: AgentModelSource.session),
-      );
-      expect(sessionSourced.modelId, 'deepseek-chat');
-
-      final pinnedToMissing = await fixture.service.resolveAgentModel(
-        const AgentModelSelectionDto(
-          source: AgentModelSource.fixed,
-          modelId: 'xai/grok-4.5',
-        ),
-      );
-      expect(pinnedToMissing.connectionId, deepseek.id);
-
-      final pinned = await fixture.service.resolveAgentModel(
-        const AgentModelSelectionDto(
-          source: AgentModelSource.fixed,
-          modelId: 'deepseek/deepseek-v4-pro',
-        ),
-      );
-      expect(pinned.modelId, 'deepseek-v4-pro');
-
-      await fixture.service.disconnect(deepseek.id);
-      await expectLater(
-        fixture.service.resolveAgentModel(
-          const AgentModelSelectionDto(source: AgentModelSource.session),
-        ),
-        throwsA(
-          isA<ProviderConnectionFailure>().having(
-            (error) => error.code,
-            'code',
-            'model_required',
-          ),
-        ),
-      );
-    },
-    tags: const <String>['feature_test__provider_default_model__unit'],
+    tags: const <String>['feature_test__provider_catalog__unit'],
   );
 
   test('model validation rejects unusable selections', () async {
@@ -996,14 +909,26 @@ void main() {
 
     await expectLater(
       fixture.service.validateAgentModel(connection.id, 'missing'),
-      throwsA(isA<StateError>()),
+      throwsA(
+        isA<ProviderConnectionFailure>().having(
+          (error) => error.code,
+          'code',
+          'model_unavailable',
+        ),
+      ),
     );
     await expectLater(
       fixture.service.validateAgentModel(
         connection.id,
         'unknown-capabilities',
       ),
-      throwsA(isA<StateError>()),
+      throwsA(
+        isA<ProviderConnectionFailure>().having(
+          (error) => error.code,
+          'code',
+          'model_unavailable',
+        ),
+      ),
     );
     await fixture.service.disconnect(connection.id);
     await expectLater(
@@ -1034,7 +959,13 @@ void main() {
 
       await expectLater(
         fixture.service.resolveExplicitModel(connection.id, 'missing'),
-        throwsA(isA<StateError>()),
+        throwsA(
+          isA<ProviderConnectionFailure>().having(
+            (error) => error.code,
+            'code',
+            'model_unavailable',
+          ),
+        ),
       );
       await fixture.service.disconnect(connection.id);
       await expectLater(
@@ -1113,7 +1044,6 @@ final class _ServiceFixture {
     service = ProviderConnectionService(
       repository: repository,
       credentials: credentials,
-      settings: settings,
       clock: clock,
       registry: registry,
       catalog: BuiltInProviderCatalog(
@@ -1130,7 +1060,6 @@ final class _ServiceFixture {
   }
 
   final _ProviderRepository repository = _ProviderRepository();
-  final _Settings settings = _Settings();
   final _Credentials credentials = _Credentials();
   final _Discovery discovery = _Discovery();
   final _Factory factory = _Factory();
@@ -1188,16 +1117,6 @@ final class _Clock implements Clock {
 
   @override
   DateTime nowUtc() => value;
-}
-
-final class _Settings implements SettingsRepository {
-  final Map<String, String> values = <String, String>{};
-
-  @override
-  Future<String?> getValue(String key) async => values[key];
-
-  @override
-  Future<void> setValue(String key, String value) async => values[key] = value;
 }
 
 final class _ProviderRepository implements ProviderRepository {

@@ -78,11 +78,11 @@ void main() {
     await store.rewriteModelPrefix('openai', 'openai-new');
 
     expect(
-      (await store.get('active'))!.model.modelId,
+      (await store.get('active'))!.model!.modelId,
       'openai-new/model/active',
     );
     expect(
-      (await store.resolve('archived'))!.model.modelId,
+      (await store.resolve('archived'))!.model!.modelId,
       'openai-new/model/archived',
     );
   });
@@ -110,9 +110,12 @@ void main() {
       expect(files.activeSource('active'), activeBefore);
       expect(files.archivedSource('archived'), archivedBefore);
       await store.reload();
-      expect((await store.get('active'))!.model.modelId, 'openai/model/active');
       expect(
-        (await store.resolve('archived'))!.model.modelId,
+        (await store.get('active'))!.model!.modelId,
+        'openai/model/active',
+      );
+      expect(
+        (await store.resolve('archived'))!.model!.modelId,
         'openai/model/archived',
       );
     },
@@ -125,8 +128,7 @@ AgentDefinitionDto _fixedAgent(AgentDefinitionDto tinest, String id) =>
       name: id,
       description: '',
       mode: AgentMode.subagent,
-      model: AgentModelSelectionDto(
-        source: AgentModelSource.fixed,
+      model: ModelSelectionDto(
         modelId: 'openai/model/$id',
       ),
       callableAgentIds: const <String>[],

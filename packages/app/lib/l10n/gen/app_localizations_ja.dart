@@ -122,6 +122,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsCategoryProvider => 'プロバイダー';
 
   @override
+  String get settingsCategoryModel => 'モデル';
+
+  @override
   String get settingsCategoryPermission => '権限';
 
   @override
@@ -980,10 +983,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentSettingsCustomPrompt => 'カスタムシステムプロンプトを使う';
 
   @override
-  String get agentSettingsSessionModel => 'セッションごとに選ぶ';
+  String get agentSettingsUseModel => 'このエージェントにモデルを指定';
 
   @override
-  String get agentSettingsPinnedModel => 'プロバイダー／モデルを固定';
+  String get agentSettingsUseModelDescription => 'オフの場合はデーモンの既定モデルを使います。';
 
   @override
   String get agentSettingsDefinitionHeading => '定義';
@@ -1125,24 +1128,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsCatalogStale => '更新期限切れ。ローカルデータを使用できます';
 
   @override
-  String get providerSettingsDefaultModelTitle => '既定のモデル';
+  String get modelSettingsSection => 'デーモンの既定モデル';
 
   @override
-  String get providerSettingsDefaultModelDescription =>
-      'セッションとエージェントのどちらもモデルを指定していないときに使います。';
+  String get modelSettingsSectionDescription =>
+      'チャットとエージェントのどちらもモデルを指定していない場合に、新しいチャットが使うモデルです。';
 
   @override
-  String get providerSettingsDefaultModelAutomatic => 'プロバイダーの既定値';
+  String get modelSettingsUnavailableTitle => '保存済みモデルは利用できません';
 
   @override
-  String get providerSettingsDefaultModelNone => '接続中のプロバイダーに使えるモデルがありません。';
+  String modelSettingsUnavailableDescription(String modelId) {
+    return '$modelId は実行できません。チャットを開始する前に別のモデルを選んでください。';
+  }
 
   @override
-  String get providerSettingsDefaultModelUnavailable =>
-      'このモデルは使えないため、セッションでは最初に使えるモデルを利用します。';
-
-  @override
-  String get providerSettingsDefaultModelChoose => '変更';
+  String get modelSettingsSaveFailed => 'デーモンの既定モデルを変更できませんでした';
 
   @override
   String providerSettingsAuthTitle(String name) {
@@ -1338,12 +1339,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSelectModel => 'モデルを選択';
-
-  @override
-  String get composerInheritModel => 'エージェントの既定値を使う';
-
-  @override
-  String get composerInheritDefaultModel => '既定のモデルを使う';
 
   @override
   String get composerStartHint => 'コーディングの依頼を書いて新しいセッションを始めましょう。';
@@ -2228,9 +2223,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerSettingsDeleteFailed => 'プロバイダーを削除できませんでした。';
-
-  @override
-  String get providerSettingsDefaultModelFailed => '既定のモデルを変更できませんでした。';
 
   @override
   String get providerSettingsDisconnected => '接続を解除しました。';

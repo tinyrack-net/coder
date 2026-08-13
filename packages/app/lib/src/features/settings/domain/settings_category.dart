@@ -21,6 +21,9 @@ enum SettingsCategory {
   /// API provider connections owned by one daemon.
   provider,
 
+  /// Concrete default model owned by one daemon.
+  model,
+
   /// Default agent permissions owned by one daemon.
   permission,
 
@@ -55,6 +58,7 @@ extension SettingsCategoryScopeX on SettingsCategory {
     SettingsCategory.mcp ||
     SettingsCategory.connection ||
     SettingsCategory.skill ||
+    SettingsCategory.model ||
     SettingsCategory.permission ||
     SettingsCategory.provider => SettingsCategoryScope.daemon,
   };

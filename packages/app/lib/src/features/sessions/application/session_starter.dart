@@ -32,7 +32,7 @@ final class SessionStarter {
     String? draftTabId,
     List<PendingAttachment> attachments = const <PendingAttachment>[],
     SessionMode mode = SessionMode.normal,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
