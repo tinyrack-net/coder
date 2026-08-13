@@ -479,6 +479,16 @@ void main() {
       expect(find.byKey(overflowKey), findsNothing);
       expect(find.byKey(settingsKey), findsNothing);
       expect(find.text(testL10n.composerRun), findsOneWidget);
+      final standardSelects = tester
+          .widgetList<TRSelect<dynamic>>(
+            find.byWidgetPredicate((widget) => widget is TRSelect<dynamic>),
+          )
+          .toList(growable: false);
+      expect(standardSelects, hasLength(3));
+      for (final select in standardSelects) {
+        expect(select.appearance, TRFieldAppearance.ghost);
+        expect(select.uiSize, TRUiSize.sm);
+      }
 
       // Local composer width does not override the application density.
       await pumpAt(768, composerWidth: 600);
@@ -520,7 +530,7 @@ void main() {
   );
 
   testWidgets(
-    'compact settings fit their content at mobile width',
+    'compact settings use one comfortable solid Select treatment',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
       const surfaceSize = Size(390, 760);
@@ -530,7 +540,12 @@ void main() {
       tester.view.physicalSize = surfaceSize;
       await tester.pumpWidget(
         _harness(
-          api: FakeTinestApi(agentDefinitions: _compactAgentDefinitions),
+          api: FakeTinestApi(
+            agentDefinitions: _compactAgentDefinitions,
+            models: const <String, List<ProviderModelDto>>{
+              'openai': <ProviderModelDto>[_compactSettingsModel],
+            },
+          ),
           composer: const _CompactSettingsHost(),
         ),
       );
@@ -564,6 +579,37 @@ void main() {
         lessThanOrEqualTo(surfaceSize.height * 0.7),
       );
       expect(tester.getBottomLeft(sheet).dy, surfaceSize.height);
+
+      final selectWidths = <double>[];
+      for (final setting in <String>[
+        'agent',
+        'model',
+        'control-reasoning_effort',
+        'permission',
+      ]) {
+        final row = find.byKey(
+          ValueKey<String>('session-composer-settings-$setting'),
+        );
+        final select = find.descendant(
+          of: row,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is TRSelect<dynamic>,
+          ),
+        );
+        expect(select, findsOneWidget, reason: setting);
+        final widget = tester.widget<TRSelect<dynamic>>(select);
+        expect(widget.appearance, TRFieldAppearance.solid, reason: setting);
+        expect(widget.uiSize, isNull, reason: setting);
+        expect(
+          tester.getSize(select).height,
+          TRControlMetrics.heightOf(TRUiSize.xl),
+          reason: '$setting inherits comfortable density',
+        );
+        selectWidths.add(tester.getSize(select).width);
+      }
+      for (final width in selectWidths.skip(1)) {
+        expect(width, selectWidths.first);
+      }
     },
   );
 
