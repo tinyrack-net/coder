@@ -3,10 +3,10 @@ import 'dart:ui' as ui;
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
@@ -38,7 +38,7 @@ void main() {
       expect(emptyRow, findsOneWidget);
       expect(find.text(testL10n.settingsDaemonSelectEmpty), findsOneWidget);
 
-      final row = tester.widget<SettingsNavigationRow>(emptyRow);
+      final row = tester.widget<TRNavigationRow>(emptyRow);
       expect(row.enabled, isFalse);
       expect(row.onPressed, isNull);
       expect(row.trailing, isNull);

@@ -10,7 +10,6 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/pairing_intent.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
@@ -87,9 +86,9 @@ class _ConnectionMethod extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => SettingsNavigationRow(
+  Widget build(BuildContext context) => TRNavigationRow(
     leading: Icon(icon),
-    title: TRText.inherit(title),
+    label: TRText.inherit(title),
     description: TRText.inherit(description),
     onPressed: onTap,
   );
@@ -557,9 +556,9 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                   variant: TRStatusVariant.danger,
                 ),
           children: <Widget>[
-            SettingsNavigationRow(
+            TRNavigationRow(
               key: const ValueKey<String>('relay-pair-device'),
-              title: TRText.inherit(l10n.relayPairTitle),
+              label: TRText.inherit(l10n.relayPairTitle),
               description: TRText.inherit(
                 l10n.relayPairDeviceDescription,
               ),
@@ -571,19 +570,19 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
         SettingsSection(
           title: l10n.settingsCategoryAdvanced,
           children: <Widget>[
-            SettingsNavigationRow(
+            TRNavigationRow(
               key: const ValueKey<String>('relay-advanced-endpoint'),
               leading: const Icon(TinestIcons.cloud),
-              title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
+              label: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
               description: _status == null
                   ? null
                   : TRText.inherit(_status!.endpoint),
               onPressed: _busy ? null : _openRelayEndpointEditor,
             ),
-            SettingsNavigationRow(
+            TRNavigationRow(
               key: const ValueKey<String>('relay-advanced-direct'),
               leading: const Icon(TinestIcons.link),
-              title: TRText.inherit(l10n.relayAdvancedDirect),
+              label: TRText.inherit(l10n.relayAdvancedDirect),
               description: TRText.inherit(
                 l10n.relayConnectDirectDescription,
               ),

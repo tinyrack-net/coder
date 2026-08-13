@@ -4,7 +4,6 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/terminals/application/terminals_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
@@ -177,19 +176,27 @@ class _ProjectList extends StatelessWidget {
                 )
               : SettingsCollectionList(
                   children: <Widget>[
-                    for (final project in projects)
-                      SettingsNavigationRow(
-                        selected: project.id == selectedId,
-                        leading: Icon(
-                          project.kind == WorkspaceKind.git
-                              ? TinestIcons.worktree
-                              : TinestIcons.folder,
-                        ),
-                        title: TRText.inherit(project.name),
-                        // The row already caps and ellipsizes its description.
-                        description: TRText.inherit(project.rootPath),
-                        onPressed: () => onSelected(project.id),
-                      ),
+                    TRTreeNav<String>.controlled(
+                      value: selectedId,
+                      itemSpacing: TRSpacing.extraSmall,
+                      onValueChange: (projectId) {
+                        if (projectId != null) onSelected(projectId);
+                      },
+                      items: <TRTreeNavItem<String>>[
+                        for (final project in projects)
+                          TRTreeNavLeaf<String>(
+                            value: project.id,
+                            showDisclosureIndicator: true,
+                            leading: Icon(
+                              project.kind == WorkspaceKind.git
+                                  ? TinestIcons.worktree
+                                  : TinestIcons.folder,
+                            ),
+                            label: TRText.inherit(project.name),
+                            description: TRText.inherit(project.rootPath),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
         ),

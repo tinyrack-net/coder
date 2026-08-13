@@ -33,6 +33,7 @@ void main() {
         find.byKey(const ValueKey<String>('provider-connection-openai')),
         findsOneWidget,
       );
+      expect(find.byType(TRTreeNav<String>), findsOneWidget);
       expect(find.byKey(const ValueKey('provider-add-openai')), findsNothing);
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-add-button')),

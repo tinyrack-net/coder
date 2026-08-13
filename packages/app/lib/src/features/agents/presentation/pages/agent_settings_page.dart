@@ -10,7 +10,6 @@ import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
 import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
@@ -267,27 +266,36 @@ class _AgentDefinitionList extends StatelessWidget {
                 )
               : SettingsCollectionList(
                   children: <Widget>[
-                    for (final definition in state.definitions)
-                      SettingsNavigationRow(
-                        selected: definition.id == selectedId,
-                        leading: Icon(
-                          definition.mode == AgentMode.primary
-                              ? TinestIcons.agent
-                              : TinestIcons.branch,
-                        ),
-                        title: TRText.inherit(definition.name),
-                        description: TRText.inherit(
-                          definition.isStale
-                              ? l10n.agentSettingsModeStale(
-                                  definition.mode.name,
-                                )
-                              : definition.mode.name,
-                        ),
-                        trailing: definition.diagnostics.isEmpty
-                            ? null
-                            : const Icon(TinestIcons.warning),
-                        onPressed: () => onSelected(definition.id),
-                      ),
+                    TRTreeNav<String>.controlled(
+                      value: selectedId,
+                      itemSpacing: TRSpacing.extraSmall,
+                      onValueChange: (definitionId) {
+                        if (definitionId != null) onSelected(definitionId);
+                      },
+                      items: <TRTreeNavItem<String>>[
+                        for (final definition in state.definitions)
+                          TRTreeNavLeaf<String>(
+                            value: definition.id,
+                            showDisclosureIndicator: true,
+                            leading: Icon(
+                              definition.mode == AgentMode.primary
+                                  ? TinestIcons.agent
+                                  : TinestIcons.branch,
+                            ),
+                            label: TRText.inherit(definition.name),
+                            description: TRText.inherit(
+                              definition.isStale
+                                  ? l10n.agentSettingsModeStale(
+                                      definition.mode.name,
+                                    )
+                                  : definition.mode.name,
+                            ),
+                            trailing: definition.diagnostics.isEmpty
+                                ? null
+                                : const Icon(TinestIcons.warning),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
         ),

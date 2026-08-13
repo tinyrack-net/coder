@@ -18,7 +18,6 @@ import 'package:app/src/features/settings/presentation/pages/general_settings_pa
 import 'package:app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -572,12 +571,11 @@ class _MobileSettingsHome extends StatelessWidget {
         TRNavigationSection(
           label: Text(l10n.settingsSectionDaemon),
           child: hosts.isEmpty
-              ? SettingsNavigationRow(
+              ? TRNavigationRow(
                   key: const ValueKey<String>('settings-daemon-empty-row'),
                   enabled: false,
                   leading: const Icon(TinestIcons.daemon),
-                  title: TRText.inherit(l10n.settingsDaemonSelectEmpty),
-                  onPressed: null,
+                  label: TRText.inherit(l10n.settingsDaemonSelectEmpty),
                 )
               : TRTreeNav<String>.controlled(
                   value: null,
