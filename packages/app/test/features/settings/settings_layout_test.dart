@@ -348,6 +348,10 @@ void main() {
   testWidgets('SettingsListDetailLayout shares desktop and compact Back', (
     tester,
   ) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(1200, 800);
+    addTearDown(tester.view.reset);
     final navigation = SettingsPaneNavigationController();
     addTearDown(navigation.dispose);
     var detailVisible = true;
@@ -377,6 +381,14 @@ void main() {
     expect(navigation.canGoBack, isFalse);
     expect(find.byType(SettingsCompactPaneTransition), findsNothing);
 
+    tester.view.physicalSize = const Size(600, 800);
+    await tester.pumpWidget(surface(600));
+    await tester.pump();
+    expect(find.text('Collection'), findsNothing);
+    expect(find.text('Detail'), findsOneWidget);
+    expect(navigation.canGoBack, isTrue);
+
+    tester.view.physicalSize = const Size(390, 800);
     await tester.pumpWidget(surface(390));
     await tester.pump();
     expect(find.text('Collection'), findsNothing);

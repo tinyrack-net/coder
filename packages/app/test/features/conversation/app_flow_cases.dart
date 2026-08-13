@@ -33,7 +33,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'conversation content is capped and centered while its header stays wide',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1500, 900));
+      await _setTestViewport(tester, const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final root = session('layout');
       final child = session('layout-child').copyWith(
@@ -104,7 +104,7 @@ void _registerConversationAppFlows() {
         findsOneWidget,
       );
 
-      await tester.binding.setSurfaceSize(const Size(700, 900));
+      await _setTestViewport(tester, const Size(700, 900));
       await tester.pumpAndSettle();
       final narrowPane = tester.getRect(pane);
       for (final content in <Finder>[timeline, composer, goalBar]) {
@@ -175,7 +175,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'plan mode starts a planning session and implements the proposal',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1500, 900));
+      await _setTestViewport(tester, const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -263,7 +263,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'a mode refused during a turn is explained rather than dropped',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final planning = session('planning');
       // The composer keeps the mode reachable while a turn runs because it
@@ -307,7 +307,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'a plan can be handed to a fresh session or postponed',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final planning = session('planning').copyWith(mode: SessionMode.plan);
       final api = FakeTinestApi(
@@ -364,10 +364,6 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey<String>('session-composer-settings')),
-        findsOneWidget,
-      );
       await tester.tap(find.widgetWithText(TRButton, '계속 계획'));
       await tester.pumpAndSettle();
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
@@ -469,7 +465,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'a question card answers with an option or with free-form text',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(900, 1000));
+      await _setTestViewport(tester, const Size(900, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final agent = session('asking');
       final request = UserQuestionRequestDto(
@@ -589,7 +585,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'session goal controls edit and dispatch every slash command lifecycle',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final agent = session('goal-session');
       final activeGoal = GoalDto(
@@ -675,7 +671,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'a multi-question card pages through tabs and submits ordered answers',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(900, 1000));
+      await _setTestViewport(tester, const Size(900, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final agent = session('asking-many');
       final request = UserQuestionRequestDto(
@@ -901,7 +897,7 @@ void _registerConversationAppFlows() {
   testWidgets(
     'question tabs remain accessible on a narrow large-text surface',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(320, 800));
+      await _setTestViewport(tester, const Size(320, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final semantics = tester.ensureSemantics();
       final request = UserQuestionRequestDto(

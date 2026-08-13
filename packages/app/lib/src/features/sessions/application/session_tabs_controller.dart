@@ -478,6 +478,9 @@ class SessionTabsController extends _$SessionTabsController {
   /// Splits one leaf and creates a fresh draft in the new pane.
   Future<void> split(String paneId, WorkspaceSplitAxis axis) async {
     final current = state.requireValue;
+    if (axis != WorkspaceSplitAxis.horizontal || current.panes.length >= 2) {
+      return;
+    }
     final pane = _findPane(current.root, paneId);
     if (pane == null) return;
     final ids = ref.read(appIdGeneratorProvider);
@@ -722,7 +725,14 @@ class SessionTabsController extends _$SessionTabsController {
           }
         }
         final seen = <String>{};
-        final root = _restoreNode(saved.root, entries.keys.toSet(), seen);
+        final restoredRoot = _restoreNode(
+          saved.root,
+          entries.keys.toSet(),
+          seen,
+        );
+        final root = restoredRoot == null
+            ? null
+            : normalizeWorkspacePaneCount(restoredRoot, saved.focusedPaneId);
         if (root != null && entries.isNotEmpty) {
           entries.removeWhere((id, _) => !seen.contains(id));
           final panes = _panes(root);
@@ -886,6 +896,36 @@ List<PaneNode> _panes(WorkspacePaneNode node) => switch (node) {
     ..._panes(node.second),
   ],
 };
+
+/// Limits a restored layout to two content panes while retaining every tab.
+WorkspacePaneNode normalizeWorkspacePaneCount(
+  WorkspacePaneNode root,
+  String focusedPaneId,
+) {
+  final panes = _panes(root);
+  if (panes.length <= 2) return root;
+  final first = panes.first;
+  final focused = panes.firstWhere(
+    (pane) => pane.id == focusedPaneId,
+    orElse: () => first,
+  );
+  final second = identical(first, focused) ? panes[1] : focused;
+  final mergedIds = <String>[
+    for (final pane in panes)
+      if (pane.id != first.id) ...pane.tabIds,
+  ];
+  final mergedSecond = second.copyWith(
+    tabIds: mergedIds,
+    activeTabId: second.activeTabId,
+  );
+  return WorkspaceSplitNode(
+    id: root is WorkspaceSplitNode ? root.id : 'split:${first.id}:${second.id}',
+    axis: WorkspaceSplitAxis.horizontal,
+    ratio: root is WorkspaceSplitNode ? root.ratio : 0.5,
+    first: first,
+    second: mergedSecond,
+  );
+}
 
 PaneNode? _findPane(WorkspacePaneNode node, String id) => switch (node) {
   PaneNode() => node.id == id ? node : null,

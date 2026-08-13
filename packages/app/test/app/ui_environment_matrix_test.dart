@@ -101,8 +101,10 @@ Future<MemoryAppStore> _pumpOfflineShell(
   required String localeTag,
   required AppThemeMode themeMode,
 }) async {
-  await tester.binding.setSurfaceSize(size);
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  tester.view
+    ..devicePixelRatio = 1
+    ..physicalSize = size;
+  addTearDown(tester.view.reset);
   final store = MemoryAppStore(
     settings: AppSettings(
       embeddedDaemonEnabled: false,

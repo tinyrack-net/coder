@@ -1307,7 +1307,8 @@ const List<UiVariantContract> _routeViewportVariant = <UiVariantContract>[
   UiVariantContract(
     id: 'desktop_mobile_light_korean',
     description:
-        'Light Korean UI renders at 1200x900 desktop and 390x760 mobile sizes.',
+        'Light Korean UI renders at 1200x900 desktop, 800x900 tablet, and '
+        '390x760 mobile sizes.',
   ),
 ];
 

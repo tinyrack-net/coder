@@ -55,8 +55,10 @@ void main() {
   );
 
   Future<void> useDesktop(WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(1200, 900);
+    addTearDown(tester.view.reset);
   }
 
   testWidgets(

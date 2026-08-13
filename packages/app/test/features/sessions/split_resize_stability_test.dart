@@ -44,7 +44,7 @@ void main() {
   testWidgets(
     'ending a split resize drag never reloads the open session',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await tester.binding.setSurfaceSize(const Size(1200, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
@@ -123,7 +123,7 @@ void main() {
   testWidgets(
     'a resize drag keeps the divider under the pointer',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      await tester.binding.setSurfaceSize(const Size(1200, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],

@@ -46,6 +46,8 @@ void main() {
     (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
       await _pumpSettings(tester, api);
 
@@ -181,6 +183,8 @@ void main() {
   );
 
   testWidgets('catalog and prefix failures recover inline', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final api = FakeTinestApi(
       connections: <ProviderConnectionDto>[],
       catalogRefreshError: const TinestClientException(

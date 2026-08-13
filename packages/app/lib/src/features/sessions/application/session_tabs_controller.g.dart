@@ -54,7 +54,7 @@ final class SessionTabsControllerProvider
 }
 
 String _$sessionTabsControllerHash() =>
-    r'40bb6383fc36725293908bef109eaf8e5fa92691';
+    r'819638f9bc73b72de7ba3789955d1802ce8ca885';
 
 /// Owns local workspace tabs and pane layout independently per worktree.
 

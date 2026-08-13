@@ -5,7 +5,7 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'host-scoped settings keep the selected daemon across categories',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      await _setTestViewport(tester, const Size(1200, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final first = FakeTinestApi(
         serverInfo: const ServerInfoDto(
@@ -124,7 +124,7 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'the settings sidebar daemon select is framed by the sidebar, not itself',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      await _setTestViewport(tester, const Size(1200, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         serverInfo: const ServerInfoDto(
@@ -199,7 +199,7 @@ void _registerSettingsAppFlows() {
   testWidgets('settings combines Projects, Agent, Provider, and Daemon', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(1100, 760));
+    await _setTestViewport(tester, const Size(1400, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final api = FakeTinestApi();
     final router = await _pumpRoute(
@@ -239,7 +239,7 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'desktop settings opens Connections for the selected daemon',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      await _setTestViewport(tester, const Size(1200, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
@@ -270,8 +270,10 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'mobile daemon settings opens Connections and returns to categories',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 844));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
       final router = await _pumpRoute(
         tester,
         FakeTinestApi(),
@@ -308,7 +310,7 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'mobile settings navigation rows remain keyboard activatable',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await _setTestViewport(tester, const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
@@ -335,7 +337,7 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'mobile settings navigation rows expose hover and pressed surfaces',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await _setTestViewport(tester, const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final router = await _pumpRoute(
         tester,
@@ -401,8 +403,10 @@ void _registerSettingsAppFlows() {
   testWidgets(
     'mobile settings drills from home into daemon MCP settings',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(390, 844));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 844);
+      addTearDown(tester.view.reset);
       final router = await _pumpRoute(
         tester,
         FakeTinestApi(),

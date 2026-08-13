@@ -137,8 +137,14 @@ void main() {
           terminalId: terminal.id,
         ).location,
       ];
-      for (final size in <Size>[const Size(1200, 900), const Size(390, 760)]) {
-        await tester.binding.setSurfaceSize(size);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      for (final size in <Size>[
+        const Size(1200, 900),
+        const Size(800, 900),
+        const Size(390, 760),
+      ]) {
+        tester.view.physicalSize = size;
         final routed = FakeTinestApi(
           workspaces: <WorkspaceDto>[workspace],
           worktrees: <WorktreeDto>[worktree],
@@ -183,7 +189,6 @@ void main() {
         await tester.pumpAndSettle();
         router.dispose();
       }
-      await tester.binding.setSurfaceSize(null);
     },
     tags: const <String>[
       'route_test__workspace_home_route__widget',
@@ -494,8 +499,14 @@ Future<void> _verifyRoute(
   String location,
   Finder expected,
 ) async {
-  for (final size in <Size>[const Size(1200, 900), const Size(390, 760)]) {
-    await tester.binding.setSurfaceSize(size);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  for (final size in <Size>[
+    const Size(1200, 900),
+    const Size(800, 900),
+    const Size(390, 760),
+  ]) {
+    tester.view.physicalSize = size;
     final router = GoRouter(initialLocation: location, routes: $appRoutes);
     await tester.pumpWidget(
       ProviderScope(
@@ -526,5 +537,4 @@ Future<void> _verifyRoute(
     await tester.pumpAndSettle();
     router.dispose();
   }
-  await tester.binding.setSurfaceSize(null);
 }
