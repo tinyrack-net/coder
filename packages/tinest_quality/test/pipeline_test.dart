@@ -663,14 +663,30 @@ void main() {
     expect(ibusTerminalRunner, isNot(contains('mise')));
   });
 
-  test('mobile nightly jobs run the remote-only bootstrap E2E', () {
-    for (final job in <String>[
-      _job(workflow, 'nightly-android-smoke'),
-      _job(workflow, 'nightly-ios-smoke'),
-    ]) {
+  test('mobile nightly jobs run remote and Android terminal E2E', () {
+    final android = _job(workflow, 'nightly-android-smoke');
+    final ios = _job(workflow, 'nightly-ios-smoke');
+    for (final job in <String>[android, ios]) {
       expect(job, contains('remote_bootstrap_smoke_test.dart'));
       expect(job, isNot(contains('provider_e2e_test.dart')));
     }
+    expect(android, contains('mobile_terminal_input_smoke_test.dart'));
+    expect(ios, isNot(contains('mobile_terminal_input_smoke_test.dart')));
+    expect(android, contains('script: >-'));
+    expect(android, isNot(contains('script: |')));
+    expect(android, contains('cd packages/app &&'));
+    expect(
+      android,
+      contains(
+        'remote_bootstrap_smoke_test.dart\n            -d emulator-5554 &&',
+      ),
+    );
+    expect(
+      android,
+      contains(
+        'mobile_terminal_input_smoke_test.dart\n            -d emulator-5554',
+      ),
+    );
   });
 
   test('only Android mobile builds use the enhanced Gradle cache', () {

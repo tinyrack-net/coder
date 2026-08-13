@@ -1202,7 +1202,7 @@ jobs:
           path: build/e2e-${{ matrix.scenario }}.json
 
   nightly-android-smoke:
-    name: Nightly Android Remote E2E
+    name: Nightly Android Remote and Terminal E2E
     if: github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -1217,6 +1217,8 @@ jobs:
           script: >-
             cd packages/app &&
             flutter test integration_test/remote_bootstrap_smoke_test.dart
+            -d emulator-5554 &&
+            flutter test integration_test/mobile_terminal_input_smoke_test.dart
             -d emulator-5554
 
   nightly-ios-smoke:
