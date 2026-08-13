@@ -936,6 +936,8 @@ void _registerSessionsAppFlows() {
   testWidgets(
     'terminal ignores the duplicate commit a sticky input method repeats',
     (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
       await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
@@ -957,33 +959,42 @@ void _registerSessionsAppFlows() {
 
       // A sticky input method ends its composition session by reporting the
       // unchanged committed buffer one more time, without a new character.
-      for (final value in const <TextEditingValue>[
-        TextEditingValue(
-          text: '한',
-          selection: TextSelection.collapsed(offset: 1),
-          composing: TextRange(start: 0, end: 1),
+      final client = tester.allStates.whereType<DeltaTextInputClient>().single;
+      for (final delta in <TextEditingDelta>[
+        const TextEditingDeltaInsertion(
+          oldText: '  ',
+          textInserted: '한',
+          insertionOffset: 2,
+          selection: TextSelection.collapsed(offset: 3),
+          composing: TextRange(start: 2, end: 3),
         ),
-        TextEditingValue(
-          text: '한',
-          selection: TextSelection.collapsed(offset: 1),
+        const TextEditingDeltaNonTextUpdate(
+          oldText: '  한',
+          selection: TextSelection.collapsed(offset: 3),
+          composing: TextRange.empty,
         ),
-        TextEditingValue(
-          text: '한솔',
-          selection: TextSelection.collapsed(offset: 2),
-          composing: TextRange(start: 1, end: 2),
+        const TextEditingDeltaInsertion(
+          oldText: '  한',
+          textInserted: '솔',
+          insertionOffset: 3,
+          selection: TextSelection.collapsed(offset: 4),
+          composing: TextRange(start: 3, end: 4),
         ),
-        TextEditingValue(
-          text: '한솔',
-          selection: TextSelection.collapsed(offset: 2),
+        const TextEditingDeltaNonTextUpdate(
+          oldText: '  한솔',
+          selection: TextSelection.collapsed(offset: 4),
+          composing: TextRange.empty,
         ),
-        TextEditingValue(
-          text: '한솔',
-          selection: TextSelection.collapsed(offset: 2),
+        const TextEditingDeltaNonTextUpdate(
+          oldText: '  한솔',
+          selection: TextSelection.collapsed(offset: 4),
+          composing: TextRange.empty,
         ),
       ]) {
-        tester.testTextInput.updateEditingValue(value);
+        client.updateEditingValueWithDeltas(<TextEditingDelta>[delta]);
         await tester.pump();
       }
+      debugDefaultTargetPlatformOverride = null;
 
       expect(
         api.terminalWrites.map((write) => write.data).join(),

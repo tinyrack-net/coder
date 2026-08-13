@@ -185,7 +185,15 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      - run: >-
+      # Dart 3.13 rewrites native-library install names before a suite starts.
+      # Concurrent macOS suites can race while replacing the shared dylib, so
+      # keep package execution serial there; Windows has no such rewrite.
+      - if: matrix.os == 'macos-26'
+        run: >-
+          dart run tinest_quality _test-dart --jobs=1
+          --report=build/quality/dart-tests.json
+      - if: matrix.os != 'macos-26'
+        run: >-
           dart run tinest_quality _test-dart
           --report=build/quality/dart-tests.json
       - if: always()
@@ -1202,7 +1210,7 @@ jobs:
           path: build/e2e-${{ matrix.scenario }}.json
 
   nightly-android-smoke:
-    name: Nightly Android Remote E2E
+    name: Nightly Android Remote and Terminal E2E
     if: github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -1217,6 +1225,8 @@ jobs:
           script: >-
             cd packages/app &&
             flutter test integration_test/remote_bootstrap_smoke_test.dart
+            -d emulator-5554 &&
+            flutter test integration_test/mobile_terminal_input_smoke_test.dart
             -d emulator-5554
 
   nightly-ios-smoke:

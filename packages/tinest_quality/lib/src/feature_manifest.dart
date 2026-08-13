@@ -655,6 +655,14 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
             'the Control+Shift+C/V clipboard chords.',
         surfaces: _desktop,
       ),
+      FeatureScenario(
+        id: 'mobile_software_keyboard_input',
+        description:
+            'Restores the focused terminal input connection on mobile and '
+            'forwards Korean text and Enter to the daemon without loss, '
+            'duplication, or line-ending drift.',
+        surfaces: <FeatureSurface>{FeatureSurface.mobile},
+      ),
     ],
   ),
   FeatureContract(

@@ -131,6 +131,13 @@ void main() {
     expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
   });
 
+  test('macOS Dart suites serialize native-asset installation', () {
+    final dart = _job(workflow, 'dart-tests');
+    expect(dart, contains("matrix.os == 'macos-26'"));
+    expect(dart, contains('dart run tinest_quality _test-dart --jobs=1'));
+    expect(dart, contains("matrix.os != 'macos-26'"));
+  });
+
   test('Windows fetches the SDK archive instead of the Actions cache', () {
     // The cached blob and the published archive are the same size on every
     // host (Windows 1.81 GB against 1.8, macOS 2.08 against 2.1, Linux 1.69
@@ -663,14 +670,30 @@ void main() {
     expect(ibusTerminalRunner, isNot(contains('mise')));
   });
 
-  test('mobile nightly jobs run the remote-only bootstrap E2E', () {
-    for (final job in <String>[
-      _job(workflow, 'nightly-android-smoke'),
-      _job(workflow, 'nightly-ios-smoke'),
-    ]) {
+  test('mobile nightly jobs run remote and Android terminal E2E', () {
+    final android = _job(workflow, 'nightly-android-smoke');
+    final ios = _job(workflow, 'nightly-ios-smoke');
+    for (final job in <String>[android, ios]) {
       expect(job, contains('remote_bootstrap_smoke_test.dart'));
       expect(job, isNot(contains('provider_e2e_test.dart')));
     }
+    expect(android, contains('mobile_terminal_input_smoke_test.dart'));
+    expect(ios, isNot(contains('mobile_terminal_input_smoke_test.dart')));
+    expect(android, contains('script: >-'));
+    expect(android, isNot(contains('script: |')));
+    expect(android, contains('cd packages/app &&'));
+    expect(
+      android,
+      contains(
+        'remote_bootstrap_smoke_test.dart\n            -d emulator-5554 &&',
+      ),
+    );
+    expect(
+      android,
+      contains(
+        'mobile_terminal_input_smoke_test.dart\n            -d emulator-5554',
+      ),
+    );
   });
 
   test('only Android mobile builds use the enhanced Gradle cache', () {
