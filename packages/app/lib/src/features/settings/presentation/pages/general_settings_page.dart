@@ -39,7 +39,11 @@ class GeneralSettingsPage extends ConsumerWidget {
       loading: SettingsSkeletonLayout.form(
         semanticLabel: l10n.settingsLoading,
       ),
-      error: (error, _) => Center(child: TRText.inherit('$error')),
+      error: (error, _) => SettingsErrorState(
+        key: const ValueKey<String>('general-settings-error'),
+        error: error,
+        onRetry: () => ref.invalidate(hostRegistryControllerProvider),
+      ),
       data: (_) => const SettingsScaffold(
         children: <Widget>[
           _AppearanceSection(),

@@ -1,4 +1,5 @@
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -57,6 +58,36 @@ void main() {
     );
   });
 
+  testWidgets('narrow task header wraps instead of truncating its title', (
+    tester,
+  ) async {
+    const viewport = Size(344, 672);
+    const titleKey = ValueKey<String>('long-title');
+    await tester.binding.setSurfaceSize(viewport);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      _host(
+        padding: EdgeInsets.zero,
+        textScaler: const TextScaler.linear(2),
+        title: const Text(
+          'Add a remote daemon connection',
+          key: titleKey,
+        ),
+        actions: [
+          TRButton(onPressed: () {}, child: const Text('Save')),
+        ],
+        body: const SizedBox.expand(),
+      ),
+    );
+
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.byKey(titleKey),
+    );
+    expect(paragraph.didExceedMaxLines, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'mobile input and primary action remain above the software keyboard',
     (tester) async {
@@ -111,6 +142,9 @@ Widget _host({
   required EdgeInsets padding,
   required Widget body,
   EdgeInsets viewInsets = EdgeInsets.zero,
+  TextScaler textScaler = TextScaler.noScaling,
+  Widget title = const Text('Title', key: ValueKey<String>('title')),
+  List<Widget> actions = const [],
 }) => MaterialApp(
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,
@@ -122,12 +156,14 @@ Widget _host({
       padding: padding,
       viewPadding: padding,
       viewInsets: viewInsets,
+      textScaler: textScaler,
     ),
     child: child!,
   ),
   home: TinestPageShell(
-    appBar: const TinestPageHeader(
-      title: Text('Title', key: ValueKey<String>('title')),
+    appBar: TinestPageHeader(
+      title: title,
+      actions: actions,
     ),
     body: body,
   ),

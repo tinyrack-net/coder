@@ -1,5 +1,7 @@
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
+import 'package:app/src/features/permissions/application/permission_settings_controller.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -172,8 +174,130 @@ void main() {
 
       expect(find.byType(TRDrawer), findsOneWidget);
       expect(find.byType(TRTextField), findsOneWidget);
+      final sheetOptions = find.descendant(
+        of: find.byType(TRDrawer),
+        matching: find.byType(TextButton),
+      );
+      expect(sheetOptions, findsWidgets);
+      for (final element in sheetOptions.evaluate()) {
+        expect(
+          tester.getSize(find.byWidget(element.widget)).height,
+          greaterThanOrEqualTo(48),
+        );
+      }
       expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__permission_settings__widget'],
   );
+
+  testWidgets(
+    'permission Select inherits the comfortable mobile control size',
+    (tester) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 760);
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: const PermissionSettingsRoute(
+          hostId: 'server',
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(
+              fakeAppServices(FakeTinestApi()),
+            ),
+          ],
+          child: TRUiDensityScope(
+            density: TRUiDensity.comfortable,
+            child: MaterialApp.router(
+              theme: testLightTheme,
+              locale: testLocale,
+              localizationsDelegates: testLocalizationsDelegates,
+              supportedLocales: testSupportedLocales,
+              routerConfig: router,
+              builder: (context, child) =>
+                  TinestToastScope(child: child ?? const SizedBox.shrink()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final trigger = find.descendant(
+        of: find.byKey(
+          const ValueKey<String>('permission-settings-change'),
+        ),
+        matching: find.byType(TextButton),
+      );
+      expect(trigger, findsOneWidget);
+      expect(
+        tester.getRect(trigger).height,
+        TRControlMetrics.heightOf(TRUiSize.xl),
+      );
+    },
+    tags: const <String>['feature_test__permission_settings__widget'],
+  );
+
+  testWidgets(
+    'a blocking permission load error uses the shared settings hierarchy',
+    (tester) async {
+      final router = GoRouter(
+        initialLocation: const PermissionSettingsRoute(
+          hostId: 'server',
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(
+              fakeAppServices(FakeTinestApi()),
+            ),
+            permissionSettingsControllerProvider('server').overrideWith(
+              _ErrorPermissionSettingsController.new,
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final state = find.byType(SettingsEmptyState);
+      expect(state, findsOneWidget);
+      expect(
+        find.descendant(
+          of: state,
+          matching: find.widgetWithText(TRText, '문제가 발생했습니다.'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('permissions unavailable'), findsOneWidget);
+      expect(find.widgetWithText(TRButton, '다시 시도'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__permission_settings__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
+  );
+}
+
+final class _ErrorPermissionSettingsController
+    extends PermissionSettingsController {
+  @override
+  Future<PermissionSettingsDto> build(String hostId) =>
+      Future<PermissionSettingsDto>.error(
+        StateError('permissions unavailable'),
+      );
 }

@@ -732,7 +732,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayConfirmDescription => 'このデバイスを登録する前にDaemonとリレーを確認してください。';
 
   @override
-  String get relayConfirmDaemon => 'Daemon ID';
+  String get relayConfirmDaemon => 'デーモン ID';
 
   @override
   String get relayConfirmRelay => 'リレーサーバー';
@@ -847,7 +847,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayPathDirect => '直接';
 
   @override
-  String get relayPathRelay => 'Relay';
+  String get relayPathRelay => 'リレー';
 
   @override
   String get relayConnectionDetails => '接続の詳細';
@@ -947,6 +947,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get agentSettingsSelectAgent => 'エージェントを選択してください。';
+
+  @override
+  String get agentSettingsEmpty => '設定されたエージェントはありません。';
 
   @override
   String agentSettingsCount(int count) {
@@ -1998,6 +2001,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get skillSettingsSelectSkill => 'スキルを選択してください。';
+
+  @override
+  String get skillSettingsEmpty => '設定されたスキルはありません。';
 
   @override
   String get skillSettingsList => 'スキル一覧';

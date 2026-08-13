@@ -17,6 +17,7 @@ import 'package:app/src/features/settings/presentation/pages/general_settings_pa
 import 'package:app/src/features/skills/presentation/pages/skill_settings_page.dart';
 import 'package:app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -56,9 +57,13 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   late final TRThreePaneNavigator<String> _adaptiveNavigation;
+  late final ProjectSettingsPaneController _projectPanes;
+  late final AgentSettingsPaneController _agentPanes;
+  late final McpSettingsPaneController _mcpPanes;
+  late final SkillSettingsPaneController _skillPanes;
+  late final ProviderSettingsPaneController _providerPanes;
+  late final Map<SettingsCategory, SettingsPaneCoordinator> _paneControllers;
   bool _adaptiveSyncScheduled = false;
-  final SettingsPaneNavigationController _paneNavigation =
-      SettingsPaneNavigationController();
 
   /// Daemon this page has already adopted from a route.
   ///
@@ -74,7 +79,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     _adaptiveNavigation = TRThreePaneNavigator<String>(
       initialDestination: _settingsDestination(widget),
     );
-    _paneNavigation.addListener(_paneNavigationChanged);
+    _projectPanes = ProjectSettingsPaneController();
+    _agentPanes = AgentSettingsPaneController();
+    _mcpPanes = McpSettingsPaneController();
+    _skillPanes = SkillSettingsPaneController();
+    _providerPanes = ProviderSettingsPaneController();
+    _paneControllers = <SettingsCategory, SettingsPaneCoordinator>{
+      SettingsCategory.project: _projectPanes,
+      SettingsCategory.agent: _agentPanes,
+      SettingsCategory.mcp: _mcpPanes,
+      SettingsCategory.skill: _skillPanes,
+      SettingsCategory.provider: _providerPanes,
+    };
+    for (final MapEntry(key: category, value: controller)
+        in _paneControllers.entries) {
+      controller.addListener(
+        () => _paneDestinationChanged(category, controller),
+      );
+    }
     // A deep link naming a daemon wins once, then the persisted selection
     // takes over so switching categories never resets it.
     WidgetsBinding.instance.addPostFrameCallback((_) => _adoptRouteHost());
@@ -83,15 +105,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   @override
   void dispose() {
     _adaptiveNavigation.dispose();
-    _paneNavigation
-      ..removeListener(_paneNavigationChanged)
-      ..dispose();
+    _projectPanes.dispose();
+    _agentPanes.dispose();
+    _mcpPanes.dispose();
+    _skillPanes.dispose();
+    _providerPanes.dispose();
     super.dispose();
   }
 
   @override
   void didUpdateWidget(UnifiedSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category ||
+        oldWidget.hostId != widget.hostId ||
+        oldWidget.workspaceId != widget.workspaceId) {
+      for (final controller in _paneControllers.values) {
+        controller.reset();
+      }
+    }
     _scheduleAdaptiveDestinationSync();
   }
 
@@ -105,13 +136,33 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       final current = _adaptiveNavigation.currentDestination;
       if (current.value != destination.value ||
           current.role != destination.role) {
-        _adaptiveNavigation.replace(destination);
+        _adaptiveNavigation.reset(destination);
       }
     });
   }
 
-  void _paneNavigationChanged() {
-    if (mounted) setState(() {});
+  void _paneDestinationChanged(
+    SettingsCategory category,
+    SettingsPaneCoordinator controller,
+  ) {
+    if (!mounted || widget.category != category) return;
+    final destinationId = controller.destinationId;
+    final current = _adaptiveNavigation.currentDestination;
+    if (destinationId == null) {
+      if (current.role == TRPaneRole.secondary && !_adaptiveNavigation.pop()) {
+        _adaptiveNavigation.reset(_settingsDestination(widget));
+      }
+      return;
+    }
+    final destination = TRPaneDestination<String>(
+      role: TRPaneRole.secondary,
+      value: 'settings-${category.name}-$destinationId',
+    );
+    if (current.role == TRPaneRole.secondary) {
+      _adaptiveNavigation.replace(destination);
+    } else {
+      _adaptiveNavigation.push(destination);
+    }
   }
 
   void _adoptRouteHost() {
@@ -144,51 +195,71 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         (widget.hostId == null
             ? SettingsCategory.general
             : SettingsCategory.provider);
-    final detail = switch (category) {
-      SettingsCategory.general => const GeneralSettingsPage(embedded: true),
-      SettingsCategory.project => _HostScopedDetail(
-        host: host,
-        loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.listDetail(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
+    final l10n = AppLocalizations.of(context);
+    final panes = switch (category) {
+      SettingsCategory.general => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(l10n, SettingsCategory.general),
+          child: const GeneralSettingsPage(embedded: true),
         ),
-        builder: (hostId) => ProjectSettingsPage(hostId: hostId),
       ),
-      SettingsCategory.agent => _HostScopedDetail(
+      SettingsCategory.project => _hostListDetailPanes(
         host: host,
         loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.listDetail(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
-        ),
-        builder: (hostId) => AgentSettingsPage(hostId: hostId),
-      ),
-      SettingsCategory.mcp => _HostScopedDetail(
-        host: host,
-        loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.listDetail(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
-        ),
-        builder: (hostId) => McpSettingsPage(hostId: hostId),
-      ),
-      SettingsCategory.connection => _HostScopedDetail(
-        host: host,
-        loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.form(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
-        ),
-        builder: (hostId) => DaemonConnectionsPage(
+        semanticLabel: l10n.settingsLoading,
+        builder: (hostId, slot) => ProjectSettingsPage(
           hostId: hostId,
-          embedded: true,
+          paneController: _projectPanes,
+          slot: slot,
         ),
       ),
-      SettingsCategory.skill => _HostScopedDetail(
+      SettingsCategory.agent => _hostListDetailPanes(
         host: host,
         loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.listDetail(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
-        ),
-        builder: (hostId) => SkillSettingsPage(
+        semanticLabel: l10n.settingsLoading,
+        builder: (hostId, slot) => AgentSettingsPage(
           hostId: hostId,
+          paneController: _agentPanes,
+          slot: slot,
+        ),
+      ),
+      SettingsCategory.mcp => _hostListDetailPanes(
+        host: host,
+        loading: registryLoading,
+        semanticLabel: l10n.settingsLoading,
+        builder: (hostId, slot) => McpSettingsPage(
+          hostId: hostId,
+          paneController: _mcpPanes,
+          slot: slot,
+        ),
+      ),
+      SettingsCategory.connection => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(
+            l10n,
+            SettingsCategory.connection,
+          ),
+          child: _HostScopedDetail(
+            host: host,
+            loading: registryLoading,
+            loadingChild: SettingsSkeletonLayout.form(
+              semanticLabel: AppLocalizations.of(context).settingsLoading,
+            ),
+            builder: (hostId) => DaemonConnectionsPage(
+              hostId: hostId,
+              embedded: true,
+            ),
+          ),
+        ),
+      ),
+      SettingsCategory.skill => _hostListDetailPanes(
+        host: host,
+        loading: registryLoading,
+        semanticLabel: l10n.settingsLoading,
+        builder: (hostId, slot) => SkillSettingsPage(
+          hostId: hostId,
+          paneController: _skillPanes,
+          slot: slot,
           workspaceId: widget.workspaceId,
           onWorkspaceChanged: (value) => SkillSettingsRoute(
             hostId: hostId,
@@ -196,33 +267,57 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           ).replace(context),
         ),
       ),
-      SettingsCategory.provider => _HostScopedDetail(
+      SettingsCategory.provider => _hostListDetailPanes(
         host: host,
         loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.form(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
+        semanticLabel: l10n.settingsLoading,
+        builder: (hostId, slot) => SettingsPage(
+          hostId: hostId,
+          paneController: _providerPanes,
+          slot: slot,
+          embedded: true,
         ),
-        builder: (hostId) => SettingsPage(hostId: hostId, embedded: true),
       ),
-      SettingsCategory.permission => _HostScopedDetail(
-        host: host,
-        loading: registryLoading,
-        loadingChild: SettingsSkeletonLayout.form(
-          semanticLabel: AppLocalizations.of(context).settingsLoading,
+      SettingsCategory.permission => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(
+            l10n,
+            SettingsCategory.permission,
+          ),
+          child: _HostScopedDetail(
+            host: host,
+            loading: registryLoading,
+            loadingChild: SettingsSkeletonLayout.form(
+              semanticLabel: AppLocalizations.of(context).settingsLoading,
+            ),
+            builder: (hostId) => PermissionSettingsPage(hostId: hostId),
+          ),
         ),
-        builder: (hostId) => PermissionSettingsPage(hostId: hostId),
       ),
-      SettingsCategory.daemon => const AppSettingsPage(embedded: true),
-      SettingsCategory.advanced => const AdvancedSettingsPage(embedded: true),
+      SettingsCategory.daemon => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(
+            l10n,
+            SettingsCategory.daemon,
+          ),
+          child: const AppSettingsPage(embedded: true),
+        ),
+      ),
+      SettingsCategory.advanced => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(
+            l10n,
+            SettingsCategory.advanced,
+          ),
+          child: const AdvancedSettingsPage(embedded: true),
+        ),
+      ),
     };
     final primary = switch ((widget.category, widget.hostId)) {
       (null, final String requestedHostId) => _MobileDaemonCategories(
         host: registry?.runtimes[requestedHostId],
       ),
-      _ => SettingsPaneNavigationScope(
-        controller: _paneNavigation,
-        child: detail,
-      ),
+      _ => panes.primary,
     };
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -245,41 +340,65 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
                   ),
                 ),
           primaryPane: primary,
+          secondaryPane: widget.category == null ? null : panes.secondary,
         );
+        final paneController = _paneControllers[widget.category];
         final hasLogicalParent =
-            _paneNavigation.canGoBack ||
+            (paneController?.hasDetail ?? false) ||
             (compact && (widget.category != null || widget.hostId != null));
-        return SettingsAdaptiveWidthScope(
-          widthClass: widthClass,
-          child: PopScope<Object?>(
-            canPop: !hasLogicalParent && Navigator.of(context).canPop(),
-            onPopInvokedWithResult: (didPop, _) {
-              if (!didPop) _goBack(compact: compact, hostId: hostId);
-            },
-            child: TinestPageShell(
-              appBar: TinestPageHeader(
-                leading: TRIconButton(
-                  key: const ValueKey<String>('settings-back-button'),
-                  appearance: TRAppearance.ghost,
-                  label: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => _goBack(compact: compact, hostId: hostId),
-                  icon: const Icon(TinestIcons.back),
-                ),
-                title: TRText.inherit(
-                  AppLocalizations.of(context).settingsTitle,
-                ),
+        return PopScope<Object?>(
+          canPop: !hasLogicalParent && Navigator.of(context).canPop(),
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _goBack(compact: compact, hostId: hostId);
+          },
+          child: TinestPageShell(
+            appBar: TinestPageHeader(
+              leading: TRIconButton(
+                key: const ValueKey<String>('settings-back-button'),
+                appearance: TRAppearance.ghost,
+                label: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => _goBack(compact: compact, hostId: hostId),
+                icon: Icon(TinestIcons.backFor(context)),
               ),
-              body: body,
+              title: TRText.inherit(
+                AppLocalizations.of(context).settingsTitle,
+              ),
             ),
+            body: body,
           ),
         );
       },
     );
   }
 
+  _SettingsPanePair _hostListDetailPanes({
+    required HostRuntimeSnapshot? host,
+    required bool loading,
+    required String semanticLabel,
+    required Widget Function(String hostId, SettingsPaneSlot slot) builder,
+  }) => _SettingsPanePair(
+    primary: _HostScopedDetail(
+      host: host,
+      loading: loading,
+      loadingChild: SettingsSkeletonLayout.collection(
+        semanticLabel: semanticLabel,
+      ),
+      builder: (hostId) => builder(hostId, SettingsPaneSlot.collection),
+    ),
+    secondary: _HostScopedDetail(
+      host: host,
+      loading: loading,
+      loadingChild: SettingsSkeletonLayout.detail(
+        semanticLabel: semanticLabel,
+      ),
+      builder: (hostId) => builder(hostId, SettingsPaneSlot.detail),
+    ),
+  );
+
   void _goBack({required bool compact, required String? hostId}) {
-    if (_paneNavigation.canGoBack) {
-      _paneNavigation.goBack();
+    final paneController = _paneControllers[widget.category];
+    if (paneController?.hasDetail ?? false) {
+      paneController!.showCollection();
       return;
     }
     if (compact) {
@@ -299,6 +418,32 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     }
     closeTask(context, () => const WorkspaceHomeRoute().go(context));
   }
+}
+
+class _SettingsPanePair {
+  const _SettingsPanePair({required this.primary, this.secondary});
+
+  final Widget primary;
+  final Widget? secondary;
+}
+
+class _SettingsSimplePane extends StatelessWidget {
+  const _SettingsSimplePane({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      TRPaneHeader(
+        title: TRText.inherit(title),
+        contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      ),
+      Expanded(child: child),
+    ],
+  );
 }
 
 TRPaneDestination<String> _settingsDestination(UnifiedSettingsPage page) {
@@ -342,12 +487,15 @@ class _MobileSettingsHome extends StatelessWidget {
                 SettingsCategoryScope.app,
               ))
                 TRTreeNavLeaf<SettingsCategory>(
+                  key: ValueKey<String>(
+                    'settings-category-row-${category.name}',
+                  ),
                   value: category,
                   leading: Icon(_settingsCategoryIcon(category)),
                   label: TRText.inherit(
                     _settingsCategoryLabel(l10n, category),
                   ),
-                  trailing: const Icon(TinestIcons.chevronRight),
+                  trailing: Icon(TinestIcons.forwardFor(context)),
                 ),
             ],
             onValueChange: (category) {
@@ -358,26 +506,38 @@ class _MobileSettingsHome extends StatelessWidget {
         ),
         TRNavigationSection(
           label: Text(l10n.settingsSectionDaemon),
-          child: TRTreeNav<String>.controlled(
-            value: null,
-            semanticLabel: l10n.settingsSectionDaemon,
-            itemSpacing: TRSpacing.extraSmall,
-            items: <TRTreeNavItem<String>>[
-              for (final host in hosts)
-                TRTreeNavLeaf<String>(
-                  key: ValueKey<String>('settings-daemon-row-${host.id}'),
-                  value: host.id,
-                  leading: Icon(hostStatusIcon(host.status)),
-                  label: TRText.inherit(hostLabel(l10n, host)),
-                  description: TRText.inherit(hostStatusText(l10n, host)),
-                  trailing: const Icon(TinestIcons.chevronRight),
+          child: hosts.isEmpty
+              ? SettingsNavigationRow(
+                  key: const ValueKey<String>('settings-daemon-empty-row'),
+                  enabled: false,
+                  leading: const Icon(TinestIcons.daemon),
+                  title: TRText.inherit(l10n.settingsDaemonSelectEmpty),
+                  onPressed: null,
+                )
+              : TRTreeNav<String>.controlled(
+                  value: null,
+                  semanticLabel: l10n.settingsSectionDaemon,
+                  itemSpacing: TRSpacing.extraSmall,
+                  items: <TRTreeNavItem<String>>[
+                    for (final host in hosts)
+                      TRTreeNavLeaf<String>(
+                        key: ValueKey<String>(
+                          'settings-daemon-row-${host.id}',
+                        ),
+                        value: host.id,
+                        leading: Icon(hostStatusIcon(host.status)),
+                        label: TRText.inherit(hostLabel(l10n, host)),
+                        description: TRText.inherit(
+                          hostStatusText(l10n, host),
+                        ),
+                        trailing: Icon(TinestIcons.forwardFor(context)),
+                      ),
+                  ],
+                  onValueChange: (hostId) {
+                    if (hostId == null) return;
+                    unawaited(_openDaemonCategories(context, hostId));
+                  },
                 ),
-            ],
-            onValueChange: (hostId) {
-              if (hostId == null) return;
-              unawaited(_openDaemonCategories(context, hostId));
-            },
-          ),
         ),
       ],
     );
@@ -414,12 +574,12 @@ class _MobileDaemonCategories extends StatelessWidget {
     }
     return Column(
       children: <Widget>[
-        SettingsPaneHeader.list(
-          title: hostLabel(l10n, host),
-          subtitle: hostStatusText(l10n, host),
+        TRPaneHeader(
+          title: TRText.inherit(hostLabel(l10n, host)),
+          description: TRText.inherit(hostStatusText(l10n, host)),
         ),
         Expanded(
-          child: ListView(
+          child: TRNavigationPane(
             children: <Widget>[
               TRTreeNav<SettingsCategory>.controlled(
                 value: null,
@@ -430,12 +590,15 @@ class _MobileDaemonCategories extends StatelessWidget {
                     SettingsCategoryScope.daemon,
                   ))
                     TRTreeNavLeaf<SettingsCategory>(
+                      key: ValueKey<String>(
+                        'settings-category-row-${category.name}',
+                      ),
                       value: category,
                       leading: Icon(_settingsCategoryIcon(category)),
                       label: TRText.inherit(
                         _settingsCategoryLabel(l10n, category),
                       ),
-                      trailing: const Icon(TinestIcons.chevronRight),
+                      trailing: Icon(TinestIcons.forwardFor(context)),
                     ),
                 ],
                 onValueChange: (category) {
@@ -483,7 +646,6 @@ class _SettingsSidebar extends StatelessWidget {
             children: <Widget>[
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: TRSpacing.extraSmall,
                   vertical: TRSpacing.extraSmall,
                 ),
                 child: _DaemonSelect(
@@ -521,6 +683,9 @@ class _SettingsSidebar extends StatelessWidget {
       items: <TRTreeNavItem<SettingsCategory>>[
         for (final category in _categoriesInScope(scope))
           TRTreeNavLeaf<SettingsCategory>(
+            key: ValueKey<String>(
+              'settings-category-row-${category.name}',
+            ),
             value: category,
             leading: Icon(_settingsCategoryIcon(category)),
             label: TRText.inherit(_settingsCategoryLabel(l10n, category)),
@@ -572,6 +737,7 @@ class _DaemonSelect extends ConsumerWidget {
     // dropped, so the screen-reader name is carried here instead.
     // The pane is narrower than a daemon label, so the trigger takes the
     // full width and lets the label ellipsize instead of overflowing.
+    final selected = hosts.where((host) => host.id == hostId).firstOrNull;
     return Semantics(
       label: l10n.settingsDaemonSelectLabel,
       container: true,
@@ -589,13 +755,19 @@ class _DaemonSelect extends ConsumerWidget {
           // takes its frame from the sidebar rather than drawing its own.
           appearance: TRFieldAppearance.ghost,
           placeholder: l10n.settingsDaemonSelectEmpty,
+          helperText: selected == null ? null : hostStatusText(l10n, selected),
+          leading: selected == null
+              ? null
+              : Icon(hostStatusIcon(selected.status)),
           enabled: hosts.isNotEmpty,
           width: constraints.maxWidth,
           items: hosts
               .map(
                 (host) => TRSelectItem<String>(
+                  key: ValueKey<String>('settings-daemon-option-${host.id}'),
                   value: host.id,
                   label: hostLabel(l10n, host),
+                  description: hostStatusText(l10n, host),
                   leading: Icon(hostStatusIcon(host.status)),
                 ),
               )
@@ -702,27 +874,17 @@ class _HostScopedDetail extends StatelessWidget {
     if (loading) return loadingChild;
     final host = this.host;
     if (host == null) {
-      return Center(child: TRText.inherit(l10n.settingsRequiresOnlineDaemon));
+      return SettingsEmptyState(
+        title: l10n.settingsRequiresOnlineDaemon,
+        icon: const Icon(TinestIcons.daemon),
+      );
     }
     if (!host.connected) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(TRSpacing.extraLarge),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: TRMeasurements.measureMd,
-            ),
-            child: TRAlert(
-              key: const ValueKey<String>('settings-daemon-offline'),
-              variant: TRStatusVariant.warning,
-              icon: Icon(hostStatusIcon(host.status)),
-              title: TRText.inherit(
-                l10n.settingsDaemonOffline(hostLabel(l10n, host)),
-              ),
-              description: TRText.inherit(hostStatusText(l10n, host)),
-            ),
-          ),
-        ),
+      return SettingsEmptyState(
+        key: const ValueKey<String>('settings-daemon-offline'),
+        title: l10n.settingsDaemonOffline(hostLabel(l10n, host)),
+        description: hostStatusText(l10n, host),
+        icon: Icon(hostStatusIcon(host.status)),
       );
     }
     return builder(host.id);

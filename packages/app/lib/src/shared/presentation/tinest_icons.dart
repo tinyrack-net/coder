@@ -9,8 +9,16 @@ abstract final class TinestIcons {
   /// Semantic Lucide glyph.
   static const IconData archive = LucideIcons.archive;
 
-  /// Semantic Lucide glyph.
+  /// Left-pointing glyph for non-directional contexts.
+  ///
+  /// Navigation Back affordances use [backFor] so RTL gets the mirrored glyph.
   static const IconData back = LucideIcons.arrowLeft;
+
+  /// Resolves the semantic Back glyph for the surrounding text direction.
+  static IconData backFor(BuildContext context) =>
+      Directionality.of(context) == TextDirection.rtl
+      ? LucideIcons.arrowRight
+      : back;
 
   /// Semantic Lucide glyph.
   static const IconData branch = LucideIcons.gitFork;
@@ -174,8 +182,16 @@ abstract final class TinestIcons {
   /// Semantic Lucide glyph.
   static const IconData key = LucideIcons.keyRound;
 
-  /// Semantic Lucide glyph.
+  /// Right-pointing chevron for non-directional contexts.
+  ///
+  /// Navigation destinations use [forwardFor] so RTL gets the mirrored glyph.
   static const IconData chevronRight = LucideIcons.chevronRight;
+
+  /// Resolves the logical Forward glyph for the surrounding text direction.
+  static IconData forwardFor(BuildContext context) =>
+      Directionality.of(context) == TextDirection.rtl
+      ? LucideIcons.chevronLeft
+      : chevronRight;
 
   /// Semantic Lucide glyph.
   static const IconData delete = LucideIcons.trash2;

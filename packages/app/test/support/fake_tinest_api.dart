@@ -111,10 +111,12 @@ final class FakeTinestApi
     this.agentListError,
     this.skillListError,
     this.failNextAgentCreate = false,
+    this.failNextSkillCreate = false,
     this.failNextAgentUpdate = false,
     this.failNextSkillUpdate = false,
     this.catalogRefreshError,
     this.providerConnectError,
+    this.providerModelListError,
     this.modelListGate,
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
@@ -425,8 +427,14 @@ final class FakeTinestApi
   /// Whether the next Markdown create should simulate a daemon failure.
   bool failNextAgentCreate;
 
+  /// Whether the next skill create should simulate a daemon failure.
+  bool failNextSkillCreate;
+
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
+
+  /// Optional failure returned while loading one provider's model catalog.
+  final Exception? providerModelListError;
 
   /// Optional gate used to keep the workspace catalog in its loading state.
   final Future<void>? workspaceCatalogGate;
@@ -1709,6 +1717,10 @@ final class FakeTinestApi
     required String body,
     String? workspaceId,
   }) async {
+    if (failNextSkillCreate) {
+      failNextSkillCreate = false;
+      throw Exception('skill_create_failed');
+    }
     if (_skillsFor(workspaceId).any((skill) => skill.id == id)) {
       throw StateError('Skill already exists: $id');
     }
@@ -1926,6 +1938,8 @@ final class FakeTinestApi
   ) async {
     final gate = modelListGate;
     if (gate != null) await gate;
+    final error = providerModelListError;
+    if (error != null) throw error;
     return List<ProviderModelDto>.unmodifiable(
       _models[connectionId] ?? const <ProviderModelDto>[],
     );

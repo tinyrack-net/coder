@@ -1,6 +1,48 @@
 part of '../../app/app_flows_test.dart';
 
+Future<void> _centerAgentSettingsAction(
+  WidgetTester tester,
+  Finder action,
+) async {
+  await tester.scrollUntilVisible(
+    action,
+    TRSpacing.fourExtraLarge,
+    scrollable: find
+        .descendant(
+          of: find.byType(SettingsScaffold),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
+  await Scrollable.ensureVisible(tester.element(action), alignment: 0.5);
+  await tester.pumpAndSettle();
+}
+
 void _registerAgentsAppFlows() {
+  testWidgets(
+    'agent collection explains that no definitions are configured',
+    (tester) async {
+      await _setTestViewport(tester, const Size(1200, 900));
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      expect(find.text('설정된 Agent가 없습니다.'), findsOneWidget);
+      // The detail destination still explains that it needs a selection; the
+      // collection itself owns the distinct no-data copy above.
+      expect(find.text('Agent를 선택하세요.'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+    ],
+  );
+
   testWidgets(
     'agent settings edits Markdown definitions and creates subagents',
     (tester) async {
@@ -14,7 +56,13 @@ void _registerAgentsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      expect(find.text('Agents'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(TRPaneHeader),
+          matching: find.text(testL10n.agentSettingsHeading),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Tinest'), findsWidgets);
       final prompt = _textInput('시스템 프롬프트 (Markdown)');
       await tester.enterText(prompt, 'Always run focused tests.');
@@ -76,6 +124,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.byKey(const ValueKey('agent-add-button')));
       await tester.pumpAndSettle();
       expect(find.byType(TRAlertDialog), findsNothing);
+      expect(find.text('Agent 추가'), findsOneWidget);
       await tester.enterText(
         _textInput('ID (파일명)'),
         'reviewer',
@@ -157,6 +206,15 @@ void _registerAgentsAppFlows() {
       expect(create.onPressed, isNotNull);
       await tester.tap(find.widgetWithText(TRButton, '생성'));
       await tester.pumpAndSettle();
+      final errorAlert = find.ancestor(
+        of: find.textContaining('agent_create_failed'),
+        matching: find.byType(TRAlert),
+      );
+      expect(errorAlert, findsOneWidget);
+      expect(
+        tester.widget<TRAlert>(errorAlert).variant,
+        TRStatusVariant.danger,
+      );
       expect(find.textContaining('agent_create_failed'), findsOneWidget);
       expect(find.text('Agent 추가'), findsWidgets);
 
@@ -205,6 +263,24 @@ void _registerAgentsAppFlows() {
         const ValueKey<String>('agent-settings-model-selector'),
       );
       await tester.ensureVisible(modelRow);
+      final modelSection = find.ancestor(
+        of: modelRow,
+        matching: find.byType(SettingsSection),
+      );
+      final modelLabel = find.descendant(
+        of: modelRow,
+        matching: find.text(testL10n.agentSettingsModelId),
+      );
+      final modelHeading = find.descendant(
+        of: modelSection,
+        matching: find.text(testL10n.agentSettingsModelHeading),
+      );
+      expect(modelLabel, findsOneWidget);
+      expect(modelHeading, findsOneWidget);
+      expect(
+        tester.getRect(modelLabel).left,
+        tester.getRect(modelHeading).left,
+      );
       expect(
         find.descendant(
           of: modelRow,
@@ -232,8 +308,19 @@ void _registerAgentsAppFlows() {
         of: modelRow,
         matching: find.byIcon(TinestIcons.lock),
       );
-      await tester.ensureVisible(lockIcon);
-      await tester.tap(lockIcon);
+      final blockedControl = find.descendant(
+        of: modelRow,
+        matching: find.byType(BlockedControl),
+      );
+      await tester.scrollUntilVisible(
+        lockIcon,
+        TRSpacing.extraLarge,
+        scrollable: find
+            .ancestor(of: modelRow, matching: find.byType(Scrollable))
+            .first,
+      );
+      await tester.pumpAndSettle();
+      tester.widget<BlockedControl>(blockedControl).onTap();
       await tester.pumpAndSettle();
 
       expect(find.byType(AsyncModelSelect), findsOneWidget);
@@ -275,7 +362,7 @@ void _registerAgentsAppFlows() {
     );
     addTearDown(router.dispose);
 
-    expect(find.text('Agents'), findsOneWidget);
+    expect(find.text(testL10n.agentSettingsHeading), findsOneWidget);
     expect(_textField('시스템 프롬프트 (Markdown)'), findsNothing);
     await tester.tap(find.text('Tinest').first);
     await tester.pumpAndSettle();
@@ -285,7 +372,7 @@ void _registerAgentsAppFlows() {
       find.byKey(const ValueKey<String>('settings-back-button')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Agents'), findsOneWidget);
+    expect(find.text(testL10n.agentSettingsHeading), findsOneWidget);
   });
 
   testWidgets(
@@ -371,7 +458,9 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(find.text('Agent 저장 실패'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TRButton, 'Overwrite'));
+      await tester.tap(
+        find.widgetWithText(TRButton, testL10n.agentSettingsOverwrite),
+      );
       await tester.pumpAndSettle();
 
       final updated = await api.agents.getAgentDefinition('tinest');
@@ -380,7 +469,9 @@ void _registerAgentsAppFlows() {
       expect(updated.toolIds, isEmpty);
       expect(updated.callableAgentIds, <String>['reviewer']);
 
-      await tester.tap(find.byKey(const ValueKey('agent-reset-button')));
+      final reset = find.byKey(const ValueKey('agent-reset-button'));
+      await _centerAgentSettingsAction(tester, reset);
+      await tester.tap(reset);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-reset-confirm')),
@@ -392,7 +483,9 @@ void _registerAgentsAppFlows() {
       );
       await tester.tap(find.text('Reviewer').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('agent-archive-button')));
+      final archive = find.byKey(const ValueKey('agent-archive-button'));
+      await _centerAgentSettingsAction(tester, archive);
+      await tester.tap(archive);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-archive-confirm')),
@@ -408,46 +501,61 @@ void _registerAgentsAppFlows() {
     tags: const <String>['feature_test__agent_collaboration__widget'],
   );
 
-  testWidgets('remote agent settings stays editable and exposes load errors', (
-    tester,
-  ) async {
-    await _setTestViewport(tester, const Size(1400, 760));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    const remoteInfo = ServerInfoDto(
-      serverId: 'server',
-      version: 'test',
-      protocolVersion: tinestProtocolMajor,
-      features: <String, bool>{},
-    );
-    final remoteRouter = await _pumpRoute(
+  testWidgets(
+    'remote agent settings stays editable and exposes load errors',
+    (
       tester,
-      FakeTinestApi(serverInfo: remoteInfo),
-      const AgentSettingsRoute(hostId: 'server').location,
-    );
-    expect(find.textContaining('읽기만'), findsNothing);
-    expect(
-      tester
-          .widget<TRIconButton>(
-            find.widgetWithIcon(TRIconButton, TinestIcons.add),
-          )
-          .onPressed,
-      isNotNull,
-    );
-    remoteRouter.dispose();
+    ) async {
+      await _setTestViewport(tester, const Size(1400, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const remoteInfo = ServerInfoDto(
+        serverId: 'server',
+        version: 'test',
+        protocolVersion: tinestProtocolMajor,
+        features: <String, bool>{},
+      );
+      final remoteRouter = await _pumpRoute(
+        tester,
+        FakeTinestApi(serverInfo: remoteInfo),
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      expect(find.textContaining('읽기만'), findsNothing);
+      expect(
+        tester
+            .widget<TRIconButton>(
+              find.widgetWithIcon(TRIconButton, TinestIcons.add),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      remoteRouter.dispose();
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpAndSettle();
-    final errorRouter = await _pumpRoute(
-      tester,
-      FakeTinestApi(agentListError: Exception('definition load failed')),
-      const AgentSettingsRoute(hostId: 'server').location,
-    );
-    addTearDown(errorRouter.dispose);
-    expect(find.textContaining('definition load failed'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('definition load failed'), findsOneWidget);
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      final errorRouter = await _pumpRoute(
+        tester,
+        FakeTinestApi(agentListError: Exception('definition load failed')),
+        const AgentSettingsRoute(hostId: 'server').location,
+        settle: false,
+      );
+      addTearDown(errorRouter.dispose);
+      // Settings owns an explicit Retry action. Riverpod's default backoff
+      // would otherwise replace this error with a loading skeleton for tens
+      // of seconds.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(SettingsSkeletonLayout), findsNothing);
+      expect(find.textContaining('definition load failed'), findsOneWidget);
+      expect(find.widgetWithText(TRButton, '다시 시도'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('definition load failed'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
+  );
 
   testWidgets(
     'resetting a built-in agent asks first and reports what it did',
@@ -470,9 +578,11 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('agent-reset-button')),
+      final reset = find.byKey(
+        const ValueKey<String>('agent-reset-button'),
       );
+      await _centerAgentSettingsAction(tester, reset);
+      await tester.tap(reset);
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
@@ -482,9 +592,8 @@ void _registerAgentsAppFlows() {
         reason: 'declining the question must not discard the edit',
       );
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('agent-reset-button')),
-      );
+      await _centerAgentSettingsAction(tester, reset);
+      await tester.tap(reset);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-reset-confirm')),

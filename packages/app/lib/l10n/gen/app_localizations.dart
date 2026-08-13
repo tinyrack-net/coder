@@ -1822,6 +1822,12 @@ abstract class AppLocalizations {
   /// **'Select an agent.'**
   String get agentSettingsSelectAgent;
 
+  /// Empty state shown when the current daemon has no agent definitions.
+  ///
+  /// In en, this message translates to:
+  /// **'No agents are configured.'**
+  String get agentSettingsEmpty;
+
   /// Subtitle counting agent definitions.
   ///
   /// In en, this message translates to:
@@ -3537,6 +3543,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a skill.'**
   String get skillSettingsSelectSkill;
+
+  /// Empty state shown when the current scope has no skills.
+  ///
+  /// In en, this message translates to:
+  /// **'No skills are configured.'**
+  String get skillSettingsEmpty;
 
   /// Tooltip for returning to the skill list on narrow layouts.
   ///

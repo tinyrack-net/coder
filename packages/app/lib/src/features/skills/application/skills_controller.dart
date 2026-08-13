@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'skills_controller.g.dart';
 
-@riverpod
+@Riverpod(retry: noAutomaticRetry)
 /// Loads and edits the skills one daemon offers, optionally for one project.
 ///
 /// A null [SkillsController.workspaceId] shows only the built-in, user-home,

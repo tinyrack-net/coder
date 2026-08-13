@@ -199,7 +199,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
                     context,
                   ).backButtonTooltip,
                   onPressed: () => const WorkspaceHomeRoute().replace(context),
-                  icon: const Icon(TinestIcons.back),
+                  icon: Icon(TinestIcons.backFor(context)),
                 )
               : !desktop
               ? null

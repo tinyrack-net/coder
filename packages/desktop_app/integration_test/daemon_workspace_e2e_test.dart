@@ -46,8 +46,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons'));
-      await tester.pumpAndSettle();
+      await _openSettingsCategory(tester, 'daemon');
       await tester.tap(find.widgetWithText(TRButton, '기기 연결'));
       await tester.pumpAndSettle();
       final directConnection = find.text('직접 연결');
@@ -184,8 +183,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons'));
-      await tester.pumpAndSettle();
+      await _openSettingsCategory(tester, 'daemon');
       await tester.tap(_action('연결 편집'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TRButton, '삭제').last);
@@ -250,8 +248,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons'));
-      await tester.pumpAndSettle();
+      await _openSettingsCategory(tester, 'daemon');
       await _pumpUntil(tester, find.textContaining('온라인'));
 
       const changedPort = testEmbeddedDaemonPort + 1;
@@ -317,6 +314,18 @@ Finder _field(String key) => find.descendant(
   of: find.byKey(ValueKey<String>(key)),
   matching: find.byType(EditableText),
 );
+
+Future<void> _openSettingsCategory(
+  WidgetTester tester,
+  String category,
+) async {
+  final row = find.byKey(
+    ValueKey<String>('settings-category-row-$category'),
+  );
+  await _pumpUntil(tester, row);
+  await tester.tap(row);
+  await tester.pumpAndSettle();
+}
 
 Future<void> _replaceFieldText(
   WidgetTester tester,

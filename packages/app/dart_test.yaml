@@ -186,6 +186,7 @@ tags:
   feature_test__settings_language__widget:
   feature_test__settings_startup__unit:
   feature_test__settings_startup__widget:
+  feature_test__app_navigation__unit:
   feature_test__app_navigation__widget:
   feature_test__app_toast__unit:
   feature_test__app_toast__widget:

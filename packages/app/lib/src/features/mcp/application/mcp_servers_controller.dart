@@ -25,7 +25,7 @@ final class McpServersState {
       .toList(growable: false);
 }
 
-@riverpod
+@Riverpod(retry: noAutomaticRetry)
 /// Loads and edits one daemon's MCP server configuration.
 class McpServersController extends _$McpServersController {
   StreamSubscription<void>? _events;

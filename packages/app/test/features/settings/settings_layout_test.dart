@@ -129,12 +129,26 @@ void main() {
     );
 
     testWidgets(
-      'adapts list-detail loading to the available width',
-      (tester) async {
+      'supplies independent collection and detail placeholders',
+      (
+        tester,
+      ) async {
         await tester.pumpWidget(
           _host(
-            const SettingsSkeletonLayout.listDetail(
-              semanticLabel: 'Loading settings',
+            const Row(
+              children: <Widget>[
+                SizedBox(
+                  width: TinestLayoutMetrics.settingsCollectionWidth,
+                  child: SettingsSkeletonLayout.collection(
+                    semanticLabel: 'Loading collection',
+                  ),
+                ),
+                Expanded(
+                  child: SettingsSkeletonLayout.detail(
+                    semanticLabel: 'Loading detail',
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -146,261 +160,53 @@ void main() {
           find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
           findsOneWidget,
         );
-
-        await tester.pumpWidget(
-          _host(
-            const SettingsSkeletonLayout.listDetail(
-              semanticLabel: 'Loading settings',
-            ),
-            width: 390,
-          ),
-        );
-        expect(
-          find.byKey(const ValueKey<String>('settings-skeleton-list-pane')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey<String>('settings-skeleton-detail-pane')),
-          findsNothing,
-        );
+        expect(find.bySemanticsLabel('Loading collection'), findsOneWidget);
+        expect(find.bySemanticsLabel('Loading detail'), findsOneWidget);
       },
       tags: const <String>['feature_test__settings_async_loading__widget'],
     );
   });
 
-  group('SettingsCompactPaneTransition', () {
-    testWidgets('uses the Tinyrack fade and scale motion for a new pane', (
-      tester,
-    ) async {
-      var pane = 'collection';
-      late StateSetter update;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              update = setState;
-              return SettingsCompactPaneTransition(
-                paneKey: ValueKey<String>(pane),
-                child: Text(pane),
-              );
-            },
-          ),
-          width: 390,
-        ),
+  test(
+    'SettingsPaneController auto-selects once until its route identity resets',
+    () {
+      final controller = SettingsPaneController<String>(
+        destinationIdFor: (value) => 'server-$value',
       );
+      addTearDown(controller.dispose);
+      var notifications = 0;
+      controller.addListener(() => notifications += 1);
 
-      update(() => pane = 'detail');
-      await tester.pump();
+      expect(controller.hasDetail, isFalse);
+      expect(controller.destination, isNull);
+      expect(controller.destinationId, isNull);
+      expect(controller.canAutoSelect, isTrue);
 
-      final switcher = tester.widget<AnimatedSwitcher>(
-        find.byType(AnimatedSwitcher),
-      );
-      expect(switcher.duration, TRMotion.slow);
-      expect(switcher.reverseDuration, TRMotion.slow);
-      expect(switcher.switchInCurve, TRMotion.easeOut);
-      expect(switcher.switchOutCurve, TRMotion.standard);
-      final enteringFade = tester.widget<FadeTransition>(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(FadeTransition),
-        ),
-      );
-      final enteringScale = tester.widget<ScaleTransition>(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(ScaleTransition),
-        ),
-      );
-      expect(enteringFade.opacity.value, 0);
-      expect(enteringScale.scale.value, TRMeasurements.overlayClosedScale);
+      controller.showInitialDetail('github');
+      expect(controller.hasDetail, isTrue);
+      expect(controller.destination, 'github');
+      expect(controller.destinationId, 'server-github');
+      expect(controller.canAutoSelect, isFalse);
+      expect(notifications, 1);
 
-      await tester.pump(TRMotion.slow ~/ 2);
-      expect(enteringFade.opacity.value, inExclusiveRange(0, 1));
-      expect(
-        enteringScale.scale.value,
-        inExclusiveRange(TRMeasurements.overlayClosedScale, 1),
-      );
+      controller.showCollection();
+      expect(controller.hasDetail, isFalse);
+      expect(controller.destination, isNull);
+      expect(controller.destinationId, isNull);
+      expect(controller.canAutoSelect, isFalse);
+      expect(notifications, 2);
 
-      await tester.pumpAndSettle();
-      expect(find.text('collection'), findsNothing);
-      expect(find.text('detail'), findsOneWidget);
-      expect(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(FadeTransition),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsNothing,
-      );
-    });
+      controller.showInitialDetail('ignored');
+      expect(controller.hasDetail, isFalse);
+      expect(notifications, 2);
 
-    testWidgets('only the entering pane owns input and semantics', (
-      tester,
-    ) async {
-      var pane = 'collection';
-      var collectionTaps = 0;
-      var detailTaps = 0;
-      late StateSetter update;
-      await tester.pumpWidget(
-        _host(
-          StatefulBuilder(
-            builder: (context, setState) {
-              update = setState;
-              final collection = pane == 'collection';
-              return SettingsCompactPaneTransition(
-                paneKey: ValueKey<String>(pane),
-                child: Semantics(
-                  label: '$pane semantics',
-                  button: true,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (collection) {
-                        collectionTaps += 1;
-                      } else {
-                        detailTaps += 1;
-                      }
-                    },
-                    child: Center(child: Text(pane)),
-                  ),
-                ),
-              );
-            },
-          ),
-          width: 390,
-        ),
-      );
-
-      update(() => pane = 'detail');
-      await tester.pump();
-
-      final departingSemantics = tester.widget<ExcludeSemantics>(
-        find.ancestor(
-          of: find.text('collection'),
-          matching: find.byType(ExcludeSemantics),
-        ),
-      );
-      final enteringSemantics = tester.widget<ExcludeSemantics>(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(ExcludeSemantics),
-        ),
-      );
-      final departingPointers = tester.widgetList<IgnorePointer>(
-        find.ancestor(
-          of: find.text('collection'),
-          matching: find.byType(IgnorePointer),
-        ),
-      );
-      final enteringPointers = tester.widgetList<IgnorePointer>(
-        find.ancestor(
-          of: find.text('detail'),
-          matching: find.byType(IgnorePointer),
-        ),
-      );
-      expect(departingSemantics.excluding, isTrue);
-      expect(enteringSemantics.excluding, isFalse);
-      expect(departingPointers.any((widget) => widget.ignoring), isTrue);
-      expect(enteringPointers.any((widget) => !widget.ignoring), isTrue);
-      await tester.tapAt(tester.getCenter(find.text('detail')));
-      expect(collectionTaps, 0);
-      expect(detailTaps, 1);
-    });
-
-    testWidgets('replaces the pane immediately when animations are disabled', (
-      tester,
-    ) async {
-      var pane = 'collection';
-      late StateSetter update;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: _host(
-            StatefulBuilder(
-              builder: (context, setState) {
-                update = setState;
-                return SettingsCompactPaneTransition(
-                  paneKey: ValueKey<String>(pane),
-                  child: Text(pane),
-                );
-              },
-            ),
-            width: 390,
-          ),
-        ),
-      );
-
-      update(() => pane = 'detail');
-      await tester.pump();
-
-      expect(find.text('collection'), findsNothing);
-      expect(find.text('detail'), findsOneWidget);
-      expect(find.byType(AnimatedSwitcher), findsNothing);
-    });
-  });
-
-  testWidgets('SettingsListDetailLayout shares desktop and compact Back', (
-    tester,
-  ) async {
-    tester.view
-      ..devicePixelRatio = 1
-      ..physicalSize = const Size(1200, 800);
-    addTearDown(tester.view.reset);
-    final navigation = SettingsPaneNavigationController();
-    addTearDown(navigation.dispose);
-    var detailVisible = true;
-    late StateSetter update;
-    Widget surface(double width) => _host(
-      StatefulBuilder(
-        builder: (context, setState) {
-          update = setState;
-          return SettingsPaneNavigationScope(
-            controller: navigation,
-            child: SettingsListDetailLayout(
-              collection: const Text('Collection'),
-              detail: const Text('Detail'),
-              detailVisible: detailVisible,
-              onBack: () => update(() => detailVisible = false),
-            ),
-          );
-        },
-      ),
-      width: width,
-    );
-
-    await tester.pumpWidget(surface(1200));
-    await tester.pump();
-    expect(find.text('Collection'), findsOneWidget);
-    expect(find.text('Detail'), findsOneWidget);
-    expect(navigation.canGoBack, isFalse);
-    expect(find.byType(SettingsCompactPaneTransition), findsNothing);
-
-    tester.view.physicalSize = const Size(600, 800);
-    await tester.pumpWidget(surface(600));
-    await tester.pump();
-    expect(find.text('Collection'), findsNothing);
-    expect(find.text('Detail'), findsOneWidget);
-    expect(navigation.canGoBack, isTrue);
-
-    tester.view.physicalSize = const Size(390, 800);
-    await tester.pumpWidget(surface(390));
-    await tester.pump();
-    expect(find.text('Collection'), findsNothing);
-    expect(find.text('Detail'), findsOneWidget);
-    expect(navigation.canGoBack, isTrue);
-    expect(find.byType(SettingsCompactPaneTransition), findsOneWidget);
-
-    navigation.goBack();
-    await tester.pumpAndSettle();
-    expect(find.text('Collection'), findsOneWidget);
-    expect(find.text('Detail'), findsNothing);
-  });
+      controller.reset();
+      expect(controller.canAutoSelect, isTrue);
+      controller.showInitialDetail('gitlab');
+      expect(controller.destination, 'gitlab');
+      expect(notifications, 3);
+    },
+  );
 
   testWidgets(
     'collection rows share the sidebar inset, navigation surface, and rhythm',
@@ -409,7 +215,7 @@ void main() {
         _host(
           const Column(
             children: <Widget>[
-              SettingsPaneHeader.collection(title: 'Projects'),
+              TRPaneHeader(title: TRText.inherit('Projects')),
               Expanded(
                 child: SettingsCollectionList(
                   children: <Widget>[
@@ -490,25 +296,20 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host(
-        SettingsListDetailLayout(
-          collection: const Column(
-            children: <Widget>[
-              SettingsPaneHeader.collection(title: 'Projects'),
-              Expanded(
-                child: SettingsCollectionList(
-                  children: <Widget>[
-                    SettingsRow.collection(
-                      title: TRText.inherit('Tinest'),
-                      selected: true,
-                    ),
-                  ],
-                ),
+        const Column(
+          children: <Widget>[
+            TRPaneHeader(title: TRText.inherit('Projects')),
+            Expanded(
+              child: SettingsCollectionList(
+                children: <Widget>[
+                  SettingsRow.collection(
+                    title: TRText.inherit('Tinest'),
+                    selected: true,
+                  ),
+                ],
               ),
-            ],
-          ),
-          detail: const Text('Detail'),
-          detailVisible: false,
-          onBack: () {},
+            ),
+          ],
         ),
         width: 390,
       ),
@@ -561,7 +362,7 @@ void main() {
       _host(
         const Column(
           children: <Widget>[
-            SettingsPaneHeader.collection(title: 'Projects'),
+            TRPaneHeader(title: TRText.inherit('Projects')),
             Expanded(
               child: SettingsCollectionList(
                 children: <Widget>[
@@ -592,7 +393,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host(
-        const SettingsSkeletonLayout.listDetail(
+        const SettingsSkeletonLayout.collection(
           semanticLabel: 'Loading settings',
         ),
       ),
@@ -625,6 +426,36 @@ void main() {
   });
 
   group('SettingsScaffold', () {
+    testWidgets('reserves tokenized bottom space for final pane actions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const SettingsScaffold(
+            children: <Widget>[
+              SettingsSection(title: 'Danger', children: <Widget>[]),
+            ],
+          ),
+        ),
+      );
+
+      final list = tester.widget<ListView>(
+        find.descendant(
+          of: find.byType(SettingsScaffold),
+          matching: find.byType(ListView),
+        ),
+      );
+      expect(
+        list.padding,
+        const EdgeInsets.fromLTRB(
+          TRSpacing.extraLarge,
+          TRSpacing.extraLarge,
+          TRSpacing.extraLarge,
+          TRSpacing.fourExtraLarge,
+        ),
+      );
+    });
+
     testWidgets(
       'scrolls the focused final field above the keyboard and restores',
       (tester) async {
@@ -752,8 +583,8 @@ void main() {
       );
 
       final card = tester.getRect(find.byType(TRCard));
-      expect(card.left, TRSpacing.large);
-      expect(card.width, 600 - 2 * TRSpacing.large);
+      expect(card.left, TRSpacing.extraLarge);
+      expect(card.width, 600 - 2 * TRSpacing.extraLarge);
     });
 
     testWidgets('separates its sections by one step', (tester) async {
@@ -775,6 +606,35 @@ void main() {
   });
 
   group('SettingsSection', () {
+    testWidgets('omits a heading when the pane already names the task', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const Column(
+            children: <Widget>[
+              TRPaneHeader(title: TRText.inherit('Connect')),
+              Expanded(
+                child: SettingsScaffold(
+                  children: <Widget>[
+                    SettingsSection.form(
+                      children: <Widget>[TRTextField(label: 'Link')],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Connect'), findsOneWidget);
+      expect(
+        tester.widget<TRTextField>(find.byType(TRTextField)).label,
+        'Link',
+      );
+    });
+
     testWidgets('heads every section at the same scale', (tester) async {
       await tester.pumpWidget(
         _host(
@@ -792,7 +652,7 @@ void main() {
       for (final title in <String>['Boxed', 'Form']) {
         expect(
           tester.widget<TRText>(find.widgetWithText(TRText, title)).variant,
-          TRTextVariant.headingMd,
+          TRTextVariant.headingSm,
         );
       }
     });
@@ -882,6 +742,42 @@ void main() {
   });
 
   group('SettingsSection header', () {
+    testWidgets('uses the scale-resilient section heading role', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: TinyrackTheme.light(),
+          home: const MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: Scaffold(
+              body: SizedBox(
+                width: 390,
+                child: SettingsScaffold(
+                  children: <Widget>[
+                    SettingsSection(
+                      title: 'Default permissions',
+                      children: <Widget>[],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester
+            .widget<TRText>(
+              find.widgetWithText(TRText, 'Default permissions'),
+            )
+            .variant,
+        TRTextVariant.headingSm,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('wraps its action rather than overflowing', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -943,6 +839,28 @@ void main() {
   });
 
   group('SettingsRow', () {
+    testWidgets('increases row padding with comfortable density', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          const TRUiDensityScope(
+            density: TRUiDensity.comfortable,
+            child: SettingsRow(title: TRText.inherit('Comfortable')),
+          ),
+          width: 390,
+        ),
+      );
+
+      expect(
+        tester.widget<TinestListRow>(find.byType(TinestListRow)).contentPadding,
+        const EdgeInsets.symmetric(
+          horizontal: TRSpacing.large,
+          vertical: TRSpacing.large,
+        ),
+      );
+    });
+
     testWidgets('puts the description leading and the control trailing', (
       tester,
     ) async {
@@ -1201,6 +1119,10 @@ void main() {
         await mouse.moveTo(tester.getCenter(find.text('Enabled')));
         await tester.pumpAndSettle();
         expect(_containerColor(tester, rowSurface), theme.surface);
+        await mouse.down(tester.getCenter(find.text('Enabled')));
+        await tester.pump();
+        expect(_containerColor(tester, rowSurface), theme.surface);
+        await mouse.cancel();
 
         await mouse.moveTo(tester.getCenter(switchFinder));
         await tester.pumpAndSettle();
@@ -1211,36 +1133,6 @@ void main() {
         );
       },
     );
-
-    testWidgets('keeps collection rows free of row hover', (tester) async {
-      await tester.pumpWidget(
-        _host(
-          SettingsRow.collection(
-            key: const ValueKey<String>('settings-collection-hover-row'),
-            title: const TRText.inherit('Project'),
-            onTap: () {},
-          ),
-        ),
-      );
-
-      final row = find.byKey(
-        const ValueKey<String>('settings-collection-hover-row'),
-      );
-      final theme = tester.element(row).tinyrackTheme;
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      addTearDown(mouse.removePointer);
-      await mouse.addPointer(location: Offset.zero);
-      await mouse.moveTo(tester.getCenter(find.text('Project')));
-      await tester.pumpAndSettle();
-
-      expect(
-        _containerColor(
-          tester,
-          _rowSurface(row, SettingsRow.collectionContentPadding),
-        ),
-        theme.surface,
-      );
-    });
 
     testWidgets('keeps hover for non-settings list rows', (tester) async {
       await tester.pumpWidget(
@@ -1300,7 +1192,7 @@ void main() {
     });
   });
 
-  group('SettingsPaneHeader', () {
+  group('TRPaneHeader in Settings', () {
     testWidgets('aligns a list header with the rows beneath it', (
       tester,
     ) async {
@@ -1308,7 +1200,7 @@ void main() {
         _host(
           const Column(
             children: <Widget>[
-              SettingsPaneHeader.list(title: 'Projects'),
+              TRPaneHeader(title: TRText.inherit('Projects')),
               SettingsRow(title: TRText.inherit('Tinest')),
             ],
           ),
@@ -1318,10 +1210,7 @@ void main() {
 
       expect(
         tester.getRect(find.text('Projects')).left,
-        moreOrLessEquals(
-          tester.getRect(find.text('Tinest')).left,
-          epsilon: 0.5,
-        ),
+        TRSpacing.extraLarge,
       );
     });
 
@@ -1332,7 +1221,7 @@ void main() {
         _host(
           const Column(
             children: <Widget>[
-              SettingsPaneHeader.detail(title: 'Tinest'),
+              TRPaneHeader(title: TRText.inherit('Tinest')),
               Expanded(
                 child: SettingsScaffold(
                   children: <Widget>[
@@ -1356,6 +1245,49 @@ void main() {
       );
     });
 
+    testWidgets(
+      'aligns a compact detail header with its section leading line',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _host(
+            const TRUiDensityScope(
+              density: TRUiDensity.comfortable,
+              child: Column(
+                children: <Widget>[
+                  TRPaneHeader(title: TRText.inherit('Tinest')),
+                  Expanded(
+                    child: SettingsScaffold(
+                      children: <Widget>[
+                        SettingsSection.form(
+                          title: 'Hooks',
+                          children: <Widget>[TRTextField(label: 'Setup')],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            width: 390,
+          ),
+        );
+
+        expect(
+          tester.getRect(find.text('Tinest')).left,
+          moreOrLessEquals(
+            tester.getRect(find.text('Hooks')).left,
+            epsilon: 0.5,
+          ),
+        );
+        expect(
+          tester.getRect(find.text('Tinest')).left,
+          TRSpacing.extraLarge,
+        );
+      },
+    );
+
     testWidgets('spaces actions and wraps them below long titles', (
       tester,
     ) async {
@@ -1367,9 +1299,13 @@ void main() {
             child: Scaffold(
               body: SizedBox(
                 width: 390,
-                child: SettingsPaneHeader.detail(
-                  title: 'A deliberately long settings detail heading',
-                  subtitle: '/a/long/path/that/must/not/crowd/the/actions',
+                child: TRPaneHeader(
+                  title: const TRText.inherit(
+                    'A deliberately long settings detail heading',
+                  ),
+                  description: const TRText.inherit(
+                    '/a/long/path/that/must/not/crowd/the/actions',
+                  ),
                   actions: <Widget>[
                     TRIconButton(
                       label: 'Copy',
@@ -1557,7 +1493,7 @@ void main() {
       // alignments, because only one of them was told to fill the pane. The
       // trigger has to fill it, not just the field around it: a tap lands on
       // the centre of the control, which otherwise falls in empty space.
-      const expected = 390 - 2 * TRSpacing.large;
+      const expected = 390 - 2 * TRSpacing.extraLarge;
       final triggers = find.descendant(
         of: find.byType(SettingsCompactToolbar),
         matching: find.byType(TextButton),

@@ -1072,6 +1072,10 @@
   "@agentSettingsSelectAgent": {
     "description": "Placeholder shown before an agent is chosen."
   },
+  "agentSettingsEmpty": "No agents are configured.",
+  "@agentSettingsEmpty": {
+    "description": "Empty state shown when the current daemon has no agent definitions."
+  },
   "agentSettingsCount": "{count} definitions",
   "agentSettingsModeStale": "{mode} · stale",
   "@agentSettingsModeStale": {
@@ -2611,6 +2615,10 @@
   "skillSettingsSelectSkill": "Select a skill.",
   "@skillSettingsSelectSkill": {
     "description": "Placeholder shown before a skill is selected."
+  },
+  "skillSettingsEmpty": "No skills are configured.",
+  "@skillSettingsEmpty": {
+    "description": "Empty state shown when the current scope has no skills."
   },
   "skillSettingsList": "Skill list",
   "@skillSettingsList": {

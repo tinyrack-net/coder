@@ -93,13 +93,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get settingsSectionApp => 'App';
+  String get settingsSectionApp => '앱';
 
   @override
-  String get settingsSectionDaemon => 'Daemon';
+  String get settingsSectionDaemon => '데몬';
 
   @override
-  String get settingsDaemonSelectLabel => 'Daemon';
+  String get settingsDaemonSelectLabel => '데몬';
 
   @override
   String get settingsDaemonSelectEmpty => 'Daemon 없음';
@@ -110,22 +110,22 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get settingsCategoryGeneral => 'General';
+  String get settingsCategoryGeneral => '일반';
 
   @override
-  String get settingsCategoryProjects => 'Projects';
+  String get settingsCategoryProjects => '프로젝트';
 
   @override
-  String get settingsCategoryAgent => 'Agent';
+  String get settingsCategoryAgent => '에이전트';
 
   @override
-  String get settingsCategoryProvider => 'Provider';
+  String get settingsCategoryProvider => '프로바이더';
 
   @override
   String get settingsCategoryPermission => '권한';
 
   @override
-  String get settingsCategoryDaemon => 'Daemons';
+  String get settingsCategoryDaemon => '데몬';
 
   @override
   String get settingsCategoryAdvanced => '고급';
@@ -733,7 +733,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayConfirmDescription => '이 기기를 등록하기 전에 daemon과 릴레이를 확인하세요.';
 
   @override
-  String get relayConfirmDaemon => 'Daemon ID';
+  String get relayConfirmDaemon => '데몬 ID';
 
   @override
   String get relayConfirmRelay => '릴레이 서버';
@@ -851,7 +851,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayPathDirect => '직접 연결';
 
   @override
-  String get relayPathRelay => 'Relay';
+  String get relayPathRelay => '릴레이';
 
   @override
   String get relayConnectionDetails => '연결 세부 정보';
@@ -897,10 +897,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsNewToken => '새 Bearer token (변경할 때만 입력)';
 
   @override
-  String get appSettingsBearerToken => 'Bearer token';
+  String get appSettingsBearerToken => 'Bearer 토큰';
 
   @override
-  String get appSettingsRemoteDetails => 'Daemon';
+  String get appSettingsRemoteDetails => '데몬';
 
   @override
   String get appSettingsConnectionBehaviour => '연결';
@@ -917,7 +917,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appSettingsDeleteBody => '연결과 저장된 bearer token도 이 기기에서 제거됩니다.';
 
   @override
-  String get projectSettingsHeading => 'Projects';
+  String get projectSettingsHeading => '프로젝트';
 
   @override
   String get projectSettingsNoProjects => '등록된 project가 없습니다.';
@@ -930,7 +930,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String projectSettingsCount(int count) {
-    return '$count projects';
+    return '프로젝트 $count개';
   }
 
   @override
@@ -947,14 +947,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get projectSettingsTeardown => 'Teardown (worktree 제거 전)';
 
   @override
-  String get agentSettingsHeading => 'Agents';
+  String get agentSettingsHeading => '에이전트';
 
   @override
   String get agentSettingsSelectAgent => 'Agent를 선택하세요.';
 
   @override
+  String get agentSettingsEmpty => '설정된 Agent가 없습니다.';
+
+  @override
   String agentSettingsCount(int count) {
-    return '$count definitions';
+    return '정의 $count개';
   }
 
   @override
@@ -1002,7 +1005,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsProviderConnectionId => 'Provider 연결 ID';
 
   @override
-  String get agentSettingsModelId => 'Model ID';
+  String get agentSettingsModelId => '모델 ID';
 
   @override
   String get agentSettingsBehaviourHeading => '동작';
@@ -1085,10 +1088,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsSaveFailedTitle => 'Agent 저장 실패';
 
   @override
-  String get agentSettingsReload => 'Reload';
+  String get agentSettingsReload => '다시 불러오기';
 
   @override
-  String get agentSettingsOverwrite => 'Overwrite';
+  String get agentSettingsOverwrite => '덮어쓰기';
 
   @override
   String get agentSettingsIdInvalid => '영문 소문자, 숫자, -, _만 사용할 수 있습니다.';
@@ -1246,7 +1249,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsApiKey => 'API 키';
 
   @override
-  String get providerSettingsBaseUrl => 'Base URL';
+  String get providerSettingsBaseUrl => '기본 URL';
 
   @override
   String get providerSettingsConnectionFailed => '프로바이더 연결에 실패했습니다.';
@@ -2004,6 +2007,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get skillSettingsSelectSkill => '스킬을 선택하세요.';
+
+  @override
+  String get skillSettingsEmpty => '설정된 스킬이 없습니다.';
 
   @override
   String get skillSettingsList => '스킬 목록';

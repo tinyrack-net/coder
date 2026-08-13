@@ -25,7 +25,7 @@ final class ProviderSettingsControllerProvider
     required ProviderSettingsControllerFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
+         retry: noAutomaticRetry,
          name: r'providerSettingsControllerProvider',
          isAutoDispose: false,
          dependencies: null,
@@ -59,7 +59,7 @@ final class ProviderSettingsControllerProvider
 }
 
 String _$providerSettingsControllerHash() =>
-    r'40ce2a6d378064356d4a67e085a434308b6e36ba';
+    r'22e091436027338a7f2accd691495fd10ea1d52d';
 
 /// ProviderSettingsController defines a public contract.
 
@@ -74,7 +74,7 @@ final class ProviderSettingsControllerFamily extends $Family
         > {
   ProviderSettingsControllerFamily._()
     : super(
-        retry: null,
+        retry: noAutomaticRetry,
         name: r'providerSettingsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,

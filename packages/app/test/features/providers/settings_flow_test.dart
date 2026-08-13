@@ -6,6 +6,7 @@ import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:client/client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,8 +23,10 @@ void main() {
     (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
       await _pumpSettings(tester, FakeTinestApi());
 
       expect(
@@ -46,8 +49,10 @@ void main() {
     (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
       final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
       await _pumpSettings(tester, api);
 
@@ -57,6 +62,14 @@ void main() {
       expect(_field('모델 Prefix'), findsOneWidget);
       expect(_field('API 키'), findsOneWidget);
       expect(find.byType(TRAlertDialog), findsNothing);
+
+      final save = find.byKey(
+        const ValueKey<String>('provider-connect-submit'),
+      );
+      expect(
+        find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+        findsOneWidget,
+      );
 
       await tester.enterText(_field('API 키'), 'deepseek-secret');
       await tester.pump();
@@ -117,6 +130,34 @@ void main() {
     tags: const <String>['feature_test__provider_oauth__widget'],
   );
 
+  testWidgets('OAuth browser failures use the shared danger alert', (
+    tester,
+  ) async {
+    final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
+    final opener = _ExternalUrlOpener(result: false);
+    await _pumpSettings(tester, api, externalUrlOpener: opener);
+
+    await _openCatalog(tester);
+    await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('provider-connect-submit')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final alert = find.byKey(
+      const ValueKey<String>('provider-oauth-open-error'),
+    );
+    expect(alert, findsOneWidget);
+    expect(tester.widget<TRAlert>(alert).variant, TRStatusVariant.danger);
+    expect(
+      find.ancestor(of: alert, matching: find.byType(SettingsRow)),
+      findsNothing,
+    );
+    expect(find.text('인증 페이지를 열 수 없습니다.'), findsOneWidget);
+  }, tags: const <String>['feature_test__provider_oauth__widget']);
+
   testWidgets(
     'custom provider configuration is one inline form',
     (
@@ -132,7 +173,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_field('이름'), findsOneWidget);
-      expect(_field('Base URL'), findsOneWidget);
+      expect(_field('기본 URL'), findsOneWidget);
       expect(_field('모델 Prefix'), findsOneWidget);
       expect(_field('API 키'), findsOneWidget);
       expect(_field('수동 model ID'), findsOneWidget);
@@ -155,6 +196,20 @@ void main() {
 
       expect(_field('모델 Prefix'), findsOneWidget);
       expect(find.text('자동'), findsOneWidget);
+      final save = find.byKey(
+        const ValueKey<String>('provider-prefix-save'),
+      );
+      expect(
+        find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+        findsOneWidget,
+      );
+      expect(tester.widget<TRButton>(save).intent, TRIntent.primary);
+      final reconnect = find.widgetWithText(TRButton, '다시 연결');
+      expect(
+        find.ancestor(of: reconnect, matching: find.byType(TRPaneHeader)),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TRButton, testL10n.commonRetry), findsNothing);
       final defaultModel = find.byKey(
         const ValueKey<String>('provider-default-model'),
       );
@@ -175,6 +230,39 @@ void main() {
         api.defaultModel,
         const SessionModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
       );
+
+      final disconnect = find.byKey(
+        const ValueKey<String>('provider-connection-disconnect'),
+      );
+      await tester.scrollUntilVisible(
+        disconnect,
+        TRSpacing.fourExtraLarge,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsScaffold),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(
+        find.ancestor(of: disconnect, matching: find.byType(TRPaneHeader)),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(of: disconnect, matching: find.byType(SettingsSection)),
+        findsOneWidget,
+      );
+      expect(tester.widget<TRButton>(disconnect).intent, TRIntent.danger);
+      await tester.tap(disconnect);
+      await tester.pumpAndSettle();
+      final confirm = find.widgetWithText(TRButton, '연결 해제').last;
+      expect(tester.widget<TRButton>(confirm).intent, TRIntent.danger);
+      await tester.tap(find.widgetWithText(TRButton, '취소').last);
+      await tester.pumpAndSettle();
+      expect(
+        (await api.providers.listProviderConnections()).single.status,
+        ProviderConnectionStatus.connected,
+      );
     },
     tags: const <String>[
       'feature_test__provider_default_model__widget',
@@ -183,8 +271,10 @@ void main() {
   );
 
   testWidgets('catalog and prefix failures recover inline', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(1200, 900);
+    addTearDown(tester.view.reset);
     final api = FakeTinestApi(
       connections: <ProviderConnectionDto>[],
       catalogRefreshError: const TinestClientException(
@@ -218,6 +308,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('이미 사용 중인 모델 Prefix'), findsOneWidget);
+    expect(find.textContaining('prefix conflict'), findsNothing);
+    expect(
+      find.ancestor(
+        of: find.textContaining('이미 사용 중인 모델 Prefix'),
+        matching: find.byType(TRAlert),
+      ),
+      findsNothing,
+    );
     expect(
       tester.widget<EditableText>(_field('모델 Prefix')).controller.text,
       'deepseek-2',
@@ -230,6 +328,40 @@ void main() {
       find.byKey(const ValueKey<String>('provider-connection-deepseek')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('unexpected provider failures remain pane-level danger alerts', (
+    tester,
+  ) async {
+    final api = FakeTinestApi(
+      connections: <ProviderConnectionDto>[],
+      providerConnectError: const TinestClientException(
+        'planned provider outage',
+        code: 'provider_unavailable',
+      ),
+    );
+    await _pumpSettings(tester, api);
+    await _openCatalog(tester);
+    await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('모델 Prefix'), 'deepseek');
+    await tester.enterText(_field('API 키'), 'secret');
+    await tester.pump();
+    final submit = find.byKey(
+      const ValueKey<String>('provider-connect-submit'),
+    );
+    expect(tester.widget<TRButton>(submit).onPressed, isNotNull);
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+
+    expect(api.providerConnectError, isNull);
+    expect(find.textContaining('planned provider outage'), findsOneWidget);
+    final alert = find.ancestor(
+      of: find.textContaining('planned provider outage'),
+      matching: find.byType(TRAlert),
+    );
+    expect(alert, findsOneWidget);
+    expect(tester.widget<TRAlert>(alert).variant, TRStatusVariant.danger);
   });
 
   testWidgets('existing connection reauthenticates without duplication', (
@@ -320,10 +452,22 @@ void main() {
     await _openCatalog(tester);
     await tester.tap(find.byKey(const ValueKey('provider-add-custom')));
     await tester.pumpAndSettle();
+    expect(find.text('Custom Provider 고급 설정'), findsOneWidget);
+    final create = find.byKey(
+      const ValueKey<String>('provider-custom-save'),
+    );
+    expect(
+      find.ancestor(of: create, matching: find.byType(TRPaneHeader)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: create, matching: find.text('생성')),
+      findsOneWidget,
+    );
 
     await tester.enterText(_field('이름'), 'Lab');
     await tester.enterText(
-      _field('Base URL'),
+      _field('기본 URL'),
       'http://127.0.0.1:9000/v1',
     );
     await tester.enterText(_field('API 키'), 'lab-secret');
@@ -347,8 +491,56 @@ void main() {
     expect(edited.displayName, 'Lab Edited');
     expect(edited.modelPrefix, 'lab-edited');
 
-    await tester.tap(find.widgetWithText(TRButton, '연결 해제'));
+    final save = find.byKey(
+      const ValueKey<String>('provider-custom-save'),
+    );
+    expect(
+      find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: save, matching: find.text('저장')),
+      findsOneWidget,
+    );
+
+    final disconnect = find.byKey(
+      const ValueKey<String>('provider-custom-disconnect'),
+    );
+    await tester.scrollUntilVisible(
+      disconnect,
+      TRSpacing.fourExtraLarge,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.ensureVisible(disconnect);
     await tester.pumpAndSettle();
+    expect(
+      find.ancestor(of: disconnect, matching: find.byType(TRPaneHeader)),
+      findsNothing,
+    );
+    expect(
+      find.ancestor(
+        of: disconnect,
+        matching: find.byType(SettingsSection),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<TRButton>(disconnect).intent, TRIntent.danger);
+    await tester.ensureVisible(disconnect);
+    await tester.tap(disconnect);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TRButton>(
+            find.widgetWithText(TRButton, '연결 해제').last,
+          )
+          .intent,
+      TRIntent.danger,
+    );
     await tester.tap(find.widgetWithText(TRButton, '취소').last);
     await tester.pumpAndSettle();
     expect(
@@ -356,9 +548,30 @@ void main() {
       ProviderConnectionStatus.connected,
     );
 
-    await tester.tap(find.widgetWithText(TRButton, '삭제'));
+    final delete = find.byKey(
+      const ValueKey<String>('provider-custom-delete'),
+    );
+    await tester.scrollUntilVisible(
+      delete,
+      TRSpacing.fourExtraLarge,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.ensureVisible(delete);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TRButton, '삭제').last);
+    expect(
+      find.ancestor(of: delete, matching: find.byType(SettingsSection)),
+      findsOneWidget,
+    );
+    await tester.tap(delete);
+    await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(TRButton, '삭제').last;
+    expect(tester.widget<TRButton>(confirm).intent, TRIntent.danger);
+    await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(await api.providers.listProviderConnections(), isEmpty);
   });
@@ -399,8 +612,10 @@ void main() {
     (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(390, 760));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 760);
+      addTearDown(tester.view.reset);
       await _pumpSettings(tester, FakeTinestApi());
 
       expect(
@@ -497,12 +712,15 @@ Future<void> _pumpSettings(
 }
 
 final class _ExternalUrlOpener implements ExternalUrlOpener {
+  _ExternalUrlOpener({this.result = true});
+
+  final bool result;
   final List<Uri> opened = <Uri>[];
 
   @override
   Future<bool> open(Uri uri) async {
     opened.add(uri);
-    return true;
+    return result;
   }
 }
 

@@ -4,6 +4,7 @@ library;
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/mcp/presentation/pages/mcp_settings_page.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -84,6 +85,12 @@ void main() {
     expect(
       find.byKey(const ValueKey<String>('mcp-server-list-empty')),
       findsOneWidget,
+    );
+    expect(
+      tester.widget(
+        find.byKey(const ValueKey<String>('mcp-server-list-empty')),
+      ),
+      isA<SettingsEmptyState>(),
     );
     expect(find.text('편집할 서버를 선택하세요.'), findsOneWidget);
   });
@@ -396,11 +403,36 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey<String>('mcp-server-delete')));
+    final delete = find.byKey(const ValueKey<String>('mcp-server-delete'));
+    await tester.scrollUntilVisible(
+      delete,
+      TRSpacing.fourExtraLarge,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.ensureVisible(delete);
+    await tester.pumpAndSettle();
+    expect(
+      find.ancestor(of: delete, matching: find.byType(SettingsSection)),
+      findsOneWidget,
+    );
+    await tester.tap(delete);
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey<String>('mcp-delete-dialog')),
       findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<TRButton>(
+            find.byKey(const ValueKey<String>('mcp-delete-confirm')),
+          )
+          .intent,
+      TRIntent.danger,
     );
     await tester.tap(find.byKey(const ValueKey<String>('mcp-delete-confirm')));
     await tester.pumpAndSettle();

@@ -25,7 +25,7 @@ final class AgentDefinitionsControllerProvider
     required AgentDefinitionsControllerFamily super.from,
     required String super.argument,
   }) : super(
-         retry: null,
+         retry: noAutomaticRetry,
          name: r'agentDefinitionsControllerProvider',
          isAutoDispose: true,
          dependencies: null,
@@ -59,7 +59,7 @@ final class AgentDefinitionsControllerProvider
 }
 
 String _$agentDefinitionsControllerHash() =>
-    r'2e3b9029fdb9e82488428e8a4d39730c82a3a46c';
+    r'7153e655a2d53e789006adeace46b077c48b8577';
 
 /// Loads and edits one daemon's Markdown agent files.
 
@@ -74,7 +74,7 @@ final class AgentDefinitionsControllerFamily extends $Family
         > {
   AgentDefinitionsControllerFamily._()
     : super(
-        retry: null,
+        retry: noAutomaticRetry,
         name: r'agentDefinitionsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,

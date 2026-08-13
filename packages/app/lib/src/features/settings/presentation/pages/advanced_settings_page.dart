@@ -68,6 +68,7 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
           control: TRButton(
             key: const ValueKey<String>('advanced-settings-reset-button'),
             appearance: TRAppearance.outline,
+            intent: TRIntent.danger,
             onPressed: _busy ? null : _confirmAndReset,
             child: TRText.inherit(
               _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
@@ -96,7 +97,7 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
             ),
             TRButton(
               key: const ValueKey<String>('advanced-reset-confirm-accept'),
-              intent: TRIntent.primary,
+              intent: TRIntent.danger,
               onPressed: () => Navigator.pop(context, true),
               child: TRText.inherit(l10n.advancedResetConfirmAccept),
             ),

@@ -10,6 +10,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/pairing_intent.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
@@ -41,7 +42,6 @@ class ConnectDaemonPage extends StatelessWidget {
     return _PairingTaskShell(
       title: l10n.relayConnectDaemonTitle,
       child: SettingsSection(
-        title: l10n.relayConnectDaemonTitle,
         description: l10n.relayConnectDaemonDescription,
         children: <Widget>[
           if (cameraSupported)
@@ -87,12 +87,11 @@ class _ConnectionMethod extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => SettingsRow(
+  Widget build(BuildContext context) => SettingsNavigationRow(
     leading: Icon(icon),
     title: TRText.inherit(title),
     description: TRText.inherit(description),
-    control: const Icon(TinestIcons.chevronRight),
-    onTap: onTap,
+    onPressed: onTap,
   );
 }
 
@@ -121,7 +120,6 @@ class _PairingLinkPageState extends ConsumerState<PairingLinkPage> {
     return _PairingTaskShell(
       title: l10n.relayConnectPasteTitle,
       child: SettingsSection.form(
-        title: l10n.relayConnectPasteTitle,
         children: <Widget>[
           if (_error != null)
             TRAlert(
@@ -199,7 +197,6 @@ class _PairingScanPageState extends ConsumerState<PairingScanPage> {
     return _PairingTaskShell(
       title: l10n.relayPairScan,
       child: SettingsSection(
-        title: l10n.relayPairScan,
         children: <Widget>[
           if (_scanError != null)
             TRAlert(
@@ -210,7 +207,8 @@ class _PairingScanPageState extends ConsumerState<PairingScanPage> {
             ),
           if (!cameraSupported)
             TRAlert(
-              title: TRText.inherit(l10n.relayPairScan),
+              key: const ValueKey<String>('relay-camera-unavailable'),
+              title: TRText.inherit(l10n.relayPairTitle),
               description: TRText.inherit(l10n.relayPairCameraUnavailable),
               icon: const Icon(TinestIcons.info),
               variant: TRStatusVariant.info,
@@ -224,7 +222,7 @@ class _PairingScanPageState extends ConsumerState<PairingScanPage> {
                 errorBuilder: (context, error) {
                   _cameraFailed = true;
                   return TRAlert(
-                    title: TRText.inherit(l10n.relayPairScan),
+                    title: TRText.inherit(l10n.appSettingsConnectionFailed),
                     description: TRText.inherit(
                       l10n.relayPairCameraError(AppIdentity.displayName),
                     ),
@@ -333,10 +331,9 @@ class _PairOfferPageState extends ConsumerState<PairOfferPage> {
     return _PairingTaskShell(
       title: l10n.relayConfirmTitle,
       child: SettingsSection.form(
-        title: l10n.relayConfirmTitle,
         banner: _error == null
             ? TRAlert(
-                title: TRText.inherit(l10n.relayConfirmTitle),
+                title: TRText.inherit(l10n.relayPairTitle),
                 description: TRText.inherit(l10n.relayConfirmDescription),
                 icon: const Icon(TinestIcons.lock),
                 variant: TRStatusVariant.info,
@@ -450,7 +447,7 @@ class _PairingTaskShell extends StatelessWidget {
           context,
           () => const DaemonSettingsRoute().go(context),
         ),
-        icon: const Icon(TinestIcons.back),
+        icon: Icon(TinestIcons.backFor(context)),
       ),
       title: TRText.inherit(title),
     ),
@@ -517,7 +514,6 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
     final body = SettingsScaffold(
       children: <Widget>[
         SettingsSection(
-          title: l10n.settingsCategoryConnection,
           children: <Widget>[
             SettingsRow(
               leading: const Icon(TinestIcons.network),
@@ -561,43 +557,37 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
                   variant: TRStatusVariant.danger,
                 ),
           children: <Widget>[
-            SettingsRow(
+            SettingsNavigationRow(
               key: const ValueKey<String>('relay-pair-device'),
               title: TRText.inherit(l10n.relayPairTitle),
               description: TRText.inherit(
                 l10n.relayPairDeviceDescription,
               ),
-              wrapsDescription: true,
-              control: _busy
-                  ? const TRSpinner()
-                  : const Icon(TinestIcons.chevronRight),
-              onTap: _busy ? null : _openPairDialog,
+              trailing: _busy ? const TRSpinner() : null,
+              onPressed: _busy ? null : _openPairDialog,
             ),
           ],
         ),
         SettingsSection(
           title: l10n.settingsCategoryAdvanced,
           children: <Widget>[
-            SettingsRow(
+            SettingsNavigationRow(
               key: const ValueKey<String>('relay-advanced-endpoint'),
               leading: const Icon(TinestIcons.cloud),
               title: TRText.inherit(l10n.relayAdvancedRelayEndpointChange),
               description: _status == null
                   ? null
                   : TRText.inherit(_status!.endpoint),
-              wrapsDescription: true,
-              control: const Icon(TinestIcons.chevronRight),
-              onTap: _busy ? null : _openRelayEndpointEditor,
+              onPressed: _busy ? null : _openRelayEndpointEditor,
             ),
-            SettingsRow(
+            SettingsNavigationRow(
               key: const ValueKey<String>('relay-advanced-direct'),
               leading: const Icon(TinestIcons.link),
               title: TRText.inherit(l10n.relayAdvancedDirect),
               description: TRText.inherit(
                 l10n.relayConnectDirectDescription,
               ),
-              control: const Icon(TinestIcons.chevronRight),
-              onTap: () => const AdvancedNewHostRoute().push<void>(context),
+              onPressed: () => const AdvancedNewHostRoute().push<void>(context),
             ),
           ],
         ),
@@ -614,7 +604,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
             context,
             () => const DaemonSettingsRoute().go(context),
           ),
-          icon: const Icon(TinestIcons.back),
+          icon: Icon(TinestIcons.backFor(context)),
         ),
         title: TRText.inherit(l10n.settingsCategoryConnection),
       ),
@@ -624,17 +614,24 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
 
   Widget _devicesSection(AsyncValue<List<RelayDeviceDto>> devicesAsync) {
     final l10n = AppLocalizations.of(context);
+    if (!devicesAsync.hasValue && devicesAsync.hasError) {
+      return SettingsSection.form(
+        title: l10n.relayApprovedDevices,
+        banner: TRAlert(
+          title: TRText.inherit(l10n.appSettingsConnectionFailed),
+          description: TRText.inherit('${devicesAsync.error}'),
+          icon: const Icon(TinestIcons.error),
+          variant: TRStatusVariant.danger,
+        ),
+        children: const <Widget>[],
+      );
+    }
     return SettingsSection(
       title: l10n.relayApprovedDevices,
       children: <Widget>[
-        if (!devicesAsync.hasValue && devicesAsync.hasError)
-          SettingsRow(
-            title: TRText.inherit(l10n.appSettingsConnectionFailed),
-            description: TRText.inherit('${devicesAsync.error}'),
-          )
-        else if (!devicesAsync.hasValue)
+        if (!devicesAsync.hasValue)
           Padding(
-            padding: SettingsRow.contentPadding,
+            padding: SettingsRow.resolvedPadding(context),
             child: ListRowsSkeleton(
               semanticLabel: l10n.settingsLoading,
               rows: 3,
@@ -650,6 +647,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
               controlLayout: SettingsControlLayout.responsive,
               control: TRButton(
                 appearance: TRAppearance.ghost,
+                intent: TRIntent.danger,
                 onPressed: _busy ? null : () => _revoke(device),
                 child: TRText.inherit(l10n.relayRevoke),
               ),
@@ -830,7 +828,7 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.relayRevoke),
           ),

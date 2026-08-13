@@ -4,6 +4,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/workspace/presentation/pages/project_settings_page.dart';
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
+import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -142,7 +143,7 @@ void main() {
       await tester.tap(find.text('tinest'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Projects'), findsWidgets);
+      expect(find.text('프로젝트'), findsWidgets);
       expect(find.text('design'), findsOneWidget);
       expect(
         find.text('/projects/workspace/.tinest/config.json'),
@@ -253,34 +254,43 @@ void main() {
     addTearDown(router.dispose);
 
     expect(find.text('등록된 project가 없습니다.'), findsOneWidget);
+    expect(find.byType(TRPaneHeader), findsOneWidget);
+    expect(find.byType(SettingsEmptyState), findsWidgets);
   });
 
-  testWidgets('project settings exposes load errors until an explicit retry', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final api = FakeTinestApi(
-      workspaces: <WorkspaceDto>[workspace('workspace', 'tinest')],
-      projectSettingsError: Exception('invalid_project_settings'),
-    );
-    final router = await _pumpRoute(
+  testWidgets(
+    'project settings exposes load errors until an explicit retry',
+    (
       tester,
-      api,
-      const ProjectSettingsRoute(hostId: 'server').location,
-    );
-    addTearDown(router.dispose);
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace('workspace', 'tinest')],
+        projectSettingsError: Exception('invalid_project_settings'),
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const ProjectSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
 
-    expect(find.textContaining('invalid_project_settings'), findsOneWidget);
-    expect(api.projectSettingsLoadCount, 1);
+      expect(find.textContaining('invalid_project_settings'), findsOneWidget);
+      expect(api.projectSettingsLoadCount, 1);
 
-    api.projectSettingsError = null;
-    await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
-    await tester.pumpAndSettle();
+      api.projectSettingsError = null;
+      await tester.tap(find.widgetWithText(TRButton, '다시 시도'));
+      await tester.pumpAndSettle();
 
-    expect(_textInput('Setup (worktree 생성 후)'), findsOneWidget);
-    expect(api.projectSettingsLoadCount, 2);
-  });
+      expect(_textInput('Setup (worktree 생성 후)'), findsOneWidget);
+      expect(api.projectSettingsLoadCount, 2);
+    },
+    tags: const <String>[
+      'feature_test__project_settings__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
+  );
 
   testWidgets('mobile project settings navigates from list to editor', (
     tester,

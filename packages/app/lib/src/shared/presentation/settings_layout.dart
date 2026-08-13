@@ -1,9 +1,140 @@
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+/// Returns the settings shell's adaptive class without classifying an inner
+/// pane's constraints.
+///
+/// Unified Settings supplies [TRAdaptivePaneScope]. Standalone task routes and
+/// focused widget hosts fall back to the logical root viewport, preserving the
+/// same window policy without mistaking an already-allocated pane for a
+/// smaller window.
+TRAdaptiveWidthClass settingsAdaptiveWidthClassOf(BuildContext context) =>
+    TRAdaptivePaneScope.maybeOf(context)?.widthClass ??
+    TRAdaptiveWidthClass.fromWidth(MediaQuery.sizeOf(context).width);
+
+/// The product-owned content slots supplied to the adaptive pane scaffold.
+enum SettingsPaneSlot {
+  /// The primary collection or category content.
+  collection,
+
+  /// The secondary editor, creator, or item detail.
+  detail,
+}
+
+/// Read-only navigation state shared by one list-detail settings feature.
+///
+/// Typed routes own categories. A feature controller owns only its local
+/// collection selection, while the settings shell maps that selection onto a
+/// [TRPaneRole.secondary] destination in the public Tinyrack navigator.
+abstract interface class SettingsPaneCoordinator implements Listenable {
+  /// Whether the feature currently has a detail or create destination.
+  bool get hasDetail;
+
+  /// Stable identity used by the shared three-pane navigator.
+  String? get destinationId;
+
+  /// Whether a desktop collection may choose its first item automatically.
+  ///
+  /// This is consumed after the first automatic selection or any explicit
+  /// navigation. Returning from a detail therefore leaves the collection
+  /// visible instead of immediately reopening its first item.
+  bool get canAutoSelect;
+
+  /// Returns the feature to its collection destination.
+  void showCollection();
+
+  /// Clears local navigation for a different route identity.
+  void reset();
+}
+
+/// Shares the initial desktop selection contract across Settings features.
+abstract class SettingsPaneCoordinatorBase extends ChangeNotifier
+    implements SettingsPaneCoordinator {
+  bool _autoSelectionConsumed = false;
+
+  @override
+  bool get canAutoSelect => !hasDetail && !_autoSelectionConsumed;
+
+  /// Consumes and admits the first desktop selection for this route identity.
+  @protected
+  bool consumeInitialSelection() {
+    if (!canAutoSelect) return false;
+    _autoSelectionConsumed = true;
+    return true;
+  }
+
+  /// Prevents later rebuilds from interpreting explicit navigation as entry.
+  @protected
+  void consumeExplicitNavigation() {
+    _autoSelectionConsumed = true;
+  }
+
+  /// Re-enables initial selection after the route identity changes.
+  @protected
+  void resetInitialSelection() {
+    _autoSelectionConsumed = false;
+  }
+}
+
+/// A typed, product-local selection controller for one settings collection.
+class SettingsPaneController<T extends Object>
+    extends SettingsPaneCoordinatorBase {
+  /// Creates a controller whose local [T] values have stable destination IDs.
+  SettingsPaneController({required this.destinationIdFor});
+
+  /// Resolves a stable local navigation identity for one typed destination.
+  final String Function(T value) destinationIdFor;
+  T? _destination;
+
+  /// The selected item or create destination, when one is active.
+  T? get destination => _destination;
+
+  @override
+  bool get hasDetail => _destination != null;
+
+  @override
+  String? get destinationId {
+    final destination = _destination;
+    return destination == null ? null : destinationIdFor(destination);
+  }
+
+  /// Shows [destination] as the initial desktop detail, at most once per
+  /// route identity.
+  void showInitialDetail(T destination) {
+    if (!consumeInitialSelection()) return;
+    _destination = destination;
+    notifyListeners();
+  }
+
+  /// Shows the detail represented by [destination].
+  void showDetail(T destination) {
+    consumeExplicitNavigation();
+    if (_destination == destination) return;
+    _destination = destination;
+    notifyListeners();
+  }
+
+  @override
+  void showCollection() {
+    consumeExplicitNavigation();
+    if (_destination == null) return;
+    _destination = null;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    final hadDetail = _destination != null;
+    resetInitialSelection();
+    _destination = null;
+    if (hadDetail) notifyListeners();
+  }
+}
 
 /// Applies one loading, stale-data, and error policy to settings reads.
 class SettingsAsyncContent<T> extends StatelessWidget {
@@ -61,7 +192,7 @@ class SettingsAsyncContent<T> extends StatelessWidget {
   }
 }
 
-enum _SettingsSkeletonKind { form, listDetail, overlay }
+enum _SettingsSkeletonKind { form, collection, detail, overlay }
 
 /// Loading placeholders that preserve the final shape of a settings surface.
 ///
@@ -72,11 +203,17 @@ class SettingsSkeletonLayout extends StatelessWidget {
   const SettingsSkeletonLayout.form({required this.semanticLabel, super.key})
     : _kind = _SettingsSkeletonKind.form;
 
-  /// Creates a responsive collection-and-detail placeholder.
-  const SettingsSkeletonLayout.listDetail({
+  /// Creates a collection-pane placeholder.
+  const SettingsSkeletonLayout.collection({
     required this.semanticLabel,
     super.key,
-  }) : _kind = _SettingsSkeletonKind.listDetail;
+  }) : _kind = _SettingsSkeletonKind.collection;
+
+  /// Creates a detail-pane placeholder.
+  const SettingsSkeletonLayout.detail({
+    required this.semanticLabel,
+    super.key,
+  }) : _kind = _SettingsSkeletonKind.detail;
 
   /// Creates a compact overlay placeholder.
   const SettingsSkeletonLayout.overlay({
@@ -97,12 +234,26 @@ class SettingsSkeletonLayout extends StatelessWidget {
     child: ExcludeSemantics(
       child: switch (_kind) {
         _SettingsSkeletonKind.form => const _SettingsFormSkeleton(),
-        _SettingsSkeletonKind.listDetail => const _SettingsListDetailSkeleton(),
+        _SettingsSkeletonKind.collection => const _SettingsSkeletonListPane(),
+        _SettingsSkeletonKind.detail => const _SettingsSkeletonDetailPane(),
         _SettingsSkeletonKind.overlay => const _SettingsOverlaySkeleton(),
       },
     ),
   );
 }
+
+/// Returns the shape-preserving placeholder for one adaptive settings slot.
+SettingsSkeletonLayout settingsPaneSkeleton(
+  SettingsPaneSlot slot, {
+  required String semanticLabel,
+}) => switch (slot) {
+  SettingsPaneSlot.collection => SettingsSkeletonLayout.collection(
+    semanticLabel: semanticLabel,
+  ),
+  SettingsPaneSlot.detail => SettingsSkeletonLayout.detail(
+    semanticLabel: semanticLabel,
+  ),
+};
 
 class _SettingsFormSkeleton extends StatelessWidget {
   const _SettingsFormSkeleton();
@@ -117,51 +268,17 @@ class _SettingsFormSkeleton extends StatelessWidget {
   );
 }
 
-class _SettingsListDetailSkeleton extends StatelessWidget {
-  const _SettingsListDetailSkeleton();
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      if (constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint) {
-        return const _SettingsSkeletonListPane(
-          key: ValueKey<String>('settings-skeleton-list-pane'),
-        );
-      }
-      return const Row(
-        children: <Widget>[
-          SizedBox(
-            width: TinestLayoutMetrics.settingsCollectionWidth,
-            child: _SettingsSkeletonListPane(
-              key: ValueKey<String>('settings-skeleton-list-pane'),
-            ),
-          ),
-          TRSeparator(
-            orientation: TRSeparatorOrientation.vertical,
-            variant: TRSeparatorVariant.muted,
-          ),
-          Expanded(
-            key: ValueKey<String>('settings-skeleton-detail-pane'),
-            child: _SettingsSkeletonDetailPane(),
-          ),
-        ],
-      );
-    },
-  );
-}
-
 class _SettingsSkeletonListPane extends StatelessWidget {
-  const _SettingsSkeletonListPane({super.key});
+  const _SettingsSkeletonListPane()
+    : super(key: const ValueKey<String>('settings-skeleton-list-pane'));
 
   @override
   Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
-      Padding(
-        padding: SettingsPaneHeader.collectionPadding,
-        child: TRSkeleton(width: TRMeasurements.measureSm),
+      TRPaneHeader(
+        title: TRSkeleton(width: TRMeasurements.measureSm),
       ),
-      TRSeparator(variant: TRSeparatorVariant.muted),
       Expanded(
         child: SettingsCollectionList(
           children: <Widget>[
@@ -180,9 +297,9 @@ class _SettingsSkeletonListRow extends StatelessWidget {
   const _SettingsSkeletonListRow();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: SettingsRow.collectionContentPadding,
-    child: Column(
+  Widget build(BuildContext context) => Padding(
+    padding: SettingsRow.resolvedPadding(context, collection: true),
+    child: const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         TRSkeleton(width: TRMeasurements.measureSm),
@@ -220,20 +337,17 @@ class SettingsCollectionList extends StatelessWidget {
 }
 
 class _SettingsSkeletonDetailPane extends StatelessWidget {
-  const _SettingsSkeletonDetailPane();
+  const _SettingsSkeletonDetailPane()
+    : super(key: const ValueKey<String>('settings-skeleton-detail-pane'));
 
   @override
   Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
-      Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: TRSpacing.extraLarge,
-          vertical: TRSpacing.medium,
-        ),
-        child: TRSkeleton(width: TRMeasurements.measureSm),
+      TRPaneHeader(
+        title: TRSkeleton(width: TRMeasurements.measureSm),
+        contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
       ),
-      TRSeparator(variant: TRSeparatorVariant.muted),
       Expanded(child: _SettingsFormSkeleton()),
     ],
   );
@@ -290,254 +404,6 @@ class _SettingsOverlaySkeleton extends StatelessWidget {
   );
 }
 
-/// Coordinates a compact settings page's deepest locally managed pane.
-///
-/// The typed router owns settings categories, while list-detail features own
-/// their selected item. This controller lets the shared page header offer one
-/// Back affordance for both layers without moving feature state into routing.
-class SettingsPaneNavigationController extends ChangeNotifier {
-  Object? _owner;
-  VoidCallback? _onBack;
-
-  /// Whether a descendant currently has a local pane to leave.
-  bool get canGoBack => _onBack != null;
-
-  /// Registers [onBack] as the action for [owner]'s visible detail pane.
-  void setBackHandler(Object owner, VoidCallback onBack) {
-    if (identical(_owner, owner)) {
-      _onBack = onBack;
-      return;
-    }
-    _owner = owner;
-    _onBack = onBack;
-    notifyListeners();
-  }
-
-  /// Removes the handler when [owner] returns to its list pane or disposes.
-  void clearBackHandler(Object owner, {bool notify = true}) {
-    if (!identical(_owner, owner)) return;
-    _owner = null;
-    _onBack = null;
-    if (notify) notifyListeners();
-  }
-
-  /// Leaves the deepest locally managed pane.
-  void goBack() => _onBack?.call();
-}
-
-/// Supplies the compact settings pane coordinator to list-detail features.
-class SettingsPaneNavigationScope extends InheritedWidget {
-  /// Creates a settings pane navigation scope.
-  const SettingsPaneNavigationScope({
-    required this.controller,
-    required super.child,
-    super.key,
-  });
-
-  /// Controller shared with the settings page header.
-  final SettingsPaneNavigationController controller;
-
-  /// Returns the nearest controller, when hosted by the unified settings page.
-  static SettingsPaneNavigationController? maybeOf(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<SettingsPaneNavigationScope>()
-          ?.controller;
-
-  @override
-  bool updateShouldNotify(SettingsPaneNavigationScope oldWidget) =>
-      !identical(controller, oldWidget.controller);
-}
-
-/// Supplies the settings shell's top-level adaptive width classification.
-///
-/// List-detail descendants are narrower than the application viewport because
-/// the navigation pane has already been allocated. They must still follow the
-/// shell's one, two, or three-pane policy instead of reclassifying that inner
-/// width as a smaller window.
-class SettingsAdaptiveWidthScope extends InheritedWidget {
-  /// Creates a scope for one settings shell.
-  const SettingsAdaptiveWidthScope({
-    required this.widthClass,
-    required super.child,
-    super.key,
-  });
-
-  /// Width class computed from the settings shell's logical constraints.
-  final TRAdaptiveWidthClass widthClass;
-
-  /// Returns the nearest settings shell width class, when one exists.
-  static TRAdaptiveWidthClass? maybeOf(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<SettingsAdaptiveWidthScope>()
-      ?.widthClass;
-
-  @override
-  bool updateShouldNotify(SettingsAdaptiveWidthScope oldWidget) =>
-      widthClass != oldWidget.widthClass;
-}
-
-/// Synchronizes a list-detail feature with the shared compact page header.
-void syncSettingsPaneBackHandler(
-  BuildContext context, {
-  required Object owner,
-  required bool active,
-  required VoidCallback onBack,
-}) {
-  final controller = SettingsPaneNavigationScope.maybeOf(context);
-  if (controller == null) return;
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (active) {
-      controller.setBackHandler(owner, onBack);
-    } else {
-      controller.clearBackHandler(owner);
-    }
-  });
-}
-
-/// Animates one compact settings pane into the next.
-///
-/// Settings navigation replaces routes and swaps collection-detail children
-/// without pushing a new page. This product-owned boundary gives both paths
-/// the same fade-and-scale motion as a routed Tinyrack page while preserving
-/// the shared settings shell and its state.
-class SettingsCompactPaneTransition extends StatelessWidget {
-  /// Creates a transition whose child identity is [paneKey].
-  const SettingsCompactPaneTransition({
-    required this.paneKey,
-    required this.child,
-    super.key,
-  });
-
-  /// Stable identity for the current logical settings pane.
-  final Key paneKey;
-
-  /// Current pane content.
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final keyedChild = KeyedSubtree(key: paneKey, child: child);
-    if (MediaQuery.disableAnimationsOf(context)) return keyedChild;
-    return AnimatedSwitcher(
-      duration: TRMotion.slow,
-      reverseDuration: TRMotion.slow,
-      switchInCurve: TRMotion.easeOut,
-      switchOutCurve: TRMotion.standard,
-      transitionBuilder: _buildTransition,
-      child: keyedChild,
-    );
-  }
-
-  Widget _buildTransition(Widget child, Animation<double> animation) {
-    final transition = FadeTransition(
-      opacity: animation,
-      alwaysIncludeSemantics: true,
-      child: ScaleTransition(
-        scale: Tween<double>(
-          begin: TRMeasurements.overlayClosedScale,
-          end: 1,
-        ).animate(animation),
-        child: child,
-      ),
-    );
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, _) {
-        if (animation.isCompleted) return child;
-        final departing = animation.status == AnimationStatus.reverse;
-        return ExcludeSemantics(
-          excluding: departing,
-          child: IgnorePointer(ignoring: departing, child: transition),
-        );
-      },
-    );
-  }
-}
-
-/// The responsive collection-and-detail structure used by list settings.
-///
-/// On a wide surface both panes remain visible. On a compact surface the
-/// detail replaces the collection and registers itself with the settings
-/// shell's shared Back action.
-class SettingsListDetailLayout extends StatefulWidget {
-  /// Creates a settings collection-and-detail layout.
-  const SettingsListDetailLayout({
-    required this.collection,
-    required this.detail,
-    required this.detailVisible,
-    required this.onBack,
-    super.key,
-  });
-
-  /// The middle settings pane containing the item collection.
-  final Widget collection;
-
-  /// The trailing pane containing an editor, creator, or empty state.
-  final Widget detail;
-
-  /// Whether compact layouts should show [detail] instead of [collection].
-  final bool detailVisible;
-
-  /// Returns a compact layout to its collection.
-  final VoidCallback onBack;
-
-  @override
-  State<SettingsListDetailLayout> createState() =>
-      _SettingsListDetailLayoutState();
-}
-
-class _SettingsListDetailLayoutState extends State<SettingsListDetailLayout> {
-  SettingsPaneNavigationController? _navigation;
-
-  @override
-  void dispose() {
-    _navigation?.clearBackHandler(this, notify: false);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final widthClass =
-          SettingsAdaptiveWidthScope.maybeOf(context) ??
-          TRAdaptiveWidthClass.fromWidth(constraints.maxWidth);
-      final stacked =
-          widthClass != TRAdaptiveWidthClass.large &&
-          widthClass != TRAdaptiveWidthClass.extraLarge;
-      _navigation = SettingsPaneNavigationScope.maybeOf(context);
-      syncSettingsPaneBackHandler(
-        context,
-        owner: this,
-        active: stacked && widget.detailVisible,
-        onBack: widget.onBack,
-      );
-      if (stacked) {
-        return SettingsCompactPaneTransition(
-          paneKey: ValueKey<String>(
-            widget.detailVisible
-                ? 'settings-list-detail-pane'
-                : 'settings-list-collection-pane',
-          ),
-          child: widget.detailVisible ? widget.detail : widget.collection,
-        );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          SizedBox(
-            width: TinestLayoutMetrics.settingsCollectionWidth,
-            child: widget.collection,
-          ),
-          const TRSeparator(
-            orientation: TRSeparatorOrientation.vertical,
-            variant: TRSeparatorVariant.muted,
-          ),
-          Expanded(child: widget.detail),
-        ],
-      );
-    },
-  );
-}
-
 /// The scroll container every settings pane uses.
 ///
 /// Page padding, content width, and the gap between sections live here rather
@@ -562,7 +428,7 @@ class _SettingsScaffoldState extends State<SettingsScaffold> {
     super.didChangeDependencies();
     final nextBottomInset = MediaQuery.viewInsetsOf(context).bottom;
     if (nextBottomInset > _bottomInset) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         final focusContext = FocusManager.instance.primaryFocus?.context;
         if (focusContext != null) {
@@ -587,53 +453,47 @@ class _SettingsScaffoldState extends State<SettingsScaffold> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final horizontalPadding =
-          constraints.maxWidth < TinestLayoutMetrics.compactBreakpoint
-          ? TRSpacing.large
-          : TRSpacing.extraLarge;
-      return ListView(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: TRSpacing.extraLarge,
-        ),
-        children: <Widget>[
-          // Each section stays its own list child rather than sharing one.
-          // Folding them into a single child builds every section eagerly, so
-          // a finder resolves a section that is scrolled out of view and a tap
-          // on it lands outside the viewport and quietly hits nothing.
-          for (final (index, child) in widget.children.indexed)
-            Padding(
-              // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
-              padding: index > 0
-                  ? const EdgeInsets.only(top: TRSpacing.twoExtraLarge)
-                  : EdgeInsets.zero,
-              child: Align(
-                // Centred, so a wide window keeps the column balanced rather
-                // than stranding it against one edge with a growing void.
-                // Below the cap the column fills the pane and this is a no-op.
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-                  ),
-                  child: child,
-                ),
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(
+      TRSpacing.extraLarge,
+      TRSpacing.extraLarge,
+      TRSpacing.extraLarge,
+      TRSpacing.fourExtraLarge,
+    ),
+    children: <Widget>[
+      // Each section stays its own list child rather than sharing one.
+      // Folding them into a single child builds every section eagerly, so
+      // a finder resolves a section that is scrolled out of view and a tap
+      // on it lands outside the viewport and quietly hits nothing.
+      for (final (index, child) in widget.children.indexed)
+        Padding(
+          // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
+          padding: index > 0
+              ? const EdgeInsets.only(top: TRSpacing.twoExtraLarge)
+              : EdgeInsets.zero,
+          child: Align(
+            // Centred, so a wide window keeps the column balanced rather
+            // than stranding it against one edge with a growing void.
+            // Below the cap the column fills the pane and this is a no-op.
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
               ),
+              child: child,
             ),
-        ],
-      );
-    },
+          ),
+        ),
+    ],
   );
 }
 
-/// One titled group of settings.
+/// One optionally titled group of settings.
 class SettingsSection extends StatelessWidget {
   /// Creates a section whose [children] are [SettingsRow]s sharing one card.
   const SettingsSection({
-    required this.title,
     required this.children,
+    this.title,
     this.description,
     this.action,
     this.banner,
@@ -647,16 +507,19 @@ class SettingsSection extends StatelessWidget {
   /// stacked label-above-control shape `TRField` defines instead of being
   /// forced into a row.
   const SettingsSection.form({
-    required this.title,
     required this.children,
+    this.title,
     this.description,
     this.action,
     this.banner,
     super.key,
   }) : _boxed = false;
 
-  /// Section heading.
-  final String title;
+  /// Optional section heading.
+  ///
+  /// A task page may already name the form in its pane header. Omitting this
+  /// heading prevents the same title from being announced and drawn twice.
+  final String? title;
 
   /// Optional supporting line under the heading.
   final String? description;
@@ -678,65 +541,77 @@ class SettingsSection extends StatelessWidget {
   final bool _boxed;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      // A Wrap rather than a Row: on a narrow window, or at a large text
-      // scale, a heading and its action do not fit on one line. Wrapping is
-      // what keeps the action from overflowing, and spaceBetween still puts
-      // it against the trailing edge whenever the two do fit.
-      Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: TRSpacing.large,
-        runSpacing: TRSpacing.small,
-        children: <Widget>[
-          TRText(title, variant: TRTextVariant.headingMd),
-          ?action,
+  Widget build(BuildContext context) {
+    final hasHeading = title != null || action != null;
+    final hasDescription = description != null;
+    final hasBanner = banner != null;
+    final hasPreamble = hasHeading || hasDescription || hasBanner;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // A Wrap rather than a Row: on a narrow window, or at a large text
+        // scale, a heading and its action do not fit on one line. Wrapping is
+        // what keeps the action from overflowing, and spaceBetween still puts
+        // it against the trailing edge whenever the two do fit.
+        if (hasHeading)
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: TRSpacing.large,
+            runSpacing: TRSpacing.small,
+            children: <Widget>[
+              if (title case final title?)
+                // Section titles are subordinate to the pane header. The
+                // smaller public heading role also keeps a long word intact
+                // when the system text scale is enlarged on a compact pane.
+                TRText(title, variant: TRTextVariant.headingSm),
+              ?action,
+            ],
+          ),
+        if (description case final description?) ...<Widget>[
+          if (hasHeading) const SizedBox(height: TRSpacing.medium),
+          TRText(
+            description,
+            variant: TRTextVariant.bodySm,
+            color: TRTextColor.muted,
+          ),
         ],
-      ),
-      if (description case final description?) ...<Widget>[
-        const SizedBox(height: TRSpacing.medium),
-        TRText(
-          description,
-          variant: TRTextVariant.bodySm,
-          color: TRTextColor.muted,
-        ),
-      ],
-      if (banner case final banner?) ...<Widget>[
-        const SizedBox(height: TRSpacing.medium),
-        banner,
-      ],
-      const SizedBox(height: TRSpacing.small),
-      if (_boxed)
-        TRCard(
-          padding: TRCardPadding.none,
-          child: Column(
+        if (banner case final banner?) ...<Widget>[
+          if (hasHeading || hasDescription)
+            const SizedBox(height: TRSpacing.medium),
+          banner,
+        ],
+        if (hasPreamble) const SizedBox(height: TRSpacing.small),
+        if (_boxed)
+          TRCard(
+            padding: TRCardPadding.none,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final (index, child) in children.indexed) ...<Widget>[
+                  if (index > 0)
+                    // Muted, so a divider inside a card matches the card's own
+                    // border. The default variant is borderStrong, which is the
+                    // weight a control draws at, not a surface.
+                    const TRSeparator(variant: TRSeparatorVariant.muted),
+                  child,
+                ],
+              ],
+            ),
+          )
+        else
+          Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (final (index, child) in children.indexed) ...<Widget>[
-                if (index > 0)
-                  // Muted, so a divider inside a card matches the card's own
-                  // border. The default variant is borderStrong, which is the
-                  // weight a control draws at, not a surface.
-                  const TRSeparator(variant: TRSeparatorVariant.muted),
+                if (index > 0) const SizedBox(height: TRSpacing.large),
                 child,
               ],
             ],
           ),
-        )
-      else
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            for (final (index, child) in children.indexed) ...<Widget>[
-              if (index > 0) const SizedBox(height: TRSpacing.large),
-              child,
-            ],
-          ],
-        ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 /// Selects how a setting's control responds to constrained width.
@@ -775,7 +650,7 @@ class SettingsRow extends StatelessWidget {
   /// Creates a row inside a [SettingsCollectionList].
   ///
   /// Its selected, hover, and focus surface is inset by the surrounding list,
-  /// while its content remains aligned with [SettingsPaneHeader.collection].
+  /// while its content remains aligned with [TRPaneHeader].
   const SettingsRow.collection({
     required this.title,
     this.control,
@@ -856,14 +731,34 @@ class SettingsRow extends StatelessWidget {
     vertical: TRSpacing.medium,
   );
 
+  /// Resolves row insets from the inherited UI density.
+  ///
+  /// Product composites that align custom content with a settings row use
+  /// this instead of freezing the standard-density constants above.
+  static EdgeInsetsGeometry resolvedPadding(
+    BuildContext context, {
+    bool flush = false,
+    bool collection = false,
+  }) {
+    final comfortable = TRUiDensityScope.of(context) == TRUiDensity.comfortable;
+    final vertical = comfortable ? TRSpacing.large : TRSpacing.medium;
+    if (flush) return EdgeInsets.symmetric(vertical: vertical);
+    return EdgeInsets.symmetric(
+      horizontal: collection ? TRSpacing.medium : TRSpacing.large,
+      vertical: vertical,
+    );
+  }
+
+  EdgeInsetsGeometry _padding(BuildContext context) => resolvedPadding(
+    context,
+    flush: flush,
+    collection: _collection,
+  );
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final padding = _collection
-          ? collectionContentPadding
-          : flush
-          ? flushPadding
-          : contentPadding;
+      final padding = _padding(context);
       final narrow =
           constraints.maxWidth - padding.horizontal < TRBreakpoints.small;
       final stacksControl =
@@ -891,118 +786,6 @@ class SettingsRow extends StatelessWidget {
             : TinestListRowTrailingLayout.inline,
       );
     },
-  );
-}
-
-/// The header of one pane in a settings list-detail layout.
-class SettingsPaneHeader extends StatelessWidget {
-  /// Creates the header of the list pane, inset to match its rows.
-  const SettingsPaneHeader.list({
-    required this.title,
-    this.subtitle,
-    this.actions = const <Widget>[],
-    this.leading,
-    super.key,
-  }) : _padding = SettingsRow.contentPadding;
-
-  /// Creates the header of a collection pane, inset to match its rows.
-  const SettingsPaneHeader.collection({
-    required this.title,
-    this.subtitle,
-    this.actions = const <Widget>[],
-    this.leading,
-    super.key,
-  }) : _padding = collectionPadding;
-
-  /// Creates the header of the detail pane, inset to match its body.
-  ///
-  /// The detail body is a [SettingsScaffold], which pads by a wider step than
-  /// a row does. A header that took the row inset left the pane with two
-  /// competing leading edges.
-  const SettingsPaneHeader.detail({
-    required this.title,
-    this.subtitle,
-    this.actions = const <Widget>[],
-    this.leading,
-    super.key,
-  }) : _padding = const EdgeInsets.symmetric(
-         horizontal: TRSpacing.extraLarge,
-         vertical: TRSpacing.medium,
-       );
-
-  /// Pane title.
-  final String title;
-
-  /// Optional supporting line, such as a count or a source path.
-  final String? subtitle;
-
-  /// Optional leading action, such as a back button.
-  final Widget? leading;
-
-  /// Trailing actions.
-  final List<Widget> actions;
-
-  /// Inset matching the content this header sits above.
-  final EdgeInsets _padding;
-
-  /// Header inset for a collection pane.
-  static const collectionPadding = EdgeInsets.symmetric(
-    horizontal: TRSpacing.extraLarge,
-    vertical: TRSpacing.medium,
-  );
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      Padding(
-        padding: _padding,
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: TRSpacing.large,
-          runSpacing: TRSpacing.small,
-          children: <Widget>[
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (leading case final leading?) ...<Widget>[
-                  leading,
-                  const SizedBox(width: TRSpacing.small),
-                ],
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      TRText(title, maxLines: 1, truncate: true),
-                      if (subtitle case final subtitle?) ...<Widget>[
-                        const SizedBox(height: TRSpacing.extraSmall),
-                        TRText(
-                          subtitle,
-                          variant: TRTextVariant.bodySm,
-                          color: TRTextColor.muted,
-                          maxLines: 1,
-                          truncate: true,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (actions.isNotEmpty)
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: TRSpacing.small,
-                runSpacing: TRSpacing.small,
-                children: actions,
-              ),
-          ],
-        ),
-      ),
-      const TRSeparator(variant: TRSeparatorVariant.muted),
-    ],
   );
 }
 
@@ -1073,6 +856,71 @@ class SettingsEmptyState extends StatelessWidget {
   );
 }
 
+/// A blocking Settings load failure with one explicit recovery action.
+///
+/// Settings providers disable automatic retry: silently replacing an error
+/// with a loading skeleton hides the failure and makes every page feel
+/// different. This state keeps the failure visible until the user retries.
+class SettingsErrorState extends StatelessWidget {
+  /// Creates a shared Settings error state.
+  const SettingsErrorState({
+    required this.error,
+    required this.onRetry,
+    super.key,
+  });
+
+  /// Failure reported by the Settings provider.
+  final Object error;
+
+  /// Explicitly starts another load attempt.
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => SettingsEmptyState(
+    title: AppLocalizations.of(context).commonActionFailed,
+    description: '$error',
+    icon: const Icon(TinestIcons.error),
+    action: TRButton(
+      intent: TRIntent.primary,
+      onPressed: onRetry,
+      child: TRText.inherit(AppLocalizations.of(context).commonRetry),
+    ),
+  );
+}
+
+/// A list-detail collection failure that preserves the pane's normal header.
+///
+/// Loading, empty, populated, and failed collection panes keep the same title
+/// rail, so status changes do not make the pane geometry jump.
+class SettingsCollectionErrorState extends StatelessWidget {
+  /// Creates a collection header followed by a shared error state.
+  const SettingsCollectionErrorState({
+    required this.title,
+    required this.error,
+    required this.onRetry,
+    super.key,
+  });
+
+  /// Collection title shown in every state.
+  final String title;
+
+  /// Failure reported by the collection provider.
+  final Object error;
+
+  /// Explicitly starts another load attempt.
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: <Widget>[
+      TRPaneHeader(title: TRText.inherit(title)),
+      Expanded(
+        child: SettingsErrorState(error: error, onRetry: onRetry),
+      ),
+    ],
+  );
+}
+
 /// The shared field rhythm and width for settings dialogs.
 class SettingsDialogForm extends StatelessWidget {
   /// Creates a settings dialog form.
@@ -1122,9 +970,9 @@ class SettingsCompactToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(
+      TRSpacing.extraLarge,
       TRSpacing.large,
-      TRSpacing.large,
-      TRSpacing.large,
+      TRSpacing.extraLarge,
       TRSpacing.medium,
     ),
     child: LayoutBuilder(

@@ -106,6 +106,39 @@ MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
   );
 }
 
+/// Markdown renderer isolated behind the documented legacy-package bridge.
+///
+/// `flutter_markdown_plus` still imports Flutter's legacy Material library.
+/// Keeping the compatibility boundary here prevents that dependency's theme
+/// and localization types from leaking into the rest of Tinest.
+class ChatMarkdownBody extends StatelessWidget {
+  /// Creates a Markdown body for one chat block.
+  const ChatMarkdownBody({required this.data, this.onTapLink, super.key});
+
+  /// Markdown source rendered by the legacy dependency.
+  final String data;
+
+  /// Link activation callback.
+  final MarkdownTapLinkCallback? onTapLink;
+
+  @override
+  Widget build(BuildContext context) {
+    // material_ui documents this bridge for dependencies that have not yet
+    // migrated. The scope is deliberately limited to flutter_markdown_plus.
+    // ignore: deprecated_member_use
+    return MaterialUiCompatibilityBridge(
+      child: Builder(
+        builder: (legacyContext) => MarkdownBody(
+          data: data,
+          builders: chatMarkdownBuilders(),
+          styleSheet: chatMarkdownStyleSheet(legacyContext),
+          onTapLink: onTapLink,
+        ),
+      ),
+    );
+  }
+}
+
 /// Opens a Markdown link, ignoring schemes that are not browser-safe.
 Future<void> openChatLink(ExternalUrlOpener opener, String? href) async {
   if (href == null || href.isEmpty) return;

@@ -51,7 +51,7 @@ final class ProviderSettingsState {
   );
 }
 
-@Riverpod(keepAlive: true)
+@Riverpod(keepAlive: true, retry: noAutomaticRetry)
 /// ProviderSettingsController defines a public contract.
 class ProviderSettingsController extends _$ProviderSettingsController {
   StreamSubscription<ProviderAuthAttemptDto>? _events;

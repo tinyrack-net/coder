@@ -321,7 +321,11 @@ Future<void> _pumpProjectSettings(
     find.byKey(const ValueKey<String>('workspace-settings-button')),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Projects'));
+  final projectsRow = find.byKey(
+    const ValueKey<String>('settings-category-row-project'),
+  );
+  await pumpUntil(tester, projectsRow);
+  await tester.tap(projectsRow);
   await tester.pumpAndSettle();
   if (waitForEditor) {
     await pumpUntil(tester, _textInput('Setup (worktree 생성 후)'));

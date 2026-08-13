@@ -33,7 +33,7 @@ final class SkillsControllerProvider
     required SkillsControllerFamily super.from,
     required (String, String?) super.argument,
   }) : super(
-         retry: null,
+         retry: noAutomaticRetry,
          name: r'skillsControllerProvider',
          isAutoDispose: true,
          dependencies: null,
@@ -65,7 +65,7 @@ final class SkillsControllerProvider
   }
 }
 
-String _$skillsControllerHash() => r'cfdca7b20635aca50378706fabebc90826308029';
+String _$skillsControllerHash() => r'1e8232c9e4f432a8b4fbb02320819a0de37b5a00';
 
 /// Loads and edits the skills one daemon offers, optionally for one project.
 ///
@@ -84,7 +84,7 @@ final class SkillsControllerFamily extends $Family
         > {
   SkillsControllerFamily._()
     : super(
-        retry: null,
+        retry: noAutomaticRetry,
         name: r'skillsControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,

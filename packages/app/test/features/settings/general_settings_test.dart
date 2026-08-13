@@ -29,7 +29,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       for (final key in <String>[
@@ -45,9 +45,17 @@ void main() {
         );
         expect(row.trailingLayout, TinestListRowTrailingLayout.below);
         expect(row.unboundedSubtitle, isTrue);
+        final rowFinder = find.descendant(
+          of: setting,
+          matching: find.byType(TinestListRow),
+        );
+        final rowRect = tester.getRect(rowFinder);
+        final rowPadding = SettingsRow.resolvedPadding(
+          tester.element(rowFinder),
+        );
         expect(
           tester.getRect(find.byKey(ValueKey<String>(key))).width,
-          greaterThan(TRMeasurements.measureXl),
+          closeTo(rowRect.width - rowPadding.horizontal, 0.01),
         );
       }
       expect(tester.takeException(), isNull);
@@ -71,7 +79,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       // Nothing is stored yet, so the app follows the pinned platform locale.
@@ -147,7 +155,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       // Nothing is stored yet, so the app follows the platform brightness,
@@ -219,7 +227,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       expect(store.settings.startAtBoot, isTrue);
@@ -274,7 +282,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       // Starting minimized only describes a login launch, so it cannot be
@@ -335,7 +343,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       // The row reports the stored preference either way, so it must not
@@ -367,7 +375,7 @@ void main() {
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('General'));
+      await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
 
       expect(find.text('표시 언어'), findsOneWidget);

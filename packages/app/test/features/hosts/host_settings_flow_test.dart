@@ -60,6 +60,7 @@ void main() {
       );
       expect(guidance.variant, TRTextVariant.bodySm);
       expect(guidance.color, TRTextColor.muted);
+      expect(find.text('Daemon 연결'), findsOneWidget);
       expect(find.byType(TRAlert), findsNothing);
       expect(
         find.descendant(of: section, matching: find.byType(TRCard)),
@@ -106,7 +107,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('QR 코드 스캔'), findsWidgets);
+      expect(find.text('QR 코드 스캔'), findsOneWidget);
       tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
         BarcodeCapture(
           barcodes: <Barcode>[
@@ -118,7 +119,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Daemon 연결 확인'), findsWidgets);
+      expect(find.text('Daemon 연결 확인'), findsOneWidget);
       expect(find.text('relay-server'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey<String>('relay-pair-submit')),
@@ -170,6 +171,7 @@ void main() {
         find.byKey(const ValueKey<String>('connect-daemon-paste')),
       );
       await tester.pumpAndSettle();
+      expect(find.text('연결 링크 붙여넣기'), findsOneWidget);
       debugDefaultTargetPlatformOverride = null;
       await tester.enterText(_field('연결 링크'), 'https://example.test/bad');
       await tester.tap(find.byKey(const ValueKey<String>('relay-pair-review')));
@@ -242,7 +244,7 @@ void main() {
 
     // A daemon-scoped category explains the missing connection rather than
     // failing to build its page.
-    await tester.tap(find.text('Agent'));
+    await tester.tap(find.text(testL10n.settingsCategoryAgent));
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey<String>('settings-daemon-offline')),
@@ -342,9 +344,28 @@ void main() {
         find.textContaining('planned device list failure'),
         findsOneWidget,
       );
+      final errorAlert = find.ancestor(
+        of: find.textContaining('planned device list failure'),
+        matching: find.byType(TRAlert),
+      );
+      expect(errorAlert, findsOneWidget);
+      expect(
+        tester.widget<TRAlert>(errorAlert).variant,
+        TRStatusVariant.danger,
+      );
+      expect(
+        find.ancestor(
+          of: find.textContaining('planned device list failure'),
+          matching: find.byType(SettingsRow),
+        ),
+        findsNothing,
+      );
       _expectDaemonConnectionSectionsUseSingleCards(tester);
     },
-    tags: const <String>['feature_test__daemon_relay__widget'],
+    tags: const <String>[
+      'feature_test__daemon_relay__widget',
+      'feature_test__settings_async_loading__widget',
+    ],
   );
 
   testWidgets(
@@ -406,6 +427,29 @@ void main() {
       await tester.pumpAndSettle();
 
       _expectDaemonConnectionSectionsUseSingleCards(tester);
+      expect(
+        tester
+            .widgetList<SettingsSection>(find.byType(SettingsSection))
+            .first
+            .title,
+        isNull,
+      );
+      for (final key in const <String>[
+        'relay-pair-device',
+        'relay-advanced-direct',
+      ]) {
+        final section = find
+            .ancestor(
+              of: find.byKey(ValueKey<String>(key)),
+              matching: find.byType(SettingsSection),
+            )
+            .first;
+        expect(
+          find.descendant(of: section, matching: find.byType(TRCard)),
+          findsOneWidget,
+          reason: '$key should use only the section-owned surface',
+        );
+      }
 
       expect(find.byType(TRQrCode), findsNothing);
       await tester.tap(
@@ -470,9 +514,13 @@ void main() {
       await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
       await tester.pumpAndSettle();
       expect(find.text('My phone'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TRButton, '해제'));
+      final revoke = find.widgetWithText(TRButton, '해제');
+      expect(tester.widget<TRButton>(revoke).intent, TRIntent.danger);
+      await tester.tap(revoke);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '해제').last);
+      final confirmRevoke = find.widgetWithText(TRButton, '해제').last;
+      expect(tester.widget<TRButton>(confirmRevoke).intent, TRIntent.danger);
+      await tester.tap(confirmRevoke);
       await tester.pumpAndSettle();
       expect(api.revokedRelayDeviceIds, <String>['phone']);
       expect(find.text('My phone'), findsNothing);
@@ -511,20 +559,34 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(_field('이름'), 'Production');
+      await tester.enterText(_field(testL10n.commonName), 'Production');
       await tester.enterText(
-        _field('WebSocket 주소'),
+        _field(testL10n.appSettingsAddress),
         'ws://daemon.example/ws',
       );
-      await tester.enterText(_field('Bearer token'), 'secret-token');
+      await tester.enterText(
+        _field(testL10n.appSettingsBearerToken),
+        'secret-token',
+      );
       await tester.pump();
       expect(
-        tester.widget<EditableText>(_field('WebSocket 주소')).controller.text,
+        tester
+            .widget<EditableText>(_field(testL10n.appSettingsAddress))
+            .controller
+            .text,
         'ws://daemon.example/ws',
       );
       expect(find.textContaining('암호화되지 않습니다'), findsNothing);
       await tester.tap(find.byType(TRSwitch));
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      final save = find.widgetWithText(TRButton, '저장');
+      expect(
+        find.descendant(
+          of: find.byType(TRAppShellHeader),
+          matching: save,
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(save);
       await tester.pumpAndSettle();
 
       expect(store.profiles.single.label, 'Production');
@@ -537,7 +599,7 @@ void main() {
         tester.element(find.byType(Navigator).first),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(_field('이름'), 'Renamed');
+      await tester.enterText(_field(testL10n.commonName), 'Renamed');
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(store.profiles.single.label, 'Renamed');
@@ -546,9 +608,18 @@ void main() {
         tester.element(find.byType(Navigator).first),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제').last);
+      final delete = find.widgetWithText(TRButton, '삭제');
+      final deleteButton = tester.widget<TRButton>(delete);
+      expect(deleteButton.intent, TRIntent.danger);
+      expect(
+        find.ancestor(of: delete, matching: find.byType(SettingsSection)),
+        findsOneWidget,
+      );
+      await tester.tap(delete);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '삭제').last);
+      final confirmDelete = find.widgetWithText(TRButton, '삭제').last;
+      expect(tester.widget<TRButton>(confirmDelete).intent, TRIntent.danger);
+      await tester.tap(confirmDelete);
       await tester.pumpAndSettle();
       expect(store.profiles, isEmpty);
       expect(store.tokens, isEmpty);
@@ -578,7 +649,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Daemons'));
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('settings-category-row-daemon'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final port = find.byKey(const ValueKey<String>('embedded-daemon-port'));
@@ -632,10 +707,17 @@ void main() {
       await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
 
+      final daemonSettingsPane = _daemonSettingsPane();
       // The sidebar daemon picker names it too, so this is not unique.
       expect(find.text('내장 daemon'), findsWidgets);
       expect(find.text('네트워크 접근 허용'), findsOneWidget);
-      expect(find.textContaining('not running'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: daemonSettingsPane,
+          matching: find.textContaining('not running'),
+        ),
+        findsOneWidget,
+      );
       final embeddedToggle = find.widgetWithText(
         TinestSwitchRow,
         '내장 daemon',
@@ -811,13 +893,18 @@ void main() {
       await tester.tap(findAccessibleAction('설정'));
       await tester.pumpAndSettle();
 
+      final daemonSettingsPane = _daemonSettingsPane();
       expect(find.text('내장 daemon을 시작할 수 없습니다'), findsOneWidget);
-      expect(find.textContaining('이미 실행 중'), findsOneWidget);
+      final runningCopyGuidance = find.descendant(
+        of: daemonSettingsPane,
+        matching: find.textContaining('이미 실행 중'),
+      );
+      expect(runningCopyGuidance, findsOneWidget);
       // Dragging over the message has to select it, so the text cannot be a
       // plain label inside the alert.
       expect(
         find.ancestor(
-          of: find.textContaining('이미 실행 중'),
+          of: runningCopyGuidance,
           matching: find.byType(SelectionArea),
         ),
         findsOneWidget,
@@ -948,7 +1035,13 @@ void main() {
     );
     // A failed daemon reports its own message in place of the generic status.
     expect(find.text('연결 중'), findsOneWidget);
-    expect(find.text('재연결 중'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _daemonSettingsPane(),
+        matching: find.text('재연결 중'),
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('bad token'), findsOneWidget);
     // The idle daemon sits below the fold of the settings list.
     await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
@@ -1103,13 +1196,28 @@ Finder _embeddedPortField() => find.descendant(
   matching: find.byType(EditableText),
 );
 
+Finder _daemonSettingsPane() => find.byKey(
+  const ValueKey<String>('settings-category-pane-daemon'),
+);
+
 void _expectDaemonConnectionSectionsUseSingleCards(WidgetTester tester) {
   for (final section in find.byType(SettingsSection).evaluate()) {
     final sectionFinder = find.byElementPredicate(
       (element) => identical(element, section),
     );
+    final cards = find.descendant(
+      of: sectionFinder,
+      matching: find.byType(TRCard),
+    );
+    final isAlertOnly =
+        cards.evaluate().isEmpty &&
+        find
+            .descendant(of: sectionFinder, matching: find.byType(TRAlert))
+            .evaluate()
+            .isNotEmpty;
+    if (isAlertOnly) continue;
     expect(
-      find.descendant(of: sectionFinder, matching: find.byType(TRCard)),
+      cards,
       findsOneWidget,
       reason: 'A boxed settings section must own its only card.',
     );

@@ -37,7 +37,11 @@ class AppSettingsPage extends ConsumerWidget {
       loading: SettingsSkeletonLayout.form(
         semanticLabel: l10n.settingsLoading,
       ),
-      error: (error, stackTrace) => Center(child: TRText.inherit('$error')),
+      error: (error, stackTrace) => SettingsErrorState(
+        key: const ValueKey<String>('daemon-settings-error'),
+        error: error,
+        onRetry: () => ref.invalidate(hostRegistryControllerProvider),
+      ),
       data: (registry) => _settingsBody(
         context,
         ref,
@@ -54,7 +58,7 @@ class AppSettingsPage extends ConsumerWidget {
           label: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () =>
               closeTask(context, () => const WorkspaceHomeRoute().go(context)),
-          icon: const Icon(TinestIcons.back),
+          icon: Icon(TinestIcons.backFor(context)),
         ),
         title: TRText.inherit(l10n.appSettingsTitle),
       ),
@@ -451,7 +455,7 @@ class _RemoteHostCard extends ConsumerWidget {
             attachedEdge: TRCollapsibleAttachedEdge.top,
             trigger: TRText.inherit(l10n.relayConnectionDetails),
             content: Padding(
-              padding: SettingsRow.contentPadding,
+              padding: SettingsRow.resolvedPadding(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -479,7 +483,7 @@ class _RemoteHostCard extends ConsumerWidget {
           Padding(
             // Sharing the row inset keeps the actions on the same trailing edge
             // as the controls above them.
-            padding: SettingsRow.contentPadding,
+            padding: SettingsRow.resolvedPadding(context),
             // A Wrap rather than a Row: on a narrow window the two actions do
             // not fit on one line. It right-aligns correctly here because the
             // surrounding column stretches it to the card width.
@@ -618,7 +622,11 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
     final waitingForExisting = widget.hostId != null && !registryState.hasValue;
     final body = waitingForExisting
         ? registryState.hasError
-              ? Center(child: TRText.inherit('${registryState.error}'))
+              ? SettingsErrorState(
+                  key: const ValueKey<String>('remote-daemon-settings-error'),
+                  error: registryState.error!,
+                  onRetry: () => ref.invalidate(hostRegistryControllerProvider),
+                )
               : SettingsSkeletonLayout.form(
                   semanticLabel: l10n.settingsLoading,
                 )
@@ -674,26 +682,24 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
                   ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  if (existing != null) ...<Widget>[
-                    TRButton(
-                      appearance: TRAppearance.ghost,
-                      onPressed: _saving ? null : () => _delete(existing),
-                      child: TRText.inherit(l10n.commonDelete),
+              if (existing != null)
+                SettingsSection(
+                  title: l10n.commonDelete,
+                  description: l10n.appSettingsDeleteBody,
+                  children: <Widget>[
+                    SettingsRow(
+                      title: TRText.inherit(existing.label),
+                      controlLayout: SettingsControlLayout.responsive,
+                      control: TRButton(
+                        key: const ValueKey<String>('remote-host-delete'),
+                        appearance: TRAppearance.outline,
+                        intent: TRIntent.danger,
+                        onPressed: _saving ? null : () => _delete(existing),
+                        child: TRText.inherit(l10n.commonDelete),
+                      ),
                     ),
-                    const SizedBox(width: TRSpacing.small),
                   ],
-                  TRButton(
-                    intent: TRIntent.primary,
-                    onPressed: _saving ? null : () => _save(existing),
-                    child: TRText.inherit(
-                      _saving ? l10n.commonSaving : l10n.commonSave,
-                    ),
-                  ),
-                ],
-              ),
+                ),
             ],
           );
     return TinestPageShell(
@@ -706,13 +712,25 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
             context,
             () => const DaemonSettingsRoute().go(context),
           ),
-          icon: const Icon(TinestIcons.back),
+          icon: Icon(TinestIcons.backFor(context)),
         ),
         title: TRText.inherit(
           widget.hostId == null
               ? l10n.appSettingsAddRemoteTitle
               : l10n.appSettingsEditRemoteTitle,
         ),
+        actions: <Widget>[
+          TRButton(
+            key: const ValueKey<String>('remote-host-save'),
+            intent: TRIntent.primary,
+            loading: _saving,
+            loadingLabel: l10n.commonSaving,
+            onPressed: _saving || waitingForExisting
+                ? null
+                : () => _save(existing),
+            child: TRText.inherit(l10n.commonSave),
+          ),
+        ],
       ),
       body: body,
     );
@@ -778,7 +796,7 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
             child: TRText.inherit(l10n.commonCancel),
           ),
           TRButton(
-            intent: TRIntent.primary,
+            intent: TRIntent.danger,
             onPressed: () => Navigator.pop(context, true),
             child: TRText.inherit(l10n.commonDelete),
           ),

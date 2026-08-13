@@ -21,7 +21,7 @@ final class McpServersControllerProvider
     required McpServersControllerFamily super.from,
     required (String, String?) super.argument,
   }) : super(
-         retry: null,
+         retry: noAutomaticRetry,
          name: r'mcpServersControllerProvider',
          isAutoDispose: true,
          dependencies: null,
@@ -54,7 +54,7 @@ final class McpServersControllerProvider
 }
 
 String _$mcpServersControllerHash() =>
-    r'75812ca9bead7bc3f61802b7428c0086d4209a7a';
+    r'd79c56687bd73179bbb18628e1c5716b38efdfb6';
 
 /// Loads and edits one daemon's MCP server configuration.
 
@@ -69,7 +69,7 @@ final class McpServersControllerFamily extends $Family
         > {
   McpServersControllerFamily._()
     : super(
-        retry: null,
+        retry: noAutomaticRetry,
         name: r'mcpServersControllerProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
