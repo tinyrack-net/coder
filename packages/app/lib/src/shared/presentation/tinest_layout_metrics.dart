@@ -9,9 +9,10 @@ abstract final class TinestLayoutMetrics {
   /// Maximum width of a settings page's primary content column.
   static const double settingsContentMaxWidth = compactBreakpoint;
 
-  /// Maximum width of a session's conversation timeline and composer column.
+  /// Maximum width of a session's readable messages and composer column.
   ///
-  /// The timeline owns an [TRSpacing.extraLarge] inset on each side, leaving
+  /// Each timeline row owns an [TRSpacing.extraLarge] inset on each side,
+  /// while the scroll viewport continues to fill its pane. The insets leave
   /// two [TRMeasurements.measureXl] measures for the readable message body.
   static const double conversationContentMaxWidth =
       TRMeasurements.measureXl * 2 + TRSpacing.extraLarge * 2;

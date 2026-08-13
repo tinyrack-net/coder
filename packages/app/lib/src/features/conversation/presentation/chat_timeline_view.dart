@@ -9,6 +9,7 @@ import 'package:app/src/features/conversation/presentation/chat_question_card.da
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -133,11 +134,15 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         (items.last as ChatReasoningActivity).isStreaming;
     final showRunning = busy && !reasoningActive;
     if (widget.loading && items.isEmpty) {
-      return ChatTimelineSkeleton(
-        semanticLabel: AppLocalizations.of(context).conversationLoading,
+      return _ChatTimelineContentColumn(
+        child: ChatTimelineSkeleton(
+          semanticLabel: AppLocalizations.of(context).conversationLoading,
+        ),
       );
     }
-    if (items.isEmpty && !busy) return const ChatEmptyState();
+    if (items.isEmpty && !busy) {
+      return const _ChatTimelineContentColumn(child: ChatEmptyState());
+    }
     final entries = <_ChatTimelineEntry>[
       for (final item in items) _ChatTimelineItemEntry(item),
       if (showRunning) const _ChatTimelineRunningEntry(),
@@ -164,27 +169,47 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             planActionBuilder: widget.planActionBuilder,
           ),
         };
-        return Padding(
-          // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
-          padding:
-              const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
-              (index == 0
-                  ? const EdgeInsets.only(top: TRSpacing.large)
-                  : EdgeInsets.zero) +
-              (index == entries.length - 1
-                  ? const EdgeInsets.only(bottom: TRSpacing.large)
-                  : const EdgeInsets.only(bottom: TRSpacing.small)),
-          child: KeyedSubtree(
-            key: ValueKey<String>(widget.pageStorageId),
+        return _ChatTimelineContentColumn(
+          child: Padding(
+            // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
+            padding:
+                const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
+                (index == 0
+                    ? const EdgeInsets.only(top: TRSpacing.large)
+                    : EdgeInsets.zero) +
+                (index == entries.length - 1
+                    ? const EdgeInsets.only(bottom: TRSpacing.large)
+                    : const EdgeInsets.only(bottom: TRSpacing.small)),
             child: KeyedSubtree(
-              key: ValueKey<String>(entry.key),
-              child: content,
+              key: ValueKey<String>(widget.pageStorageId),
+              child: KeyedSubtree(
+                key: ValueKey<String>(entry.key),
+                child: content,
+              ),
             ),
           ),
         );
       },
     );
   }
+}
+
+/// Keeps timeline visuals readable without narrowing their scroll viewport.
+class _ChatTimelineContentColumn extends StatelessWidget {
+  const _ChatTimelineContentColumn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: TinestLayoutMetrics.conversationContentMaxWidth,
+      ),
+      child: SizedBox(width: double.infinity, child: child),
+    ),
+  );
 }
 
 sealed class _ChatTimelineEntry {

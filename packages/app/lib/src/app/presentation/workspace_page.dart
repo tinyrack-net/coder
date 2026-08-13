@@ -1396,35 +1396,33 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               // does not offer a second button for the same thing.
             ),
             Expanded(
-              child: _ConversationContentColumn(
-                child: ChatTimelineView(
-                  pageStorageId:
-                      'conversation:${widget.selection.hostId}:${current.id}',
-                  items: visibleItems,
-                  busy: busy || optimistic,
-                  loading: conversation.isLoading && !conversation.hasValue,
-                  hostId: widget.selection.hostId,
-                  planActionBuilder: pendingPlan == null
-                      ? null
-                      : (proposal) => proposal.key != pendingPlan.key
-                            ? null
-                            : ChatPlanActions(
-                                selection: widget.selection,
-                                session: current,
-                                proposal: proposal,
-                                embedded: true,
-                                onDismiss: () => setState(
-                                  () => _dismissedPlans.add(proposal.key),
-                                ),
-                                onSessionCreated: (session) => _goSession(
-                                  context,
-                                  widget.selection,
-                                  session.id,
-                                ),
+              child: ChatTimelineView(
+                pageStorageId:
+                    'conversation:${widget.selection.hostId}:${current.id}',
+                items: visibleItems,
+                busy: busy || optimistic,
+                loading: conversation.isLoading && !conversation.hasValue,
+                hostId: widget.selection.hostId,
+                planActionBuilder: pendingPlan == null
+                    ? null
+                    : (proposal) => proposal.key != pendingPlan.key
+                          ? null
+                          : ChatPlanActions(
+                              selection: widget.selection,
+                              session: current,
+                              proposal: proposal,
+                              embedded: true,
+                              onDismiss: () => setState(
+                                () => _dismissedPlans.add(proposal.key),
                               ),
-                  loadAttachment: _loadAttachment,
-                  exportAttachment: _exportAttachment,
-                ),
+                              onSessionCreated: (session) => _goSession(
+                                context,
+                                widget.selection,
+                                session.id,
+                              ),
+                            ),
+                loadAttachment: _loadAttachment,
+                exportAttachment: _exportAttachment,
               ),
             ),
             if (value?.goal case final GoalDto goal)
