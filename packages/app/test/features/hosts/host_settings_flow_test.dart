@@ -8,6 +8,7 @@ import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
+import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -286,6 +287,67 @@ void main() {
   );
 
   testWidgets(
+    'approved device loading and error states share the section card',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final now = DateTime.utc(2026, 8, 8);
+      final gate = Completer<void>();
+      final api = FakeTinestApi(serverInfo: _serverInfo('device-server'))
+        ..listRelayDevicesGate = gate.future;
+      final store = MemoryAppStore(
+        settings: const AppSettings(embeddedDaemonEnabled: false),
+        profiles: <RemoteDaemonProfile>[
+          RemoteDaemonProfile(
+            id: 'remote',
+            label: 'Remote daemon',
+            serverId: 'device-server',
+            connections: directHostConnections(
+              Uri.parse('wss://daemon.example/v4/ws'),
+            ),
+            autoConnect: true,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        tokens: const <String, String>{'remote': 'token'},
+      );
+      await tester.pumpWidget(
+        TinestApp(
+          services: AppServices(
+            settings: store,
+            profiles: store,
+            credentials: store,
+            clients: _PairClients(api),
+            clientKind: 'desktop',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      const DaemonConnectionsRoute(hostId: 'remote').go(
+        tester.element(find.byType(Navigator).first),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ListRowsSkeleton), findsOneWidget);
+      _expectDaemonConnectionSectionsUseSingleCards(tester);
+
+      gate.completeError(StateError('planned device list failure'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('planned device list failure'),
+        findsOneWidget,
+      );
+      _expectDaemonConnectionSectionsUseSingleCards(tester);
+    },
+    tags: const <String>['feature_test__daemon_relay__widget'],
+  );
+
+  testWidgets(
     'approved devices can create a pairing offer and revoke a device',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 900);
@@ -343,6 +405,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      _expectDaemonConnectionSectionsUseSingleCards(tester);
+
       expect(find.byType(TRQrCode), findsNothing);
       await tester.tap(
         find.byKey(const ValueKey<String>('relay-pair-device')),
@@ -387,6 +451,7 @@ void main() {
 
       tester.view.physicalSize = const Size(390, 760);
       await tester.pumpAndSettle();
+      _expectDaemonConnectionSectionsUseSingleCards(tester);
       await tester.tap(
         find.byKey(const ValueKey<String>('relay-advanced-endpoint')),
       );
@@ -411,6 +476,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.revokedRelayDeviceIds, <String>['phone']);
       expect(find.text('My phone'), findsNothing);
+      _expectDaemonConnectionSectionsUseSingleCards(tester);
       semantics.dispose();
     },
     tags: const <String>['feature_test__daemon_relay__widget'],
@@ -1036,3 +1102,30 @@ Finder _embeddedPortField() => find.descendant(
   of: find.byKey(const ValueKey<String>('embedded-daemon-port')),
   matching: find.byType(EditableText),
 );
+
+void _expectDaemonConnectionSectionsUseSingleCards(WidgetTester tester) {
+  for (final section in find.byType(SettingsSection).evaluate()) {
+    final sectionFinder = find.byElementPredicate(
+      (element) => identical(element, section),
+    );
+    expect(
+      find.descendant(of: sectionFinder, matching: find.byType(TRCard)),
+      findsOneWidget,
+      reason: 'A boxed settings section must own its only card.',
+    );
+  }
+
+  final advancedSection = find.ancestor(
+    of: find.widgetWithText(TRText, '고급'),
+    matching: find.byType(SettingsSection),
+  );
+  final separator = find.descendant(
+    of: advancedSection,
+    matching: find.byType(TRSeparator),
+  );
+  expect(separator, findsOneWidget);
+  expect(
+    tester.widget<TRSeparator>(separator).variant,
+    TRSeparatorVariant.muted,
+  );
+}
