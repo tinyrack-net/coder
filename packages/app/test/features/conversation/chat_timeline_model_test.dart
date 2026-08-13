@@ -419,7 +419,7 @@ void main() {
   );
 
   testWidgets(
-    'a pending question keeps its timeline key when its answer arrives',
+    'a question keeps one unique timeline key from broadcast through answer',
     (tester) async {
       final tool = event('tool.requested', <String, dynamic>{
         'callId': 'call-ask',
@@ -456,7 +456,15 @@ void main() {
         createdAt: now,
       );
 
-      final pending =
+      final broadcastOnly =
+          projectChatTimeline(
+                const <TimelineEventDto>[],
+                questions: <String, UserQuestionRequestDto>{
+                  request.id: request,
+                },
+              ).single
+              as ChatQuestionInteraction;
+      final persisted =
           projectChatTimeline(
                 <TimelineEventDto>[tool],
                 questions: <String, UserQuestionRequestDto>{
@@ -464,6 +472,22 @@ void main() {
                 },
               ).single
               as ChatQuestionInteraction;
+      final otherTurn = UserQuestionRequestDto(
+        id: 'request-2',
+        sessionId: 'session',
+        turnId: 'turn-2',
+        toolCallId: 'call-ask',
+        questions: request.questions,
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+      final concurrentKeys = projectChatTimeline(
+        const <TimelineEventDto>[],
+        questions: <String, UserQuestionRequestDto>{
+          request.id: request,
+          otherTurn.id: otherTurn,
+        },
+      ).map((item) => item.key);
       final answered =
           projectChatTimeline(<TimelineEventDto>[
                 tool,
@@ -478,7 +502,9 @@ void main() {
               ]).single
               as ChatUserAnswer;
 
-      expect(answered.key, pending.key);
+      expect(persisted.key, broadcastOnly.key);
+      expect(answered.key, persisted.key);
+      expect(concurrentKeys.toSet(), hasLength(2));
       expect(answered.entries.single.answer, 'SQLite');
     },
     tags: const <String>['feature_test__turn_question__widget'],

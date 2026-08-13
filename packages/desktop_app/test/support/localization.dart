@@ -1,3 +1,4 @@
+import 'package:app/l10n/app_localization_config.dart';
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -28,10 +29,7 @@ final AppLocalizations testL10n = lookupAppLocalizations(testLocale);
 
 /// Delegates every test app needs to resolve [AppLocalizations].
 const Iterable<LocalizationsDelegate<dynamic>> testLocalizationsDelegates =
-    <LocalizationsDelegate<dynamic>>[
-      AppLocalizations.delegate,
-      ...GlobalMaterialLocalizations.delegates,
-    ];
+    tinestLocalizationsDelegates;
 
 /// Locales every test app supports.
 const Iterable<Locale> testSupportedLocales = AppLocalizations.supportedLocales;

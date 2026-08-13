@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/conversation/infrastructure/attachment_io.dart';
@@ -45,7 +44,7 @@ void main() {
               theme: testLightTheme,
               locale: testLocale,
               localizationsDelegates: testLocalizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
+              supportedLocales: testSupportedLocales,
               home: Scaffold(
                 body: ComposerDropPane(
                   controller: dropController,
@@ -135,7 +134,7 @@ void main() {
             theme: testLightTheme,
             locale: testLocale,
             localizationsDelegates: testLocalizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
+            supportedLocales: testSupportedLocales,
             home: Scaffold(
               body: ComposerDropPane(
                 controller: dropController,
@@ -184,7 +183,7 @@ void main() {
             theme: testLightTheme,
             locale: testLocale,
             localizationsDelegates: testLocalizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
+            supportedLocales: testSupportedLocales,
             home: Scaffold(
               body: StatefulBuilder(
                 builder: (context, setState) {

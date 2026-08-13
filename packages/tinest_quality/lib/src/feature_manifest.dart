@@ -1458,6 +1458,12 @@ tinestUiReachabilityManifest = <UiReachabilityContract>[
         description: 'Reasoning and response deltas remain visibly live.',
       ),
       UiStateContract(
+        id: 'history_anchored',
+        description:
+            'Streaming, disclosure growth, and session restoration preserve '
+            "the reader's visible history anchor.",
+      ),
+      UiStateContract(
         id: 'approval_pending',
         description: 'A tool approval remains actionable in the timeline.',
       ),

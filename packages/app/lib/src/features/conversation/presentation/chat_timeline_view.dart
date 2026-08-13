@@ -22,6 +22,7 @@ class ChatTimelineView extends StatefulWidget {
   const ChatTimelineView({
     required this.items,
     required this.busy,
+    required this.pageStorageId,
     this.loading = false,
     this.hostId,
     this.planActionBuilder,
@@ -35,6 +36,9 @@ class ChatTimelineView extends StatefulWidget {
 
   /// Whether the session is currently running a turn.
   final bool busy;
+
+  /// Stable restoration identity for this conversation's scroll position.
+  final String pageStorageId;
 
   /// Whether history is still loading and no snapshot has ever arrived.
   ///
@@ -60,55 +64,34 @@ class ChatTimelineView extends StatefulWidget {
 }
 
 class _ChatTimelineViewState extends State<ChatTimelineView> {
-  static const double _cacheExtentViewportMultiplier = 4;
-
   // Expansion lives here so a card keeps its state when it scrolls out of the
-  // cache extent or when new events shift every reversed index.
+  // cache extent or when new events shift its virtual index.
   final Set<String> _expanded = <String>{};
   final Map<String, Future<Uint8List>> _attachmentCache =
       <String, Future<Uint8List>>{};
-  final ScrollController _scrollController = ScrollController();
+  final TRVirtualListController<String> _virtualListController =
+      TRVirtualListController<String>();
+
+  @override
+  void didUpdateWidget(covariant ChatTimelineView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageStorageId == widget.pageStorageId) return;
+    _expanded.clear();
+    _attachmentCache.clear();
+  }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _virtualListController.dispose();
     super.dispose();
   }
 
   /// Folds or unfolds a row while holding it still on screen.
-  ///
-  /// The list is reversed, so a row that grows extends toward the top of the
-  /// viewport. Without this correction the header the user just clicked jumps
-  /// upward by the body's height and the body lands where the header was, which
-  /// reads as unfolding upward. Restoring the row's top edge pins the header
-  /// and lets the body claim the space below it instead.
-  void _toggle(String key, BuildContext rowContext) {
-    final before = _rowTop(rowContext);
+  void _toggle(String key) {
+    _virtualListController.holdVisibleAnchorForNextLayout();
     setState(() {
       if (!_expanded.remove(key)) _expanded.add(key);
     });
-    if (before == null) return;
-    // One frame is enough: the disclosure swaps its body in without animating.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      final after = _rowTop(rowContext);
-      if (after == null) return;
-      final position = _scrollController.position;
-      // A reversed offset grows upward, so adding the drop pushes the row back
-      // down to where the pointer left it.
-      final target = (position.pixels + (before - after)).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
-      if (target != position.pixels) _scrollController.jumpTo(target);
-    });
-  }
-
-  double? _rowTop(BuildContext rowContext) {
-    if (!rowContext.mounted) return null;
-    final box = rowContext.findRenderObject();
-    if (box is! RenderBox || !box.attached || !box.hasSize) return null;
-    return box.localToGlobal(Offset.zero).dy;
   }
 
   Future<Uint8List> _load(ChatAttachment attachment) =>
@@ -116,6 +99,29 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         attachment.id,
         () => widget.loadAttachment!(attachment),
       );
+
+  double _estimatedItemExtent(_ChatTimelineEntry entry, int _) =>
+      switch (entry) {
+        _ChatTimelineRunningEntry() => TRMeasurements.measureXs,
+        _ChatTimelineItemEntry(:final item) => switch (item) {
+          ChatAttachmentMessage() ||
+          ChatNotice() ||
+          ChatContextReset() ||
+          ChatContextCompacted() ||
+          ChatDeferredTools() ||
+          ChatUsage() ||
+          ChatUnknownEvent() => TRMeasurements.measureXs,
+          ChatUserMessage() ||
+          ChatAssistantMessage() ||
+          ChatReasoningActivity() ||
+          ChatPlanProposal() ||
+          ChatApprovalInteraction() ||
+          ChatQuestionInteraction() ||
+          ChatToolActivity() ||
+          ChatUserAnswer() ||
+          ChatSleep() => TRMeasurements.measureSm,
+        },
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -132,71 +138,75 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
       );
     }
     if (items.isEmpty && !busy) return const ChatEmptyState();
-    // The list is reversed so new items pin to the bottom; every row carries a
-    // stable key so expanding a tool card cannot leak into its neighbour when
-    // indices shift.
-    // The list owns its own viewport, so the scroll area may only theme it.
-    return TRScrollArea.forScrollable(
-      controller: _scrollController,
-      child: ListView.separated(
-        controller: _scrollController,
-        primary: false,
-        reverse: true,
-        // Flutter estimates an unbuilt SliverList's full height from the
-        // rows currently laid out. Chat rows vary sharply in height, so a
-        // wider viewport-relative sample keeps the scrollbar thumb stable
-        // while retaining lazy construction for distant history.
-        scrollCacheExtent: const .viewport(
-          _cacheExtentViewportMultiplier,
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          TRSpacing.extraLarge,
-          TRSpacing.large,
-          TRSpacing.extraLarge,
-          TRSpacing.large,
-        ),
-        itemCount: items.length + (showRunning ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: TRSpacing.small),
-        // Every new event shifts the reversed indices, so keys are mapped
-        // back to their slot; without this an expanded card would leak its
-        // state into whichever item lands on its old index.
-        findItemIndexCallback: (key) {
-          if (key is! ValueKey<String>) return null;
-          final position = items.indexWhere(
-            (item) => item.key == key.value,
-          );
-          if (position < 0) return null;
-          return items.length - position - 1 + (showRunning ? 1 : 0);
-        },
-        itemBuilder: (context, index) {
-          if (showRunning && index == 0) {
-            return const KeyedSubtree(
-              key: ValueKey<String>('chat-running'),
-              child: ChatRunningIndicator(),
-            );
-          }
-          final itemIndex = index - (showRunning ? 1 : 0);
-          final item = items[items.length - itemIndex - 1];
-          return KeyedSubtree(
-            key: ValueKey<String>(item.key),
-            // The builder hands the toggle a context inside the row so the row
-            // can be measured before and after it changes height.
-            child: Builder(
-              builder: (rowContext) => ChatItemView(
-                item: item,
-                expanded: _expanded.contains(item.key),
-                onToggle: () => _toggle(item.key, rowContext),
-                loadAttachment: widget.loadAttachment == null ? null : _load,
-                exportAttachment: widget.exportAttachment,
-                hostId: widget.hostId,
-                planActionBuilder: widget.planActionBuilder,
-              ),
+    final entries = <_ChatTimelineEntry>[
+      for (final item in items) _ChatTimelineItemEntry(item),
+      if (showRunning) const _ChatTimelineRunningEntry(),
+    ];
+    return TRVirtualList<_ChatTimelineEntry, String>(
+      items: entries,
+      itemKey: (entry) => entry.key,
+      estimatedItemExtent: _estimatedItemExtent,
+      controller: _virtualListController,
+      initialPosition: const TRVirtualListInitialPosition<String>.trailing(),
+      follow: TRVirtualListFollow.trailing,
+      scrollCacheExtent: const .viewport(4),
+      pageStorageId: widget.pageStorageId,
+      itemBuilder: (context, entry, index) {
+        final content = switch (entry) {
+          _ChatTimelineRunningEntry() => const ChatRunningIndicator(),
+          _ChatTimelineItemEntry(:final item) => ChatItemView(
+            item: item,
+            expanded: _expanded.contains(item.key),
+            onToggle: () => _toggle(item.key),
+            loadAttachment: widget.loadAttachment == null ? null : _load,
+            exportAttachment: widget.exportAttachment,
+            hostId: widget.hostId,
+            planActionBuilder: widget.planActionBuilder,
+          ),
+        };
+        return Padding(
+          // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
+          padding:
+              const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
+              (index == 0
+                  ? const EdgeInsets.only(top: TRSpacing.large)
+                  : EdgeInsets.zero) +
+              (index == entries.length - 1
+                  ? const EdgeInsets.only(bottom: TRSpacing.large)
+                  : const EdgeInsets.only(bottom: TRSpacing.small)),
+          child: KeyedSubtree(
+            key: ValueKey<String>(widget.pageStorageId),
+            child: KeyedSubtree(
+              key: ValueKey<String>(entry.key),
+              child: content,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
+}
+
+sealed class _ChatTimelineEntry {
+  const _ChatTimelineEntry();
+
+  String get key;
+}
+
+final class _ChatTimelineItemEntry extends _ChatTimelineEntry {
+  const _ChatTimelineItemEntry(this.item);
+
+  final ChatItem item;
+
+  @override
+  String get key => item.key;
+}
+
+final class _ChatTimelineRunningEntry extends _ChatTimelineEntry {
+  const _ChatTimelineRunningEntry();
+
+  @override
+  String get key => 'chat-running';
 }
 
 /// Renders one projected chat item.

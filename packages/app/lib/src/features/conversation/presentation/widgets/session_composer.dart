@@ -1725,6 +1725,10 @@ class _SessionComposerState extends State<SessionComposer> {
   @override
   void initState() {
     super.initState();
+    // Standalone text editing consumes Enter in its editing shortcuts before
+    // an ancestor Focus sees it. Listen before focus-tree dispatch, but only
+    // claim events while this composer's actual input node owns focus.
+    FocusManager.instance.addEarlyKeyEventHandler(_handleEarlyKey);
     // A listener rather than onChanged: a completion splices the value
     // programmatically, and that has to re-evaluate the token too.
     _controller.addListener(_handleTextChanged);
@@ -1774,6 +1778,7 @@ class _SessionComposerState extends State<SessionComposer> {
 
   @override
   void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_handleEarlyKey);
     final dropController = widget.controller;
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => dropController?._detach(this),
@@ -1965,18 +1970,15 @@ class _SessionComposerState extends State<SessionComposer> {
                       },
                       // Shift+Tab cycles the mode instead of moving focus,
                       // and Enter sends rather than opening a line.
-                      child: Focus(
-                        onKeyEvent: _handleKey,
-                        child: TRTextField(
-                          key: const ValueKey('session-composer-input'),
-                          controller: _controller,
-                          focusNode: _inputFocus,
-                          appearance: TRFieldAppearance.plain,
-                          minLines: 1,
-                          maxLines: 8,
-                          enabled: widget.enabled,
-                          placeholder: l10n.composerInputHint,
-                        ),
+                      child: TRTextField(
+                        key: const ValueKey('session-composer-input'),
+                        controller: _controller,
+                        focusNode: _inputFocus,
+                        appearance: TRFieldAppearance.plain,
+                        minLines: 1,
+                        maxLines: 8,
+                        enabled: widget.enabled,
+                        placeholder: l10n.composerInputHint,
                       ),
                     ),
                     if (_attachments.isNotEmpty)
@@ -2136,6 +2138,10 @@ class _SessionComposerState extends State<SessionComposer> {
     toggle();
     return KeyEventResult.handled;
   }
+
+  KeyEventResult _handleEarlyKey(KeyEvent event) => _inputFocus.hasFocus
+      ? _handleKey(_inputFocus, event)
+      : KeyEventResult.ignored;
 
   Future<void> _pickFiles() async {
     final input = widget.attachmentInput;
