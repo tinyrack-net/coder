@@ -13,6 +13,7 @@ import 'package:app/testing/features/conversation/presentation/widgets/session_c
 import 'package:app/testing/features/desktop/infrastructure/desktop_shell.dart';
 import 'package:app/testing/features/hosts/domain/host_models.dart';
 import 'package:app/testing/features/hosts/domain/host_ports.dart';
+import 'package:app/testing/shared/presentation/settings_layout.dart';
 import 'package:app/testing/shared/presentation/tinest_icons.dart';
 import 'package:app/testing/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
@@ -2477,15 +2478,29 @@ Future<void> _centerSettingsAction(
   WidgetTester tester,
   Finder action,
 ) async {
-  final scrollable = find
-      .descendant(
-        of: find.byType(ListView).last,
-        matching: find.byType(Scrollable),
-      )
-      .first;
+  final settingsScrollables = find.descendant(
+    of: find.byType(SettingsScaffold),
+    matching: find.byType(Scrollable),
+  );
   // Saving can briefly replace the editor with its loading state. Wait for the
   // settings scrollable to remount before revealing the trailing action.
-  await pumpUntil(tester, scrollable);
+  await pumpUntil(tester, settingsScrollables);
+  final scrollable = settingsScrollables.first;
+
+  // Settings sections are separate lazy ListView children, so a trailing
+  // action may not have an element until its section enters the cache extent.
+  // Scroll the real surface until the target is built before asking Flutter to
+  // align that element precisely.
+  for (var attempt = 0; action.evaluate().isEmpty; attempt += 1) {
+    if (attempt >= 50) {
+      throw TestFailure('Settings action was not built after scrolling.');
+    }
+    await tester.drag(
+      scrollable,
+      const Offset(0, -TRSpacing.fourExtraLarge),
+    );
+    await tester.pumpAndSettle();
+  }
   await tester.scrollUntilVisible(
     action,
     TRSpacing.fourExtraLarge,

@@ -55,8 +55,24 @@ class McpServersController extends _$McpServersController {
   /// Adds one user-scoped server.
   Future<void> add(McpServerConfigDto server) async {
     final api = await requireHostApi(ref, hostId);
-    await api.mcp.addMcpServer(server);
+    final added = await api.mcp.addMcpServer(server);
+    _upsertServer(added);
     await refresh();
+  }
+
+  void _upsertServer(McpServerStateDto server) {
+    final current = state.value;
+    if (current == null) return;
+    final servers = List<McpServerStateDto>.of(current.servers);
+    final index = servers.indexWhere(
+      (candidate) => candidate.config.id == server.config.id,
+    );
+    if (index < 0) {
+      servers.add(server);
+    } else {
+      servers[index] = server;
+    }
+    state = AsyncData<McpServersState>(McpServersState(servers: servers));
   }
 
   /// Replaces one user-scoped server.

@@ -1,15 +1,20 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
+import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
+import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 const _geometryTolerance = 0.01;
@@ -103,6 +108,105 @@ Finder get _scrollable => find
 
 ScrollPosition _scrollPosition(WidgetTester tester) =>
     tester.state<ScrollableState>(_scrollable).position;
+
+void _expectTrailingPinned(WidgetTester tester, {required String reason}) {
+  expect(
+    _scrollPosition(tester).extentAfter,
+    closeTo(0, _geometryTolerance),
+    reason: reason,
+  );
+}
+
+Widget _streamingConversationHarness(
+  GlobalKey<_StreamingConversationHarnessState> key,
+) => ProviderScope(
+  overrides: [
+    appServicesProvider.overrideWithValue(fakeAppServices(FakeTinestApi())),
+    externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+  ],
+  child: MaterialApp(
+    theme: testLightTheme,
+    darkTheme: testDarkTheme,
+    locale: testLocale,
+    localizationsDelegates: testLocalizationsDelegates,
+    supportedLocales: testSupportedLocales,
+    builder: (context, child) => TinestUiDensity(child: child!),
+    home: Scaffold(body: _StreamingConversationHarness(key: key)),
+  ),
+);
+
+final class _StreamingConversationHarness extends StatefulWidget {
+  const _StreamingConversationHarness({super.key});
+
+  @override
+  State<_StreamingConversationHarness> createState() =>
+      _StreamingConversationHarnessState();
+}
+
+final class _StreamingConversationHarnessState
+    extends State<_StreamingConversationHarness> {
+  final PageStorageBucket _bucket = PageStorageBucket();
+  final List<ChatItem> _history = _messages(24, prefix: 'composer-history');
+  String? submittedPrompt;
+  String _assistantMarkdown = '';
+  bool _busy = false;
+
+  List<ChatItem> get _items => <ChatItem>[
+    ..._history,
+    if (submittedPrompt case final prompt?)
+      ChatUserMessage(
+        key: 'submitted-prompt',
+        turnId: 'turn-composer-streaming',
+        createdAt: _createdAt.add(const Duration(minutes: 1)),
+        text: prompt,
+      ),
+    if (_busy) _streamingMessage(_assistantMarkdown),
+  ];
+
+  void _submit(ComposerSubmission submission) {
+    setState(() {
+      submittedPrompt = submission.text;
+      _assistantMarkdown = '';
+      _busy = true;
+    });
+  }
+
+  void appendAssistantDelta(String delta) {
+    setState(() => _assistantMarkdown += delta);
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Expanded(
+        child: PageStorage(
+          bucket: _bucket,
+          child: ChatTimelineView(
+            pageStorageId: 'conversation:$_hostId:composer-streaming-session',
+            items: _items,
+            busy: _busy,
+            hostId: _hostId,
+          ),
+        ),
+      ),
+      SessionComposer(
+        enabled: true,
+        busy: _busy,
+        onSubmit: _submit,
+        bar: SessionComposerBar(
+          hostId: _hostId,
+          definitions: const [],
+          agentDefinitionId: null,
+          selection: null,
+          onAgentChanged: (_) {},
+          onModelChanged: (_, _) {},
+          mode: SessionMode.normal,
+          onModeChanged: (_) {},
+        ),
+      ),
+    ],
+  );
+}
 
 ({String key, double top}) _visibleAnchor(
   WidgetTester tester,
@@ -282,6 +386,67 @@ void main() {
       );
     },
   );
+
+  for (final testCase in <({String name, String prompt})>[
+    (name: 'one-line input', prompt: 'Explain the change'),
+    (
+      name: 'multi-line input',
+      prompt: 'Inspect the behavior\nPreserve the anchor\nVerify every chunk',
+    ),
+  ]) {
+    testWidgets(
+      'SessionComposer send and streaming deltas stay trailing for '
+      '${testCase.name}',
+      tags: const <String>[
+        'feature_test__turn_execution__widget',
+        'ui_state__conversation_timeline__history_anchored__widget',
+      ],
+      (tester) async {
+        await _useDesktopViewport(tester);
+        final harnessKey = GlobalKey<_StreamingConversationHarnessState>();
+        await tester.pumpWidget(_streamingConversationHarness(harnessKey));
+        await tester.pumpAndSettle();
+        _expectTrailingPinned(tester, reason: 'initial history');
+
+        const inputKey = ValueKey<String>('session-composer-input');
+        await tester.enterText(find.byKey(inputKey), testCase.prompt);
+        await tester.pump();
+        _expectTrailingPinned(tester, reason: 'typed ${testCase.name}');
+
+        await tester.tap(
+          find.byKey(const ValueKey<String>('session-composer-send')),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(harnessKey.currentState!.submittedPrompt, testCase.prompt);
+        expect(find.byKey(inputKey), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey<String>('chat-running')),
+          findsOneWidget,
+        );
+        _expectTrailingPinned(tester, reason: 'sent ${testCase.name}');
+
+        final chunks = <String>[
+          'Starting with a short response.',
+          '\n\nThe second chunk expands the response.',
+          '\n\n${List<String>.generate(
+            8,
+            (index) => 'Detail $index.',
+          ).join('\n\n')}',
+          '\n\nFinal streamed paragraph.',
+        ];
+        for (var index = 0; index < chunks.length; index += 1) {
+          harnessKey.currentState!.appendAssistantDelta(chunks[index]);
+          await tester.pump();
+          await tester.pump();
+          _expectTrailingPinned(
+            tester,
+            reason: '${testCase.name} assistant chunk $index',
+          );
+        }
+      },
+    );
+  }
 
   testWidgets(
     'a disclosure keeps its header fixed in the expansion pump',

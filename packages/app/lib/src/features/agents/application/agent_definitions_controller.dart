@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/src/features/hosts/application/host_controller.dart';
+import 'package:client/client.dart';
 import 'package:protocol/protocol.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -30,8 +31,8 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
   Future<AgentDefinitionsState> build(String hostId) async {
     final api = await watchHostApi(ref, hostId);
     _events
-      ..add(api.agents.definitionChanges.listen((_) => unawaited(refresh())))
-      ..add(api.mcp.serverChanges.listen((_) => unawaited(refresh())));
+      ..add(api.agents.definitionChanges.listen((_) => _scheduleRefresh()))
+      ..add(api.mcp.serverChanges.listen((_) => _scheduleRefresh()));
     ref.onDispose(() {
       for (final subscription in _events) {
         unawaited(subscription.cancel());
@@ -41,6 +42,21 @@ class AgentDefinitionsController extends _$AgentDefinitionsController {
       definitions: await api.agents.listAgentDefinitions(),
       tools: await api.agents.listAgentTools(),
     );
+  }
+
+  void _scheduleRefresh() => unawaited(_refreshFromEvent());
+
+  Future<void> _refreshFromEvent() async {
+    try {
+      await refresh();
+    } on TinestClientException catch (error, stackTrace) {
+      // Transport shutdown can finish an event-triggered request after this
+      // auto-disposed controller is gone. There is no remaining consumer to
+      // receive that failure; while mounted, retain it as the visible state.
+      if (ref.mounted) {
+        state = AsyncError<AgentDefinitionsState>(error, stackTrace);
+      }
+    }
   }
 
   /// Reloads files, diagnostics, and the tool catalog from the daemon.
