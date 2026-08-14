@@ -659,6 +659,13 @@ void main() {
       );
       expect(tester.getRect(settingsDrawer).bottom, 760);
       expect(tester.getRect(settingsSafeContent.at(1)).bottom, 726);
+      final settingsHandle = find.byKey(
+        const ValueKey<String>('tr-drawer-drag-handle'),
+      );
+      expect(
+        tester.getRect(settingsHandle).top - tester.getRect(settingsDrawer).top,
+        TRSpacing.medium + TRControlMetrics.borderWidth,
+      );
       for (final setting in <String>[
         'agent',
         'model',
@@ -682,6 +689,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TRDrawer), findsOneWidget);
       expect(find.byType(TRDialog), findsNothing);
+      final modelDrawer = find.byType(TRDrawer);
+      final modelHandle = find.byKey(
+        const ValueKey<String>('tr-drawer-drag-handle'),
+      );
+      expect(
+        tester.getRect(modelHandle).top - tester.getRect(modelDrawer).top,
+        TRSpacing.medium + TRControlMetrics.borderWidth,
+      );
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byType(TRDrawer), findsOneWidget);
