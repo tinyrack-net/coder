@@ -1156,7 +1156,7 @@ jobs:
           $releaseNotesUrl = "https://github.com/${{ github.repository }}/releases/tag/$env:GITHUB_REF_NAME"
 
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          .\wingetcreate.exe update tinyrack.tinest `
+          .\wingetcreate.exe update Tinyrack.Tinest `
             --version $version `
             --urls "$downloadUrl/Tinest-setup-win-x64.exe|x64" `
             --release-notes-url "$releaseNotesUrl" `
@@ -1165,7 +1165,7 @@ jobs:
 
           # The CLI ships as a portable zip rather than an installer, so it is
           # a separate winget package from the desktop app.
-          .\wingetcreate.exe update tinyrack.tinest-cli `
+          .\wingetcreate.exe update Tinyrack.TinestCLI `
             --version $version `
             --urls "$downloadUrl/tinest-cli-windows-x64.zip|x64" `
             --release-notes-url "$releaseNotesUrl" `
