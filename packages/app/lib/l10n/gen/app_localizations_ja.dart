@@ -1627,9 +1627,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subagentStatusWaitingForApproval => '承認待ち';
 
   @override
-  String get subagentReadOnlyNotice => 'サブエージェントの会話 · 読み取り専用';
-
-  @override
   String get chatToolSubagentQueued => '順番待ちに追加しました';
 
   @override

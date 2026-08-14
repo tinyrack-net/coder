@@ -33,7 +33,6 @@ import 'package:app/src/features/workspace/presentation/widgets/workspace_sideba
 import 'package:app/src/shared/presentation/client_error_alert.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
-import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
@@ -1266,7 +1265,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final sessions =
         ref
             .watch(
@@ -1383,25 +1381,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
       child: LayoutBuilder(
         builder: (context, constraints) => Column(
           children: <Widget>[
-            TinestListRow(
-              leading: readOnly
-                  ? SubagentStatusIcon(
-                      lifecycle: current.lifecycle,
-                      status: current.status,
-                    )
-                  : null,
-              title: TRText.inherit(
-                readOnly ? current.taskName ?? current.title : current.title,
-              ),
-              subtitle: TRText.inherit(
-                readOnly
-                    ? '${current.agentPath ?? current.agentDefinitionId} · '
-                          '${l10n.subagentReadOnlyNotice}'
-                    : '${current.agentDefinitionId} · ${current.origin.name}',
-              ),
-              // Stopping lives on the composer's primary action, so the header
-              // does not offer a second button for the same thing.
-            ),
+            // No title header: the tab already names the session and carries
+            // the subagent status icon, so the timeline owns the top edge.
             Expanded(
               child: ChatTimelineView(
                 pageStorageId:

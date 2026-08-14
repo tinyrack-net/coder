@@ -97,15 +97,16 @@ void _registerConversationAppFlows() {
       final composer = find.byType(SessionComposer);
       final goalBar = find.byType(GoalStatusBar);
       final subagents = find.byType(SubagentTrack);
-      final header = find
-          .ancestor(
-            of: find.text(root.title).last,
-            matching: find.byType(TinestListRow),
-          )
-          .first;
+      // The pane carries no title header: the tab label already names the
+      // session, so the timeline starts flush with the top of the pane.
+      expect(
+        find.descendant(of: pane, matching: find.byType(TinestListRow)),
+        findsNothing,
+      );
 
       final paneRect = tester.getRect(pane);
       final timelineRect = tester.getRect(timeline);
+      expect(timelineRect.top, closeTo(paneRect.top, 0.5));
       expect(timelineRect.width, paneRect.width);
       expect(timelineRect.center.dx, closeTo(paneRect.center.dx, 0.5));
       final scrollbarRect = tester.getRect(scrollbar);
@@ -129,7 +130,6 @@ void _registerConversationAppFlows() {
         TinestLayoutMetrics.conversationContentMaxWidth - TRSpacing.medium * 2,
       );
       expect(subagentRect.center.dx, closeTo(paneRect.center.dx, 0.5));
-      expect(tester.getRect(header).width, paneRect.width);
       expect(
         find.byKey(const ValueKey<String>('session-composer-model')),
         findsOneWidget,

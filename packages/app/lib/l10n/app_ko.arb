@@ -481,7 +481,6 @@
   "subagentStatusInterrupted": "중단됨",
   "subagentStatusErrored": "실패",
   "subagentStatusWaitingForApproval": "승인 대기 중",
-  "subagentReadOnlyNotice": "서브 에이전트 대화 · 읽기 전용",
   "chatToolSubagentQueued": "대기열에 추가됨",
   "chatToolSubagentCount": "에이전트 {count}개",
   "chatDeferredTools": "검색으로 사용할 수 있는 도구 {count}개",

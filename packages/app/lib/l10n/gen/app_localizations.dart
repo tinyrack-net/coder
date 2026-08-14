@@ -2992,12 +2992,6 @@ abstract class AppLocalizations {
   /// **'Waiting for approval'**
   String get subagentStatusWaitingForApproval;
 
-  /// Subtitle notice on the read-only subagent pane.
-  ///
-  /// In en, this message translates to:
-  /// **'Subagent conversation · read-only'**
-  String get subagentReadOnlyNotice;
-
   /// Result line of a queued inter-agent message.
   ///
   /// In en, this message translates to:

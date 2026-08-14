@@ -1083,7 +1083,12 @@ void main() {
       // Opening the row shows a live transcript with no composer, but its
       // approval stays actionable: answering it is what ends the child's turn.
       await tester.tap(childRow);
-      await pumpUntil(tester, find.textContaining('읽기 전용'));
+      await pumpUntil(
+        tester,
+        find.byKey(
+          ValueKey<String>('conversation-pane-session:${spawnedChild.id}'),
+        ),
+      );
       expect(find.byKey(composer), findsNothing);
       final allowSubagentPatch = find.widgetWithText(TRButton, '승인');
       await pumpUntil(tester, allowSubagentPatch);
@@ -1116,7 +1121,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TRMenuItem, 'review_task'), findsNothing);
       await tester.tap(find.text('Delegate review').last);
-      await pumpUntil(tester, find.text('tinest · manual'));
+      // The composer only exists on a drivable pane, so its return is the
+      // evidence that the root session is on screen again, not the child.
       await pumpUntil(tester, find.byKey(composer));
 
       final goalSessionId = (await setupClient.sessions.listSessions(
