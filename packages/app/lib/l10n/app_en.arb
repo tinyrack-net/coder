@@ -1958,10 +1958,6 @@
   "@subagentStatusWaitingForApproval": {
     "description": "Semantics label of a subagent blocked on an approval."
   },
-  "subagentReadOnlyNotice": "Subagent conversation · read-only",
-  "@subagentReadOnlyNotice": {
-    "description": "Subtitle notice on the read-only subagent pane."
-  },
   "chatToolSubagentQueued": "Queued",
   "@chatToolSubagentQueued": {
     "description": "Result line of a queued inter-agent message."

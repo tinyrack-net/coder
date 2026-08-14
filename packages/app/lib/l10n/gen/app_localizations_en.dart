@@ -1674,9 +1674,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subagentStatusWaitingForApproval => 'Waiting for approval';
 
   @override
-  String get subagentReadOnlyNotice => 'Subagent conversation · read-only';
-
-  @override
   String get chatToolSubagentQueued => 'Queued';
 
   @override

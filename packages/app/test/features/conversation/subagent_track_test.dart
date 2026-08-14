@@ -195,12 +195,9 @@ void main() {
       );
       addTearDown(router.dispose);
 
-      // Read-only chrome: status header, no composer, no subagent track.
+      // Read-only chrome: the tab names the task and carries the status icon,
+      // and the pane offers no composer and no subagent track.
       expect(find.text('explore_auth'), findsWidgets);
-      expect(
-        find.textContaining('서브 에이전트 대화 · 읽기 전용'),
-        findsOneWidget,
-      );
       expect(find.byType(SessionComposer), findsNothing);
       expect(find.byKey(const ValueKey('subagent-track')), findsNothing);
       expect(find.byType(TRSpinner), findsWidgets);
@@ -240,7 +237,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.textContaining('Reading auth module…'), findsOneWidget);
 
-      // A lifecycle change flips the header spinner into a settled icon.
+      // A lifecycle change flips the tab's spinner into a settled icon.
       api.emit(
         SessionUpdatedClientEvent(
           child.copyWith(

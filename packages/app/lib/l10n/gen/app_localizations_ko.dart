@@ -1632,9 +1632,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subagentStatusWaitingForApproval => '승인 대기 중';
 
   @override
-  String get subagentReadOnlyNotice => '서브 에이전트 대화 · 읽기 전용';
-
-  @override
   String get chatToolSubagentQueued => '대기열에 추가됨';
 
   @override
