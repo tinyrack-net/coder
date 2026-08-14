@@ -15,6 +15,8 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
     required this._wire,
     this.models = const <ProviderCatalogModel>[],
     this.strictToolSchema = false,
+    this.supportsModelDiscovery = true,
+    this.usesRemoteCatalog = true,
   });
 
   @override
@@ -25,6 +27,12 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
 
   /// Whether strict JSON schemas are accepted by this vendor.
   final bool strictToolSchema;
+
+  /// Whether this vendor serves a `/models` listing.
+  final bool supportsModelDiscovery;
+
+  @override
+  final bool usesRemoteCatalog;
 
   final OpenAICompatibleWire _wire;
 
@@ -38,6 +46,7 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
   ProviderEndpoint endpoint(AgentProviderAuthKind authKind) => ProviderEndpoint(
     baseUrl: baseUrl,
     strictToolSchema: strictToolSchema,
+    supportsModelDiscovery: supportsModelDiscovery,
   );
 
   @override
@@ -162,6 +171,22 @@ List<ProviderPlugin> openAIFamilyPlugins({
       baseUrl: 'https://api.x.ai/v1',
       wire: chatCompletions,
       models: xaiBundledModels,
+    ),
+    OpenAICompatiblePlugin(
+      definition: minimaxDefinition,
+      baseUrl: 'https://api.minimax.io/v1',
+      wire: chatCompletions,
+      models: minimaxBundledModels,
+      supportsModelDiscovery: false,
+      usesRemoteCatalog: false,
+    ),
+    OpenAICompatiblePlugin(
+      definition: minimaxChinaDefinition,
+      baseUrl: 'https://api.minimaxi.com/v1',
+      wire: chatCompletions,
+      models: minimaxBundledModels,
+      supportsModelDiscovery: false,
+      usesRemoteCatalog: false,
     ),
     OpenAICompatiblePlugin(
       definition: ollamaDefinition,
@@ -415,6 +440,84 @@ const List<ProviderCatalogModel> xaiBundledModels = <ProviderCatalogModel>[
     id: 'grok-4.3',
     label: 'Grok 4.3',
     capabilities: _reasoning,
+  ),
+];
+
+/// Public MiniMax metadata safe to send to clients.
+///
+/// One definition serves both MiniMax credentials: the platform API key and
+/// the Token Plan subscription key are bearer keys against the same host, and
+/// the connect procedure carries no method identifier to tell them apart.
+const AgentProviderDefinition minimaxDefinition = AgentProviderDefinition(
+  id: 'minimax',
+  name: 'MiniMax',
+  description:
+      'MiniMax hosted models through a platform API key or a Token '
+      'Plan subscription key.',
+  authMethods: <AgentProviderAuthMethod>[_apiKey],
+  recommendedModelIds: <String>['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.5'],
+  documentationUrl: 'https://platform.minimax.io/docs',
+);
+
+/// Public metadata for MiniMax accounts served from mainland China.
+const AgentProviderDefinition minimaxChinaDefinition = AgentProviderDefinition(
+  id: 'minimax-cn',
+  name: 'MiniMax (China)',
+  description:
+      'MiniMax hosted models for a mainland China account, through a '
+      'platform API key or a Token Plan subscription key.',
+  authMethods: <AgentProviderAuthMethod>[_apiKey],
+  recommendedModelIds: <String>['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.5'],
+  documentationUrl: 'https://platform.minimaxi.com/docs',
+);
+
+/// Bundled MiniMax coding models, shared by both regional endpoints.
+///
+/// No reasoning control: MiniMax thinks adaptively and switches thinking off
+/// with a `thinking` block rather than tuning depth, and its OpenAI-compatible
+/// surface accepts `reasoning_effort` only to ignore it. Reasoning text still
+/// reaches the client through the `reasoning_content` deltas the Chat
+/// Completions adapter already reads.
+const List<ProviderCatalogModel> minimaxBundledModels = <ProviderCatalogModel>[
+  ProviderCatalogModel(
+    id: 'MiniMax-M3',
+    label: 'MiniMax M3',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.7',
+    label: 'MiniMax M2.7',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.7-highspeed',
+    label: 'MiniMax M2.7 Highspeed',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.5',
+    label: 'MiniMax M2.5',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.5-highspeed',
+    label: 'MiniMax M2.5 Highspeed',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.1',
+    label: 'MiniMax M2.1',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2.1-highspeed',
+    label: 'MiniMax M2.1 Highspeed',
+    capabilities: _tools,
+  ),
+  ProviderCatalogModel(
+    id: 'MiniMax-M2',
+    label: 'MiniMax M2',
+    capabilities: _tools,
   ),
 ];
 

@@ -65,6 +65,27 @@ void main() {
     },
   );
 
+  // Models.dev namespaces MiniMax under aggregator ids the vendor's own API
+  // rejects, so a refresh must not be able to add a model that cannot run.
+  test('a bundled-only vendor is never asked for public metadata', () async {
+    final source = _MetadataSource();
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: registry,
+      metadataSource: source,
+    );
+
+    await catalog.refresh();
+
+    expect(source.requested, contains('deepseek'));
+    expect(source.requested, isNot(contains('minimax')));
+    expect(source.requested, isNot(contains('minimax-cn')));
+    expect(
+      catalog.modelsFor('minimax').map((model) => model.id),
+      everyElement(startsWith('MiniMax-')),
+    );
+  });
+
   test('refreshed metadata fills unknown bundled capabilities', () async {
     final catalog = BuiltInProviderCatalog(
       clock: _Clock(now),

@@ -71,6 +71,11 @@ void main() {
     );
     expect(identical(plugin.refineRemoteCapabilities(remote), remote), isTrue);
   });
+
+  test('a plugin reads the public catalog unless it opts out', () {
+    expect(_FakePlugin().usesRemoteCatalog, isTrue);
+    expect(_BundledOnlyPlugin().usesRemoteCatalog, isFalse);
+  });
 }
 
 final class _FakeWire implements ProviderWireProtocol {
@@ -147,6 +152,11 @@ final class _FakePlugin extends ProviderPlugin {
 final class _MislabelledPlugin extends _FakePlugin {
   @override
   String get id => 'someone-else';
+}
+
+final class _BundledOnlyPlugin extends _FakePlugin {
+  @override
+  bool get usesRemoteCatalog => false;
 }
 
 final class _FakeModelProvider implements ModelProvider {
