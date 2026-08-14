@@ -272,8 +272,13 @@ class ModelSettingsRoute extends GoRouteData with $ModelSettingsRoute {
   final String? hostId;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      UnifiedSettingsPage(category: SettingsCategory.model, hostId: hostId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsShellPage(
+        UnifiedSettingsPage(
+          category: SettingsCategory.model,
+          hostId: hostId,
+        ),
+      );
 }
 
 @TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions')

@@ -323,8 +323,10 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
         'Opens settings and daemon editing as pushed tasks that close back to '
         'the screen they were opened from, moves laterally between settings '
         'categories and workspace selections without changing the root stack, '
-        'returns mobile workspace details to the workspace list, and still '
-        'closes to a sensible destination when entered by deep link.',
+        'keeps the shared settings shell mounted so adaptive category '
+        'transitions affect only the active pane, returns mobile workspace '
+        'details to the workspace list, and still closes to a sensible '
+        'destination when entered by deep link.',
     routes: <String>['SettingsHomeRoute', 'DaemonCategoriesRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

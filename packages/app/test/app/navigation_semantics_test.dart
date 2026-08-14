@@ -1,12 +1,16 @@
 import 'dart:async';
 
+import 'package:app/src/app/presentation/settings_page.dart';
 import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
+import 'package:app/src/features/models/presentation/pages/model_settings_page.dart';
+import 'package:app/src/features/permissions/presentation/pages/permission_settings_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_tinest_api.dart';
 import '../support/router_harness.dart';
@@ -210,6 +214,13 @@ void main() {
     tags: const <String>['feature_test__app_navigation__widget'],
   );
 
+  Future<void> useTwoPane(WidgetTester tester) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(800, 900);
+    addTearDown(tester.view.reset);
+  }
+
   testWidgets(
     'settings opened from a worktree closes back to that worktree',
     (tester) async {
@@ -283,6 +294,146 @@ void main() {
       expect(currentLocation(router), const ProjectSettingsRoute().location);
       expect(router.canPop(), isTrue);
 
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), worktreeLocation);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'two-pane settings category changes keep the shell mounted',
+    (tester) async {
+      await useTwoPane(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: worktreeLocation,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-category-row-model')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const ModelSettingsRoute().location,
+      );
+
+      final modelShell = find.byType(UnifiedSettingsPage);
+      final modelState = tester.state<State<UnifiedSettingsPage>>(modelShell);
+      final modelSidebar = find.descendant(
+        of: modelShell,
+        matching: find.byKey(
+          const ValueKey<String>('settings-sidebar-surface'),
+        ),
+      );
+      final modelSidebarElement = tester.element(modelSidebar);
+      final modelSidebarRect = tester.getRect(modelSidebar);
+      final modelRoute = ModalRoute.of(
+        tester.element(find.byType(ModelSettingsPage)),
+      );
+      final modelPage = tester
+          .widget<Navigator>(find.byType(Navigator))
+          .pages
+          .last;
+      expect(modelRoute?.animation?.status, AnimationStatus.completed);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('settings-category-row-permission'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(TRMotion.slow ~/ 2);
+
+      expect(
+        currentLocation(router),
+        const PermissionSettingsRoute().location,
+      );
+      final permissionShell = find.ancestor(
+        of: find.byType(PermissionSettingsPage),
+        matching: find.byType(UnifiedSettingsPage),
+      );
+      expect(permissionShell, findsOneWidget);
+      expect(
+        tester.state<State<UnifiedSettingsPage>>(permissionShell),
+        same(modelState),
+        reason: 'a category replacement must preserve the settings shell',
+      );
+      final permissionRoute = ModalRoute.of(
+        tester.element(find.byType(PermissionSettingsPage)),
+      );
+      expect(permissionRoute, same(modelRoute));
+      expect(permissionRoute?.animation?.status, AnimationStatus.completed);
+      final permissionPage = tester
+          .widget<Navigator>(find.byType(Navigator))
+          .pages
+          .last;
+      expect(permissionPage.runtimeType, modelPage.runtimeType);
+      expect(permissionPage.key, modelPage.key);
+      expect(permissionPage.key, const ValueKey<String>('settings-shell'));
+
+      final permissionSidebar = find.descendant(
+        of: permissionShell,
+        matching: find.byKey(
+          const ValueKey<String>('settings-sidebar-surface'),
+        ),
+      );
+      expect(tester.element(permissionSidebar), same(modelSidebarElement));
+      expect(tester.getRect(permissionSidebar), modelSidebarRect);
+
+      final panes = tester.widgetList<TRAdaptivePane>(
+        find.byType(TRAdaptivePane),
+      );
+      expect(
+        panes.where((pane) => pane.role == TRPaneRole.navigation),
+        hasLength(1),
+      );
+      expect(
+        panes.where((pane) => pane.role == TRPaneRole.primary),
+        hasLength(2),
+      );
+      expect(find.byType(ModelSettingsPage), findsOneWidget);
+      expect(find.byType(PermissionSettingsPage), findsOneWidget);
+
+      final paneSwitcher = find.byWidgetPredicate(
+        (widget) =>
+            widget is AnimatedSwitcher && widget.child is TRAdaptivePane,
+        description: 'the active-pane AnimatedSwitcher',
+      );
+      expect(paneSwitcher, findsOneWidget);
+      expect(
+        find.descendant(
+          of: paneSwitcher,
+          matching: find.byType(FadeTransition),
+        ),
+        findsNWidgets(2),
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.byType(ModelSettingsPage), findsNothing);
+      expect(find.byType(PermissionSettingsPage), findsOneWidget);
+      final settledPanes = tester.widgetList<TRAdaptivePane>(
+        find.byType(TRAdaptivePane),
+      );
+      expect(
+        settledPanes.where((pane) => pane.role == TRPaneRole.navigation),
+        hasLength(1),
+      );
+      expect(
+        settledPanes.where((pane) => pane.role == TRPaneRole.primary),
+        hasLength(1),
+      );
+
+      expect(router.canPop(), isTrue);
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
