@@ -26,6 +26,7 @@ import 'package:app/src/features/workspace/presentation/widgets/directory_browse
 import 'package:app/src/features/workspace/presentation/widgets/worktree_hook_report.dart';
 import 'package:app/src/shared/presentation/client_error_alert.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:client/client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -497,9 +498,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           searchable: true,
           searchPlaceholder: l10n.selectSearchPlaceholder,
           noResultsText: l10n.selectNoResults,
-          // Explicit so the production Select policy can audit adaptation.
-          // ignore: avoid_redundant_argument_values
-          surface: TRSelectSurface.auto,
+          presentation: TinestSelectPresentation.resolve(context),
           value: (projectKey: project?.key, addProject: false),
           leading: const Icon(TinestIcons.folder),
           placeholder:
@@ -555,9 +554,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             searchable: true,
             searchPlaceholder: l10n.selectSearchPlaceholder,
             noResultsText: l10n.selectNoResults,
-            // Explicit so the production Select policy can audit adaptation.
-            // ignore: avoid_redundant_argument_values
-            surface: TRSelectSurface.auto,
+            presentation: TinestSelectPresentation.resolve(context),
             value: worktree?.id,
             leading: const Icon(TinestIcons.branch),
             placeholder: worktree == null
@@ -596,9 +593,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             searchable: true,
             searchPlaceholder: l10n.selectSearchPlaceholder,
             noResultsText: l10n.selectNoResults,
-            // Explicit so the production Select policy can audit adaptation.
-            // ignore: avoid_redundant_argument_values
-            surface: TRSelectSurface.auto,
+            presentation: TinestSelectPresentation.resolve(context),
             value: baseBranch,
             leading: const Icon(TinestIcons.check),
             placeholder: baseBranch ?? l10n.workspaceBaseBranchChip,

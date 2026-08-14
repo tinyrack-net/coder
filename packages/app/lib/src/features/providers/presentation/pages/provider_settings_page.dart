@@ -8,6 +8,7 @@ import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
@@ -700,9 +701,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
                       searchable: true,
                       searchPlaceholder: l10n.selectSearchPlaceholder,
                       noResultsText: l10n.selectNoResults,
-                      // Explicit for the auditable adaptive Select contract.
-                      // ignore: avoid_redundant_argument_values
-                      surface: TRSelectSurface.auto,
+                      presentation: TinestSelectPresentation.resolve(context),
                       label: l10n.providerSettingsActions,
                       width: TinestLayoutMetrics.settingsContentMaxWidth,
                       items: <TRSelectItem<String>>[
@@ -1337,9 +1336,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                     searchable: true,
                     searchPlaceholder: l10n.selectSearchPlaceholder,
                     noResultsText: l10n.selectNoResults,
-                    // Explicit for the auditable adaptive Select contract.
-                    // ignore: avoid_redundant_argument_values
-                    surface: TRSelectSurface.auto,
+                    presentation: TinestSelectPresentation.resolve(context),
                     label: l10n.providerSettingsApiFormat,
                     width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: <TRSelectItem<String>>[

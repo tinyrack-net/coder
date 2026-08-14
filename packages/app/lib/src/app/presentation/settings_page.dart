@@ -21,6 +21,7 @@ import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -771,9 +772,7 @@ class _DaemonSelect extends ConsumerWidget {
           searchable: true,
           searchPlaceholder: l10n.selectSearchPlaceholder,
           noResultsText: l10n.selectNoResults,
-          // Explicit so the production Select policy can audit adaptation.
-          // ignore: avoid_redundant_argument_values
-          surface: TRSelectSurface.auto,
+          presentation: TinestSelectPresentation.resolve(context),
           value: hostId,
           // The sidebar is a flat list of borderless nav rows, so the trigger
           // takes its frame from the sidebar rather than drawing its own.

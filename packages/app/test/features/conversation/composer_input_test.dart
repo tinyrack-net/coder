@@ -433,6 +433,83 @@ void main() {
   );
 
   testWidgets(
+    'model layer keyboard focus does not paint the composer ring',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          composer: SessionComposer(
+            enabled: true,
+            onSubmit: (_) {},
+            bar: _bar(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final composerCard = find.ancestor(
+        of: find.byKey(inputKey),
+        matching: find.byType(TRCard),
+      );
+      expect(composerCard, findsOneWidget);
+      final focusColor = Theme.of(
+        tester.element(composerCard),
+      ).extension<TinyrackThemeData>()!.focus;
+      List<BorderSide> paintedComposerFocusBorders() => tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: composerCard,
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.border?.top)
+          .nonNulls
+          .where((side) => side.color == focusColor)
+          .toList();
+
+      final model = find.byKey(
+        const ValueKey<String>('session-composer-model'),
+      );
+      await tester.tap(model);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TRDrawer), findsNothing);
+      expect(find.textContaining('openai/gpt-5.6-sol'), findsOneWidget);
+      expect(
+        paintedComposerFocusBorders(),
+        isEmpty,
+        reason: 'overlay keyboard focus must not paint the composer group ring',
+      );
+      expect(
+        tester.widget<TRCard>(composerCard).focused,
+        isFalse,
+        reason: 'the layer FocusScope is outside the composer focus subtree',
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      final primaryContext = tester.binding.focusManager.primaryFocus?.context;
+      expect(primaryContext, isNotNull);
+      final primaryFocus = find.byElementPredicate(
+        (element) => identical(element, primaryContext),
+      );
+      expect(
+        find.ancestor(of: primaryFocus, matching: model),
+        findsOneWidget,
+        reason: 'closing the layer restores focus to its Select trigger',
+      );
+      expect(tester.widget<TRCard>(composerCard).focused, isTrue);
+    },
+  );
+
+  testWidgets(
     'the composer swaps the labelled settings row for one settings sheet',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
@@ -1303,11 +1380,21 @@ void main() {
       await tester.tap(find.byKey(inputKey));
       await tester.pumpAndSettle();
 
+      final composerCard = find.ancestor(
+        of: find.byKey(inputKey),
+        matching: find.byType(TRCard),
+      );
+      expect(composerCard, findsOneWidget);
       final focus = Theme.of(
-        tester.element(find.byKey(inputKey)),
+        tester.element(composerCard),
       ).extension<TinyrackThemeData>()!.focus;
       List<BorderSide> rings() => tester
-          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: composerCard,
+              matching: find.byType(DecoratedBox),
+            ),
+          )
           .map((box) => box.decoration)
           .whereType<BoxDecoration>()
           .map((decoration) => decoration.border?.top)
@@ -1322,6 +1409,7 @@ void main() {
       TRFocusSource.instance.debugSetKeyboardModality(true);
       await tester.pumpAndSettle();
       expect(rings(), hasLength(1));
+      expect(rings().single.width, TRControlMetrics.focusWidth);
     },
   );
 

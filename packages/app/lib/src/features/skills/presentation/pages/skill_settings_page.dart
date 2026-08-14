@@ -2,6 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/skills/application/skills_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -161,9 +162,7 @@ class _SkillCatalogBody extends StatelessWidget {
                     searchable: true,
                     searchPlaceholder: l10n.skillSettingsProjectSearch,
                     noResultsText: l10n.skillSettingsProjectNoMatch,
-                    // Explicit for the auditable adaptive Select contract.
-                    // ignore: avoid_redundant_argument_values
-                    surface: TRSelectSurface.auto,
+                    presentation: TinestSelectPresentation.resolve(context),
                     items: <TRSelectItem<String?>>[
                       TRSelectItem<String?>(
                         value: null,

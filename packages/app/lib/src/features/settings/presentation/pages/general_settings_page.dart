@@ -7,6 +7,7 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -169,9 +170,7 @@ class _AppearanceSection extends ConsumerWidget {
               searchable: true,
               searchPlaceholder: l10n.selectSearchPlaceholder,
               noResultsText: l10n.selectNoResults,
-              // Explicit for the auditable adaptive Select contract.
-              // ignore: avoid_redundant_argument_values
-              surface: TRSelectSurface.auto,
+              presentation: TinestSelectPresentation.resolve(context),
               value: settings?.themeMode ?? AppThemeMode.system,
               enabled: settings != null,
               items: <TRSelectItem<AppThemeMode>>[
@@ -236,9 +235,7 @@ class _LanguageSection extends ConsumerWidget {
               searchable: true,
               searchPlaceholder: l10n.selectSearchPlaceholder,
               noResultsText: l10n.selectNoResults,
-              // Explicit for the auditable adaptive Select contract.
-              // ignore: avoid_redundant_argument_values
-              surface: TRSelectSurface.auto,
+              presentation: TinestSelectPresentation.resolve(context),
               value: settings?.localeTag,
               enabled: settings != null,
               placeholder: l10n.generalLanguageSystem,

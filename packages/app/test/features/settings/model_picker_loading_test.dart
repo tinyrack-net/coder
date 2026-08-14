@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:app/src/shared/presentation/model_picker.dart';
+import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
@@ -29,7 +31,7 @@ void main() {
         find.byType(TRSelect<ModelPickerOption>),
       );
       expect(select.searchable, isTrue);
-      expect(select.surface, TRSelectSurface.auto);
+      expect(select.presentation, isA<TRSelectLayerPresentation>());
     },
   );
 
@@ -84,8 +86,8 @@ void main() {
   });
 
   for (final (width, expectsSheet) in <(double, bool)>[
-    (1000, false),
-    (320, true),
+    (599, true),
+    (600, false),
   ]) {
     testWidgets(
       'model Select uses the adaptive searchable surface at width $width',
@@ -99,6 +101,26 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final select = tester.widget<TRSelect<ModelPickerOption>>(
+          find.byType(TRSelect<ModelPickerOption>),
+        );
+        expect(
+          select.presentation,
+          expectsSheet
+              ? isA<TRSelectSheetPresentation>()
+              : isA<TRSelectLayerPresentation>(),
+        );
+        if (expectsSheet) {
+          final sheet = select.presentation as TRSelectSheetPresentation;
+          expect(sheet.maxExtent, tinestBottomSheetMaxExtent);
+          expect(sheet.snapPoints, isEmpty);
+          expect(sheet.showDragHandle, isTrue);
+        } else {
+          final layer = select.presentation as TRSelectLayerPresentation;
+          expect(layer.layerSize, const TRLayerSize());
+          expect(layer.placement, TRLayerPlacement.bottomStart);
+          expect(layer.useRootOverlay, isTrue);
+        }
         await tester.tap(find.byType(TRSelect<ModelPickerOption>));
         await tester.pumpAndSettle();
 
@@ -114,6 +136,62 @@ void main() {
             const ValueKey<String>('model-option-provider-gpt-test'),
           ),
           findsOneWidget,
+        );
+      },
+    );
+  }
+
+  for (final (initialWidth, resizedWidth, expectsSheet)
+      in <(double, double, bool)>[(599, 600, true), (600, 599, false)]) {
+    testWidgets(
+      'model Select keeps its open presentation when resizing from '
+      '$initialWidth to $resizedWidth',
+      tags: const <String>['feature_test__settings_async_loading__widget'],
+      (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(initialWidth, 760);
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          _host(() async => const <ModelPickerOption>[_option]),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(TRSelect<ModelPickerOption>));
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(TRDrawer),
+          expectsSheet ? findsOneWidget : findsNothing,
+        );
+
+        tester.view.physicalSize = Size(resizedWidth, 760);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byType(TRDrawer),
+          expectsSheet ? findsOneWidget : findsNothing,
+          reason: 'an open Select snapshots its presentation until close',
+        );
+        expect(find.text('Test provider · provider/gpt-test'), findsOneWidget);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(TRDrawer), findsNothing);
+
+        final resizedSelect = tester.widget<TRSelect<ModelPickerOption>>(
+          find.byType(TRSelect<ModelPickerOption>),
+        );
+        expect(
+          resizedSelect.presentation,
+          expectsSheet
+              ? isA<TRSelectLayerPresentation>()
+              : isA<TRSelectSheetPresentation>(),
+        );
+        await tester.tap(find.byType(TRSelect<ModelPickerOption>));
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(TRDrawer),
+          expectsSheet ? findsNothing : findsOneWidget,
+          reason: 'the next open resolves the resized viewport',
         );
       },
     );

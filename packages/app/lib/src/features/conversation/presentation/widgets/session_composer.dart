@@ -28,6 +28,7 @@ import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_bottom_sheet.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:dropwell/dropwell.dart';
@@ -323,9 +324,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         searchable: true,
         searchPlaceholder: l10n.selectSearchPlaceholder,
         noResultsText: l10n.selectNoResults,
-        // Explicit so the production Select policy can audit adaptation.
-        // ignore: avoid_redundant_argument_values
-        surface: TRSelectSurface.auto,
+        presentation: TinestSelectPresentation.resolve(context),
         items: <TRSelectItem<String>>[
           for (final definition in widget.definitions)
             TRSelectItem<String>(
@@ -733,9 +732,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         searchable: true,
         searchPlaceholder: l10n.selectSearchPlaceholder,
         noResultsText: l10n.selectNoResults,
-        // Explicit so the production Select policy can audit adaptation.
-        // ignore: avoid_redundant_argument_values
-        surface: TRSelectSurface.auto,
+        presentation: TinestSelectPresentation.resolve(context),
         items: <TRSelectItem<String?>>[
           TRSelectItem<String?>(
             key: ValueKey<String>(
