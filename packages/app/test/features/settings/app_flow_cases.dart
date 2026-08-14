@@ -885,4 +885,83 @@ void _registerSettingsAppFlows() {
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
+
+  testWidgets(
+    'Android predictive Back finishes before settings returns to the list',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      final api = FakeTinestApi();
+      api.mcpServers['github'] = const McpServerStateDto(
+        config: McpServerConfigDto(
+          id: 'github',
+          transport: McpTransportKind.stdio,
+          command: 'npx',
+        ),
+        status: McpServerStatus.ready,
+        scope: McpConfigScope.user,
+        sourcePath: '/config/mcp.json',
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const McpSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mcp-server-tile-github')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('mcp-server-editor-github')),
+        findsOneWidget,
+      );
+
+      Future<void> send(MethodCall call) async {
+        final message = const StandardMethodCodec().encodeMethodCall(call);
+        await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/backgesture',
+          message,
+          (_) {},
+        );
+        await tester.pump();
+      }
+
+      const start = MethodCall('startBackGesture', <String, Object>{
+        'touchOffset': <double>[0, 422],
+        'progress': 0.0,
+        'swipeEdge': 0,
+      });
+      const update = MethodCall('updateBackGestureProgress', <String, Object>{
+        'x': 195.0,
+        'y': 422.0,
+        'progress': 0.5,
+        'swipeEdge': 0,
+      });
+
+      await send(start);
+      await send(update);
+      final list = find.byKey(const ValueKey<String>('mcp-server-list'));
+      final previewListOffset = tester.getTopLeft(list).dx;
+
+      await send(const MethodCall('commitBackGesture'));
+      expect(
+        find.byKey(const ValueKey<String>('mcp-server-editor-github')),
+        findsOneWidget,
+      );
+      await tester.pump(TRMotion.slow ~/ 4);
+      final settlingListOffset = tester.getTopLeft(list).dx;
+      expect(settlingListOffset, greaterThan(previewListOffset));
+      expect(settlingListOffset, lessThan(0));
+
+      await tester.pumpAndSettle();
+      expect(list, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('mcp-server-editor-github')),
+        findsNothing,
+      );
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
 }
