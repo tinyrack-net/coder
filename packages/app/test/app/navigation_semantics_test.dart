@@ -390,48 +390,12 @@ void main() {
       expect(tester.element(permissionSidebar), same(modelSidebarElement));
       expect(tester.getRect(permissionSidebar), modelSidebarRect);
 
-      final panes = tester.widgetList<TRAdaptivePane>(
-        find.byType(TRAdaptivePane),
-      );
-      expect(
-        panes.where((pane) => pane.role == TRPaneRole.navigation),
-        hasLength(1),
-      );
-      expect(
-        panes.where((pane) => pane.role == TRPaneRole.primary),
-        hasLength(2),
-      );
-      expect(find.byType(ModelSettingsPage), findsOneWidget);
+      expect(find.byType(ModelSettingsPage), findsNothing);
       expect(find.byType(PermissionSettingsPage), findsOneWidget);
-
-      final paneSwitcher = find.byWidgetPredicate(
-        (widget) =>
-            widget is AnimatedSwitcher && widget.child is TRAdaptivePane,
-        description: 'the active-pane AnimatedSwitcher',
-      );
-      expect(paneSwitcher, findsOneWidget);
-      expect(
-        find.descendant(
-          of: paneSwitcher,
-          matching: find.byType(FadeTransition),
-        ),
-        findsNWidgets(2),
-      );
 
       await tester.pumpAndSettle();
       expect(find.byType(ModelSettingsPage), findsNothing);
       expect(find.byType(PermissionSettingsPage), findsOneWidget);
-      final settledPanes = tester.widgetList<TRAdaptivePane>(
-        find.byType(TRAdaptivePane),
-      );
-      expect(
-        settledPanes.where((pane) => pane.role == TRPaneRole.navigation),
-        hasLength(1),
-      );
-      expect(
-        settledPanes.where((pane) => pane.role == TRPaneRole.primary),
-        hasLength(1),
-      );
 
       expect(router.canPop(), isTrue);
       await tester.tap(

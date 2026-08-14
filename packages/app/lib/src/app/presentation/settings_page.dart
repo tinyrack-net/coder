@@ -56,13 +56,12 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
-  late final TRThreePaneNavigator<String> _adaptiveNavigation;
+  final _contentNavigatorKey = GlobalKey<NavigatorState>();
   late final ProjectSettingsPaneController _projectPanes;
   late final AgentSettingsPaneController _agentPanes;
   late final McpSettingsPaneController _mcpPanes;
   late final ProviderSettingsPaneController _providerPanes;
   late final Map<SettingsCategory, SettingsPaneCoordinator> _paneControllers;
-  bool _adaptiveSyncScheduled = false;
 
   /// Daemon this page has already adopted from a route.
   ///
@@ -75,9 +74,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _adaptiveNavigation = TRThreePaneNavigator<String>(
-      initialDestination: _settingsDestination(widget),
-    );
     _projectPanes = ProjectSettingsPaneController();
     _agentPanes = AgentSettingsPaneController();
     _mcpPanes = McpSettingsPaneController();
@@ -88,7 +84,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.mcp: _mcpPanes,
       SettingsCategory.provider: _providerPanes,
     };
-    _adaptiveNavigation.addListener(_adaptiveNavigationChanged);
     for (final MapEntry(key: category, value: controller)
         in _paneControllers.entries) {
       controller.addListener(
@@ -102,7 +97,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
 
   @override
   void dispose() {
-    _adaptiveNavigation.dispose();
     _projectPanes.dispose();
     _agentPanes.dispose();
     _mcpPanes.dispose();
@@ -120,47 +114,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         controller.reset();
       }
     }
-    _scheduleAdaptiveDestinationReset();
-  }
-
-  void _scheduleAdaptiveDestinationReset() {
-    if (_adaptiveSyncScheduled) return;
-    _adaptiveSyncScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _adaptiveSyncScheduled = false;
-      if (!mounted) return;
-      final destination = _settingsDestination(widget);
-      final current = _adaptiveNavigation.currentDestination;
-      if (current.value != destination.value ||
-          current.role != destination.role) {
-        _adaptiveNavigation.reset(destination);
-      }
-    });
-  }
-
-  void _adaptiveNavigationChanged() {
-    if (!mounted ||
-        _adaptiveNavigation.lastChange?.operation !=
-            TRPaneNavigationOperation.pop) {
-      return;
-    }
-    final destination = _adaptiveNavigation.currentDestination;
-    if (destination.role == TRPaneRole.secondary) return;
-    if (destination.value == 'settings-daemon-categories-pane') {
-      final hostId = widget.hostId;
-      if (hostId != null) {
-        DaemonCategoriesRoute(hostId: hostId).replace(context);
-      }
-      return;
-    }
-    if (destination.role == TRPaneRole.primary) {
-      final paneController = _paneControllers[widget.category];
-      if (paneController?.hasDetail ?? false) {
-        paneController!.showCollection();
-      }
-      return;
-    }
-    const SettingsHomeRoute().replace(context);
   }
 
   void _paneDestinationChanged(
@@ -168,23 +121,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     SettingsPaneCoordinator controller,
   ) {
     if (!mounted || widget.category != category) return;
-    final destinationId = controller.destinationId;
-    final current = _adaptiveNavigation.currentDestination;
-    if (destinationId == null) {
-      if (current.role == TRPaneRole.secondary && !_adaptiveNavigation.pop()) {
-        _adaptiveNavigation.reset(_settingsDestination(widget));
-      }
-      return;
-    }
-    final destination = TRPaneDestination<String>(
-      role: TRPaneRole.secondary,
-      value: 'settings-${category.name}-$destinationId',
-    );
-    if (current.role == TRPaneRole.secondary) {
-      _adaptiveNavigation.replace(destination);
-    } else {
-      _adaptiveNavigation.push(destination);
-    }
+    setState(() {});
   }
 
   void _adoptRouteHost() {
@@ -368,45 +305,103 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
         final compact = widthClass == TRAdaptiveWidthClass.compact;
         final hasSecondaryPane =
             widget.category != null && panes.secondary != null;
-        final body = TRNavigableThreePaneScaffold<String>(
-          navigator: _adaptiveNavigation,
-          navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
-          navigationPane: compact
-              ? _MobileSettingsHome(
-                  hosts: hosts,
-                  onCategorySelected: _selectCategory,
-                  onDaemonSelected: _selectDaemon,
-                )
-              : KeyedSubtree(
-                  key: const ValueKey<String>('settings-sidebar-surface'),
-                  child: _SettingsSidebar(
-                    selected: category,
-                    hosts: hosts,
-                    hostId: hostId,
-                    loading: registryLoading,
-                    onCategorySelected: _selectCategory,
-                  ),
-                ),
-          primaryPane: primary,
-          secondaryPane: hasSecondaryPane ? panes.secondary : null,
-        );
-        return TinestPageShell(
-          appBar: TinestPageHeader(
-            leading: TRIconButton(
-              key: const ValueKey<String>('settings-back-button'),
-              appearance: TRAppearance.ghost,
-              label: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: () => _goBack(
-                widthClass: widthClass,
-                hasSecondaryPane: hasSecondaryPane,
-              ),
-              icon: Icon(TinestIcons.backFor(context)),
-            ),
-            title: TRText.inherit(
-              AppLocalizations.of(context).settingsTitle,
-            ),
+        final paneController = _paneControllers[widget.category];
+        final showsDetail = paneController?.hasDetail ?? false;
+        final split =
+            widthClass == TRAdaptiveWidthClass.large ||
+            widthClass == TRAdaptiveWidthClass.extraLarge;
+        final mobileHome = KeyedSubtree(
+          key: const ValueKey<String>('settings-home-pane'),
+          child: _MobileSettingsHome(
+            hosts: hosts,
+            onCategorySelected: _selectCategory,
+            onDaemonSelected: _selectDaemon,
           ),
-          body: body,
+        );
+        final navigationPane = compact
+            ? mobileHome
+            : KeyedSubtree(
+                key: const ValueKey<String>('settings-sidebar-surface'),
+                child: _SettingsSidebar(
+                  selected: category,
+                  hosts: hosts,
+                  hostId: hostId,
+                  loading: registryLoading,
+                  onCategorySelected: _selectCategory,
+                ),
+              );
+        final primaryKey = switch ((widget.category, widget.hostId)) {
+          (final SettingsCategory category, _) =>
+            'settings-category-pane-${category.name}',
+          (null, final String _) => 'settings-daemon-categories-pane',
+          _ => 'settings-home-pane',
+        };
+        final keyedPrimary = KeyedSubtree(
+          key: ValueKey<String>(primaryKey),
+          child: primary,
+        );
+        final contentNavigator = Navigator(
+          key: _contentNavigatorKey,
+          pages: <Page<void>>[
+            MaterialPage<void>(
+              key: ValueKey<String>('settings-${category.name}-collection'),
+              child: keyedPrimary,
+            ),
+            if (hasSecondaryPane && (showsDetail || split))
+              MaterialPage<void>(
+                key: ValueKey<String>('settings-${category.name}-detail'),
+                child: panes.secondary!,
+              ),
+          ],
+          onDidRemovePage: (page) {
+            if (page.key ==
+                    ValueKey<String>('settings-${category.name}-detail') &&
+                (paneController?.hasDetail ?? false)) {
+              paneController!.showCollection();
+            }
+          },
+        );
+        final categoryContent = hasSecondaryPane
+            ? TRAdaptiveListDetailLayout(
+                singlePane: contentNavigator,
+                collectionPane: keyedPrimary,
+                detailPane: contentNavigator,
+              )
+            : keyedPrimary;
+        final contentPane =
+            compact && widget.category == null && widget.hostId == null
+            ? navigationPane
+            : categoryContent;
+        final body = TRAdaptiveNavigationLayout(
+          navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
+          navigationPane: navigationPane,
+          contentPane: contentPane,
+        );
+        return PopScope<void>(
+          canPop: split || !showsDetail,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && !split && showsDetail) {
+              _contentNavigatorKey.currentState!.maybePop();
+            }
+          },
+          child: TinestPageShell(
+            appBar: TinestPageHeader(
+              leading: TRIconButton(
+                key: const ValueKey<String>('settings-back-button'),
+                appearance: TRAppearance.ghost,
+                label: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => _goBack(
+                  widthClass: widthClass,
+                  hasSecondaryPane: hasSecondaryPane,
+                ),
+                icon: Icon(TinestIcons.backFor(context)),
+              ),
+              title: TRText.inherit(
+                AppLocalizations.of(context).settingsTitle,
+              ),
+            ),
+            body: body,
+          ),
         );
       },
     );
@@ -440,39 +435,35 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     required TRAdaptiveWidthClass widthClass,
     required bool hasSecondaryPane,
   }) {
-    if (_adaptiveNavigation.popUntilScaffoldValueChange(
-      widthClass,
-      hasSecondaryPane: hasSecondaryPane,
-    )) {
+    final split =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
+    final paneController = _paneControllers[widget.category];
+    if (!split && hasSecondaryPane && (paneController?.hasDetail ?? false)) {
+      paneController!.showCollection();
       return;
+    }
+    if (widthClass == TRAdaptiveWidthClass.compact) {
+      final hostId = widget.hostId;
+      if (widget.category != null && hostId != null) {
+        DaemonCategoriesRoute(hostId: hostId).replace(context);
+        return;
+      }
+      if (widget.category != null || hostId != null) {
+        const SettingsHomeRoute().replace(context);
+        return;
+      }
     }
     closeTask(context, () => const WorkspaceHomeRoute().go(context));
   }
 
   void _selectCategory(SettingsCategory category, {String? hostId}) {
-    final destination = TRPaneDestination<String>(
-      role: TRPaneRole.primary,
-      value: 'settings-category-pane-${category.name}',
-    );
-    final current = _adaptiveNavigation.currentDestination;
-    if (current.role == TRPaneRole.navigation ||
-        current.value == 'settings-daemon-categories-pane') {
-      _adaptiveNavigation.push(destination);
-    } else {
-      _adaptiveNavigation.replace(destination);
-    }
     _goToSettingsCategory(context, category, hostId: hostId);
   }
 
   Future<void> _selectDaemon(String hostId) async {
     await ref.read(hostRegistryControllerProvider.notifier).selectHost(hostId);
     if (!mounted) return;
-    _adaptiveNavigation.push(
-      const TRPaneDestination<String>(
-        role: TRPaneRole.primary,
-        value: 'settings-daemon-categories-pane',
-      ),
-    );
     DaemonCategoriesRoute(hostId: hostId).replace(context);
   }
 }
@@ -500,26 +491,6 @@ class _SettingsSimplePane extends StatelessWidget {
       ),
       Expanded(child: child),
     ],
-  );
-}
-
-TRPaneDestination<String> _settingsDestination(UnifiedSettingsPage page) {
-  final category = page.category;
-  if (category != null) {
-    return TRPaneDestination<String>(
-      role: TRPaneRole.primary,
-      value: 'settings-category-pane-${category.name}',
-    );
-  }
-  if (page.hostId != null) {
-    return const TRPaneDestination<String>(
-      role: TRPaneRole.primary,
-      value: 'settings-daemon-categories-pane',
-    );
-  }
-  return const TRPaneDestination<String>(
-    role: TRPaneRole.navigation,
-    value: 'settings-home-pane',
   );
 }
 

@@ -50,57 +50,17 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late final ProviderSettingsPaneController _paneController;
-  TRThreePaneNavigator<String>? _standaloneNavigator;
 
   @override
   void initState() {
     super.initState();
     _paneController = widget.paneController ?? ProviderSettingsPaneController();
-    if (widget.slot == null) {
-      _standaloneNavigator = TRThreePaneNavigator<String>(
-        initialDestination: const TRPaneDestination<String>(
-          role: TRPaneRole.navigation,
-          value: 'provider-collection',
-        ),
-      );
-      _standaloneNavigator!.addListener(_standaloneNavigationChanged);
-      _paneController.addListener(_syncStandaloneDestination);
-    }
   }
 
   @override
   void dispose() {
-    _paneController.removeListener(_syncStandaloneDestination);
-    _standaloneNavigator?.dispose();
     if (widget.paneController == null) _paneController.dispose();
     super.dispose();
-  }
-
-  void _syncStandaloneDestination() {
-    final navigator = _standaloneNavigator;
-    if (navigator == null) return;
-    final destinationId = _paneController.destinationId;
-    if (destinationId == null) {
-      navigator.pop();
-      return;
-    }
-    final destination = TRPaneDestination<String>(
-      role: TRPaneRole.primary,
-      value: destinationId,
-    );
-    if (navigator.currentDestination.role == TRPaneRole.primary) {
-      navigator.replace(destination);
-    } else {
-      navigator.push(destination);
-    }
-  }
-
-  void _standaloneNavigationChanged() {
-    final navigator = _standaloneNavigator;
-    if (navigator?.lastChange?.operation != TRPaneNavigationOperation.pop) {
-      return;
-    }
-    if (_paneController.hasDetail) _paneController.showCollection();
   }
 
   @override
@@ -129,43 +89,51 @@ class _SettingsPageState extends State<SettingsPage> {
         body: embeddedBody!,
       );
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final widthClass = TRAdaptiveWidthClass.fromWidth(constraints.maxWidth);
-        final body = TRNavigableThreePaneScaffold<String>(
-          navigator: _standaloneNavigator!,
-          navigationPane: _ProviderSettingsSlot(
+    return ListenableBuilder(
+      listenable: _paneController,
+      builder: (context, _) => LayoutBuilder(
+        builder: (context, constraints) {
+          final widthClass = TRAdaptiveWidthClass.fromWidth(
+            constraints.maxWidth,
+          );
+          final collection = _ProviderSettingsSlot(
             hostId: widget.hostId,
             paneController: _paneController,
             slot: SettingsPaneSlot.collection,
-          ),
-          primaryPane: _ProviderSettingsSlot(
+          );
+          final detail = _ProviderSettingsSlot(
             hostId: widget.hostId,
             paneController: _paneController,
             slot: SettingsPaneSlot.detail,
-          ),
-        );
-        return TinestPageShell(
-          appBar: TinestPageHeader(
-            leading: TRIconButton(
-              appearance: TRAppearance.ghost,
-              label: MaterialLocalizations.of(context).backButtonTooltip,
-              onPressed: () {
-                if (_standaloneNavigator!.popUntilScaffoldValueChange(
-                  widthClass,
-                  hasSecondaryPane: false,
-                )) {
-                  return;
-                }
-                context.pop();
-              },
-              icon: Icon(TinestIcons.backFor(context)),
+          );
+          final body = TRAdaptiveListDetailLayout(
+            singlePane: _paneController.hasDetail ? detail : collection,
+            collectionPane: collection,
+            detailPane: detail,
+          );
+          return TinestPageShell(
+            appBar: TinestPageHeader(
+              leading: TRIconButton(
+                appearance: TRAppearance.ghost,
+                label: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () {
+                  final split =
+                      widthClass == TRAdaptiveWidthClass.large ||
+                      widthClass == TRAdaptiveWidthClass.extraLarge;
+                  if (!split && _paneController.hasDetail) {
+                    _paneController.showCollection();
+                    return;
+                  }
+                  context.pop();
+                },
+                icon: Icon(TinestIcons.backFor(context)),
+              ),
+              title: TRText.inherit(l10n.providerSettingsTitle),
             ),
-            title: TRText.inherit(l10n.providerSettingsTitle),
-          ),
-          body: body,
-        );
-      },
+            body: body,
+          );
+        },
+      ),
     );
   }
 }

@@ -9,12 +9,12 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// Returns the settings shell's adaptive class without classifying an inner
 /// pane's constraints.
 ///
-/// Unified Settings supplies [TRAdaptivePaneScope]. Standalone task routes and
-/// focused widget hosts fall back to the logical root viewport, preserving the
-/// same window policy without mistaking an already-allocated pane for a
-/// smaller window.
+/// Unified Settings supplies [TRAdaptiveLayoutScope]. Standalone task routes
+/// and focused widget hosts fall back to the logical root viewport. This keeps
+/// the window policy from mistaking an already-allocated pane for a smaller
+/// window.
 TRAdaptiveWidthClass settingsAdaptiveWidthClassOf(BuildContext context) =>
-    TRAdaptivePaneScope.maybeOf(context)?.widthClass ??
+    TRAdaptiveLayoutScope.maybeOf(context)?.widthClass ??
     TRAdaptiveWidthClass.fromWidth(MediaQuery.sizeOf(context).width);
 
 /// The product-owned content slots supplied to the adaptive pane scaffold.
