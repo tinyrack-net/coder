@@ -128,6 +128,7 @@ final class FakeTinestApi
     this.permissionSettingsGate,
     this.modelSettingsGate,
     this.providerConnectionsGate,
+    this.providerDisconnectGate,
     this.mcpListGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
@@ -466,6 +467,9 @@ final class FakeTinestApi
 
   /// Optional gate used to keep provider settings in their loading state.
   final Future<void>? providerConnectionsGate;
+
+  /// Optional gate used to keep provider disconnection pending.
+  final Future<void>? providerDisconnectGate;
 
   /// Optional gate used to keep MCP discovery in its loading state.
   final Future<void>? mcpListGate;
@@ -1830,6 +1834,7 @@ final class FakeTinestApi
 
   @override
   Future<void> disconnectProvider(String connectionId) async {
+    await providerDisconnectGate;
     credentials.remove(connectionId);
     final current = _connections.singleWhere((item) => item.id == connectionId);
     _saveConnection(

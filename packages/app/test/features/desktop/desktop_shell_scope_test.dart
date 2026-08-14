@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/src/app/composition/app_services.dart';
+import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/src/features/desktop/infrastructure/desktop_shell.dart';
@@ -239,7 +240,7 @@ void main() {
   );
 
   testWidgets(
-    'custom desktop frame keeps one navigator across settings categories',
+    'custom desktop frame keeps stable root and settings navigators',
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -257,6 +258,15 @@ void main() {
         find.byKey(const ValueKey<String>('settings-back-button')),
         findsOneWidget,
       );
+      final rootNavigator = Navigator.of(
+        tester.element(
+          find.byKey(const ValueKey<String>('settings-back-button')),
+        ),
+        rootNavigator: true,
+      );
+      final settingsNavigator = SettingsShellRoute.$navigatorKey.currentState;
+      expect(settingsNavigator, isNotNull);
+      expect(find.byType(Navigator), findsNWidgets(2));
 
       await tester.tap(find.text(testL10n.settingsCategoryGeneral));
       await tester.pumpAndSettle();
@@ -280,8 +290,31 @@ void main() {
         find.byKey(const ValueKey<String>('advanced-settings-reset-button')),
         findsOneWidget,
       );
-      expect(find.byType(Navigator), findsOneWidget);
+      expect(
+        Navigator.of(
+          tester.element(
+            find.byKey(const ValueKey<String>('settings-back-button')),
+          ),
+          rootNavigator: true,
+        ),
+        same(rootNavigator),
+      );
+      expect(
+        SettingsShellRoute.$navigatorKey.currentState,
+        same(settingsNavigator),
+      );
+      expect(find.byType(Navigator), findsNWidgets(2));
       expect(tester.takeException(), isNull);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(testL10n.generalLanguageLabel), findsOneWidget);
+      expect(
+        SettingsShellRoute.$navigatorKey.currentState,
+        same(settingsNavigator),
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),

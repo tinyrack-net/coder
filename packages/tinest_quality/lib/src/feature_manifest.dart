@@ -320,13 +320,11 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'app.navigation',
     description:
-        'Opens settings and daemon editing as pushed tasks that close back to '
-        'the screen they were opened from, moves laterally between settings '
-        'categories and workspace selections without changing the root stack, '
-        'keeps the shared settings shell mounted so adaptive category '
-        'transitions affect only the active pane, returns mobile workspace '
-        'details to the workspace list, and still closes to a sensible '
-        'destination when entered by deep link.',
+        'Uses typed Settings and Workspace shell routes with Material Page and '
+        'Navigator lifecycle across one-, two-, and three-pane layouts. System '
+        'Back follows concrete history, Up follows the logical hierarchy, and '
+        'lateral settings or workspace replacements preserve stable shell '
+        'state without app-owned animation or pane-history synchronization.',
     routes: <String>['SettingsHomeRoute', 'DaemonCategoriesRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
@@ -1211,8 +1209,8 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'provider.connection.management',
     description:
         'Connects, reconnects in place, and disconnects OpenAI, Anthropic, '
-        'Gemini, MiniMax, and compatible provider presets through their '
-        'public API contracts.',
+        'Gemini, and compatible provider presets through their public API '
+        'contracts.',
     apiMethods: <String>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',

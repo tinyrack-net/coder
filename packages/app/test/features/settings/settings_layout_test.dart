@@ -5,6 +5,7 @@ import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -170,29 +171,27 @@ void main() {
   test(
     'SettingsPaneController auto-selects once until its route identity resets',
     () {
-      final controller = SettingsPaneController<String>(
-        destinationIdFor: (value) => 'server-$value',
-      );
+      final controller = SettingsPaneController<String>();
       addTearDown(controller.dispose);
       var notifications = 0;
       controller.addListener(() => notifications += 1);
 
       expect(controller.hasDetail, isFalse);
-      expect(controller.destination, isNull);
-      expect(controller.destinationId, isNull);
+      expect(controller.selection, isNull);
+      expect(controller.detailSelection, isNull);
       expect(controller.canAutoSelect, isTrue);
 
       controller.showInitialDetail('github');
       expect(controller.hasDetail, isTrue);
-      expect(controller.destination, 'github');
-      expect(controller.destinationId, 'server-github');
+      expect(controller.selection, 'github');
+      expect(controller.detailSelection, 'github');
       expect(controller.canAutoSelect, isFalse);
       expect(notifications, 1);
 
       controller.showCollection();
       expect(controller.hasDetail, isFalse);
-      expect(controller.destination, isNull);
-      expect(controller.destinationId, isNull);
+      expect(controller.selection, isNull);
+      expect(controller.detailSelection, isNull);
       expect(controller.canAutoSelect, isFalse);
       expect(notifications, 2);
 
@@ -203,9 +202,177 @@ void main() {
       controller.reset();
       expect(controller.canAutoSelect, isTrue);
       controller.showInitialDetail('gitlab');
-      expect(controller.destination, 'gitlab');
+      expect(controller.selection, 'gitlab');
       expect(notifications, 3);
     },
+  );
+
+  testWidgets(
+    'replacing detail A with B does not treat outgoing A as a Back pop',
+    (tester) async {
+      final controller = SettingsPaneController<String>();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _host(
+          TRAdaptiveLayoutScope(
+            widthClass: TRAdaptiveWidthClass.large,
+            child: SettingsListDetailHost(
+              coordinator: controller,
+              collection: const TRText.inherit('Collection'),
+              detail: const TRText.inherit('Detail'),
+            ),
+          ),
+        ),
+      );
+
+      controller.showDetail('A');
+      await tester.pumpAndSettle();
+      controller.showDetail('B');
+      await tester.pumpAndSettle();
+
+      expect(controller.selection, 'B');
+      expect(find.text('Detail'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(controller.selection, isNull);
+      expect(controller.hasDetail, isFalse);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'large list-detail uses the dedicated collection width token',
+    (tester) async {
+      final controller = SettingsPaneController<String>();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _host(
+          TRAdaptiveLayoutScope(
+            widthClass: TRAdaptiveWidthClass.large,
+            child: SettingsListDetailHost(
+              coordinator: controller,
+              collection: const SizedBox(
+                key: ValueKey<String>('collection-pane-content'),
+                height: double.infinity,
+              ),
+              detail: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey<String>('collection-pane-content')),
+            )
+            .width,
+        TinestLayoutMetrics.settingsCollectionWidth,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'large detail replacement keeps collection fixed and outgoing content '
+    'inert',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = SettingsPaneController<String>();
+      addTearDown(controller.dispose);
+      var activations = 0;
+      await tester.pumpWidget(
+        _host(
+          TRAdaptiveLayoutScope(
+            widthClass: TRAdaptiveWidthClass.large,
+            child: SettingsListDetailHost(
+              coordinator: controller,
+              collection: const _CollectionIdentityProbe(
+                key: ValueKey<String>('fixed-collection'),
+              ),
+              detail: ListenableBuilder(
+                listenable: controller,
+                builder: (context, _) {
+                  final selection = controller.selection;
+                  return selection == null
+                      ? const SizedBox.expand()
+                      : Center(
+                          child: Semantics(
+                            container: true,
+                            button: true,
+                            label: 'Detail $selection',
+                            child: ExcludeSemantics(
+                              child: TRButton(
+                                key: ValueKey<String>('detail-$selection'),
+                                onPressed: () => activations += 1,
+                                child: TRText.inherit('Detail $selection'),
+                              ),
+                            ),
+                          ),
+                        );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      controller.showDetail('A');
+      await tester.pumpAndSettle();
+      final collection = find.byKey(
+        const ValueKey<String>('fixed-collection'),
+      );
+      final collectionState = tester.state(collection);
+      final collectionRect = tester.getRect(collection);
+
+      controller.showDetail('B');
+      await tester.pump();
+
+      expect(tester.state(collection), same(collectionState));
+      expect(tester.getRect(collection), collectionRect);
+      expect(
+        find.byKey(
+          const ValueKey<String>('detail-B'),
+          skipOffstage: false,
+        ),
+        findsNWidgets(2),
+      );
+      final interactiveDetail = find
+          .byKey(const ValueKey<String>('detail-B'))
+          .hitTestable();
+      expect(interactiveDetail, findsOneWidget);
+      expect(find.bySemanticsLabel('Detail B'), findsOneWidget);
+
+      await tester.tap(interactiveDetail);
+      await tester.pump();
+      expect(activations, 1);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focusContext = FocusManager.instance.primaryFocus?.context;
+      expect(focusContext, isNotNull);
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate(
+            (element) => identical(element, focusContext),
+          ),
+          matching: interactiveDetail,
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey<String>('detail-B'),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
   );
 
   testWidgets(
@@ -1504,4 +1671,17 @@ void main() {
       }
     });
   });
+}
+
+class _CollectionIdentityProbe extends StatefulWidget {
+  const _CollectionIdentityProbe({super.key});
+
+  @override
+  State<_CollectionIdentityProbe> createState() =>
+      _CollectionIdentityProbeState();
+}
+
+class _CollectionIdentityProbeState extends State<_CollectionIdentityProbe> {
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }

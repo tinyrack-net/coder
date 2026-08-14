@@ -100,6 +100,54 @@ void main() {
     expect(violations, isEmpty);
   });
 
+  test('feature verifier discovers typed routes nested in a shell', () {
+    const markerPrefix =
+        'feature_'
+        'test__';
+    const routeMarkerPrefix =
+        'route_'
+        'test__';
+    final fixture = _fixture(
+      api: 'abstract interface class TinestApi {}',
+      routes: '''
+@TypedShellRoute<AppShellRoute>(
+  routes: <TypedRoute<RouteData>>[
+    TypedGoRoute<HomeRoute>(path: '/'),
+    TypedGoRoute<SettingsRoute>(path: '/settings'),
+  ],
+)
+''',
+      tests: <String>[
+        "testWidgets('navigates', (tester) async {",
+        'await tester.pump();',
+        'expect(true, isTrue);',
+        '}, tags: <String>[',
+        "'${markerPrefix}app_navigation__widget', ",
+        "'${routeMarkerPrefix}home_route__widget', ",
+        "'${routeMarkerPrefix}settings_route__widget']);",
+      ].join(),
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[
+        FeatureContract(
+          id: 'app.navigation',
+          description: 'Navigates through a typed shell.',
+          routes: <String>['HomeRoute', 'SettingsRoute'],
+          requiredLayers: <FeatureVerificationLayer>{
+            FeatureVerificationLayer.widget,
+          },
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(violations, isEmpty);
+  });
+
   test('feature verifier accepts executable typed E2E scenarios', () {
     const markerPrefix =
         'feature_'

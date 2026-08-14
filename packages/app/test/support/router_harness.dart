@@ -27,6 +27,12 @@ Future<GoRouter> pumpRoutedApp(
   // A screen with a perpetual animation (a running subagent spinner, for
   // instance) never settles; such tests pump fixed frames instead.
   bool settle = true,
+  // Makes page transitions render their destination immediately while keeping
+  // the real Navigator route lifecycle under test.
+  bool disableAnimations = false,
+  // Selects a platform transition without mutating the process-wide test
+  // platform, so Android predictive Back can be exercised deterministically.
+  TargetPlatform? platform,
   // Extra observers a test installs for its own assertions. The build-phase
   // guard below is added on top of these, not instead of them.
   List<ProviderObserver> observers = const <ProviderObserver>[],
@@ -54,17 +60,27 @@ Future<GoRouter> pumpRoutedApp(
         ...overrides,
       ],
       child: MaterialApp.router(
-        theme: testLightTheme,
-        darkTheme: testDarkTheme,
+        theme: testLightTheme.copyWith(platform: platform),
+        darkTheme: testDarkTheme.copyWith(platform: platform),
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
         // Mirrors what TinestApp wraps every route in, so a screen under test
         // can report a result the same way it does when the app runs.
-        builder: (context, child) => TinestUiDensity(
-          child: TinestToastScope(child: child ?? const SizedBox.shrink()),
-        ),
+        builder: (context, child) {
+          final content = TinestUiDensity(
+            child: TinestToastScope(child: child ?? const SizedBox.shrink()),
+          );
+          return disableAnimations
+              ? MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: true),
+                  child: content,
+                )
+              : content;
+        },
       ),
     ),
   );

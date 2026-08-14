@@ -5,15 +5,25 @@ import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/features/models/presentation/pages/model_settings_page.dart';
-import 'package:app/src/features/permissions/presentation/pages/permission_settings_page.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
-import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../support/fake_tinest_api.dart';
 import '../support/router_harness.dart';
+
+Future<void> _sendBackGesture(
+  WidgetTester tester,
+  MethodCall call,
+) async {
+  final message = const StandardMethodCodec().encodeMethodCall(call);
+  await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+    'flutter/backgesture',
+    message,
+    (_) {},
+  );
+}
 
 /// Navigation-verb behaviour: pushed tasks pop back, lateral moves do not
 /// change the stack, and deep links still close to a sensible destination.
@@ -73,6 +83,13 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
+  Future<void> useTwoPane(WidgetTester tester) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(800, 900);
+    addTearDown(tester.view.reset);
+  }
+
   testWidgets(
     'system Back closes the new-workspace composer to the workspace list',
     (tester) async {
@@ -127,6 +144,106 @@ void main() {
       expect(
         find.byKey(const ValueKey('workspace-new-button')),
         findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'Android predictive Back cancel preserves the session and commit returns '
+    'home',
+    (tester) async {
+      await useMobile(tester);
+      final sessionLocation = SessionRoute(
+        hostId: 'server',
+        workspaceId: workspace.id,
+        worktreeId: worktree.id,
+        sessionId: 'session',
+      ).location;
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: sessionLocation,
+        platform: TargetPlatform.android,
+      );
+      addTearDown(router.dispose);
+
+      Future<void> startAndUpdate() async {
+        await _sendBackGesture(
+          tester,
+          const MethodCall('startBackGesture', <String, Object>{
+            'touchOffset': <double>[5, 300],
+            'progress': 0.0,
+            'swipeEdge': 0,
+          }),
+        );
+        await _sendBackGesture(
+          tester,
+          const MethodCall('updateBackGestureProgress', <String, Object>{
+            'touchOffset': <double>[160, 300],
+            'progress': 0.5,
+            'swipeEdge': 0,
+          }),
+        );
+        await tester.pump();
+      }
+
+      await startAndUpdate();
+      expect(currentLocation(router), sessionLocation);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+
+      await _sendBackGesture(tester, const MethodCall('cancelBackGesture'));
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), sessionLocation);
+      expect(find.text('Route session'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsNothing,
+      );
+
+      await startAndUpdate();
+      await _sendBackGesture(tester, const MethodCall('commitBackGesture'));
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'reduced motion exposes a pushed settings page on the first frame',
+    (tester) async {
+      await useMobile(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: const SettingsHomeRoute().location,
+        disableAnimations: true,
+      );
+      addTearDown(router.dispose);
+
+      unawaited(
+        router.push<void>(const GeneralSettingsRoute().location),
+      );
+      // One frame applies GoRouter's new configuration; the next paints the
+      // Material route at its reduced-motion destination.
+      await tester.pump();
+      await tester.pump();
+
+      expect(currentLocation(router), const GeneralSettingsRoute().location);
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-general')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-home-pane')).hitTestable(),
+        findsNothing,
       );
     },
     tags: const <String>['feature_test__app_navigation__widget'],
@@ -214,15 +331,8 @@ void main() {
     tags: const <String>['feature_test__app_navigation__widget'],
   );
 
-  Future<void> useTwoPane(WidgetTester tester) async {
-    tester.view
-      ..devicePixelRatio = 1
-      ..physicalSize = const Size(800, 900);
-    addTearDown(tester.view.reset);
-  }
-
   testWidgets(
-    'settings opened from a worktree closes back to that worktree',
+    'settings system Back returns to worktree while Up follows hierarchy',
     (tester) async {
       await useDesktop(tester);
       final router = await pumpRoutedApp(
@@ -242,17 +352,44 @@ void main() {
       );
       expect(router.canPop(), isTrue);
 
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const ProviderSettingsRoute(hostId: 'server').location,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), worktreeLocation);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(currentLocation(router), worktreeLocation);
+      expect(
+        currentLocation(router),
+        const ProviderSettingsRoute(hostId: 'server').location,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const DaemonCategoriesRoute(hostId: 'server').location,
+      );
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
 
   testWidgets(
-    'settings entered by deep link closes to the workspace home',
+    'system Back on a settings deep link does not synthesize Up history',
     (tester) async {
       await useDesktop(tester);
       final router = await pumpRoutedApp(
@@ -263,11 +400,68 @@ void main() {
       addTearDown(router.dispose);
 
       expect(router.canPop(), isFalse);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const GeneralSettingsRoute().location);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'settings Up on a deep link replaces it with its logical parent',
+    (tester) async {
+      await useDesktop(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: const GeneralSettingsRoute().location,
+      );
+      addTearDown(router.dispose);
+
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(currentLocation(router), const SettingsHomeRoute().location);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'daemon categories Up closes its wide provider detail before settings home',
+    (tester) async {
+      await useDesktop(tester);
+      const route = DaemonCategoriesRoute(hostId: 'server');
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: route.location,
+      );
+      addTearDown(router.dispose);
+
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsOneWidget,
+      );
+      final up = find.byKey(
+        const ValueKey<String>('settings-back-button'),
+      );
+      await tester.tap(up);
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), route.location);
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-openai')),
+        findsOneWidget,
+      );
+
+      await tester.tap(up);
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const SettingsHomeRoute().location);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
@@ -298,53 +492,68 @@ void main() {
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
+      expect(currentLocation(router), const ProjectSettingsRoute().location);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const SettingsHomeRoute().location);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
       expect(currentLocation(router), worktreeLocation);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
 
   testWidgets(
-    'two-pane settings category changes keep the shell mounted',
+    'rapid lateral settings replacements settle on the final URL and pane',
+    (tester) async {
+      await useDesktop(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: const GeneralSettingsRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      unawaited(router.replace<void>(const ProjectSettingsRoute().location));
+      unawaited(router.replace<void>(const AgentSettingsRoute().location));
+      unawaited(router.replace<void>(const AdvancedSettingsRoute().location));
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const AdvancedSettingsRoute().location);
+      expect(
+        find.byKey(
+          const ValueKey<String>('settings-category-pane-advanced'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'two-pane category replacement keeps the typed shell and sidebar mounted',
     (tester) async {
       await useTwoPane(tester);
       final router = await pumpRoutedApp(
         tester,
-        apiWith(<SessionDto>[session('session', 'Route session')]),
-        initialLocation: worktreeLocation,
+        apiWith(<SessionDto>[]),
+        initialLocation: const ModelSettingsRoute().location,
       );
       addTearDown(router.dispose);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      final shell = find.byType(UnifiedSettingsPage);
+      final shellState = tester.state<State<UnifiedSettingsPage>>(shell);
+      final sidebar = find.byKey(
+        const ValueKey<String>('settings-sidebar-surface'),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-category-row-model')),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        currentLocation(router),
-        const ModelSettingsRoute().location,
-      );
-
-      final modelShell = find.byType(UnifiedSettingsPage);
-      final modelState = tester.state<State<UnifiedSettingsPage>>(modelShell);
-      final modelSidebar = find.descendant(
-        of: modelShell,
-        matching: find.byKey(
-          const ValueKey<String>('settings-sidebar-surface'),
-        ),
-      );
-      final modelSidebarElement = tester.element(modelSidebar);
-      final modelSidebarRect = tester.getRect(modelSidebar);
-      final modelRoute = ModalRoute.of(
-        tester.element(find.byType(ModelSettingsPage)),
-      );
-      final modelPage = tester
-          .widget<Navigator>(find.byType(Navigator))
-          .pages
-          .last;
-      expect(modelRoute?.animation?.status, AnimationStatus.completed);
+      final sidebarElement = tester.element(sidebar);
+      final sidebarRect = tester.getRect(sidebar);
+      final childNavigator = SettingsShellRoute.$navigatorKey.currentState;
 
       await tester.tap(
         find.byKey(
@@ -352,57 +561,34 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.pump(TRMotion.slow ~/ 2);
+      await tester.pump();
 
       expect(
         currentLocation(router),
         const PermissionSettingsRoute().location,
       );
-      final permissionShell = find.ancestor(
-        of: find.byType(PermissionSettingsPage),
-        matching: find.byType(UnifiedSettingsPage),
-      );
-      expect(permissionShell, findsOneWidget);
       expect(
-        tester.state<State<UnifiedSettingsPage>>(permissionShell),
-        same(modelState),
-        reason: 'a category replacement must preserve the settings shell',
+        tester.state<State<UnifiedSettingsPage>>(shell),
+        same(shellState),
       );
-      final permissionRoute = ModalRoute.of(
-        tester.element(find.byType(PermissionSettingsPage)),
+      expect(
+        SettingsShellRoute.$navigatorKey.currentState,
+        same(childNavigator),
       );
-      expect(permissionRoute, same(modelRoute));
-      expect(permissionRoute?.animation?.status, AnimationStatus.completed);
-      final permissionPage = tester
-          .widget<Navigator>(find.byType(Navigator))
-          .pages
-          .last;
-      expect(permissionPage.runtimeType, modelPage.runtimeType);
-      expect(permissionPage.key, modelPage.key);
-      expect(permissionPage.key, const ValueKey<String>('settings-shell'));
-
-      final permissionSidebar = find.descendant(
-        of: permissionShell,
-        matching: find.byKey(
-          const ValueKey<String>('settings-sidebar-surface'),
-        ),
+      expect(tester.element(sidebar), same(sidebarElement));
+      expect(tester.getRect(sidebar), sidebarRect);
+      final permissionPane = find.byKey(
+        const ValueKey<String>('settings-category-pane-permission'),
       );
-      expect(tester.element(permissionSidebar), same(modelSidebarElement));
-      expect(tester.getRect(permissionSidebar), modelSidebarRect);
-
-      expect(find.byType(ModelSettingsPage), findsNothing);
-      expect(find.byType(PermissionSettingsPage), findsOneWidget);
+      expect(permissionPane, findsOneWidget);
 
       await tester.pumpAndSettle();
-      expect(find.byType(ModelSettingsPage), findsNothing);
-      expect(find.byType(PermissionSettingsPage), findsOneWidget);
-
-      expect(router.canPop(), isTrue);
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-back-button')),
+      expect(permissionPane, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-category-pane-model')),
+        findsNothing,
       );
-      await tester.pumpAndSettle();
-      expect(currentLocation(router), worktreeLocation);
+      expect(tester.takeException(), isNull);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
@@ -581,13 +767,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(currentLocation(router), const DaemonSettingsRoute().location);
-      expect(find.byType(Navigator), findsOneWidget);
+      expect(find.byType(Navigator), findsNWidgets(2));
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.text('일반'));
       await tester.pumpAndSettle();
       expect(currentLocation(router), const GeneralSettingsRoute().location);
-      expect(find.byType(Navigator), findsOneWidget);
+      expect(find.byType(Navigator), findsNWidgets(2));
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const SettingsHomeRoute().location);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),

@@ -7,36 +7,92 @@ part of 'app_router.dart';
 // **************************************************************************
 
 List<RouteBase> get $appRoutes => [
-  $settingsHomeRoute,
-  $daemonCategoriesRoute,
-  $workspaceHomeRoute,
-  $worktreeRoute,
-  $sessionRoute,
-  $terminalRoute,
-  $generalSettingsRoute,
-  $providerSettingsRoute,
-  $modelSettingsRoute,
-  $permissionSettingsRoute,
-  $projectSettingsRoute,
-  $agentSettingsRoute,
-  $mcpSettingsRoute,
-  $skillSettingsRoute,
-  $daemonSettingsRoute,
-  $advancedSettingsRoute,
+  $settingsShellRoute,
+  $workspaceShellRoute,
   $connectDaemonRoute,
   $pairingLinkRoute,
   $pairingScanRoute,
   $pairOfferRoute,
   $advancedNewHostRoute,
-  $daemonConnectionsRoute,
   $editHostRoute,
 ];
 
-RouteBase get $settingsHomeRoute => GoRouteData.$route(
-  path: '/settings',
-  hasOverriddenOnExit: false,
-  factory: $SettingsHomeRoute._fromState,
+RouteBase get $settingsShellRoute => ShellRouteData.$route(
+  navigatorKey: SettingsShellRoute.$navigatorKey,
+  factory: $SettingsShellRouteExtension._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: '/settings',
+      hasOverriddenOnExit: false,
+      factory: $SettingsHomeRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/daemons/:hostId/categories',
+      hasOverriddenOnExit: false,
+      factory: $DaemonCategoriesRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/general',
+      hasOverriddenOnExit: false,
+      factory: $GeneralSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/providers',
+      hasOverriddenOnExit: false,
+      factory: $ProviderSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/models',
+      hasOverriddenOnExit: false,
+      factory: $ModelSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/permissions',
+      hasOverriddenOnExit: false,
+      factory: $PermissionSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/projects',
+      hasOverriddenOnExit: false,
+      factory: $ProjectSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/agents',
+      hasOverriddenOnExit: false,
+      factory: $AgentSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/mcp',
+      hasOverriddenOnExit: false,
+      factory: $McpSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/skills',
+      hasOverriddenOnExit: false,
+      factory: $SkillSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/daemons',
+      hasOverriddenOnExit: false,
+      factory: $DaemonSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/advanced',
+      hasOverriddenOnExit: false,
+      factory: $AdvancedSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/settings/daemons/:hostId/connections',
+      hasOverriddenOnExit: false,
+      factory: $DaemonConnectionsRoute._fromState,
+    ),
+  ],
 );
+
+extension $SettingsShellRouteExtension on SettingsShellRoute {
+  static SettingsShellRoute _fromState(GoRouterState state) =>
+      const SettingsShellRoute();
+}
 
 mixin $SettingsHomeRoute on GoRouteData {
   static SettingsHomeRoute _fromState(GoRouterState state) =>
@@ -58,12 +114,6 @@ mixin $SettingsHomeRoute on GoRouteData {
   @override
   void replace(BuildContext context) => context.replace(location);
 }
-
-RouteBase get $daemonCategoriesRoute => GoRouteData.$route(
-  path: '/settings/daemons/:hostId/categories',
-  hasOverriddenOnExit: false,
-  factory: $DaemonCategoriesRoute._fromState,
-);
 
 mixin $DaemonCategoriesRoute on GoRouteData {
   static DaemonCategoriesRoute _fromState(GoRouterState state) =>
@@ -90,11 +140,316 @@ mixin $DaemonCategoriesRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $workspaceHomeRoute => GoRouteData.$route(
-  path: '/',
-  hasOverriddenOnExit: false,
-  factory: $WorkspaceHomeRoute._fromState,
+mixin $GeneralSettingsRoute on GoRouteData {
+  static GeneralSettingsRoute _fromState(GoRouterState state) =>
+      const GeneralSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/general');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ProviderSettingsRoute on GoRouteData {
+  static ProviderSettingsRoute _fromState(GoRouterState state) =>
+      ProviderSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  ProviderSettingsRoute get _self => this as ProviderSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/providers',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ModelSettingsRoute on GoRouteData {
+  static ModelSettingsRoute _fromState(GoRouterState state) =>
+      ModelSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  ModelSettingsRoute get _self => this as ModelSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/models',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $PermissionSettingsRoute on GoRouteData {
+  static PermissionSettingsRoute _fromState(GoRouterState state) =>
+      PermissionSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  PermissionSettingsRoute get _self => this as PermissionSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/permissions',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ProjectSettingsRoute on GoRouteData {
+  static ProjectSettingsRoute _fromState(GoRouterState state) =>
+      ProjectSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  ProjectSettingsRoute get _self => this as ProjectSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/projects',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $AgentSettingsRoute on GoRouteData {
+  static AgentSettingsRoute _fromState(GoRouterState state) =>
+      AgentSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  AgentSettingsRoute get _self => this as AgentSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/agents',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $McpSettingsRoute on GoRouteData {
+  static McpSettingsRoute _fromState(GoRouterState state) =>
+      McpSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  McpSettingsRoute get _self => this as McpSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/mcp',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $SkillSettingsRoute on GoRouteData {
+  static SkillSettingsRoute _fromState(GoRouterState state) =>
+      SkillSettingsRoute(
+        hostId: state.uri.queryParameters['host-id'],
+        workspaceId: state.uri.queryParameters['workspace-id'],
+      );
+
+  SkillSettingsRoute get _self => this as SkillSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/skills',
+    queryParams: {
+      if (_self.hostId != null) 'host-id': _self.hostId,
+      if (_self.workspaceId != null) 'workspace-id': _self.workspaceId,
+    },
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $DaemonSettingsRoute on GoRouteData {
+  static DaemonSettingsRoute _fromState(GoRouterState state) =>
+      const DaemonSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/daemons');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $AdvancedSettingsRoute on GoRouteData {
+  static AdvancedSettingsRoute _fromState(GoRouterState state) =>
+      const AdvancedSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/settings/advanced');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $DaemonConnectionsRoute on GoRouteData {
+  static DaemonConnectionsRoute _fromState(GoRouterState state) =>
+      DaemonConnectionsRoute(hostId: state.pathParameters['hostId']!);
+
+  DaemonConnectionsRoute get _self => this as DaemonConnectionsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/connections',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $workspaceShellRoute => ShellRouteData.$route(
+  navigatorKey: WorkspaceShellRoute.$navigatorKey,
+  factory: $WorkspaceShellRouteExtension._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: '/',
+      hasOverriddenOnExit: false,
+      factory: $WorkspaceHomeRoute._fromState,
+      routes: [
+        GoRouteData.$route(
+          path: 'workspaces/:hostId/:workspaceId/:worktreeId',
+          hasOverriddenOnExit: false,
+          factory: $WorktreeRoute._fromState,
+        ),
+        GoRouteData.$route(
+          path:
+              'workspaces/:hostId/:workspaceId/:worktreeId/sessions/:sessionId',
+          hasOverriddenOnExit: false,
+          factory: $SessionRoute._fromState,
+        ),
+        GoRouteData.$route(
+          path: 'workspaces/:hostId/:workspaceId/:worktreeId/terminals/:terminalId',
+          hasOverriddenOnExit: false,
+          factory: $TerminalRoute._fromState,
+        ),
+      ],
+    ),
+  ],
 );
+
+extension $WorkspaceShellRouteExtension on WorkspaceShellRoute {
+  static WorkspaceShellRoute _fromState(GoRouterState state) =>
+      const WorkspaceShellRoute();
+}
 
 mixin $WorkspaceHomeRoute on GoRouteData {
   static WorkspaceHomeRoute _fromState(GoRouterState state) =>
@@ -132,32 +487,6 @@ mixin $WorkspaceHomeRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-T? _$convertMapValue<T>(
-  String key,
-  Map<String, String> map,
-  T? Function(String) converter,
-) {
-  final value = map[key];
-  return value == null ? null : converter(value);
-}
-
-bool _$boolConverter(String value) {
-  switch (value) {
-    case 'true':
-      return true;
-    case 'false':
-      return false;
-    default:
-      throw UnsupportedError('Cannot convert "$value" into a bool.');
-  }
-}
-
-RouteBase get $worktreeRoute => GoRouteData.$route(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId',
-  hasOverriddenOnExit: false,
-  factory: $WorktreeRoute._fromState,
-);
-
 mixin $WorktreeRoute on GoRouteData {
   static WorktreeRoute _fromState(GoRouterState state) => WorktreeRoute(
     hostId: state.pathParameters['hostId']!,
@@ -185,12 +514,6 @@ mixin $WorktreeRoute on GoRouteData {
   @override
   void replace(BuildContext context) => context.replace(location);
 }
-
-RouteBase get $sessionRoute => GoRouteData.$route(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:sessionId',
-  hasOverriddenOnExit: false,
-  factory: $SessionRoute._fromState,
-);
 
 mixin $SessionRoute on GoRouteData {
   static SessionRoute _fromState(GoRouterState state) => SessionRoute(
@@ -221,12 +544,6 @@ mixin $SessionRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $terminalRoute => GoRouteData.$route(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/terminals/:terminalId',
-  hasOverriddenOnExit: false,
-  factory: $TerminalRoute._fromState,
-);
-
 mixin $TerminalRoute on GoRouteData {
   static TerminalRoute _fromState(GoRouterState state) => TerminalRoute(
     hostId: state.pathParameters['hostId']!,
@@ -256,315 +573,24 @@ mixin $TerminalRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $generalSettingsRoute => GoRouteData.$route(
-  path: '/settings/general',
-  hasOverriddenOnExit: false,
-  factory: $GeneralSettingsRoute._fromState,
-);
-
-mixin $GeneralSettingsRoute on GoRouteData {
-  static GeneralSettingsRoute _fromState(GoRouterState state) =>
-      const GeneralSettingsRoute();
-
-  @override
-  String get location => GoRouteData.$location('/settings/general');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
+T? _$convertMapValue<T>(
+  String key,
+  Map<String, String> map,
+  T? Function(String) converter,
+) {
+  final value = map[key];
+  return value == null ? null : converter(value);
 }
 
-RouteBase get $providerSettingsRoute => GoRouteData.$route(
-  path: '/settings/providers',
-  hasOverriddenOnExit: false,
-  factory: $ProviderSettingsRoute._fromState,
-);
-
-mixin $ProviderSettingsRoute on GoRouteData {
-  static ProviderSettingsRoute _fromState(GoRouterState state) =>
-      ProviderSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  ProviderSettingsRoute get _self => this as ProviderSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/providers',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $modelSettingsRoute => GoRouteData.$route(
-  path: '/settings/models',
-  hasOverriddenOnExit: false,
-  factory: $ModelSettingsRoute._fromState,
-);
-
-mixin $ModelSettingsRoute on GoRouteData {
-  static ModelSettingsRoute _fromState(GoRouterState state) =>
-      ModelSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  ModelSettingsRoute get _self => this as ModelSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/models',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $permissionSettingsRoute => GoRouteData.$route(
-  path: '/settings/permissions',
-  hasOverriddenOnExit: false,
-  factory: $PermissionSettingsRoute._fromState,
-);
-
-mixin $PermissionSettingsRoute on GoRouteData {
-  static PermissionSettingsRoute _fromState(GoRouterState state) =>
-      PermissionSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  PermissionSettingsRoute get _self => this as PermissionSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/permissions',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $projectSettingsRoute => GoRouteData.$route(
-  path: '/settings/projects',
-  hasOverriddenOnExit: false,
-  factory: $ProjectSettingsRoute._fromState,
-);
-
-mixin $ProjectSettingsRoute on GoRouteData {
-  static ProjectSettingsRoute _fromState(GoRouterState state) =>
-      ProjectSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  ProjectSettingsRoute get _self => this as ProjectSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/projects',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $agentSettingsRoute => GoRouteData.$route(
-  path: '/settings/agents',
-  hasOverriddenOnExit: false,
-  factory: $AgentSettingsRoute._fromState,
-);
-
-mixin $AgentSettingsRoute on GoRouteData {
-  static AgentSettingsRoute _fromState(GoRouterState state) =>
-      AgentSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  AgentSettingsRoute get _self => this as AgentSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/agents',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $mcpSettingsRoute => GoRouteData.$route(
-  path: '/settings/mcp',
-  hasOverriddenOnExit: false,
-  factory: $McpSettingsRoute._fromState,
-);
-
-mixin $McpSettingsRoute on GoRouteData {
-  static McpSettingsRoute _fromState(GoRouterState state) =>
-      McpSettingsRoute(hostId: state.uri.queryParameters['host-id']);
-
-  McpSettingsRoute get _self => this as McpSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/mcp',
-    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $skillSettingsRoute => GoRouteData.$route(
-  path: '/settings/skills',
-  hasOverriddenOnExit: false,
-  factory: $SkillSettingsRoute._fromState,
-);
-
-mixin $SkillSettingsRoute on GoRouteData {
-  static SkillSettingsRoute _fromState(GoRouterState state) =>
-      SkillSettingsRoute(
-        hostId: state.uri.queryParameters['host-id'],
-        workspaceId: state.uri.queryParameters['workspace-id'],
-      );
-
-  SkillSettingsRoute get _self => this as SkillSettingsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/skills',
-    queryParams: {
-      if (_self.hostId != null) 'host-id': _self.hostId,
-      if (_self.workspaceId != null) 'workspace-id': _self.workspaceId,
-    },
-  );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $daemonSettingsRoute => GoRouteData.$route(
-  path: '/settings/daemons',
-  hasOverriddenOnExit: false,
-  factory: $DaemonSettingsRoute._fromState,
-);
-
-mixin $DaemonSettingsRoute on GoRouteData {
-  static DaemonSettingsRoute _fromState(GoRouterState state) =>
-      const DaemonSettingsRoute();
-
-  @override
-  String get location => GoRouteData.$location('/settings/daemons');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $advancedSettingsRoute => GoRouteData.$route(
-  path: '/settings/advanced',
-  hasOverriddenOnExit: false,
-  factory: $AdvancedSettingsRoute._fromState,
-);
-
-mixin $AdvancedSettingsRoute on GoRouteData {
-  static AdvancedSettingsRoute _fromState(GoRouterState state) =>
-      const AdvancedSettingsRoute();
-
-  @override
-  String get location => GoRouteData.$location('/settings/advanced');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
+bool _$boolConverter(String value) {
+  switch (value) {
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    default:
+      throw UnsupportedError('Cannot convert "$value" into a bool.');
+  }
 }
 
 RouteBase get $connectDaemonRoute => GoRouteData.$route(
@@ -687,37 +713,6 @@ mixin $AdvancedNewHostRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/connect/direct');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $daemonConnectionsRoute => GoRouteData.$route(
-  path: '/settings/daemons/:hostId/connections',
-  hasOverriddenOnExit: false,
-  factory: $DaemonConnectionsRoute._fromState,
-);
-
-mixin $DaemonConnectionsRoute on GoRouteData {
-  static DaemonConnectionsRoute _fromState(GoRouterState state) =>
-      DaemonConnectionsRoute(hostId: state.pathParameters['hostId']!);
-
-  DaemonConnectionsRoute get _self => this as DaemonConnectionsRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-    '/settings/daemons/${Uri.encodeComponent(_self.hostId)}/connections',
-  );
 
   @override
   void go(BuildContext context) => context.go(location);

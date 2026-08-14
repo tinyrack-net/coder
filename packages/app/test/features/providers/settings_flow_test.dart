@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/composition/app_services.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
+import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
-import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:client/client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -463,6 +464,10 @@ void main() {
       (await api.providers.listProviderConnections()).single.displayName,
       'Lab',
     );
+    expect(
+      find.byKey(const ValueKey<String>('provider-custom-save')),
+      findsOneWidget,
+    );
 
     await tester.enterText(_field('이름'), 'Lab Edited');
     await tester.enterText(_field('모델 Prefix'), 'lab-edited');
@@ -559,6 +564,40 @@ void main() {
     expect(await api.providers.listProviderConnections(), isEmpty);
   });
 
+  testWidgets(
+    'a disconnect completing after Settings closes does not reuse its pane',
+    (tester) async {
+      final disconnectGate = Completer<void>();
+      final api = FakeTinestApi(
+        providerDisconnectGate: disconnectGate.future,
+      );
+      final router = await _pumpSettings(tester, api);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connection-openai')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('provider-connection-disconnect'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TRButton, '연결 해제').last);
+      await tester.pumpAndSettle();
+
+      router.go(const WorkspaceHomeRoute().location);
+      await tester.pumpAndSettle();
+      disconnectGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__widget',
+    ],
+  );
+
   testWidgets('provider list renders every connection status', (tester) async {
     final now = DateTime.utc(2026);
     const statuses = ProviderConnectionStatus.values;
@@ -615,13 +654,23 @@ void main() {
   );
 
   testWidgets(
-    'settings renders disconnected and bootstrap error states',
+    'provider route renders offline and unavailable daemon states',
     (tester) async {
       await _pumpSettings(tester, FakeTinestApi(), autoConnectEnabled: false);
-      expect(find.text('Daemon 연결이 필요합니다.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('settings-daemon-offline')),
+        findsOneWidget,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
 
+      final router = GoRouter(
+        initialLocation: const ProviderSettingsRoute(
+          hostId: 'server',
+        ).location,
+        routes: $appRoutes,
+      );
+      addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -635,18 +684,18 @@ void main() {
               ),
             ),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             theme: testLightTheme,
             darkTheme: testDarkTheme,
             locale: testLocale,
             localizationsDelegates: testLocalizationsDelegates,
             supportedLocales: testSupportedLocales,
-            home: const SettingsPage(hostId: 'server'),
+            routerConfig: router,
           ),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('connection failed'), findsOneWidget);
+      expect(find.text('온라인 daemon 연결이 필요합니다.'), findsOneWidget);
     },
     tags: const <String>['feature_test__daemon_authentication__widget'],
   );
@@ -664,12 +713,17 @@ Future<void> _openCatalog(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpSettings(
+Future<GoRouter> _pumpSettings(
   WidgetTester tester,
   FakeTinestApi api, {
   bool autoConnectEnabled = true,
   ExternalUrlOpener? externalUrlOpener,
 }) async {
+  final router = GoRouter(
+    initialLocation: const ProviderSettingsRoute(hostId: 'server').location,
+    routes: $appRoutes,
+  );
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -681,17 +735,18 @@ Future<void> _pumpSettings(
           externalUrlOpener ?? _ExternalUrlOpener(),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         theme: testLightTheme,
         darkTheme: testDarkTheme,
         locale: testLocale,
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
-        home: const SettingsPage(hostId: 'server'),
+        routerConfig: router,
       ),
     ),
   );
   await tester.pumpAndSettle();
+  return router;
 }
 
 final class _ExternalUrlOpener implements ExternalUrlOpener {

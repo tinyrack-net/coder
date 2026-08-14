@@ -81,7 +81,7 @@ class ProjectSettingsPage extends ConsumerWidget {
                   ),
             data: (value) {
               final projects = _projects(value);
-              final selectedId = paneController.destination;
+              final selectedId = paneController.selection;
               final selected = projects
                   .where((project) => project.id == selectedId)
                   .firstOrNull;
@@ -142,8 +142,7 @@ class ProjectSettingsPage extends ConsumerWidget {
 /// Owns the selected project independently from either rendered pane slot.
 class ProjectSettingsPaneController extends SettingsPaneController<String> {
   /// Creates a project pane controller.
-  ProjectSettingsPaneController()
-    : super(destinationIdFor: (projectId) => 'project-$projectId');
+  ProjectSettingsPaneController();
 }
 
 class _ProjectList extends StatelessWidget {

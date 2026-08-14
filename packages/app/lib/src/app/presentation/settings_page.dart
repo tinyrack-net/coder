@@ -36,11 +36,15 @@ List<SettingsCategory> _categoriesInScope(SettingsCategoryScope scope) =>
 class UnifiedSettingsPage extends ConsumerStatefulWidget {
   /// Creates a unified settings page.
   const UnifiedSettingsPage({
+    required this.navigator,
     this.category,
     this.hostId,
     this.workspaceId,
     super.key,
   });
+
+  /// Navigator built by the typed Settings shell.
+  final Widget navigator;
 
   /// Selected settings category, or null for a compact navigation pane.
   final SettingsCategory? category;
@@ -57,20 +61,18 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
-  final _contentNavigatorKey = GlobalKey<NavigatorState>();
   late final ProjectSettingsPaneController _projectPanes;
   late final AgentSettingsPaneController _agentPanes;
   late final McpSettingsPaneController _mcpPanes;
   late final ProviderSettingsPaneController _providerPanes;
   late final Map<SettingsCategory, SettingsPaneCoordinator> _paneControllers;
+  String? _routeHostAdoptionScheduled;
 
-  /// Daemon this page has already adopted from a route.
-  ///
-  /// Categories replace each other rather than pushing, so this state outlives
-  /// a location change and cannot latch on "have I ever adopted one": it has to
-  /// remember which daemon it adopted, or a later location naming a different
-  /// daemon would be ignored.
-  String? _adoptedRouteHost;
+  SettingsCategory get _effectiveCategory =>
+      widget.category ??
+      (widget.hostId == null
+          ? SettingsCategory.general
+          : SettingsCategory.provider);
 
   @override
   void initState() {
@@ -85,15 +87,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       SettingsCategory.mcp: _mcpPanes,
       SettingsCategory.provider: _providerPanes,
     };
-    for (final MapEntry(key: category, value: controller)
-        in _paneControllers.entries) {
-      controller.addListener(
-        () => _paneDestinationChanged(category, controller),
-      );
-    }
-    // A deep link naming a daemon wins once, then the persisted selection
-    // takes over so switching categories never resets it.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _adoptRouteHost());
   }
 
   @override
@@ -117,294 +110,214 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     }
   }
 
-  void _paneDestinationChanged(
-    SettingsCategory category,
-    SettingsPaneCoordinator controller,
-  ) {
-    if (!mounted || widget.category != category) return;
-    setState(() {});
-  }
-
-  void _adoptRouteHost() {
-    if (!mounted) return;
-    final requested = widget.hostId;
-    if (requested == null || requested == _adoptedRouteHost) return;
-    final registry = ref.read(hostRegistryControllerProvider).value;
-    if (registry == null) return;
-    _adoptedRouteHost = requested;
-    if (!registry.runtimes.containsKey(requested)) return;
-    if (registry.settings.lastActiveHostId == requested) return;
-    unawaited(
-      ref.read(hostRegistryControllerProvider.notifier).selectHost(requested),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    _adoptRouteHost();
     final registryState = ref.watch(hostRegistryControllerProvider);
     final registry = registryState.value;
+    _scheduleRouteHostAdoption(registry);
     final registryLoading = registryState.isLoading && !registryState.hasValue;
     final hosts =
         registry?.runtimes.values.toList(growable: false) ??
         const <HostRuntimeSnapshot>[];
-    final hostId = ref.watch(activeHostIdProvider);
-    final host = hostId == null ? null : registry?.runtimes[hostId];
-    final category =
-        widget.category ??
-        (widget.hostId == null
-            ? SettingsCategory.general
-            : SettingsCategory.provider);
+    final activeHostId = ref.watch(activeHostIdProvider);
+    final hostId = widget.hostId ?? activeHostId;
+    final category = _effectiveCategory;
     final l10n = AppLocalizations.of(context);
-    final panes = switch (category) {
-      SettingsCategory.general => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(l10n, SettingsCategory.general),
-          child: const GeneralSettingsPage(embedded: true),
-        ),
-      ),
-      SettingsCategory.project => _hostListDetailPanes(
-        host: host,
-        loading: registryLoading,
-        semanticLabel: l10n.settingsLoading,
-        builder: (hostId, slot) => ProjectSettingsPage(
-          hostId: hostId,
-          paneController: _projectPanes,
-          slot: slot,
-        ),
-      ),
-      SettingsCategory.agent => _hostListDetailPanes(
-        host: host,
-        loading: registryLoading,
-        semanticLabel: l10n.settingsLoading,
-        builder: (hostId, slot) => AgentSettingsPage(
-          hostId: hostId,
-          paneController: _agentPanes,
-          slot: slot,
-        ),
-      ),
-      SettingsCategory.mcp => _hostListDetailPanes(
-        host: host,
-        loading: registryLoading,
-        semanticLabel: l10n.settingsLoading,
-        builder: (hostId, slot) => McpSettingsPage(
-          hostId: hostId,
-          paneController: _mcpPanes,
-          slot: slot,
-        ),
-      ),
-      SettingsCategory.connection => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(
-            l10n,
-            SettingsCategory.connection,
-          ),
-          child: _HostScopedDetail(
-            host: host,
-            loading: registryLoading,
-            loadingChild: SettingsSkeletonLayout.form(
-              semanticLabel: AppLocalizations.of(context).settingsLoading,
-            ),
-            builder: (hostId) => DaemonConnectionsPage(
-              hostId: hostId,
-              embedded: true,
-            ),
+    Widget categoryContent(
+      SettingsCategory category, {
+      String? hostId,
+      String? workspaceId,
+    }) {
+      final effectiveHostId = hostId ?? activeHostId;
+      final host = effectiveHostId == null
+          ? null
+          : registry?.runtimes[effectiveHostId];
+      final panes = switch (category) {
+        SettingsCategory.general => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(l10n, SettingsCategory.general),
+            child: const GeneralSettingsPage(embedded: true),
           ),
         ),
-      ),
-      SettingsCategory.skill => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(l10n, SettingsCategory.skill),
-          child: _HostScopedDetail(
-            host: host,
-            loading: registryLoading,
-            loadingChild: SettingsSkeletonLayout.form(
-              semanticLabel: l10n.settingsLoading,
+        SettingsCategory.project => _hostListDetailPanes(
+          host: host,
+          loading: registryLoading,
+          semanticLabel: l10n.settingsLoading,
+          builder: (hostId, slot) => ProjectSettingsPage(
+            hostId: hostId,
+            paneController: _projectPanes,
+            slot: slot,
+          ),
+        ),
+        SettingsCategory.agent => _hostListDetailPanes(
+          host: host,
+          loading: registryLoading,
+          semanticLabel: l10n.settingsLoading,
+          builder: (hostId, slot) => AgentSettingsPage(
+            hostId: hostId,
+            paneController: _agentPanes,
+            slot: slot,
+          ),
+        ),
+        SettingsCategory.mcp => _hostListDetailPanes(
+          host: host,
+          loading: registryLoading,
+          semanticLabel: l10n.settingsLoading,
+          builder: (hostId, slot) => McpSettingsPage(
+            hostId: hostId,
+            paneController: _mcpPanes,
+            slot: slot,
+          ),
+        ),
+        SettingsCategory.connection => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(
+              l10n,
+              SettingsCategory.connection,
             ),
-            builder: (hostId) => SkillSettingsPage(
-              hostId: hostId,
-              workspaceId: widget.workspaceId,
-              onWorkspaceChanged: (value) => SkillSettingsRoute(
+            child: _HostScopedDetail(
+              host: host,
+              loading: registryLoading,
+              loadingChild: SettingsSkeletonLayout.form(
+                semanticLabel: AppLocalizations.of(context).settingsLoading,
+              ),
+              builder: (hostId) => DaemonConnectionsPage(
                 hostId: hostId,
-                workspaceId: value,
-              ).replace(context),
+                embedded: true,
+              ),
             ),
           ),
         ),
-      ),
-      SettingsCategory.provider => _hostListDetailPanes(
-        host: host,
-        loading: registryLoading,
-        semanticLabel: l10n.settingsLoading,
-        builder: (hostId, slot) => SettingsPage(
-          hostId: hostId,
-          paneController: _providerPanes,
-          slot: slot,
-          embedded: true,
-        ),
-      ),
-      SettingsCategory.model => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(l10n, SettingsCategory.model),
-          child: _HostScopedDetail(
-            host: host,
-            loading: registryLoading,
-            loadingChild: SettingsSkeletonLayout.form(
-              semanticLabel: AppLocalizations.of(context).settingsLoading,
-            ),
-            builder: (hostId) => ModelSettingsPage(hostId: hostId),
-          ),
-        ),
-      ),
-      SettingsCategory.permission => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(
-            l10n,
-            SettingsCategory.permission,
-          ),
-          child: _HostScopedDetail(
-            host: host,
-            loading: registryLoading,
-            loadingChild: SettingsSkeletonLayout.form(
-              semanticLabel: AppLocalizations.of(context).settingsLoading,
-            ),
-            builder: (hostId) => PermissionSettingsPage(hostId: hostId),
-          ),
-        ),
-      ),
-      SettingsCategory.daemon => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(
-            l10n,
-            SettingsCategory.daemon,
-          ),
-          child: const AppSettingsPage(embedded: true),
-        ),
-      ),
-      SettingsCategory.advanced => _SettingsPanePair(
-        primary: _SettingsSimplePane(
-          title: _settingsCategoryLabel(
-            l10n,
-            SettingsCategory.advanced,
-          ),
-          child: const AdvancedSettingsPage(embedded: true),
-        ),
-      ),
-    };
-    final primary = switch ((widget.category, widget.hostId)) {
-      (null, final String requestedHostId) => _MobileDaemonCategories(
-        host: registry?.runtimes[requestedHostId],
-        onCategorySelected: _selectCategory,
-      ),
-      _ => panes.primary,
-    };
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final widthClass = TRAdaptiveWidthClass.fromWidth(
-          constraints.maxWidth,
-        );
-        final compact = widthClass == TRAdaptiveWidthClass.compact;
-        final hasSecondaryPane =
-            widget.category != null && panes.secondary != null;
-        final paneController = _paneControllers[widget.category];
-        final showsDetail = paneController?.hasDetail ?? false;
-        final split =
-            widthClass == TRAdaptiveWidthClass.large ||
-            widthClass == TRAdaptiveWidthClass.extraLarge;
-        final mobileHome = KeyedSubtree(
-          key: const ValueKey<String>('settings-home-pane'),
-          child: _MobileSettingsHome(
-            hosts: hosts,
-            onCategorySelected: _selectCategory,
-            onDaemonSelected: _selectDaemon,
-          ),
-        );
-        final navigationPane = compact
-            ? mobileHome
-            : KeyedSubtree(
-                key: const ValueKey<String>('settings-sidebar-surface'),
-                child: _SettingsSidebar(
-                  selected: category,
-                  hosts: hosts,
+        SettingsCategory.skill => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(l10n, SettingsCategory.skill),
+            child: _HostScopedDetail(
+              host: host,
+              loading: registryLoading,
+              loadingChild: SettingsSkeletonLayout.form(
+                semanticLabel: l10n.settingsLoading,
+              ),
+              builder: (hostId) => SkillSettingsPage(
+                hostId: hostId,
+                workspaceId: workspaceId,
+                onWorkspaceChanged: (value) => SkillSettingsRoute(
                   hostId: hostId,
-                  loading: registryLoading,
-                  onCategorySelected: _selectCategory,
-                ),
-              );
-        final primaryKey = switch ((widget.category, widget.hostId)) {
-          (final SettingsCategory category, _) =>
-            'settings-category-pane-${category.name}',
-          (null, final String _) => 'settings-daemon-categories-pane',
-          _ => 'settings-home-pane',
-        };
-        final keyedPrimary = KeyedSubtree(
-          key: ValueKey<String>(primaryKey),
-          child: primary,
-        );
-        final contentNavigator = Navigator(
-          key: _contentNavigatorKey,
-          pages: <Page<void>>[
-            MaterialPage<void>(
-              key: ValueKey<String>('settings-${category.name}-collection'),
-              child: keyedPrimary,
-            ),
-            if (hasSecondaryPane && (showsDetail || split))
-              MaterialPage<void>(
-                key: ValueKey<String>('settings-${category.name}-detail'),
-                child: panes.secondary!,
-              ),
-          ],
-          onDidRemovePage: (page) {
-            if (page.key ==
-                    ValueKey<String>('settings-${category.name}-detail') &&
-                (paneController?.hasDetail ?? false)) {
-              paneController!.showCollection();
-            }
-          },
-        );
-        final categoryContent = hasSecondaryPane
-            ? TRAdaptiveListDetailLayout(
-                singlePane: contentNavigator,
-                collectionPane: keyedPrimary,
-                detailPane: contentNavigator,
-              )
-            : keyedPrimary;
-        final contentPane =
-            compact && widget.category == null && widget.hostId == null
-            ? navigationPane
-            : categoryContent;
-        final body = TRAdaptiveNavigationLayout(
-          navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
-          navigationPane: navigationPane,
-          contentPane: contentPane,
-        );
-        return PopScope<void>(
-          canPop: split || !showsDetail,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && !split && showsDetail) {
-              _contentNavigatorKey.currentState!.maybePop();
-            }
-          },
-          child: TinestPageShell(
-            appBar: TinestPageHeader(
-              leading: TRIconButton(
-                key: const ValueKey<String>('settings-back-button'),
-                appearance: TRAppearance.ghost,
-                label: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => _goBack(
-                  widthClass: widthClass,
-                  hasSecondaryPane: hasSecondaryPane,
-                ),
-                icon: Icon(TinestIcons.backFor(context)),
-              ),
-              title: TRText.inherit(
-                AppLocalizations.of(context).settingsTitle,
+                  workspaceId: value,
+                ).replace(context),
               ),
             ),
-            body: body,
           ),
-        );
-      },
+        ),
+        SettingsCategory.provider => _hostListDetailPanes(
+          host: host,
+          loading: registryLoading,
+          semanticLabel: l10n.settingsLoading,
+          builder: (hostId, slot) => SettingsPage(
+            hostId: hostId,
+            paneController: _providerPanes,
+            slot: slot,
+          ),
+        ),
+        SettingsCategory.model => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(l10n, SettingsCategory.model),
+            child: _HostScopedDetail(
+              host: host,
+              loading: registryLoading,
+              loadingChild: SettingsSkeletonLayout.form(
+                semanticLabel: AppLocalizations.of(context).settingsLoading,
+              ),
+              builder: (hostId) => ModelSettingsPage(hostId: hostId),
+            ),
+          ),
+        ),
+        SettingsCategory.permission => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(
+              l10n,
+              SettingsCategory.permission,
+            ),
+            child: _HostScopedDetail(
+              host: host,
+              loading: registryLoading,
+              loadingChild: SettingsSkeletonLayout.form(
+                semanticLabel: AppLocalizations.of(context).settingsLoading,
+              ),
+              builder: (hostId) => PermissionSettingsPage(hostId: hostId),
+            ),
+          ),
+        ),
+        SettingsCategory.daemon => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(
+              l10n,
+              SettingsCategory.daemon,
+            ),
+            child: const AppSettingsPage(embedded: true),
+          ),
+        ),
+        SettingsCategory.advanced => _SettingsPanePair(
+          primary: _SettingsSimplePane(
+            title: _settingsCategoryLabel(
+              l10n,
+              SettingsCategory.advanced,
+            ),
+            child: const AdvancedSettingsPage(embedded: true),
+          ),
+        ),
+      };
+      final coordinator = _paneControllers[category];
+      return panes.secondary == null
+          ? panes.primary
+          : SettingsListDetailHost(
+              key: ValueKey<String>('settings-list-detail-${category.name}'),
+              coordinator: coordinator!,
+              collection: panes.primary,
+              detail: panes.secondary!,
+            );
+    }
+
+    final routedContent = _SettingsRouteContentScope(
+      categoryContent: categoryContent,
+      home: _MobileSettingsHome(
+        hosts: hosts,
+        onCategorySelected: (category, {hostId}) =>
+            _selectCategory(category, hostId: hostId, push: true),
+        onDaemonSelected: _selectDaemon,
+      ),
+      daemonCategories: (hostId) => _MobileDaemonCategories(
+        host: registry?.runtimes[hostId],
+        onCategorySelected: (category, {hostId}) =>
+            _selectCategory(category, hostId: hostId, push: true),
+      ),
+      child: widget.navigator,
+    );
+    return TinestPageShell(
+      appBar: TinestPageHeader(
+        leading: TRIconButton(
+          key: const ValueKey<String>('settings-back-button'),
+          appearance: TRAppearance.ghost,
+          label: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: _goBack,
+          icon: Icon(TinestIcons.backFor(context)),
+        ),
+        title: TRText.inherit(AppLocalizations.of(context).settingsTitle),
+      ),
+      body: TRAdaptiveNavigationLayout(
+        navigationPaneWidth: TinestLayoutMetrics.settingsSidebarWidth,
+        navigationPane: KeyedSubtree(
+          key: const ValueKey<String>('settings-sidebar-surface'),
+          child: _SettingsSidebar(
+            selected: category,
+            hosts: hosts,
+            hostId: hostId,
+            loading: registryLoading,
+            onDaemonSelected: _selectSidebarDaemon,
+            onCategorySelected: _selectCategory,
+          ),
+        ),
+        contentPane: routedContent,
+      ),
     );
   }
 
@@ -432,41 +345,204 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     ),
   );
 
-  void _goBack({
-    required TRAdaptiveWidthClass widthClass,
-    required bool hasSecondaryPane,
-  }) {
-    final split =
-        widthClass == TRAdaptiveWidthClass.large ||
-        widthClass == TRAdaptiveWidthClass.extraLarge;
-    final paneController = _paneControllers[widget.category];
-    if (!split && hasSecondaryPane && (paneController?.hasDetail ?? false)) {
-      paneController!.showCollection();
+  void _goBack() {
+    final controller = _paneControllers[_effectiveCategory];
+    if (controller?.hasDetail ?? false) {
+      controller!.showCollection();
       return;
     }
-    if (widthClass == TRAdaptiveWidthClass.compact) {
+    final category = widget.category;
+    if (category != null) {
       final hostId = widget.hostId;
-      if (widget.category != null && hostId != null) {
-        DaemonCategoriesRoute(hostId: hostId).replace(context);
+      if (category.scope == SettingsCategoryScope.daemon && hostId != null) {
+        _popToSettingsParent(
+          'settings-daemon-categories',
+          () => DaemonCategoriesRoute(hostId: hostId).replace(context),
+        );
         return;
       }
-      if (widget.category != null || hostId != null) {
-        const SettingsHomeRoute().replace(context);
-        return;
-      }
+      _popToSettingsParent(
+        'settings-home',
+        () => const SettingsHomeRoute().replace(context),
+      );
+      return;
+    }
+    if (widget.hostId != null) {
+      _popToSettingsParent(
+        'settings-home',
+        () => const SettingsHomeRoute().replace(context),
+      );
+      return;
     }
     closeTask(context, () => const WorkspaceHomeRoute().go(context));
   }
 
-  void _selectCategory(SettingsCategory category, {String? hostId}) {
-    _goToSettingsCategory(context, category, hostId: hostId);
+  void _scheduleRouteHostAdoption(HostRegistryState? registry) {
+    final requested = widget.hostId;
+    if (requested == null ||
+        registry == null ||
+        !registry.runtimes.containsKey(requested) ||
+        registry.settings.lastActiveHostId == requested ||
+        _routeHostAdoptionScheduled == requested) {
+      return;
+    }
+    _routeHostAdoptionScheduled = requested;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_routeHostAdoptionScheduled == requested) {
+        _routeHostAdoptionScheduled = null;
+      }
+      if (!mounted || widget.hostId != requested) return;
+      final latest = ref.read(hostRegistryControllerProvider).value;
+      if (latest == null ||
+          !latest.runtimes.containsKey(requested) ||
+          latest.settings.lastActiveHostId == requested) {
+        return;
+      }
+      unawaited(
+        ref.read(hostRegistryControllerProvider.notifier).selectHost(requested),
+      );
+    });
+  }
+
+  void _popToSettingsParent(String routeName, VoidCallback replace) {
+    final navigator = SettingsShellRoute.$navigatorKey.currentState;
+    if (navigator?.canPop() != true) {
+      replace();
+      return;
+    }
+    var found = false;
+    navigator!.popUntil((route) {
+      if (route.settings.name == routeName) found = true;
+      return found || route.isFirst;
+    });
+    if (!found) replace();
+  }
+
+  void _selectCategory(
+    SettingsCategory category, {
+    String? hostId,
+    bool push = false,
+  }) {
+    _goToSettingsCategory(
+      context,
+      category,
+      hostId: hostId,
+      push: push,
+    );
   }
 
   Future<void> _selectDaemon(String hostId) async {
     await ref.read(hostRegistryControllerProvider.notifier).selectHost(hostId);
     if (!mounted) return;
-    DaemonCategoriesRoute(hostId: hostId).replace(context);
+    await DaemonCategoriesRoute(hostId: hostId).push<void>(context);
   }
+
+  void _selectSidebarDaemon(String hostId) {
+    final category = widget.category;
+    if (category == null && widget.hostId != null) {
+      DaemonCategoriesRoute(hostId: hostId).replace(context);
+    } else if (category?.scope == SettingsCategoryScope.daemon) {
+      _goToSettingsCategory(context, category!, hostId: hostId);
+    }
+    unawaited(
+      ref.read(hostRegistryControllerProvider.notifier).selectHost(hostId),
+    );
+  }
+}
+
+/// Child content rendered by the stable typed Settings shell.
+class SettingsRouteContent extends StatelessWidget {
+  /// Creates a Settings child-route surface.
+  const SettingsRouteContent({
+    required this.kind,
+    this.category,
+    this.hostId,
+    this.workspaceId,
+    super.key,
+  });
+
+  /// Structural role of this child route.
+  final SettingsRouteContentKind kind;
+
+  /// Concrete category rendered by a category route.
+  final SettingsCategory? category;
+
+  /// Daemon selected by this route.
+  final String? hostId;
+
+  /// Workspace selected by this route.
+  final String? workspaceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = _SettingsRouteContentScope.of(context);
+    final compact =
+        TRAdaptiveLayoutScope.of(context).widthClass ==
+        TRAdaptiveWidthClass.compact;
+    return switch (kind) {
+      SettingsRouteContentKind.home =>
+        compact
+            ? KeyedSubtree(
+                key: const ValueKey<String>('settings-home-pane'),
+                child: scope.home,
+              )
+            : scope.categoryContent(SettingsCategory.general),
+      SettingsRouteContentKind.daemonCategories =>
+        compact
+            ? KeyedSubtree(
+                key: const ValueKey<String>('settings-daemon-categories-pane'),
+                child: scope.daemonCategories(hostId!),
+              )
+            : scope.categoryContent(
+                SettingsCategory.provider,
+                hostId: hostId,
+              ),
+      SettingsRouteContentKind.category => scope.categoryContent(
+        category!,
+        hostId: hostId,
+        workspaceId: workspaceId,
+      ),
+    };
+  }
+}
+
+/// Structural Settings route roles rendered inside [SettingsShellRoute].
+enum SettingsRouteContentKind {
+  /// Compact root navigation, or the default category on wider layouts.
+  home,
+
+  /// Compact daemon category navigation, or its default category when wider.
+  daemonCategories,
+
+  /// One concrete settings category.
+  category,
+}
+
+class _SettingsRouteContentScope extends InheritedWidget {
+  const _SettingsRouteContentScope({
+    required this.categoryContent,
+    required this.home,
+    required this.daemonCategories,
+    required super.child,
+  });
+
+  final Widget Function(
+    SettingsCategory category, {
+    String? hostId,
+    String? workspaceId,
+  })
+  categoryContent;
+  final Widget home;
+  final Widget Function(String hostId) daemonCategories;
+
+  static _SettingsRouteContentScope of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SettingsRouteContentScope>()!;
+
+  @override
+  bool updateShouldNotify(_SettingsRouteContentScope oldWidget) =>
+      categoryContent != oldWidget.categoryContent ||
+      home != oldWidget.home ||
+      daemonCategories != oldWidget.daemonCategories;
 }
 
 class _SettingsPanePair {
@@ -647,6 +723,7 @@ class _SettingsSidebar extends StatelessWidget {
     required this.hosts,
     required this.hostId,
     required this.loading,
+    required this.onDaemonSelected,
     required this.onCategorySelected,
   });
 
@@ -654,6 +731,7 @@ class _SettingsSidebar extends StatelessWidget {
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
   final bool loading;
+  final ValueChanged<String> onDaemonSelected;
   final void Function(SettingsCategory category, {String? hostId})
   onCategorySelected;
 
@@ -678,6 +756,7 @@ class _SettingsSidebar extends StatelessWidget {
                   hosts: hosts,
                   hostId: hostId,
                   loading: loading,
+                  onValueChange: onDaemonSelected,
                 ),
               ),
               _scopeNav(context, l10n, SettingsCategoryScope.daemon),
@@ -732,19 +811,21 @@ class _SettingsSidebar extends StatelessWidget {
 ///
 /// Offline daemons stay listed so their settings can be reached as soon as
 /// they reconnect, and so a saved selection does not silently jump elsewhere.
-class _DaemonSelect extends ConsumerWidget {
+class _DaemonSelect extends StatelessWidget {
   const _DaemonSelect({
     required this.hosts,
     required this.hostId,
     required this.loading,
+    required this.onValueChange,
   });
 
   final List<HostRuntimeSnapshot> hosts;
   final String? hostId;
   final bool loading;
+  final ValueChanged<String> onValueChange;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (loading) {
       return Semantics(
@@ -797,11 +878,7 @@ class _DaemonSelect extends ConsumerWidget {
               .toList(growable: false),
           onValueChange: (value) {
             if (value == null) return;
-            unawaited(
-              ref
-                  .read(hostRegistryControllerProvider.notifier)
-                  .selectHost(value),
-            );
+            onValueChange(value);
           },
         ),
       ),
@@ -849,32 +926,74 @@ void _goToSettingsCategory(
   BuildContext context,
   SettingsCategory category, {
   String? hostId,
+  bool push = false,
 }) {
+  void navigate(VoidCallback replace, Future<void> Function() pushRoute) {
+    if (push) {
+      unawaited(pushRoute());
+    } else {
+      replace();
+    }
+  }
+
   switch (category) {
     case SettingsCategory.general:
-      const GeneralSettingsRoute().replace(context);
+      navigate(
+        () => const GeneralSettingsRoute().replace(context),
+        () => const GeneralSettingsRoute().push<void>(context),
+      );
     case SettingsCategory.project:
-      ProjectSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => ProjectSettingsRoute(hostId: hostId).replace(context),
+        () => ProjectSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.agent:
-      AgentSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => AgentSettingsRoute(hostId: hostId).replace(context),
+        () => AgentSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.mcp:
-      McpSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => McpSettingsRoute(hostId: hostId).replace(context),
+        () => McpSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.connection:
       if (hostId != null) {
-        DaemonConnectionsRoute(hostId: hostId).replace(context);
+        navigate(
+          () => DaemonConnectionsRoute(hostId: hostId).replace(context),
+          () => DaemonConnectionsRoute(hostId: hostId).push<void>(context),
+        );
       }
     case SettingsCategory.skill:
-      SkillSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => SkillSettingsRoute(hostId: hostId).replace(context),
+        () => SkillSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.provider:
-      ProviderSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => ProviderSettingsRoute(hostId: hostId).replace(context),
+        () => ProviderSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.model:
-      ModelSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => ModelSettingsRoute(hostId: hostId).replace(context),
+        () => ModelSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.permission:
-      PermissionSettingsRoute(hostId: hostId).replace(context);
+      navigate(
+        () => PermissionSettingsRoute(hostId: hostId).replace(context),
+        () => PermissionSettingsRoute(hostId: hostId).push<void>(context),
+      );
     case SettingsCategory.daemon:
-      const DaemonSettingsRoute().replace(context);
+      navigate(
+        () => const DaemonSettingsRoute().replace(context),
+        () => const DaemonSettingsRoute().push<void>(context),
+      );
     case SettingsCategory.advanced:
-      const AdvancedSettingsRoute().replace(context);
+      navigate(
+        () => const AdvancedSettingsRoute().replace(context),
+        () => const AdvancedSettingsRoute().push<void>(context),
+      );
   }
 }
 
