@@ -107,15 +107,19 @@ final class SkillWatchPathFilter {
   final String _watchedRoot;
 
   /// Whether [eventPath] can create, remove, or change the skills root.
-  bool accepts(String eventPath) {
+  ///
+  /// Some native watchers report only the watched ancestor for every direct
+  /// child change. An ancestor event is relevant only once the skills root
+  /// exists; otherwise unrelated siblings would trigger catalog refreshes.
+  bool accepts(String eventPath, {required bool skillRootExists}) {
     final changed = p.normalize(
       p.isRelative(eventPath) || p.isRootRelative(eventPath)
           ? p.join(_watchedRoot, eventPath)
           : eventPath,
     );
     return p.equals(changed, _skillRoot) ||
-        p.isWithin(changed, _skillRoot) ||
-        p.isWithin(_skillRoot, changed);
+        p.isWithin(_skillRoot, changed) ||
+        (skillRootExists && p.isWithin(changed, _skillRoot));
   }
 }
 
@@ -241,7 +245,13 @@ final class NativeSkillFiles implements SkillFiles {
       late final StreamSubscription<FileSystemEvent> subscription;
       subscription = Directory(watchedPath).watch().listen(
         (event) {
-          if (_closed || !_affectsSkillRoot(event, pathFilter)) return;
+          if (_closed) return;
+          if (!_affectsSkillRoot(event, pathFilter)) {
+            // A missing root may be created one ancestor at a time. Quietly
+            // move the watcher closer without reporting unrelated siblings.
+            if (!_directory.existsSync()) unawaited(_ensureWatchTarget());
+            return;
+          }
           _changes.add(null);
           unawaited(_ensureWatchTarget());
         },
@@ -272,10 +282,20 @@ final class NativeSkillFiles implements SkillFiles {
     FileSystemEvent event,
     SkillWatchPathFilter pathFilter,
   ) {
-    if (pathFilter.accepts(event.path)) return true;
+    final skillRootExists = _directory.existsSync();
+    if (pathFilter.accepts(
+      event.path,
+      skillRootExists: skillRootExists,
+    )) {
+      return true;
+    }
     if (event is! FileSystemMoveEvent) return false;
     final destination = event.destination;
-    return destination != null && pathFilter.accepts(destination);
+    return destination != null &&
+        pathFilter.accepts(
+          destination,
+          skillRootExists: skillRootExists,
+        );
   }
 
   @override

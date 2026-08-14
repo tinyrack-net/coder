@@ -410,17 +410,40 @@ void main() {
         watchedRoot: root.path,
       );
 
-      expect(filter.accepts('sibling-worktree'), isFalse);
-      expect(filter.accepts('tracked'), isTrue);
-      expect(filter.accepts(p.join('tracked', '.agents')), isTrue);
-      expect(filter.accepts(p.relative(skillRoot, from: root.path)), isTrue);
+      expect(
+        filter.accepts('sibling-worktree', skillRootExists: false),
+        isFalse,
+      );
+      expect(filter.accepts('tracked', skillRootExists: false), isFalse);
       expect(
         filter.accepts(
-          p.join('tracked', '.agents', 'skills', 'commit', 'SKILL.md'),
+          p.join('tracked', '.agents'),
+          skillRootExists: false,
+        ),
+        isFalse,
+      );
+      expect(
+        filter.accepts(
+          p.relative(skillRoot, from: root.path),
+          skillRootExists: false,
         ),
         isTrue,
       );
-      expect(filter.accepts(p.join(root.path, 'other')), isFalse);
+      expect(filter.accepts('tracked', skillRootExists: true), isTrue);
+      expect(
+        filter.accepts(
+          p.join('tracked', '.agents', 'skills', 'commit', 'SKILL.md'),
+          skillRootExists: false,
+        ),
+        isTrue,
+      );
+      expect(
+        filter.accepts(
+          p.join(root.path, 'other'),
+          skillRootExists: true,
+        ),
+        isFalse,
+      );
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
   );
