@@ -138,6 +138,8 @@ void main() {
       );
       addTearDown(router.dispose);
 
+      expect(find.byType(TRTreeNav<String>), findsOneWidget);
+
       // Select the product workspace explicitly: the new brand sorts after
       // `design`, unlike the previous product name.
       await tester.tap(find.text('tinest'));

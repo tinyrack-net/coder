@@ -12,7 +12,6 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
 import 'package:app/src/features/settings/domain/settings_category.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -2302,8 +2301,8 @@ Future<void> _openRepresentativeDetail(
       !_longListScenarioIds.contains(catalogCase.scenario.id)) {
     return;
   }
-  final row = find.byType(SettingsNavigationRow).first;
-  if (row.evaluate().isEmpty) {
+  final row = _firstTreeNavigationRow();
+  if (row == null) {
     throw StateError(
       'The ${catalogCase.scenario.id} accessibility variant has no detail '
       'navigation row.',
@@ -2484,15 +2483,30 @@ Future<void> _tapButton(WidgetTester tester, String label) async {
 }
 
 Future<void> _tapFirstNavigationRow(WidgetTester tester) async {
-  final matches = find.byType(SettingsNavigationRow);
-  if (matches.evaluate().isEmpty) {
+  final finder = _firstTreeNavigationRow();
+  if (finder == null) {
     throw StateError('Catalog action could not find a navigation row.');
   }
-  final finder = matches.first;
   await tester.ensureVisible(finder);
   await tester.pump();
   await tester.tap(finder);
   await _pumpCatalogFrame(tester);
+}
+
+Finder? _firstTreeNavigationRow() {
+  final trees = find.byWidgetPredicate(
+    (widget) => widget is TRTreeNav<Object>,
+    description: 'typed tree navigation',
+  );
+  if (trees.evaluate().isEmpty) return null;
+  final rows = find.descendant(
+    of: trees.first,
+    matching: find.byWidgetPredicate(
+      (widget) => widget is GestureDetector && widget.onTap != null,
+      description: 'actionable tree navigation row',
+    ),
+  );
+  return rows.evaluate().isEmpty ? null : rows.first;
 }
 
 Future<void> _tapText(WidgetTester tester, String text) async {

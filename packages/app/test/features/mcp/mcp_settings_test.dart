@@ -181,6 +181,7 @@ void main() {
       find.byKey(const ValueKey<String>('mcp-server-tile-github')),
       findsOneWidget,
     );
+    expect(find.byType(TRTreeNav<String>), findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey<String>('mcp-server-tile-github')),
     );
@@ -328,10 +329,7 @@ void main() {
       );
     await pump(tester, api);
 
-    expect(
-      find.byKey(const ValueKey<String>('mcp-scope-section-project')),
-      findsOneWidget,
-    );
+    expect(find.byType(TRTreeNav<String>), findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey<String>('mcp-server-tile-repo')),
     );

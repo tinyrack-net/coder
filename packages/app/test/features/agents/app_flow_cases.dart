@@ -90,6 +90,7 @@ void _registerAgentsAppFlows() {
       );
       addTearDown(router.dispose);
 
+      expect(find.byType(TRTreeNav<String>), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(TRPaneHeader),

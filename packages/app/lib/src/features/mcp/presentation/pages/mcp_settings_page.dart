@@ -2,7 +2,6 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/mcp/application/mcp_servers_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
@@ -228,7 +227,6 @@ class _ServerList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final project = state.projectServers;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -253,32 +251,31 @@ class _ServerList extends StatelessWidget {
                 )
               : SettingsCollectionList(
                   children: <Widget>[
-                    if (state.userServers.isNotEmpty) ...<Widget>[
-                      _SectionHeader(
-                        key: const ValueKey<String>('mcp-scope-section-user'),
-                        label: l10n.mcpSettingsScopeUser,
-                      ),
-                      for (final server in state.userServers)
-                        _ServerTile(
-                          server: server,
-                          selected: server.config.id == selectedId,
-                          onTap: () => onSelected(server.config.id),
-                        ),
-                    ],
-                    if (project.isNotEmpty) ...<Widget>[
-                      _SectionHeader(
-                        key: const ValueKey<String>(
-                          'mcp-scope-section-project',
-                        ),
-                        label: l10n.mcpSettingsScopeProject,
-                      ),
-                      for (final server in project)
-                        _ServerTile(
-                          server: server,
-                          selected: server.config.id == selectedId,
-                          onTap: () => onSelected(server.config.id),
-                        ),
-                    ],
+                    TRTreeNav<String>.controlled(
+                      value: selectedId,
+                      itemSpacing: TRSpacing.extraSmall,
+                      onValueChange: (serverId) {
+                        if (serverId != null) onSelected(serverId);
+                      },
+                      items: <TRTreeNavItem<String>>[
+                        for (final server in state.servers)
+                          TRTreeNavLeaf<String>(
+                            key: ValueKey<String>(
+                              'mcp-server-tile-${server.config.id}',
+                            ),
+                            value: server.config.id,
+                            showDisclosureIndicator: true,
+                            leading: _StatusDot(server: server),
+                            label: TRText.inherit(server.config.id),
+                            description: TRText.inherit(
+                              _serverListDescription(l10n, server),
+                            ),
+                            trailing: server.scope == McpConfigScope.project
+                                ? const Icon(TinestIcons.lock)
+                                : null,
+                          ),
+                      ],
+                    ),
                   ],
                 ),
         ),
@@ -287,59 +284,16 @@ class _ServerList extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, super.key});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: TRSpacing.medium,
-      vertical: TRSpacing.small,
-    ),
-    child: TRText(
-      label,
-      variant: TRTextVariant.label,
-      color: TRTextColor.muted,
-    ),
-  );
-}
-
-class _ServerTile extends StatelessWidget {
-  const _ServerTile({
-    required this.server,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final McpServerStateDto server;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return SettingsNavigationRow(
-      key: ValueKey<String>('mcp-server-tile-${server.config.id}'),
-      selected: selected,
-      onPressed: onTap,
-      leading: _StatusDot(server: server),
-      title: TRText.inherit(server.config.id),
-      description: TRText.inherit(
-        server.shadowed
-            ? l10n.mcpSettingsShadowed
-            : '${mcpStatusLabel(l10n, server.status)} · '
-                  '${l10n.mcpSettingsDiscoveredTools} '
-                  '${server.tools.length} · '
-                  '${l10n.mcpSettingsDiscoveredResources} '
-                  '${server.resources.length}',
-      ),
-      trailing: server.scope == McpConfigScope.project
-          ? const Icon(TinestIcons.lock)
-          : null,
-    );
-  }
+String _serverListDescription(
+  AppLocalizations l10n,
+  McpServerStateDto server,
+) {
+  if (server.shadowed) return l10n.mcpSettingsShadowed;
+  return <String>[
+    mcpStatusLabel(l10n, server.status),
+    '${l10n.mcpSettingsDiscoveredTools} ${server.tools.length}',
+    '${l10n.mcpSettingsDiscoveredResources} ${server.resources.length}',
+  ].join(' · ');
 }
 
 class _StatusDot extends StatelessWidget {

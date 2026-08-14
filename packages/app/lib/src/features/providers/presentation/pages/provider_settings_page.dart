@@ -5,7 +5,6 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/settings_navigation_row.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -486,20 +485,29 @@ class _ProviderCollection extends StatelessWidget {
                 )
               : SettingsCollectionList(
                   children: <Widget>[
-                    for (final connection in connections)
-                      SettingsNavigationRow(
-                        key: ValueKey<String>(
-                          'provider-connection-${connection.id}',
-                        ),
-                        selected: connection.id == selectedId,
-                        leading: Icon(_statusIcon(connection.status)),
-                        title: TRText.inherit(connection.displayName),
-                        description: TRText.inherit(
-                          '${connection.modelPrefix} · '
-                          '${_statusLabel(l10n, connection.status)}',
-                        ),
-                        onPressed: () => onSelected(connection.id),
-                      ),
+                    TRTreeNav<String>.controlled(
+                      value: selectedId,
+                      itemSpacing: TRSpacing.extraSmall,
+                      onValueChange: (connectionId) {
+                        if (connectionId != null) onSelected(connectionId);
+                      },
+                      items: <TRTreeNavItem<String>>[
+                        for (final connection in connections)
+                          TRTreeNavLeaf<String>(
+                            key: ValueKey<String>(
+                              'provider-connection-${connection.id}',
+                            ),
+                            value: connection.id,
+                            showDisclosureIndicator: true,
+                            leading: Icon(_statusIcon(connection.status)),
+                            label: TRText.inherit(connection.displayName),
+                            description: TRText.inherit(
+                              '${connection.modelPrefix} · '
+                              '${_statusLabel(l10n, connection.status)}',
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
         ),
@@ -571,17 +579,17 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
                     ),
                   ),
                   for (final definition in catalog.definitions)
-                    SettingsNavigationRow(
+                    TRNavigationRow(
                       key: ValueKey<String>('provider-add-${definition.id}'),
                       leading: const Icon(TinestIcons.network),
-                      title: TRText.inherit(definition.name),
+                      label: TRText.inherit(definition.name),
                       description: TRText.inherit(definition.description),
                       onPressed: () => widget.onPreset(definition),
                     ),
-                  SettingsNavigationRow(
+                  TRNavigationRow(
                     key: const ValueKey<String>('provider-add-custom'),
                     leading: const Icon(TinestIcons.tune),
-                    title: TRText.inherit(l10n.providerSettingsCustomName),
+                    label: TRText.inherit(l10n.providerSettingsCustomName),
                     description: TRText.inherit(
                       l10n.providerSettingsCustomSubtitle,
                     ),
