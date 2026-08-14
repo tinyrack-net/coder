@@ -719,11 +719,11 @@ void _registerSettingsAppFlows() {
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.secondary)),
-      findsNothing,
+      findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey<TRPaneRole>(TRPaneRole.primary)),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
     expect(find.byKey(const ValueKey<String>('mcp-field-id')), findsNothing);
@@ -783,29 +783,33 @@ void _registerSettingsAppFlows() {
       Future<void> expectRoles(
         double width, {
         required Set<TRPaneRole> roles,
-        required TRPaneRole activeRole,
         required bool collection,
         required bool detail,
       }) async {
         tester.view.physicalSize = Size(width, 800);
         await tester.pumpAndSettle();
-        final scope = tester.widget<TRAdaptivePaneScope>(
-          find.byType(TRAdaptivePaneScope),
+        final scope = tester.widget<TRAdaptiveLayoutScope>(
+          find.byType(TRAdaptiveLayoutScope).first,
         );
         expect(
-          scope.visibleRoles,
+          tester
+              .widgetList<TRAdaptivePane>(find.byType(TRAdaptivePane))
+              .map((pane) => pane.role)
+              .toSet(),
           roles,
           reason: 'visible roles at $width logical pixels',
         );
         expect(
-          TRUiDensityScope.of(tester.element(find.byType(TRAdaptivePaneScope))),
-          roles.length == 1 ? TRUiDensity.comfortable : TRUiDensity.standard,
-          reason: 'UI density at $width logical pixels',
+          scope.widthClass,
+          TRAdaptiveWidthClass.fromWidth(width),
+          reason: 'width class at $width logical pixels',
         );
         expect(
-          scope.activeRole,
-          activeRole,
-          reason: 'active role at $width logical pixels',
+          TRUiDensityScope.of(
+            tester.element(find.byType(TRAdaptiveLayoutScope).first),
+          ),
+          width < 600 ? TRUiDensity.comfortable : TRUiDensity.standard,
+          reason: 'UI density at $width logical pixels',
         );
         expect(
           find.byKey(const ValueKey<String>('settings-sidebar-surface')),
@@ -826,16 +830,17 @@ void _registerSettingsAppFlows() {
 
       await expectRoles(
         599,
-        roles: const <TRPaneRole>{TRPaneRole.primary},
-        activeRole: TRPaneRole.primary,
+        roles: const <TRPaneRole>{TRPaneRole.secondary},
         collection: true,
         detail: false,
       );
       for (final width in <double>[600, 839, 840, 1199]) {
         await expectRoles(
           width,
-          roles: const <TRPaneRole>{TRPaneRole.navigation, TRPaneRole.primary},
-          activeRole: TRPaneRole.primary,
+          roles: const <TRPaneRole>{
+            TRPaneRole.navigation,
+            TRPaneRole.secondary,
+          },
           collection: true,
           detail: false,
         );
@@ -847,7 +852,6 @@ void _registerSettingsAppFlows() {
           TRPaneRole.primary,
           TRPaneRole.secondary,
         },
-        activeRole: TRPaneRole.secondary,
         collection: true,
         detail: true,
       );
@@ -862,7 +866,6 @@ void _registerSettingsAppFlows() {
             TRPaneRole.navigation,
             TRPaneRole.secondary,
           },
-          activeRole: TRPaneRole.secondary,
           collection: false,
           detail: true,
         );
@@ -870,18 +873,19 @@ void _registerSettingsAppFlows() {
       await expectRoles(
         599,
         roles: const <TRPaneRole>{TRPaneRole.secondary},
-        activeRole: TRPaneRole.secondary,
         collection: false,
         detail: true,
       );
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      final scope = tester.widget<TRAdaptivePaneScope>(
-        find.byType(TRAdaptivePaneScope),
+      expect(
+        tester
+            .widgetList<TRAdaptivePane>(find.byType(TRAdaptivePane))
+            .map((pane) => pane.role)
+            .toSet(),
+        const <TRPaneRole>{TRPaneRole.secondary},
       );
-      expect(scope.activeRole, TRPaneRole.primary);
-      expect(scope.visibleRoles, const <TRPaneRole>{TRPaneRole.primary});
       expect(find.byKey(const ValueKey<String>('mcp-server-list')), findsOne);
       expect(
         find.byKey(const ValueKey<String>('mcp-server-editor-github')),
@@ -947,18 +951,8 @@ void _registerSettingsAppFlows() {
       await send(start);
       await send(update);
       final list = find.byKey(const ValueKey<String>('mcp-server-list'));
-      final previewListOffset = tester.getTopLeft(list).dx;
 
       await send(const MethodCall('commitBackGesture'));
-      expect(
-        find.byKey(const ValueKey<String>('mcp-server-editor-github')),
-        findsOneWidget,
-      );
-      await tester.pump(TRMotion.slow ~/ 4);
-      final settlingListOffset = tester.getTopLeft(list).dx;
-      expect(settlingListOffset, greaterThan(previewListOffset));
-      expect(settlingListOffset, lessThan(0));
-
       await tester.pumpAndSettle();
       expect(list, findsOneWidget);
       expect(

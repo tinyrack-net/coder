@@ -610,6 +610,74 @@ void main() {
       for (final width in selectWidths.skip(1)) {
         expect(width, selectWidths.first);
       }
+
+      final handle = find.byKey(
+        const ValueKey<String>('tr-drawer-drag-handle'),
+      );
+      final startingHandleRect = tester.getRect(handle);
+      await tester.timedDrag(
+        handle,
+        const Offset(0, -120),
+        TRMotion.slow,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getRect(handle), startingHandleRect);
+
+      final agentSelect = find.byKey(
+        const ValueKey<String>('session-composer-settings-agent-select'),
+      );
+      final startingAgentTop = tester.getRect(agentSelect).top;
+      await tester.timedDrag(
+        agentSelect,
+        const Offset(0, -80),
+        TRMotion.slow,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getRect(handle), startingHandleRect);
+      expect(tester.getRect(agentSelect).top, lessThan(startingAgentTop));
+      await tester.timedDragFrom(
+        const Offset(195, 600),
+        const Offset(0, 80),
+        TRMotion.slow,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getRect(handle), startingHandleRect);
+
+      final headerGesture = await tester.startGesture(
+        tester.getCenter(find.text(testL10n.composerMoreSettings)),
+      );
+      await headerGesture.moveBy(const Offset(0, 20));
+      await headerGesture.moveBy(const Offset(0, 80));
+      await tester.pump();
+      expect(
+        tester.getRect(handle).top,
+        greaterThan(startingHandleRect.top),
+      );
+      await headerGesture.up();
+      await tester.pumpAndSettle();
+      expect(tester.getRect(handle), startingHandleRect);
+
+      for (final setting in <String>['agent', 'model', 'permission']) {
+        final select = find.byKey(
+          ValueKey<String>('session-composer-settings-$setting-select'),
+        );
+        await tester.ensureVisible(select);
+        await tester.pumpAndSettle();
+        await tester.tap(select);
+        await tester.pumpAndSettle();
+        expect(find.byType(TRDrawer), findsNWidgets(2), reason: setting);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.byType(TRDrawer), findsOneWidget, reason: setting);
+      }
+
+      await tester.timedDrag(
+        handle,
+        const Offset(0, 300),
+        TRMotion.fast,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TRDrawer), findsNothing);
     },
   );
 

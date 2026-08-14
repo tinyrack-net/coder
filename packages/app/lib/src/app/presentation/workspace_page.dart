@@ -76,16 +76,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   /// Whether this state already queued the saved-worktree restore.
   bool _restoreScheduled = false;
   bool _missingSelectionScheduled = false;
-  bool _adaptiveSyncScheduled = false;
-  late final TRThreePaneNavigator<String> _adaptiveNavigation;
+  final _compactNavigatorKey = GlobalKey<NavigatorState>();
   late final TRTreeNavController<WorkspaceNavValue> _workspaceTreeController;
 
   @override
   void initState() {
     super.initState();
     final selection = widget.selection;
-    _adaptiveNavigation = _createWorkspaceNavigator(widget);
-    _adaptiveNavigation.addListener(_adaptiveNavigationChanged);
     _workspaceTreeController = TRTreeNavController<WorkspaceNavValue>(
       expanded: selection == null
           ? const <WorkspaceNavValue>[]
@@ -107,44 +104,10 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     if (widget.selection != oldWidget.selection) {
       _missingSelectionScheduled = false;
     }
-    _scheduleAdaptiveDestinationSync();
-  }
-
-  void _scheduleAdaptiveDestinationSync() {
-    if (_adaptiveSyncScheduled) return;
-    _adaptiveSyncScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _adaptiveSyncScheduled = false;
-      if (!mounted) return;
-      final destination = _workspaceDestination(widget);
-      final current = _adaptiveNavigation.currentDestination;
-      if (current.value != destination.value ||
-          current.role != destination.role) {
-        if (destination.role == TRPaneRole.navigation) {
-          _adaptiveNavigation.reset(destination);
-        } else if (current.role == TRPaneRole.navigation) {
-          _adaptiveNavigation.push(destination);
-        } else {
-          _adaptiveNavigation.replace(destination);
-        }
-      }
-    });
-  }
-
-  void _adaptiveNavigationChanged() {
-    if (!mounted ||
-        _adaptiveNavigation.lastChange?.operation !=
-            TRPaneNavigationOperation.pop ||
-        _adaptiveNavigation.currentDestination.role != TRPaneRole.navigation) {
-      return;
-    }
-    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
-    const WorkspaceHomeRoute().replace(context);
   }
 
   @override
   void dispose() {
-    _adaptiveNavigation.dispose();
     _workspaceTreeController.dispose();
     super.dispose();
   }
@@ -196,164 +159,161 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         widthClass == TRAdaptiveWidthClass.extraLarge;
     final showsCompactDetail =
         compact && (widget.selection != null || widget.compose);
-    return TinestPageShell(
-      appBar: TinestPageHeader(
-        // Compact Back and the desktop toggle share the one stable
-        // navigation position at the very top left.
-        leading: showsCompactDetail
-            ? TRIconButton(
-                key: const ValueKey<String>('workspace-back-button'),
-                appearance: TRAppearance.ghost,
-                label: MaterialLocalizations.of(
-                  context,
-                ).backButtonTooltip,
-                onPressed: () => _goBack(widthClass),
-                icon: Icon(TinestIcons.backFor(context)),
-              )
-            : !desktop
-            ? null
-            : TRIconButton(
-                appearance: TRAppearance.ghost,
-                key: const ValueKey('workspace-sidebar-toggle'),
-                label: collapsed
-                    ? AppLocalizations.of(context).workspaceSidebarExpand
-                    : AppLocalizations.of(
-                        context,
-                      ).workspaceSidebarCollapse,
-                onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
-                icon: Icon(
-                  collapsed ? TinestIcons.menu : TinestIcons.menuOpen,
-                ),
-              ),
-        title: TRText.inherit(
-          AppLocalizations.of(context).workspacesTitle,
-        ),
-        actions: <Widget>[
-          TRIconButton(
-            key: const ValueKey('workspace-settings-button'),
-            appearance: TRAppearance.ghost,
-            label: AppLocalizations.of(context).settingsTitle,
-            onPressed: () {
-              if (compact) {
-                unawaited(const SettingsHomeRoute().push<void>(context));
-                return;
-              }
-              final hostId = widget.selection?.hostId;
-              unawaited(
-                hostId == null
-                    ? const DaemonSettingsRoute().push<void>(context)
-                    : ProviderSettingsRoute(
-                        hostId: hostId,
-                      ).push<void>(context),
-              );
-            },
-            icon: const Icon(TinestIcons.settings),
-          ),
-        ],
-      ),
-      body: Builder(
-        builder: (context) {
-          final sidebar = WorkspaceSidebar(
-            hosts: hosts,
-            catalog: catalog,
-            homeSessions: _homeSessions(catalog.value),
-            selected: widget.selection,
-            treeController: _workspaceTreeController,
-            onNewWorkspace: _openNewWorkspaceComposer,
-            onSelect: _selectWorktree,
-            onSelectSession: _selectSession,
-            onOpenDaemonSettings: () => unawaited(
-              const DaemonSettingsRoute().push<void>(context),
-            ),
-            onConnectDaemon: () => unawaited(
-              const ConnectDaemonRoute().push<void>(context),
-            ),
-            onArchivedSelection: () =>
-                const WorkspaceHomeRoute().replace(context),
-          );
-          final detail = widget.selection == null
-              ? NewWorkspacePane(
-                  onStarted: (selection, session) =>
-                      _selectSession(selection, session.id),
+    return PopScope<void>(
+      canPop: !showsCompactDetail,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && showsCompactDetail) {
+          _compactNavigatorKey.currentState!.maybePop();
+        }
+      },
+      child: TinestPageShell(
+        appBar: TinestPageHeader(
+          // Compact Back and the desktop toggle share the one stable
+          // navigation position at the very top left.
+          leading: showsCompactDetail
+              ? TRIconButton(
+                  key: const ValueKey<String>('workspace-back-button'),
+                  appearance: TRAppearance.ghost,
+                  label: MaterialLocalizations.of(
+                    context,
+                  ).backButtonTooltip,
+                  onPressed: _goBack,
+                  icon: Icon(TinestIcons.backFor(context)),
                 )
-              : _SessionArea(
-                  // Replacing a checkout location preserves this page.
-                  // Key its session area so tabs, conversations, and
-                  // terminals start clean on a different checkout.
-                  key: ValueKey<WorkspaceSelection>(widget.selection!),
-                  selection: widget.selection!,
-                  requestedAgentId: widget.requestedAgentId,
-                  requestedTerminalId: widget.requestedTerminalId,
-                  mobile: !desktop,
+              : !desktop
+              ? null
+              : TRIconButton(
+                  appearance: TRAppearance.ghost,
+                  key: const ValueKey('workspace-sidebar-toggle'),
+                  label: collapsed
+                      ? AppLocalizations.of(context).workspaceSidebarExpand
+                      : AppLocalizations.of(
+                          context,
+                        ).workspaceSidebarCollapse,
+                  onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
+                  icon: Icon(
+                    collapsed ? TinestIcons.menu : TinestIcons.menuOpen,
+                  ),
+                ),
+          title: TRText.inherit(
+            AppLocalizations.of(context).workspacesTitle,
+          ),
+          actions: <Widget>[
+            TRIconButton(
+              key: const ValueKey('workspace-settings-button'),
+              appearance: TRAppearance.ghost,
+              label: AppLocalizations.of(context).settingsTitle,
+              onPressed: () {
+                if (compact) {
+                  unawaited(const SettingsHomeRoute().push<void>(context));
+                  return;
+                }
+                final hostId = widget.selection?.hostId;
+                unawaited(
+                  hostId == null
+                      ? const DaemonSettingsRoute().push<void>(context)
+                      : ProviderSettingsRoute(
+                          hostId: hostId,
+                        ).push<void>(context),
                 );
-          final effectiveCollapsed = desktop && collapsed;
-          final scaffold = TRNavigableThreePaneScaffold<String>(
-            navigator: _adaptiveNavigation,
-            navigationPane: KeyedSubtree(
-              key: const ValueKey<String>('workspace-sidebar-surface'),
-              child: sidebar,
+              },
+              icon: const Icon(TinestIcons.settings),
             ),
-            primaryPane: detail,
-          );
-          return effectiveCollapsed ? detail : scaffold;
-        },
+          ],
+        ),
+        body: Builder(
+          builder: (context) {
+            final sidebar = WorkspaceSidebar(
+              hosts: hosts,
+              catalog: catalog,
+              homeSessions: _homeSessions(catalog.value),
+              selected: widget.selection,
+              treeController: _workspaceTreeController,
+              onNewWorkspace: _openNewWorkspaceComposer,
+              onSelect: _selectWorktree,
+              onSelectSession: _selectSession,
+              onOpenDaemonSettings: () => unawaited(
+                const DaemonSettingsRoute().push<void>(context),
+              ),
+              onConnectDaemon: () => unawaited(
+                const ConnectDaemonRoute().push<void>(context),
+              ),
+              onArchivedSelection: () =>
+                  const WorkspaceHomeRoute().replace(context),
+            );
+            final detail = widget.selection == null
+                ? NewWorkspacePane(
+                    onStarted: (selection, session) =>
+                        _selectSession(selection, session.id),
+                  )
+                : _SessionArea(
+                    // Replacing a checkout location preserves this page.
+                    // Key its session area so tabs, conversations, and
+                    // terminals start clean on a different checkout.
+                    key: ValueKey<WorkspaceSelection>(widget.selection!),
+                    selection: widget.selection!,
+                    requestedAgentId: widget.requestedAgentId,
+                    requestedTerminalId: widget.requestedTerminalId,
+                    mobile: !desktop,
+                  );
+            final effectiveCollapsed = desktop && collapsed;
+            final compactContent = Navigator(
+              key: _compactNavigatorKey,
+              pages: <Page<void>>[
+                MaterialPage<void>(
+                  key: const ValueKey<String>('workspace-navigation-page'),
+                  child: sidebar,
+                ),
+                if (showsCompactDetail)
+                  MaterialPage<void>(
+                    key: const ValueKey<String>('workspace-detail-page'),
+                    child: detail,
+                  ),
+              ],
+              onDidRemovePage: (page) {
+                if (page.key ==
+                    const ValueKey<String>('workspace-detail-page')) {
+                  _goBack();
+                }
+              },
+            );
+            final scaffold = TRAdaptiveNavigationLayout(
+              navigationPane: KeyedSubtree(
+                key: const ValueKey<String>('workspace-sidebar-surface'),
+                child: sidebar,
+              ),
+              contentPane: compact ? compactContent : detail,
+            );
+            return effectiveCollapsed
+                ? TRAdaptiveLayoutScope(
+                    widthClass: widthClass,
+                    child: TRAdaptivePane(
+                      role: TRPaneRole.secondary,
+                      child: detail,
+                    ),
+                  )
+                : scaffold;
+          },
+        ),
       ),
     );
   }
 
-  void _goBack(TRAdaptiveWidthClass widthClass) {
-    if (_adaptiveNavigation.popUntilScaffoldValueChange(
-      widthClass,
-      hasSecondaryPane: false,
-    )) {
-      return;
-    }
+  void _goBack() {
+    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
     const WorkspaceHomeRoute().replace(context);
   }
 
   void _selectWorktree(WorkspaceSelection selection) {
-    _pushWorkspaceContentDestination(selection: selection);
     _goWorktree(context, selection);
   }
 
   void _openNewWorkspaceComposer() {
-    _setWorkspaceContentDestination(
-      _workspaceDestination(const WorkspacePage(compose: true)),
-    );
     const WorkspaceHomeRoute(compose: true).replace(context);
   }
 
   void _selectSession(WorkspaceSelection selection, String sessionId) {
-    _pushWorkspaceContentDestination(
-      selection: selection,
-      requestedAgentId: sessionId,
-    );
     _goSession(context, selection, sessionId);
-  }
-
-  void _pushWorkspaceContentDestination({
-    required WorkspaceSelection selection,
-    String? requestedAgentId,
-  }) {
-    _setWorkspaceContentDestination(
-      _workspaceDestination(
-        WorkspacePage(
-          selection: selection,
-          requestedAgentId: requestedAgentId,
-        ),
-      ),
-    );
-  }
-
-  void _setWorkspaceContentDestination(
-    TRPaneDestination<String> destination,
-  ) {
-    final current = _adaptiveNavigation.currentDestination;
-    if (current.role == TRPaneRole.navigation) {
-      _adaptiveNavigation.push(destination);
-    } else {
-      _adaptiveNavigation.replace(destination);
-    }
   }
 
   /// Gathers the sessions that belong to no project across every daemon.
@@ -464,36 +424,6 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     }
     _missingSelectionScheduled = false;
   }
-}
-
-const _workspaceNavigationDestination = TRPaneDestination<String>(
-  role: TRPaneRole.navigation,
-  value: 'navigation',
-);
-
-TRThreePaneNavigator<String> _createWorkspaceNavigator(WorkspacePage page) {
-  final initialDestination = _workspaceDestination(page);
-  final navigator = TRThreePaneNavigator<String>(
-    initialDestination: _workspaceNavigationDestination,
-  );
-  // Seed a complete hierarchy before listeners can observe the navigator.
-  // This is initial state construction, not lifecycle-time navigation.
-  if (initialDestination.role != _workspaceNavigationDestination.role ||
-      initialDestination.value != _workspaceNavigationDestination.value) {
-    navigator.push(initialDestination);
-  }
-  return navigator;
-}
-
-TRPaneDestination<String> _workspaceDestination(WorkspacePage page) {
-  final selection = page.selection;
-  if (selection == null && !page.compose) {
-    return _workspaceNavigationDestination;
-  }
-  return TRPaneDestination<String>(
-    role: TRPaneRole.primary,
-    value: selection == null ? 'compose' : selection.storageKey,
-  );
 }
 
 class _SessionArea extends ConsumerStatefulWidget {
