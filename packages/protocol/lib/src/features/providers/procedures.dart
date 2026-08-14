@@ -124,26 +124,6 @@ final providersListModelsProcedure =
     );
 
 /// Typed v4 transport descriptor.
-final providersGetDefaultModelProcedure =
-    RpcProcedure<EmptyParamsDto, DefaultModelDto>(
-      name: 'providers.getDefaultModel',
-      decodeParams: EmptyParamsDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: DefaultModelDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
-final providersSetDefaultModelProcedure =
-    RpcProcedure<DefaultModelDto, EmptyResultDto>(
-      name: 'providers.setDefaultModel',
-      decodeParams: DefaultModelDto.fromJson,
-      encodeParams: (value) => value.toJson(),
-      decodeResult: EmptyResultDto.fromJson,
-      encodeResult: (value) => value.toJson(),
-    );
-
-/// Typed v4 transport descriptor.
 final providersCreateCustomProcedure =
     RpcProcedure<ProviderCustomCreateParamsDto, ProviderConnectionResultDto>(
       name: 'providers.createCustom',
@@ -202,8 +182,6 @@ final providersProcedures = <RpcProcedureDescriptor>[
   providersUpdateModelPrefixProcedure,
   providersRefreshCatalogProcedure,
   providersListModelsProcedure,
-  providersGetDefaultModelProcedure,
-  providersSetDefaultModelProcedure,
   providersCreateCustomProcedure,
   providersUpdateCustomProcedure,
   providersDeleteCustomProcedure,

@@ -3229,7 +3229,7 @@ as String,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; SessionModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3262,11 +3262,11 @@ abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
   factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
-$SessionModelSelectionDtoCopyWith<$Res>? get model;
+$ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -3287,7 +3287,7 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
   ));
@@ -3296,12 +3296,12 @@ as PermissionMode?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
+$ModelSelectionDtoCopyWith<$Res>? get model {
     if (_self.model == null) {
     return null;
   }
 
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -3386,7 +3386,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
@@ -3407,7 +3407,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto():
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
@@ -3427,7 +3427,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  SessionModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
@@ -3450,7 +3450,7 @@ class _SessionCreateParamsDto implements SessionCreateParamsDto {
 @override final  String title;
 @override final  String agentDefinitionId;
 @override@JsonKey() final  SessionMode mode;
-@override final  SessionModelSelectionDto? model;
+@override final  ModelSelectionDto? model;
  final  Map<String, ModelControlValueDto> _modelControls;
 @override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
   if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
@@ -3493,11 +3493,11 @@ abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionC
   factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, SessionModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
+ String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
-@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
+@override $ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -3518,7 +3518,7 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
   ));
@@ -3528,12 +3528,12 @@ as PermissionMode?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
+$ModelSelectionDtoCopyWith<$Res>? get model {
     if (_self.model == null) {
     return null;
   }
 
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -3543,7 +3543,7 @@ $SessionModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$SessionSettingsPatchDto {
 
- SessionMode? get mode; bool get hasModel; SessionModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
+ SessionMode? get mode; ModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3556,16 +3556,16 @@ $SessionSettingsPatchDtoCopyWith<SessionSettingsPatchDto> get copyWith => _$Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,mode,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(mode: $mode, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3576,11 +3576,11 @@ abstract mixin class $SessionSettingsPatchDtoCopyWith<$Res>  {
   factory $SessionSettingsPatchDtoCopyWith(SessionSettingsPatchDto value, $Res Function(SessionSettingsPatchDto) _then) = _$SessionSettingsPatchDtoCopyWithImpl;
 @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ SessionMode? mode, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
-$SessionModelSelectionDtoCopyWith<$Res>? get model;
+$ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -3593,12 +3593,11 @@ class _$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
-as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as SessionMode?,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
@@ -3609,12 +3608,12 @@ as PermissionMode?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
+$ModelSelectionDtoCopyWith<$Res>? get model {
     if (_self.model == null) {
     return null;
   }
 
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -3699,10 +3698,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3720,10 +3719,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto():
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3740,10 +3739,10 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  bool hasModel,  SessionModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return null;
 
 }
@@ -3755,12 +3754,11 @@ return $default(_that.mode,_that.hasModel,_that.model,_that.hasModelControls,_th
 @JsonSerializable()
 
 class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
-  const _SessionSettingsPatchDto({this.mode, this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
+  const _SessionSettingsPatchDto({this.mode, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
   factory _SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) => _$SessionSettingsPatchDtoFromJson(json);
 
 @override final  SessionMode? mode;
-@override@JsonKey() final  bool hasModel;
-@override final  SessionModelSelectionDto? model;
+@override final  ModelSelectionDto? model;
 @override@JsonKey() final  bool hasModelControls;
  final  Map<String, ModelControlValueDto> _modelControls;
 @override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
@@ -3785,16 +3783,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,mode,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(mode: $mode, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3805,11 +3803,11 @@ abstract mixin class _$SessionSettingsPatchDtoCopyWith<$Res> implements $Session
   factory _$SessionSettingsPatchDtoCopyWith(_SessionSettingsPatchDto value, $Res Function(_SessionSettingsPatchDto) _then) = __$SessionSettingsPatchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- SessionMode? mode, bool hasModel, SessionModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ SessionMode? mode, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
-@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
+@override $ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -3822,12 +3820,11 @@ class __$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_SessionSettingsPatchDto(
 mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode?,hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
-as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
+as SessionMode?,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
 as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
@@ -3839,12 +3836,12 @@ as PermissionMode?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
+$ModelSelectionDtoCopyWith<$Res>? get model {
     if (_self.model == null) {
     return null;
   }
 
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -19834,82 +19831,82 @@ as PermissionMode,
 
 
 /// @nodoc
-mixin _$DefaultModelDto {
+mixin _$DaemonModelSettingsDto {
 
- SessionModelSelectionDto? get model;
-/// Create a copy of DefaultModelDto
+ ModelSelectionDto? get defaultModel;
+/// Create a copy of DaemonModelSettingsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$DefaultModelDtoCopyWith<DefaultModelDto> get copyWith => _$DefaultModelDtoCopyWithImpl<DefaultModelDto>(this as DefaultModelDto, _$identity);
+$DaemonModelSettingsDtoCopyWith<DaemonModelSettingsDto> get copyWith => _$DaemonModelSettingsDtoCopyWithImpl<DaemonModelSettingsDto>(this as DaemonModelSettingsDto, _$identity);
 
-  /// Serializes this DefaultModelDto to a JSON map.
+  /// Serializes this DaemonModelSettingsDto to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DefaultModelDto&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DaemonModelSettingsDto&&(identical(other.defaultModel, defaultModel) || other.defaultModel == defaultModel));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,model);
+int get hashCode => Object.hash(runtimeType,defaultModel);
 
 @override
 String toString() {
-  return 'DefaultModelDto(model: $model)';
+  return 'DaemonModelSettingsDto(defaultModel: $defaultModel)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $DefaultModelDtoCopyWith<$Res>  {
-  factory $DefaultModelDtoCopyWith(DefaultModelDto value, $Res Function(DefaultModelDto) _then) = _$DefaultModelDtoCopyWithImpl;
+abstract mixin class $DaemonModelSettingsDtoCopyWith<$Res>  {
+  factory $DaemonModelSettingsDtoCopyWith(DaemonModelSettingsDto value, $Res Function(DaemonModelSettingsDto) _then) = _$DaemonModelSettingsDtoCopyWithImpl;
 @useResult
 $Res call({
- SessionModelSelectionDto? model
+ ModelSelectionDto? defaultModel
 });
 
 
-$SessionModelSelectionDtoCopyWith<$Res>? get model;
+$ModelSelectionDtoCopyWith<$Res>? get defaultModel;
 
 }
 /// @nodoc
-class _$DefaultModelDtoCopyWithImpl<$Res>
-    implements $DefaultModelDtoCopyWith<$Res> {
-  _$DefaultModelDtoCopyWithImpl(this._self, this._then);
+class _$DaemonModelSettingsDtoCopyWithImpl<$Res>
+    implements $DaemonModelSettingsDtoCopyWith<$Res> {
+  _$DaemonModelSettingsDtoCopyWithImpl(this._self, this._then);
 
-  final DefaultModelDto _self;
-  final $Res Function(DefaultModelDto) _then;
+  final DaemonModelSettingsDto _self;
+  final $Res Function(DaemonModelSettingsDto) _then;
 
-/// Create a copy of DefaultModelDto
+/// Create a copy of DaemonModelSettingsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? model = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? defaultModel = freezed,}) {
   return _then(_self.copyWith(
-model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,
+defaultModel: freezed == defaultModel ? _self.defaultModel : defaultModel // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,
   ));
 }
-/// Create a copy of DefaultModelDto
+/// Create a copy of DaemonModelSettingsDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
+$ModelSelectionDtoCopyWith<$Res>? get defaultModel {
+    if (_self.defaultModel == null) {
     return null;
   }
 
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
-    return _then(_self.copyWith(model: value));
+  return $ModelSelectionDtoCopyWith<$Res>(_self.defaultModel!, (value) {
+    return _then(_self.copyWith(defaultModel: value));
   });
 }
 }
 
 
-/// Adds pattern-matching-related methods to [DefaultModelDto].
-extension DefaultModelDtoPatterns on DefaultModelDto {
+/// Adds pattern-matching-related methods to [DaemonModelSettingsDto].
+extension DaemonModelSettingsDtoPatterns on DaemonModelSettingsDto {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -19922,10 +19919,10 @@ extension DefaultModelDtoPatterns on DefaultModelDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DefaultModelDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DaemonModelSettingsDto value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _DefaultModelDto() when $default != null:
+case _DaemonModelSettingsDto() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -19944,10 +19941,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DefaultModelDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DaemonModelSettingsDto value)  $default,){
 final _that = this;
 switch (_that) {
-case _DefaultModelDto():
+case _DaemonModelSettingsDto():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -19965,10 +19962,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DefaultModelDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DaemonModelSettingsDto value)?  $default,){
 final _that = this;
 switch (_that) {
-case _DefaultModelDto() when $default != null:
+case _DaemonModelSettingsDto() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -19986,9 +19983,293 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionModelSelectionDto? model)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ModelSelectionDto? defaultModel)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _DefaultModelDto() when $default != null:
+case _DaemonModelSettingsDto() when $default != null:
+return $default(_that.defaultModel);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ModelSelectionDto? defaultModel)  $default,) {final _that = this;
+switch (_that) {
+case _DaemonModelSettingsDto():
+return $default(_that.defaultModel);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ModelSelectionDto? defaultModel)?  $default,) {final _that = this;
+switch (_that) {
+case _DaemonModelSettingsDto() when $default != null:
+return $default(_that.defaultModel);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DaemonModelSettingsDto implements DaemonModelSettingsDto {
+  const _DaemonModelSettingsDto({this.defaultModel});
+  factory _DaemonModelSettingsDto.fromJson(Map<String, dynamic> json) => _$DaemonModelSettingsDtoFromJson(json);
+
+@override final  ModelSelectionDto? defaultModel;
+
+/// Create a copy of DaemonModelSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DaemonModelSettingsDtoCopyWith<_DaemonModelSettingsDto> get copyWith => __$DaemonModelSettingsDtoCopyWithImpl<_DaemonModelSettingsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DaemonModelSettingsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DaemonModelSettingsDto&&(identical(other.defaultModel, defaultModel) || other.defaultModel == defaultModel));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,defaultModel);
+
+@override
+String toString() {
+  return 'DaemonModelSettingsDto(defaultModel: $defaultModel)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DaemonModelSettingsDtoCopyWith<$Res> implements $DaemonModelSettingsDtoCopyWith<$Res> {
+  factory _$DaemonModelSettingsDtoCopyWith(_DaemonModelSettingsDto value, $Res Function(_DaemonModelSettingsDto) _then) = __$DaemonModelSettingsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ ModelSelectionDto? defaultModel
+});
+
+
+@override $ModelSelectionDtoCopyWith<$Res>? get defaultModel;
+
+}
+/// @nodoc
+class __$DaemonModelSettingsDtoCopyWithImpl<$Res>
+    implements _$DaemonModelSettingsDtoCopyWith<$Res> {
+  __$DaemonModelSettingsDtoCopyWithImpl(this._self, this._then);
+
+  final _DaemonModelSettingsDto _self;
+  final $Res Function(_DaemonModelSettingsDto) _then;
+
+/// Create a copy of DaemonModelSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? defaultModel = freezed,}) {
+  return _then(_DaemonModelSettingsDto(
+defaultModel: freezed == defaultModel ? _self.defaultModel : defaultModel // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,
+  ));
+}
+
+/// Create a copy of DaemonModelSettingsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ModelSelectionDtoCopyWith<$Res>? get defaultModel {
+    if (_self.defaultModel == null) {
+    return null;
+  }
+
+  return $ModelSelectionDtoCopyWith<$Res>(_self.defaultModel!, (value) {
+    return _then(_self.copyWith(defaultModel: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$SetDaemonDefaultModelParamsDto {
+
+ ModelSelectionDto get model;
+/// Create a copy of SetDaemonDefaultModelParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SetDaemonDefaultModelParamsDtoCopyWith<SetDaemonDefaultModelParamsDto> get copyWith => _$SetDaemonDefaultModelParamsDtoCopyWithImpl<SetDaemonDefaultModelParamsDto>(this as SetDaemonDefaultModelParamsDto, _$identity);
+
+  /// Serializes this SetDaemonDefaultModelParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SetDaemonDefaultModelParamsDto&&(identical(other.model, model) || other.model == model));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,model);
+
+@override
+String toString() {
+  return 'SetDaemonDefaultModelParamsDto(model: $model)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SetDaemonDefaultModelParamsDtoCopyWith<$Res>  {
+  factory $SetDaemonDefaultModelParamsDtoCopyWith(SetDaemonDefaultModelParamsDto value, $Res Function(SetDaemonDefaultModelParamsDto) _then) = _$SetDaemonDefaultModelParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ ModelSelectionDto model
+});
+
+
+$ModelSelectionDtoCopyWith<$Res> get model;
+
+}
+/// @nodoc
+class _$SetDaemonDefaultModelParamsDtoCopyWithImpl<$Res>
+    implements $SetDaemonDefaultModelParamsDtoCopyWith<$Res> {
+  _$SetDaemonDefaultModelParamsDtoCopyWithImpl(this._self, this._then);
+
+  final SetDaemonDefaultModelParamsDto _self;
+  final $Res Function(SetDaemonDefaultModelParamsDto) _then;
+
+/// Create a copy of SetDaemonDefaultModelParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? model = null,}) {
+  return _then(_self.copyWith(
+model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto,
+  ));
+}
+/// Create a copy of SetDaemonDefaultModelParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ModelSelectionDtoCopyWith<$Res> get model {
+  
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
+    return _then(_self.copyWith(model: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [SetDaemonDefaultModelParamsDto].
+extension SetDaemonDefaultModelParamsDtoPatterns on SetDaemonDefaultModelParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SetDaemonDefaultModelParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SetDaemonDefaultModelParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SetDaemonDefaultModelParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _SetDaemonDefaultModelParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SetDaemonDefaultModelParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SetDaemonDefaultModelParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ModelSelectionDto model)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SetDaemonDefaultModelParamsDto() when $default != null:
 return $default(_that.model);case _:
   return orElse();
 
@@ -20007,9 +20288,9 @@ return $default(_that.model);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionModelSelectionDto? model)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ModelSelectionDto model)  $default,) {final _that = this;
 switch (_that) {
-case _DefaultModelDto():
+case _SetDaemonDefaultModelParamsDto():
 return $default(_that.model);case _:
   throw StateError('Unexpected subclass');
 
@@ -20027,9 +20308,9 @@ return $default(_that.model);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionModelSelectionDto? model)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ModelSelectionDto model)?  $default,) {final _that = this;
 switch (_that) {
-case _DefaultModelDto() when $default != null:
+case _SetDaemonDefaultModelParamsDto() when $default != null:
 return $default(_that.model);case _:
   return null;
 
@@ -20041,26 +20322,26 @@ return $default(_that.model);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _DefaultModelDto implements DefaultModelDto {
-  const _DefaultModelDto({this.model});
-  factory _DefaultModelDto.fromJson(Map<String, dynamic> json) => _$DefaultModelDtoFromJson(json);
+class _SetDaemonDefaultModelParamsDto implements SetDaemonDefaultModelParamsDto {
+  const _SetDaemonDefaultModelParamsDto({required this.model});
+  factory _SetDaemonDefaultModelParamsDto.fromJson(Map<String, dynamic> json) => _$SetDaemonDefaultModelParamsDtoFromJson(json);
 
-@override final  SessionModelSelectionDto? model;
+@override final  ModelSelectionDto model;
 
-/// Create a copy of DefaultModelDto
+/// Create a copy of SetDaemonDefaultModelParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$DefaultModelDtoCopyWith<_DefaultModelDto> get copyWith => __$DefaultModelDtoCopyWithImpl<_DefaultModelDto>(this, _$identity);
+_$SetDaemonDefaultModelParamsDtoCopyWith<_SetDaemonDefaultModelParamsDto> get copyWith => __$SetDaemonDefaultModelParamsDtoCopyWithImpl<_SetDaemonDefaultModelParamsDto>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$DefaultModelDtoToJson(this, );
+  return _$SetDaemonDefaultModelParamsDtoToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DefaultModelDto&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SetDaemonDefaultModelParamsDto&&(identical(other.model, model) || other.model == model));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -20069,51 +20350,48 @@ int get hashCode => Object.hash(runtimeType,model);
 
 @override
 String toString() {
-  return 'DefaultModelDto(model: $model)';
+  return 'SetDaemonDefaultModelParamsDto(model: $model)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$DefaultModelDtoCopyWith<$Res> implements $DefaultModelDtoCopyWith<$Res> {
-  factory _$DefaultModelDtoCopyWith(_DefaultModelDto value, $Res Function(_DefaultModelDto) _then) = __$DefaultModelDtoCopyWithImpl;
+abstract mixin class _$SetDaemonDefaultModelParamsDtoCopyWith<$Res> implements $SetDaemonDefaultModelParamsDtoCopyWith<$Res> {
+  factory _$SetDaemonDefaultModelParamsDtoCopyWith(_SetDaemonDefaultModelParamsDto value, $Res Function(_SetDaemonDefaultModelParamsDto) _then) = __$SetDaemonDefaultModelParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- SessionModelSelectionDto? model
+ ModelSelectionDto model
 });
 
 
-@override $SessionModelSelectionDtoCopyWith<$Res>? get model;
+@override $ModelSelectionDtoCopyWith<$Res> get model;
 
 }
 /// @nodoc
-class __$DefaultModelDtoCopyWithImpl<$Res>
-    implements _$DefaultModelDtoCopyWith<$Res> {
-  __$DefaultModelDtoCopyWithImpl(this._self, this._then);
+class __$SetDaemonDefaultModelParamsDtoCopyWithImpl<$Res>
+    implements _$SetDaemonDefaultModelParamsDtoCopyWith<$Res> {
+  __$SetDaemonDefaultModelParamsDtoCopyWithImpl(this._self, this._then);
 
-  final _DefaultModelDto _self;
-  final $Res Function(_DefaultModelDto) _then;
+  final _SetDaemonDefaultModelParamsDto _self;
+  final $Res Function(_SetDaemonDefaultModelParamsDto) _then;
 
-/// Create a copy of DefaultModelDto
+/// Create a copy of SetDaemonDefaultModelParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? model = freezed,}) {
-  return _then(_DefaultModelDto(
-model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as SessionModelSelectionDto?,
+@override @pragma('vm:prefer-inline') $Res call({Object? model = null,}) {
+  return _then(_SetDaemonDefaultModelParamsDto(
+model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto,
   ));
 }
 
-/// Create a copy of DefaultModelDto
+/// Create a copy of SetDaemonDefaultModelParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$SessionModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
-    return null;
-  }
-
-  return $SessionModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+$ModelSelectionDtoCopyWith<$Res> get model {
+  
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
 }

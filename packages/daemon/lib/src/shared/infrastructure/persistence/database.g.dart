@@ -1167,9 +1167,9 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
     'model_id',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _modelControlsJsonMeta = const VerificationMeta(
     'modelControlsJson',
@@ -1426,6 +1426,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         _modelIdMeta,
         modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
       );
+    } else if (isInserting) {
+      context.missing(_modelIdMeta);
     }
     if (data.containsKey('model_controls_json')) {
       context.handle(
@@ -1574,7 +1576,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       modelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
-      ),
+      )!,
       modelControlsJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}model_controls_json'],
@@ -1663,8 +1665,8 @@ class Session extends DataClass implements Insertable<Session> {
   /// Collaboration mode: `plan` proposes work, `normal` performs it.
   final String mode;
 
-  /// Qualified model pinned for this session; null inherits the agent.
-  final String? modelId;
+  /// Concrete qualified model snapshotted for this session.
+  final String modelId;
 
   /// JSON-encoded typed model-control values for this session.
   final String modelControlsJson;
@@ -1710,7 +1712,7 @@ class Session extends DataClass implements Insertable<Session> {
     this.activeTurnId,
     this.lastError,
     required this.mode,
-    this.modelId,
+    required this.modelId,
     required this.modelControlsJson,
     this.permissionMode,
     required this.currentContextEpoch,
@@ -1752,9 +1754,7 @@ class Session extends DataClass implements Insertable<Session> {
       map['last_error'] = Variable<String>(lastError);
     }
     map['mode'] = Variable<String>(mode);
-    if (!nullToAbsent || modelId != null) {
-      map['model_id'] = Variable<String>(modelId);
-    }
+    map['model_id'] = Variable<String>(modelId);
     map['model_controls_json'] = Variable<String>(modelControlsJson);
     if (!nullToAbsent || permissionMode != null) {
       map['permission_mode'] = Variable<String>(permissionMode);
@@ -1801,9 +1801,7 @@ class Session extends DataClass implements Insertable<Session> {
           ? const Value.absent()
           : Value(lastError),
       mode: Value(mode),
-      modelId: modelId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(modelId),
+      modelId: Value(modelId),
       modelControlsJson: Value(modelControlsJson),
       permissionMode: permissionMode == null && nullToAbsent
           ? const Value.absent()
@@ -1840,7 +1838,7 @@ class Session extends DataClass implements Insertable<Session> {
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       mode: serializer.fromJson<String>(json['mode']),
-      modelId: serializer.fromJson<String?>(json['modelId']),
+      modelId: serializer.fromJson<String>(json['modelId']),
       modelControlsJson: serializer.fromJson<String>(json['modelControlsJson']),
       permissionMode: serializer.fromJson<String?>(json['permissionMode']),
       currentContextEpoch: serializer.fromJson<int>(
@@ -1874,7 +1872,7 @@ class Session extends DataClass implements Insertable<Session> {
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
       'mode': serializer.toJson<String>(mode),
-      'modelId': serializer.toJson<String?>(modelId),
+      'modelId': serializer.toJson<String>(modelId),
       'modelControlsJson': serializer.toJson<String>(modelControlsJson),
       'permissionMode': serializer.toJson<String?>(permissionMode),
       'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
@@ -1902,7 +1900,7 @@ class Session extends DataClass implements Insertable<Session> {
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
     String? mode,
-    Value<String?> modelId = const Value.absent(),
+    String? modelId,
     String? modelControlsJson,
     Value<String?> permissionMode = const Value.absent(),
     int? currentContextEpoch,
@@ -1931,7 +1929,7 @@ class Session extends DataClass implements Insertable<Session> {
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
     mode: mode ?? this.mode,
-    modelId: modelId.present ? modelId.value : this.modelId,
+    modelId: modelId ?? this.modelId,
     modelControlsJson: modelControlsJson ?? this.modelControlsJson,
     permissionMode: permissionMode.present
         ? permissionMode.value
@@ -2102,7 +2100,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
   final Value<String> mode;
-  final Value<String?> modelId;
+  final Value<String> modelId;
   final Value<String> modelControlsJson;
   final Value<String?> permissionMode;
   final Value<int> currentContextEpoch;
@@ -2155,7 +2153,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
     this.mode = const Value.absent(),
-    this.modelId = const Value.absent(),
+    required String modelId,
     this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
     this.currentContextEpoch = const Value.absent(),
@@ -2172,6 +2170,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
        agentDefinitionId = Value(agentDefinitionId),
        origin = Value(origin),
        status = Value(status),
+       modelId = Value(modelId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<Session> custom({
@@ -2247,7 +2246,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
     Value<String>? mode,
-    Value<String?>? modelId,
+    Value<String>? modelId,
     Value<String>? modelControlsJson,
     Value<String?>? permissionMode,
     Value<int>? currentContextEpoch,
@@ -9436,7 +9435,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<String?> activeTurnId,
   Value<String?> lastError,
   Value<String> mode,
-  Value<String?> modelId,
+  required String modelId,
   Value<String> modelControlsJson,
   Value<String?> permissionMode,
   Value<int> currentContextEpoch,
@@ -9463,7 +9462,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<String?> activeTurnId,
   Value<String?> lastError,
   Value<String> mode,
-  Value<String?> modelId,
+  Value<String> modelId,
   Value<String> modelControlsJson,
   Value<String?> permissionMode,
   Value<int> currentContextEpoch,
@@ -10604,7 +10603,7 @@ class $$SessionsTableTableManager
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<String> mode = const Value.absent(),
-                Value<String?> modelId = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
@@ -10658,7 +10657,7 @@ class $$SessionsTableTableManager
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<String> mode = const Value.absent(),
-                Value<String?> modelId = const Value.absent(),
+                required String modelId,
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),

@@ -10,6 +10,7 @@ void main() {
         'workspaces',
         'agents',
         'prompts',
+        'models',
         'providers',
         'relay',
         'mcp',

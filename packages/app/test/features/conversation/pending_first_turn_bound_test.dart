@@ -21,6 +21,7 @@ SessionDto _session(String id) => SessionDto(
   status: SessionStatus.idle,
   agentDefinitionId: 'agent',
   origin: SessionOrigin.manual,
+  model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
   createdAt: _now,
   updatedAt: _now,
 );

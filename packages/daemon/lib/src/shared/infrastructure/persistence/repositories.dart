@@ -80,9 +80,8 @@ abstract interface class SessionRepository {
   /// Atomically updates model selection and model-specific controls.
   Future<SessionDto> updateModelSettings(
     String id, {
-    required bool hasModel,
+    required ModelSelectionDto model,
     required Map<String, ModelControlValueDto> modelControls,
-    SessionModelSelectionDto? model,
   });
 
   /// Rewrites qualified model selections after a provider prefix rename.

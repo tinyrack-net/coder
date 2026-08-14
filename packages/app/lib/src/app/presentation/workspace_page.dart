@@ -1391,19 +1391,19 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final definitions = selectableAgentDefinitions(
       agents?.definitions ?? const <AgentDefinitionDto>[],
     );
-    final definition = definitions
-        .where((item) => item.id == current.agentDefinitionId)
-        .firstOrNull;
-    final effective =
-        current.model ??
-        effectiveModelFor(
-          definition: definition,
-          connections: connections,
-          models:
-              providersAsync.value?.models ??
+    final effective = current.model;
+    final effectiveRunnable = isRunnableSelection(
+      effective,
+      connections,
+      providersAsync.value?.models ?? const <String, List<ProviderModelDto>>{},
+    );
+    final hasRunnableModel =
+        firstUsableModel(
+          connections,
+          providersAsync.value?.models ??
               const <String, List<ProviderModelDto>>{},
-          defaultModel: providersAsync.value?.defaultModel,
-        );
+        ) !=
+        null;
     // Only the newest plan can still be acted on, and only in plan mode: the
     // card asks whether to leave planning and carry the plan out.
     final lastPlan = visibleItems.whereType<ChatPlanProposal>().lastOrNull;
@@ -1522,14 +1522,13 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                 ),
                           // A running turn never takes the keyboard away; the
                           // prompt queues instead.
-                          enabled: effective != null,
+                          enabled: effectiveRunnable,
                           busy: busy,
                           contextTokens: current.contextTokens,
                           contextWindow: current.contextWindow,
                           totalCostUsd: current.totalCostUsd,
-                          providerConnectionId: effective == null
-                              ? null
-                              : connections
+                          providerConnectionId: effectiveRunnable
+                              ? connections
                                     .where(
                                       (connection) =>
                                           effective.qualifiedModelId.startsWith(
@@ -1537,7 +1536,8 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                           ),
                                     )
                                     .firstOrNull
-                                    ?.id,
+                                    ?.id
+                              : null,
                           onLoadProviderUsage: () => ref
                               .read(
                                 providerSettingsControllerProvider(
@@ -1566,8 +1566,14 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           hint:
                               (agentsLoading ||
                                   providersLoading ||
-                                  effective != null)
+                                  effectiveRunnable)
                               ? null
+                              : hasRunnableModel
+                              ? AppLocalizations.of(
+                                  context,
+                                ).modelSettingsUnavailableDescription(
+                                  effective.modelId,
+                                )
                               : AppLocalizations.of(
                                   context,
                                 ).composerConnectProviderFirst,

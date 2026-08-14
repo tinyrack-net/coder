@@ -877,6 +877,7 @@ final class FeatureVerifier {
       'SessionsApi': 'sessions',
       'AgentsApi': 'agents',
       'PromptsApi': 'prompts',
+      'ModelsApi': 'models',
       'ProvidersApi': 'providers',
       'McpApi': 'mcp',
       'TerminalsApi': 'terminals',

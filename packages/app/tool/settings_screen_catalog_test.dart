@@ -136,7 +136,7 @@ enum _CatalogAction {
   openProviderModelError,
   openProviderDisconnectDialog,
   openProviderDeleteDialog,
-  openProviderModelSelect,
+  openDaemonModelSelect,
   openPermissionSelect,
   failPermissionSave,
   openRelayQrDialog,
@@ -169,7 +169,7 @@ enum _CatalogScrollTarget {
   mcpResourceTemplates('mcp-resource-templates'),
   mcpSecrets('mcp-secrets'),
   mcpDanger('mcp-danger'),
-  providerDefaultModel('provider-default-model'),
+  daemonDefaultModel('daemon-default-model'),
   providerDanger('provider-danger'),
   relayEndpoint('relay-endpoint'),
   relayDevices('relay-devices'),
@@ -368,8 +368,7 @@ _PreparedScenario _prepareScenario(_CatalogPreparation preparation) {
               mode: AgentMode.primary,
               promptEnabled: false,
               systemPrompt: '',
-              model: AgentModelSelectionDto(
-                source: AgentModelSource.fixed,
+              model: ModelSelectionDto(
                 modelId: 'missing/catalog-model',
               ),
               permissionMode: PermissionMode.readOnly,
@@ -717,9 +716,6 @@ final _agentDefinitions = List<AgentDefinitionDto>.unmodifiable(
         mode: index == 0 ? AgentMode.primary : AgentMode.subagent,
         promptEnabled: true,
         systemPrompt: 'Use the shared settings visual contract.',
-        model: const AgentModelSelectionDto(
-          source: AgentModelSource.session,
-        ),
         permissionMode: PermissionMode.ask,
         toolIds: const <String>['read_file'],
         callableAgentIds: const <String>[],
@@ -1382,20 +1378,19 @@ final _scenarios = <_Scenario>[
       destination: 'provider-detail',
       state: 'error',
       text: 'Could not list models',
-      scrollTarget: _CatalogScrollTarget.providerDefaultModel,
     ),
     matrixOnly: true,
   ),
   _Scenario(
-    id: 'provider-model-select',
-    location: const ProviderSettingsRoute(hostId: 'server').location,
-    action: _CatalogAction.openProviderModelSelect,
+    id: 'daemon-model-select',
+    location: const ModelSettingsRoute(hostId: 'server').location,
+    action: _CatalogAction.openDaemonModelSelect,
     expected: const _ExpectedFrame(
-      destination: 'provider-detail',
+      destination: 'model-settings',
       state: 'selection-open',
       overlay: _ExpectedOverlay.adaptiveSelect,
-      key: 'provider-model-openai/gpt-5.6-sol',
-      scrollTarget: _CatalogScrollTarget.providerDefaultModel,
+      key: 'model-option-openai-gpt-5.6-sol',
+      scrollTarget: _CatalogScrollTarget.daemonDefaultModel,
     ),
     matrixOnly: true,
   ),
@@ -1824,6 +1819,8 @@ final class _CatalogMcpErrorApi implements TinestApi {
   AgentsApi get agents => delegate.agents;
   @override
   PromptsApi get prompts => delegate.prompts;
+  @override
+  ModelsApi get models => delegate.models;
   @override
   ProvidersApi get providers => delegate.providers;
   @override
@@ -2511,9 +2508,8 @@ Future<void> _applyScenarioAction(
     case _CatalogAction.openProviderDeleteDialog:
       await _tapKey(tester, 'provider-connection-catalog-lab');
       await _tapKey(tester, 'provider-custom-delete');
-    case _CatalogAction.openProviderModelSelect:
-      await _tapKey(tester, 'provider-connection-openai');
-      await _tapKey(tester, 'provider-default-model');
+    case _CatalogAction.openDaemonModelSelect:
+      await _tapKey(tester, 'daemon-default-model');
     case _CatalogAction.openPermissionSelect:
       await _tapKey(tester, 'permission-settings-change');
     case _CatalogAction.failPermissionSave:

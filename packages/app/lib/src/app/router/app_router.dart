@@ -262,6 +262,20 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
       );
 }
 
+@TypedGoRoute<ModelSettingsRoute>(path: '/settings/models')
+/// Unified settings route with Model selected.
+class ModelSettingsRoute extends GoRouteData with $ModelSettingsRoute {
+  /// Creates the model settings route.
+  const ModelSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the model selector.
+  final String? hostId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UnifiedSettingsPage(category: SettingsCategory.model, hostId: hostId);
+}
+
 @TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions')
 /// Unified settings route with Permissions selected.
 class PermissionSettingsRoute extends GoRouteData

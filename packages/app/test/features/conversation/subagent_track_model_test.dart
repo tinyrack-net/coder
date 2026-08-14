@@ -29,6 +29,7 @@ void main() {
     agentPath: agentPath,
     rootSessionId: parentSessionId == null ? null : 'root',
     lifecycle: lifecycle,
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
     createdAt: createdAt ?? now,
     updatedAt: createdAt ?? now,
   );

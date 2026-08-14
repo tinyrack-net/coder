@@ -140,7 +140,7 @@ abstract interface class SessionsApi {
     required String title,
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
@@ -298,6 +298,15 @@ abstract interface class PromptsApi {
   });
 }
 
+/// Daemon-owned model settings exposed by the v4 client.
+abstract interface class ModelsApi {
+  /// Reads the daemon default model.
+  Future<DaemonModelSettingsDto> getSettings();
+
+  /// Replaces the daemon default with one concrete runnable model.
+  Future<DaemonModelSettingsDto> setDefaultModel(ModelSelectionDto model);
+}
+
 /// Provider operations exposed by the v4 client.
 abstract interface class ProvidersApi {
   /// Provider authorization updates.
@@ -358,12 +367,6 @@ abstract interface class ProvidersApi {
 
   /// Lists models for a connection.
   Future<List<ProviderModelDto>> listProviderModels(String connectionId);
-
-  /// Reads the default model.
-  Future<SessionModelSelectionDto?> getDefaultModel();
-
-  /// Replaces the default model.
-  Future<void> setDefaultModel(SessionModelSelectionDto? model);
 
   /// Creates a custom provider.
   Future<ProviderConnectionDto> createCustomProvider(
@@ -512,6 +515,9 @@ abstract interface class TinestApi {
 
   /// Prompt, command, and skill operations.
   PromptsApi get prompts;
+
+  /// Daemon-owned model settings.
+  ModelsApi get models;
 
   /// Provider operations.
   ProvidersApi get providers;

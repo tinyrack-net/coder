@@ -9,6 +9,7 @@ import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/hosts/presentation/pages/host_settings_page.dart';
 import 'package:app/src/features/hosts/presentation/pages/relay_pairing_pages.dart';
 import 'package:app/src/features/mcp/presentation/pages/mcp_settings_page.dart';
+import 'package:app/src/features/models/presentation/pages/model_settings_page.dart';
 import 'package:app/src/features/permissions/presentation/pages/permission_settings_page.dart';
 import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
 import 'package:app/src/features/settings/domain/settings_category.dart';
@@ -302,6 +303,19 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           paneController: _providerPanes,
           slot: slot,
           embedded: true,
+        ),
+      ),
+      SettingsCategory.model => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(l10n, SettingsCategory.model),
+          child: _HostScopedDetail(
+            host: host,
+            loading: registryLoading,
+            loadingChild: SettingsSkeletonLayout.form(
+              semanticLabel: AppLocalizations.of(context).settingsLoading,
+            ),
+            builder: (hostId) => ModelSettingsPage(hostId: hostId),
+          ),
         ),
       ),
       SettingsCategory.permission => _SettingsPanePair(
@@ -834,6 +848,7 @@ IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
   SettingsCategory.connection => TinestIcons.link,
   SettingsCategory.skill => TinestIcons.sparkle,
   SettingsCategory.provider => TinestIcons.network,
+  SettingsCategory.model => TinestIcons.memory,
   SettingsCategory.permission => TinestIcons.permission,
   SettingsCategory.daemon => TinestIcons.daemon,
   SettingsCategory.advanced => TinestIcons.tool,
@@ -850,6 +865,7 @@ String _settingsCategoryLabel(
   SettingsCategory.connection => l10n.settingsCategoryConnection,
   SettingsCategory.skill => l10n.settingsCategorySkill,
   SettingsCategory.provider => l10n.settingsCategoryProvider,
+  SettingsCategory.model => l10n.settingsCategoryModel,
   SettingsCategory.permission => l10n.settingsCategoryPermission,
   SettingsCategory.daemon => l10n.settingsCategoryDaemon,
   SettingsCategory.advanced => l10n.settingsCategoryAdvanced,
@@ -882,6 +898,8 @@ void _goToSettingsCategory(
       SkillSettingsRoute(hostId: hostId).replace(context);
     case SettingsCategory.provider:
       ProviderSettingsRoute(hostId: hostId).replace(context);
+    case SettingsCategory.model:
+      ModelSettingsRoute(hostId: hostId).replace(context);
     case SettingsCategory.permission:
       PermissionSettingsRoute(hostId: hostId).replace(context);
     case SettingsCategory.daemon:

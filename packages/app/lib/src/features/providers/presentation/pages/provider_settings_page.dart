@@ -1066,14 +1066,6 @@ class _ProviderConnectionPaneState
   Object? _error;
 
   @override
-  void initState() {
-    super.initState();
-    if (!widget.state.models.containsKey(widget.connection.id)) {
-      unawaited(_loadModels());
-    }
-  }
-
-  @override
   void dispose() {
     _prefix.dispose();
     super.dispose();
@@ -1085,8 +1077,6 @@ class _ProviderConnectionPaneState
     final definition = widget.state.catalog.definitions
         .where((item) => item.id == widget.connection.definitionId)
         .firstOrNull;
-    final models =
-        widget.state.models[widget.connection.id] ?? const <ProviderModelDto>[];
     return Column(
       children: <Widget>[
         TRPaneHeader(
@@ -1134,50 +1124,6 @@ class _ProviderConnectionPaneState
                   ),
                 ],
               ),
-              SettingsSection.form(
-                title: l10n.providerSettingsDefaultModelTitle,
-                children: <Widget>[
-                  TRSelect<String?>.controlled(
-                    key: const ValueKey<String>('provider-default-model'),
-                    value: widget.state.defaultModel?.qualifiedModelId,
-                    searchable: true,
-                    searchPlaceholder: l10n.selectSearchPlaceholder,
-                    noResultsText: l10n.selectNoResults,
-                    // Explicit for the auditable adaptive Select contract.
-                    // ignore: avoid_redundant_argument_values
-                    surface: TRSelectSurface.auto,
-                    items: <TRSelectItem<String?>>[
-                      TRSelectItem<String?>(
-                        value: null,
-                        label: l10n.providerSettingsDefaultModelAutomatic,
-                      ),
-                      for (final model in models)
-                        TRSelectItem<String?>(
-                          key: ValueKey<String>(
-                            'provider-model-${model.id}',
-                          ),
-                          value: model.id,
-                          label: model.label,
-                          description:
-                              '${widget.connection.displayName} · ${model.id}',
-                        ),
-                    ],
-                    onValueChange: (modelId) => unawaited(
-                      ref
-                          .read(
-                            providerSettingsControllerProvider(
-                              widget.hostId,
-                            ).notifier,
-                          )
-                          .setDefaultModel(
-                            modelId == null
-                                ? null
-                                : SessionModelSelectionDto(modelId: modelId),
-                          ),
-                    ),
-                  ),
-                ],
-              ),
               SettingsSection(
                 title: l10n.providerSettingsDisconnectTitle,
                 children: <Widget>[
@@ -1222,19 +1168,6 @@ class _ProviderConnectionPaneState
           .where((item) => item.id == widget.connection.id)
           .firstOrNull;
       if (changed != null) widget.onChanged(changed);
-    } on Object catch (error) {
-      if (mounted) setState(() => _error = error);
-    }
-  }
-
-  Future<void> _loadModels() async {
-    setState(() => _error = null);
-    try {
-      await ref
-          .read(
-            providerSettingsControllerProvider(widget.hostId).notifier,
-          )
-          .loadModels(widget.connection.id);
     } on Object catch (error) {
       if (mounted) setState(() => _error = error);
     }
@@ -1342,15 +1275,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       for (final model in initial?.models ?? const <ManualProviderModelDto>[])
         for (final control in model.controls) control.id,
     };
-    if (connection != null && !widget.state.models.containsKey(connection.id)) {
-      unawaited(
-        ref
-            .read(
-              providerSettingsControllerProvider(widget.hostId).notifier,
-            )
-            .loadModels(connection.id),
-      );
-    }
   }
 
   @override
@@ -1497,47 +1421,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                     ),
                 ],
               ),
-              if (widget.existing case final existing?)
-                SettingsSection.form(
-                  title: l10n.providerSettingsDefaultModelTitle,
-                  children: <Widget>[
-                    TRSelect<String?>.controlled(
-                      key: const ValueKey<String>('provider-default-model'),
-                      value: widget.state.defaultModel?.qualifiedModelId,
-                      searchable: true,
-                      searchPlaceholder: l10n.selectSearchPlaceholder,
-                      noResultsText: l10n.selectNoResults,
-                      // Explicit for the auditable adaptive Select contract.
-                      // ignore: avoid_redundant_argument_values
-                      surface: TRSelectSurface.auto,
-                      items: <TRSelectItem<String?>>[
-                        TRSelectItem<String?>(
-                          value: null,
-                          label: l10n.providerSettingsDefaultModelAutomatic,
-                        ),
-                        for (final model
-                            in widget.state.models[existing.id] ??
-                                const <ProviderModelDto>[])
-                          TRSelectItem<String?>(
-                            key: ValueKey<String>(
-                              'provider-model-${model.id}',
-                            ),
-                            value: model.id,
-                            label: model.label,
-                            description:
-                                '${existing.displayName} · ${model.id}',
-                          ),
-                      ],
-                      onValueChange: (modelId) => unawaited(
-                        _setDefault(
-                          modelId == null
-                              ? null
-                              : SessionModelSelectionDto(modelId: modelId),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               if (widget.existing case final existing?)
                 SettingsSection(
                   title: l10n.providerSettingsActions,
@@ -1712,24 +1595,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
           id: 'provider-delete',
         );
     if (deleted) widget.onRemoved?.call();
-  }
-
-  /// Stores [model] as the default, reporting a refusal.
-  ///
-  /// The row that triggers this ignores the future it returns, so without a
-  /// report a rejected write left the previous default selected and
-  /// unexplained.
-  Future<void> _setDefault(SessionModelSelectionDto? model) async {
-    final l10n = AppLocalizations.of(context);
-    await ref
-        .read(toastMessengerProvider)
-        .run(
-          () => ref
-              .read(providerSettingsControllerProvider(widget.hostId).notifier)
-              .setDefaultModel(model),
-          failure: l10n.providerSettingsDefaultModelFailed,
-          id: 'provider-default-model',
-        );
   }
 
   Future<void> _disconnect() async {

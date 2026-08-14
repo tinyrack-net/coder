@@ -27,6 +27,7 @@ void _registerWorkspaceAppFlows() {
     agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
     createdAt: now,
     updatedAt: now,
   );

@@ -114,16 +114,8 @@ class SessionTurnCoordinator implements SessionTurnPort {
       final session = await _sessions.getById(sessionId);
       if (session == null) throw StateError('Session not found: $sessionId');
       final definition = await _definitions.resolve(session.agentDefinitionId);
-      final sessionModel = session.model;
-      // A session override wins over the model of its agent definition.
-      final resolvedModel = sessionModel == null
-          ? await _models.resolveAgentModel(definition.model)
-          : await _models.resolveQualifiedModel(sessionModel.qualifiedModelId);
-      final controls = sessionModel != null
-          ? session.modelControls
-          : definition.model.source == AgentModelSource.fixed
-          ? definition.modelControls
-          : const <String, ModelControlValueDto>{};
+      final resolvedModel = await _models.resolveSelection(session.model);
+      final controls = session.modelControls;
       await _models.validateModelControls(
         resolvedModel.connectionId,
         resolvedModel.modelId,
@@ -571,16 +563,8 @@ class SessionTurnCoordinator implements SessionTurnPort {
     // spend a model call to say so.
     if (history.isEmpty) return;
 
-    final definition = await _definitions.resolve(session.agentDefinitionId);
-    final sessionModel = session.model;
-    final resolvedModel = sessionModel == null
-        ? await _models.resolveAgentModel(definition.model)
-        : await _models.resolveQualifiedModel(sessionModel.qualifiedModelId);
-    final modelControls = sessionModel != null
-        ? session.modelControls
-        : definition.model.source == AgentModelSource.fixed
-        ? definition.modelControls
-        : const <String, ModelControlValueDto>{};
+    final resolvedModel = await _models.resolveSelection(session.model);
+    final modelControls = session.modelControls;
     await _models.validateModelControls(
       resolvedModel.connectionId,
       resolvedModel.modelId,

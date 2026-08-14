@@ -9,11 +9,11 @@ import 'package:http/http.dart' as http;
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc;
 import 'package:protocol/protocol.dart';
 
-SessionModelSelectionDto? _canonicalSelection(
-  SessionModelSelectionDto? selection,
+ModelSelectionDto? _canonicalSelection(
+  ModelSelectionDto? selection,
 ) => selection == null
     ? null
-    : SessionModelSelectionDto(modelId: selection.qualifiedModelId);
+    : ModelSelectionDto(modelId: selection.qualifiedModelId);
 
 /// TinestClientException defines a public contract.
 class TinestClientException implements Exception {
@@ -50,6 +50,7 @@ class TinestClient
         SessionsApi,
         AgentsApi,
         PromptsApi,
+        ModelsApi,
         ProvidersApi,
         McpApi,
         TerminalsApi,
@@ -154,6 +155,9 @@ class TinestClient
 
   @override
   PromptsApi get prompts => this;
+
+  @override
+  ModelsApi get models => this;
 
   @override
   ProvidersApi get providers => this;
@@ -608,7 +612,7 @@ class TinestClient
     required String title,
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
@@ -638,9 +642,9 @@ class TinestClient
       sessionsUpdateSettingsProcedure,
       SessionSettingsUpdateParamsDto(
         sessionId: sessionId,
-        patch: patch.hasModel
-            ? patch.copyWith(model: _canonicalSelection(patch.model))
-            : patch,
+        patch: patch.model == null
+            ? patch
+            : patch.copyWith(model: _canonicalSelection(patch.model)),
       ),
     );
     return response.session;
@@ -1201,18 +1205,19 @@ class TinestClient
   }
 
   @override
-  Future<SessionModelSelectionDto?> getDefaultModel() async {
-    final response = await _call(
-      providersGetDefaultModelProcedure,
-      const EmptyParamsDto(),
-    );
-    return response.model;
-  }
+  Future<DaemonModelSettingsDto> getSettings() => _call(
+    modelsGetSettingsProcedure,
+    const EmptyParamsDto(),
+  );
 
   @override
-  Future<void> setDefaultModel(SessionModelSelectionDto? model) => _call(
-    providersSetDefaultModelProcedure,
-    DefaultModelDto(model: _canonicalSelection(model)),
+  Future<DaemonModelSettingsDto> setDefaultModel(
+    ModelSelectionDto model,
+  ) => _call(
+    modelsSetDefaultModelProcedure,
+    SetDaemonDefaultModelParamsDto(
+      model: ModelSelectionDto(modelId: model.qualifiedModelId),
+    ),
   );
 
   @override

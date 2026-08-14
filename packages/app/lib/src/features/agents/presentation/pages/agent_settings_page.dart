@@ -320,7 +320,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
   late final TextEditingController _prompt;
   late final TextEditingController _modelId;
   late bool _promptEnabled;
-  late AgentModelSource _modelSource;
+  late bool _usesModel;
   PermissionMode? _permissionMode;
   late Set<String> _tools;
   late Set<String> _callableAgents;
@@ -336,9 +336,9 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     _name = TextEditingController(text: definition.name);
     _description = TextEditingController(text: definition.description);
     _prompt = TextEditingController(text: definition.systemPrompt);
-    _modelId = TextEditingController(text: definition.model.modelId);
+    _modelId = TextEditingController(text: definition.model?.modelId ?? '');
     _promptEnabled = definition.promptEnabled;
-    _modelSource = definition.model.source;
+    _usesModel = definition.model != null;
     _permissionMode = definition.permissionMode;
     final alwaysOn = <String>{
       for (final tool in widget.state.tools)
@@ -362,16 +362,31 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     final l10n = AppLocalizations.of(context);
     final definition = widget.definition;
     final editable = !_saving;
+    final canSave =
+        editable && (!_usesModel || _modelId.text.trim().isNotEmpty);
     final providersState = ref.watch(
       providerSettingsControllerProvider(widget.hostId),
     );
     final providers = providersState.value;
     final providersResolved = providersState.hasValue && providers != null;
-    final modelBlocked =
-        editable &&
-        providersResolved &&
-        usableConnections(providers.connections).isEmpty;
-    final modelSelectionEnabled = editable && providersResolved;
+    final firstModel = providers == null
+        ? null
+        : firstUsableModel(providers.connections, providers.models);
+    final modelBlocked = editable && providersResolved && firstModel == null;
+    final modelSelectionEnabled =
+        editable && providersResolved && firstModel != null;
+    final storedModel = _modelId.text.isEmpty
+        ? null
+        : ModelSelectionDto(modelId: _modelId.text);
+    final modelUnavailable =
+        _usesModel &&
+        providers != null &&
+        storedModel != null &&
+        !isRunnableSelection(
+          storedModel,
+          providers.connections,
+          providers.models,
+        );
     final subagents = widget.state.definitions.where(
       (candidate) =>
           candidate.mode == AgentMode.subagent &&
@@ -395,7 +410,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
             ),
             TRButton(
               intent: TRIntent.primary,
-              onPressed: editable ? () => _save(force: false) : null,
+              onPressed: canSave ? () => _save(force: false) : null,
               child: TRText.inherit(
                 _saving ? l10n.commonSaving : l10n.commonSave,
               ),
@@ -465,26 +480,43 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
               ),
               SettingsSection.form(
                 title: l10n.agentSettingsModelHeading,
+                banner: modelUnavailable
+                    ? TRAlert(
+                        key: const ValueKey<String>(
+                          'agent-settings-model-unavailable',
+                        ),
+                        title: TRText.inherit(
+                          l10n.modelSettingsUnavailableTitle,
+                        ),
+                        description: TRText.inherit(
+                          l10n.modelSettingsUnavailableDescription(
+                            _modelId.text,
+                          ),
+                        ),
+                        icon: const Icon(TinestIcons.warning),
+                        variant: TRStatusVariant.warning,
+                      )
+                    : null,
                 children: <Widget>[
-                  TRRadioGroup(
-                    value: _modelSource.name,
-                    disabled: !editable,
-                    onValueChange: (value) => setState(
-                      () =>
-                          _modelSource = AgentModelSource.values.byName(value),
+                  TinestSwitchRow(
+                    key: const ValueKey<String>('agent-settings-use-model'),
+                    flush: true,
+                    value: _usesModel,
+                    onChanged: editable
+                        ? (value) => setState(() {
+                            _usesModel = value;
+                            if (value && _modelId.text.isEmpty) {
+                              _modelId.text = firstModel?.modelId ?? '';
+                            }
+                          })
+                        : null,
+                    title: TRText.inherit(l10n.agentSettingsUseModel),
+                    subtitle: TRText.inherit(
+                      l10n.agentSettingsUseModelDescription,
                     ),
-                    children: [
-                      TRRadio(
-                        value: AgentModelSource.session.name,
-                        label: TRText.inherit(l10n.agentSettingsSessionModel),
-                      ),
-                      TRRadio(
-                        value: AgentModelSource.fixed.name,
-                        label: TRText.inherit(l10n.agentSettingsPinnedModel),
-                      ),
-                    ],
+                    wrapsSubtitle: true,
                   ),
-                  if (_modelSource == AgentModelSource.fixed) ...<Widget>[
+                  if (_usesModel) ...<Widget>[
                     Semantics(
                       key: const ValueKey<String>(
                         'agent-settings-model-selector',
@@ -689,13 +721,8 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     description: _description.text.trim(),
     promptEnabled: _promptEnabled,
     systemPrompt: _prompt.text,
-    model: AgentModelSelectionDto(
-      source: _modelSource,
-      modelId: _modelSource == AgentModelSource.fixed
-          ? _modelId.text.trim()
-          : null,
-    ),
-    modelControls: _modelSource == AgentModelSource.fixed
+    model: _usesModel ? ModelSelectionDto(modelId: _modelId.text.trim()) : null,
+    modelControls: _usesModel
         ? widget.definition.modelControls
         : const <String, ModelControlValueDto>{},
     permissionMode: _permissionMode,
@@ -724,16 +751,13 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
       loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
       currentSelection: _modelId.text.isEmpty
           ? null
-          : SessionModelSelectionDto(modelId: _modelId.text),
-      inheritLabel: null,
-      placeholder: _modelId.text.isEmpty
-          ? l10n.providerSettingsDefaultModelChoose
-          : _modelId.text,
+          : ModelSelectionDto(modelId: _modelId.text),
+      placeholder: _modelId.text.isEmpty ? l10n.composerModel : _modelId.text,
       enabled: enabled,
       leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
-      onValueChange: (option) {
-        if (option != null) setState(() => _modelId.text = option.model.id);
-      },
+      onValueChange: (option) => setState(
+        () => _modelId.text = option.model.id,
+      ),
     );
     if (!blocked) return select;
     return BlockedControl(

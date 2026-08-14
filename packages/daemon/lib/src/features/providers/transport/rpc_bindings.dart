@@ -102,13 +102,6 @@ List<RpcBindingDescriptor> providerRpcBindings({
         ),
       );
     }),
-    RpcBinding(providersGetDefaultModelProcedure, (_, _) async {
-      return DefaultModelDto(model: await providers.storedDefaultModel());
-    }),
-    RpcBinding(providersSetDefaultModelProcedure, (request, _) async {
-      await providers.setDefaultModel(request.model);
-      return const EmptyResultDto();
-    }),
     RpcBinding(providersCreateCustomProcedure, (request, _) async {
       return ProviderConnectionResultDto(
         connection: await exposeFailure(

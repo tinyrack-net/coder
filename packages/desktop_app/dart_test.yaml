@@ -34,6 +34,8 @@ tags:
   ui_variant__general_settings_route__desktop_mobile_light_korean__widget:
   ui_state__provider_settings_route__rendered__widget:
   ui_variant__provider_settings_route__desktop_mobile_light_korean__widget:
+  ui_state__model_settings_route__rendered__widget:
+  ui_variant__model_settings_route__desktop_mobile_light_korean__widget:
   ui_state__permission_settings_route__rendered__widget:
   ui_variant__permission_settings_route__desktop_mobile_light_korean__widget:
   ui_state__project_settings_route__rendered__widget:
@@ -236,8 +238,8 @@ tags:
   feature_test__skill_invocation__widget:
   feature_test__provider_catalog__widget:
   feature_test__provider_catalog__unit:
-  feature_test__provider_default_model__unit:
-  feature_test__provider_default_model__widget:
+  feature_test__model_settings__unit:
+  feature_test__model_settings__widget:
   feature_test__provider_catalog__e2e:
   feature_test__provider_connection_management__widget:
   feature_test__provider_connection_management__e2e:
@@ -252,6 +254,7 @@ tags:
   route_test__daemon_categories_route__widget:
   route_test__general_settings_route__widget:
   route_test__provider_settings_route__widget:
+  route_test__model_settings_route__widget:
   route_test__permission_settings_route__widget:
   route_test__project_settings_route__widget:
   route_test__agent_settings_route__widget:

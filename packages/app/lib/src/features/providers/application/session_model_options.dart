@@ -18,46 +18,39 @@ List<AgentDefinitionDto> selectableAgentDefinitions(
 /// Provider connections that can currently run a turn.
 List<ProviderConnectionDto> usableConnections(
   List<ProviderConnectionDto> connections,
-) => connections
-    .where(
-      (connection) =>
-          connection.status == ProviderConnectionStatus.connected ||
-          connection.status == ProviderConnectionStatus.degraded,
-    )
-    .toList(growable: false);
+) {
+  final usable =
+      connections
+          .where(
+            (connection) =>
+                connection.status == ProviderConnectionStatus.connected ||
+                connection.status == ProviderConnectionStatus.degraded,
+          )
+          .toList()
+        ..sort((left, right) {
+          final byName = left.displayName.compareTo(right.displayName);
+          return byName != 0
+              ? byName
+              : left.modelPrefix.compareTo(right.modelPrefix);
+        });
+  return usable;
+}
 
 /// Resolves the provider and model a definition would use on its own.
 ///
-/// Returns null when the definition's selection cannot be satisfied, which
-/// hands the choice to the next step of [effectiveModelFor]. Unlike the daemon
-/// this validates only the connection, because the model list of a connection
-/// the composer never touches may not be loaded.
-SessionModelSelectionDto? agentSelectionFor(
+/// Returns null only when the definition delegates to the daemon default.
+/// An unavailable explicit selection is preserved so the UI can show its raw
+/// ID and block execution instead of silently falling through.
+ModelSelectionDto? agentSelectionFor(
   AgentDefinitionDto definition,
-  List<ProviderConnectionDto> connections,
-) {
-  final usable = usableConnections(connections);
-  switch (definition.model.source) {
-    case AgentModelSource.session:
-      return null;
-    case AgentModelSource.fixed:
-      final modelId = definition.model.qualifiedModelId;
-      if (modelId == null) return null;
-      if (!usable.any(
-        (connection) => modelId.startsWith('${connection.modelPrefix}/'),
-      )) {
-        return null;
-      }
-      return SessionModelSelectionDto(modelId: modelId);
-  }
-}
+) => definition.model;
 
 /// Whether one selection names a connection and model that can run a turn.
 ///
 /// Mirrors the daemon predicate so the composer never shows a model the daemon
 /// would refuse at turn start.
 bool isRunnableSelection(
-  SessionModelSelectionDto selection,
+  ModelSelectionDto selection,
   List<ProviderConnectionDto> connections,
   Map<String, List<ProviderModelDto>> models,
 ) {
@@ -77,14 +70,21 @@ bool isRunnableSelection(
 /// [connections] must arrive in daemon order (display name ascending) and the
 /// lists in [models] in `listProviderModels` order (label ascending), so this
 /// resolves to the same model the daemon would pick.
-SessionModelSelectionDto? firstUsableModel(
+ModelSelectionDto? firstUsableModel(
   List<ProviderConnectionDto> connections,
   Map<String, List<ProviderModelDto>> models,
 ) {
   for (final connection in usableConnections(connections)) {
-    for (final model in models[connection.id] ?? const <ProviderModelDto>[]) {
+    final ordered =
+        <ProviderModelDto>[
+          ...models[connection.id] ?? const <ProviderModelDto>[],
+        ]..sort((left, right) {
+          final byLabel = left.label.compareTo(right.label);
+          return byLabel != 0 ? byLabel : left.id.compareTo(right.id);
+        });
+    for (final model in ordered) {
       if (!_isRunnableModel(model)) continue;
-      return SessionModelSelectionDto(modelId: model.id);
+      return ModelSelectionDto(modelId: model.id);
     }
   }
   return null;
@@ -93,22 +93,19 @@ SessionModelSelectionDto? firstUsableModel(
 /// Resolves the model a session runs on when it has no explicit override.
 ///
 /// Applies the agent definition, then the daemon-global [defaultModel], then
-/// the first usable provider model. Returns null only when no connected
-/// provider offers a runnable model.
-SessionModelSelectionDto? effectiveModelFor({
+/// the first runnable provider model. Explicit unavailable values remain the
+/// result so callers can report and block them without falling through.
+ModelSelectionDto? effectiveModelFor({
   required AgentDefinitionDto? definition,
   required List<ProviderConnectionDto> connections,
   required Map<String, List<ProviderModelDto>> models,
-  SessionModelSelectionDto? defaultModel,
+  ModelSelectionDto? defaultModel,
 }) {
   if (definition != null) {
-    final pinned = agentSelectionFor(definition, connections);
+    final pinned = agentSelectionFor(definition);
     if (pinned != null) return pinned;
   }
-  if (defaultModel != null &&
-      isRunnableSelection(defaultModel, connections, models)) {
-    return defaultModel;
-  }
+  if (defaultModel != null) return defaultModel;
   return firstUsableModel(connections, models);
 }
 

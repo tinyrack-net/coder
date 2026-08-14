@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2);
+  const sessionModel = ModelSelectionDto(modelId: 'provider/model');
 
   test('protocol v4 exposes permission defaults and typed contracts', () {
     expect(tinestProtocolMajor, 4);
@@ -152,6 +153,7 @@ void main() {
       createdAt: now,
       updatedAt: now,
       mode: SessionMode.plan,
+      model: sessionModel,
     );
 
     expect(
@@ -164,6 +166,7 @@ void main() {
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
       ).mode,
       SessionMode.normal,
     );
@@ -196,7 +199,7 @@ void main() {
   });
 
   test('session model overrides round-trip', () {
-    const selection = SessionModelSelectionDto(
+    const selection = ModelSelectionDto(
       modelId: 'provider/model',
     );
     final overridden = SessionDto(
@@ -214,7 +217,7 @@ void main() {
     _roundTrip(
       selection,
       (value) => value.toJson(),
-      SessionModelSelectionDto.fromJson,
+      ModelSelectionDto.fromJson,
     );
     _roundTrip(overridden, (value) => value.toJson(), SessionDto.fromJson);
     _roundTrip(
@@ -231,15 +234,7 @@ void main() {
     _roundTrip(
       const SessionSettingsUpdateParamsDto(
         sessionId: 'session',
-        patch: SessionSettingsPatchDto(hasModel: true, model: selection),
-      ),
-      (value) => value.toJson(),
-      SessionSettingsUpdateParamsDto.fromJson,
-    );
-    _roundTrip(
-      const SessionSettingsUpdateParamsDto(
-        sessionId: 'session',
-        patch: SessionSettingsPatchDto(hasModel: true),
+        patch: SessionSettingsPatchDto(model: selection),
       ),
       (value) => value.toJson(),
       SessionSettingsUpdateParamsDto.fromJson,
@@ -251,7 +246,7 @@ void main() {
       selection,
     );
     expect(
-      const SessionSettingsPatchDto(hasModel: true).model,
+      const SessionSettingsPatchDto().model,
       isNull,
     );
   });
@@ -306,6 +301,7 @@ void main() {
       status: SessionStatus.idle,
       createdAt: now,
       updatedAt: now,
+      model: sessionModel,
       modelControls: values,
     );
 
@@ -339,6 +335,7 @@ void main() {
         status: SessionStatus.running,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
         parentSessionId: 'root',
         taskName: 'explore_auth',
         agentPath: '/root/explore_auth',
@@ -363,6 +360,7 @@ void main() {
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
       );
       expect(root.taskName, isNull);
       expect(root.agentPath, isNull);
@@ -426,7 +424,7 @@ void main() {
       mode: AgentMode.subagent,
       promptEnabled: true,
       systemPrompt: 'Review the requested code.',
-      model: AgentModelSelectionDto(source: AgentModelSource.session),
+      model: sessionModel,
       modelControls: <String, ModelControlValueDto>{
         'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
       },
@@ -445,6 +443,7 @@ void main() {
       status: SessionStatus.idle,
       createdAt: now,
       updatedAt: now,
+      model: sessionModel,
     );
 
     _roundTrip(
@@ -778,6 +777,7 @@ void main() {
     status: SessionStatus.waitingForApproval,
     createdAt: now,
     updatedAt: now,
+    model: sessionModel,
     activeTurnId: 'turn',
     lastError: 'none',
   );
@@ -1188,9 +1188,7 @@ void main() {
           mode: AgentMode.subagent,
           promptEnabled: true,
           systemPrompt: 'Review code.',
-          model: AgentModelSelectionDto(
-            source: AgentModelSource.session,
-          ),
+          model: sessionModel,
           modelControls: <String, ModelControlValueDto>{
             'reasoning_effort': ModelControlValueDto.stringValue(
               value: 'medium',
@@ -1521,7 +1519,9 @@ void main() {
       // A blocked turn is a distinct state from one blocked on an approval.
       expect(
         SessionDto.fromJson(
-          agent.copyWith(status: SessionStatus.waitingForInput).toJson(),
+          _jsonMap(
+            agent.copyWith(status: SessionStatus.waitingForInput).toJson(),
+          ),
         ).status,
         SessionStatus.waitingForInput,
       );
@@ -1547,6 +1547,7 @@ void main() {
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
         contextTokens: 32000,
         contextWindow: 200000,
       );
@@ -1563,6 +1564,7 @@ void main() {
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
       );
       expect(unknown.contextWindow, isNull);
       expect(unknown.contextTokens, 0);
@@ -1670,9 +1672,13 @@ void main() {
         status: SessionStatus.idle,
         createdAt: now,
         updatedAt: now,
+        model: sessionModel,
         totalCostUsd: 1.25,
       );
-      expect(SessionDto.fromJson(session.toJson()).totalCostUsd, 1.25);
+      expect(
+        SessionDto.fromJson(_jsonMap(session.toJson())).totalCostUsd,
+        1.25,
+      );
     },
   );
 
@@ -1966,33 +1972,43 @@ void main() {
   );
 
   test(
-    'default model contracts round-trip and name stable RPC methods',
+    'daemon model settings use concrete selections and model-owned RPCs',
     () {
-      _roundTrip(
-        const DefaultModelDto(
-          model: SessionModelSelectionDto(
-            modelId: 'connection-1/model-1',
-          ),
-        ),
-        (value) => value.toJson(),
-        DefaultModelDto.fromJson,
+      const selection = ModelSelectionDto(
+        modelId: 'connection-1/model-1',
       );
       _roundTrip(
-        const DefaultModelDto(),
+        const DaemonModelSettingsDto(defaultModel: selection),
         (value) => value.toJson(),
-        DefaultModelDto.fromJson,
+        DaemonModelSettingsDto.fromJson,
+      );
+      _roundTrip(
+        const DaemonModelSettingsDto(),
+        (value) => value.toJson(),
+        DaemonModelSettingsDto.fromJson,
+      );
+      _roundTrip(
+        const SetDaemonDefaultModelParamsDto(model: selection),
+        (value) => value.toJson(),
+        SetDaemonDefaultModelParamsDto.fromJson,
       );
 
+      expect(modelsGetSettingsProcedure.name, 'models.getSettings');
       expect(
-        providersGetDefaultModelProcedure.name,
-        'providers.getDefaultModel',
+        modelsSetDefaultModelProcedure.name,
+        'models.setDefaultModel',
       );
       expect(
-        providersSetDefaultModelProcedure.name,
-        'providers.setDefaultModel',
+        rpcProcedures.map((procedure) => procedure.name),
+        isNot(
+          containsAll(<String>[
+            'providers.getDefaultModel',
+            'providers.setDefaultModel',
+          ]),
+        ),
       );
     },
-    tags: const <String>['feature_test__provider_default_model__contract'],
+    tags: const <String>['feature_test__model_settings__contract'],
   );
 
   test(
@@ -2167,3 +2183,6 @@ void _roundTrip<T>(
   final json = Map<String, dynamic>.from(jsonDecode(encoded) as Map);
   expect(decoder(json), value);
 }
+
+Map<String, dynamic> _jsonMap(Map<String, dynamic> value) =>
+    Map<String, dynamic>.from(jsonDecode(jsonEncode(value)) as Map);

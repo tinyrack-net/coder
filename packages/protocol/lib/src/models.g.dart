@@ -286,24 +286,11 @@ Map<String, dynamic> _$GitBranchDtoToJson(_GitBranchDto instance) =>
       'isDefault': instance.isDefault,
     };
 
-_AgentModelSelectionDto _$AgentModelSelectionDtoFromJson(
-  Map<String, dynamic> json,
-) => _AgentModelSelectionDto(
-  source: $enumDecode(_$AgentModelSourceEnumMap, json['source']),
-  modelId: json['modelId'] as String?,
-);
+_ModelSelectionDto _$ModelSelectionDtoFromJson(Map<String, dynamic> json) =>
+    _ModelSelectionDto(modelId: json['modelId'] as String);
 
-Map<String, dynamic> _$AgentModelSelectionDtoToJson(
-  _AgentModelSelectionDto instance,
-) => <String, dynamic>{
-  'source': _$AgentModelSourceEnumMap[instance.source]!,
-  'modelId': instance.modelId,
-};
-
-const _$AgentModelSourceEnumMap = {
-  AgentModelSource.session: 'session',
-  AgentModelSource.fixed: 'fixed',
-};
+Map<String, dynamic> _$ModelSelectionDtoToJson(_ModelSelectionDto instance) =>
+    <String, dynamic>{'modelId': instance.modelId};
 
 _AgentDefinitionDiagnosticDto _$AgentDefinitionDiagnosticDtoFromJson(
   Map<String, dynamic> json,
@@ -323,47 +310,50 @@ Map<String, dynamic> _$AgentDefinitionDiagnosticDtoToJson(
   'column': instance.column,
 };
 
-_AgentDefinitionDto _$AgentDefinitionDtoFromJson(
-  Map<String, dynamic> json,
-) => _AgentDefinitionDto(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  description: json['description'] as String,
-  mode: $enumDecode(_$AgentModeEnumMap, json['mode']),
-  promptEnabled: json['promptEnabled'] as bool,
-  systemPrompt: json['systemPrompt'] as String,
-  model: AgentModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
-  toolIds: (json['toolIds'] as List<dynamic>).map((e) => e as String).toList(),
-  callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  contentHash: json['contentHash'] as String,
-  sourcePath: json['sourcePath'] as String,
-  modelControls:
-      (json['modelControls'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(
-          k,
-          ModelControlValueDto.fromJson(e as Map<String, dynamic>),
-        ),
-      ) ??
-      const <String, ModelControlValueDto>{},
-  permissionMode: $enumDecodeNullable(
-    _$PermissionModeEnumMap,
-    json['permissionMode'],
-  ),
-  isBuiltIn: json['isBuiltIn'] as bool? ?? false,
-  isArchived: json['isArchived'] as bool? ?? false,
-  isStale: json['isStale'] as bool? ?? false,
-  diagnostics:
-      (json['diagnostics'] as List<dynamic>?)
-          ?.map(
-            (e) => AgentDefinitionDiagnosticDto.fromJson(
-              e as Map<String, dynamic>,
+_AgentDefinitionDto _$AgentDefinitionDtoFromJson(Map<String, dynamic> json) =>
+    _AgentDefinitionDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      mode: $enumDecode(_$AgentModeEnumMap, json['mode']),
+      promptEnabled: json['promptEnabled'] as bool,
+      systemPrompt: json['systemPrompt'] as String,
+      toolIds: (json['toolIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      contentHash: json['contentHash'] as String,
+      sourcePath: json['sourcePath'] as String,
+      model: json['model'] == null
+          ? null
+          : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
+      modelControls:
+          (json['modelControls'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(
+              k,
+              ModelControlValueDto.fromJson(e as Map<String, dynamic>),
             ),
-          )
-          .toList() ??
-      const <AgentDefinitionDiagnosticDto>[],
-);
+          ) ??
+          const <String, ModelControlValueDto>{},
+      permissionMode: $enumDecodeNullable(
+        _$PermissionModeEnumMap,
+        json['permissionMode'],
+      ),
+      isBuiltIn: json['isBuiltIn'] as bool? ?? false,
+      isArchived: json['isArchived'] as bool? ?? false,
+      isStale: json['isStale'] as bool? ?? false,
+      diagnostics:
+          (json['diagnostics'] as List<dynamic>?)
+              ?.map(
+                (e) => AgentDefinitionDiagnosticDto.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
+              .toList() ??
+          const <AgentDefinitionDiagnosticDto>[],
+    );
 
 Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
     <String, dynamic>{
@@ -373,11 +363,11 @@ Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
       'mode': _$AgentModeEnumMap[instance.mode]!,
       'promptEnabled': instance.promptEnabled,
       'systemPrompt': instance.systemPrompt,
-      'model': instance.model,
       'toolIds': instance.toolIds,
       'callableAgentIds': instance.callableAgentIds,
       'contentHash': instance.contentHash,
       'sourcePath': instance.sourcePath,
+      'model': instance.model,
       'modelControls': instance.modelControls,
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'isBuiltIn': instance.isBuiltIn,
@@ -712,14 +702,6 @@ const _$SkillSourceEnumMap = {
   SkillSource.project: 'project',
 };
 
-_SessionModelSelectionDto _$SessionModelSelectionDtoFromJson(
-  Map<String, dynamic> json,
-) => _SessionModelSelectionDto(modelId: json['modelId'] as String);
-
-Map<String, dynamic> _$SessionModelSelectionDtoToJson(
-  _SessionModelSelectionDto instance,
-) => <String, dynamic>{'modelId': instance.modelId};
-
 _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   id: json['id'] as String,
   worktreeId: json['worktreeId'] as String,
@@ -729,14 +711,10 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   status: $enumDecode(_$SessionStatusEnumMap, json['status']),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
+  model: ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
   mode:
       $enumDecodeNullable(_$SessionModeEnumMap, json['mode']) ??
       SessionMode.normal,
-  model: json['model'] == null
-      ? null
-      : SessionModelSelectionDto.fromJson(
-          json['model'] as Map<String, dynamic>,
-        ),
   modelControls:
       (json['modelControls'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(
@@ -771,8 +749,8 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'status': _$SessionStatusEnumMap[instance.status]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
-      'mode': _$SessionModeEnumMap[instance.mode]!,
       'model': instance.model,
+      'mode': _$SessionModeEnumMap[instance.mode]!,
       'modelControls': instance.modelControls,
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'parentSessionId': instance.parentSessionId,

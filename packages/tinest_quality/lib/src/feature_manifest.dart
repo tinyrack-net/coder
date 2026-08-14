@@ -1193,17 +1193,15 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
-    id: 'provider.default.model',
+    id: 'model.settings',
     description:
-        'Resolves the chat model from the session override, the agent '
-        'definition, the daemon default, then the first usable provider '
-        'model, and edits the daemon default.',
-    // ProviderSettingsRoute already belongs to provider.catalog; a route maps
-    // to exactly one feature, and the card is only part of that page.
+        'Owns one concrete daemon default model and resolves new sessions from '
+        'the chat override, agent model, then daemon default.',
     apiMethods: <String>[
-      'providers.getDefaultModel',
-      'providers.setDefaultModel',
+      'models.getSettings',
+      'models.setDefaultModel',
     ],
+    routes: <String>['ModelSettingsRoute'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -1363,6 +1361,11 @@ _uiRouteRegistrations = <({String id, String featureId, String description})>[
     id: 'provider_settings_route',
     featureId: 'provider.catalog',
     description: 'Provider connections and models.',
+  ),
+  (
+    id: 'model_settings_route',
+    featureId: 'model.settings',
+    description: 'Daemon default model settings.',
   ),
   (
     id: 'permission_settings_route',

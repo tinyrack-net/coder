@@ -416,10 +416,8 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
         for (final value in _archived.values) (value: value, archived: true),
       ]) {
         final definition = entry.value;
-        final modelId = definition.model.modelId;
-        if (definition.model.source != AgentModelSource.fixed ||
-            modelId == null ||
-            !modelId.startsWith('$oldPrefix/')) {
+        final modelId = definition.model?.modelId;
+        if (modelId == null || !modelId.startsWith('$oldPrefix/')) {
           continue;
         }
         final before = _sources[definition.id];
@@ -429,8 +427,7 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
         final after = codec.encodeUpdate(
           originalSource: before,
           definition: definition.copyWith(
-            model: AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
+            model: ModelSelectionDto(
               modelId: '$newPrefix/${modelId.substring(oldPrefix.length + 1)}',
             ),
           ),
@@ -681,7 +678,6 @@ AgentDefinitionDto _defaultTinest(String sourcePath) => AgentDefinitionDto(
   systemPrompt:
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
-  model: const AgentModelSelectionDto(source: AgentModelSource.session),
   // The always-on tools are implicit; every selectable built-in capability is
   // enabled for the shipped Tinest definition. The Lua tool surface is not
   // among them: a model that wants it declares `ModelToolSurface.luaCode` and
@@ -845,7 +841,7 @@ final class AgentDefinitionService {
     return List<AgentToolDefinitionDto>.unmodifiable(tools);
   }
 
-  /// Whether an active or archived definition fixes itself to a connection.
+  /// Whether an active or archived definition references a connection.
   Future<bool> referencesProvider(String modelPrefix) async {
     final definitions = <AgentDefinitionDto>[
       ...await _store.list(),
@@ -853,8 +849,7 @@ final class AgentDefinitionService {
     ];
     return definitions.any(
       (definition) =>
-          definition.model.source == AgentModelSource.fixed &&
-          definition.model.modelId?.startsWith('$modelPrefix/') == true,
+          definition.model?.modelId.startsWith('$modelPrefix/') == true,
     );
   }
 
@@ -993,7 +988,7 @@ final class AgentMarkdownCodec {
       throw const FormatException('Agent frontmatter must be a YAML map.');
     }
     final frontmatter = _stringMap(decoded);
-    if (_requiredInt(frontmatter, 'version') != 4) {
+    if (_requiredInt(frontmatter, 'version') != 5) {
       throw const FormatException('Unsupported agent Markdown version.');
     }
     final mode = _enumValue(
@@ -1001,22 +996,11 @@ final class AgentMarkdownCodec {
       _requiredString(frontmatter, 'mode'),
       'mode',
     );
-    final modelMap = _requiredMap(frontmatter, 'model');
-    final modelSource = _enumValue(
-      AgentModelSource.values,
-      _requiredString(modelMap, 'source'),
-      'model.source',
-    );
-    final modelId = _optionalString(modelMap, 'modelId');
-    if (modelSource == AgentModelSource.fixed && modelId == null) {
-      throw const FormatException(
-        'Fixed agent models require a qualified modelId.',
-      );
-    }
+    final modelId = _optionalString(frontmatter, 'model');
     final modelControls = _modelControls(frontmatter['modelControls']);
-    if (modelSource != AgentModelSource.fixed && modelControls.isNotEmpty) {
+    if (modelId == null && modelControls.isNotEmpty) {
       throw const FormatException(
-        'Only fixed agent models may declare modelControls.',
+        'modelControls require a concrete model.',
       );
     }
     final callableAgentIds = _stringList(frontmatter, 'callableAgents');
@@ -1031,10 +1015,7 @@ final class AgentMarkdownCodec {
       mode: mode,
       promptEnabled: _requiredBool(frontmatter, 'promptEnabled'),
       systemPrompt: document.body.trim(),
-      model: AgentModelSelectionDto(
-        source: modelSource,
-        modelId: modelId,
-      ),
+      model: modelId == null ? null : ModelSelectionDto(modelId: modelId),
       modelControls: modelControls,
       permissionMode: permissionMode == null
           ? null
@@ -1059,23 +1040,30 @@ final class AgentMarkdownCodec {
   }) {
     final document = _AgentMarkdownDocument.parse(originalSource);
     final editor = YamlEditor(document.frontmatter)
-      ..update(<Object>['version'], 4)
+      ..update(<Object>['version'], 5)
       ..update(<Object>['name'], definition.name)
       ..update(<Object>['description'], definition.description)
       ..update(<Object>['mode'], definition.mode.name)
       ..update(<Object>['promptEnabled'], definition.promptEnabled)
-      ..update(<Object>['model'], _modelMap(definition.model))
-      ..update(
-        <Object>['modelControls'],
-        _encodedModelControls(definition.modelControls),
-      )
       ..update(<Object>['tools'], definition.toolIds)
       ..update(<Object>['callableAgents'], definition.callableAgentIds);
+    final original = loadYaml(document.frontmatter) as YamlMap;
+    if (definition.model case final model?) {
+      editor.update(<Object>['model'], model.qualifiedModelId);
+    } else if (original.containsKey('model')) {
+      editor.remove(<Object>['model']);
+    }
+    if (definition.modelControls.isNotEmpty) {
+      editor.update(
+        <Object>['modelControls'],
+        _encodedModelControls(definition.modelControls),
+      );
+    } else if (original.containsKey('modelControls')) {
+      editor.remove(<Object>['modelControls']);
+    }
     if (definition.permissionMode case final permissionMode?) {
       editor.update(<Object>['permissionMode'], permissionMode.name);
-    } else if ((loadYaml(document.frontmatter) as YamlMap).containsKey(
-      'permissionMode',
-    )) {
+    } else if (original.containsKey('permissionMode')) {
       editor.remove(<Object>['permissionMode']);
     }
     return '---\n$editor\n---\n\n${definition.systemPrompt.trim()}\n';
@@ -1085,13 +1073,14 @@ final class AgentMarkdownCodec {
   String encodeNew(AgentDefinitionDto definition) {
     final editor = YamlEditor('')
       ..update(<Object>[], <String, Object?>{
-        'version': 4,
+        'version': 5,
         'name': definition.name,
         'description': definition.description,
         'mode': definition.mode.name,
         'promptEnabled': definition.promptEnabled,
-        'model': _modelMap(definition.model),
-        'modelControls': _encodedModelControls(definition.modelControls),
+        if (definition.model case final model?) 'model': model.qualifiedModelId,
+        if (definition.modelControls.isNotEmpty)
+          'modelControls': _encodedModelControls(definition.modelControls),
         if (definition.permissionMode case final permissionMode?)
           'permissionMode': permissionMode.name,
         'tools': definition.toolIds,
@@ -1099,12 +1088,6 @@ final class AgentMarkdownCodec {
       });
     return '---\n$editor\n---\n\n${definition.systemPrompt.trim()}\n';
   }
-
-  static Map<String, Object?> _modelMap(AgentModelSelectionDto model) =>
-      <String, Object?>{
-        'source': model.source.name,
-        'modelId': ?model.modelId,
-      };
 
   static Map<String, Object> _encodedModelControls(
     Map<String, ModelControlValueDto> controls,
@@ -1192,14 +1175,6 @@ Map<String, ModelControlValueDto> _modelControls(Object? value) {
         ),
       },
   };
-}
-
-Map<String, Object?> _requiredMap(Map<String, Object?> map, String key) {
-  final value = map[key];
-  if (value is! Map<String, Object?>) {
-    throw FormatException('$key must be a map.');
-  }
-  return value;
 }
 
 String _requiredString(Map<String, Object?> map, String key) {

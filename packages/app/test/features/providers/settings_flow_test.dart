@@ -183,7 +183,7 @@ void main() {
   );
 
   testWidgets(
-    'connection detail manages prefix and daemon default model',
+    'connection detail manages prefix without daemon model settings',
     (
       tester,
     ) async {
@@ -195,7 +195,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_field('모델 Prefix'), findsOneWidget);
-      expect(find.text('자동'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('provider-default-model')),
+        findsNothing,
+      );
+      expect(find.text('데몬 기본 모델'), findsNothing);
       final save = find.byKey(
         const ValueKey<String>('provider-prefix-save'),
       );
@@ -210,27 +214,6 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(TRButton, testL10n.commonRetry), findsNothing);
-      final defaultModel = find.byKey(
-        const ValueKey<String>('provider-default-model'),
-      );
-      await tester.ensureVisible(defaultModel);
-      await tester.tap(defaultModel);
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey<String>('provider-model-openai/gpt-5.6-sol')),
-        findsOneWidget,
-      );
-      await tester.tap(
-        find.byKey(
-          const ValueKey<String>('provider-model-openai/gpt-5.6-sol'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        api.defaultModel,
-        const SessionModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
-      );
-
       final disconnect = find.byKey(
         const ValueKey<String>('provider-connection-disconnect'),
       );
@@ -265,7 +248,6 @@ void main() {
       );
     },
     tags: const <String>[
-      'feature_test__provider_default_model__widget',
       'feature_test__provider_connection_management__widget',
     ],
   );

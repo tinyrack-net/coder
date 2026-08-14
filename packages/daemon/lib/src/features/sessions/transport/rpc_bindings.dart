@@ -1,5 +1,6 @@
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
+import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/goal_service.dart';
@@ -18,6 +19,7 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   required SessionInteractionPort interactions,
   required AgentDefinitionService agentDefinitions,
   required ProviderModelResolver models,
+  required DaemonModelSettingsService modelSettings,
   required Clock clock,
   required SessionGoalService goals,
 }) => <RpcBindingDescriptor>[
@@ -49,11 +51,24 @@ List<RpcBindingDescriptor> sessionRpcBindings({
           },
         );
       }
-      if (request.model case final selected?) {
-        await models.validateQualifiedModel(selected.qualifiedModelId);
+      final ModelSelectionDto selected;
+      final Map<String, ModelControlValueDto> controls;
+      if (request.model case final chatModel?) {
+        await modelSettings.requireRunnable(chatModel);
+        selected = chatModel;
+        controls = request.modelControls;
+      } else if (definition.model case final agentModel?) {
+        await modelSettings.requireRunnable(agentModel);
+        selected = agentModel;
+        controls = definition.modelControls;
       } else {
-        await models.resolveAgentModel(definition.model);
+        selected = await modelSettings.requireDefaultModel();
+        controls = const <String, ModelControlValueDto>{};
       }
+      await models.validateQualifiedModelControls(
+        selected.qualifiedModelId,
+        controls,
+      );
       final now = clock.nowUtc();
       return SessionResultDto(
         session: await sessions.create(
@@ -65,8 +80,8 @@ List<RpcBindingDescriptor> sessionRpcBindings({
             origin: SessionOrigin.manual,
             status: SessionStatus.idle,
             mode: request.mode,
-            model: request.model,
-            modelControls: request.modelControls,
+            model: selected,
+            modelControls: controls,
             permissionMode: request.permissionMode,
             createdAt: now,
             updatedAt: now,
@@ -74,6 +89,8 @@ List<RpcBindingDescriptor> sessionRpcBindings({
         ),
       );
     } on ProviderConnectionFailure catch (error) {
+      throw RpcFailureException(code: error.code, message: error.message);
+    } on ModelSettingsFailure catch (error) {
       throw RpcFailureException(code: error.code, message: error.message);
     } on AgentDefinitionLookupFailure catch (error) {
       throw RpcFailureException(
@@ -102,6 +119,8 @@ List<RpcBindingDescriptor> sessionRpcBindings({
           'setting': error.setting,
         },
       );
+    } on ProviderConnectionFailure catch (error) {
+      throw RpcFailureException(code: error.code, message: error.message);
     }
   }),
   RpcBinding(sessionsGetGoalProcedure, (request, _) async {

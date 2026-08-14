@@ -257,7 +257,7 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
         mode: Value<String>(session.mode.name),
-        modelId: Value<String?>(session.model?.qualifiedModelId),
+        modelId: session.model.qualifiedModelId,
         modelControlsJson: Value<String>(
           jsonEncode(
             session.modelControls.map(
@@ -287,15 +287,12 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
   @override
   Future<SessionDto> updateModelSettings(
     String id, {
-    required bool hasModel,
+    required ModelSelectionDto model,
     required Map<String, ModelControlValueDto> modelControls,
-    SessionModelSelectionDto? model,
   }) async {
     await (update(sessions)..where((row) => row.id.equals(id))).write(
       SessionsCompanion(
-        modelId: hasModel
-            ? Value<String?>(model?.qualifiedModelId)
-            : const Value<String?>.absent(),
+        modelId: Value<String>(model.qualifiedModelId),
         modelControlsJson: Value<String>(
           jsonEncode(
             modelControls.map(
@@ -319,7 +316,6 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
               .get();
       for (final session in affected) {
         final modelId = session.modelId;
-        if (modelId == null) continue;
         await (update(
           sessions,
         )..where((row) => row.id.equals(session.id))).write(
@@ -530,9 +526,7 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
           SessionMode.normal,
       activeTurnId: row.activeTurnId,
       lastError: row.lastError,
-      model: modelId == null
-          ? null
-          : SessionModelSelectionDto(modelId: modelId),
+      model: ModelSelectionDto(modelId: modelId),
       modelControls: <String, ModelControlValueDto>{
         for (final entry in (jsonDecode(
           row.modelControlsJson,

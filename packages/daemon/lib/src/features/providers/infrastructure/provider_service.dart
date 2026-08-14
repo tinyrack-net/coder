@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:agent/agent.dart';
+import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_adapters.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_auth.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_catalog.dart';
@@ -63,14 +63,9 @@ final class ProviderModelResolver {
 
   final ProviderConnectionService _connections;
 
-  /// Returns the daemon-global fallback model, when one is runnable.
-  Future<SessionModelSelectionDto?> fallbackModel() =>
-      _connections.fallbackModel();
-
-  /// Resolves a Markdown agent model selection.
-  Future<ResolvedAgentModel> resolveAgentModel(
-    AgentModelSelectionDto selection,
-  ) => _connections.resolveAgentModel(selection);
+  /// Resolves one concrete model selection.
+  Future<ResolvedAgentModel> resolveSelection(ModelSelectionDto selection) =>
+      _connections.resolveQualifiedModel(selection.qualifiedModelId);
 
   /// Resolves one canonical qualified model identifier.
   Future<ResolvedAgentModel> resolveQualifiedModel(String modelId) =>
@@ -142,12 +137,6 @@ final class ProviderModelResolver {
 /// never collides with a registered plugin id.
 const String customProviderDefinitionId = 'custom';
 
-/// Settings key holding the daemon-global default model selection.
-///
-/// An empty stored value means no explicit default, which makes the daemon
-/// fall back to the first usable provider model instead.
-const String defaultModelSettingKey = 'provider.defaultModel';
-
 /// Rewrites persisted references owned outside provider persistence.
 abstract interface class ProviderModelReferenceUpdater {
   /// Replaces the qualified prefix everywhere outside provider storage.
@@ -155,12 +144,12 @@ abstract interface class ProviderModelReferenceUpdater {
 }
 
 /// Owns provider connections while keeping runtime details out of the protocol.
-final class ProviderConnectionService implements ProviderOAuthConnector {
+final class ProviderConnectionService
+    implements ProviderOAuthConnector, RunnableModelCatalog {
   /// Creates the provider connection service.
   factory ProviderConnectionService({
     required ProviderRepository repository,
     required CredentialRepository credentials,
-    required SettingsRepository settings,
     required Clock clock,
     required ProviderRegistry registry,
     required BuiltInProviderCatalog catalog,
@@ -174,7 +163,6 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     referenceUpdater,
     repository: repository,
     credentials: credentials,
-    settings: settings,
     ids: ids,
     clock: clock,
     registry: registry,
@@ -189,7 +177,6 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     this._referenceUpdater, {
     required this._repository,
     required this._credentials,
-    required this._settings,
     required this._ids,
     required this._clock,
     required this._registry,
@@ -202,7 +189,6 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
        _factoryOverride = providerFactory;
 
   final ProviderRepository _repository;
-  final SettingsRepository _settings;
   final CredentialRepository _credentials;
   final IdGenerator _ids;
   final Clock _clock;
@@ -215,11 +201,16 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
   ProviderModelReferenceUpdater? _referenceUpdater;
   final StreamController<ProviderCatalogDto> _catalogUpdates =
       StreamController<ProviderCatalogDto>.broadcast(sync: true);
+  final StreamController<void> _runnableModelChanges =
+      StreamController<void>.broadcast(sync: true);
   Future<void>? _backgroundRefresh;
   final Map<String, String> _oauthPrefixReservations = <String, String>{};
 
   /// Background catalog refresh results.
   Stream<ProviderCatalogDto> get catalogUpdates => _catalogUpdates.stream;
+
+  @override
+  Stream<void> get runnableModelChanges => _runnableModelChanges.stream;
 
   /// Persistence coordinator currently attached by the composition root.
   ProviderModelReferenceUpdater? get referenceUpdater => _referenceUpdater;
@@ -260,6 +251,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     await _catalog.close();
     await _backgroundRefresh;
     await _catalogUpdates.close();
+    await _runnableModelChanges.close();
   }
 
   Future<void> _initializeFixedProvider() async {
@@ -328,6 +320,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       await _repository.replaceModels(connection.id, models.values);
     }
     _catalogUpdates.add(refreshed);
+    _runnableModelChanges.add(null);
     return refreshed;
   }
 
@@ -342,106 +335,23 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     return result;
   }
 
-  /// Reads the stored daemon-global default model without validating it.
-  ///
-  /// A stored selection that no longer runs is kept on disk so the settings
-  /// page can show it as unavailable instead of silently forgetting it.
-  Future<SessionModelSelectionDto?> storedDefaultModel() async {
-    final raw = await _settings.getValue(defaultModelSettingKey);
-    if (raw == null || raw.isEmpty) return null;
-    return SessionModelSelectionDto.fromJson(
-      Map<String, dynamic>.from(jsonDecode(raw) as Map),
-    );
-  }
-
-  /// Replaces or clears the daemon-global default model.
-  Future<void> setDefaultModel(SessionModelSelectionDto? model) =>
-      _settings.setValue(
-        defaultModelSettingKey,
-        model == null ? '' : jsonEncode(model.toJson()),
-      );
-
-  /// Resolves the model to use when no session or agent selection applies.
-  ///
-  /// Prefers the stored daemon default and falls through to
-  /// [firstUsableModel] when that default no longer runs.
-  Future<SessionModelSelectionDto?> fallbackModel() async {
-    final stored = await storedDefaultModel();
-    if (stored != null && await _isRunnableSelection(stored)) return stored;
-    return firstUsableModel();
-  }
-
-  /// Returns the first runnable model of the first usable connection.
-  ///
-  /// Connections arrive sorted by display name and models by label, so the
-  /// choice is deterministic and matches what the app shows.
-  Future<SessionModelSelectionDto?> firstUsableModel() async {
+  @override
+  Future<List<ModelSelectionDto>> listRunnableModels() async {
+    final selections = <ModelSelectionDto>[];
     for (final connection in await connections()) {
       if (!_canRun(connection.status)) continue;
       final models = await _repository.listModels(connection.id);
-      final runtimeModelIds = _registry
-          .find(connection.definitionId)
-          ?.models
-          .map((model) => model.id)
-          .toSet();
       models.sort((left, right) {
-        final leftRuntime =
-            runtimeModelIds?.contains(left.providerModelId) ?? false;
-        final rightRuntime =
-            runtimeModelIds?.contains(right.providerModelId) ?? false;
-        if (leftRuntime != rightRuntime) return leftRuntime ? -1 : 1;
-        return left.label.compareTo(right.label);
+        final byLabel = left.label.compareTo(right.label);
+        if (byLabel != 0) return byLabel;
+        return left.id.compareTo(right.id);
       });
       for (final model in models) {
         if (!_isRunnableModel(model)) continue;
-        return SessionModelSelectionDto(
-          modelId: model.id,
-        );
+        selections.add(ModelSelectionDto(modelId: model.id));
       }
     }
-    return null;
-  }
-
-  /// Resolves daemon-default or fixed Markdown agent model configuration.
-  ///
-  /// A fixed selection whose provider or model can no longer run falls back to
-  /// the daemon default so a disconnected provider never blocks a turn.
-  Future<ResolvedAgentModel> resolveAgentModel(
-    AgentModelSelectionDto selection,
-  ) async {
-    switch (selection.source) {
-      case AgentModelSource.session:
-        return _resolveFallback();
-      case AgentModelSource.fixed:
-        final fixedModel = selection.qualifiedModelId;
-        if (fixedModel == null) {
-          throw const FormatException(
-            'Fixed agent models require a qualified model ID.',
-          );
-        }
-        final pinned = SessionModelSelectionDto(modelId: fixedModel);
-        if (!await _isRunnableSelection(pinned)) return _resolveFallback();
-        return resolveQualifiedModel(fixedModel);
-    }
-  }
-
-  Future<ResolvedAgentModel> _resolveFallback() async {
-    final fallback = await fallbackModel();
-    if (fallback == null) {
-      throw const ProviderConnectionFailure(
-        'model_required',
-        'No connected provider offers a usable model.',
-      );
-    }
-    return resolveQualifiedModel(fallback.qualifiedModelId);
-  }
-
-  Future<bool> _isRunnableSelection(SessionModelSelectionDto selection) async {
-    final modelId = selection.qualifiedModelId;
-    final connection = await _connectionForQualifiedModel(modelId);
-    if (connection == null || !_canRun(connection.status)) return false;
-    final model = await _repository.getModel(connection.id, modelId);
-    return model != null && _isRunnableModel(model);
+    return selections;
   }
 
   /// Resolves one canonical `<prefix>/<provider-model-id>` selection.
@@ -706,6 +616,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         error: null,
       ),
     );
+    _runnableModelChanges.add(null);
   }
 
   /// Changes one connection prefix and every provider-owned model identifier.
@@ -733,14 +644,6 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       modelPrefix: normalized,
       updatedAt: _clock.nowUtc(),
     );
-    final stored = await storedDefaultModel();
-    final renamedDefault =
-        stored != null && stored.modelId.startsWith('$oldPrefix/')
-        ? SessionModelSelectionDto(
-            modelId:
-                '$normalized/${stored.modelId.substring(oldPrefix.length + 1)}',
-          )
-        : stored;
     final updater = _referenceUpdater;
     var referencesUpdated = false;
     try {
@@ -757,14 +660,11 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
           ),
         ),
       );
-      if (renamedDefault != stored) {
-        await setDefaultModel(renamedDefault);
-      }
+      _runnableModelChanges.add(null);
       return updated;
     } catch (_) {
       await _repository.upsertConnection(current);
       await _repository.replaceModels(id, models);
-      if (renamedDefault != stored) await setDefaultModel(stored);
       if (referencesUpdated) await updater!.rewrite(normalized, oldPrefix);
       rethrow;
     }
@@ -778,6 +678,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
     }
     await _credentials.removeCredential(id);
     await _repository.deleteConnection(id);
+    _runnableModelChanges.add(null);
   }
 
   /// Returns cached and discovered models for a connection.
@@ -883,10 +784,16 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
         ? modelId
         : _qualify(connection.modelPrefix, modelId);
     final model = await _repository.getModel(connection.id, qualifiedModelId);
-    if (model == null) throw StateError('Unknown provider model: $modelId');
+    if (model == null) {
+      throw ProviderConnectionFailure(
+        'model_unavailable',
+        'The configured model is unavailable: $qualifiedModelId',
+      );
+    }
     if (!_isRunnableModel(model)) {
-      throw StateError(
-        'Model streaming and tool calling capabilities must be supported.',
+      throw ProviderConnectionFailure(
+        'model_unavailable',
+        'The configured model cannot stream and call tools: $qualifiedModelId',
       );
     }
     return model;
@@ -1024,6 +931,7 @@ final class ProviderConnectionService implements ProviderOAuthConnector {
       error: error,
     );
     await _repository.upsertConnection(saved);
+    _runnableModelChanges.add(null);
     return (await _repository.getConnection(saved.id)) ?? saved;
   }
 

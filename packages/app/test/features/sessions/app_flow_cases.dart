@@ -27,6 +27,7 @@ void _registerSessionsAppFlows() {
     agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
     createdAt: now,
     updatedAt: now,
   );
@@ -1235,12 +1236,6 @@ void _registerSessionsAppFlows() {
         mode: AgentMode.primary,
         promptEnabled: true,
         systemPrompt: 'Plan first.',
-        model: AgentModelSelectionDto(
-          source: AgentModelSource.session,
-        ),
-        modelControls: <String, ModelControlValueDto>{
-          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -1277,7 +1272,8 @@ void _registerSessionsAppFlows() {
           'deepseek': <ProviderModelDto>[
             ProviderModelDto(
               connectionId: 'deepseek',
-              id: 'gpt-5.6-sol',
+              id: 'deepseek/gpt-5.6-sol',
+              providerModelId: 'gpt-5.6-sol',
               label: 'Shared Model',
               source: ProviderModelSource.bundled,
               capabilities: ModelCapabilitiesDto(
@@ -1337,7 +1333,7 @@ void _registerSessionsAppFlows() {
       expect(created.title, 'Run the tests');
       expect(
         created.model,
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'deepseek/gpt-5.6-sol',
         ),
       );
@@ -1347,13 +1343,14 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'composer pins a model at creation and clears it mid-session',
+    'composer pins a model at creation and replaces it mid-session',
     (tester) async {
       await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const fast = ProviderModelDto(
         connectionId: 'openai',
-        id: 'gpt-5.6-fast',
+        id: 'openai/gpt-5.6-fast',
+        providerModelId: 'gpt-5.6-fast',
         label: 'GPT-5.6 Fast',
         source: ProviderModelSource.bundled,
         capabilities: ModelCapabilitiesDto(
@@ -1394,8 +1391,7 @@ void _registerSessionsAppFlows() {
             mode: AgentMode.primary,
             promptEnabled: true,
             systemPrompt: 'Code carefully.',
-            model: AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
+            model: ModelSelectionDto(
               modelId: 'openai/gpt-5.6-sol',
             ),
             modelControls: <String, ModelControlValueDto>{
@@ -1415,7 +1411,8 @@ void _registerSessionsAppFlows() {
           'openai': <ProviderModelDto>[
             const ProviderModelDto(
               connectionId: 'openai',
-              id: 'gpt-5.6-sol',
+              id: 'openai/gpt-5.6-sol',
+              providerModelId: 'gpt-5.6-sol',
               label: 'GPT-5.6 Sol',
               source: ProviderModelSource.bundled,
               capabilities: ModelCapabilitiesDto(
@@ -1428,7 +1425,8 @@ void _registerSessionsAppFlows() {
           'deepseek': <ProviderModelDto>[
             const ProviderModelDto(
               connectionId: 'deepseek',
-              id: 'deepseek-v4',
+              id: 'deepseek/deepseek-v4',
+              providerModelId: 'deepseek-v4',
               label: 'DeepSeek V4',
               source: ProviderModelSource.bundled,
               capabilities: ModelCapabilitiesDto(
@@ -1467,7 +1465,7 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
       expect(
         api.createdSessions.single.model,
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'openai/gpt-5.6-fast',
         ),
       );
@@ -1480,23 +1478,33 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
       expect(
         api.updatedSessionModels.single.model,
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'deepseek/deepseek-v4',
         ),
       );
 
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('model-option-inherit')));
+      expect(
+        find.byKey(const ValueKey('model-option-inherit')),
+        findsNothing,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      expect(api.updatedSessionModels.last.model, isNull);
-      expect((await api.sessions.listSessions()).single.model, isNull);
+      expect(
+        api.updatedSessionModels.last.model,
+        const ModelSelectionDto(modelId: 'deepseek/deepseek-v4'),
+      );
+      expect(
+        (await api.sessions.listSessions()).single.model,
+        const ModelSelectionDto(modelId: 'deepseek/deepseek-v4'),
+      );
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );
 
   testWidgets(
-    'composer turn settings follow model capabilities and return to inherit',
+    'composer snapshots model controls and resets optional settings',
     (tester) async {
       await _setTestViewport(tester, const Size(1400, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1519,7 +1527,8 @@ void _registerSessionsAppFlows() {
           'openai': <ProviderModelDto>[
             ProviderModelDto(
               connectionId: 'openai',
-              id: 'gpt-5.6-sol',
+              id: 'openai/gpt-5.6-sol',
+              providerModelId: 'gpt-5.6-sol',
               label: 'GPT-5.6 Sol',
               source: ProviderModelSource.bundled,
               capabilities: ModelCapabilitiesDto(
@@ -1548,7 +1557,8 @@ void _registerSessionsAppFlows() {
             // A model the catalog says cannot honour either setting.
             ProviderModelDto(
               connectionId: 'openai',
-              id: 'gpt-5.6-plain',
+              id: 'openai/gpt-5.6-plain',
+              providerModelId: 'gpt-5.6-plain',
               label: 'GPT-5.6 Plain',
               source: ProviderModelSource.bundled,
               capabilities: ModelCapabilitiesDto(
@@ -1577,12 +1587,6 @@ void _registerSessionsAppFlows() {
         findsOne,
       );
 
-      await tester.tap(find.byKey(const ValueKey('session-composer-model')));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
-      );
-      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('session-composer-control-reasoning_effort')),
         findsOne,
@@ -1626,6 +1630,10 @@ void _registerSessionsAppFlows() {
       await tester.pumpAndSettle();
 
       final created = api.createdSessions.single;
+      expect(
+        created.model,
+        const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
+      );
       expect(
         created.modelControls['reasoning_effort'],
         const ModelControlValueDto.stringValue(value: 'high'),

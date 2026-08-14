@@ -32,7 +32,7 @@ final class SessionTurnActiveFailure implements Exception {
 
 /// Session preference mutations exposed to the daemon transport.
 abstract interface class SessionSettingsPort {
-  /// Applies an atomic nullable patch to one session.
+  /// Applies an atomic patch to one session.
   Future<SessionDto> updateSettings(
     String sessionId,
     SessionSettingsPatchDto patch,
@@ -47,10 +47,10 @@ abstract interface class SessionSettingsPort {
     PermissionMode? permissionMode,
   );
 
-  /// Sets or clears the provider and model override used by future turns.
+  /// Replaces the concrete provider-qualified model used by future turns.
   Future<SessionDto> setModel(
     String sessionId,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto model,
   );
 }
 
@@ -83,30 +83,23 @@ final class SessionSettingsService implements SessionSettingsPort {
   ) async {
     await _requireSession(sessionId);
     final changesIdleSettings =
-        patch.mode != null || patch.hasModel || patch.hasModelControls;
+        patch.mode != null || patch.model != null || patch.hasModelControls;
     if (changesIdleSettings) _requireIdle(sessionId, 'settings');
-    if (patch.hasModel && patch.model != null) {
+    if (patch.model != null) {
       await _models.validateQualifiedModel(patch.model!.qualifiedModelId);
     }
 
     var session = (await _sessions.getById(sessionId))!;
-    final targetModel = patch.hasModel ? patch.model : session.model;
+    final targetModel = patch.model ?? session.model;
     var targetControls = patch.hasModelControls
         ? patch.modelControls
         : session.modelControls;
-    if (targetModel == null) {
-      if (patch.hasModelControls && targetControls.isNotEmpty) {
-        throw const FormatException(
-          'Model controls require an explicit provider model.',
-        );
-      }
-      targetControls = const <String, ModelControlValueDto>{};
-    } else if (patch.hasModelControls) {
+    if (patch.hasModelControls) {
       await _models.validateQualifiedModelControls(
         targetModel.qualifiedModelId,
         targetControls,
       );
-    } else if (patch.hasModel) {
+    } else if (patch.model != null) {
       targetControls = await _models.retainValidQualifiedModelControls(
         targetModel.qualifiedModelId,
         targetControls,
@@ -115,11 +108,10 @@ final class SessionSettingsService implements SessionSettingsPort {
     if (patch.mode != null) {
       session = await _sessions.updateMode(sessionId, patch.mode!);
     }
-    if (patch.hasModel || patch.hasModelControls) {
+    if (patch.model != null || patch.hasModelControls) {
       session = await _sessions.updateModelSettings(
         sessionId,
-        hasModel: patch.hasModel,
-        model: patch.model,
+        model: targetModel,
         modelControls: targetControls,
       );
     }
@@ -153,24 +145,19 @@ final class SessionSettingsService implements SessionSettingsPort {
   @override
   Future<SessionDto> setModel(
     String sessionId,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto model,
   ) async {
     await _requireSession(sessionId);
     _requireIdle(sessionId, 'model');
-    if (model != null) {
-      await _models.validateQualifiedModel(model.qualifiedModelId);
-    }
+    await _models.validateQualifiedModel(model.qualifiedModelId);
     final current = (await _sessions.getById(sessionId))!;
-    final controls = model == null
-        ? const <String, ModelControlValueDto>{}
-        : await _models.retainValidQualifiedModelControls(
-            model.qualifiedModelId,
-            current.modelControls,
-          );
+    final controls = await _models.retainValidQualifiedModelControls(
+      model.qualifiedModelId,
+      current.modelControls,
+    );
     return _emit(
       await _sessions.updateModelSettings(
         sessionId,
-        hasModel: true,
         model: model,
         modelControls: controls,
       ),

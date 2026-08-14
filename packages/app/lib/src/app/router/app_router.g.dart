@@ -15,6 +15,7 @@ List<RouteBase> get $appRoutes => [
   $terminalRoute,
   $generalSettingsRoute,
   $providerSettingsRoute,
+  $modelSettingsRoute,
   $permissionSettingsRoute,
   $projectSettingsRoute,
   $agentSettingsRoute,
@@ -297,6 +298,38 @@ mixin $ProviderSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/providers',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $modelSettingsRoute => GoRouteData.$route(
+  path: '/settings/models',
+  hasOverriddenOnExit: false,
+  factory: $ModelSettingsRoute._fromState,
+);
+
+mixin $ModelSettingsRoute on GoRouteData {
+  static ModelSettingsRoute _fromState(GoRouterState state) =>
+      ModelSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  ModelSettingsRoute get _self => this as ModelSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/models',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

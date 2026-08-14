@@ -39,6 +39,7 @@ void main() {
     agentPath: agentPath,
     rootSessionId: rootSessionId,
     lifecycle: lifecycle,
+    model: const ModelSelectionDto(modelId: 'local-test/test-model'),
     createdAt: createdAt ?? now,
     updatedAt: createdAt ?? now,
   );

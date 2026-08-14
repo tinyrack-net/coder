@@ -20,8 +20,9 @@ void _registerSharedAppFlows() {
                 height: 600,
                 child: AsyncModelSelect(
                   loadOptions: () async => const <ModelPickerOption>[],
-                  currentSelection: null,
-                  inheritLabel: 'Automatic',
+                  currentSelection: const ModelSelectionDto(
+                    modelId: 'missing/model',
+                  ),
                   onValueChange: (_) {},
                 ),
               ),
@@ -31,8 +32,8 @@ void _registerSharedAppFlows() {
       );
 
       await tester.pumpAndSettle();
-      final select = tester.widget<TRSelect<ModelPickerOption?>>(
-        find.byType(TRSelect<ModelPickerOption?>),
+      final select = tester.widget<TRSelect<ModelPickerOption>>(
+        find.byType(TRSelect<ModelPickerOption>),
       );
       expect(select.searchable, isTrue);
       expect(select.surface, TRSelectSurface.auto);

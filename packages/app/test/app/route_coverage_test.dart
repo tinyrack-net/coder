@@ -39,6 +39,7 @@ void main() {
     agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
     createdAt: now,
     updatedAt: now,
   );
@@ -279,6 +280,22 @@ void main() {
       // Exact executable tag required by the typed UI manifest.
       // ignore: lines_longer_than_80_chars
       'ui_variant__provider_settings_route__desktop_mobile_light_korean__widget',
+    ],
+  );
+
+  testWidgets(
+    'ModelSettingsRoute renders at desktop, tablet, and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const ModelSettingsRoute(hostId: 'server').location,
+      find.byKey(const ValueKey<String>('daemon-default-model')),
+    ),
+    tags: const <String>[
+      'route_test__model_settings_route__widget',
+      'feature_test__model_settings__widget',
+      'ui_state__model_settings_route__rendered__widget',
+      'ui_variant__model_settings_route__desktop_mobile_light_korean__widget',
     ],
   );
 

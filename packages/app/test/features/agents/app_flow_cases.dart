@@ -237,8 +237,7 @@ void _registerAgentsAppFlows() {
         mode: AgentMode.primary,
         promptEnabled: false,
         systemPrompt: '',
-        model: AgentModelSelectionDto(
-          source: AgentModelSource.fixed,
+        model: ModelSelectionDto(
           modelId: 'openai/gpt-5.6-sol',
         ),
         toolIds: <String>[],
@@ -349,6 +348,85 @@ void _registerAgentsAppFlows() {
     ],
   );
 
+  testWidgets(
+    'agent model switch snapshots a concrete model and clears it when off',
+    (tester) async {
+      await _setTestViewport(tester, const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi();
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.byKey(
+        const ValueKey<String>('agent-settings-use-model'),
+      );
+      var modelSwitch = tester.widget<TinestSwitchRow>(switchFinder);
+      expect(modelSwitch.value, isFalse);
+
+      modelSwitch.onChanged!(true);
+      await tester.pumpAndSettle();
+      expect(find.byType(AsyncModelSelect), findsOneWidget);
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      expect(
+        (await api.agents.getAgentDefinition('tinest')).model,
+        const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
+      );
+
+      modelSwitch = tester.widget<TinestSwitchRow>(switchFinder);
+      modelSwitch.onChanged!(false);
+      await tester.pumpAndSettle();
+      expect(find.byType(AsyncModelSelect), findsNothing);
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      expect((await api.agents.getAgentDefinition('tinest')).model, isNull);
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+      'feature_test__model_settings__widget',
+    ],
+  );
+
+  testWidgets(
+    'agent model switch cannot save without a concrete runnable option',
+    (tester) async {
+      await _setTestViewport(tester, const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        connections: const <ProviderConnectionDto>[],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+
+      final modelSwitch = tester.widget<TinestSwitchRow>(
+        find.byKey(const ValueKey<String>('agent-settings-use-model')),
+      );
+      modelSwitch.onChanged!(true);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AsyncModelSelect), findsOneWidget);
+      expect(find.byType(BlockedControl), findsOneWidget);
+      expect(
+        tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
+        isNull,
+      );
+    },
+    tags: const <String>[
+      'feature_test__agent_definition_management__widget',
+      'feature_test__model_settings__widget',
+    ],
+  );
+
   testWidgets('mobile agent settings navigates from list to Markdown detail', (
     tester,
   ) async {
@@ -387,12 +465,6 @@ void _registerAgentsAppFlows() {
         mode: AgentMode.primary,
         promptEnabled: true,
         systemPrompt: 'Code carefully.',
-        model: AgentModelSelectionDto(
-          source: AgentModelSource.session,
-        ),
-        modelControls: <String, ModelControlValueDto>{
-          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-        },
         permissionMode: PermissionMode.ask,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -413,12 +485,6 @@ void _registerAgentsAppFlows() {
         mode: AgentMode.subagent,
         promptEnabled: true,
         systemPrompt: 'Review.',
-        model: AgentModelSelectionDto(
-          source: AgentModelSource.session,
-        ),
-        modelControls: <String, ModelControlValueDto>{
-          'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-        },
         permissionMode: PermissionMode.readOnly,
         toolIds: <String>['read_file'],
         callableAgentIds: <String>[],
@@ -442,9 +508,9 @@ void _registerAgentsAppFlows() {
       final editorList = find.byType(ListView).last;
       await tester.drag(editorList, const Offset(0, -500));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('고정 provider/model'));
+      await tester.tap(find.text('이 Agent에 모델 지정'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(TRSelect<ModelPickerOption?>).last);
+      await tester.tap(find.byType(TRSelect<ModelPickerOption>).last);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(
@@ -465,7 +531,7 @@ void _registerAgentsAppFlows() {
 
       final updated = await api.agents.getAgentDefinition('tinest');
       expect(updated.promptEnabled, isFalse);
-      expect(updated.model.modelId, 'openai/gpt-5.6-sol');
+      expect(updated.model!.modelId, 'openai/gpt-5.6-sol');
       expect(updated.toolIds, isEmpty);
       expect(updated.callableAgentIds, <String>['reviewer']);
 

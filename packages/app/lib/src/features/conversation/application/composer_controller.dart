@@ -74,8 +74,8 @@ final class SessionComposerDraft {
   /// Explicitly chosen agent definition; null falls back to the first usable.
   final String? agentDefinitionId;
 
-  /// Explicitly chosen provider and model; null inherits the agent definition.
-  final SessionModelSelectionDto? model;
+  /// Explicit chat model; null resolves through the agent and daemon defaults.
+  final ModelSelectionDto? model;
 
   /// Collaboration mode the next session starts in.
   final SessionMode mode;
@@ -93,7 +93,7 @@ final class SessionComposerDraft {
   SessionComposerDraft copyWith({
     SessionMode? mode,
     ({String? value})? agentDefinitionId,
-    ({SessionModelSelectionDto? value})? model,
+    ({ModelSelectionDto? value})? model,
     Map<String, ModelControlValueDto>? modelControls,
     ({PermissionMode? value})? permissionMode,
   }) => SessionComposerDraft(
@@ -126,8 +126,8 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
     mode: state.mode,
   );
 
-  /// Chooses the provider and model override, or clears it when null.
-  void selectModel(SessionModelSelectionDto? model) => state = state.copyWith(
+  /// Chooses one concrete provider and model override.
+  void selectModel(ModelSelectionDto model) => state = state.copyWith(
     model: (value: model),
     modelControls: const <String, ModelControlValueDto>{},
   );

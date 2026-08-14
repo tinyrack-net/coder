@@ -1,5 +1,6 @@
 import 'package:protocol/src/features/agents/procedures.dart';
 import 'package:protocol/src/features/mcp/procedures.dart';
+import 'package:protocol/src/features/models/procedures.dart';
 import 'package:protocol/src/features/prompts/procedures.dart';
 import 'package:protocol/src/features/providers/procedures.dart';
 import 'package:protocol/src/features/relay/procedures.dart';
@@ -16,6 +17,7 @@ final List<RpcProcedureDescriptor> rpcProcedures =
       ...workspacesProcedures,
       ...agentsProcedures,
       ...promptsProcedures,
+      ...modelsProcedures,
       ...providersProcedures,
       ...relayProcedures,
       ...mcpProcedures,

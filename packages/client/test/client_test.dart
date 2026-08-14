@@ -12,6 +12,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   final now = DateTime.utc(2026, 8, 2);
+  const selectedModel = ModelSelectionDto(modelId: 'openai/gpt-5.6-sol');
   final workspace = WorkspaceDto(
     id: 'workspace',
     name: 'Workspace',
@@ -37,6 +38,7 @@ void main() {
     status: SessionStatus.idle,
     createdAt: now,
     updatedAt: now,
+    model: selectedModel,
   );
   const skill = SkillDto(
     id: 'commit',
@@ -55,9 +57,7 @@ void main() {
     mode: AgentMode.primary,
     promptEnabled: true,
     systemPrompt: 'Code carefully.',
-    model: AgentModelSelectionDto(
-      source: AgentModelSource.session,
-    ),
+    model: selectedModel,
     modelControls: <String, ModelControlValueDto>{
       'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
     },
@@ -490,7 +490,7 @@ void main() {
           title: agent.title,
           agentDefinitionId: agent.agentDefinitionId,
           mode: SessionMode.plan,
-          model: const SessionModelSelectionDto(
+          model: const ModelSelectionDto(
             modelId: 'provider/model',
           ),
         ),
@@ -500,8 +500,7 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasModel: true,
-            model: SessionModelSelectionDto(
+            model: ModelSelectionDto(
               modelId: 'provider/model',
             ),
           ),
@@ -528,13 +527,6 @@ void main() {
         goal,
       );
       expect(await client.sessions.clearGoal(agent.id), isTrue);
-      expect(
-        await client.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(hasModel: true),
-        ),
-        agent,
-      );
       expect(
         await client.updateSettings(
           agent.id,
@@ -746,20 +738,30 @@ void main() {
         <ProviderModelDto>[model],
       );
       expect(
-        await client.getDefaultModel(),
-        const SessionModelSelectionDto(
-          modelId: 'openai/gpt-5.6-sol',
+        await client.models.getSettings(),
+        const DaemonModelSettingsDto(
+          defaultModel: ModelSelectionDto(
+            modelId: 'openai/gpt-5.6-sol',
+          ),
         ),
       );
-      await client.setDefaultModel(null);
+      const defaultModel = ModelSelectionDto(
+        modelId: 'openai/gpt-5.6-sol',
+      );
+      expect(
+        await client.models.setDefaultModel(defaultModel),
+        const DaemonModelSettingsDto(defaultModel: defaultModel),
+      );
       expect(
         connector.requests
             .lastWhere(
               (request) =>
-                  request.method == providersSetDefaultModelProcedure.name,
+                  request.method == modelsSetDefaultModelProcedure.name,
             )
             .payload,
-        const DefaultModelDto().toJson(),
+        const <String, dynamic>{
+          'model': <String, dynamic>{'modelId': 'openai/gpt-5.6-sol'},
+        },
       );
       const customConfig = CustomProviderConfigDto(
         name: 'Custom',
@@ -1705,12 +1707,16 @@ void _registerFixtureMethods(
     providersListModelsProcedure.name: ProviderModelsResultDto(
       models: <ProviderModelDto>[model],
     ).toJson(),
-    providersGetDefaultModelProcedure.name: const DefaultModelDto(
-      model: SessionModelSelectionDto(
+    modelsGetSettingsProcedure.name: const DaemonModelSettingsDto(
+      defaultModel: ModelSelectionDto(
         modelId: 'openai/gpt-5.6-sol',
       ),
     ).toJson(),
-    providersSetDefaultModelProcedure.name: const <String, dynamic>{},
+    modelsSetDefaultModelProcedure.name: const DaemonModelSettingsDto(
+      defaultModel: ModelSelectionDto(
+        modelId: 'openai/gpt-5.6-sol',
+      ),
+    ).toJson(),
     providersCreateCustomProcedure.name: ProviderConnectionResultDto(
       connection: connection,
     ).toJson(),

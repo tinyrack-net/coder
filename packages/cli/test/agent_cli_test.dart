@@ -117,9 +117,7 @@ final class _AgentBackend implements AgentCliBackend {
     mode: id == 'tinest' ? AgentMode.primary : AgentMode.subagent,
     promptEnabled: true,
     systemPrompt: 'prompt',
-    model: const AgentModelSelectionDto(
-      source: AgentModelSource.session,
-    ),
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5'),
     modelControls: <String, ModelControlValueDto>{
       'reasoning_effort': const ModelControlValueDto.stringValue(
         value: 'medium',

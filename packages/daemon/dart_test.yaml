@@ -57,8 +57,8 @@ tags:
   feature_test__provider_usage__verticalSlice:
   feature_test__provider_connection_management__unit:
   feature_test__provider_connection_management__verticalSlice:
-  feature_test__provider_default_model__unit:
-  feature_test__provider_default_model__verticalSlice:
+  feature_test__model_settings__unit:
+  feature_test__model_settings__verticalSlice:
   feature_test__provider_oauth__unit:
   feature_test__provider_oauth__verticalSlice:
   feature_test__provider_custom__unit:

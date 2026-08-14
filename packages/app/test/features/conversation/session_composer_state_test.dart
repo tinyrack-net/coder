@@ -13,9 +13,7 @@ void main() {
     AgentMode mode = AgentMode.primary,
     bool isArchived = false,
     bool isStale = false,
-    AgentModelSelectionDto model = const AgentModelSelectionDto(
-      source: AgentModelSource.session,
-    ),
+    ModelSelectionDto? model,
   }) => AgentDefinitionDto(
     id: id,
     name: id,
@@ -24,11 +22,13 @@ void main() {
     promptEnabled: true,
     systemPrompt: 'prompt',
     model: model,
-    modelControls: <String, ModelControlValueDto>{
-      'reasoning_effort': const ModelControlValueDto.stringValue(
-        value: 'medium',
-      ),
-    },
+    modelControls: model == null
+        ? const <String, ModelControlValueDto>{}
+        : const <String, ModelControlValueDto>{
+            'reasoning_effort': ModelControlValueDto.stringValue(
+              value: 'medium',
+            ),
+          },
     permissionMode: PermissionMode.ask,
     toolIds: const <String>['read_file'],
     callableAgentIds: const <String>[],
@@ -86,8 +86,7 @@ void main() {
         definition(id: 'stale', isStale: true),
         definition(
           id: 'broken',
-          model: const AgentModelSelectionDto(
-            source: AgentModelSource.fixed,
+          model: const ModelSelectionDto(
             modelId: 'missing/model',
           ),
         ),
@@ -103,63 +102,45 @@ void main() {
           connection(id: 'degraded', status: ProviderConnectionStatus.degraded),
           connection(id: 'offline', status: ProviderConnectionStatus.error),
         ]).map((item) => item.id),
-        <String>['openai', 'degraded'],
+        <String>['degraded', 'openai'],
       );
     },
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );
 
   test(
-    'agent selections require a session choice or resolve a fixed model',
+    'agent selections preserve concrete IDs including unavailable ones',
     () {
-      final connections = <ProviderConnectionDto>[
-        connection(),
-        connection(id: 'deepseek'),
-      ];
-
       expect(
-        agentSelectionFor(definition(), connections),
+        agentSelectionFor(definition()),
         isNull,
       );
       expect(
         agentSelectionFor(
           definition(
-            model: const AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
+            model: const ModelSelectionDto(
               modelId: 'deepseek/deepseek-v4',
             ),
           ),
-          connections,
         ),
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'deepseek/deepseek-v4',
         ),
       );
       expect(
         agentSelectionFor(
           definition(
-            model: const AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
+            model: const ModelSelectionDto(
               modelId: 'missing/model',
             ),
           ),
-          connections,
         ),
-        isNull,
+        const ModelSelectionDto(modelId: 'missing/model'),
       );
       expect(
         agentSelectionFor(
-          definition(
-            model: const AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
-            ),
-          ),
-          connections,
+          definition(),
         ),
-        isNull,
-      );
-      expect(
-        agentSelectionFor(definition(), <ProviderConnectionDto>[connection()]),
         isNull,
       );
     },
@@ -201,9 +182,9 @@ void main() {
         ],
         'openai': <ProviderModelDto>[model(), model(id: 'gpt-5-mini')],
       };
-      SessionModelSelectionDto? resolve({
+      ModelSelectionDto? resolve({
         AgentDefinitionDto? agent,
-        SessionModelSelectionDto? defaultModel,
+        ModelSelectionDto? defaultModel,
         List<ProviderConnectionDto>? only,
       }) => effectiveModelFor(
         definition: agent ?? definition(),
@@ -216,16 +197,15 @@ void main() {
       expect(
         resolve(
           agent: definition(
-            model: const AgentModelSelectionDto(
-              source: AgentModelSource.fixed,
+            model: const ModelSelectionDto(
               modelId: 'openai/gpt-5-mini',
             ),
           ),
-          defaultModel: const SessionModelSelectionDto(
+          defaultModel: const ModelSelectionDto(
             modelId: 'deepseek/deepseek-chat',
           ),
         ),
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'openai/gpt-5-mini',
         ),
       );
@@ -233,29 +213,27 @@ void main() {
       // Step 3 wins once the agent has no usable pin.
       expect(
         resolve(
-          defaultModel: const SessionModelSelectionDto(
+          defaultModel: const ModelSelectionDto(
             modelId: 'openai/gpt-5-mini',
           ),
         ),
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'openai/gpt-5-mini',
         ),
       );
 
-      // Step 4 skips the unusable default and the unusable first model.
+      // An explicit unavailable default blocks instead of falling through.
       expect(
         resolve(
-          defaultModel: const SessionModelSelectionDto(
+          defaultModel: const ModelSelectionDto(
             modelId: 'retired/gpt-5-mini',
           ),
         ),
-        const SessionModelSelectionDto(
-          modelId: 'deepseek/deepseek-chat',
-        ),
+        const ModelSelectionDto(modelId: 'retired/gpt-5-mini'),
       );
       expect(
         resolve(),
-        const SessionModelSelectionDto(
+        const ModelSelectionDto(
           modelId: 'deepseek/deepseek-chat',
         ),
       );
@@ -274,7 +252,7 @@ void main() {
       );
       expect(resolve(only: const <ProviderConnectionDto>[]), isNull);
     },
-    tags: const <String>['feature_test__provider_default_model__unit'],
+    tags: const <String>['feature_test__model_settings__unit'],
   );
 
   test(
@@ -287,7 +265,7 @@ void main() {
         'worktree',
         'draft:test',
       );
-      const model = SessionModelSelectionDto(
+      const model = ModelSelectionDto(
         modelId: 'openai/gpt-5.6-sol',
       );
 
@@ -311,8 +289,6 @@ void main() {
       expect(container.read(provider).model, isNull);
       container.read(provider.notifier).selectModel(model);
       expect(container.read(provider).agentDefinitionId, 'planner');
-      container.read(provider.notifier).selectModel(null);
-      expect(container.read(provider).model, isNull);
     },
     tags: const <String>['feature_test__session_lifecycle__unit'],
   );

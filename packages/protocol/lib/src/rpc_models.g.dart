@@ -182,9 +182,7 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
       SessionMode.normal,
   model: json['model'] == null
       ? null
-      : SessionModelSelectionDto.fromJson(
-          json['model'] as Map<String, dynamic>,
-        ),
+      : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
   modelControls:
       (json['modelControls'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(
@@ -228,12 +226,9 @@ _SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionSettingsPatchDto(
   mode: $enumDecodeNullable(_$SessionModeEnumMap, json['mode']),
-  hasModel: json['hasModel'] as bool? ?? false,
   model: json['model'] == null
       ? null
-      : SessionModelSelectionDto.fromJson(
-          json['model'] as Map<String, dynamic>,
-        ),
+      : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
   hasModelControls: json['hasModelControls'] as bool? ?? false,
   modelControls:
       (json['modelControls'] as Map<String, dynamic>?)?.map(
@@ -254,7 +249,6 @@ Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
   _SessionSettingsPatchDto instance,
 ) => <String, dynamic>{
   'mode': _$SessionModeEnumMap[instance.mode],
-  'hasModel': instance.hasModel,
   'model': instance.model,
   'hasModelControls': instance.hasModelControls,
   'modelControls': instance.modelControls,
@@ -1074,17 +1068,29 @@ Map<String, dynamic> _$PermissionSettingsDtoToJson(
   'defaultMode': _$PermissionModeEnumMap[instance.defaultMode]!,
 };
 
-_DefaultModelDto _$DefaultModelDtoFromJson(Map<String, dynamic> json) =>
-    _DefaultModelDto(
-      model: json['model'] == null
-          ? null
-          : SessionModelSelectionDto.fromJson(
-              json['model'] as Map<String, dynamic>,
-            ),
-    );
+_DaemonModelSettingsDto _$DaemonModelSettingsDtoFromJson(
+  Map<String, dynamic> json,
+) => _DaemonModelSettingsDto(
+  defaultModel: json['defaultModel'] == null
+      ? null
+      : ModelSelectionDto.fromJson(
+          json['defaultModel'] as Map<String, dynamic>,
+        ),
+);
 
-Map<String, dynamic> _$DefaultModelDtoToJson(_DefaultModelDto instance) =>
-    <String, dynamic>{'model': instance.model};
+Map<String, dynamic> _$DaemonModelSettingsDtoToJson(
+  _DaemonModelSettingsDto instance,
+) => <String, dynamic>{'defaultModel': instance.defaultModel};
+
+_SetDaemonDefaultModelParamsDto _$SetDaemonDefaultModelParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _SetDaemonDefaultModelParamsDto(
+  model: ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$SetDaemonDefaultModelParamsDtoToJson(
+  _SetDaemonDefaultModelParamsDto instance,
+) => <String, dynamic>{'model': instance.model};
 
 _AgentDefinitionListResultDto _$AgentDefinitionListResultDtoFromJson(
   Map<String, dynamic> json,

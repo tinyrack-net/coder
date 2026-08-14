@@ -85,6 +85,7 @@ final class FakeTinestApi
         SessionsApi,
         AgentsApi,
         PromptsApi,
+        ModelsApi,
         ProvidersApi,
         McpApi,
         TerminalsApi,
@@ -106,6 +107,7 @@ final class FakeTinestApi
     Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
     List<ProviderUsageDto>? providerUsage,
+    ModelSelectionDto? defaultModel,
     List<WorkspaceCatalogDto>? workspaceCatalogResponses,
     this.eventStream,
     this.agentListError,
@@ -126,6 +128,7 @@ final class FakeTinestApi
     this.listTerminalsGate,
     this.skillListGate,
     this.permissionSettingsGate,
+    this.modelSettingsGate,
     this.providerConnectionsGate,
     this.mcpListGate,
     this.createWorktreeError,
@@ -166,6 +169,11 @@ final class FakeTinestApi
                      : connection,
                )
                .toList(),
+       _defaultModel =
+           defaultModel ??
+           ((connections ?? <ProviderConnectionDto>[_openAIConnection]).isEmpty
+               ? null
+               : const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol')),
        _workspaces = workspaces ?? <WorkspaceDto>[],
        _worktrees = worktrees ?? <WorktreeDto>[],
        _agents = agents ?? <SessionDto>[],
@@ -194,18 +202,7 @@ final class FakeTinestApi
          'openai': <ProviderModelDto>[_openAIModel],
          for (final entry
              in (models ?? <String, List<ProviderModelDto>>{}).entries)
-           entry.key: entry.value
-               .map(
-                 (model) => model.id.contains('/')
-                     ? model
-                     : model.copyWith(
-                         id: '${entry.key}/${model.id}',
-                         providerModelId: model.providerModelId.isEmpty
-                             ? model.id
-                             : model.providerModelId,
-                       ),
-               )
-               .toList(),
+           entry.key: List<ProviderModelDto>.of(entry.value),
        };
 
   static final DateTime _now = DateTime.utc(2026);
@@ -317,9 +314,6 @@ final class FakeTinestApi
     mode: AgentMode.primary,
     promptEnabled: true,
     systemPrompt: 'Code carefully.',
-    model: AgentModelSelectionDto(
-      source: AgentModelSource.session,
-    ),
     permissionMode: PermissionMode.ask,
     toolIds: <String>['read_file'],
     callableAgentIds: <String>[],
@@ -379,10 +373,10 @@ final class FakeTinestApi
 
   /// Host shell saved through the settings API.
   ShellSpecDto? get terminalShell => _terminalShell;
-  SessionModelSelectionDto? _defaultModel;
+  ModelSelectionDto? _defaultModel;
 
-  /// Daemon-global default model saved through the provider settings API.
-  SessionModelSelectionDto? get defaultModel => _defaultModel;
+  /// Daemon-global concrete model saved through the model settings API.
+  ModelSelectionDto? get defaultModel => _defaultModel;
   PermissionMode _defaultPermissionMode;
 
   /// Error thrown when the daemon-global permission default is saved.
@@ -432,6 +426,9 @@ final class FakeTinestApi
 
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
+
+  /// Optional gate used to keep daemon model settings loading.
+  final Future<void>? modelSettingsGate;
 
   /// Optional failure returned while loading one provider's model catalog.
   final Exception? providerModelListError;
@@ -565,9 +562,8 @@ final class FakeTinestApi
       <({String sessionId, SessionMode mode})>[];
 
   /// Session model overrides written through the fake.
-  final List<({String sessionId, SessionModelSelectionDto? model})>
-  updatedSessionModels =
-      <({String sessionId, SessionModelSelectionDto? model})>[];
+  final List<({String sessionId, ModelSelectionDto model})>
+  updatedSessionModels = <({String sessionId, ModelSelectionDto model})>[];
 
   /// Session reasoning effort overrides written through the fake.
   final List<({String sessionId, String? reasoningEffort})>
@@ -733,6 +729,9 @@ final class FakeTinestApi
 
   @override
   PromptsApi get prompts => this;
+
+  @override
+  ModelsApi get models => this;
 
   @override
   ProvidersApi get providers => this;
@@ -1113,7 +1112,7 @@ final class FakeTinestApi
     required String title,
     required String agentDefinitionId,
     SessionMode mode = SessionMode.normal,
-    SessionModelSelectionDto? model,
+    ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
     PermissionMode? permissionMode,
@@ -1122,6 +1121,16 @@ final class FakeTinestApi
     if (gate != null) await gate.future;
     final error = sessionCreateError;
     if (error != null) throw error;
+    final definition = _agentDefinitions
+        .where((definition) => definition.id == agentDefinitionId)
+        .firstOrNull;
+    final resolvedModel = model ?? definition?.model ?? _defaultModel;
+    if (resolvedModel == null) {
+      throw const TinestClientException(
+        'No runnable model is available.',
+        code: 'model_required',
+      );
+    }
     final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
@@ -1130,7 +1139,7 @@ final class FakeTinestApi
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
       mode: mode,
-      model: model,
+      model: resolvedModel,
       modelControls: modelControls,
       permissionMode: permissionMode,
       createdAt: _now,
@@ -1154,9 +1163,9 @@ final class FakeTinestApi
       updatedSessionModes.add((sessionId: sessionId, mode: mode));
       updated = updated.copyWith(mode: mode);
     }
-    if (patch.hasModel) {
-      updatedSessionModels.add((sessionId: sessionId, model: patch.model));
-      updated = updated.copyWith(model: patch.model);
+    if (patch.model case final model?) {
+      updatedSessionModels.add((sessionId: sessionId, model: model));
+      updated = updated.copyWith(model: model);
     }
     if (patch.hasModelControls) {
       final controls = patch.modelControls;
@@ -1950,11 +1959,17 @@ final class FakeTinestApi
       List<ProviderUsageDto>.unmodifiable(_providerUsage);
 
   @override
-  Future<SessionModelSelectionDto?> getDefaultModel() async => _defaultModel;
+  Future<DaemonModelSettingsDto> getSettings() async {
+    await modelSettingsGate;
+    return DaemonModelSettingsDto(defaultModel: _defaultModel);
+  }
 
   @override
-  Future<void> setDefaultModel(SessionModelSelectionDto? model) async {
+  Future<DaemonModelSettingsDto> setDefaultModel(
+    ModelSelectionDto model,
+  ) async {
     _defaultModel = model;
+    return DaemonModelSettingsDto(defaultModel: model);
   }
 
   @override
@@ -2012,16 +2027,22 @@ final class FakeTinestApi
     String? apiKey,
   }) async {
     if (apiKey != null) credentials[connectionId] = apiKey;
+    final current = _connections.singleWhere(
+      (item) => item.id == connectionId,
+    );
     for (final manualModel in config.models) {
       final models = _models.putIfAbsent(
         connectionId,
         () => <ProviderModelDto>[],
       );
-      if (models.any((model) => model.id == manualModel.id)) continue;
+      if (models.any((model) => model.providerModelId == manualModel.id)) {
+        continue;
+      }
       models.add(
         ProviderModelDto(
           connectionId: connectionId,
-          id: manualModel.id,
+          id: '${current.modelPrefix}/${manualModel.id}',
+          providerModelId: manualModel.id,
           label: manualModel.label,
           source: ProviderModelSource.manual,
           capabilities: const ModelCapabilitiesDto(
@@ -2032,9 +2053,6 @@ final class FakeTinestApi
         ),
       );
     }
-    final current = _connections.singleWhere(
-      (item) => item.id == connectionId,
-    );
     return _saveConnection(
       current.copyWith(
         displayName: config.name,

@@ -25,6 +25,7 @@ void _registerWorkspaceControllerTests() {
     agentDefinitionId: 'tinest',
     origin: SessionOrigin.manual,
     status: SessionStatus.idle,
+    model: const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
     createdAt: now,
     updatedAt: now,
   );
@@ -99,7 +100,7 @@ void _registerWorkspaceControllerTests() {
 
       final agentsProvider = sessionsControllerProvider('server', worktree.id);
       expect(await container.read(agentsProvider.future), <SessionDto>[agent]);
-      const override = SessionModelSelectionDto(
+      const override = ModelSelectionDto(
         modelId: 'openai/gpt-5.6-sol',
       );
       final created = await container
@@ -119,11 +120,11 @@ void _registerWorkspaceControllerTests() {
                 .read(agentsProvider.notifier)
                 .setModel(
                   created.id,
-                  null,
+                  const ModelSelectionDto(modelId: 'openai/gpt-5.6-terra'),
                   const <String, ModelControlValueDto>{},
                 ))
             .model,
-        isNull,
+        const ModelSelectionDto(modelId: 'openai/gpt-5.6-terra'),
       );
       expect(api.updatedSessionModels.single.sessionId, created.id);
       expect(
@@ -144,7 +145,7 @@ void _registerWorkspaceControllerTests() {
             .value!
             .firstWhere((item) => item.id == created.id)
             .model,
-        isNull,
+        const ModelSelectionDto(modelId: 'openai/gpt-5.6-terra'),
       );
       api.emit(
         SessionUpdatedClientEvent(
