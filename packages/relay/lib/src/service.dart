@@ -14,7 +14,12 @@ final class RelayService {
     RelayRegistry? registry,
     this.maxConnections = 4096,
     this.maxConnectionsPerIp = 64,
-  }) : registry = registry ?? RelayRegistry();
+    this.clientHandshakeTimeout = const Duration(seconds: 10),
+  }) : assert(
+         clientHandshakeTimeout > Duration.zero,
+         'Client handshake timeout must be positive.',
+       ),
+       registry = registry ?? RelayRegistry();
 
   /// In-memory daemon/client registry for this replica.
   final RelayRegistry registry;
@@ -24,6 +29,12 @@ final class RelayService {
 
   /// Maximum simultaneous sockets admitted from one source address.
   final int maxConnectionsPerIp;
+
+  /// Maximum time a client may wait before sending its first relay frame.
+  ///
+  /// Daemon control sockets are deliberately exempt: they wait for a client
+  /// connection before they have an envelope to send.
+  final Duration clientHandshakeTimeout;
 
   final Set<_WebSocketRelayPeer> _peers = <_WebSocketRelayPeer>{};
   final Map<String, int> _connectionsByIp = <String, int>{};
@@ -99,6 +110,9 @@ final class RelayService {
   ) {
     final peer = _WebSocketRelayPeer(
       channel,
+      initialFrameTimeout: route.role == _RelayRole.client
+          ? clientHandshakeTimeout
+          : null,
       onReceived: (bytes) => _receivedBytes += bytes,
       onSent: (bytes) => _sentBytes += bytes,
     );
@@ -175,16 +189,19 @@ final class _RelayRoute {
 final class _WebSocketRelayPeer implements RelayPeer {
   _WebSocketRelayPeer(
     this._channel, {
+    required Duration? initialFrameTimeout,
     required this.onReceived,
     required this.onSent,
   }) {
-    _handshakeTimer = Timer(const Duration(seconds: 10), () {
-      unawaited(close(1008, 'Relay handshake timed out.'));
-    });
+    _handshakeTimer = initialFrameTimeout == null
+        ? null
+        : Timer(initialFrameTimeout, () {
+            unawaited(close(1008, 'Relay handshake timed out.'));
+          });
     _subscription = _channel.stream.listen(
       (message) {
         if (message is List<int>) {
-          _handshakeTimer.cancel();
+          _handshakeTimer?.cancel();
           onReceived(message.length);
           _messages.add(Uint8List.fromList(message));
         } else {
@@ -203,7 +220,7 @@ final class _WebSocketRelayPeer implements RelayPeer {
   final void Function(int bytes) onSent;
   final StreamController<Uint8List> _messages = StreamController<Uint8List>();
   late final StreamSubscription<dynamic> _subscription;
-  late final Timer _handshakeTimer;
+  late final Timer? _handshakeTimer;
 
   Future<void> get done => _channel.sink.done;
 
@@ -212,11 +229,15 @@ final class _WebSocketRelayPeer implements RelayPeer {
 
   @override
   Future<void> close(int code, String reason) async {
-    _handshakeTimer.cancel();
+    _handshakeTimer?.cancel();
     // package:web_socket currently rejects registered 1xxx codes other than
-    // 1000. Keep 1012 as the registry/service protocol intent and map it to a
-    // private equivalent only at this library boundary.
-    final wireCode = code == 1012 ? 4002 : code;
+    // 1000. Keep the standard registry/service protocol intent and map it to
+    // private equivalents only at this library boundary.
+    final wireCode = switch (code) {
+      1008 => 4008,
+      1012 => 4002,
+      _ => code,
+    };
     await _channel.sink
         .close(wireCode, reason)
         .timeout(

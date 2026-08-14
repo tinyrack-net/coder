@@ -349,7 +349,7 @@ jobs:
             http://127.0.0.1:18080 relay-smoke.ready \
             >relay-smoke.log 2>&1 &
           smoke_pid=$!
-          for _ in $(seq 1 40); do
+          for _ in $(seq 1 80); do
             test -f relay-smoke.ready && break
             sleep 0.25
           done

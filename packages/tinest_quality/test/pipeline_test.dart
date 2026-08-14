@@ -260,6 +260,7 @@ void main() {
       _job(workflow, 'relay-smoke-linux'),
       contains("needs.changes.outputs.scope == 'relay-only'"),
     );
+    expect(_job(workflow, 'relay-smoke-linux'), contains('seq 1 80'));
     for (final job in <String>[
       'generated-linux',
       'coverage-flutter-linux',
@@ -466,6 +467,7 @@ void main() {
       relayWorkflow,
       contains('packages/relay/tool/smoke_relay.dart'),
     );
+    expect(relayWorkflow, contains('seq 1 80'));
     expect(relayWorkflow, isNot(contains('gh release create')));
   });
 

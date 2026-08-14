@@ -20,6 +20,10 @@ Future<void> _smokeRelay(Uri base, String? readyFile) async {
   final daemon = await WebSocket.connect(
     _webSocketUri(base, role: 'daemon', serverId: 'container-smoke').toString(),
   );
+  // The daemon normally waits for a client before it has an envelope to send.
+  // Keep it idle beyond the production client handshake timeout so release and
+  // live smoke checks cover the daemon-role lifetime contract.
+  await Future<void>.delayed(const Duration(seconds: 11));
   final client = await WebSocket.connect(
     _webSocketUri(base, role: 'client', serverId: 'container-smoke').toString(),
   );
