@@ -84,9 +84,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   void initState() {
     super.initState();
     final selection = widget.selection;
-    _adaptiveNavigation = TRThreePaneNavigator<String>(
-      initialDestination: _workspaceDestination(widget),
-    );
+    _adaptiveNavigation = _createWorkspaceNavigator(widget);
     _adaptiveNavigation.addListener(_adaptiveNavigationChanged);
     _workspaceTreeController = TRTreeNavController<WorkspaceNavValue>(
       expanded: selection == null
@@ -109,10 +107,10 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     if (widget.selection != oldWidget.selection) {
       _missingSelectionScheduled = false;
     }
-    _scheduleAdaptiveDestinationReset();
+    _scheduleAdaptiveDestinationSync();
   }
 
-  void _scheduleAdaptiveDestinationReset() {
+  void _scheduleAdaptiveDestinationSync() {
     if (_adaptiveSyncScheduled) return;
     _adaptiveSyncScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,7 +120,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       final current = _adaptiveNavigation.currentDestination;
       if (current.value != destination.value ||
           current.role != destination.role) {
-        _adaptiveNavigation.reset(destination);
+        if (destination.role == TRPaneRole.navigation) {
+          _adaptiveNavigation.reset(destination);
+        } else if (current.role == TRPaneRole.navigation) {
+          _adaptiveNavigation.push(destination);
+        } else {
+          _adaptiveNavigation.replace(destination);
+        }
       }
     });
   }
@@ -134,6 +138,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         _adaptiveNavigation.currentDestination.role != TRPaneRole.navigation) {
       return;
     }
+    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
     const WorkspaceHomeRoute().replace(context);
   }
 
@@ -254,8 +259,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
             homeSessions: _homeSessions(catalog.value),
             selected: widget.selection,
             treeController: _workspaceTreeController,
-            onNewWorkspace: () =>
-                const WorkspaceHomeRoute(compose: true).replace(context),
+            onNewWorkspace: _openNewWorkspaceComposer,
             onSelect: _selectWorktree,
             onSelectSession: _selectSession,
             onOpenDaemonSettings: () => unawaited(
@@ -312,6 +316,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     _goWorktree(context, selection);
   }
 
+  void _openNewWorkspaceComposer() {
+    _setWorkspaceContentDestination(
+      _workspaceDestination(const WorkspacePage(compose: true)),
+    );
+    const WorkspaceHomeRoute(compose: true).replace(context);
+  }
+
   void _selectSession(WorkspaceSelection selection, String sessionId) {
     _pushWorkspaceContentDestination(
       selection: selection,
@@ -324,12 +335,19 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     required WorkspaceSelection selection,
     String? requestedAgentId,
   }) {
-    final destination = _workspaceDestination(
-      WorkspacePage(
-        selection: selection,
-        requestedAgentId: requestedAgentId,
+    _setWorkspaceContentDestination(
+      _workspaceDestination(
+        WorkspacePage(
+          selection: selection,
+          requestedAgentId: requestedAgentId,
+        ),
       ),
     );
+  }
+
+  void _setWorkspaceContentDestination(
+    TRPaneDestination<String> destination,
+  ) {
     final current = _adaptiveNavigation.currentDestination;
     if (current.role == TRPaneRole.navigation) {
       _adaptiveNavigation.push(destination);
@@ -448,13 +466,29 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   }
 }
 
+const _workspaceNavigationDestination = TRPaneDestination<String>(
+  role: TRPaneRole.navigation,
+  value: 'navigation',
+);
+
+TRThreePaneNavigator<String> _createWorkspaceNavigator(WorkspacePage page) {
+  final initialDestination = _workspaceDestination(page);
+  final navigator = TRThreePaneNavigator<String>(
+    initialDestination: _workspaceNavigationDestination,
+  );
+  // Seed a complete hierarchy before listeners can observe the navigator.
+  // This is initial state construction, not lifecycle-time navigation.
+  if (initialDestination.role != _workspaceNavigationDestination.role ||
+      initialDestination.value != _workspaceNavigationDestination.value) {
+    navigator.push(initialDestination);
+  }
+  return navigator;
+}
+
 TRPaneDestination<String> _workspaceDestination(WorkspacePage page) {
   final selection = page.selection;
   if (selection == null && !page.compose) {
-    return const TRPaneDestination<String>(
-      role: TRPaneRole.navigation,
-      value: 'navigation',
-    );
+    return _workspaceNavigationDestination;
   }
   return TRPaneDestination<String>(
     role: TRPaneRole.primary,
