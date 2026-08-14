@@ -84,6 +84,81 @@ void main() {
   );
 
   test(
+    'an idle daemon remains routable beyond the client handshake timeout',
+    () async {
+      final service = RelayService(
+        clientHandshakeTimeout: const Duration(milliseconds: 20),
+      );
+      final server = await shelf_io.serve(
+        service.call,
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      addTearDown(() => server.close(force: true));
+      final base = Uri.parse('http://127.0.0.1:${server.port}');
+      final daemon = await WebSocket.connect(
+        _webSocketUri(base, role: 'daemon', serverId: 'idle-daemon').toString(),
+      );
+      addTearDown(daemon.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final client = await WebSocket.connect(
+        _webSocketUri(base, role: 'client', serverId: 'idle-daemon').toString(),
+      );
+      addTearDown(client.close);
+      final daemonMessages = StreamIterator<dynamic>(daemon);
+      client.add(Uint8List.fromList(<int>[1, 2, 3]));
+      expect(
+        await daemonMessages.moveNext().timeout(const Duration(seconds: 1)),
+        isTrue,
+      );
+    },
+  );
+
+  test('a client without a daemon closes with the wire policy code', () async {
+    final service = RelayService(
+      clientHandshakeTimeout: const Duration(milliseconds: 20),
+    );
+    final server = await shelf_io.serve(
+      service.call,
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    addTearDown(() => server.close(force: true));
+    final base = Uri.parse('http://127.0.0.1:${server.port}');
+    final client = await WebSocket.connect(
+      _webSocketUri(base, role: 'client', serverId: 'missing').toString(),
+    );
+
+    await client.drain<void>().timeout(const Duration(seconds: 1));
+    expect(client.closeCode, 4008);
+  });
+
+  test('an idle client closes with the wire policy code', () async {
+    final service = RelayService(
+      clientHandshakeTimeout: const Duration(milliseconds: 20),
+    );
+    final server = await shelf_io.serve(
+      service.call,
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    addTearDown(() => server.close(force: true));
+    final base = Uri.parse('http://127.0.0.1:${server.port}');
+    final daemon = await WebSocket.connect(
+      _webSocketUri(base, role: 'daemon', serverId: 'idle-client').toString(),
+    );
+    addTearDown(daemon.close);
+    final client = await WebSocket.connect(
+      _webSocketUri(base, role: 'client', serverId: 'idle-client').toString(),
+    );
+
+    await client.drain<void>().timeout(const Duration(seconds: 1));
+    expect(client.closeCode, 4008);
+  });
+
+  test(
     'unknown routes and oversized server identifiers are rejected',
     () async {
       final service = RelayService();
