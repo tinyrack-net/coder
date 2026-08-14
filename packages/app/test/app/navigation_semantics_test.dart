@@ -62,6 +62,154 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
+  Future<void> useMobile(WidgetTester tester) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(390, 780);
+    addTearDown(tester.view.reset);
+  }
+
+  testWidgets(
+    'system Back closes the new-workspace composer to the workspace list',
+    (tester) async {
+      await useMobile(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: const WorkspaceHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.byKey(const ValueKey('workspace-new-button')));
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const WorkspaceHomeRoute(compose: true).location,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'system Back closes a directly opened mobile session to the workspace list',
+    (tester) async {
+      await useMobile(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: worktree.id,
+          sessionId: 'session',
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      expect(find.text('Route session'), findsWidgets);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'system Back closes a session selected from the mobile workspace list',
+    (tester) async {
+      await useMobile(tester);
+      final homeWorkspace = workspace.copyWith(
+        id: 'home',
+        name: 'Home',
+        rootPath: '/home/user',
+        kind: WorkspaceKind.home,
+      );
+      final homeWorktree = worktree.copyWith(
+        id: 'home-checkout',
+        workspaceId: homeWorkspace.id,
+        name: 'Home',
+        path: homeWorkspace.rootPath,
+        branch: null,
+        kind: WorktreeKind.directory,
+      );
+      final homeSession = session('home-session', 'Home session').copyWith(
+        worktreeId: homeWorktree.id,
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        FakeTinestApi(
+          workspaces: <WorkspaceDto>[homeWorkspace],
+          worktrees: <WorktreeDto>[homeWorktree],
+          agents: <SessionDto>[homeSession],
+        ),
+        initialLocation: const WorkspaceHomeRoute().location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.text('Home session'));
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), contains('/sessions/home-session'));
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'system Back closes a restored mobile worktree to the workspace list',
+    (tester) async {
+      await useMobile(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[]),
+        initialLocation: const WorkspaceHomeRoute().location,
+        store: MemoryAppStore(
+          settings: AppSettings(
+            embeddedDaemonEnabled: false,
+            lastWorktree: WorkspaceSelection(
+              hostId: 'server',
+              workspaceId: workspace.id,
+              worktreeId: worktree.id,
+            ),
+          ),
+        ),
+      );
+      addTearDown(router.dispose);
+
+      expect(currentLocation(router), worktreeLocation);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
   testWidgets(
     'settings opened from a worktree closes back to that worktree',
     (tester) async {

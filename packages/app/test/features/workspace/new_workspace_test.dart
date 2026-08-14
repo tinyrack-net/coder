@@ -157,6 +157,42 @@ void main() {
   );
 
   testWidgets(
+    'a mobile session started in the composer backs to the workspace list',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 780));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[_home],
+        worktrees: <WorktreeDto>[_homeCheckout],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Explain this repository',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, contains('/sessions/'));
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri, Uri.parse(const WorkspaceHomeRoute().location));
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>[
+      'feature_test__app_navigation__widget',
+      'feature_test__session_lifecycle__widget',
+    ],
+  );
+
+  testWidgets(
     'a new worktree is created from the first prompt',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
