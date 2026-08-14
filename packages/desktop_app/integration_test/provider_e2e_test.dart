@@ -150,13 +150,11 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey<String>('provider-add-button')),
       );
-      await pumpUntil(
-        tester,
-        find.byKey(const ValueKey<String>('provider-catalog-refresh')),
-      );
-      await tester.tap(
-        find.byKey(const ValueKey<String>('provider-catalog-refresh')),
-      );
+      final activeCatalogRefresh = find
+          .byKey(const ValueKey<String>('provider-catalog-refresh'))
+          .hitTestable();
+      await pumpUntil(tester, activeCatalogRefresh);
+      await tester.tap(activeCatalogRefresh);
       await tester.pumpAndSettle();
       expect(
         (await assertions.providers.listProviderCatalog()).source,

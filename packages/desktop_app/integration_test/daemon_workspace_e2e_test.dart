@@ -5,7 +5,6 @@ import 'package:app/testing/app/tinest_app.dart';
 import 'package:app/testing/features/hosts/domain/host_models.dart';
 import 'package:app/testing/features/hosts/domain/host_ports.dart';
 import 'package:app/testing/features/workspace/presentation/widgets/directory_browser.dart';
-import 'package:app/testing/shared/presentation/tinest_icons.dart';
 import 'package:app/testing/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
@@ -90,7 +89,16 @@ void main() {
         fixture.token,
       );
 
-      await tester.tap(find.byIcon(TinestIcons.back).first);
+      final settingsBack = find.byKey(
+        const ValueKey<String>('settings-back-button'),
+      );
+      await tester.tap(settingsBack);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('workspace-new-button')),
+        findsNothing,
+      );
+      await tester.tap(settingsBack);
       await _pumpUntil(
         tester,
         find.byKey(const ValueKey('workspace-new-button')),

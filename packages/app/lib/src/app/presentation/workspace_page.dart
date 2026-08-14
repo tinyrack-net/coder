@@ -48,12 +48,16 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 class WorkspacePage extends ConsumerStatefulWidget {
   /// Creates a workspace page.
   const WorkspacePage({
+    required this.navigator,
     this.selection,
     this.requestedAgentId,
     this.requestedTerminalId,
     this.compose = false,
     super.key,
   });
+
+  /// Navigator built by the typed workspace shell.
+  final Widget navigator;
 
   /// Whether the right pane opens the new-workspace composer directly.
   final bool compose;
@@ -75,7 +79,6 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
   /// Whether this state already queued the saved-worktree restore.
   bool _restoreScheduled = false;
   bool _missingSelectionScheduled = false;
-  final _compactNavigatorKey = GlobalKey<NavigatorState>();
   late final TRTreeNavController<WorkspaceNavValue> _workspaceTreeController;
 
   @override
@@ -102,6 +105,13 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     // selection change and each new checkout needs its own archived check.
     if (widget.selection != oldWidget.selection) {
       _missingSelectionScheduled = false;
+    }
+    if ((oldWidget.selection != null || oldWidget.compose) &&
+        widget.selection == null &&
+        !widget.compose) {
+      // Returning through Navigator history is an explicit choice. Do not let
+      // startup restoration immediately reopen the page that was just closed.
+      _restoreScheduled = true;
     }
   }
 
@@ -158,161 +168,150 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         widthClass == TRAdaptiveWidthClass.extraLarge;
     final showsCompactDetail =
         compact && (widget.selection != null || widget.compose);
-    return PopScope<void>(
-      canPop: !showsCompactDetail,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && showsCompactDetail) {
-          _compactNavigatorKey.currentState!.maybePop();
-        }
-      },
-      child: TinestPageShell(
-        appBar: TinestPageHeader(
-          // Compact Back and the desktop toggle share the one stable
-          // navigation position at the very top left.
-          leading: showsCompactDetail
-              ? TRIconButton(
-                  key: const ValueKey<String>('workspace-back-button'),
-                  appearance: TRAppearance.ghost,
-                  label: MaterialLocalizations.of(
-                    context,
-                  ).backButtonTooltip,
-                  onPressed: _goBack,
-                  icon: Icon(TinestIcons.backFor(context)),
-                )
-              : !desktop
-              ? null
-              : TRIconButton(
-                  appearance: TRAppearance.ghost,
-                  key: const ValueKey('workspace-sidebar-toggle'),
-                  label: collapsed
-                      ? AppLocalizations.of(context).workspaceSidebarExpand
-                      : AppLocalizations.of(
-                          context,
-                        ).workspaceSidebarCollapse,
-                  onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
-                  icon: Icon(
-                    collapsed ? TinestIcons.menu : TinestIcons.menuOpen,
-                  ),
+    WorkspaceSidebar sidebar({required bool push}) => WorkspaceSidebar(
+      hosts: hosts,
+      catalog: catalog,
+      homeSessions: _homeSessions(catalog.value),
+      selected: widget.selection,
+      treeController: _workspaceTreeController,
+      onNewWorkspace: () => _openNewWorkspaceComposer(push: push),
+      onSelect: (selection) => _selectWorktree(selection, push: push),
+      onSelectSession: (selection, sessionId) =>
+          _selectSession(selection, sessionId, push: push),
+      onOpenDaemonSettings: () => unawaited(
+        const DaemonSettingsRoute().push<void>(context),
+      ),
+      onConnectDaemon: () => unawaited(
+        const ConnectDaemonRoute().push<void>(context),
+      ),
+      onArchivedSelection: () => const WorkspaceHomeRoute().replace(context),
+    );
+    final routedContent = _WorkspaceRouteContentScope(
+      compactHome: KeyedSubtree(
+        key: const ValueKey<String>('workspace-compact-sidebar-surface'),
+        child: sidebar(push: true),
+      ),
+      onStarted: (selection, session) => _selectSession(selection, session.id),
+      child: widget.navigator,
+    );
+    final effectiveCollapsed = desktop && collapsed;
+    return TinestPageShell(
+      appBar: TinestPageHeader(
+        // Compact Back and the desktop toggle share the one stable
+        // navigation position at the very top left.
+        leading: showsCompactDetail
+            ? TRIconButton(
+                key: const ValueKey<String>('workspace-back-button'),
+                appearance: TRAppearance.ghost,
+                label: MaterialLocalizations.of(
+                  context,
+                ).backButtonTooltip,
+                onPressed: _goBack,
+                icon: Icon(TinestIcons.backFor(context)),
+              )
+            : !desktop
+            ? null
+            : TRIconButton(
+                appearance: TRAppearance.ghost,
+                key: const ValueKey('workspace-sidebar-toggle'),
+                label: collapsed
+                    ? AppLocalizations.of(context).workspaceSidebarExpand
+                    : AppLocalizations.of(
+                        context,
+                      ).workspaceSidebarCollapse,
+                onPressed: () => unawaited(_setSidebarCollapsed(!collapsed)),
+                icon: Icon(
+                  collapsed ? TinestIcons.menu : TinestIcons.menuOpen,
                 ),
-          title: TRText.inherit(
-            AppLocalizations.of(context).workspacesTitle,
-          ),
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey('workspace-settings-button'),
-              appearance: TRAppearance.ghost,
-              label: AppLocalizations.of(context).settingsTitle,
-              onPressed: () {
-                if (compact) {
-                  unawaited(const SettingsHomeRoute().push<void>(context));
-                  return;
-                }
-                final hostId = widget.selection?.hostId;
-                unawaited(
-                  hostId == null
-                      ? const DaemonSettingsRoute().push<void>(context)
-                      : ProviderSettingsRoute(
-                          hostId: hostId,
-                        ).push<void>(context),
-                );
-              },
-              icon: const Icon(TinestIcons.settings),
-            ),
-          ],
+              ),
+        title: TRText.inherit(
+          AppLocalizations.of(context).workspacesTitle,
         ),
-        body: Builder(
-          builder: (context) {
-            final sidebar = WorkspaceSidebar(
-              hosts: hosts,
-              catalog: catalog,
-              homeSessions: _homeSessions(catalog.value),
-              selected: widget.selection,
-              treeController: _workspaceTreeController,
-              onNewWorkspace: _openNewWorkspaceComposer,
-              onSelect: _selectWorktree,
-              onSelectSession: _selectSession,
-              onOpenDaemonSettings: () => unawaited(
-                const DaemonSettingsRoute().push<void>(context),
-              ),
-              onConnectDaemon: () => unawaited(
-                const ConnectDaemonRoute().push<void>(context),
-              ),
-              onArchivedSelection: () =>
-                  const WorkspaceHomeRoute().replace(context),
-            );
-            final detail = widget.selection == null
-                ? NewWorkspacePane(
-                    onStarted: (selection, session) =>
-                        _selectSession(selection, session.id),
-                  )
-                : _SessionArea(
-                    // Replacing a checkout location preserves this page.
-                    // Key its session area so tabs, conversations, and
-                    // terminals start clean on a different checkout.
-                    key: ValueKey<WorkspaceSelection>(widget.selection!),
-                    selection: widget.selection!,
-                    requestedAgentId: widget.requestedAgentId,
-                    requestedTerminalId: widget.requestedTerminalId,
-                    mobile: !desktop,
-                  );
-            final effectiveCollapsed = desktop && collapsed;
-            final compactContent = Navigator(
-              key: _compactNavigatorKey,
-              pages: <Page<void>>[
-                MaterialPage<void>(
-                  key: const ValueKey<String>('workspace-navigation-page'),
-                  child: sidebar,
-                ),
-                if (showsCompactDetail)
-                  MaterialPage<void>(
-                    key: const ValueKey<String>('workspace-detail-page'),
-                    child: detail,
-                  ),
-              ],
-              onDidRemovePage: (page) {
-                if (page.key ==
-                    const ValueKey<String>('workspace-detail-page')) {
-                  _goBack();
-                }
-              },
-            );
-            final scaffold = TRAdaptiveNavigationLayout(
+        actions: <Widget>[
+          TRIconButton(
+            key: const ValueKey('workspace-settings-button'),
+            appearance: TRAppearance.ghost,
+            label: AppLocalizations.of(context).settingsTitle,
+            onPressed: () {
+              if (compact) {
+                unawaited(const SettingsHomeRoute().push<void>(context));
+                return;
+              }
+              final hostId = widget.selection?.hostId;
+              unawaited(
+                hostId == null
+                    ? const DaemonSettingsRoute().push<void>(context)
+                    : ProviderSettingsRoute(
+                        hostId: hostId,
+                      ).push<void>(context),
+              );
+            },
+            icon: const Icon(TinestIcons.settings),
+          ),
+        ],
+      ),
+      body: effectiveCollapsed
+          ? TRAdaptiveLayoutScope(
+              widthClass: widthClass,
+              child: routedContent,
+            )
+          : TRAdaptiveNavigationLayout(
               navigationPane: KeyedSubtree(
                 key: const ValueKey<String>('workspace-sidebar-surface'),
-                child: sidebar,
+                child: sidebar(push: false),
               ),
-              contentPane: compact ? compactContent : detail,
-            );
-            return effectiveCollapsed
-                ? TRAdaptiveLayoutScope(
-                    widthClass: widthClass,
-                    child: TRAdaptivePane(
-                      role: TRPaneRole.secondary,
-                      child: detail,
-                    ),
-                  )
-                : scaffold;
-          },
-        ),
-      ),
+              contentPane: routedContent,
+            ),
     );
   }
 
   void _goBack() {
+    final navigator = WorkspaceShellRoute.$navigatorKey.currentState;
+    if (navigator?.canPop() != true) {
+      const WorkspaceHomeRoute().replace(context);
+      return;
+    }
+    var found = false;
+    navigator!.popUntil((route) {
+      if (route.settings.name == 'workspace-home') found = true;
+      return found || route.isFirst;
+    });
+    if (!found) const WorkspaceHomeRoute().replace(context);
+  }
+
+  void _selectWorktree(
+    WorkspaceSelection selection, {
+    bool push = false,
+  }) {
     ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
-    const WorkspaceHomeRoute().replace(context);
+    _goWorktree(
+      context,
+      selection,
+      push: push || (widget.selection == null && !widget.compose),
+    );
   }
 
-  void _selectWorktree(WorkspaceSelection selection) {
-    _goWorktree(context, selection);
-  }
-
-  void _openNewWorkspaceComposer() {
+  void _openNewWorkspaceComposer({bool push = false}) {
+    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+    if (push) {
+      unawaited(const WorkspaceHomeRoute(compose: true).push<void>(context));
+      return;
+    }
     const WorkspaceHomeRoute(compose: true).replace(context);
   }
 
-  void _selectSession(WorkspaceSelection selection, String sessionId) {
-    _goSession(context, selection, sessionId);
+  void _selectSession(
+    WorkspaceSelection selection,
+    String sessionId, {
+    bool push = false,
+  }) {
+    ref.read(selectionRestoreControllerProvider.notifier).markConsumed();
+    _goSession(
+      context,
+      selection,
+      sessionId,
+      push: push || (widget.selection == null && !widget.compose),
+    );
   }
 
   /// Gathers the sessions that belong to no project across every daemon.
@@ -373,7 +372,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
       // that task with a second workspace-shell page, duplicating its Page key
       // in the root Navigator. Opening another task supersedes startup restore.
       if (ModalRoute.of(context)?.isCurrent != true) return;
-      _goWorktree(context, saved);
+      _goWorktree(context, saved, push: true);
     });
   }
 
@@ -423,6 +422,103 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
     }
     _missingSelectionScheduled = false;
   }
+}
+
+/// Child content rendered by the stable typed workspace shell.
+class WorkspaceRouteContent extends StatelessWidget {
+  /// Creates a workspace child-route surface.
+  const WorkspaceRouteContent({
+    this.selection,
+    this.requestedAgentId,
+    this.requestedTerminalId,
+    this.compose = false,
+    super.key,
+  });
+
+  /// Whether this route paints the new-workspace composer.
+  final bool compose;
+
+  /// Selected checkout, if any.
+  final WorkspaceSelection? selection;
+
+  /// Session requested by the route.
+  final String? requestedAgentId;
+
+  /// Terminal requested by the route.
+  final String? requestedTerminalId;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = selection;
+    if (selected == null && !compose) {
+      return const _WorkspaceHomeRouteSurface();
+    }
+    final scope = _WorkspaceRouteContentScope.of(context);
+    final widthClass = TRAdaptiveLayoutScope.of(context).widthClass;
+    final desktop =
+        widthClass == TRAdaptiveWidthClass.large ||
+        widthClass == TRAdaptiveWidthClass.extraLarge;
+    if (selected == null) {
+      return NewWorkspacePane(onStarted: scope.onStarted);
+    }
+    return _SessionArea(
+      // The shared workspace-content Page keeps this State across lateral
+      // route replacements for one checkout, while a new checkout starts a
+      // fresh tabs/conversation surface.
+      key: ValueKey<WorkspaceSelection>(selected),
+      selection: selected,
+      requestedAgentId: requestedAgentId,
+      requestedTerminalId: requestedTerminalId,
+      mobile: !desktop,
+    );
+  }
+}
+
+class _WorkspaceHomeRouteSurface extends StatelessWidget {
+  const _WorkspaceHomeRouteSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    final route = ModalRoute.of(context)!;
+    final secondaryAnimation = route.secondaryAnimation!;
+    return AnimatedBuilder(
+      animation: secondaryAnimation,
+      builder: (context, _) {
+        // Direct workspace deep links include a structural home Page under the
+        // content Page. Keep that inactive Page lightweight, while preserving
+        // its real outgoing surface for push and predictive-Back transitions.
+        if (!route.isCurrent && !secondaryAnimation.isAnimating) {
+          return const SizedBox.expand();
+        }
+        final scope = _WorkspaceRouteContentScope.of(context);
+        final compact =
+            TRAdaptiveLayoutScope.of(context).widthClass ==
+            TRAdaptiveWidthClass.compact;
+        return compact
+            ? scope.compactHome
+            : NewWorkspacePane(onStarted: scope.onStarted);
+      },
+    );
+  }
+}
+
+class _WorkspaceRouteContentScope extends InheritedWidget {
+  const _WorkspaceRouteContentScope({
+    required this.compactHome,
+    required this.onStarted,
+    required super.child,
+  });
+
+  final Widget compactHome;
+  final void Function(WorkspaceSelection selection, SessionDto session)
+  onStarted;
+
+  static _WorkspaceRouteContentScope of(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<_WorkspaceRouteContentScope>()!;
+
+  @override
+  bool updateShouldNotify(_WorkspaceRouteContentScope oldWidget) =>
+      compactHome != oldWidget.compactHome || onStarted != oldWidget.onStarted;
 }
 
 class _SessionArea extends ConsumerStatefulWidget {
@@ -1826,28 +1922,42 @@ class _ConversationContentColumn extends StatelessWidget {
 
 /// Selects [selection] within the workspace surface.
 ///
-/// Every workspace location renders the same [WorkspacePage], so this replaces
-/// the current page: the page key survives, no transition plays, and the state
-/// of the open sessions is not rebuilt from scratch.
-void _goWorktree(BuildContext context, WorkspaceSelection selection) {
-  WorktreeRoute(
+/// Lateral selection replaces the shared content page; compact hierarchy
+/// entry pushes it above workspace home.
+void _goWorktree(
+  BuildContext context,
+  WorkspaceSelection selection, {
+  bool push = false,
+}) {
+  final route = WorktreeRoute(
     hostId: selection.hostId,
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
-  ).replace(context);
+  );
+  if (push) {
+    unawaited(route.push<void>(context));
+  } else {
+    route.replace(context);
+  }
 }
 
 void _goSession(
   BuildContext context,
   WorkspaceSelection selection,
-  String sessionId,
-) {
-  SessionRoute(
+  String sessionId, {
+  bool push = false,
+}) {
+  final route = SessionRoute(
     hostId: selection.hostId,
     workspaceId: selection.workspaceId,
     worktreeId: selection.worktreeId,
     sessionId: sessionId,
-  ).replace(context);
+  );
+  if (push) {
+    unawaited(route.push<void>(context));
+  } else {
+    route.replace(context);
+  }
 }
 
 void _goTerminal(

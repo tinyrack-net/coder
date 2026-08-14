@@ -144,7 +144,7 @@ void _registerWorkspaceAppFlows() {
       expect(find.text('Session two'), findsOneWidget);
       await tester.tap(find.text('Session two'));
       await tester.pumpAndSettle();
-      expect(router.routeInformationProvider.value.uri.path, contains('two'));
+      expect(router.state.uri.path, contains('two'));
     },
     tags: const <String>['feature_test__workspace_catalog__widget'],
   );

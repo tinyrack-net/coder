@@ -80,13 +80,13 @@ void main() {
       expect(find.text('스킬 추가'), findsNothing);
       expect(find.text('스킬 삭제'), findsNothing);
 
+      final layoutScope = tester.widget<TRAdaptiveLayoutScope>(
+        find.byType(TRAdaptiveLayoutScope),
+      );
+      expect(layoutScope.widthClass, TRAdaptiveWidthClass.large);
       expect(
-        tester
-            .widget<TRAdaptiveLayoutScope>(
-              find.byType(TRAdaptiveLayoutScope).first,
-            )
-            .widthClass,
-        TRAdaptiveWidthClass.large,
+        find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+        findsOneWidget,
       );
       expect(api.skillListRequests, hasLength(1));
       expect(api.skillListRequests.single.view, SkillListView.global);
@@ -294,13 +294,13 @@ void main() {
       final router = await _pumpSkills(tester, api);
       addTearDown(router.dispose);
 
+      final layoutScope = tester.widget<TRAdaptiveLayoutScope>(
+        find.byType(TRAdaptiveLayoutScope),
+      );
+      expect(layoutScope.widthClass, TRAdaptiveWidthClass.compact);
       expect(
-        tester
-            .widget<TRAdaptiveLayoutScope>(
-              find.byType(TRAdaptiveLayoutScope).first,
-            )
-            .widthClass,
-        TRAdaptiveWidthClass.compact,
+        find.byKey(const ValueKey<String>('settings-sidebar-surface')),
+        findsNothing,
       );
 
       await tester.tap(_scopeTrigger);

@@ -160,11 +160,11 @@ class McpSettingsPaneController extends SettingsPaneCoordinatorBase {
   bool get hasDetail => _creating || _selectedId != null;
 
   @override
-  String? get destinationId => _creating
-      ? 'mcp-create'
+  Object? get detailSelection => _creating
+      ? (_McpPaneDestination.create, null)
       : _selectedId == null
       ? null
-      : 'mcp-$_selectedId';
+      : (_McpPaneDestination.existing, _selectedId);
 
   /// Shows the first server on initial desktop entry.
   void selectInitial(String id) {
@@ -209,6 +209,8 @@ class McpSettingsPaneController extends SettingsPaneCoordinatorBase {
     if (hadDetail) notifyListeners();
   }
 }
+
+enum _McpPaneDestination { create, existing }
 
 class _ServerList extends StatelessWidget {
   const _ServerList({

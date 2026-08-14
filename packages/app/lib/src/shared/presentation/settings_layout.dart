@@ -2,8 +2,8 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Returns the settings shell's adaptive class without classifying an inner
@@ -29,14 +29,13 @@ enum SettingsPaneSlot {
 /// Read-only navigation state shared by one list-detail settings feature.
 ///
 /// Typed routes own categories. A feature controller owns only its local
-/// collection selection, while the settings shell maps that selection onto a
-/// [TRPaneRole.secondary] destination in the public Tinyrack navigator.
+/// collection selection. Flutter Navigator and Page own its route lifecycle.
 abstract interface class SettingsPaneCoordinator implements Listenable {
   /// Whether the feature currently has a detail or create destination.
   bool get hasDetail;
 
-  /// Stable identity used by the shared three-pane navigator.
-  String? get destinationId;
+  /// Typed identity of the active detail or create destination.
+  Object? get detailSelection;
 
   /// Whether a desktop collection may choose its first item automatically.
   ///
@@ -84,24 +83,19 @@ abstract class SettingsPaneCoordinatorBase extends ChangeNotifier
 /// A typed, product-local selection controller for one settings collection.
 class SettingsPaneController<T extends Object>
     extends SettingsPaneCoordinatorBase {
-  /// Creates a controller whose local [T] values have stable destination IDs.
-  SettingsPaneController({required this.destinationIdFor});
+  /// Creates a typed settings pane controller.
+  SettingsPaneController();
 
-  /// Resolves a stable local navigation identity for one typed destination.
-  final String Function(T value) destinationIdFor;
   T? _destination;
 
   /// The selected item or create destination, when one is active.
-  T? get destination => _destination;
+  T? get selection => _destination;
 
   @override
   bool get hasDetail => _destination != null;
 
   @override
-  String? get destinationId {
-    final destination = _destination;
-    return destination == null ? null : destinationIdFor(destination);
-  }
+  T? get detailSelection => _destination;
 
   /// Shows [destination] as the initial desktop detail, at most once per
   /// route identity.
@@ -134,6 +128,91 @@ class SettingsPaneController<T extends Object>
     _destination = null;
     if (hadDetail) notifyListeners();
   }
+}
+
+/// Renders one settings collection/detail pair with standard Page lifecycle.
+///
+/// Below the large width class the nested Navigator moves between collection
+/// and detail across the complete content region. At large widths the
+/// collection stays fixed and the same keyed Navigator moves into the detail
+/// region, so only detail transitions while its State survives resizing.
+class SettingsListDetailHost extends StatefulWidget {
+  /// Creates a routed list-detail host.
+  const SettingsListDetailHost({
+    required this.coordinator,
+    required this.collection,
+    required this.detail,
+    super.key,
+  });
+
+  /// Typed local detail selection owned by the feature.
+  final SettingsPaneCoordinator coordinator;
+
+  /// Collection surface.
+  final Widget collection;
+
+  /// Detail surface, including its empty-selection state.
+  final Widget detail;
+
+  @override
+  State<SettingsListDetailHost> createState() => _SettingsListDetailHostState();
+}
+
+class _SettingsListDetailHostState extends State<SettingsListDetailHost> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.coordinator,
+    builder: (context, _) {
+      final widthClass = settingsAdaptiveWidthClassOf(context);
+      final split =
+          widthClass == TRAdaptiveWidthClass.large ||
+          widthClass == TRAdaptiveWidthClass.extraLarge;
+      final hasDetail = widget.coordinator.hasDetail;
+      final navigator = NavigatorPopHandler<Object?>(
+        enabled: hasDetail,
+        onPopWithResult: (result) =>
+            _navigatorKey.currentState?.pop<Object?>(result),
+        child: Navigator(
+          key: _navigatorKey,
+          transitionDelegate: const DefaultTransitionDelegate<void>(),
+          pages: <Page<void>>[
+            MaterialPage<void>(
+              key: const ValueKey<String>('settings-collection-page'),
+              name: 'settings-collection',
+              child: split
+                  ? hasDetail
+                        ? const SizedBox.expand()
+                        : widget.detail
+                  : widget.collection,
+            ),
+            if (hasDetail)
+              MaterialPage<void>(
+                key: ValueKey<Object?>(widget.coordinator.detailSelection),
+                name: 'settings-detail',
+                child: widget.detail,
+              ),
+          ],
+          onDidRemovePage: (page) {
+            final removedSelection = switch (page.key) {
+              ValueKey<Object?>(:final value) => value,
+              _ => null,
+            };
+            if (page.name == 'settings-detail' &&
+                removedSelection == widget.coordinator.detailSelection) {
+              widget.coordinator.showCollection();
+            }
+          },
+        ),
+      );
+      return TRAdaptiveListDetailLayout(
+        singlePane: navigator,
+        collectionPane: widget.collection,
+        detailPane: navigator,
+      );
+    },
+  );
 }
 
 /// Applies one loading, stale-data, and error policy to settings reads.

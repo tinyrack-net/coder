@@ -916,7 +916,7 @@ final class FeatureVerifier {
   }
 
   Set<String> _routes(String source) => RegExp(
-    r'@TypedGoRoute<(\w+)>',
+    r'@?TypedGoRoute<(\w+)>',
   ).allMatches(source).map((match) => match.group(1)!).toSet();
 
   List<File> _testSources() {

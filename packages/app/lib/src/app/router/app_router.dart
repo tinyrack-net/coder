@@ -24,28 +24,134 @@ part 'app_router.g.dart';
 /// Whether [uri] addresses any settings surface.
 bool _isSettingsLocation(Uri uri) => uri.path.startsWith('/settings');
 
-/// Page identity shared by every route rendered inside the Settings shell.
-MaterialPage<void> _settingsShellPage(Widget child) => MaterialPage<void>(
-  key: const ValueKey<String>('settings-shell'),
-  name: 'settings-shell',
-  restorationId: 'settings-shell',
-  child: child,
+MaterialPage<void> _settingsContentPage(
+  GoRouterState state, {
+  required String name,
+  required SettingsRouteContentKind kind,
+  SettingsCategory? category,
+  String? hostId,
+  String? workspaceId,
+}) => MaterialPage<void>(
+  key: state.pageKey,
+  name: name,
+  restorationId: name,
+  child: KeyedSubtree(
+    key: category == null
+        ? null
+        : ValueKey<String>('settings-category-pane-${category.name}'),
+    child: SettingsRouteContent(
+      kind: kind,
+      category: category,
+      hostId: hostId,
+      workspaceId: workspaceId,
+    ),
+  ),
 );
 
-/// Page identity shared by every route that paints the workspace shell.
-///
-/// go_router keys a page by the matched path pattern, so the home, checkout,
-/// session, and terminal routes would each own a separate Navigator page even
-/// though they build one screen. Naming the page keeps a single page across
-/// those lateral moves, so the sidebar's tree expansion, its scroll offset,
-/// and the page state behind them survive switching between tab kinds.
-NoTransitionPage<void> _workspaceShellPage(Widget child) =>
-    NoTransitionPage<void>(
-      key: const ValueKey<String>('workspace-shell'),
-      name: 'workspace-shell',
-      restorationId: 'workspace-shell',
-      child: child,
+typedef _SettingsRouteConfiguration = ({
+  SettingsCategory? category,
+  String? hostId,
+  String? workspaceId,
+});
+
+_SettingsRouteConfiguration _settingsRouteConfiguration(Uri uri) {
+  final segments = uri.pathSegments;
+  if (segments.length == 4 &&
+      segments[1] == 'daemons' &&
+      segments[3] == 'categories') {
+    return (category: null, hostId: segments[2], workspaceId: null);
+  }
+  if (segments.length == 4 &&
+      segments[1] == 'daemons' &&
+      segments[3] == 'connections') {
+    return (
+      category: SettingsCategory.connection,
+      hostId: segments[2],
+      workspaceId: null,
     );
+  }
+  final category = switch (segments.length > 1 ? segments[1] : null) {
+    'general' => SettingsCategory.general,
+    'providers' => SettingsCategory.provider,
+    'models' => SettingsCategory.model,
+    'permissions' => SettingsCategory.permission,
+    'projects' => SettingsCategory.project,
+    'agents' => SettingsCategory.agent,
+    'mcp' => SettingsCategory.mcp,
+    'skills' => SettingsCategory.skill,
+    'daemons' => SettingsCategory.daemon,
+    'advanced' => SettingsCategory.advanced,
+    _ => null,
+  };
+  return (
+    category: category,
+    hostId: uri.queryParameters['host-id'],
+    workspaceId: uri.queryParameters['workspace-id'],
+  );
+}
+
+typedef _WorkspaceRouteConfiguration = ({
+  bool compose,
+  String? requestedAgentId,
+  String? requestedTerminalId,
+  WorkspaceSelection? selection,
+});
+
+_WorkspaceRouteConfiguration _workspaceRouteConfiguration(Uri uri) {
+  final segments = uri.pathSegments;
+  if (segments.length >= 4 && segments.first == 'workspaces') {
+    final selection = WorkspaceSelection(
+      hostId: segments[1],
+      workspaceId: segments[2],
+      worktreeId: segments[3],
+    );
+    if (segments.length == 6 && segments[4] == 'sessions') {
+      return (
+        compose: false,
+        requestedAgentId: segments[5],
+        requestedTerminalId: null,
+        selection: selection,
+      );
+    }
+    if (segments.length == 6 && segments[4] == 'terminals') {
+      return (
+        compose: false,
+        requestedAgentId: null,
+        requestedTerminalId: segments[5],
+        selection: selection,
+      );
+    }
+    return (
+      compose: false,
+      requestedAgentId: null,
+      requestedTerminalId: null,
+      selection: selection,
+    );
+  }
+  return (
+    compose: uri.queryParameters['compose'] == 'true',
+    requestedAgentId: null,
+    requestedTerminalId: null,
+    selection: null,
+  );
+}
+
+MaterialPage<void> _workspaceContentPage(
+  GoRouterState state, {
+  required Widget child,
+  bool sharedIdentity = false,
+  String? name,
+}) => MaterialPage<void>(
+  // GoRouter's replace operation carries the replaced match's pageKey into
+  // the new match. Using that key preserves one content Route without
+  // assigning unrelated direct-link matches the same global identity.
+  key: state.pageKey,
+  name: sharedIdentity ? 'workspace-content' : name ?? 'workspace-home',
+  restorationId: sharedIdentity
+      ? 'workspace-content'
+      : name ?? 'workspace-home',
+  child: child,
+);
 
 /// Closes a pushed task and returns to the screen it was opened from.
 ///
@@ -76,7 +182,57 @@ void openSettingsTask(GoRouter router) {
   unawaited(router.push<void>(target.location));
 }
 
-@TypedGoRoute<SettingsHomeRoute>(path: '/settings')
+@TypedShellRoute<SettingsShellRoute>(
+  routes: <TypedRoute<RouteData>>[
+    TypedGoRoute<SettingsHomeRoute>(path: '/settings'),
+    TypedGoRoute<DaemonCategoriesRoute>(
+      path: '/settings/daemons/:hostId/categories',
+    ),
+    TypedGoRoute<GeneralSettingsRoute>(path: '/settings/general'),
+    TypedGoRoute<ProviderSettingsRoute>(path: '/settings/providers'),
+    TypedGoRoute<ModelSettingsRoute>(path: '/settings/models'),
+    TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions'),
+    TypedGoRoute<ProjectSettingsRoute>(path: '/settings/projects'),
+    TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents'),
+    TypedGoRoute<McpSettingsRoute>(path: '/settings/mcp'),
+    TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills'),
+    TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons'),
+    TypedGoRoute<AdvancedSettingsRoute>(path: '/settings/advanced'),
+    TypedGoRoute<DaemonConnectionsRoute>(
+      path: '/settings/daemons/:hostId/connections',
+    ),
+  ],
+)
+/// Stable Settings frame whose child Navigator owns route history.
+class SettingsShellRoute extends ShellRouteData {
+  /// Creates the Settings shell.
+  const SettingsShellRoute();
+
+  /// Navigator used for hierarchical Settings pages.
+  static final GlobalKey<NavigatorState> $navigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'settings-shell');
+
+  @override
+  Page<void> pageBuilder(
+    BuildContext context,
+    GoRouterState state,
+    Widget navigator,
+  ) {
+    final configuration = _settingsRouteConfiguration(state.uri);
+    return MaterialPage<void>(
+      key: const ValueKey<String>('settings-shell'),
+      name: 'settings-shell',
+      restorationId: 'settings-shell',
+      child: UnifiedSettingsPage(
+        navigator: navigator,
+        category: configuration.category,
+        hostId: configuration.hostId,
+        workspaceId: configuration.workspaceId,
+      ),
+    );
+  }
+}
+
 /// Responsive settings entry: navigation home on compact widths, General on
 /// wider layouts.
 class SettingsHomeRoute extends GoRouteData with $SettingsHomeRoute {
@@ -85,12 +241,13 @@ class SettingsHomeRoute extends GoRouteData with $SettingsHomeRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(const UnifiedSettingsPage());
+      _settingsContentPage(
+        state,
+        name: 'settings-home',
+        kind: SettingsRouteContentKind.home,
+      );
 }
 
-@TypedGoRoute<DaemonCategoriesRoute>(
-  path: '/settings/daemons/:hostId/categories',
-)
 /// Compact daemon category pane, with Provider selected on wider layouts.
 class DaemonCategoriesRoute extends GoRouteData with $DaemonCategoriesRoute {
   /// Creates a daemon category route.
@@ -101,10 +258,67 @@ class DaemonCategoriesRoute extends GoRouteData with $DaemonCategoriesRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(UnifiedSettingsPage(hostId: hostId));
+      _settingsContentPage(
+        state,
+        name: 'settings-daemon-categories',
+        kind: SettingsRouteContentKind.daemonCategories,
+        hostId: hostId,
+      );
 }
 
-@TypedGoRoute<WorkspaceHomeRoute>(path: '/')
+@TypedShellRoute<WorkspaceShellRoute>(
+  routes: <TypedRoute<RouteData>>[
+    TypedGoRoute<WorkspaceHomeRoute>(
+      path: '/',
+      routes: <TypedRoute<RouteData>>[
+        TypedGoRoute<WorktreeRoute>(
+          path: 'workspaces/:hostId/:workspaceId/:worktreeId',
+        ),
+        TypedGoRoute<SessionRoute>(
+          path:
+              'workspaces/:hostId/:workspaceId/:worktreeId/'
+              'sessions/:sessionId',
+        ),
+        TypedGoRoute<TerminalRoute>(
+          path:
+              'workspaces/:hostId/:workspaceId/:worktreeId/'
+              'terminals/:terminalId',
+        ),
+      ],
+    ),
+  ],
+)
+/// Stable workspace frame whose child Navigator owns content history.
+class WorkspaceShellRoute extends ShellRouteData {
+  /// Creates the workspace shell.
+  const WorkspaceShellRoute();
+
+  /// Navigator used for workspace home and content pages.
+  static final GlobalKey<NavigatorState> $navigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'workspace-shell');
+
+  @override
+  Page<void> pageBuilder(
+    BuildContext context,
+    GoRouterState state,
+    Widget navigator,
+  ) {
+    final configuration = _workspaceRouteConfiguration(state.uri);
+    return NoTransitionPage<void>(
+      key: const ValueKey<String>('workspace-shell'),
+      name: 'workspace-shell',
+      restorationId: 'workspace-shell',
+      child: WorkspacePage(
+        navigator: navigator,
+        selection: configuration.selection,
+        requestedAgentId: configuration.requestedAgentId,
+        requestedTerminalId: configuration.requestedTerminalId,
+        compose: configuration.compose,
+      ),
+    );
+  }
+}
+
 /// Unified workspace home shown before daemon connections complete.
 class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
   /// Creates the workspace home route.
@@ -115,12 +329,13 @@ class WorkspaceHomeRoute extends GoRouteData with $WorkspaceHomeRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _workspaceShellPage(WorkspacePage(compose: compose));
+      _workspaceContentPage(
+        state,
+        name: compose ? 'workspace-compose' : 'workspace-home',
+        child: WorkspaceRouteContent(compose: compose),
+      );
 }
 
-@TypedGoRoute<WorktreeRoute>(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId',
-)
 /// Opens a checkout and its session tabs.
 class WorktreeRoute extends GoRouteData with $WorktreeRoute {
   /// Creates a checkout route.
@@ -141,8 +356,10 @@ class WorktreeRoute extends GoRouteData with $WorktreeRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _workspaceShellPage(
-        WorkspacePage(
+      _workspaceContentPage(
+        state,
+        sharedIdentity: true,
+        child: WorkspaceRouteContent(
           selection: WorkspaceSelection(
             hostId: hostId,
             workspaceId: workspaceId,
@@ -152,9 +369,6 @@ class WorktreeRoute extends GoRouteData with $WorktreeRoute {
       );
 }
 
-@TypedGoRoute<SessionRoute>(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/sessions/:sessionId',
-)
 /// Opens one AI session in the checkout tab strip.
 class SessionRoute extends GoRouteData with $SessionRoute {
   /// Creates a session route.
@@ -179,8 +393,10 @@ class SessionRoute extends GoRouteData with $SessionRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _workspaceShellPage(
-        WorkspacePage(
+      _workspaceContentPage(
+        state,
+        sharedIdentity: true,
+        child: WorkspaceRouteContent(
           selection: WorkspaceSelection(
             hostId: hostId,
             workspaceId: workspaceId,
@@ -191,9 +407,6 @@ class SessionRoute extends GoRouteData with $SessionRoute {
       );
 }
 
-@TypedGoRoute<TerminalRoute>(
-  path: '/workspaces/:hostId/:workspaceId/:worktreeId/terminals/:terminalId',
-)
 /// Opens one daemon terminal in the checkout tab strip.
 class TerminalRoute extends GoRouteData with $TerminalRoute {
   /// Creates a terminal route.
@@ -218,8 +431,10 @@ class TerminalRoute extends GoRouteData with $TerminalRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _workspaceShellPage(
-        WorkspacePage(
+      _workspaceContentPage(
+        state,
+        sharedIdentity: true,
+        child: WorkspaceRouteContent(
           selection: WorkspaceSelection(
             hostId: hostId,
             workspaceId: workspaceId,
@@ -230,7 +445,6 @@ class TerminalRoute extends GoRouteData with $TerminalRoute {
       );
 }
 
-@TypedGoRoute<GeneralSettingsRoute>(path: '/settings/general')
 /// Unified settings route with General selected.
 class GeneralSettingsRoute extends GoRouteData with $GeneralSettingsRoute {
   /// Creates the general settings route.
@@ -238,12 +452,14 @@ class GeneralSettingsRoute extends GoRouteData with $GeneralSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        const UnifiedSettingsPage(category: SettingsCategory.general),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-general',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.general,
       );
 }
 
-@TypedGoRoute<ProviderSettingsRoute>(path: '/settings/providers')
 /// Unified settings route with Provider selected.
 class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
   /// Creates the provider settings route.
@@ -254,15 +470,15 @@ class ProviderSettingsRoute extends GoRouteData with $ProviderSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.provider,
-          hostId: hostId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-provider',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.provider,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<ModelSettingsRoute>(path: '/settings/models')
 /// Unified settings route with Model selected.
 class ModelSettingsRoute extends GoRouteData with $ModelSettingsRoute {
   /// Creates the model settings route.
@@ -273,15 +489,15 @@ class ModelSettingsRoute extends GoRouteData with $ModelSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.model,
-          hostId: hostId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-model',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.model,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions')
 /// Unified settings route with Permissions selected.
 class PermissionSettingsRoute extends GoRouteData
     with $PermissionSettingsRoute {
@@ -293,15 +509,15 @@ class PermissionSettingsRoute extends GoRouteData
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.permission,
-          hostId: hostId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-permission',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.permission,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<ProjectSettingsRoute>(path: '/settings/projects')
 /// Unified settings route with Projects selected.
 class ProjectSettingsRoute extends GoRouteData with $ProjectSettingsRoute {
   /// Creates the project settings route.
@@ -312,15 +528,15 @@ class ProjectSettingsRoute extends GoRouteData with $ProjectSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.project,
-          hostId: hostId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-project',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.project,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents')
 /// Unified settings route with Agent selected.
 class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
   /// Creates the agent settings route.
@@ -331,12 +547,15 @@ class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(category: SettingsCategory.agent, hostId: hostId),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-agent',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.agent,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<McpSettingsRoute>(path: '/settings/mcp')
 /// Unified settings route with MCP selected.
 class McpSettingsRoute extends GoRouteData with $McpSettingsRoute {
   /// Creates the MCP settings route.
@@ -347,12 +566,15 @@ class McpSettingsRoute extends GoRouteData with $McpSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(category: SettingsCategory.mcp, hostId: hostId),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-mcp',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.mcp,
+        hostId: hostId,
       );
 }
 
-@TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills')
 /// Unified settings route with Skill selected.
 class SkillSettingsRoute extends GoRouteData with $SkillSettingsRoute {
   /// Creates the skill settings route.
@@ -366,16 +588,16 @@ class SkillSettingsRoute extends GoRouteData with $SkillSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.skill,
-          hostId: hostId,
-          workspaceId: workspaceId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-skill',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.skill,
+        hostId: hostId,
+        workspaceId: workspaceId,
       );
 }
 
-@TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons')
 /// Unified settings route with Daemon selected.
 class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
   /// Creates daemon settings route.
@@ -383,12 +605,14 @@ class DaemonSettingsRoute extends GoRouteData with $DaemonSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        const UnifiedSettingsPage(category: SettingsCategory.daemon),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-daemon',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.daemon,
       );
 }
 
-@TypedGoRoute<AdvancedSettingsRoute>(path: '/settings/advanced')
 /// Unified settings route with Advanced selected.
 class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
   /// Creates the advanced settings route.
@@ -396,8 +620,11 @@ class AdvancedSettingsRoute extends GoRouteData with $AdvancedSettingsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        const UnifiedSettingsPage(category: SettingsCategory.advanced),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-advanced',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.advanced,
       );
 }
 
@@ -456,9 +683,6 @@ class AdvancedNewHostRoute extends GoRouteData with $AdvancedNewHostRoute {
       const RemoteHostEditPage();
 }
 
-@TypedGoRoute<DaemonConnectionsRoute>(
-  path: '/settings/daemons/:hostId/connections',
-)
 /// Opens one daemon's connection, pairing, and approved-device settings.
 class DaemonConnectionsRoute extends GoRouteData with $DaemonConnectionsRoute {
   /// Creates the route.
@@ -469,11 +693,12 @@ class DaemonConnectionsRoute extends GoRouteData with $DaemonConnectionsRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      _settingsShellPage(
-        UnifiedSettingsPage(
-          category: SettingsCategory.connection,
-          hostId: hostId,
-        ),
+      _settingsContentPage(
+        state,
+        name: 'settings-category-connection',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.connection,
+        hostId: hostId,
       );
 }
 

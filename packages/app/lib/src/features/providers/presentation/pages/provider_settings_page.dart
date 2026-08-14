@@ -7,136 +7,41 @@ import 'package:app/src/features/providers/application/provider_settings_control
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
-import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:client/client.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 /// Provider connection settings for one daemon host.
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends StatelessWidget {
   /// Creates a provider connection settings page.
   const SettingsPage({
     required this.hostId,
-    this.paneController,
-    this.slot,
-    this.embedded = false,
+    required this.paneController,
+    required this.slot,
     super.key,
-  }) : assert(
-         (paneController == null) == (slot == null),
-         'paneController and slot must be supplied together.',
-       );
+  });
 
   /// Route host identifier.
   final String hostId;
 
   /// Selection shared by the collection and detail scaffold slots.
-  final ProviderSettingsPaneController? paneController;
+  final ProviderSettingsPaneController paneController;
 
   /// Which scaffold slot this widget supplies.
-  final SettingsPaneSlot? slot;
-
-  /// Whether the unified settings shell supplies navigation chrome.
-  final bool embedded;
+  final SettingsPaneSlot slot;
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
-  late final ProviderSettingsPaneController _paneController;
-
-  @override
-  void initState() {
-    super.initState();
-    _paneController = widget.paneController ?? ProviderSettingsPaneController();
-  }
-
-  @override
-  void dispose() {
-    if (widget.paneController == null) _paneController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final slot = widget.slot;
-    final embeddedBody = slot == null
-        ? null
-        : _ProviderSettingsSlot(
-            hostId: widget.hostId,
-            paneController: _paneController,
-            slot: slot,
-          );
-    if (embeddedBody != null && widget.embedded) return embeddedBody;
-    if (slot != null) {
-      return TinestPageShell(
-        appBar: TinestPageHeader(
-          leading: TRIconButton(
-            appearance: TRAppearance.ghost,
-            label: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: context.pop,
-            icon: Icon(TinestIcons.backFor(context)),
-          ),
-          title: TRText.inherit(l10n.providerSettingsTitle),
-        ),
-        body: embeddedBody!,
-      );
-    }
-    return ListenableBuilder(
-      listenable: _paneController,
-      builder: (context, _) => LayoutBuilder(
-        builder: (context, constraints) {
-          final widthClass = TRAdaptiveWidthClass.fromWidth(
-            constraints.maxWidth,
-          );
-          final collection = _ProviderSettingsSlot(
-            hostId: widget.hostId,
-            paneController: _paneController,
-            slot: SettingsPaneSlot.collection,
-          );
-          final detail = _ProviderSettingsSlot(
-            hostId: widget.hostId,
-            paneController: _paneController,
-            slot: SettingsPaneSlot.detail,
-          );
-          final body = TRAdaptiveListDetailLayout(
-            singlePane: _paneController.hasDetail ? detail : collection,
-            collectionPane: collection,
-            detailPane: detail,
-          );
-          return TinestPageShell(
-            appBar: TinestPageHeader(
-              leading: TRIconButton(
-                appearance: TRAppearance.ghost,
-                label: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () {
-                  final split =
-                      widthClass == TRAdaptiveWidthClass.large ||
-                      widthClass == TRAdaptiveWidthClass.extraLarge;
-                  if (!split && _paneController.hasDetail) {
-                    _paneController.showCollection();
-                    return;
-                  }
-                  context.pop();
-                },
-                icon: Icon(TinestIcons.backFor(context)),
-              ),
-              title: TRText.inherit(l10n.providerSettingsTitle),
-            ),
-            body: body,
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _ProviderSettingsSlot(
+    hostId: hostId,
+    paneController: paneController,
+    slot: slot,
+  );
 }
 
 class _ProviderSettingsSlot extends ConsumerWidget {
@@ -185,12 +90,16 @@ class _ProviderSettingsSlot extends ConsumerWidget {
                       : TinestIcons.network,
                 ),
               )
-            : _body(context, state),
+            : _body(context, ref, state),
       ),
     );
   }
 
-  Widget _body(BuildContext context, ProviderSettingsState state) {
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref,
+    ProviderSettingsState state,
+  ) {
     final widthClass = settingsAdaptiveWidthClassOf(context);
     final showsSplit =
         widthClass == TRAdaptiveWidthClass.large ||
@@ -211,7 +120,11 @@ class _ProviderSettingsSlot extends ConsumerWidget {
         )
         .firstOrNull;
     if (paneController._pane == _ProviderPane.connection && selected == null) {
-      _scheduleCollection();
+      _scheduleCollection(
+        context,
+        ref,
+        paneController.selectedId!,
+      );
     }
     if (slot == SettingsPaneSlot.collection) {
       return _ProviderCollection(
@@ -285,9 +198,24 @@ class _ProviderSettingsSlot extends ConsumerWidget {
     });
   }
 
-  void _scheduleCollection() {
+  void _scheduleCollection(
+    BuildContext context,
+    WidgetRef ref,
+    String selectedId,
+  ) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      paneController.showCollection();
+      if (!context.mounted ||
+          paneController._pane != _ProviderPane.connection ||
+          paneController.selectedId != selectedId) {
+        return;
+      }
+      final latest = ref.read(providerSettingsControllerProvider(hostId)).value;
+      final stillExists =
+          latest?.connections.any(
+            (connection) => connection.id == selectedId,
+          ) ??
+          false;
+      if (!stillExists) paneController.showCollection();
     });
   }
 }
@@ -314,13 +242,16 @@ class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
   bool get hasDetail => _pane != _ProviderPane.empty;
 
   @override
-  String? get destinationId => switch (_pane) {
+  Object? get detailSelection => switch (_pane) {
     _ProviderPane.empty => null,
-    _ProviderPane.catalog => 'provider-catalog',
-    _ProviderPane.preset =>
-      'provider-preset-${_draftDefinition!.id}-${_reauthConnectionId ?? 'new'}',
-    _ProviderPane.custom => 'provider-custom-new',
-    _ProviderPane.connection => 'provider-connection-$_selectedId',
+    _ProviderPane.catalog => (_ProviderPane.catalog, null, null),
+    _ProviderPane.preset => (
+      _ProviderPane.preset,
+      _draftDefinition!.id,
+      _reauthConnectionId,
+    ),
+    _ProviderPane.custom => (_ProviderPane.custom, null, null),
+    _ProviderPane.connection => (_ProviderPane.connection, _selectedId, null),
   };
 
   /// Shows the first connection on initial desktop entry.
@@ -1182,7 +1113,7 @@ class _ProviderConnectionPaneState
           success: l10n.providerSettingsDisconnected,
           id: 'provider-disconnect',
         );
-    if (disconnected) widget.onRemoved();
+    if (disconnected && mounted) widget.onRemoved();
   }
 }
 

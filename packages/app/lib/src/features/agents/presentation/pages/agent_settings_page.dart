@@ -176,11 +176,11 @@ class AgentSettingsPaneController extends SettingsPaneCoordinatorBase {
   bool get hasDetail => _creating || _selectedId != null;
 
   @override
-  String? get destinationId => _creating
-      ? 'agent-create'
+  Object? get detailSelection => _creating
+      ? (_AgentPaneDestination.create, null)
       : _selectedId == null
       ? null
-      : 'agent-$_selectedId';
+      : (_AgentPaneDestination.existing, _selectedId);
 
   /// Shows the first Agent on initial desktop entry.
   void selectInitial(String id) {
@@ -225,6 +225,8 @@ class AgentSettingsPaneController extends SettingsPaneCoordinatorBase {
     if (hadDetail) notifyListeners();
   }
 }
+
+enum _AgentPaneDestination { create, existing }
 
 class _AgentDefinitionList extends StatelessWidget {
   const _AgentDefinitionList({

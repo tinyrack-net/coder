@@ -446,9 +446,13 @@ void main() {
       final reviewerFile = File(reviewer.sourcePath);
       expect(reviewerFile.existsSync(), isTrue);
 
-      final promptField = _trTextInput('시스템 프롬프트 (Markdown)');
+      final promptField = _trTextInput(
+        '시스템 프롬프트 (Markdown)',
+      ).hitTestable();
       await tester.enterText(promptField, 'Review the current change.');
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.tap(
+        find.widgetWithText(TRButton, '저장').hitTestable(),
+      );
       await _waitForAgentPrompt(
         setupClient,
         'reviewer',
@@ -572,7 +576,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(reviewerSubagent);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.tap(
+        find.widgetWithText(TRButton, '저장').hitTestable(),
+      );
       await tester.pumpAndSettle();
       final collaboratingTinest = await setupClient.agents.getAgentDefinition(
         'tinest',
@@ -879,7 +885,12 @@ void main() {
         expectedContentHash: tinestDefinition.contentHash,
       );
 
-      await tester.tap(find.byIcon(TinestIcons.back).first);
+      final settingsBack = find.byKey(
+        const ValueKey<String>('settings-back-button'),
+      );
+      await tester.tap(settingsBack);
+      await tester.pumpAndSettle();
+      await tester.tap(settingsBack);
       await pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);
@@ -1972,11 +1983,7 @@ void main() {
         tester,
         find.byKey(const ValueKey<String>('provider-add-button')),
       );
-      await _selectDaemon(
-        tester,
-        'Remote daemon',
-        settleAfterSelection: false,
-      );
+      await _selectDaemon(tester, 'Remote daemon');
       await pumpUntil(
         tester,
         find.byKey(const ValueKey<String>('provider-add-button')),
@@ -2028,21 +2035,26 @@ void main() {
         'the custom provider to be persisted',
       );
       expect(degradedProvider!.status, ProviderConnectionStatus.degraded);
-      await pumpUntil(
-        tester,
-        find.byKey(
-          ValueKey<String>('provider-detail-${degradedProvider!.id}'),
-        ),
-      );
+      final activeProviderDetail = find
+          .byKey(
+            ValueKey<String>('provider-detail-${degradedProvider!.id}'),
+          )
+          .hitTestable();
+      await pumpUntil(tester, activeProviderDetail);
 
-      await tester.enterText(_trTextInput('이름'), 'E2E Provider Edited');
       await tester.enterText(
-        _trTextInput('기본 URL'),
+        _trTextInput('이름').hitTestable(),
+        'E2E Provider Edited',
+      );
+      await tester.enterText(
+        _trTextInput('기본 URL').hitTestable(),
         'http://127.0.0.1:${modelServer.port}/v1',
       );
       await tester.pump();
       await tester.tap(
-        find.byKey(const ValueKey<String>('provider-custom-save')),
+        find
+            .byKey(const ValueKey<String>('provider-custom-save'))
+            .hitTestable(),
       );
       await pumpUntilCondition(
         tester,
@@ -2491,26 +2503,19 @@ Future<AgentDefinitionDto> _waitForAgentDefinition(
 
 Future<void> _selectDaemon(
   WidgetTester tester,
-  String label, {
-  bool settleAfterSelection = true,
-}) async {
+  String label,
+) async {
   // The picker now lives in the sidebar, so a settings route still animating
-  // out carries its own copy. Settle it away where the caller allows it, and
-  // target the incoming route otherwise.
-  if (settleAfterSelection) {
-    await tester.pumpAndSettle();
-  }
+  // out carries its own copy. Settle it away before selecting the incoming
+  // route and wait for the host-scoped content to finish replacing afterward.
+  await tester.pumpAndSettle();
   final dropdown = find.byKey(
     const ValueKey<String>('settings-daemon-select'),
   );
   await tester.tap(dropdown.last);
   await tester.pumpAndSettle();
   await tester.tap(find.text(label).last);
-  if (settleAfterSelection) {
-    await tester.pumpAndSettle();
-  } else {
-    await tester.pump();
-  }
+  await tester.pumpAndSettle();
 }
 
 Future<void> _disconnectProviderConnection(
@@ -2520,10 +2525,10 @@ Future<void> _disconnectProviderConnection(
   final detail = find.byKey(
     ValueKey<String>('provider-detail-$connectionId'),
   );
-  await pumpUntil(tester, detail);
-  final disconnect = find.byKey(
-    const ValueKey<String>('provider-connection-disconnect'),
-  );
+  await pumpUntil(tester, detail.hitTestable());
+  final disconnect = find
+      .byKey(const ValueKey<String>('provider-connection-disconnect'))
+      .hitTestable();
   await _centerSettingsAction(tester, disconnect);
   await tester.tap(disconnect);
   await tester.pumpAndSettle();

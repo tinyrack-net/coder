@@ -177,11 +177,21 @@ void main() {
         );
         await tester.pumpAndSettle();
         final page = tester.state(find.byType(WorkspacePage));
-        for (final location in locations.skip(1)) {
+        // Home is the structural parent, so the first content route enters
+        // above it. Subsequent content changes are lateral replacements that
+        // retain the shell and content Page identities.
+        unawaited(router.push<void>(locations[1]));
+        await tester.pumpAndSettle();
+        expect(
+          router.state.uri.path,
+          Uri.parse(locations[1]).path,
+        );
+        expect(tester.state(find.byType(WorkspacePage)), same(page));
+        for (final location in locations.skip(2)) {
           unawaited(router.replace<void>(location));
           await tester.pumpAndSettle();
           expect(
-            router.routeInformationProvider.value.uri.path,
+            router.state.uri.path,
             Uri.parse(location).path,
           );
           expect(tester.state(find.byType(WorkspacePage)), same(page));

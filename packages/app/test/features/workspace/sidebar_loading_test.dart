@@ -32,6 +32,7 @@ void main() {
     'the sidebar shows a tree skeleton, not a false empty state, while '
     'catalogs load',
     (tester) async {
+      final semantics = tester.ensureSemantics();
       await tester.binding.setSurfaceSize(const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final gate = Completer<void>();
@@ -51,6 +52,7 @@ void main() {
 
       expect(find.byType(SidebarTreeSkeleton), findsOneWidget);
       expect(find.bySemanticsLabel('워크스페이스 목록 불러오는 중'), findsOneWidget);
+      semantics.dispose();
       expect(find.text('아직 workspace가 없습니다.'), findsNothing);
       expect(find.text('설정된 daemon이 없습니다.'), findsNothing);
 
