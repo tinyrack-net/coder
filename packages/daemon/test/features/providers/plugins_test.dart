@@ -60,6 +60,8 @@ void main() {
       'openrouter',
       'groq',
       'xai',
+      'minimax',
+      'minimax-cn',
       'ollama',
       'lmstudio',
       'vllm',
@@ -82,7 +84,48 @@ void main() {
     }
   });
 
-  test('only the subscription OAuth endpoint withholds model discovery', () {
+  test('the two MiniMax regions differ only by host', () {
+    final plugins = openAIFamilyPlugins(
+      clock: clock,
+      openAIOAuth: const _UnusedGateway(),
+    );
+    final international = plugins.firstWhere(
+      (plugin) => plugin.id == 'minimax',
+    );
+    final china = plugins.firstWhere((plugin) => plugin.id == 'minimax-cn');
+
+    expect(
+      international.endpoint(AgentProviderAuthKind.apiKey).baseUrl,
+      'https://api.minimax.io/v1',
+    );
+    expect(
+      china.endpoint(AgentProviderAuthKind.apiKey).baseUrl,
+      'https://api.minimaxi.com/v1',
+    );
+    expect(
+      china.models.map((model) => model.id),
+      international.models.map((model) => model.id),
+    );
+    for (final plugin in <ProviderPlugin>[international, china]) {
+      // MiniMax documents no `/models` listing, and Models.dev namespaces its
+      // models under identifiers the MiniMax API rejects, so the bundled
+      // catalog is the whole model set for both regions.
+      expect(
+        plugin.endpoint(AgentProviderAuthKind.apiKey).supportsModelDiscovery,
+        isFalse,
+        reason: plugin.id,
+      );
+      expect(plugin.usesRemoteCatalog, isFalse, reason: plugin.id);
+      // MiniMax thinks adaptively, so an effort control would be inert.
+      expect(
+        plugin.models.expand((model) => model.capabilities.controls),
+        isEmpty,
+        reason: plugin.id,
+      );
+    }
+  });
+
+  test('the OpenAI subscription endpoint withholds model discovery', () {
     final openai = openAIFamilyPlugins(
       clock: clock,
       openAIOAuth: const _UnusedGateway(),

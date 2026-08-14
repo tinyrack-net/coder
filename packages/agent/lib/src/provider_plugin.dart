@@ -274,6 +274,13 @@ abstract base class ProviderPlugin {
   /// starts flows only for methods the definition advertises.
   ProviderOAuthGateway? get oauth => null;
 
+  /// Whether a public model catalog reports identifiers this vendor accepts.
+  ///
+  /// An aggregator may namespace a vendor's models under its own identifiers,
+  /// which the vendor's own API rejects; such a vendor serves bundled models
+  /// only, because a refreshed entry would name a model no turn can run.
+  bool get usesRemoteCatalog => true;
+
   /// Refines capability metadata fetched from a public model catalog.
   ///
   /// A public catalog reports what it knows about every vendor; the vendor

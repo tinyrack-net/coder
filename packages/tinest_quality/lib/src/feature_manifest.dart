@@ -1211,8 +1211,8 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'provider.connection.management',
     description:
         'Connects, reconnects in place, and disconnects OpenAI, Anthropic, '
-        'Gemini, and compatible provider presets through their public API '
-        'contracts.',
+        'Gemini, MiniMax, and compatible provider presets through their '
+        'public API contracts.',
     apiMethods: <String>[
       'providers.connectProviderApiKey',
       'providers.connectProviderNone',

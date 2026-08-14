@@ -443,6 +443,37 @@ void main() {
   });
 
   test(
+    'a vendor without a model listing connects on its bundled catalog',
+    () async {
+      final fixture = _ServiceFixture(now);
+      // Discovery would fail if it ran at all, so a clean connection proves
+      // the endpoint was never asked for a `/models` listing.
+      fixture.discovery.failure = const ProviderDiscoveryFailure(
+        ProviderDiscoveryFailureKind.unavailable,
+        'no such route',
+      );
+
+      final connection = await fixture.service.connectApiKey(
+        'minimax',
+        'sk-token-plan',
+      );
+
+      expect(connection.status, ProviderConnectionStatus.connected);
+      expect(connection.error, isNull);
+      expect(fixture.discovery.calls, 0);
+      expect(
+        (await fixture.service.listModels(
+          connection.id,
+        )).map((model) => model.providerModelId),
+        contains('MiniMax-M3'),
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__unit',
+    ],
+  );
+
+  test(
     'custom connections validate URL and allow multiple instances',
     () async {
       final fixture = _ServiceFixture(now);

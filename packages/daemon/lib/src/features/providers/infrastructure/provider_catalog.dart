@@ -274,7 +274,10 @@ final class BuiltInProviderCatalog {
       return catalog();
     }
     _lastAttemptAt = _clock.nowUtc();
-    final providerIds = _registry.plugins.map((plugin) => plugin.id).toSet();
+    final providerIds = _registry.plugins
+        .where((plugin) => plugin.usesRemoteCatalog)
+        .map((plugin) => plugin.id)
+        .toSet();
     final Map<String, List<ProviderCatalogMetadata>> fetched;
     try {
       fetched = await _metadataSource.fetch(providerIds);
