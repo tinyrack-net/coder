@@ -427,6 +427,10 @@ void main() {
       publishWinget,
       contains("needs.publish-release.result == 'success'"),
     );
+    expect(publishWinget, contains('update Tinyrack.Tinest `'));
+    expect(publishWinget, contains('update Tinyrack.TinestCLI `'));
+    expect(publishWinget, isNot(contains('update tinyrack.tinest `')));
+    expect(publishWinget, isNot(contains('update tinyrack.tinest-cli `')));
   });
 
   test('a release web deployment can recover from a skipped publish job', () {
