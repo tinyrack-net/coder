@@ -47,7 +47,7 @@ dev_dependencies:
   tinyrack_ui:
     git:
       url: https://github.com/tinyrack-net/design.git
-      ref: f163d85a18a76a6f2a021c5a6f6d4c35fc4da48c
+      ref: 20f57c883d7358f006bffefe84fed9270fa27021
       path: packages/ui_flutter
 
 flutter:
