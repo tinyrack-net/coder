@@ -435,15 +435,14 @@ abstract final class DaemonApplication {
             if (userHome != null)
               NativeSkillFiles(
                 p.join(userHome, '.agents', 'skills'),
-                source: SkillSource.userHome,
+                origin: SkillOrigin.userHome,
               ),
             NativeSkillFiles(
               p.join(configDirectory, 'skills'),
-              source: SkillSource.config,
+              origin: SkillOrigin.config,
               createIfMissing: true,
             ),
           ],
-          settings: database.settingsDao,
         ),
       );
       await skills.initialize();

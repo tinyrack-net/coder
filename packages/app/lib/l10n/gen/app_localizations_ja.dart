@@ -1990,119 +1990,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get skillSettingsHeading => 'スキル';
 
   @override
-  String skillSettingsCount(int count) {
-    return 'スキル $count 件';
+  String get skillSettingsScope => 'スキルの範囲';
+
+  @override
+  String get skillSettingsScopeGlobal => 'グローバル';
+
+  @override
+  String get skillSettingsScopeHint => '選択した範囲で定義され、実際に有効なスキルのみ表示します。';
+
+  @override
+  String skillSettingsGlobalCount(int count) {
+    return 'グローバルスキル $count 件';
   }
 
   @override
-  String get skillSettingsSelectSkill => 'スキルを選択してください。';
-
-  @override
-  String get skillSettingsEmpty => '設定されたスキルはありません。';
-
-  @override
-  String get skillSettingsList => 'スキル一覧';
-
-  @override
-  String get skillSettingsAdd => 'スキルを追加';
-
-  @override
-  String get skillSettingsAddTitle => 'スキルを追加';
-
-  @override
-  String get skillSettingsIdLabel => 'ID（ディレクトリ名）';
-
-  @override
-  String get skillSettingsIdInvalid => '半角小文字、数字、-、_ のみ使えます。';
-
-  @override
-  String get skillSettingsIdTaken => 'そのスキル ID はすでに存在します。';
-
-  @override
-  String get skillSettingsNameRequired => '名前を入力してください。';
-
-  @override
-  String get skillSettingsCopyPath => 'ファイルの場所をコピー';
-
-  @override
-  String get skillSettingsDelete => 'スキルを削除';
-
-  @override
-  String get skillSettingsDeleteFailed => 'スキルを削除できませんでした。';
-
-  @override
-  String get skillSettingsToggleFailed => 'スキルの有効・無効を切り替えられませんでした。';
-
-  @override
-  String skillSettingsDeleteTitle(String name) {
-    return '$name を削除しますか？';
+  String skillSettingsProjectCount(int count) {
+    return 'プロジェクトスキル $count 件';
   }
 
   @override
-  String get skillSettingsDeleteMessage => 'スキルのディレクトリは、同じ場所の .archive に移動します。';
+  String get skillSettingsGlobalEmpty => '利用可能なグローバルスキルはありません。';
 
   @override
-  String get skillSettingsEnabled => '有効';
-
-  @override
-  String get skillSettingsMandatory => 'この組み込みスキルは常に有効です。';
-
-  @override
-  String get skillSettingsReadOnly => '組み込みスキルはアプリに同梱されているため編集できません。';
-
-  @override
-  String get skillSettingsInstructions => '指示（Markdown）';
-
-  @override
-  String get skillSettingsStateHeading => '利用可否';
-
-  @override
-  String get skillSettingsDefinitionHeading => '定義';
-
-  @override
-  String get skillSettingsResources => '同梱ファイル';
-
-  @override
-  String get skillSettingsNoResources => 'このスキルに同梱されているファイルはありません。';
-
-  @override
-  String get skillSettingsSaveFailedTitle => 'スキルを保存できませんでした';
-
-  @override
-  String get skillSettingsReload => '再読み込み';
-
-  @override
-  String get skillSettingsOverwrite => '上書き';
-
-  @override
-  String get skillSettingsShadowed => '別のソースがこのスキルを上書きしています。';
-
-  @override
-  String get skillSettingsStale => 'このファイルを解析できないため、最後に正常だった内容を表示しています。';
-
-  @override
-  String get skillSettingsSource => '提供元';
-
-  @override
-  String get skillSettingsSourceBuiltIn => '組み込み';
-
-  @override
-  String get skillSettingsSourceUserHome => 'グローバル';
-
-  @override
-  String get skillSettingsSourceConfig => '設定';
-
-  @override
-  String get skillSettingsSourceProject => 'プロジェクト';
-
-  @override
-  String get skillSettingsProject => 'プロジェクト';
-
-  @override
-  String get skillSettingsProjectNone => 'グローバルスキルのみ';
-
-  @override
-  String get skillSettingsProjectHint => 'プロジェクトを選ぶと、そこにコミットされたスキルもあわせて表示されます。';
+  String get skillSettingsProjectEmpty => 'このプロジェクトで利用可能なスキルはありません。';
 
   @override
   String get skillSettingsProjectSearch => 'プロジェクトを検索';

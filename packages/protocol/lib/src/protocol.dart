@@ -5,10 +5,10 @@ const int tinestProtocolMajor = 4;
 
 /// Exact revision supported by this implementation.
 ///
-/// Revision 1 added the required `group` on `AgentToolDefinitionDto`. A
-/// revision-0 peer cannot decode the tool catalog, so the handshake rejects the
-/// pairing rather than letting it fail later at an arbitrary RPC.
-const int tinestProtocolRevision = 1;
+/// Revision 2 replaces mutable skill management with the read-only catalog
+/// contract. An earlier peer cannot decode this catalog, so the handshake
+/// rejects the pairing rather than letting it fail later at an arbitrary RPC.
+const int tinestProtocolRevision = 2;
 
 /// WebSocket subprotocol offered by v4 clients and servers.
 const String tinestWebSocketProtocol = 'tinyrack.tinest.v4';

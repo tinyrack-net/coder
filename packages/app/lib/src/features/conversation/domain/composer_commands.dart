@@ -7,7 +7,7 @@ enum ComposerCommandKind {
   /// Handled inside the app; never reaches the daemon as a turn.
   client,
 
-  /// Names an enabled skill for the agent to load.
+  /// Names an effective skill for the agent to load.
   skill,
 
   /// Expands a Markdown prompt template authored on disk.
@@ -178,14 +178,14 @@ const List<ComposerCommand> clientComposerCommands = <ComposerCommand>[
 List<ComposerCommand> mergeComposerCommands({
   required List<ComposerCommand> client,
   required List<AgentCommandDto> agent,
-  required List<SkillDto> skills,
+  required List<SkillSummaryDto> skills,
 }) {
   final resolved = <String, ComposerCommand>{};
 
   for (final skill in skills) {
-    // Mandatory skills are injected into every turn already, so offering them
+    // Implicit skills are injected into every turn already, so offering them
     // here would only duplicate what the agent has.
-    if (!skill.isEnabled || skill.isMandatory) continue;
+    if (skill.isImplicit) continue;
     final name = skill.name.trim().isEmpty ? skill.id : skill.name.trim();
     resolved[name] = ComposerCommand(
       id: 'skill:${skill.id}',

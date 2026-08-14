@@ -1933,15 +1933,12 @@ class _CompletionHostState extends State<_CompletionHost> {
   late final List<ComposerCommand> _commands = mergeComposerCommands(
     client: clientComposerCommands,
     agent: const <AgentCommandDto>[],
-    skills: const <SkillDto>[
-      SkillDto(
+    skills: const <SkillSummaryDto>[
+      SkillSummaryDto(
         id: 'commit',
         name: 'commit',
         description: 'Writes atomic commits.',
-        source: SkillSource.config,
-        sourcePath: '/config/skills/commit/SKILL.md',
-        contentHash: 'hash',
-        body: 'Stage related changes together.',
+        isImplicit: false,
       ),
     ],
   );

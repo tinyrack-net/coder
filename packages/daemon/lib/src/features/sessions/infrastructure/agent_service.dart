@@ -360,7 +360,10 @@ class SessionTurnCoordinator implements SessionTurnPort {
             multiAgent?.usageHintFor(session, definition),
           ),
           projectDoc: projectDoc?.render(),
-          toolPrompts: turnTools.promptFragments,
+          toolPrompts: <String>[
+            ...turnTools.promptFragments,
+            ?skills.implicitInstructions,
+          ],
           contextWindowTokens: resolvedModel.limits?.context,
           // What the live window already holds, so a turn that starts on a
           // full window compacts before it samples rather than failing.

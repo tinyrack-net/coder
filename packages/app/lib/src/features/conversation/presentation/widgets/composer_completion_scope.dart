@@ -100,10 +100,14 @@ class _ComposerCompletionScopeState
         skills:
             ref
                 .watch(
-                  skillsControllerProvider(widget.hostId, widget.workspaceId),
+                  skillsControllerProvider(
+                    widget.hostId,
+                    SkillListView.effective,
+                    widget.workspaceId,
+                  ),
                 )
                 .value ??
-            const <SkillDto>[],
+            const <SkillSummaryDto>[],
       ),
       widget.excludedClientActions,
     );

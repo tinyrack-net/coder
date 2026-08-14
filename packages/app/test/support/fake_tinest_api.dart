@@ -101,8 +101,8 @@ final class FakeTinestApi
     List<SessionDto>? agents,
     List<TerminalDto>? terminals,
     List<AgentDefinitionDto>? agentDefinitions,
-    List<SkillDto>? skills,
-    List<SkillDto>? projectSkills,
+    List<SkillSummaryDto>? skills,
+    List<SkillSummaryDto>? projectSkills,
     Map<String, List<TimelineEventDto>>? timelines,
     Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
@@ -113,9 +113,7 @@ final class FakeTinestApi
     this.agentListError,
     this.skillListError,
     this.failNextAgentCreate = false,
-    this.failNextSkillCreate = false,
     this.failNextAgentUpdate = false,
-    this.failNextSkillUpdate = false,
     this.catalogRefreshError,
     this.providerConnectError,
     this.providerModelListError,
@@ -182,10 +180,12 @@ final class FakeTinestApi
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_tinest],
        ),
-       _skills = List<SkillDto>.of(
-         skills ?? <SkillDto>[_builtInSkill, _configSkill],
+       _skills = List<SkillSummaryDto>.of(
+         skills ?? <SkillSummaryDto>[_builtInSkill, _configSkill],
        ),
-       _projectSkills = List<SkillDto>.of(projectSkills ?? <SkillDto>[]),
+       _projectSkills = List<SkillSummaryDto>.of(
+         projectSkills ?? <SkillSummaryDto>[],
+       ),
        relayDevices = List<RelayDeviceDto>.of(
          relayDevices ?? const <RelayDeviceDto>[],
        ),
@@ -322,29 +322,18 @@ final class FakeTinestApi
     isBuiltIn: true,
   );
 
-  static const SkillDto _builtInSkill = SkillDto(
+  static const SkillSummaryDto _builtInSkill = SkillSummaryDto(
     id: 'coding-conventions',
     name: 'coding-conventions',
     description: 'Match the surrounding code.',
-    source: SkillSource.builtIn,
-    sourcePath: '',
-    contentHash: 'coding-conventions-hash',
-    body: 'Read neighbouring code first.',
-    isMandatory: true,
+    isImplicit: true,
   );
 
-  static const SkillDto _configSkill = SkillDto(
+  static const SkillSummaryDto _configSkill = SkillSummaryDto(
     id: 'commit',
     name: 'commit',
     description: 'Writes atomic commits.',
-    source: SkillSource.config,
-    sourcePath: '/config/skills/commit/SKILL.md',
-    contentHash: 'commit-hash',
-    body: 'Stage related changes together.',
-    isEditable: true,
-    resources: <SkillResourceDto>[
-      SkillResourceDto(path: 'scripts/split.sh', sizeBytes: 11),
-    ],
+    isImplicit: false,
   );
 
   final ServerInfoDto _serverInfo;
@@ -388,8 +377,8 @@ final class FakeTinestApi
   /// Daemon-global default permission mode.
   PermissionMode get defaultPermissionMode => _defaultPermissionMode;
   final List<AgentDefinitionDto> _agentDefinitions;
-  final List<SkillDto> _skills;
-  final List<SkillDto> _projectSkills;
+  final List<SkillSummaryDto> _skills;
+  final List<SkillSummaryDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
   final Map<String, GoalDto> _goals;
   final List<ProviderUsageDto> _providerUsage;
@@ -404,6 +393,10 @@ final class FakeTinestApi
   /// Optional failure returned while loading the skill catalog.
   Exception? skillListError;
 
+  /// Skill catalog requests, retained so scope and routing tests can inspect
+  /// the exact view sent to the API.
+  final List<SkillListParamsDto> skillListRequests = <SkillListParamsDto>[];
+
   /// Optional attach failure used by terminal error-state tests.
   ///
   /// Mutable so a retry test can clear the failure between attempts.
@@ -415,14 +408,8 @@ final class FakeTinestApi
   /// Whether the next guarded Markdown save should simulate a file race.
   bool failNextAgentUpdate;
 
-  /// Whether the next guarded skill save should simulate a file race.
-  bool failNextSkillUpdate;
-
   /// Whether the next Markdown create should simulate a daemon failure.
   bool failNextAgentCreate;
-
-  /// Whether the next skill create should simulate a daemon failure.
-  bool failNextSkillCreate;
 
   /// Optional gate used to keep model discovery in its loading state.
   final Future<void>? modelListGate;
@@ -1658,12 +1645,6 @@ final class FakeTinestApi
     ],
   );
 
-  List<SkillDto> _skillsFor(String? workspaceId) =>
-      workspaceId == null ? _skills : <SkillDto>[..._skills, ..._projectSkills];
-
-  List<SkillDto> _skillStoreFor(SkillSource source) =>
-      source == SkillSource.project ? _projectSkills : _skills;
-
   @override
   Future<FileSearchResultDto> searchFiles({
     required String worktreeId,
@@ -1710,92 +1691,25 @@ final class FakeTinestApi
       List<AgentCommandDto>.unmodifiable(commands);
 
   @override
-  Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+  Future<List<SkillSummaryDto>> listSkills({
+    required SkillListView view,
+    String? workspaceId,
+  }) async {
+    skillListRequests.add(
+      SkillListParamsDto(view: view, workspaceId: workspaceId),
+    );
     await skillListGate;
     final error = skillListError;
     if (error != null) throw error;
-    return List<SkillDto>.unmodifiable(_skillsFor(workspaceId));
-  }
-
-  @override
-  Future<SkillDto> getSkill(String id, {String? workspaceId}) async =>
-      _skillsFor(workspaceId).singleWhere((skill) => skill.id == id);
-
-  @override
-  Future<SkillDto> createSkill({
-    required String id,
-    required SkillSource source,
-    required String name,
-    required String description,
-    required String body,
-    String? workspaceId,
-  }) async {
-    if (failNextSkillCreate) {
-      failNextSkillCreate = false;
-      throw Exception('skill_create_failed');
-    }
-    if (_skillsFor(workspaceId).any((skill) => skill.id == id)) {
-      throw StateError('Skill already exists: $id');
-    }
-    final created = SkillDto(
-      id: id,
-      name: name,
-      description: description,
-      source: source,
-      sourcePath: '/config/skills/$id/SKILL.md',
-      contentHash: '$id-hash',
-      body: body,
-      isEditable: true,
-    );
-    _skillStoreFor(source).add(created);
-    return created;
-  }
-
-  @override
-  Future<SkillDto> updateSkill(
-    SkillDto skill, {
-    required String expectedContentHash,
-    bool force = false,
-    String? workspaceId,
-  }) async {
-    if (failNextSkillUpdate && !force) {
-      failNextSkillUpdate = false;
-      throw Exception('skill_file_conflict');
-    }
-    final store = _skillStoreFor(skill.source);
-    final index = store.indexWhere((item) => item.id == skill.id);
-    if (index < 0) throw StateError('Skill not found: ${skill.id}');
-    if (!force && store[index].contentHash != expectedContentHash) {
-      throw StateError('skill_file_conflict');
-    }
-    final updated = skill.copyWith(contentHash: '${skill.id}-updated-hash');
-    store[index] = updated;
-    return updated;
-  }
-
-  @override
-  Future<void> deleteSkill(String id, {String? workspaceId}) async {
-    _skills.removeWhere((skill) => skill.id == id && skill.isEditable);
-    _projectSkills.removeWhere((skill) => skill.id == id);
-  }
-
-  @override
-  Future<SkillDto> setSkillEnabled(
-    String id, {
-    required bool enabled,
-    String? workspaceId,
-  }) async {
-    for (final store in <List<SkillDto>>[_skills, _projectSkills]) {
-      final index = store.indexWhere((skill) => skill.id == id);
-      if (index < 0) continue;
-      if (store[index].isMandatory) {
-        throw StateError('Skill is always enabled: $id');
-      }
-      final updated = store[index].copyWith(isEnabled: enabled);
-      store[index] = updated;
-      return updated;
-    }
-    throw StateError('Skill not found: $id');
+    final result = switch (view) {
+      SkillListView.global => _skills,
+      SkillListView.project => _projectSkills,
+      SkillListView.effective => <SkillSummaryDto>[
+        ..._skills,
+        ..._projectSkills,
+      ],
+    };
+    return List<SkillSummaryDto>.unmodifiable(result);
   }
 
   @override

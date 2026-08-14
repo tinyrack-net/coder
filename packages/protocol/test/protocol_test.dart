@@ -44,11 +44,6 @@ void main() {
     expect(agentsUpdateProcedure.name, 'agents.update');
     expect(agentsListToolsProcedure.name, 'agents.listTools');
     expect(promptsListSkillsProcedure.name, 'prompts.listSkills');
-    expect(promptsGetSkillProcedure.name, 'prompts.getSkill');
-    expect(promptsCreateSkillProcedure.name, 'prompts.createSkill');
-    expect(promptsUpdateSkillProcedure.name, 'prompts.updateSkill');
-    expect(promptsDeleteSkillProcedure.name, 'prompts.deleteSkill');
-    expect(promptsSetSkillEnabledProcedure.name, 'prompts.setSkillEnabled');
     expect(promptsSkillsChangedNotification.name, 'prompts.skillsChanged');
     expect(workspacesSearchFilesProcedure.name, 'workspaces.searchFiles');
     expect(promptsListCommandsProcedure.name, 'prompts.listCommands');
@@ -455,95 +450,61 @@ void main() {
   });
 
   test(
-    'skill contracts round-trip and default to an enabled read-only skill',
+    'skill catalog contracts round-trip each view and summary',
     () {
-      const skill = SkillDto(
+      const skill = SkillSummaryDto(
         id: 'commit',
         name: 'commit',
         description: 'Writes atomic commits.',
-        source: SkillSource.config,
-        sourcePath: '/config/skills/commit/SKILL.md',
-        contentHash: 'hash',
-        body: 'Stage related changes together.',
-        resources: <SkillResourceDto>[
-          SkillResourceDto(path: 'scripts/split.sh', sizeBytes: 42),
-        ],
-        isEditable: true,
+        isImplicit: false,
       );
 
-      expect(skill.isEnabled, isTrue);
-      expect(skill.isMandatory, isFalse);
-      expect(skill.isShadowed, isFalse);
-      expect(skill.isStale, isFalse);
-      expect(skill.diagnostics, isEmpty);
-
-      _roundTrip(skill, (value) => value.toJson(), SkillDto.fromJson);
+      _roundTrip(skill, (value) => value.toJson(), SkillSummaryDto.fromJson);
+      const params = SkillListParamsDto(
+        view: SkillListView.project,
+        workspaceId: 'workspace',
+      );
+      expect(params.toJson(), <String, dynamic>{
+        'view': 'project',
+        'workspaceId': 'workspace',
+      });
       _roundTrip(
-        const SkillDiagnosticDto(
-          code: 'shadowed_builtin',
-          message: 'A mandatory built-in skill owns this id.',
-        ),
+        params,
         (value) => value.toJson(),
-        SkillDiagnosticDto.fromJson,
+        SkillListParamsDto.fromJson,
       );
       _roundTrip(
-        const SkillScopeParamsDto(workspaceId: 'workspace'),
-        (value) => value.toJson(),
-        SkillScopeParamsDto.fromJson,
-      );
-      _roundTrip(
-        const SkillIdParamsDto(id: 'commit', workspaceId: 'workspace'),
-        (value) => value.toJson(),
-        SkillIdParamsDto.fromJson,
-      );
-      _roundTrip(
-        const SkillCreateParamsDto(
-          id: 'commit',
-          source: SkillSource.project,
-          name: 'commit',
-          description: 'Writes atomic commits.',
-          body: 'Stage related changes together.',
-          workspaceId: 'workspace',
-        ),
-        (value) => value.toJson(),
-        SkillCreateParamsDto.fromJson,
-      );
-      _roundTrip(
-        const SkillUpdateParamsDto(
-          skill: skill,
-          expectedContentHash: 'hash',
-          workspaceId: 'workspace',
-          force: true,
-        ),
-        (value) => value.toJson(),
-        SkillUpdateParamsDto.fromJson,
-      );
-      _roundTrip(
-        const SkillSetEnabledParamsDto(id: 'commit', enabled: false),
-        (value) => value.toJson(),
-        SkillSetEnabledParamsDto.fromJson,
-      );
-      _roundTrip(
-        const SkillListResultDto(skills: <SkillDto>[skill]),
+        const SkillListResultDto(skills: <SkillSummaryDto>[skill]),
         (value) => value.toJson(),
         SkillListResultDto.fromJson,
       );
-      _roundTrip(
-        const SkillResultDto(skill: skill),
-        (value) => value.toJson(),
-        SkillResultDto.fromJson,
-      );
 
-      expect(const SkillScopeParamsDto().workspaceId, isNull);
+      expect(promptsListSkillsProcedure.paramsType, SkillListParamsDto);
+      expect(promptsListSkillsProcedure.resultType, SkillListResultDto);
       expect(
-        const SkillUpdateParamsDto(
-          skill: skill,
-          expectedContentHash: 'hash',
-        ).force,
-        isFalse,
+        rpcProcedures
+            .map((procedure) => procedure.name)
+            .where(
+              <String>{
+                'prompts.getSkill',
+                'prompts.createSkill',
+                'prompts.updateSkill',
+                'prompts.deleteSkill',
+                'prompts.setSkillEnabled',
+              }.contains,
+            ),
+        isEmpty,
+      );
+      expect(
+        SkillListView.values,
+        <SkillListView>[
+          SkillListView.global,
+          SkillListView.project,
+          SkillListView.effective,
+        ],
       );
     },
-    tags: const <String>['feature_test__skill_management__contract'],
+    tags: const <String>['feature_test__skill_catalog__contract'],
   );
 
   test('workspace and worktree contracts round-trip', () {
@@ -1731,7 +1692,7 @@ void main() {
       ...McpConfigScope.values,
       ...McpTransportKind.values,
       ...McpServerStatus.values,
-      ...SkillSource.values,
+      ...SkillListView.values,
       ...AgentCommandSource.values,
       ...WorkspaceKind.values,
       ...WorktreeKind.values,

@@ -61,7 +61,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   late final ProjectSettingsPaneController _projectPanes;
   late final AgentSettingsPaneController _agentPanes;
   late final McpSettingsPaneController _mcpPanes;
-  late final SkillSettingsPaneController _skillPanes;
   late final ProviderSettingsPaneController _providerPanes;
   late final Map<SettingsCategory, SettingsPaneCoordinator> _paneControllers;
   bool _adaptiveSyncScheduled = false;
@@ -83,13 +82,11 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     _projectPanes = ProjectSettingsPaneController();
     _agentPanes = AgentSettingsPaneController();
     _mcpPanes = McpSettingsPaneController();
-    _skillPanes = SkillSettingsPaneController();
     _providerPanes = ProviderSettingsPaneController();
     _paneControllers = <SettingsCategory, SettingsPaneCoordinator>{
       SettingsCategory.project: _projectPanes,
       SettingsCategory.agent: _agentPanes,
       SettingsCategory.mcp: _mcpPanes,
-      SettingsCategory.skill: _skillPanes,
       SettingsCategory.provider: _providerPanes,
     };
     _adaptiveNavigation.addListener(_adaptiveNavigationChanged);
@@ -110,7 +107,6 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     _projectPanes.dispose();
     _agentPanes.dispose();
     _mcpPanes.dispose();
-    _skillPanes.dispose();
     _providerPanes.dispose();
     super.dispose();
   }
@@ -279,19 +275,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           ),
         ),
       ),
-      SettingsCategory.skill => _hostListDetailPanes(
-        host: host,
-        loading: registryLoading,
-        semanticLabel: l10n.settingsLoading,
-        builder: (hostId, slot) => SkillSettingsPage(
-          hostId: hostId,
-          paneController: _skillPanes,
-          slot: slot,
-          workspaceId: widget.workspaceId,
-          onWorkspaceChanged: (value) => SkillSettingsRoute(
-            hostId: hostId,
-            workspaceId: value,
-          ).replace(context),
+      SettingsCategory.skill => _SettingsPanePair(
+        primary: _SettingsSimplePane(
+          title: _settingsCategoryLabel(l10n, SettingsCategory.skill),
+          child: _HostScopedDetail(
+            host: host,
+            loading: registryLoading,
+            loadingChild: SettingsSkeletonLayout.form(
+              semanticLabel: l10n.settingsLoading,
+            ),
+            builder: (hostId) => SkillSettingsPage(
+              hostId: hostId,
+              workspaceId: widget.workspaceId,
+              onWorkspaceChanged: (value) => SkillSettingsRoute(
+                hostId: hostId,
+                workspaceId: value,
+              ).replace(context),
+            ),
+          ),
         ),
       ),
       SettingsCategory.provider => _hostListDetailPanes(

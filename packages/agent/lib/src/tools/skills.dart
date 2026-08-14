@@ -77,12 +77,12 @@ final class SkillLookupException implements Exception {
 
 /// Turn-scoped boundary over the skills one session may load.
 abstract interface class SkillCatalog {
-  /// Returns the enabled skills, sorted by name.
+  /// Returns the effective skills, sorted by name.
   List<SkillSummary> summaries();
 
   /// Loads one skill body.
   ///
-  /// Throws [SkillLookupException] when the skill is unknown or disabled.
+  /// Throws [SkillLookupException] when the skill is unavailable.
   Future<SkillContent> read(String name);
 
   /// Loads one file bundled next to a skill document.

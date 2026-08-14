@@ -7,7 +7,7 @@ tags:
   feature_test__conversation_attachments__contract:
   feature_test__composer_file_mention__contract:
   feature_test__composer_slash_command__contract:
-  feature_test__skill_management__contract:
+  feature_test__skill_catalog__contract:
   feature_test__tool_context_budget__contract:
   feature_test__provider_usage__contract:
   feature_test__turn_question__contract:

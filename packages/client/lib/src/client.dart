@@ -980,86 +980,15 @@ class TinestClient
   }
 
   @override
-  Future<List<SkillDto>> listSkills({String? workspaceId}) async {
+  Future<List<SkillSummaryDto>> listSkills({
+    required SkillListView view,
+    String? workspaceId,
+  }) async {
     final response = await _call(
       promptsListSkillsProcedure,
-      SkillScopeParamsDto(workspaceId: workspaceId),
+      SkillListParamsDto(view: view, workspaceId: workspaceId),
     );
     return response.skills;
-  }
-
-  @override
-  Future<SkillDto> getSkill(String id, {String? workspaceId}) async {
-    final response = await _call(
-      promptsGetSkillProcedure,
-      SkillIdParamsDto(id: id, workspaceId: workspaceId),
-    );
-    return response.skill;
-  }
-
-  @override
-  Future<SkillDto> createSkill({
-    required String id,
-    required SkillSource source,
-    required String name,
-    required String description,
-    required String body,
-    String? workspaceId,
-  }) async {
-    final response = await _call(
-      promptsCreateSkillProcedure,
-      SkillCreateParamsDto(
-        id: id,
-        source: source,
-        name: name,
-        description: description,
-        body: body,
-        workspaceId: workspaceId,
-      ),
-    );
-    return response.skill;
-  }
-
-  @override
-  Future<SkillDto> updateSkill(
-    SkillDto skill, {
-    required String expectedContentHash,
-    bool force = false,
-    String? workspaceId,
-  }) async {
-    final response = await _call(
-      promptsUpdateSkillProcedure,
-      SkillUpdateParamsDto(
-        skill: skill,
-        expectedContentHash: expectedContentHash,
-        force: force,
-        workspaceId: workspaceId,
-      ),
-    );
-    return response.skill;
-  }
-
-  @override
-  Future<void> deleteSkill(String id, {String? workspaceId}) => _call(
-    promptsDeleteSkillProcedure,
-    SkillIdParamsDto(id: id, workspaceId: workspaceId),
-  );
-
-  @override
-  Future<SkillDto> setSkillEnabled(
-    String id, {
-    required bool enabled,
-    String? workspaceId,
-  }) async {
-    final response = await _call(
-      promptsSetSkillEnabledProcedure,
-      SkillSetEnabledParamsDto(
-        id: id,
-        enabled: enabled,
-        workspaceId: workspaceId,
-      ),
-    );
-    return response.skill;
   }
 
   @override

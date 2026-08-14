@@ -8,30 +8,18 @@ part of 'skills_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Loads and edits the skills one daemon offers, optionally for one project.
-///
-/// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-/// and daemon-config sources; naming a workspace layers its
-/// `.agents/skills` on top.
+/// Loads one read-only view of the effective skills a daemon offers.
 
 @ProviderFor(SkillsController)
 final skillsControllerProvider = SkillsControllerFamily._();
 
-/// Loads and edits the skills one daemon offers, optionally for one project.
-///
-/// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-/// and daemon-config sources; naming a workspace layers its
-/// `.agents/skills` on top.
+/// Loads one read-only view of the effective skills a daemon offers.
 final class SkillsControllerProvider
-    extends $AsyncNotifierProvider<SkillsController, List<SkillDto>> {
-  /// Loads and edits the skills one daemon offers, optionally for one project.
-  ///
-  /// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-  /// and daemon-config sources; naming a workspace layers its
-  /// `.agents/skills` on top.
+    extends $AsyncNotifierProvider<SkillsController, List<SkillSummaryDto>> {
+  /// Loads one read-only view of the effective skills a daemon offers.
   SkillsControllerProvider._({
     required SkillsControllerFamily super.from,
-    required (String, String?) super.argument,
+    required (String, SkillListView, String?) super.argument,
   }) : super(
          retry: noAutomaticRetry,
          name: r'skillsControllerProvider',
@@ -65,22 +53,18 @@ final class SkillsControllerProvider
   }
 }
 
-String _$skillsControllerHash() => r'1e8232c9e4f432a8b4fbb02320819a0de37b5a00';
+String _$skillsControllerHash() => r'1fe32e780933ce1ae5781ce3187d74865f02d725';
 
-/// Loads and edits the skills one daemon offers, optionally for one project.
-///
-/// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-/// and daemon-config sources; naming a workspace layers its
-/// `.agents/skills` on top.
+/// Loads one read-only view of the effective skills a daemon offers.
 
 final class SkillsControllerFamily extends $Family
     with
         $ClassFamilyOverride<
           SkillsController,
-          AsyncValue<List<SkillDto>>,
-          List<SkillDto>,
-          FutureOr<List<SkillDto>>,
-          (String, String?)
+          AsyncValue<List<SkillSummaryDto>>,
+          List<SkillSummaryDto>,
+          FutureOr<List<SkillSummaryDto>>,
+          (String, SkillListView, String?)
         > {
   SkillsControllerFamily._()
     : super(
@@ -91,43 +75,55 @@ final class SkillsControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Loads and edits the skills one daemon offers, optionally for one project.
-  ///
-  /// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-  /// and daemon-config sources; naming a workspace layers its
-  /// `.agents/skills` on top.
+  /// Loads one read-only view of the effective skills a daemon offers.
 
-  SkillsControllerProvider call(String hostId, String? workspaceId) =>
-      SkillsControllerProvider._(argument: (hostId, workspaceId), from: this);
+  SkillsControllerProvider call(
+    String hostId,
+    SkillListView view,
+    String? workspaceId,
+  ) => SkillsControllerProvider._(
+    argument: (hostId, view, workspaceId),
+    from: this,
+  );
 
   @override
   String toString() => r'skillsControllerProvider';
 }
 
-/// Loads and edits the skills one daemon offers, optionally for one project.
-///
-/// A null [SkillsController.workspaceId] shows only the built-in, user-home,
-/// and daemon-config sources; naming a workspace layers its
-/// `.agents/skills` on top.
+/// Loads one read-only view of the effective skills a daemon offers.
 
-abstract class _$SkillsController extends $AsyncNotifier<List<SkillDto>> {
-  late final _$args = ref.$arg as (String, String?);
+abstract class _$SkillsController
+    extends $AsyncNotifier<List<SkillSummaryDto>> {
+  late final _$args = ref.$arg as (String, SkillListView, String?);
   String get hostId => _$args.$1;
-  String? get workspaceId => _$args.$2;
+  SkillListView get view => _$args.$2;
+  String? get workspaceId => _$args.$3;
 
-  FutureOr<List<SkillDto>> build(String hostId, String? workspaceId);
+  FutureOr<List<SkillSummaryDto>> build(
+    String hostId,
+    SkillListView view,
+    String? workspaceId,
+  );
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<List<SkillDto>>, List<SkillDto>>;
+    final ref =
+        this.ref
+            as $Ref<AsyncValue<List<SkillSummaryDto>>, List<SkillSummaryDto>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<SkillDto>>, List<SkillDto>>,
-              AsyncValue<List<SkillDto>>,
+              AnyNotifier<
+                AsyncValue<List<SkillSummaryDto>>,
+                List<SkillSummaryDto>
+              >,
+              AsyncValue<List<SkillSummaryDto>>,
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+    return element.handleCreate(
+      ref,
+      () => build(_$args.$1, _$args.$2, _$args.$3),
+    );
   }
 }

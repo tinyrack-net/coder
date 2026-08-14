@@ -14,7 +14,6 @@ List<RpcBindingDescriptor> promptRpcBindings({
       workspaceId == null
       ? SkillScope.global
       : SkillScope(
-          workspaceId: workspaceId,
           projectRoot: await workspaces.workspaceRoot(workspaceId),
         );
   Future<CommandScope> commandScope(String? workspaceId) async =>
@@ -34,62 +33,22 @@ List<RpcBindingDescriptor> promptRpcBindings({
       );
     }),
     RpcBinding(promptsListSkillsProcedure, (request, _) async {
-      return SkillListResultDto(
-        skills: await skills.list(scope: await skillScope(request.workspaceId)),
-      );
-    }),
-    RpcBinding(promptsGetSkillProcedure, (request, _) async {
-      return SkillResultDto(
-        skill: await skills.get(
-          request.id,
-          scope: await skillScope(request.workspaceId),
-        ),
-      );
-    }),
-    RpcBinding(promptsCreateSkillProcedure, (request, _) async {
-      return SkillResultDto(
-        skill: await skills.create(
-          id: request.id,
-          source: request.source,
-          name: request.name,
-          description: request.description,
-          body: request.body,
-          scope: await skillScope(request.workspaceId),
-        ),
-      );
-    }),
-    RpcBinding(promptsUpdateSkillProcedure, (request, _) async {
-      try {
-        return SkillResultDto(
-          skill: await skills.update(
-            request.skill,
-            expectedContentHash: request.expectedContentHash,
-            force: request.force,
-            scope: await skillScope(request.workspaceId),
-          ),
-        );
-      } on SkillFileConflict catch (error) {
-        throw RpcFailureException(
-          code: 'skill_file_conflict',
-          message: 'Skill file changed outside Tinest.',
-          details: <String, dynamic>{
-            'currentContentHash': error.currentContentHash,
-          },
+      if (request.view == SkillListView.global && request.workspaceId != null) {
+        throw const RpcFailureException(
+          code: RpcErrorCodes.invalidParams,
+          message: 'Global skill view does not accept workspaceId.',
         );
       }
-    }),
-    RpcBinding(promptsDeleteSkillProcedure, (request, _) async {
-      await skills.delete(
-        request.id,
-        scope: await skillScope(request.workspaceId),
-      );
-      return const EmptyResultDto();
-    }),
-    RpcBinding(promptsSetSkillEnabledProcedure, (request, _) async {
-      return SkillResultDto(
-        skill: await skills.setEnabled(
-          request.id,
-          enabled: request.enabled,
+      if (request.view == SkillListView.project &&
+          request.workspaceId == null) {
+        throw const RpcFailureException(
+          code: RpcErrorCodes.invalidParams,
+          message: 'Project skill view requires workspaceId.',
+        );
+      }
+      return SkillListResultDto(
+        skills: await skills.list(
+          view: request.view,
           scope: await skillScope(request.workspaceId),
         ),
       );

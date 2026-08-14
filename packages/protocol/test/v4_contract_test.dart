@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   test('v4 exposes one genuinely typed procedure catalog', () {
     expect(tinestProtocolMajor, 4);
-    expect(tinestProtocolRevision, 1);
+    expect(tinestProtocolRevision, 2);
     expect(rpcProcedures.map((procedure) => procedure.name), isNotEmpty);
     expect(
       rpcProcedures.map((procedure) => procedure.name).toSet(),

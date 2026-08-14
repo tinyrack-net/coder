@@ -959,73 +959,32 @@ abstract class AgentCommandDto with _$AgentCommandDto {
       _$AgentCommandDtoFromJson(json);
 }
 
-/// Where one skill was loaded from, ordered by ascending precedence.
-enum SkillSource {
-  /// Ships inside the daemon and cannot be edited.
-  builtIn,
+/// Which read-only projection of the effective skill catalog to return.
+enum SkillListView {
+  /// Skills defined outside any project.
+  global,
 
-  /// Lives in the shared `~/.agents/skills` tree.
-  userHome,
-
-  /// Lives in the daemon configuration directory.
-  config,
-
-  /// Lives in `<workspace root>/.agents/skills`.
+  /// Skills defined by one project after precedence is resolved.
   project,
+
+  /// Every skill available to an agent in the requested scope.
+  effective,
 }
 
 @freezed
-/// A source diagnostic produced while loading a skill.
-abstract class SkillDiagnosticDto with _$SkillDiagnosticDto {
-  /// Creates a skill diagnostic.
-  const factory SkillDiagnosticDto({
-    required String code,
-    required String message,
-  }) = _SkillDiagnosticDto;
-
-  /// Decodes a skill diagnostic.
-  factory SkillDiagnosticDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillDiagnosticDtoFromJson(json);
-}
-
-@freezed
-/// One file bundled next to a skill document.
-abstract class SkillResourceDto with _$SkillResourceDto {
-  /// Creates a skill resource.
-  const factory SkillResourceDto({
-    required String path,
-    required int sizeBytes,
-  }) = _SkillResourceDto;
-
-  /// Decodes a skill resource.
-  factory SkillResourceDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillResourceDtoFromJson(json);
-}
-
-@freezed
-/// One Markdown-backed skill offered to agents through the `skill` tool.
-abstract class SkillDto with _$SkillDto {
-  /// Creates a skill.
-  const factory SkillDto({
+/// Public metadata for one effective Markdown-backed skill.
+abstract class SkillSummaryDto with _$SkillSummaryDto {
+  /// Creates skill metadata.
+  const factory SkillSummaryDto({
     required String id,
     required String name,
     required String description,
-    required SkillSource source,
-    required String sourcePath,
-    required String contentHash,
-    required String body,
-    @Default(<SkillResourceDto>[]) List<SkillResourceDto> resources,
-    @Default(true) bool isEnabled,
-    @Default(false) bool isMandatory,
-    @Default(false) bool isEditable,
-    @Default(false) bool isShadowed,
-    @Default(false) bool isStale,
-    @Default(<SkillDiagnosticDto>[]) List<SkillDiagnosticDto> diagnostics,
-  }) = _SkillDto;
+    required bool isImplicit,
+  }) = _SkillSummaryDto;
 
-  /// Decodes a skill.
-  factory SkillDto.fromJson(Map<String, dynamic> json) =>
-      _$SkillDtoFromJson(json);
+  /// Decodes skill metadata.
+  factory SkillSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$SkillSummaryDtoFromJson(json);
 }
 
 /// How a session collaborates: planning first, or working directly.
