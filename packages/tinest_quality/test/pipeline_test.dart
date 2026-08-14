@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 import 'support/repo_root.dart';
 
@@ -20,6 +21,12 @@ void main() {
   final relayDockerfile = File(
     'packages/relay/Dockerfile',
   ).readAsStringSync();
+  final relayPubspec = loadYaml(
+    File('packages/relay/pubspec.yaml').readAsStringSync(),
+  ) as YamlMap;
+  final relayContainerLock = loadYaml(
+    File('packages/relay/docker/pubspec.lock').readAsStringSync(),
+  ) as YamlMap;
   final shipworld = File('shipworld.yaml').readAsStringSync();
   final ibusTerminalRunner = File(
     'packages/desktop_app/tool/run_linux_ibus_terminal_e2e.sh',
@@ -507,6 +514,13 @@ void main() {
     expect(relayDockerfile, contains('dart pub get --enforce-lockfile'));
     expect(relayDockerfile, isNot(contains('dart:stable')));
     expect(File('packages/relay/docker/pubspec.lock').existsSync(), isTrue);
+    final directDependencies = <String>{
+      ...(relayPubspec['dependencies']! as YamlMap).keys.cast<String>(),
+      ...(relayPubspec['dev_dependencies']! as YamlMap).keys.cast<String>(),
+    }..remove('relay_protocol');
+    final lockedPackages = (relayContainerLock['packages']! as YamlMap).keys
+        .cast<String>();
+    expect(lockedPackages, containsAll(directDependencies));
     expect(File('packages/relay/deploy/kubernetes.yaml').existsSync(), isFalse);
   });
 
