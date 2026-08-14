@@ -584,7 +584,7 @@ void main() {
   );
 
   testWidgets(
-    'mobile branch sheet scrolls options from its fixed search field',
+    'mobile branch sheet keeps search fixed and scrolls only from options',
     (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(390, 780);
@@ -628,6 +628,7 @@ void main() {
         of: drawer,
         matching: find.byType(SingleChildScrollView),
       );
+      expect(optionsScroll, findsOneWidget);
       final position = tester
           .state<ScrollableState>(
             find.descendant(
@@ -640,6 +641,21 @@ void main() {
       final searchRect = tester.getRect(search);
 
       await tester.trackpadFling(search, const Offset(0, -1000), 1000);
+      await tester.pumpAndSettle();
+
+      expect(
+        position.pixels,
+        0,
+        reason: 'the fixed search region does not forward scroll gestures',
+      );
+      expect(tester.getRect(drawer), drawerRect);
+      expect(tester.getRect(search), searchRect);
+
+      await tester.trackpadFling(
+        optionsScroll,
+        const Offset(0, -1000),
+        1000,
+      );
       await tester.pumpAndSettle();
 
       expect(position.pixels, greaterThan(0));

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -148,9 +149,7 @@ class _AsyncModelSelectState extends State<AsyncModelSelect> {
       searchable: true,
       searchPlaceholder: l10n.selectSearchPlaceholder,
       noResultsText: l10n.selectNoResults,
-      // Explicit so the production Select policy can audit adaptation.
-      // ignore: avoid_redundant_argument_values
-      surface: TRSelectSurface.auto,
+      presentation: TinestSelectPresentation.resolve(context),
       items: <TRSelectItem<ModelPickerOption>>[
         for (final option in options)
           TRSelectItem<ModelPickerOption>(

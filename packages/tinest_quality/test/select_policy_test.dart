@@ -77,13 +77,15 @@ final class _SelectPolicyVisitor extends RecursiveAstVisitor<void> {
           argument.name.label.name: argument.expression,
     };
     final searchable = arguments['searchable'];
-    final surface = arguments['surface'];
+    final presentation = arguments['presentation'];
     if (searchable is! BooleanLiteral || !searchable.value) {
       violations.add('$normalizedPath:$offset: $name needs searchable: true');
     }
-    if (surface?.toSource() != 'TRSelectSurface.auto') {
+    if (presentation?.toSource() !=
+        'TinestSelectPresentation.resolve(context)') {
       violations.add(
-        '$normalizedPath:$offset: $name needs surface: TRSelectSurface.auto',
+        '$normalizedPath:$offset: $name needs '
+        'presentation: TinestSelectPresentation.resolve(context)',
       );
     }
   }

@@ -12,6 +12,7 @@ import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/services.dart';
@@ -1014,9 +1015,7 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
                     searchable: true,
                     searchPlaceholder: l10n.selectSearchPlaceholder,
                     noResultsText: l10n.selectNoResults,
-                    // Explicit for the auditable adaptive Select contract.
-                    // ignore: avoid_redundant_argument_values
-                    surface: TRSelectSurface.auto,
+                    presentation: TinestSelectPresentation.resolve(context),
                     label: l10n.commonKind,
                     width: TinestLayoutMetrics.settingsContentMaxWidth,
                     items: AgentMode.values
