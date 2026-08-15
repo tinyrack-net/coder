@@ -63,15 +63,6 @@ void main() {
         () => record('notifier visible=${window.visible.value}'),
       );
 
-      // Question 2: the same cycle before the tray exists.
-      await _diagnoseHideCycle(
-        window,
-        log,
-        record,
-        label: 'pre-tray',
-        cycles: 3,
-      );
-
       const menu = TrayMenuModel(
         tooltip: 'Tinest',
         entries: <TrayMenuEntry>[
@@ -90,6 +81,44 @@ void main() {
       expect(const NativeAttachmentInput(), isA<AttachmentInputPort>());
       expect(const NativeAttachmentExport(), isA<AttachmentExportPort>());
 
+      // The original sequence, untouched and first, so the process spends its
+      // very first hide exactly where the failing test spends it. An earlier
+      // diagnostic build ran probe cycles before this point and never
+      // reproduced, which is a result about the probes as much as the bug:
+      // consuming the first-ever hide earlier can hide the thing being hunted.
+      await window.hide();
+      final firstHideNative = !await window.isVisible();
+      record(
+        'original hide native=${firstHideNative ? 'hidden' : 'VISIBLE'} '
+        'notifier=${window.visible.value}',
+      );
+      try {
+        await _waitForWindowVisibility(window, visible: false);
+      } on TestFailure {
+        record(
+          'original wait timed out '
+          'native=${await window.isVisible()} '
+          'notifier=${window.visible.value}',
+        );
+        await window.hide();
+        record(
+          'original extra hide '
+          'native=${await window.isVisible()} '
+          'notifier=${window.visible.value}',
+        );
+        fail(
+          'HIDE DIAGNOSTICS (failed at the original assertion)\n'
+          '${log.join('\n')}',
+        );
+      }
+      expect(window.visible.value, isFalse);
+      await window.show();
+      await _waitForWindowVisibility(window, visible: true);
+      expect(window.visible.value, isTrue);
+      expect(closes, 0);
+
+      // Only now widen the sample, to catch a hazard that needs the app to
+      // reach a later state.
       await _diagnoseHideCycle(
         window,
         log,
@@ -97,16 +126,6 @@ void main() {
         label: 'post-tray',
         cycles: _hideCycles,
       );
-
-      // The original single-shot assertions, kept so a green diagnostic run
-      // still proves the contract this test owns.
-      await window.hide();
-      await _waitForWindowVisibility(window, visible: false);
-      expect(window.visible.value, isFalse);
-      await window.show();
-      await _waitForWindowVisibility(window, visible: true);
-      expect(window.visible.value, isTrue);
-      expect(closes, 0);
 
       // ignore: avoid_print, the diagnostic payload this build exists to emit.
       print('HIDE DIAGNOSTICS (passed)\n${log.join('\n')}');
