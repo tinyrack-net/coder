@@ -6,6 +6,24 @@ import 'package:integration_test/integration_test.dart';
 
 import 'support/pump_until.dart';
 
+// DIAGNOSTIC BUILD — NOT FOR MERGE.
+//
+// `hides instead of quitting` fails on roughly one in ten Linux CI runs with
+// the native window still reporting visible 60s after `hide()` returned, even
+// though `PluginDesktopWindow.hide()` already re-issues hide ten times. This
+// build answers three questions the failure message cannot:
+//
+//   1. Does the app-level notifier also flip back, which would mean the
+//      plugin delivered a native `show` event that undid our hide, rather
+//      than the hide never reaching GTK?
+//   2. Does hide work before `tray.install`, which is the only step between
+//      the passing visibility wait and the failing one?
+//   3. Does hide fail once and stay failed, or fail on a random iteration?
+//
+// The hide/show cycle repeats so a per-attempt race reproduces inside a single
+// job instead of once every ten pipeline runs.
+const int _hideCycles = 20;
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -17,6 +35,11 @@ void main() {
       addTearDown(tray.destroy);
       addTearDown(window.releaseClose);
 
+      final log = <String>[];
+      final clock = Stopwatch()..start();
+      void record(String entry) =>
+          log.add('+${clock.elapsedMilliseconds}ms $entry');
+
       await window.prepare(startHidden: false);
       await window.show();
       await _waitForWindowVisibility(window, visible: true);
@@ -25,6 +48,21 @@ void main() {
 
       var closes = 0;
       await window.interceptClose(() => closes += 1);
+      // Registered only after interceptClose, because the relay that publishes
+      // native show/hide events into the notifier is installed there.
+      window.visible.addListener(
+        () => record('notifier visible=${window.visible.value}'),
+      );
+
+      // Question 2: the same cycle before the tray exists.
+      await _diagnoseHideCycle(
+        window,
+        log,
+        record,
+        label: 'pre-tray',
+        cycles: 3,
+      );
+
       const menu = TrayMenuModel(
         tooltip: 'Tinest',
         entries: <TrayMenuEntry>[
@@ -39,9 +77,20 @@ void main() {
       );
       await tray.install(menu: menu, onSelected: (_) {}, onActivated: () {});
       await tray.update(menu);
+      record('tray installed');
       expect(const NativeAttachmentInput(), isA<AttachmentInputPort>());
       expect(const NativeAttachmentExport(), isA<AttachmentExportPort>());
 
+      await _diagnoseHideCycle(
+        window,
+        log,
+        record,
+        label: 'post-tray',
+        cycles: _hideCycles,
+      );
+
+      // The original single-shot assertions, kept so a green diagnostic run
+      // still proves the contract this test owns.
       await window.hide();
       await _waitForWindowVisibility(window, visible: false);
       expect(window.visible.value, isFalse);
@@ -50,10 +99,9 @@ void main() {
       expect(window.visible.value, isTrue);
       expect(closes, 0);
 
-      // Exercise maximize transitions after the hide/restore contract. Linux
-      // window managers can still be completing an unmaximize animation after
-      // the plugin future resolves; issuing hide during that transition makes
-      // this independent residency assertion depend on compositor timing.
+      // ignore: avoid_print, the diagnostic payload this build exists to emit.
+      print('HIDE DIAGNOSTICS (passed)\n${log.join('\n')}');
+
       await window.toggleMaximized();
       expect(window.maximized.value, isTrue);
       await window.toggleMaximized();
@@ -67,6 +115,56 @@ void main() {
       'feature_scenario__desktop_window_chrome__native_window_controls__e2e',
     ],
   );
+}
+
+/// Hides and shows [window] repeatedly, failing with the whole event log the
+/// first time the native window refuses to report itself hidden.
+Future<void> _diagnoseHideCycle(
+  DesktopWindow window,
+  List<String> log,
+  void Function(String) record, {
+  required String label,
+  required int cycles,
+}) async {
+  for (var cycle = 0; cycle < cycles; cycle += 1) {
+    await window.hide();
+    final hiddenImmediately = !await window.isVisible();
+    record(
+      '$label #$cycle hide() returned '
+      'native=${hiddenImmediately ? 'hidden' : 'VISIBLE'} '
+      'notifier=${window.visible.value}',
+    );
+    if (!hiddenImmediately) {
+      // Give the compositor the budget the original wait allowed, then report
+      // what one more explicit hide does, which separates "the request was
+      // dropped" from "something keeps showing the window again".
+      final recovered = await _settles(window, visible: false);
+      record(
+        '$label #$cycle after wait native=${recovered ? 'hidden' : 'VISIBLE'}',
+      );
+      if (!recovered) {
+        await window.hide();
+        final afterRetry = !await window.isVisible();
+        record(
+          '$label #$cycle extra hide '
+          'native=${afterRetry ? 'hidden' : 'VISIBLE'} '
+          'notifier=${window.visible.value}',
+        );
+        fail('HIDE DIAGNOSTICS (failed)\n${log.join('\n')}');
+      }
+    }
+    await window.show();
+    await _waitForWindowVisibility(window, visible: true);
+  }
+  record('$label cycles complete');
+}
+
+Future<bool> _settles(DesktopWindow window, {required bool visible}) async {
+  for (var waited = 0; waited < 100; waited += 1) {
+    if (await window.isVisible() == visible) return true;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  return false;
 }
 
 Future<void> _waitForWindowVisibility(
