@@ -299,14 +299,32 @@ return tinest.plugin.define({tools = {}, hooks = {}, ui = {}})
   test(
     'app-data source watcher reports external Lua and Markdown edits',
     () async {
+      final user = Directory(p.join(config.path, 'v5', 'plugins', 'acme.echo'));
+      await user.create(recursive: true);
       final sources = NativePluginSourceCatalog(config.path);
       await sources.initialize();
       addTearDown(sources.close);
-      final user = Directory(p.join(config.path, 'v5', 'plugins', 'acme.echo'));
-      await user.create(recursive: true);
       final changed = sources.changes.first.timeout(const Duration(seconds: 5));
 
       await File(p.join(user.path, 'main.lua')).writeAsString('return {}');
+
+      await expectLater(changed, completes);
+    },
+  );
+
+  test(
+    'app-data source watcher reports namespaced plugin directory creation',
+    () async {
+      final sources = NativePluginSourceCatalog(config.path);
+      await sources.initialize();
+      addTearDown(sources.close);
+      final changed = sources.changes.first.timeout(
+        const Duration(seconds: 5),
+      );
+
+      await Directory(
+        p.join(config.path, 'v5', 'plugins', 'acme.echo'),
+      ).create();
 
       await expectLater(changed, completes);
     },

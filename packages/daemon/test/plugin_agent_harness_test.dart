@@ -2397,6 +2397,99 @@ void main() {
   );
 
   test(
+    'tinest.terminal preserves its process handle across model tool rounds',
+    () async {
+      const agentId = 'terminal-agent';
+      const catalog = BuiltInPluginCatalog();
+      final bundles = <String, PluginBundle>{
+        'tinest.standard': await catalog.load('tinest.standard'),
+        'tinest.terminal': await catalog.load('tinest.terminal'),
+      };
+      final revisions = PluginRevisionCatalog(
+        loader: _BundleMapLoader(bundles),
+        cache: _MemoryRevisionCache(),
+      );
+      final runtime = _pluginRuntime(stagedHost, revisions);
+      addTearDown(runtime.close);
+      final capabilities = await _prepareBuiltinPlugins(
+        catalog: catalog,
+        revisions: revisions,
+        runtime: runtime,
+        agentId: agentId,
+        pluginIds: bundles.keys.toList(growable: false),
+      );
+      final primitives = _TerminalPrimitiveHost();
+      final model = _TerminalModelGateway();
+      final persisted = <ConversationItem>[];
+      final turnErrors = <String>[];
+
+      await LuaAgentHarness(runtime: runtime).startTurn(
+        request: LuaAgentHarnessRequest(
+          definition: const AgentDefinitionDto(
+            version: 5,
+            id: agentId,
+            name: 'Terminal Agent',
+            description: '',
+            mode: AgentMode.primary,
+            model: AgentModelSelectionDto(source: AgentModelSource.session),
+            driverId: 'tinest.standard/driver',
+            extensionIds: <String>[],
+            toolIds: <String>[
+              'tinest.terminal/exec_command',
+              'tinest.terminal/write_stdin',
+            ],
+            pluginSettings: <String, Map<String, dynamic>>{},
+            callableAgentIds: <String>[],
+            prompt: '',
+            contentHash: 'terminal-agent-hash',
+            sourcePath: 'terminal-agent.md',
+          ),
+          sessionId: 'terminal-session',
+          turnId: 'terminal-turn',
+          workspaceRoot: Directory.current.path,
+          prompt: 'Run the shell',
+          modelId: 'terminal-model',
+          model: model,
+          modelCapabilities: const AgentModelCapabilities(
+            streaming: AgentCapabilitySupport.supported,
+            toolCalling: AgentCapabilitySupport.supported,
+            functionTools: AgentCapabilitySupport.supported,
+          ),
+          history: const <ConversationItem>[],
+          safetyIdentifier: 'safety',
+          allowedCapabilitiesByPlugin: capabilities,
+          primitives: primitives.registry,
+          state: MemoryPluginStateStore(),
+          policyFactory: (_) => const _AllowPolicy(),
+        ),
+        callbacks: LuaAgentHarnessCallbacks(
+          onEvent: (_, _) {},
+          onStatus: (_, {error}) {
+            if (error != null) turnErrors.add(error);
+          },
+          onProviderItems: persisted.addAll,
+        ),
+        cancellation: CancellationToken(),
+      );
+
+      expect(turnErrors, isEmpty);
+      expect(model.execResult, <String, Object?>{
+        'output': '',
+        'running': true,
+        'wall_time_ms': 1,
+        'session_id': 73,
+      });
+      expect(model.stdinResult['output'], contains('tinyrack-exec-probe'));
+      expect(primitives.writes, <String>['tinyrack-exec-probe\n']);
+      expect(
+        persisted.whereType<ToolResultConversationItem>(),
+        hasLength(2),
+      );
+    },
+    tags: const <String>['feature_test__tool_exec_session__unit'],
+  );
+
+  test(
     'before_turn capability limits intersect in Agent extension order',
     () async {
       final host = _CountingPrimitiveHost();
@@ -5722,6 +5815,91 @@ final class _ScriptedModelGateway implements ModelGateway {
   }
 }
 
+final class _TerminalModelGateway implements ModelGateway {
+  final List<ModelRequest> requests = <ModelRequest>[];
+  Map<String, Object?> execResult = const <String, Object?>{};
+  Map<String, Object?> stdinResult = const <String, Object?>{};
+
+  @override
+  String get id => 'terminal-model';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    requests.add(request);
+    if (requests.length == 1) {
+      const arguments = <String, dynamic>{
+        'cmd': 'cat',
+        'workdir': null,
+        'tty': false,
+        'yield_time_ms': 300,
+        'max_output_tokens': null,
+      };
+      yield const ModelFunctionCall(
+        callId: 'exec-call',
+        name: 'exec_command',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.function(
+              callId: 'exec-call',
+              name: 'exec_command',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (requests.length == 2) {
+      execResult = _toolResultFor(request, 'exec-call');
+      final arguments = <String, dynamic>{
+        'session_id': execResult['session_id'],
+        'chars': 'tinyrack-exec-probe\n',
+        'yield_time_ms': 1000,
+        'max_output_tokens': null,
+      };
+      yield ModelFunctionCall(
+        callId: 'stdin-call',
+        name: 'write_stdin',
+        arguments: arguments,
+      );
+      yield ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.function(
+              callId: 'stdin-call',
+              name: 'write_stdin',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    stdinResult = _toolResultFor(request, 'stdin-call');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Done.'),
+    );
+  }
+
+  Map<String, Object?> _toolResultFor(ModelRequest request, String callId) =>
+      Map<String, Object?>.from(
+        jsonDecode(
+          request.history
+              .whereType<ToolResultConversationItem>()
+              .firstWhere((item) => item.callId == callId)
+              .output,
+        ) as Map,
+      );
+}
+
 final class _PlanUpdateModelGateway implements ModelGateway {
   final List<ModelRequest> requests = <ModelRequest>[];
 
@@ -6034,6 +6212,44 @@ final class _CountingPrimitiveHost {
           return <String, Object?>{'output': 'exec_command executed'};
         },
       ).erased,
+    ],
+  );
+}
+
+final class _TerminalPrimitiveHost {
+  final List<String> writes = <String>[];
+  var _reads = 0;
+
+  late final HostPrimitiveRegistry registry = HostPrimitiveRegistry(
+    <HostPrimitive<Object?, Object?>>[
+      HostPrimitiveContracts.processStart
+          .bind(
+            decode: _primitiveArguments,
+            invoke: (_, _) => <String, Object?>{'handle': 73},
+          )
+          .erased,
+      HostPrimitiveContracts.processRead
+          .bind(
+            decode: _primitiveArguments,
+            invoke: (_, _) {
+              _reads += 1;
+              return <String, Object?>{
+                'output': _reads == 1 ? '' : 'tinyrack-exec-probe\n',
+                'running': true,
+                'wall_time_ms': _reads,
+              };
+            },
+          )
+          .erased,
+      HostPrimitiveContracts.processWrite
+          .bind(
+            decode: _primitiveArguments,
+            invoke: (arguments, _) {
+              writes.add(arguments['chars']! as String);
+              return <String, Object?>{'written': true};
+            },
+          )
+          .erased,
     ],
   );
 }

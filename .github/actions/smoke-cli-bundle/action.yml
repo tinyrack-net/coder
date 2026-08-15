@@ -43,7 +43,7 @@ runs:
         if [ "$PLATFORM" = "windows" ]; then
           helper="$helper.exe"
         fi
-        printf '%s\n' '{"version":1,"cell_id":"smoke","sequence_id":0,"type":"init","payload":{"source":"text(\"ok\")","tools":[],"store":{}}}' \
+        printf '%s\n' '{"version":2,"cell_id":"smoke","sequence_id":0,"type":"invoke","payload":{"bundle":{"revision":"smoke-v2","entrypoint":"main","modules":{"main":"return {run = function(_arguments) text(\"ok\") end}"},"preload_modules":[],"markdown_assets":{}},"handler":"run","arguments":{},"tools":[],"store":{},"memory_limit_bytes":16777216}}' \
           | "$helper" "$bundle/lua_tool_runtime/bootstrap.lua" \
           | grep '"type":"completed"'
         daemon_log="$RUNNER_TEMP/tinest-smoke-daemon.log"

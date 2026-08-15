@@ -2112,10 +2112,32 @@ final class _TurnCallbackRouter
     Object? value, {
     required List<ConversationAttachment> resources,
   }) {
+    final envelope = value is Map ? _object(value) : null;
+    final isExplicitValue = envelope?[_toolValueMarker] == true;
+    if (isExplicitValue &&
+        (envelope!.length != 2 || !envelope.containsKey('value'))) {
+      discardUiPublications();
+      return ToolResult(
+        value: const <String, Object?>{
+          'code': 'invalid_tool_result',
+          'message': 'Explicit tool values must contain exactly one value.',
+          'retryable': false,
+          'details': <String, Object?>{'path': r'$.result'},
+        },
+        isError: true,
+        attachments: List<ConversationAttachment>.unmodifiable(resources),
+        contextImages: _contextImages(resources),
+      );
+    }
+    final resultValue = isExplicitValue ? envelope!['value'] : value;
     final outputSchema = tool.outputSchema;
     if (outputSchema != null) {
       try {
-        validatePluginJsonSchema(outputSchema, value, path: r'$.result');
+        validatePluginJsonSchema(
+          outputSchema,
+          resultValue,
+          path: r'$.result',
+        );
       } on PluginJsonValidationException catch (error) {
         discardUiPublications();
         return ToolResult(
@@ -2131,7 +2153,9 @@ final class _TurnCallbackRouter
         );
       }
     }
-    final base = _toolResult(value);
+    final base = isExplicitValue
+        ? ToolResult(value: resultValue)
+        : _toolResult(value);
     final attachments = <ConversationAttachment>[...base.attachments];
     for (final resource in resources) {
       _addToolResource(attachments, resource);
@@ -2928,6 +2952,8 @@ Map<String, Object?> _modelToolInput(ToolCallInput input) => switch (input) {
   JsonToolCallInput(:final value) => value,
   FreeformToolCallInput(:final value) => <String, Object?>{'input': value},
 };
+
+const _toolValueMarker = '__tinest_tool_value';
 
 ToolResult _toolResult(Object? value) {
   if (value is! Map) return ToolResult(value: value);

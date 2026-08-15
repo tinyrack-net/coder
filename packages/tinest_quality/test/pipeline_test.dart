@@ -586,6 +586,16 @@ void main() {
     expect(connect, greaterThan(ready));
   });
 
+  test('CLI smoke invokes the staged Lua runtime protocol v2 bundle', () {
+    expect(cliSmoke, contains('"version":2'));
+    expect(cliSmoke, contains('"type":"invoke"'));
+    expect(cliSmoke, contains('"entrypoint":"main"'));
+    expect(cliSmoke, contains('"modules":{"main":'));
+    expect(cliSmoke, contains('"handler":"run"'));
+    expect(cliSmoke, isNot(contains('"version":1')));
+    expect(cliSmoke, isNot(contains('"type":"init"')));
+  });
+
   test('the aggregate gate requires every quality job', () {
     final gate = _job(workflow, 'quality-gate');
     for (final dependency in <String>[

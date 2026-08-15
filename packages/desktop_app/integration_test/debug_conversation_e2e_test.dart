@@ -546,12 +546,11 @@ void main() {
       await tester.tap(createTemporary);
       await pumpUntilGone(tester, find.text('Agent 추가'));
       await _waitForAgentDefinition(setupClient, 'temporary');
-      final archiveAgent = find.byKey(
-        const ValueKey('agent-archive-button'),
-      );
-      await _centerSettingsAction(
+      final archiveAgent = await _centerSettingsAction(
         tester,
-        archiveAgent,
+        find.byKey(
+          const ValueKey('agent-archive-button'),
+        ),
         settingsOwner: find.byKey(
           const ValueKey<String>('agent-settings-editor-temporary'),
         ),
@@ -571,10 +570,9 @@ void main() {
 
       await tester.tap(find.text('Tinest').first);
       await tester.pumpAndSettle();
-      final resetAgent = find.byKey(const ValueKey('agent-reset-button'));
-      await _centerSettingsAction(
+      final resetAgent = await _centerSettingsAction(
         tester,
-        resetAgent,
+        find.byKey(const ValueKey('agent-reset-button')),
         settingsOwner: find.byKey(
           const ValueKey<String>('agent-settings-editor-tinest'),
         ),
@@ -591,12 +589,11 @@ void main() {
       await pumpUntil(tester, tinestEditor);
       // The group header is the waypoint rather than the tool: a group starts
       // closed, so its tools are not in the tree until someone opens it.
-      final collaborationGroup = find.byKey(
-        const ValueKey<String>('agent-tool-group-collaboration'),
-      );
-      await _centerSettingsAction(
+      final collaborationGroup = await _centerSettingsAction(
         tester,
-        collaborationGroup,
+        find.byKey(
+          const ValueKey<String>('agent-tool-group-collaboration'),
+        ),
         settingsOwner: tinestEditor,
       );
       // Opening it proves the group really does carry the tool the reset
@@ -2541,19 +2538,35 @@ Future<void> _openSettingsCategory(
   await tester.pumpAndSettle();
 }
 
-Future<void> _centerSettingsAction(
+Future<Finder> _centerSettingsAction(
   WidgetTester tester,
   Finder action, {
   Finder? settingsOwner,
 }) async {
-  // Saving can briefly replace the editor with its loading state. Wait for the
-  // settings list to remount before revealing the trailing action. An adaptive
-  // navigator can retain an offstage settings pane, so callers with a known
-  // detail destination provide its exact owner. Jump one currently known
-  // extent at a time: lazily built sections can extend the list after a jump,
-  // and reaching a stable end without the action is a real contract failure.
+  // A detail replacement deliberately keeps the outgoing route inert during
+  // its transition. Both routes listen to the same pane controller, so until
+  // that transition settles they can render the new editor identity while
+  // retaining independent lazy-list scroll positions. Never choose a scroll
+  // owner from that transient pair: it can disappear before the action is
+  // built in the incoming route.
+  await tester.pumpAndSettle();
+  if (settingsOwner != null) {
+    expect(
+      settingsOwner,
+      findsOneWidget,
+      reason: 'a settled settings destination has one editor owner',
+    );
+  }
+  // Saving can also briefly replace the editor with its loading state. Wait
+  // for the settled settings list to remount before revealing the trailing
+  // action. Jump one currently known extent at a time: lazily built sections
+  // can extend the list after a jump, and reaching a stable end without the
+  // action is a real contract failure.
+  final ownedAction = settingsOwner == null
+      ? action
+      : find.descendant(of: settingsOwner, matching: action);
   var anchoredAtStart = false;
-  while (action.evaluate().isEmpty) {
+  while (ownedAction.evaluate().isEmpty) {
     final settingsLists = find.descendant(
       of: settingsOwner ?? find.byType(SettingsScaffold),
       matching: find.byType(ListView),
@@ -2582,9 +2595,18 @@ Future<void> _centerSettingsAction(
     position.jumpTo(nextExtent);
     await tester.pumpAndSettle();
   }
-  await pumpUntil(tester, action);
-  await Scrollable.ensureVisible(tester.element(action), alignment: 0.5);
+  await pumpUntil(tester, ownedAction);
+  expect(
+    ownedAction,
+    findsOneWidget,
+    reason: 'the exact settings editor owns one actionable control',
+  );
+  await Scrollable.ensureVisible(
+    tester.element(ownedAction),
+    alignment: 0.5,
+  );
   await tester.pumpAndSettle();
+  return ownedAction;
 }
 
 Finder _approvalForCall(String toolCallId) => find.byWidgetPredicate(

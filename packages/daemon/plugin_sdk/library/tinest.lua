@@ -1731,7 +1731,7 @@ end
 ---@param spec tinest.ToolSpec
 ---@param input tinest.Schema<I>
 ---@param output tinest.Schema<O>?
----@param callback fun(arguments: I, context: tinest.ToolContext): O
+---@param callback fun(arguments: I, context: tinest.ToolContext): O|tinest.ToolValue<O>
 ---@return tinest.ToolRef<I, O>
 function tinest.tool.function_(spec, input, output, callback)
   return tool_constructor("function", spec, input, output, callback)
@@ -1740,7 +1740,7 @@ end
 ---@param spec tinest.ToolSpec
 ---@param input tinest.Schema<string>
 ---@param output tinest.Schema<O>?
----@param callback fun(source: string, context: tinest.ToolContext): O
+---@param callback fun(source: string, context: tinest.ToolContext): O|tinest.ToolValue<O>
 ---@return tinest.ToolRef<string, O>
 function tinest.tool.freeform(spec, input, output, callback)
   return tool_constructor("freeform", spec, input, output, callback)
@@ -1749,7 +1749,7 @@ end
 ---@param spec tinest.ToolSpec
 ---@param input tinest.Schema<I>
 ---@param output tinest.Schema<O>?
----@param callback fun(arguments: I, context: tinest.ToolContext): O
+---@param callback fun(arguments: I, context: tinest.ToolContext): O|tinest.ToolValue<O>
 ---@return tinest.ToolRef<I, O>
 function tinest.tool.deferred(spec, input, output, callback)
   return tool_constructor("deferred", spec, input, output, callback)
@@ -1760,7 +1760,7 @@ end
 ---@param payload tinest.Schema<P>
 ---@param input tinest.Schema<I>
 ---@param output tinest.Schema<O>?
----@param callback fun(arguments: I, payload: P, context: tinest.ToolContext): O
+---@param callback fun(arguments: I, payload: P, context: tinest.ToolContext): O|tinest.ToolValue<O>
 ---@return tinest.ToolTemplateRef<I, O, P>
 function tinest.tool.template(spec, payload, input, output, callback)
   local extras = {
@@ -1834,7 +1834,7 @@ end
 ---@param spec tinest.DynamicToolSpec
 ---@param input tinest.Schema<I>
 ---@param output tinest.Schema<O>?
----@param callback fun(arguments: I, context: tinest.ToolContext): O
+---@param callback fun(arguments: I, context: tinest.ToolContext): O|tinest.ToolValue<O>
 ---@return tinest.ToolRef<I, O>
 function tinest.tool.dynamic(spec, input, output, callback)
   local wire, run = dynamic_metadata(spec, input, output, callback)
@@ -2164,6 +2164,18 @@ function tinest.result.unwrap(result)
   if result.ok == true then return result.value end
   if result.ok == false or result.is_error == true then fail(error_message(result), 2) end
   return result
+end
+
+---@class (exact) tinest.ToolValue<T>
+---@field value T
+
+---Keeps a structured tool value distinct from the optional result envelope.
+---@generic T
+---@param value T
+---@return tinest.ToolValue<T>
+function tinest.result.value(value)
+  reject_reference_result(value)
+  return {__tinest_tool_value = true, value = copy_json(value)}
 end
 
 function tinest.assets.read(path) return runtime_assets.read(path) end

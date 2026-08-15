@@ -1568,15 +1568,28 @@ void main() {
         // Running a command always asks; approving the first one is what makes
         // every later write into that same session pass without another dialog.
         final approvals = <String>[];
+        final approvalFailure = Completer<Never>();
+        // startTurn can deliver and resolve an approval before the provider
+        // wait below attaches its fail-fast listener.
+        approvalFailure.future.ignore();
         final approvalSubscription = client.sessions.approvalRequests.listen((
           approval,
         ) {
           approvals.add(approval.toolName);
           unawaited(
-            client.resolveApproval(
-              approvalId: approval.id,
-              approved: true,
-            ),
+            client
+                .resolveApproval(
+                  approvalId: approval.id,
+                  approved: true,
+                )
+                .onError((error, stackTrace) {
+                  if (!approvalFailure.isCompleted) {
+                    approvalFailure.completeError(
+                      error ?? StateError('Approval resolution failed.'),
+                      stackTrace,
+                    );
+                  }
+                }),
           );
         });
         addTearDown(approvalSubscription.cancel);
@@ -1589,8 +1602,14 @@ void main() {
         // A command that outlives the first call hands back an id the second
         // call writes into, and the echoed text proves the same process
         // answered.
-        final seen = await provider.echoed.future.timeout(
-          const Duration(minutes: 2),
+        final seen = await _waitForProviderResultOrTurnFailure(
+          client: client,
+          worktreeId: registered.worktrees.single.id,
+          sessionId: session.id,
+          result: provider.echoed.future,
+          externalFailure: approvalFailure.future,
+          progress: () =>
+              'providerRound=${provider.round}, approvals=$approvals',
         );
         expect(seen, contains('tinyrack-exec-probe'));
         expect(approvals, <String>['exec_command']);
@@ -3924,6 +3943,77 @@ Future<void> _waitForProviderStartOrTurnFailure({
   await started.future.timeout(_eventTimeout);
 }
 
+Future<T> _waitForProviderResultOrTurnFailure<T>({
+  required TinestApi client,
+  required String worktreeId,
+  required String sessionId,
+  required Future<T> result,
+  Future<Never>? externalFailure,
+  String Function()? progress,
+}) async {
+  final completed =
+      Completer<({Object? value, Object? error, StackTrace? stack})>();
+  unawaited(
+    result.then<void>(
+      (value) {
+        if (!completed.isCompleted) {
+          completed.complete((value: value, error: null, stack: null));
+        }
+      },
+      onError: (Object error, StackTrace stack) {
+        if (!completed.isCompleted) {
+          completed.complete((value: null, error: error, stack: stack));
+        }
+      },
+    ),
+  );
+  final failure = externalFailure;
+  if (failure != null) {
+    unawaited(
+      failure.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stack) {
+          if (!completed.isCompleted) {
+            completed.complete((value: null, error: error, stack: stack));
+          }
+        },
+      ),
+    );
+  }
+  for (
+    var attempt = 0;
+    attempt < 1200 && !completed.isCompleted;
+    attempt += 1
+  ) {
+    final current = (await client.sessions.listSessions(
+      worktreeId: worktreeId,
+    )).singleWhere((item) => item.id == sessionId);
+    if (current.status == SessionStatus.failed) {
+      throw StateError(
+        'Turn failed before the provider result: '
+        '${current.lastError ?? 'unknown error'} '
+        '(${progress?.call() ?? 'no progress'})',
+      );
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  if (!completed.isCompleted) {
+    final current = (await client.sessions.listSessions(
+      worktreeId: worktreeId,
+    )).singleWhere((item) => item.id == sessionId);
+    throw StateError(
+      'Timed out waiting for provider result: status=${current.status}, '
+      'error=${current.lastError}, ${progress?.call() ?? 'no progress'}',
+    );
+  }
+  final outcome = await completed.future;
+  final error = outcome.error;
+  if (error != null) {
+    Error.throwWithStackTrace(error, outcome.stack ?? StackTrace.current);
+  }
+  return outcome.value as T;
+}
+
 Future<void> _writeCommand(
   String directory, {
   required String name,
@@ -4496,6 +4586,8 @@ class _ExecProvider implements ModelGateway {
 
   var _round = 0;
   int? _sessionId;
+
+  int get round => _round;
 
   @override
   String get id => 'exec-fake';

@@ -191,18 +191,26 @@ void main() {
     expect((await future).exitCode, 0);
   });
 
-  test('Windows repair covers compiled sources and guards its target path', () {
-    expect(
-      desktopE2eWindowsGeneratedSources,
-      <String>[
-        'core_implementations.cc',
-        'engine_method_result.cc',
-        'flutter_engine.cc',
-        'flutter_view_controller.cc',
-        'plugin_registrar.cc',
-        'standard_codec.cc',
-      ],
-    );
+  test(
+    'Windows invalidates a complete lane before Flutter recreates ephemeral',
+    () async {
+      final runtime = _FakeDesktopE2eRuntime();
+      final future = DesktopE2eRunner(runtime: runtime).run(
+        DesktopE2ePlan.forHost(DesktopHost.windows),
+        jobs: 1,
+        seed: 303,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(runtime.invalidatedWindowsLanes, <int>[0]);
+      runtime.processes.single
+        ..markReady()
+        ..finish(0);
+      expect((await future).exitCode, 0);
+    },
+  );
+
+  test('Windows reset guards its lane-owned target path', () {
     expect(desktopE2eWindowsLaneBuildPath(1), 'build/e2e/lane-1/windows');
     expect(() => desktopE2eWindowsLaneBuildPath(-1), throwsArgumentError);
   });
@@ -346,14 +354,12 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
   }
 
   @override
-  Future<void> prepareWindowsBuild(
+  Future<void> resetWindowsLaneBuild(
     String projectDirectory,
     int laneIndex,
   ) async {
-    if (missingWindowsGeneratedSources.isNotEmpty) {
-      invalidatedWindowsLanes.add(laneIndex);
-      missingWindowsGeneratedSources.clear();
-    }
+    invalidatedWindowsLanes.add(laneIndex);
+    missingWindowsGeneratedSources.clear();
   }
 
   @override

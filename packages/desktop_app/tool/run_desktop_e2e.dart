@@ -8,6 +8,7 @@ import 'package:app/testing/devtools/io_windows_build_environment.dart';
 import 'package:app/testing/devtools/windows_build_environment.dart';
 
 import 'src/desktop_e2e_cli.dart';
+import 'src/windows_e2e_lane_build.dart';
 
 Future<void> main(List<String> arguments) async {
   exitCode = await runDesktopE2eCli(
@@ -122,36 +123,13 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
   }
 
   @override
-  Future<void> prepareWindowsBuild(
+  Future<void> resetWindowsLaneBuild(
     String projectDirectory,
     int laneIndex,
-  ) async {
-    final project = Directory(projectDirectory).absolute;
-    final wrapper = Directory(
-      '${project.path}${Platform.pathSeparator}windows'
-      '${Platform.pathSeparator}flutter${Platform.pathSeparator}ephemeral'
-      '${Platform.pathSeparator}cpp_client_wrapper',
-    );
-    final generatedStateIsComplete = desktopE2eWindowsGeneratedSources.every(
-      (name) =>
-          File('${wrapper.path}${Platform.pathSeparator}$name').existsSync(),
-    );
-    if (generatedStateIsComplete) return;
-
-    final relativeLanePath = desktopE2eWindowsLaneBuildPath(
-      laneIndex,
-    ).replaceAll('/', Platform.pathSeparator);
-    final laneWindows = Directory(
-      '${project.path}${Platform.pathSeparator}$relativeLanePath',
-    ).absolute;
-    final projectPrefix = '${project.path}${Platform.pathSeparator}';
-    if (!laneWindows.path.startsWith(projectPrefix)) {
-      throw StateError('Windows E2E build path escaped the desktop project.');
-    }
-    if (laneWindows.existsSync()) {
-      await laneWindows.delete(recursive: true);
-    }
-  }
+  ) => resetWindowsE2eLaneBuild(
+    projectDirectory: projectDirectory,
+    laneIndex: laneIndex,
+  );
 
   @override
   Future<DesktopE2eLaneResources> createLaneResources(int laneIndex) async {

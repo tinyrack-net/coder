@@ -139,6 +139,33 @@ Future<lua.LuaHostCommand> _stageDevelopmentLuaHost({
   final command = lua.LuaHostCommand.fromDirectory(root);
   if (_isCompleteHost(command)) return command;
 
+  final inProgress = _developmentLuaHostStages[root];
+  if (inProgress != null) return inProgress;
+  final stage = _stageDevelopmentLuaHostWithFileLock(
+    root: root,
+    packageRoot: packageRoot,
+    stager: stager,
+  );
+  _developmentLuaHostStages[root] = stage;
+  try {
+    return await stage;
+  } finally {
+    if (identical(_developmentLuaHostStages[root], stage)) {
+      final _ = _developmentLuaHostStages.remove(root);
+    }
+  }
+}
+
+final Map<String, Future<lua.LuaHostCommand>> _developmentLuaHostStages =
+    <String, Future<lua.LuaHostCommand>>{};
+
+Future<lua.LuaHostCommand> _stageDevelopmentLuaHostWithFileLock({
+  required String root,
+  required String packageRoot,
+  required LuaHostDistributionStager stager,
+}) async {
+  final command = lua.LuaHostCommand.fromDirectory(root);
+
   final lock = File('$root.lock')..parent.createSync(recursive: true);
   final handle = lock.openSync(mode: FileMode.append);
   var locked = false;

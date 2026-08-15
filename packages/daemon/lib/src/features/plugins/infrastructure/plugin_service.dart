@@ -59,7 +59,10 @@ final class NativePluginSourceCatalog implements PluginSourceCatalog {
     await _root.create(recursive: true);
     _watchSubscription = _root.watch(recursive: true).listen((event) {
       final extension = p.extension(event.path).toLowerCase();
-      if (extension.isNotEmpty && extension != '.lua' && extension != '.md') {
+      if (!event.isDirectory &&
+          extension.isNotEmpty &&
+          extension != '.lua' &&
+          extension != '.md') {
         return;
       }
       _changeDebounce?.cancel();

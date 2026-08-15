@@ -225,16 +225,6 @@ final class DesktopE2eLaneResources {
   final String readinessMarker;
 }
 
-/// Generated C++ sources required by Flutter's Windows client wrapper target.
-const desktopE2eWindowsGeneratedSources = <String>[
-  'core_implementations.cc',
-  'engine_method_result.cc',
-  'flutter_engine.cc',
-  'flutter_view_controller.cc',
-  'plugin_registrar.cc',
-  'standard_codec.cc',
-];
-
 /// Returns the generated build subtree owned by one Windows E2E lane.
 String desktopE2eWindowsLaneBuildPath(int laneIndex) {
   if (laneIndex < 0) {
@@ -277,8 +267,9 @@ abstract interface class DesktopE2eRuntime {
     int laneIndex,
   );
 
-  /// Repairs generated Windows state for [laneIndex] before Flutter starts.
-  Future<void> prepareWindowsBuild(
+  /// Resets [laneIndex]'s Windows output before Flutter recreates ephemeral
+  /// files.
+  Future<void> resetWindowsLaneBuild(
     String projectDirectory,
     int laneIndex,
   );
@@ -404,7 +395,10 @@ final class DesktopE2eRunner {
         projectBuildLease = await runtime.acquireProjectBuildLease(
           command.workingDirectory,
         );
-        await runtime.prepareWindowsBuild(command.workingDirectory, lane.index);
+        await runtime.resetWindowsLaneBuild(
+          command.workingDirectory,
+          lane.index,
+        );
       }
       final process = await runtime.start(command);
       final readyAt = Completer<Duration?>();

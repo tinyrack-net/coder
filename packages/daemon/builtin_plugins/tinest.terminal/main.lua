@@ -10,6 +10,22 @@ local tool_card = tinest.ui.contribution({
   return tinest.ui.tool_document(arguments)
 end)
 
+local exec_output = S.object(T.ExecCommandOutput, {
+  output = S.string(),
+  running = S.boolean(),
+  exit_code = S.optional(S.integer()),
+  wall_time_ms = S.integer(),
+  truncated = S.optional(S.boolean()),
+  session_id = S.optional(S.integer()),
+})
+
+local process_read_output = S.object(T.WriteStdinOutput, {
+  output = S.string(),
+  running = S.boolean(),
+  exit_code = S.optional(S.integer()),
+  wall_time_ms = S.integer(),
+})
+
 local exec_command = tinest.tool.function_({
   id = "exec_command",
   name = "exec_command",
@@ -33,7 +49,7 @@ local exec_command = tinest.tool.function_({
   login = S.optional(S.boolean()),
   yield_time_ms = S.optional(S.integer()),
   max_output_tokens = S.optional(S.integer()),
-}), nil, function(arguments)
+}), exec_output, function(arguments)
   local started = tinest.result.unwrap(tinest.host.process.start({
     command = arguments.cmd,
     workdir = arguments.workdir,
@@ -52,14 +68,14 @@ local exec_command = tinest.tool.function_({
     output = string.sub(result.output, 1, maximum)
     truncated = true
   end
-  return {
+  return tinest.result.value({
     output = output,
     running = result.running,
     exit_code = result.exit_code,
     wall_time_ms = result.wall_time_ms,
     truncated = truncated and true or nil,
     session_id = result.running and started.handle or nil,
-  }
+  })
 end)
 
 local write_stdin = tinest.tool.function_({
@@ -81,17 +97,19 @@ local write_stdin = tinest.tool.function_({
   chars = S.optional(S.string()),
   yield_time_ms = S.optional(S.integer()),
   max_output_tokens = S.optional(S.integer()),
-}), nil, function(arguments)
+}), process_read_output, function(arguments)
   if arguments.chars ~= nil and arguments.chars ~= "" then
     tinest.result.unwrap(tinest.host.process.write({
       handle = arguments.session_id,
       chars = arguments.chars,
     }))
   end
-  return tinest.result.unwrap(tinest.host.process.read({
-    handle = arguments.session_id,
-    yield_time_ms = arguments.yield_time_ms or 10000,
-  }))
+  return tinest.result.value(
+    tinest.result.unwrap(tinest.host.process.read({
+      handle = arguments.session_id,
+      yield_time_ms = arguments.yield_time_ms or 10000,
+    }))
+  )
 end)
 
 return tinest.plugin.define({
