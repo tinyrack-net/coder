@@ -22,7 +22,16 @@ import 'support/pump_until.dart';
 //
 // The hide/show cycle repeats so a per-attempt race reproduces inside a single
 // job instead of once every ten pipeline runs.
-const int _hideCycles = 20;
+//
+// The first diagnostic run answered one question already: a healthy process
+// hides in about 7ms and did so 23 times in a row, before and after the tray,
+// finishing inside 700ms. A burst that short only samples the first instant of
+// the process, so the cycles are now spaced to cover the first ~40s instead,
+// which is where a hazard that needs the app to reach some later state — a
+// delayed first frame, a tray fallback timer, a lifecycle transition — would
+// actually live.
+const int _hideCycles = 80;
+const Duration _cycleGap = Duration(milliseconds: 500);
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -155,6 +164,7 @@ Future<void> _diagnoseHideCycle(
     }
     await window.show();
     await _waitForWindowVisibility(window, visible: true);
+    await Future<void>.delayed(_cycleGap);
   }
   record('$label cycles complete');
 }
