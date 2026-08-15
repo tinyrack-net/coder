@@ -1,7 +1,7 @@
 import 'package:daemon/src/features/terminals/domain/terminal.dart';
 import 'package:protocol/protocol.dart';
 
-/// Maps a terminal domain snapshot to its v4 wire DTO.
+/// Maps a terminal domain snapshot to its v5 wire DTO.
 TerminalDto terminalToDto(Terminal terminal) => TerminalDto(
   id: terminal.id,
   worktreeId: terminal.worktreeId,
@@ -18,7 +18,7 @@ TerminalDto terminalToDto(Terminal terminal) => TerminalDto(
   error: terminal.error,
 );
 
-/// Maps terminal output to its v4 wire DTO.
+/// Maps terminal output to its v5 wire DTO.
 TerminalOutputDto terminalOutputToDto(TerminalOutput output) =>
     TerminalOutputDto(
       terminalId: output.terminalId,
@@ -26,7 +26,7 @@ TerminalOutputDto terminalOutputToDto(TerminalOutput output) =>
       data: output.data,
     );
 
-/// Maps a restore request from its v4 wire DTO.
+/// Maps a restore request from its v5 wire DTO.
 TerminalRestoreRequest terminalRestoreRequestFromDto(
   TerminalAttachParamsDto params,
 ) => TerminalRestoreRequest(
@@ -45,7 +45,7 @@ TerminalRestoreRequest terminalRestoreRequestFromDto(
   },
 );
 
-/// Maps an attach result to its v4 wire DTO.
+/// Maps an attach result to its v5 wire DTO.
 TerminalAttachResultDto terminalRestoreToDto(TerminalRestore restore) =>
     TerminalAttachResultDto(
       terminal: terminalToDto(restore.terminal),

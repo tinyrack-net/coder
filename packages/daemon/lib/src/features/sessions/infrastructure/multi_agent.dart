@@ -1,14 +1,10 @@
 import 'dart:async';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/sessions/infrastructure/multi_agent_tools.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
-
-/// Catalog capability that turns on the six collaboration tools.
-const String collaborationCapabilityId = 'collaboration';
 
 /// Concurrent subagent turns allowed per collaboration tree.
 const int maxConcurrentSubagentTurnsPerTree = 4;
@@ -90,7 +86,8 @@ typedef AgentDefinitionLookup = Future<AgentDefinitionDto> Function(String id);
 /// Validates that a model exists on a provider connection.
 typedef AgentModelValidator = Future<void> Function(String modelId);
 
-/// Resolves the concrete daemon default model.
+/// Resolves the concrete daemon default used when neither the session nor its
+/// Agent selects a fixed model.
 typedef AgentDefaultModelResolver = Future<ModelSelectionDto> Function();
 
 /// Turn control the collaboration layer needs from the session service.
@@ -167,66 +164,21 @@ class MultiAgentService {
   /// Canonical collaboration path of [session].
   String pathOf(SessionDto session) => session.agentPath ?? AgentPaths.root;
 
-  bool _collaborationEnabled(
+  /// Structured identity data available to any Agent-selected Lua extension.
+  ///
+  /// Dart deliberately supplies no model-facing prose. The Agent-selected
+  /// collaboration extension owns prompt wording and ordering.
+  Map<String, Object?>? extensionDataFor(
     SessionDto session,
     AgentDefinitionDto definition,
-  ) =>
-      definition.toolIds.contains(collaborationCapabilityId) ||
-      session.parentSessionId != null;
-
-  /// The collaboration tools one turn of [session] may call.
-  List<AgentTool> collaborationToolsFor(
-    SessionDto session,
-    AgentDefinitionDto definition,
-    String turnId,
   ) {
-    if (!_collaborationEnabled(session, definition)) {
-      return const <AgentTool>[];
-    }
-    return <AgentTool>[
-      SpawnAgentTool(this, session, definition, turnId),
-      SendMessageTool(this, session),
-      FollowupTaskTool(this, session),
-      WaitAgentTool(this, session),
-      InterruptAgentTool(this, session),
-      ListAgentsTool(this, session),
-    ];
-  }
-
-  /// System-prompt collaboration hint for one turn, or null when disabled.
-  String? usageHintFor(SessionDto session, AgentDefinitionDto definition) {
-    if (!_collaborationEnabled(session, definition)) return null;
     final path = pathOf(session);
     final isRoot = session.parentSessionId == null;
-    final identity = isRoot
-        ? 'You are the root agent at path `$path` of a collaboration tree.'
-        : 'You are subagent `$path`. Your final response of each turn is '
-              'delivered to your parent as a FINAL_ANSWER message; make it '
-              'self-contained.';
-    // Only the root is coached to delegate. Handing the orchestrator prompt to
-    // a subagent tells every child to spawn grandchildren and wait on them, so
-    // the tree expands and times out instead of terminating.
-    final role = isRoot ? orchestratorPrompt : subagentPrompt;
-    return '''
-## Multi-agent collaboration
-$identity
-Inter-agent messages arrive wrapped in an envelope of the form
-`Message Type / Task name / Sender / Payload`; NEW_TASK starts your work,
-MESSAGE is mid-flight coordination, and FINAL_ANSWER carries a finished
-subagent's result.
-- `spawn_agent` creates a subagent and starts it asynchronously; it never
-  blocks. Reference agents by relative (`task_1`) or canonical
-  (`/root/task_1`) path.
-- `send_message` only queues a message; `followup_task` also starts a turn on
-  an idle agent.
-- `wait_agent` blocks until new agent activity or user input; call it
-  sparingly and prefer doing useful work first.
-- All agents share one workspace and filesystem; coordinate edits so agents
-  do not overwrite each other.
-At most $maxConcurrentSubagentTurnsPerTree subagent turns run concurrently
-per tree.
-
-$role''';
+    return <String, Object?>{
+      'path': path,
+      'is_root': isRoot,
+      'max_concurrent_turns': maxConcurrentSubagentTurnsPerTree,
+    };
   }
 
   /// The mailbox drain handed to the runner of one session's turns.
@@ -496,22 +448,17 @@ $role''';
       }
     }
 
-    final ModelSelectionDto childModel;
-    final Map<String, ModelControlValueDto> inheritedControls;
+    ModelSelectionDto? childModel;
+    var inheritedControls = const <String, ModelControlValueDto>{};
     if (fullFork) {
-      childModel = caller.model;
+      childModel = await _effectiveModelOf(caller, callerDefinition);
       inheritedControls = caller.modelControls;
     } else if (model != null) {
       await _validateModel(model);
       childModel = ModelSelectionDto(modelId: model);
-      inheritedControls = const <String, ModelControlValueDto>{};
-    } else if (childDefinition.model case final agentModel?) {
-      await _validateModel(agentModel.qualifiedModelId);
-      childModel = agentModel;
-      inheritedControls = childDefinition.modelControls;
-    } else {
-      childModel = await _defaultModel();
-      inheritedControls = const <String, ModelControlValueDto>{};
+    } else if (childDefinition.model.source == AgentModelSource.session) {
+      childModel = await _effectiveModelOf(caller, callerDefinition);
+      inheritedControls = caller.modelControls;
     }
 
     final now = _clock.nowUtc();
@@ -527,8 +474,6 @@ $role''';
         rootSessionId: rootId,
         lifecycle: AgentLifecycle.pendingInit,
         origin: SessionOrigin.delegated,
-        // A planning parent must not spawn work that mutates the workspace.
-        mode: caller.mode,
         status: SessionStatus.idle,
         model: childModel,
         modelControls: <String, ModelControlValueDto>{
@@ -802,6 +747,20 @@ $role''';
     await _timeline.appendProviderItems(childSessionId, sliced);
   }
 
+  /// The model a session effectively runs on, for inheritance by a child.
+  Future<ModelSelectionDto> _effectiveModelOf(
+    SessionDto session,
+    AgentDefinitionDto definition,
+  ) async {
+    final selected = session.model;
+    if (selected != null) return selected;
+    final modelId = definition.model.modelId;
+    if (definition.model.source == AgentModelSource.fixed && modelId != null) {
+      return ModelSelectionDto(modelId: modelId);
+    }
+    return _defaultModel();
+  }
+
   Future<void> _appendEvent({
     required String sessionId,
     required String type,
@@ -847,42 +806,4 @@ final class _MailboxTurnInputSource implements TurnInputSource {
         UserConversationItem(MultiAgentService.renderEnvelope(entry.message)),
     ];
   }
-}
-
-/// Registers the collaboration tools a turn may drive subagents with.
-///
-/// Selection is not by id alone: a subagent is handed the tools by its
-/// parentage, because an agent that was spawned has to be able to answer the
-/// agent that spawned it.
-final class CollaborationToolProvider extends AgentToolProvider {
-  /// Creates a provider reading the supervisor at turn time.
-  ///
-  /// The supervisor is wired after the session service it drives, so reading
-  /// it per turn is what keeps the registry from capturing a null at boot.
-  const CollaborationToolProvider(this._multiAgent);
-
-  final MultiAgentService? Function() _multiAgent;
-
-  @override
-  String get id => collaborationCapabilityId;
-
-  @override
-  AgentToolDefinition get catalogEntry => const AgentToolDefinition(
-    id: collaborationCapabilityId,
-    name: collaborationCapabilityId,
-    description:
-        'Spawn, message, wait on, interrupt, and list collaborating '
-        'subagents that share this workspace.',
-    risk: AgentToolRisk.read,
-    group: AgentToolGroup.collaboration,
-  );
-
-  @override
-  List<AgentTool> create(AgentToolScope scope) =>
-      _multiAgent()?.collaborationToolsFor(
-        scope.session.value! as SessionDto,
-        scope.definition.value! as AgentDefinitionDto,
-        scope.turnId,
-      ) ??
-      const <AgentTool>[];
 }

@@ -7,64 +7,67 @@ import 'package:protocol/protocol.dart';
 
 AgentToolDefinitionDto _tool(
   String id,
-  ToolGroup group, {
-  bool alwaysOn = false,
-}) => AgentToolDefinitionDto(
+  String group,
+) => AgentToolDefinitionDto(
   id: id,
+  originPluginId: 'test.tools',
+  contributionId: id,
   name: id,
   description: 'Does $id.',
   risk: ToolRisk.read,
   group: group,
-  alwaysOn: alwaysOn,
+  kind: AgentToolKind.function,
+  inputSchema: const <String, dynamic>{'type': 'object'},
+  effects: const <String>['test.read'],
+  presentation: <String, dynamic>{'group': group},
 );
 
 void main() {
-  test('groups follow enum order while tools keep catalog order', () {
-    // The catalog is deliberately out of group order and out of alphabetical
-    // order: neither is what decides where a tool is drawn.
+  test('plugin string groups keep first-seen catalog order', () {
     final grouped = groupAgentTools(<AgentToolDefinitionDto>[
-      _tool('exec_command', ToolGroup.execution),
-      _tool('read_file', ToolGroup.filesystem),
-      _tool('apply_patch', ToolGroup.editing),
-      _tool('glob', ToolGroup.filesystem),
+      _tool('exec_command', 'execution'),
+      _tool('read_file', 'filesystem'),
+      _tool('apply_patch', 'third.party'),
+      _tool('glob', 'filesystem'),
     ]);
 
     expect(
       grouped.map((view) => view.group),
-      <ToolGroup>[ToolGroup.filesystem, ToolGroup.editing, ToolGroup.execution],
+      <String>['execution', 'filesystem', 'third.party'],
     );
     expect(
-      grouped.first.tools.map((tool) => tool.id),
+      grouped[1].tools.map((tool) => tool.id),
       <String>['read_file', 'glob'],
     );
   });
 
   test('a group nothing belongs to is not drawn', () {
     final grouped = groupAgentTools(<AgentToolDefinitionDto>[
-      _tool('read_file', ToolGroup.filesystem),
+      _tool('read_file', 'filesystem'),
     ]);
 
     expect(grouped, hasLength(1));
-    expect(grouped.single.group, ToolGroup.filesystem);
+    expect(grouped.single.group, 'filesystem');
   });
 
-  test('an always-on tool is counted but never offered a toggle', () {
+  test('every tool in a group can be toggled independently', () {
     final view = groupAgentTools(<AgentToolDefinitionDto>[
-      _tool('read_file', ToolGroup.filesystem, alwaysOn: true),
-      _tool('glob', ToolGroup.filesystem, alwaysOn: true),
+      _tool('read_file', 'filesystem'),
+      _tool('glob', 'filesystem'),
     ]).single;
 
-    expect(view.toggleableIds, isEmpty);
-    expect(view.locked, isTrue);
-    expect(view.enabledCount(const <String>{}), 2);
-    expect(view.allEnabled(const <String>{}), isTrue);
+    expect(view.toggleableIds, <String>['read_file', 'glob']);
+    expect(view.enabledCount(const <String>{}), 0);
+    expect(view.allEnabled(const <String>{}), isFalse);
     expect(view.partiallyEnabled(const <String>{}), isFalse);
+    expect(view.enabledCount(const <String>{'read_file'}), 1);
+    expect(view.partiallyEnabled(const <String>{'read_file'}), isTrue);
   });
 
   test('a group reports partial only between empty and full', () {
     final view = groupAgentTools(<AgentToolDefinitionDto>[
-      _tool('list_mcp_resources', ToolGroup.mcp),
-      _tool('read_mcp_resource', ToolGroup.mcp),
+      _tool('list_mcp_resources', 'mcp'),
+      _tool('read_mcp_resource', 'mcp'),
     ]).single;
 
     expect(view.toggleableIds, <String>[
@@ -80,19 +83,5 @@ void main() {
     const both = <String>{'list_mcp_resources', 'read_mcp_resource'};
     expect(view.partiallyEnabled(both), isFalse);
     expect(view.allEnabled(both), isTrue);
-  });
-
-  test('an always-on tool beside a selectable one still counts', () {
-    final view = groupAgentTools(<AgentToolDefinitionDto>[
-      _tool('read_file', ToolGroup.filesystem, alwaysOn: true),
-      _tool('apply_patch', ToolGroup.filesystem),
-    ]).single;
-
-    expect(view.locked, isFalse);
-    expect(view.toggleableIds, <String>['apply_patch']);
-    // The always-on half is on whatever the agent selected, so the group reads
-    // as partial rather than empty.
-    expect(view.partiallyEnabled(const <String>{}), isTrue);
-    expect(view.allEnabled(const <String>{'apply_patch'}), isTrue);
   });
 }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/error_body.dart';
+import 'package:daemon/src/features/providers/infrastructure/openai/media.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/sse.dart';
 import 'package:dio/dio.dart';
 
@@ -150,8 +151,21 @@ bool? modelControlBool(ModelRequest request, String id) =>
       _ => null,
     };
 
+String? _deferredSearchName(List<ModelToolDefinition> tools) {
+  final deferred = tools.whereType<ModelDeferredSearchToolDefinition>();
+  final iterator = deferred.iterator;
+  if (!iterator.moveNext()) return null;
+  final name = iterator.current.name;
+  if (iterator.moveNext()) {
+    throw const OpenAIProviderException(
+      'OpenAI Responses supports one provider-native deferred search tool.',
+    );
+  }
+  return name;
+}
+
 /// OpenAIResponsesProvider defines a public contract.
-class OpenAIResponsesProvider implements ModelProvider {
+class OpenAIResponsesProvider implements ModelGateway {
   /// Creates a [OpenAIResponsesProvider].
   OpenAIResponsesProvider(OpenAIProviderConfig config, {Dio? dio})
     : _config = config,
@@ -174,6 +188,7 @@ class OpenAIResponsesProvider implements ModelProvider {
       );
     }
     final cancelToken = CancelToken();
+    final deferredSearchName = _deferredSearchName(request.tools);
     cancellation.onCancel(() => cancelToken.cancel('Agent turn cancelled.'));
     Response<ResponseBody>? response;
     Object? lastError;
@@ -239,7 +254,11 @@ class OpenAIResponsesProvider implements ModelProvider {
     if (response?.data == null) {
       throw OpenAIProviderException('No response stream: $lastError');
     }
-    yield* _modelEvents(response!.data!.stream, cancellation);
+    yield* _modelEvents(
+      response!.data!.stream,
+      cancellation,
+      deferredSearchName: deferredSearchName,
+    );
   }
 
   Map<String, dynamic> _requestBody(
@@ -256,8 +275,23 @@ class OpenAIResponsesProvider implements ModelProvider {
     );
     return <String, dynamic>{
       'model': request.model,
-      'instructions': request.instructions,
-      'input': _responsesInput(request.history),
+      'input': <Map<String, dynamic>>[
+        ...request.blocks.map(
+          (block) => <String, dynamic>{
+            'type': 'message',
+            'role': block.role,
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'type': block.role == 'assistant'
+                    ? 'output_text'
+                    : 'input_text',
+                'text': block.content,
+              },
+            ],
+          },
+        ),
+        ..._responsesInput(request.history),
+      ],
       if ((_config.supportsReasoningEffort &&
               (effort != null || mode != null)) ||
           includeReasoningSummary)
@@ -464,7 +498,7 @@ class OpenAIResponsesProvider implements ModelProvider {
         },
       };
 
-  static const Set<String> _supportedImageTypes = supportedContextImageTypes;
+  static const Set<String> _supportedImageTypes = openAiSupportedImageTypes;
 
   static const int _maxDirectFileBytes = 50 * 1024 * 1024;
 
@@ -507,12 +541,13 @@ class OpenAIResponsesProvider implements ModelProvider {
   static String _attachmentFallback(ConversationAttachment attachment) =>
       '[Attachment id=${attachment.id}, file=${attachment.fileName}, '
       'mime=${attachment.mimeType}, bytes=${attachment.byteSize}, '
-      'path=${attachment.path}. Use read_attachment with the attachment id.]';
+      'path=${attachment.path}]';
 
   Stream<ModelEvent> _modelEvents(
     Stream<Uint8List> bytes,
-    CancellationToken cancellation,
-  ) async* {
+    CancellationToken cancellation, {
+    required String? deferredSearchName,
+  }) async* {
     final emittedCalls = <String>{};
     await for (final sse in decodeServerSentEvents(bytes)) {
       cancellation.throwIfCancelled();
@@ -534,7 +569,10 @@ class OpenAIResponsesProvider implements ModelProvider {
         case 'response.output_item.done':
           final item = event['item'];
           if (item is Map) {
-            final call = _toolCall(Map<String, dynamic>.from(item));
+            final call = _toolCall(
+              Map<String, dynamic>.from(item),
+              deferredSearchName: deferredSearchName,
+            );
             if (call != null && emittedCalls.add(call.callId)) yield call;
           }
         case 'response.completed':
@@ -550,16 +588,25 @@ class OpenAIResponsesProvider implements ModelProvider {
               .map(Map<String, dynamic>.from)
               .toList(growable: false);
           for (final item in output) {
-            final call = _toolCall(item);
+            final call = _toolCall(
+              item,
+              deferredSearchName: deferredSearchName,
+            );
             if (call != null && emittedCalls.add(call.callId)) yield call;
           }
           final calls = output
-              .map(_toolCall)
+              .map(
+                (item) => _toolCall(
+                  item,
+                  deferredSearchName: deferredSearchName,
+                ),
+              )
               .whereType<ModelToolCall>()
               .map(
                 (call) => call is ModelDeferredSearchCall
                     ? ConversationToolCall.deferredSearch(
                         callId: call.callId,
+                        name: call.name,
                         arguments: call.arguments,
                       )
                     : switch (call.input) {
@@ -616,14 +663,24 @@ class OpenAIResponsesProvider implements ModelProvider {
     return buffer.toString();
   }
 
-  ModelToolCall? _toolCall(Map<String, dynamic> item) {
+  ModelToolCall? _toolCall(
+    Map<String, dynamic> item, {
+    required String? deferredSearchName,
+  }) {
     final callId = item['call_id'];
     if (callId is! String) return null;
     if (item['type'] == 'tool_search_call') {
+      if (deferredSearchName == null) {
+        throw const OpenAIProviderException(
+          'The provider emitted a deferred search call without a selected '
+          'Lua tool.',
+        );
+      }
       final arguments = item['arguments'];
       if (arguments is! Map) return null;
       return ModelDeferredSearchCall(
         callId: callId,
+        name: deferredSearchName,
         arguments: Map<String, dynamic>.from(arguments),
       );
     }

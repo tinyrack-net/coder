@@ -7,9 +7,9 @@ import 'package:dio/dio.dart';
 ///
 /// Everything vendor-specific is data on this class, so a new compatible
 /// vendor is a new instance rather than a new code path.
-base class OpenAICompatiblePlugin extends ProviderPlugin {
+base class OpenAICompatibleAdapter extends ProviderAdapter {
   /// Creates one OpenAI-compatible vendor.
-  const OpenAICompatiblePlugin({
+  const OpenAICompatibleAdapter({
     required this.definition,
     required this.baseUrl,
     required this._wire,
@@ -50,7 +50,7 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
   );
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
+  ModelGateway createProvider(ModelGatewayRequest request) =>
       _wire.createProvider(request);
 
   @override
@@ -61,12 +61,12 @@ base class OpenAICompatiblePlugin extends ProviderPlugin {
 }
 
 /// OpenAI itself: the platform API, plus the ChatGPT subscription backend.
-final class OpenAIPlugin extends OpenAICompatiblePlugin {
+final class OpenAIAdapter extends OpenAICompatibleAdapter {
   /// Creates the OpenAI vendor.
   ///
   /// [_oauth] must come from the composition root so tests can substitute the
   /// gateway while the plugin still owns which backend each credential uses.
-  const OpenAIPlugin({
+  const OpenAIAdapter({
     required this._oauth,
     super.wire = const OpenAIResponsesWire(),
   }) : super(
@@ -95,20 +95,19 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
       : super.endpoint(authKind);
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
-      _wire.adapterFor(
-        request,
-        additionalHeaders: <String, String>{
-          if (request.credential is OAuthCredential)
-            'originator': 'tinyrack_tinest',
-          if (request.credential case OAuthCredential(:final accountId?))
-            'ChatGPT-Account-ID': accountId,
-        },
-        // The subscription backend serves a narrower Responses surface and
-        // answers 400 for the platform-only request fields.
-        supportsPlatformRequestFields: request.credential is! OAuthCredential,
-        supportsReasoningSummary: true,
-      );
+  ModelGateway createProvider(ModelGatewayRequest request) => _wire.adapterFor(
+    request,
+    additionalHeaders: <String, String>{
+      if (request.credential is OAuthCredential)
+        'originator': 'tinyrack_tinest',
+      if (request.credential case OAuthCredential(:final accountId?))
+        'ChatGPT-Account-ID': accountId,
+    },
+    // The subscription backend serves a narrower Responses surface and
+    // answers 400 for the platform-only request fields.
+    supportsPlatformRequestFields: request.credential is! OAuthCredential,
+    supportsReasoningSummary: true,
+  );
 
   /// The API documents image and file inputs for every current model, which
   /// the public catalog does not record.
@@ -116,6 +115,9 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
   AgentModelCapabilities refineRemoteCapabilities(
     AgentModelCapabilities capabilities,
   ) => capabilities.copyWith(
+    functionTools: AgentCapabilitySupport.supported,
+    freeformTools: AgentCapabilitySupport.supported,
+    deferredTools: AgentCapabilitySupport.supported,
     imageInput: AgentCapabilitySupport.supported,
     fileInput: AgentCapabilitySupport.supported,
   );
@@ -136,43 +138,43 @@ final class OpenAIPlugin extends OpenAICompatiblePlugin {
 }
 
 /// The vendors this package compiles into the daemon, in advertised order.
-List<ProviderPlugin> openAIFamilyPlugins({
+List<ProviderAdapter> openAIFamilyAdapters({
   required Clock clock,
   ProviderOAuthGateway? openAIOAuth,
   Dio Function(ProviderEndpoint endpoint)? dioFactory,
 }) {
   final responses = OpenAIResponsesWire(dioFactory: dioFactory);
   final chatCompletions = OpenAIChatCompletionsWire(dioFactory: dioFactory);
-  return <ProviderPlugin>[
-    OpenAIPlugin(
+  return <ProviderAdapter>[
+    OpenAIAdapter(
       oauth: openAIOAuth ?? OpenAIOAuthGateway(clock: clock),
       wire: responses,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: deepseekDefinition,
       baseUrl: 'https://api.deepseek.com',
       wire: chatCompletions,
       models: deepseekBundledModels,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: openRouterDefinition,
       baseUrl: 'https://openrouter.ai/api/v1',
       wire: chatCompletions,
       models: openRouterBundledModels,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: groqDefinition,
       baseUrl: 'https://api.groq.com/openai/v1',
       wire: chatCompletions,
       models: groqBundledModels,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: xaiDefinition,
       baseUrl: 'https://api.x.ai/v1',
       wire: chatCompletions,
       models: xaiBundledModels,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: minimaxDefinition,
       baseUrl: 'https://api.minimax.io/v1',
       wire: chatCompletions,
@@ -180,7 +182,7 @@ List<ProviderPlugin> openAIFamilyPlugins({
       supportsModelDiscovery: false,
       usesRemoteCatalog: false,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: minimaxChinaDefinition,
       baseUrl: 'https://api.minimaxi.com/v1',
       wire: chatCompletions,
@@ -188,17 +190,17 @@ List<ProviderPlugin> openAIFamilyPlugins({
       supportsModelDiscovery: false,
       usesRemoteCatalog: false,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: ollamaDefinition,
       baseUrl: 'http://127.0.0.1:11434/v1',
       wire: chatCompletions,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: lmStudioDefinition,
       baseUrl: 'http://127.0.0.1:1234/v1',
       wire: chatCompletions,
     ),
-    OpenAICompatiblePlugin(
+    OpenAICompatibleAdapter(
       definition: vllmDefinition,
       baseUrl: 'http://127.0.0.1:8000/v1',
       wire: chatCompletions,
@@ -235,6 +237,9 @@ const AgentProviderAuthMethod _none = AgentProviderAuthMethod(
 const AgentModelCapabilities _reasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
+  functionTools: AgentCapabilitySupport.supported,
+  freeformTools: AgentCapabilitySupport.unsupported,
+  deferredTools: AgentCapabilitySupport.unsupported,
   controls: <AgentModelControlDescriptor>[_reasoningEffortControl],
   source: AgentCapabilitySource.bundled,
 );
@@ -244,6 +249,9 @@ const AgentModelCapabilities _reasoning = AgentModelCapabilities(
 const AgentModelCapabilities _openAiReasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
+  functionTools: AgentCapabilitySupport.supported,
+  freeformTools: AgentCapabilitySupport.supported,
+  deferredTools: AgentCapabilitySupport.supported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
   controls: <AgentModelControlDescriptor>[
@@ -256,6 +264,9 @@ const AgentModelCapabilities _openAiReasoning = AgentModelCapabilities(
 const AgentModelCapabilities _tools = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
+  functionTools: AgentCapabilitySupport.supported,
+  freeformTools: AgentCapabilitySupport.unsupported,
+  deferredTools: AgentCapabilitySupport.unsupported,
   source: AgentCapabilitySource.bundled,
 );
 

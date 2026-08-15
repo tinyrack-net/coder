@@ -354,18 +354,21 @@ _PreparedScenario _prepareScenario(_CatalogPreparation preparation) {
         api: FakeTinestApi(
           agentDefinitions: const <AgentDefinitionDto>[
             AgentDefinitionDto(
+              version: 5,
               id: 'locked-agent',
               name: 'Locked model agent',
               description: 'Its pinned provider is not connected.',
               mode: AgentMode.primary,
-              promptEnabled: false,
-              systemPrompt: '',
-              model: ModelSelectionDto(
+              model: AgentModelSelectionDto(
+                source: AgentModelSource.fixed,
                 modelId: 'missing/catalog-model',
               ),
-              permissionMode: PermissionMode.readOnly,
+              driverId: 'tinest.standard/driver',
+              extensionIds: <String>[],
               toolIds: <String>[],
+              pluginSettings: <String, Map<String, dynamic>>{},
               callableAgentIds: <String>[],
+              prompt: '',
               contentHash: 'locked-agent-hash',
               sourcePath: '/config/agents/locked-agent.md',
               isBuiltIn: true,
@@ -696,17 +699,22 @@ final _agentDefinitions = List<AgentDefinitionDto>.unmodifiable(
   <AgentDefinitionDto>[
     for (var index = 0; index < 18; index += 1)
       AgentDefinitionDto(
+        version: 5,
         id: index == 0 ? 'tinest' : 'agent-$index',
         name: index == 0 ? 'Tinest' : 'Agent $index',
         description: index == 0
             ? 'General-purpose coding agent'
             : 'Deterministic catalog agent $index',
         mode: index == 0 ? AgentMode.primary : AgentMode.subagent,
-        promptEnabled: true,
-        systemPrompt: 'Use the shared settings visual contract.',
-        permissionMode: PermissionMode.ask,
-        toolIds: const <String>['read_file'],
+        model: const AgentModelSelectionDto(
+          source: AgentModelSource.session,
+        ),
+        driverId: 'tinest.standard/driver',
+        extensionIds: const <String>[],
+        toolIds: const <String>['tinest.files/read_file'],
+        pluginSettings: const <String, Map<String, dynamic>>{},
         callableAgentIds: const <String>[],
+        prompt: 'Use the shared settings visual contract.',
         contentHash: 'agent-$index-hash',
         sourcePath: '/config/agents/agent-$index.md',
         isBuiltIn: index == 0,
@@ -1750,6 +1758,8 @@ final class _CatalogMcpErrorApi implements TinestApi {
   SessionsApi get sessions => delegate.sessions;
   @override
   AgentsApi get agents => delegate.agents;
+  @override
+  PluginsApi get plugins => delegate.plugins;
   @override
   PromptsApi get prompts => delegate.prompts;
   @override

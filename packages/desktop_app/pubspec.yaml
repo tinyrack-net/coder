@@ -27,12 +27,14 @@ dev_dependencies:
       ref: c21627dcd525f899223ac584a931c72ddf6f2b12
       path: packages/dropwell
   flutter_launcher_icons: ^0.14.4
+  flutter_riverpod: 3.3.2
   flutter_secure_storage: ^10.3.1
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
   material_ui: ^1.0.0
+  path: ^1.9.1
   protocol: ^0.1.0
   relay: ^0.5.0
   relay_protocol: ^0.1.0

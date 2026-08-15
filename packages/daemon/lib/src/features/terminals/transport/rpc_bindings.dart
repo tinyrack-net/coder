@@ -6,7 +6,7 @@ import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the terminal feature's complete v4 RPC surface.
+/// Builds the terminal feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> terminalRpcBindings({
   required TerminalService terminals,
   required SettingsRepository settings,

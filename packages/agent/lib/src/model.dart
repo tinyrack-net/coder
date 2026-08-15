@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:agent/src/contracts.dart';
-import 'package:agent/src/tools/tool_search.dart';
 import 'package:agent/src/usage.dart';
 
 /// CancellationToken defines a public contract.
@@ -178,10 +177,11 @@ final class ModelNamespaceToolDefinition extends ModelToolDefinition {
 final class ModelDeferredSearchToolDefinition extends ModelToolDefinition {
   /// Creates a deferred search declaration.
   const ModelDeferredSearchToolDefinition({
+    required super.name,
     required super.description,
     required this.parameters,
     this.execution = 'client',
-  }) : super(name: 'tool_search');
+  });
 
   @override
   ModelToolKind get kind => ModelToolKind.deferredSearch;
@@ -256,9 +256,9 @@ class ConversationToolCall {
   /// Creates a provider-native deferred-search call.
   const ConversationToolCall.deferredSearch({
     required this.callId,
+    required this.name,
     required Map<String, dynamic> arguments,
-  }) : name = 'tool_search',
-       namespace = null,
+  }) : namespace = null,
        _jsonInput = arguments,
        _freeformInput = null,
        kind = ModelToolKind.deferredSearch;
@@ -564,12 +564,30 @@ class ToolResultConversationItem extends ConversationItem {
   };
 }
 
+/// A role-qualified prompt block supplied by an Agent driver.
+final class ModelRoleBlock {
+  /// Creates one ordered prompt block.
+  const ModelRoleBlock({required this.role, required this.content});
+
+  /// Provider-neutral role name advertised by model capabilities.
+  final String role;
+
+  /// Text content of this block.
+  final String content;
+
+  /// JSON representation consumed by plugin and provider boundaries.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'role': role,
+    'content': content,
+  };
+}
+
 /// ModelRequest defines a public contract.
 class ModelRequest {
   /// Creates a [ModelRequest].
   const ModelRequest({
     required this.model,
-    required this.instructions,
+    required this.blocks,
     required this.history,
     required this.tools,
     required this.safetyIdentifier,
@@ -583,8 +601,8 @@ class ModelRequest {
   /// Model-specific values validated against the resolved provider catalog.
   final Map<String, AgentModelControlValue> modelControls;
 
-  /// The instructions public API member.
-  final String instructions;
+  /// Driver-owned role blocks, in exact request order.
+  final List<ModelRoleBlock> blocks;
 
   /// The history public API member.
   final List<ConversationItem> history;
@@ -685,8 +703,9 @@ final class ModelDeferredSearchCall extends ModelToolCall {
   /// Creates a client-executed search call.
   const ModelDeferredSearchCall({
     required super.callId,
+    required super.name,
     required this.arguments,
-  }) : super(name: 'tool_search');
+  });
 
   /// Search query and optional result limit.
   final Map<String, dynamic> arguments;
@@ -711,7 +730,7 @@ class ModelResponseCompleted extends ModelEvent {
 }
 
 /// Public API exposed by this library.
-abstract interface class ModelProvider {
+abstract interface class ModelGateway {
   /// The id public API member.
   String get id;
 
@@ -887,88 +906,6 @@ abstract interface class UserQuestionCoordinator {
     CancellationToken cancellation,
   );
 }
-
-/// Discards the persisted conversation and starts a fresh context window.
-///
-/// The retained items are re-appended under a new epoch so the database and
-/// the runner's in-memory conversation cannot drift apart.
-abstract interface class ContextResetCoordinator {
-  /// Keeps only [retain], under a new context epoch.
-  Future<void> reset(List<ConversationItem> retain);
-}
-
-/// Invokes a tool intentionally hidden behind an orchestration surface.
-abstract interface class NestedToolInvoker {
-  /// Runs [name] through the turn's normal approval and cancellation path.
-  Future<ToolResult> invoke(
-    String name,
-    Map<String, dynamic> arguments,
-  );
-}
-
-/// ToolExecutionContext defines a public contract.
-class ToolExecutionContext {
-  /// Creates a [ToolExecutionContext].
-  const ToolExecutionContext({
-    required this.workspaceRoot,
-    required this.cancellation,
-    this.callId = '',
-    this.contextWindowTokens,
-    this.turnUsage = const ModelUsage(),
-    this.requestContextReset = _ignoreContextReset,
-    this.nestedTools,
-    this.sessionMode = AgentSessionMode.normal,
-    this.toolSurfaceMode = AgentToolSurfaceMode.direct,
-  });
-
-  /// The workspaceRoot public API member.
-  final String workspaceRoot;
-
-  /// The cancellation public API member.
-  final CancellationToken cancellation;
-
-  /// Provider-assigned identifier of the call being executed.
-  ///
-  /// A tool that raises host state of its own — a question the user must
-  /// answer, for instance — keys that state by this so the client can tie it
-  /// back to the call that produced it.
-  final String callId;
-
-  /// Tokens this model's context window holds, when the provider reports one.
-  final int? contextWindowTokens;
-
-  /// What the last response in this turn consumed.
-  final ModelUsage turnUsage;
-
-  /// Asks the runner to start a fresh context window after this round.
-  ///
-  /// Deliberately deferred: resetting inside the tool would strand any call
-  /// that follows it in the same round.
-  final void Function() requestContextReset;
-
-  /// Dispatcher for tools hidden behind the current orchestration surface.
-  final NestedToolInvoker? nestedTools;
-
-  /// Collaboration mode of the owning session.
-  final AgentSessionMode sessionMode;
-
-  /// Model-facing tool surface executing this call.
-  final AgentToolSurfaceMode toolSurfaceMode;
-
-  /// Invokes one nested tool.
-  Future<ToolResult> invokeNestedTool(
-    String name,
-    Map<String, dynamic> arguments,
-  ) {
-    final invoker = nestedTools;
-    if (invoker == null) {
-      throw StateError('Nested tool invocation is unavailable.');
-    }
-    return invoker.invoke(name, arguments);
-  }
-}
-
-void _ignoreContextReset() {}
 
 /// One provider-neutral content block returned by a tool.
 sealed class ToolContent {
@@ -1249,64 +1186,4 @@ class ToolResult {
 
   /// Values emitted through an immediate side channel while the tool ran.
   final List<Object?> notifications;
-}
-
-/// AgentTool defines a public contract.
-abstract class AgentTool {
-  /// The name public API member.
-  String get name;
-
-  /// The description public API member.
-  String get description;
-
-  /// The risk public API member.
-  AgentToolRisk get risk;
-
-  /// The strictJsonSchema public API member.
-  Map<String, dynamic> get strictJsonSchema;
-
-  /// Whether [strictJsonSchema] satisfies provider strict-schema requirements.
-  ///
-  /// Tools that pass through a schema authored elsewhere — an external MCP
-  /// server, for instance — cannot guarantee that every property is required
-  /// and that every object forbids additional properties, so they opt out.
-  bool get strict => true;
-
-  /// Provider-neutral declaration exposed to the model.
-  ModelToolDefinition get modelSpec => ModelFunctionToolDefinition(
-    name: name,
-    description: description,
-    parameters: strictJsonSchema,
-    strict: strict,
-  );
-
-  /// Whether the model is told about this tool up front.
-  ///
-  /// A deferred tool stays dispatchable; only its advertisement is withheld
-  /// until [ToolSearchTool] surfaces it.
-  ToolExposure get exposure => ToolExposure.advertised;
-
-  /// The preview public API member.
-  Future<String?> preview(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async => null;
-
-  /// Builds an approval preview for raw freeform input.
-  Future<String?> previewFreeform(
-    String input,
-    ToolExecutionContext context,
-  ) async => null;
-
-  /// The execute public API member.
-  Future<ToolResult> execute(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  );
-
-  /// Executes raw freeform input when this tool declares a freeform spec.
-  Future<ToolResult> executeFreeform(
-    String input,
-    ToolExecutionContext context,
-  ) => throw StateError('$name does not accept freeform input.');
 }

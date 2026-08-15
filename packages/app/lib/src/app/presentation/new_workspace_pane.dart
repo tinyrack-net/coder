@@ -6,7 +6,6 @@ import 'package:app/src/features/agents/application/agent_definitions_controller
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/composer_controller.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:app/src/features/conversation/presentation/composer_client_commands.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_suggestions_overlay.dart';
@@ -15,8 +14,11 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/features/models/application/model_settings_controller.dart';
+import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
+import 'package:app/src/features/sessions/application/session_prompt_starter.dart';
+import 'package:app/src/features/sessions/application/session_starter.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
 import 'package:app/src/features/workspace/application/directory_picker_port.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
@@ -250,9 +252,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         agent != null &&
         effectiveRunnable &&
         !_submitting;
-    void toggleMode() => _notifier(hostId)?.selectMode(
-      draft?.mode == SessionMode.plan ? SessionMode.normal : SessionMode.plan,
-    );
     // The completion is null only while no daemon is chosen, which is also the
     // state where the composer is disabled and has nothing to complete.
     Widget composer(ComposerCompletion? completion) => SessionComposer(
@@ -281,15 +280,32 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
               error: _failure!,
               title: AppLocalizations.of(context).workspaceStartFailedTitle,
             ),
-      header: _targets(
-        projects: projects,
-        project: project,
-        home: home,
-        worktree: worktree,
-        branches: branches,
-        showGitTargets: showGitTargets,
-        baseBranch: baseBranch,
-        anyDaemonConnected: anyDaemonConnected,
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _targets(
+            projects: projects,
+            project: project,
+            home: home,
+            worktree: worktree,
+            branches: branches,
+            showGitTargets: showGitTargets,
+            baseBranch: baseBranch,
+            anyDaemonConnected: anyDaemonConnected,
+          ),
+          if (hostId != null && agent != null)
+            AgentPluginUiSlot(
+              hostId: hostId,
+              agent: agent,
+              slot: PluginUiSlot.composerControl,
+              context: <String, dynamic>{
+                'workspaceId': project?.workspace.id,
+                'worktreeId': worktree?.id,
+                'draft': true,
+              },
+            ),
+        ],
       ),
       bar: SessionComposerBar(
         hostId: hostId ?? '',
@@ -297,13 +313,11 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         agentDefinitionId: agent?.id,
         selection: effective,
         enabled: hostId != null && !_submitting,
-        mode: draft?.mode ?? SessionMode.normal,
         onAgentChanged: (id) => _notifier(hostId)?.selectAgent(id),
         onModelChanged: (model, controls) {
           _notifier(hostId)?.selectModel(model);
           _notifier(hostId)?.selectModelControls(controls);
         },
-        onModeChanged: (mode) => _notifier(hostId)?.selectMode(mode),
         modelControls:
             draft?.modelControls ?? const <String, ModelControlValueDto>{},
         onModelControlsChanged: (controls) {
@@ -317,7 +331,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         onPermissionModeChanged: (mode) =>
             _notifier(hostId)?.selectPermissionMode(mode),
       ),
-      onModeToggled: hostId == null ? null : toggleMode,
       attachmentInput: ref.read(attachmentInputProvider),
       commands: completion?.commands ?? const <ComposerCommand>[],
       suggestions: completion?.suggestions ?? ComposerSuggestionsState.closed,
@@ -328,7 +341,6 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
               context,
               invocation,
               hostId: hostId!,
-              onToggleMode: toggleMode,
             ),
       onSubmit: (submission) =>
           _submit(submission, project, home, worktree, agent!, draft!),
@@ -823,13 +835,12 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   ) async {
     final l10n = AppLocalizations.of(context);
     final session = await startSessionWithPrompt(
-      ref,
+      ref.read(sessionStarterProvider),
       selection: selection,
       agentDefinitionId: agent.id,
       title: deriveSessionTitle(seed, fallback: l10n.sessionDefaultTitle),
       prompt: submission.text,
       attachments: submission.attachments,
-      mode: draft.mode,
       model: draft.model,
     );
     if (!mounted) return;

@@ -14,6 +14,9 @@ const Duration execSessionIdleTimeout = Duration(minutes: 30);
 /// How many pseudo-terminals one tinest session may hold at once.
 const int maxExecSessionsPerSession = 8;
 
+/// Maximum unread UTF-8 output retained by one process handle.
+const int maxExecSessionOutputBytes = 1024 * 1024;
+
 /// Owns every agent-driven pseudo-terminal on this daemon.
 ///
 /// Built on [TerminalGateway] rather than the PTY package directly, so the
@@ -110,6 +113,14 @@ class ExecSessionService {
   /// Records that the user approved the command that started [sessionId].
   void markApproved(int sessionId) => _approved.add(sessionId);
 
+  /// Terminates one live session only when [owner] owns it.
+  Future<bool> terminate(String owner, int sessionId) async {
+    final session = _sessions[sessionId];
+    if (session == null || session.owner != owner) return false;
+    await _terminate(session);
+    return true;
+  }
+
   /// Terminates every session untouched for [execSessionIdleTimeout].
   void sweepIdle() {
     final deadline = _clock.nowUtc().subtract(execSessionIdleTimeout);
@@ -176,6 +187,10 @@ class SessionExecHost implements ExecSessionHost {
 
   @override
   void markApproved(int sessionId) => _service.markApproved(sessionId);
+
+  @override
+  Future<bool> terminate(int sessionId) =>
+      _service.terminate(_sessionId, sessionId);
 }
 
 class _LiveExecSession implements ExecSession {
@@ -211,7 +226,8 @@ class _LiveExecSession implements ExecSession {
   final Clock _clock;
   final Completer<int> _finished = Completer<int>();
 
-  /// Output produced since the last read, capped at [maxToolOutputBytes].
+  /// Output produced since the last read, capped at
+  /// [maxExecSessionOutputBytes].
   String _buffer = '';
   late final StreamSubscription<String> _output;
   int? _exitCode;
@@ -261,8 +277,10 @@ class _LiveExecSession implements ExecSession {
   ///
   /// A server left running between reads would otherwise grow this without
   /// bound, and its recent output is the part worth keeping.
-  void _append(String data) =>
-      _buffer = truncateTailToBytes('$_buffer$data', maxToolOutputBytes);
+  void _append(String data) => _buffer = truncateTailToBytes(
+    '$_buffer$data',
+    maxExecSessionOutputBytes,
+  );
 
   /// Stops reading and terminates the pseudo-terminal.
   Future<void> close() async {

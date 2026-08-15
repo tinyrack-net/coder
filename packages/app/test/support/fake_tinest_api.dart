@@ -26,16 +26,6 @@ final class SessionUpdatedClientEvent extends ClientEvent {
   final SessionDto session;
 }
 
-final class GoalUpdatedClientEvent extends ClientEvent {
-  const GoalUpdatedClientEvent(this.goal);
-  final GoalDto goal;
-}
-
-final class GoalClearedClientEvent extends ClientEvent {
-  const GoalClearedClientEvent(this.cleared);
-  final GoalClearedDto cleared;
-}
-
 final class TerminalOutputClientEvent extends ClientEvent {
   const TerminalOutputClientEvent(this.output);
   final TerminalOutputDto output;
@@ -48,6 +38,10 @@ final class TerminalUpdatedClientEvent extends ClientEvent {
 
 final class AgentDefinitionsChangedClientEvent extends ClientEvent {
   const AgentDefinitionsChangedClientEvent();
+}
+
+final class PluginsChangedClientEvent extends ClientEvent {
+  const PluginsChangedClientEvent();
 }
 
 final class McpServersChangedClientEvent extends ClientEvent {
@@ -84,6 +78,7 @@ final class FakeTinestApi
         WorkspacesApi,
         SessionsApi,
         AgentsApi,
+        PluginsApi,
         PromptsApi,
         ModelsApi,
         ProvidersApi,
@@ -103,8 +98,12 @@ final class FakeTinestApi
     List<AgentDefinitionDto>? agentDefinitions,
     List<SkillSummaryDto>? skills,
     List<SkillSummaryDto>? projectSkills,
+    List<PluginDescriptorDto>? plugins,
+    List<AgentPluginGrantDto>? pluginGrants,
+    Map<String, PluginUiDocumentDto>? pluginUiDocuments,
+    Map<String, PluginAuthoringEnvironmentDto>? pluginAuthoringEnvironments,
+    Map<String, PluginSessionControlValueDto>? pluginSessionControls,
     Map<String, List<TimelineEventDto>>? timelines,
-    Map<String, GoalDto>? goals,
     Map<String, List<ProviderModelDto>>? models,
     List<ProviderUsageDto>? providerUsage,
     ModelSelectionDto? defaultModel,
@@ -121,6 +120,7 @@ final class FakeTinestApi
     this.suggestDirectoriesGate,
     this.workspaceCatalogGate,
     this.agentDefinitionsGate,
+    this.agentUpdateGate,
     this.terminalShellGate,
     this.listSessionsGate,
     this.listTerminalsGate,
@@ -130,6 +130,7 @@ final class FakeTinestApi
     this.providerConnectionsGate,
     this.providerDisconnectGate,
     this.mcpListGate,
+    this.pluginListGate,
     this.createWorktreeError,
     this.suggestDirectoriesError,
     this.projectSettingsError,
@@ -181,6 +182,24 @@ final class FakeTinestApi
        _agentDefinitions = List<AgentDefinitionDto>.of(
          agentDefinitions ?? <AgentDefinitionDto>[_tinest],
        ),
+       _plugins = List<PluginDescriptorDto>.of(
+         plugins ?? _defaultPlugins,
+       ),
+       _pluginGrants = List<AgentPluginGrantDto>.of(
+         pluginGrants ?? const <AgentPluginGrantDto>[],
+       ),
+       pluginUiDocuments = Map<String, PluginUiDocumentDto>.of(
+         pluginUiDocuments ?? const <String, PluginUiDocumentDto>{},
+       ),
+       pluginAuthoringEnvironments =
+           Map<String, PluginAuthoringEnvironmentDto>.of(
+             pluginAuthoringEnvironments ??
+                 const <String, PluginAuthoringEnvironmentDto>{},
+           ),
+       pluginSessionControls = Map<String, PluginSessionControlValueDto>.of(
+         pluginSessionControls ??
+             const <String, PluginSessionControlValueDto>{},
+       ),
        _skills = List<SkillSummaryDto>.of(
          skills ?? <SkillSummaryDto>[_builtInSkill, _configSkill],
        ),
@@ -195,7 +214,6 @@ final class FakeTinestApi
              in (timelines ?? <String, List<TimelineEventDto>>{}).entries)
            entry.key: List<TimelineEventDto>.of(entry.value),
        },
-       _goals = Map<String, GoalDto>.of(goals ?? const <String, GoalDto>{}),
        _providerUsage = List<ProviderUsageDto>.of(
          providerUsage ?? const <ProviderUsageDto>[],
        ),
@@ -309,19 +327,183 @@ final class FakeTinestApi
     ),
   );
   static const AgentDefinitionDto _tinest = AgentDefinitionDto(
+    version: 5,
     id: 'tinest',
     name: 'Tinest',
     description: 'General-purpose coding agent',
     mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: 'Code carefully.',
-    permissionMode: PermissionMode.ask,
-    toolIds: <String>['read_file'],
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.session,
+    ),
+    driverId: 'tinest.standard/driver',
+    extensionIds: <String>[],
+    toolIds: <String>['tinest.files/read_file'],
+    pluginSettings: <String, Map<String, dynamic>>{},
     callableAgentIds: <String>[],
+    prompt: 'Code carefully.',
     contentHash: 'tinest-hash',
     sourcePath: '/config/agents/tinest.md',
     isBuiltIn: true,
   );
+
+  static const List<PluginDescriptorDto> _defaultPlugins =
+      <PluginDescriptorDto>[
+        PluginDescriptorDto(
+          apiMajor: 5,
+          id: 'tinest.standard',
+          version: '1.0.0',
+          name: 'Standard',
+          entrypoint: 'main.lua',
+          source: PluginSource.builtIn,
+          sourcePath: '/built-in/tinest.standard',
+          requestedCapabilities: <String>['model.call'],
+          contributions: <PluginContributionDto>[
+            PluginContributionDto(
+              pluginId: 'tinest.standard',
+              id: 'tinest.standard/driver',
+              kind: PluginContributionKind.driver,
+              metadata: <String, dynamic>{
+                'name': 'Standard driver',
+                'requiredModelCapabilities': <String>['streaming'],
+              },
+            ),
+            PluginContributionDto(
+              pluginId: 'tinest.standard',
+              id: 'tinest.standard/telemetry',
+              kind: PluginContributionKind.extension,
+              metadata: <String, dynamic>{'lifecycle': 'after_model'},
+            ),
+          ],
+        ),
+        PluginDescriptorDto(
+          apiMajor: 5,
+          id: 'tinest.files',
+          version: '1.0.0',
+          name: 'Files',
+          entrypoint: 'main.lua',
+          source: PluginSource.builtIn,
+          sourcePath: '/built-in/tinest.files',
+          requestedCapabilities: <String>['workspace.read'],
+          contributions: <PluginContributionDto>[
+            PluginContributionDto(
+              pluginId: 'tinest.files',
+              id: 'tinest.files/read_file',
+              kind: PluginContributionKind.tool,
+              requiredCapabilities: <String>['workspace.read'],
+              tool: AgentToolDefinitionDto(
+                id: 'tinest.files/read_file',
+                originPluginId: 'tinest.files',
+                contributionId: 'read_file',
+                name: 'read_file',
+                description: 'Read a file.',
+                risk: ToolRisk.read,
+                group: 'filesystem',
+                kind: AgentToolKind.function,
+                inputSchema: <String, dynamic>{'type': 'object'},
+                effects: <String>['filesystem.read'],
+                presentation: <String, dynamic>{'group': 'filesystem'},
+              ),
+            ),
+          ],
+        ),
+        PluginDescriptorDto(
+          apiMajor: 5,
+          id: 'tinest.terminal',
+          version: '1.0.0',
+          name: 'Terminal',
+          entrypoint: 'main.lua',
+          source: PluginSource.builtIn,
+          sourcePath: '/built-in/tinest.terminal',
+          requestedCapabilities: <String>['process.exec'],
+          contributions: <PluginContributionDto>[
+            PluginContributionDto(
+              pluginId: 'tinest.terminal',
+              id: 'tinest.terminal/exec_command',
+              kind: PluginContributionKind.tool,
+              requiredCapabilities: <String>['process.exec'],
+              tool: AgentToolDefinitionDto(
+                id: 'tinest.terminal/exec_command',
+                originPluginId: 'tinest.terminal',
+                contributionId: 'exec_command',
+                name: 'exec_command',
+                description: 'Run a command in a pseudo-terminal.',
+                risk: ToolRisk.command,
+                group: 'execution',
+                kind: AgentToolKind.function,
+                inputSchema: <String, dynamic>{'type': 'object'},
+                effects: <String>['process.execute'],
+                presentation: <String, dynamic>{'group': 'execution'},
+              ),
+            ),
+          ],
+        ),
+        PluginDescriptorDto(
+          apiMajor: 5,
+          id: 'tinest.mcp',
+          version: '1.0.0',
+          name: 'MCP',
+          entrypoint: 'main.lua',
+          source: PluginSource.builtIn,
+          sourcePath: '/built-in/tinest.mcp',
+          requestedCapabilities: <String>['mcp.read'],
+          contributions: <PluginContributionDto>[
+            PluginContributionDto(
+              pluginId: 'tinest.mcp',
+              id: 'tinest.mcp/list_mcp_resources',
+              kind: PluginContributionKind.tool,
+              tool: AgentToolDefinitionDto(
+                id: 'tinest.mcp/list_mcp_resources',
+                originPluginId: 'tinest.mcp',
+                contributionId: 'list_mcp_resources',
+                name: 'list_mcp_resources',
+                description: 'List MCP resources.',
+                risk: ToolRisk.read,
+                group: 'mcp',
+                kind: AgentToolKind.function,
+                inputSchema: <String, dynamic>{'type': 'object'},
+                effects: <String>['mcp.read'],
+                presentation: <String, dynamic>{'group': 'mcp'},
+              ),
+            ),
+            PluginContributionDto(
+              pluginId: 'tinest.mcp',
+              id: 'tinest.mcp/list_mcp_resource_templates',
+              kind: PluginContributionKind.tool,
+              tool: AgentToolDefinitionDto(
+                id: 'tinest.mcp/list_mcp_resource_templates',
+                originPluginId: 'tinest.mcp',
+                contributionId: 'list_mcp_resource_templates',
+                name: 'list_mcp_resource_templates',
+                description: 'List MCP resource templates.',
+                risk: ToolRisk.read,
+                group: 'mcp',
+                kind: AgentToolKind.function,
+                inputSchema: <String, dynamic>{'type': 'object'},
+                effects: <String>['mcp.read'],
+                presentation: <String, dynamic>{'group': 'mcp'},
+              ),
+            ),
+            PluginContributionDto(
+              pluginId: 'tinest.mcp',
+              id: 'tinest.mcp/read_mcp_resource',
+              kind: PluginContributionKind.tool,
+              tool: AgentToolDefinitionDto(
+                id: 'tinest.mcp/read_mcp_resource',
+                originPluginId: 'tinest.mcp',
+                contributionId: 'read_mcp_resource',
+                name: 'read_mcp_resource',
+                description: 'Read one MCP resource.',
+                risk: ToolRisk.read,
+                group: 'mcp',
+                kind: AgentToolKind.function,
+                inputSchema: <String, dynamic>{'type': 'object'},
+                effects: <String>['mcp.read'],
+                presentation: <String, dynamic>{'group': 'mcp'},
+              ),
+            ),
+          ],
+        ),
+      ];
 
   static const SkillSummaryDto _builtInSkill = SkillSummaryDto(
     id: 'coding-conventions',
@@ -378,10 +560,70 @@ final class FakeTinestApi
   /// Daemon-global default permission mode.
   PermissionMode get defaultPermissionMode => _defaultPermissionMode;
   final List<AgentDefinitionDto> _agentDefinitions;
+  final List<PluginDescriptorDto> _plugins;
+  final List<AgentPluginGrantDto> _pluginGrants;
+
+  /// Declarative documents keyed by `plugin/contribution/agent`.
+  final Map<String, PluginUiDocumentDto> pluginUiDocuments;
+
+  /// Optional explicit authoring states keyed by plugin ID.
+  final Map<String, PluginAuthoringEnvironmentDto> pluginAuthoringEnvironments;
+
+  /// Session controls keyed by `session/plugin/contribution`.
+  final Map<String, PluginSessionControlValueDto> pluginSessionControls;
+
+  /// Plugin session-control mutations received by the fake transport.
+  final List<
+    ({
+      String sessionId,
+      String pluginId,
+      String contributionId,
+      Object? value,
+    })
+  >
+  pluginSessionControlSets =
+      <
+        ({
+          String sessionId,
+          String pluginId,
+          String contributionId,
+          Object? value,
+        })
+      >[];
+
+  /// Plugin reload calls in transport order.
+  final List<({String pluginId, String agentId})> reloadedPlugins =
+      <({String pluginId, String agentId})>[];
+  final List<(String, String, String)> forkedPlugins =
+      <(String, String, String)>[];
+  final Map<String, String> pluginSecrets = <String, String>{};
+
+  /// Plugin UI actions dispatched through the fake transport.
+  final List<PluginUiActionDto> pluginUiActions = <PluginUiActionDto>[];
+
+  /// Plugin UI render requests received by the fake transport.
+  final List<
+    ({
+      String agentId,
+      String pluginId,
+      String contributionId,
+      PluginUiSlot slot,
+      Map<String, dynamic> context,
+    })
+  >
+  pluginUiRenders =
+      <
+        ({
+          String agentId,
+          String pluginId,
+          String contributionId,
+          PluginUiSlot slot,
+          Map<String, dynamic> context,
+        })
+      >[];
   final List<SkillSummaryDto> _skills;
   final List<SkillSummaryDto> _projectSkills;
   final Map<String, List<TimelineEventDto>> _timelines;
-  final Map<String, GoalDto> _goals;
   final List<ProviderUsageDto> _providerUsage;
   final Map<String, List<ProviderModelDto>> _models;
 
@@ -431,6 +673,9 @@ final class FakeTinestApi
   /// Number of agent definition catalog reads.
   int agentDefinitionsListCount = 0;
 
+  /// Optional gate used to keep an Agent definition update pending.
+  final Future<void>? agentUpdateGate;
+
   /// Optional gate used to keep daemon shell settings in their loading state.
   final Future<void>? terminalShellGate;
 
@@ -473,6 +718,9 @@ final class FakeTinestApi
 
   /// Optional gate used to keep MCP discovery in its loading state.
   final Future<void>? mcpListGate;
+
+  /// Optional gate used to hold plugin catalog loading in widget tests.
+  final Future<void>? pluginListGate;
 
   /// Daemon-side directory tree keyed by parent path.
   final Map<String, List<String>> directories;
@@ -551,13 +799,9 @@ final class FakeTinestApi
   /// Sessions created through the fake, in creation order.
   final List<SessionDto> createdSessions = <SessionDto>[];
 
-  /// Session mode switches written through the fake.
-  final List<({String sessionId, SessionMode mode})> updatedSessionModes =
-      <({String sessionId, SessionMode mode})>[];
-
   /// Session model overrides written through the fake.
-  final List<({String sessionId, ModelSelectionDto model})>
-  updatedSessionModels = <({String sessionId, ModelSelectionDto model})>[];
+  final List<({String sessionId, ModelSelectionDto? model})>
+  updatedSessionModels = <({String sessionId, ModelSelectionDto? model})>[];
 
   /// Session reasoning effort overrides written through the fake.
   final List<({String sessionId, String? reasoningEffort})>
@@ -587,9 +831,6 @@ final class FakeTinestApi
 
   /// Agent identifiers cancelled through the fake.
   final List<String> cancelledAgents = <String>[];
-
-  /// Sessions the client asked to compact, in order.
-  final List<String> compactedSessions = <String>[];
 
   /// Provider credentials written through the fake.
   final Map<String, String> credentials = <String, String>{};
@@ -682,6 +923,17 @@ final class FakeTinestApi
     _events.add(event);
   }
 
+  /// Replaces one descriptor and emits the app-data watcher notification.
+  void emitPluginChange(PluginDescriptorDto plugin) {
+    final index = _plugins.indexWhere((candidate) => candidate.id == plugin.id);
+    if (index < 0) {
+      _plugins.add(plugin);
+    } else {
+      _plugins[index] = plugin;
+    }
+    emit(const PluginsChangedClientEvent());
+  }
+
   /// Appends and broadcasts one timeline event for a session.
   void emitTimeline(
     String sessionId,
@@ -720,6 +972,9 @@ final class FakeTinestApi
 
   @override
   AgentsApi get agents => this;
+
+  @override
+  PluginsApi get plugins => this;
 
   @override
   PromptsApi get prompts => this;
@@ -802,14 +1057,6 @@ final class FakeTinestApi
       .map((event) => event.session);
 
   @override
-  Stream<GoalDto> get goalUpdates =>
-      events.whereType<GoalUpdatedClientEvent>().map((event) => event.goal);
-
-  @override
-  Stream<GoalClearedDto> get goalClears =>
-      events.whereType<GoalClearedClientEvent>().map((event) => event.cleared);
-
-  @override
   Stream<TimelineEventDto> get timelineEvents =>
       events.whereType<TimelineClientEvent>().map((event) => event.event);
 
@@ -826,6 +1073,10 @@ final class FakeTinestApi
   @override
   Stream<void> get definitionChanges =>
       events.whereType<AgentDefinitionsChangedClientEvent>().map((_) {});
+
+  @override
+  Stream<void> get pluginChanges =>
+      events.whereType<PluginsChangedClientEvent>().map((_) {});
 
   @override
   Stream<void> get skillChanges =>
@@ -1105,7 +1356,6 @@ final class FakeTinestApi
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
-    SessionMode mode = SessionMode.normal,
     ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
@@ -1115,16 +1365,6 @@ final class FakeTinestApi
     if (gate != null) await gate.future;
     final error = sessionCreateError;
     if (error != null) throw error;
-    final definition = _agentDefinitions
-        .where((definition) => definition.id == agentDefinitionId)
-        .firstOrNull;
-    final resolvedModel = model ?? definition?.model ?? _defaultModel;
-    if (resolvedModel == null) {
-      throw const TinestClientException(
-        'No runnable model is available.',
-        code: 'model_required',
-      );
-    }
     final agent = SessionDto(
       id: id,
       worktreeId: worktreeId,
@@ -1132,8 +1372,7 @@ final class FakeTinestApi
       agentDefinitionId: agentDefinitionId,
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
-      mode: mode,
-      model: resolvedModel,
+      model: model,
       modelControls: modelControls,
       permissionMode: permissionMode,
       createdAt: _now,
@@ -1153,13 +1392,9 @@ final class FakeTinestApi
     final index = _agents.indexWhere((agent) => agent.id == sessionId);
     if (index < 0) throw StateError('Session not found: $sessionId');
     var updated = _agents[index];
-    if (patch.mode case final mode?) {
-      updatedSessionModes.add((sessionId: sessionId, mode: mode));
-      updated = updated.copyWith(mode: mode);
-    }
-    if (patch.model case final model?) {
-      updatedSessionModels.add((sessionId: sessionId, model: model));
-      updated = updated.copyWith(model: model);
+    if (patch.hasModel) {
+      updatedSessionModels.add((sessionId: sessionId, model: patch.model));
+      updated = updated.copyWith(model: patch.model);
     }
     if (patch.hasModelControls) {
       final controls = patch.modelControls;
@@ -1194,62 +1429,6 @@ final class FakeTinestApi
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));
     return updated;
-  }
-
-  @override
-  Future<GoalDto?> getGoal(String sessionId) async => _goals[sessionId];
-
-  @override
-  Future<GoalDto> replaceGoal({
-    required String sessionId,
-    required String objective,
-    int? tokenBudget,
-  }) async {
-    final goal = GoalDto(
-      sessionId: sessionId,
-      goalId: 'goal-${_goals.length + 1}',
-      objective: objective.trim(),
-      status: GoalStatus.active,
-      tokenBudget: tokenBudget,
-      tokensUsed: 0,
-      timeUsedSeconds: 0,
-      createdAt: _now,
-      updatedAt: _now,
-    );
-    _goals[sessionId] = goal;
-    emit(GoalUpdatedClientEvent(goal));
-    return goal;
-  }
-
-  @override
-  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update) async {
-    final current = _goals[sessionId];
-    if (current == null || current.goalId != update.expectedGoalId) {
-      throw StateError('Goal not found: $sessionId');
-    }
-    final goal = current.copyWith(
-      objective: update.objective ?? current.objective,
-      status: update.status ?? current.status,
-      tokenBudget: update.hasTokenBudget
-          ? update.tokenBudget
-          : current.tokenBudget,
-      updatedAt: _now,
-    );
-    _goals[sessionId] = goal;
-    emit(GoalUpdatedClientEvent(goal));
-    return goal;
-  }
-
-  @override
-  Future<bool> clearGoal(String sessionId) async {
-    final goal = _goals.remove(sessionId);
-    if (goal == null) return false;
-    emit(
-      GoalClearedClientEvent(
-        GoalClearedDto(sessionId: sessionId, goalId: goal.goalId),
-      ),
-    );
-    return true;
   }
 
   @override
@@ -1513,6 +1692,7 @@ final class FakeTinestApi
     required String expectedContentHash,
     bool force = false,
   }) async {
+    await agentUpdateGate;
     if (failNextAgentUpdate && !force) {
       failNextAgentUpdate = false;
       throw Exception('agent_file_conflict');
@@ -1549,51 +1729,291 @@ final class FakeTinestApi
   Future<AgentDefinitionDto> validateAgentDefinition(
     String id,
     String markdown,
-  ) async => _tinest.copyWith(id: id, systemPrompt: markdown);
+  ) async => _tinest.copyWith(id: id, prompt: markdown);
 
   @override
   Future<List<AgentToolDefinitionDto>> listAgentTools({
     String? worktreeId,
   }) async => const <AgentToolDefinitionDto>[
     AgentToolDefinitionDto(
-      id: 'read_file',
+      id: 'tinest.files/read_file',
+      originPluginId: 'tinest.files',
+      contributionId: 'read_file',
       name: 'read_file',
       description: 'Read a file.',
       risk: ToolRisk.read,
-      group: ToolGroup.filesystem,
-      alwaysOn: true,
+      group: 'filesystem',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['filesystem.read'],
+      presentation: <String, dynamic>{'group': 'filesystem'},
     ),
     AgentToolDefinitionDto(
-      id: 'exec_command',
+      id: 'tinest.terminal/exec_command',
+      originPluginId: 'tinest.terminal',
+      contributionId: 'exec_command',
       name: 'exec_command',
       description: 'Run a command in a pseudo-terminal.',
       risk: ToolRisk.command,
-      group: ToolGroup.execution,
+      group: 'execution',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['process.execute'],
+      presentation: <String, dynamic>{'group': 'execution'},
     ),
     // Three of one group, so a test can tell a whole-group toggle from a
     // per-tool one and see the header report a partial selection.
     AgentToolDefinitionDto(
-      id: 'list_mcp_resources',
+      id: 'tinest.mcp/list_mcp_resources',
+      originPluginId: 'tinest.mcp',
+      contributionId: 'list_mcp_resources',
       name: 'list_mcp_resources',
       description: 'List MCP resources.',
       risk: ToolRisk.read,
-      group: ToolGroup.mcp,
+      group: 'mcp',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['mcp.read'],
+      presentation: <String, dynamic>{'group': 'mcp'},
     ),
     AgentToolDefinitionDto(
-      id: 'list_mcp_resource_templates',
+      id: 'tinest.mcp/list_mcp_resource_templates',
+      originPluginId: 'tinest.mcp',
+      contributionId: 'list_mcp_resource_templates',
       name: 'list_mcp_resource_templates',
       description: 'List MCP resource templates.',
       risk: ToolRisk.read,
-      group: ToolGroup.mcp,
+      group: 'mcp',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['mcp.read'],
+      presentation: <String, dynamic>{'group': 'mcp'},
     ),
     AgentToolDefinitionDto(
-      id: 'read_mcp_resource',
+      id: 'tinest.mcp/read_mcp_resource',
+      originPluginId: 'tinest.mcp',
+      contributionId: 'read_mcp_resource',
       name: 'read_mcp_resource',
       description: 'Read one MCP resource.',
       risk: ToolRisk.read,
-      group: ToolGroup.mcp,
+      group: 'mcp',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['mcp.read'],
+      presentation: <String, dynamic>{'group': 'mcp'},
     ),
   ];
+
+  @override
+  Future<List<PluginDescriptorDto>> listPlugins() async {
+    await pluginListGate;
+    return List<PluginDescriptorDto>.unmodifiable(_plugins);
+  }
+
+  @override
+  Future<PluginDescriptorDto> getPlugin(String id) async =>
+      _plugins.singleWhere((plugin) => plugin.id == id);
+
+  @override
+  Future<PluginDescriptorDto> validatePlugin(String id) async => getPlugin(id);
+
+  @override
+  Future<PluginDescriptorDto> reloadPlugin(String id, String agentId) async {
+    reloadedPlugins.add((pluginId: id, agentId: agentId));
+    return getPlugin(id);
+  }
+
+  @override
+  Future<PluginDescriptorDto> scaffoldPlugin(String id, String name) async {
+    if (_plugins.any((plugin) => plugin.id == id)) {
+      throw StateError('Plugin already exists: $id');
+    }
+    final plugin = PluginDescriptorDto(
+      apiMajor: 5,
+      id: id,
+      version: '0.1.0',
+      name: name,
+      entrypoint: 'main.lua',
+      source: PluginSource.user,
+      sourcePath: '/config/v5/plugins/$id',
+      requestedCapabilities: const <String>[],
+      revision: PluginRevisionDto(
+        pluginId: id,
+        contentHash: '$id-revision',
+        manifestHash: '$id-manifest',
+        sdkAbiHash: 'sdk-abi-hash',
+        executionRevisionHash: '$id-execution-revision',
+        requestedCapabilities: const <String>[],
+      ),
+    );
+    _plugins.add(plugin);
+    return plugin;
+  }
+
+  @override
+  Future<PluginDescriptorDto> forkPlugin({
+    required String sourceId,
+    required String id,
+    required String name,
+  }) async {
+    forkedPlugins.add((sourceId, id, name));
+    final source = await getPlugin(sourceId);
+    final plugin = source.copyWith(
+      id: id,
+      name: name,
+      source: PluginSource.user,
+      sourcePath: '/config/v5/plugins/$id',
+      revision: source.revision?.copyWith(pluginId: id),
+      contributions: const <PluginContributionDto>[],
+      diagnostics: const <PluginDiagnosticDto>[],
+      isStale: false,
+    );
+    _plugins.add(plugin);
+    return plugin;
+  }
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> getPluginAuthoringEnvironment(
+    String id,
+  ) async =>
+      pluginAuthoringEnvironments[id] ?? _defaultAuthoringEnvironment(id);
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> syncPluginAuthoringEnvironment(
+    String id,
+  ) async {
+    final environment = _defaultAuthoringEnvironment(id);
+    pluginAuthoringEnvironments[id] = environment;
+    return environment;
+  }
+
+  PluginAuthoringEnvironmentDto _defaultAuthoringEnvironment(String id) {
+    final plugin = _plugins.singleWhere((candidate) => candidate.id == id);
+    final abi = plugin.revision?.sdkAbiHash ?? 'sdk-abi-hash';
+    return PluginAuthoringEnvironmentDto(
+      pluginId: id,
+      apiMajor: plugin.apiMajor,
+      sdkAbiHash: abi,
+      luaRuntimeVersion: '5.5.1',
+      luaLanguageServerVersion: '3.18.2',
+      pluginPath: plugin.sourcePath,
+      sdkLibraryPath: '/config/v5/plugin-sdk/api-5/$abi/library',
+      configurationPath: '${plugin.sourcePath}/.luarc.json',
+      synchronized: true,
+    );
+  }
+
+  @override
+  Future<void> setPluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+    required String value,
+  }) async {
+    pluginSecrets['$agentId/$pluginId/$name'] = value;
+  }
+
+  @override
+  Future<void> removePluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+  }) async {
+    pluginSecrets.remove('$agentId/$pluginId/$name');
+  }
+
+  @override
+  Future<List<AgentPluginGrantDto>> listPluginGrants(String agentId) async =>
+      _pluginGrants
+          .where((grant) => grant.agentId == agentId)
+          .toList(growable: false);
+
+  @override
+  Future<List<AgentPluginGrantDto>> grantPluginCapability(
+    AgentPluginGrantDto grant,
+  ) async {
+    if (!_pluginGrants.contains(grant)) _pluginGrants.add(grant);
+    return listPluginGrants(grant.agentId);
+  }
+
+  @override
+  Future<List<AgentPluginGrantDto>> revokePluginCapability(
+    AgentPluginGrantDto grant,
+  ) async {
+    _pluginGrants.remove(grant);
+    return listPluginGrants(grant.agentId);
+  }
+
+  @override
+  Future<PluginSessionControlValueDto> getPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+  }) async {
+    final key = '$sessionId/$pluginId/$contributionId';
+    return pluginSessionControls[key] ??
+        (throw StateError('Plugin session control is not configured: $key'));
+  }
+
+  @override
+  Future<PluginSessionControlValueDto> setPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+    required Object? value,
+  }) async {
+    pluginSessionControlSets.add((
+      sessionId: sessionId,
+      pluginId: pluginId,
+      contributionId: contributionId,
+      value: value,
+    ));
+    final key = '$sessionId/$pluginId/$contributionId';
+    final current = await getPluginSessionControl(
+      sessionId: sessionId,
+      pluginId: pluginId,
+      contributionId: contributionId,
+    );
+    final updated = current.copyWith(value: value, isDefault: false);
+    pluginSessionControls[key] = updated;
+    return updated;
+  }
+
+  @override
+  Future<PluginUiDocumentDto> renderPluginUi({
+    required String agentId,
+    required String pluginId,
+    required String contributionId,
+    required PluginUiSlot slot,
+    Object? input,
+    Map<String, dynamic> context = const <String, dynamic>{},
+  }) async {
+    pluginUiRenders.add((
+      agentId: agentId,
+      pluginId: pluginId,
+      contributionId: contributionId,
+      slot: slot,
+      context: Map<String, dynamic>.unmodifiable(context),
+    ));
+    final key = '$pluginId/$contributionId/$agentId';
+    final document = pluginUiDocuments[key];
+    if (document == null) {
+      throw StateError('Plugin UI is not configured: $key');
+    }
+    return document;
+  }
+
+  @override
+  Future<PluginUiDocumentDto> dispatchPluginUiAction({
+    required String agentId,
+    required String pluginId,
+    required PluginUiActionDto action,
+  }) async {
+    pluginUiActions.add(action);
+    return pluginUiDocuments.values.singleWhere(
+      (document) => document.id == action.documentId,
+    );
+  }
 
   /// MCP servers this fake daemon reports, keyed by id.
   final Map<String, McpServerStateDto> mcpServers =
@@ -2079,11 +2499,6 @@ final class FakeTinestApi
   @override
   Future<void> cancelTurn(String sessionId) async {
     cancelledAgents.add(sessionId);
-  }
-
-  @override
-  Future<void> compactSession(String sessionId) async {
-    compactedSessions.add(sessionId);
   }
 
   @override

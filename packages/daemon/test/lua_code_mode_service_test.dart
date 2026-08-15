@@ -35,20 +35,227 @@ void main() {
 
   tearDown(() => service.close());
 
-  test('development discovery walks up from a package directory', () {
-    final command = discoverLuaHostCommand(
-      sourceRoot: '${Directory.current.path}/test',
+  test('development discovery stages the pinned native Lua host', () async {
+    final workspace = Directory.systemTemp.createTempSync(
+      'tinest-lua-discovery-',
+    );
+    addTearDown(() => workspace.deleteSync(recursive: true));
+    File(
+        p.join(workspace.path, '.dart_tool', 'package_config.json'),
+      )
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+        jsonEncode(<String, Object?>{
+          'configVersion': 2,
+          'packages': <Map<String, Object?>>[
+            <String, Object?>{
+              'name': 'lua_tool_runtime',
+              'rootUri': '../runtime/',
+              'packageUri': 'lib/',
+              'languageVersion': '3.12',
+            },
+          ],
+        }),
+      );
+    File(
+      p.join(workspace.path, 'runtime', 'native', 'bootstrap.lua'),
+    ).createSync(recursive: true);
+    final staging = _LuaHostStager();
+    final command = await resolveLuaHostCommand(
+      sourceRoot: p.join(workspace.path, 'test'),
+      stager: staging,
+    );
+    final cached = await resolveLuaHostCommand(
+      sourceRoot: workspace.path,
+      stager: staging,
     );
 
+    expect(staging.calls, 1);
+    expect(cached.executable, command.executable);
+    expect(
+      command.executable,
+      endsWith(
+        Platform.isWindows
+            ? 'lua-tool-runtime-host.exe'
+            : 'lua-tool-runtime-host',
+      ),
+    );
     expect(
       command.arguments.single,
       endsWith(
-        <String>['native', 'bootstrap.lua'].join(Platform.pathSeparator),
+        <String>['lua_tool_runtime', 'bootstrap.lua'].join(
+          Platform.pathSeparator,
+        ),
       ),
     );
+    expect(command.executable, isNot(anyOf('lua', 'lua.exe')));
   });
 
-  test('macOS discovery reads bootstrap from app resources', () {
+  test('packaged host is returned without scanning or staging', () async {
+    final bundle = Directory.systemTemp.createTempSync(
+      'tinest-lua-packaged-',
+    );
+    addTearDown(() => bundle.deleteSync(recursive: true));
+    final executableDirectory = Directory(p.join(bundle.path, 'bin'))
+      ..createSync(recursive: true);
+    final distribution = _writeDistribution(executableDirectory.path);
+    final stager = _LuaHostStager();
+
+    final command = await resolveLuaHostCommand(
+      sourceRoot: p.join(bundle.path, 'missing-source-root'),
+      resolvedExecutable: p.join(executableDirectory.path, 'tinest'),
+      stager: stager,
+    );
+
+    expect(command.executable, distribution.hostPath);
+    expect(command.arguments, <String>[distribution.bootstrapPath]);
+    expect(stager.calls, 0);
+  });
+
+  test('concurrent development discovery stages one distribution', () async {
+    final workspace = _developmentWorkspace('tinest-lua-concurrent-');
+    addTearDown(() => workspace.deleteSync(recursive: true));
+    final staging = _BlockingLuaHostStager();
+
+    final first = resolveLuaHostCommand(
+      sourceRoot: workspace.path,
+      stager: staging,
+    );
+    await staging.started.future;
+    final second = resolveLuaHostCommand(
+      sourceRoot: p.join(workspace.path, 'nested'),
+      stager: staging,
+    );
+    await pumpEventQueue();
+
+    expect(staging.calls, 1);
+    staging.release.complete();
+    final commands = await Future.wait(<Future<lua.LuaHostCommand>>[
+      first,
+      second,
+    ]).timeout(const Duration(seconds: 5));
+
+    expect(staging.calls, 1);
+    expect(commands[1].executable, commands[0].executable);
+    expect(commands[1].arguments, commands[0].arguments);
+  });
+
+  test('development build uses a fresh short system-temp directory', () async {
+    final workspace = _developmentWorkspace('tinest-lua-short-build-');
+    addTearDown(() => workspace.deleteSync(recursive: true));
+    final staging = _LuaHostStager();
+
+    await resolveLuaHostCommand(
+      sourceRoot: workspace.path,
+      stager: staging,
+    );
+
+    final buildDirectory = staging.buildDirectories.single;
+    expect(
+      p.equals(p.dirname(buildDirectory), Directory.systemTemp.absolute.path),
+      isTrue,
+    );
+    expect(p.basename(buildDirectory), startsWith('tinest-lua-'));
+    expect(p.basename(buildDirectory).length, lessThanOrEqualTo(48));
+    expect(p.isWithin(workspace.path, buildDirectory), isFalse);
+    expect(Directory(buildDirectory).existsSync(), isFalse);
+  });
+
+  test(
+    'failed staging leaves no partial cache and a fresh retry succeeds',
+    () async {
+      final workspace = _developmentWorkspace('tinest-lua-retry-');
+      addTearDown(() => workspace.deleteSync(recursive: true));
+      final staging = _FailOnceLuaHostStager();
+
+      await expectLater(
+        resolveLuaHostCommand(
+          sourceRoot: workspace.path,
+          stager: staging,
+        ),
+        throwsStateError,
+      );
+
+      expect(staging.calls, 1);
+      final failedDestination = staging.destinations.single;
+      final cacheRoot = p.join(
+        p.dirname(failedDestination),
+        Platform.operatingSystem,
+      );
+      expect(Directory(failedDestination).existsSync(), isFalse);
+      expect(Directory(cacheRoot).existsSync(), isFalse);
+      final command = await resolveLuaHostCommand(
+        sourceRoot: workspace.path,
+        stager: staging,
+      );
+
+      expect(staging.calls, 2);
+      expect(staging.destinations[1], isNot(staging.destinations[0]));
+      expect(File(command.executable).existsSync(), isTrue);
+      expect(File(command.arguments.single).existsSync(), isTrue);
+      expect(p.isWithin(cacheRoot, command.executable), isTrue);
+    },
+  );
+
+  test(
+    'Windows CMake locator discovers Visual Studio through vswhere',
+    () async {
+      final programFiles = Directory.systemTemp.createTempSync(
+        'tinest-cmake-locator-',
+      );
+      addTearDown(() => programFiles.deleteSync(recursive: true));
+      final vswhere = File(
+        p.join(
+          programFiles.path,
+          'Microsoft Visual Studio',
+          'Installer',
+          'vswhere.exe',
+        ),
+      )..createSync(recursive: true);
+      final calls = <({String executable, List<String> arguments})>[];
+      final expected = p.join(
+        programFiles.path,
+        'Microsoft Visual Studio',
+        '2022',
+        'BuildTools',
+        'Common7',
+        'IDE',
+        'CommonExtensions',
+        'Microsoft',
+        'CMake',
+        'CMake',
+        'bin',
+        'cmake.exe',
+      );
+
+      final resolved = await resolveLuaHostCmakeExecutable(
+        isWindows: true,
+        environment: <String, String>{'ProgramFiles(x86)': programFiles.path},
+        processRunner: (executable, arguments) async {
+          calls.add((executable: executable, arguments: arguments));
+          if (executable == 'where.exe') {
+            return ProcessResult(1, 1, '', 'not found');
+          }
+          return ProcessResult(2, 0, '$expected\r\n', '');
+        },
+      );
+
+      expect(resolved, expected);
+      expect(calls, hasLength(2));
+      expect(calls[1].executable, vswhere.path);
+      expect(
+        calls[1].arguments,
+        containsAllInOrder(<String>[
+          '-requires',
+          'Microsoft.VisualStudio.Component.VC.CMake.Project',
+          '-find',
+          r'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe',
+        ]),
+      );
+    },
+  );
+
+  test('macOS discovery reads bootstrap from app resources', () async {
     final bundle = Directory.systemTemp.createTempSync('tinest-lua-bundle-');
     addTearDown(() => bundle.deleteSync(recursive: true));
     final executableDirectory = Directory(
@@ -73,7 +280,7 @@ void main() {
       ),
     )..createSync(recursive: true);
 
-    final command = discoverLuaHostCommand(
+    final command = await resolveLuaHostCommand(
       sourceRoot: bundle.path,
       resolvedExecutable: p.join(executableDirectory.path, 'Tinest'),
       isMacOS: true,
@@ -240,6 +447,56 @@ void main() {
     }
   });
 
+  test('a yielded cell keeps its original nested tool surface', () async {
+    final original = _Invoker();
+    final replacement = _Invoker();
+    final execute = service.execute(
+      owner: 'session-1',
+      workingDirectory: '/workspace',
+      request: const LuaExecuteRequest(
+        source: 'yield_control(); text(tools.echo({value="after"}))',
+        yieldTime: Duration(seconds: 1),
+        maxOutputTokens: 1000,
+        tools: <LuaNestedToolDefinition>[],
+      ),
+      context: _context(original),
+    );
+    await pumpEventQueue();
+    final cellId = pipes.process.writtenFrame(0)['cell_id']! as String;
+    pipes.process.emitFrame(cellId, 1, 'yielded', const <String, dynamic>{
+      'store': <String, dynamic>{},
+    });
+    expect((await execute).running, isTrue);
+
+    final resumed = service.wait(
+      owner: 'session-1',
+      request: LuaWaitRequest(
+        cellId: cellId,
+        yieldTime: const Duration(seconds: 1),
+        maxOutputTokens: 1000,
+        terminate: false,
+      ),
+      context: _context(replacement),
+    );
+    await pumpEventQueue();
+    pipes.process.emitFrame(cellId, 2, 'tool_batch', <String, dynamic>{
+      'calls': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'request_id': '2:1',
+          'name': 'echo',
+          'arguments': <String, dynamic>{'value': 'after'},
+        },
+      ],
+    });
+    await pumpEventQueue();
+    expect(original.calls, <String>['echo:after']);
+    expect(replacement.calls, isEmpty);
+    pipes.process.emitFrame(cellId, 3, 'completed', const <String, dynamic>{
+      'store': <String, dynamic>{},
+    });
+    await resumed;
+  });
+
   test('forwards Tinest cancellation to the shared runtime process', () async {
     final cancellation = CancellationToken();
     final execute = service.execute(
@@ -251,11 +508,9 @@ void main() {
         maxOutputTokens: 1000,
         tools: <LuaNestedToolDefinition>[],
       ),
-      context: ToolExecutionContext(
-        workspaceRoot: '/workspace',
+      context: LuaCodeModeContext(
         cancellation: cancellation,
-        callId: 'exec-parent',
-        nestedTools: _Invoker(),
+        tools: _Invoker(),
       ),
     );
     await pumpEventQueue();
@@ -320,41 +575,137 @@ void main() {
   );
 }
 
-ToolExecutionContext _context(NestedToolInvoker invoker) =>
-    ToolExecutionContext(
-      workspaceRoot: '/workspace',
-      cancellation: CancellationToken(),
-      callId: 'exec-parent',
-      nestedTools: invoker,
-    );
+LuaCodeModeContext _context(LuaNestedToolInvoker invoker) => LuaCodeModeContext(
+  cancellation: CancellationToken(),
+  tools: invoker,
+);
 
-final class _Invoker implements NestedToolInvoker {
+final class _Invoker implements LuaNestedToolInvoker {
   final List<String> calls = <String>[];
 
   @override
-  Future<ToolResult> invoke(
+  Future<LuaNestedToolResult> invoke(
     String name,
     Map<String, dynamic> arguments,
   ) async {
     calls.add('$name:${arguments['value']}');
-    return ToolResult(value: 'echoed ${arguments['value']}');
+    return LuaNestedToolResult(value: 'echoed ${arguments['value']}');
   }
 }
 
-final class _AttachmentInvoker implements NestedToolInvoker {
+final class _AttachmentInvoker implements LuaNestedToolInvoker {
   const _AttachmentInvoker(this.attachment);
 
   final ConversationAttachment attachment;
 
   @override
-  Future<ToolResult> invoke(
+  Future<LuaNestedToolResult> invoke(
     String name,
     Map<String, dynamic> arguments,
-  ) async => ToolResult(
+  ) async => LuaNestedToolResult(
     value: 'image',
     attachments: <ConversationAttachment>[attachment],
   );
 }
+
+final class _LuaHostStager implements LuaHostDistributionStager {
+  int calls = 0;
+  final List<String> destinations = <String>[];
+  final List<String> buildDirectories = <String>[];
+
+  @override
+  Future<lua.LuaHostDistribution> stage({
+    required String destination,
+    required String packageRoot,
+    required String buildDirectory,
+  }) async {
+    calls += 1;
+    destinations.add(destination);
+    buildDirectories.add(buildDirectory);
+    expect(Directory(buildDirectory).existsSync(), isTrue);
+    return _writeDistribution(destination);
+  }
+}
+
+final class _BlockingLuaHostStager implements LuaHostDistributionStager {
+  int calls = 0;
+  final Completer<void> started = Completer<void>();
+  final Completer<void> release = Completer<void>();
+
+  @override
+  Future<lua.LuaHostDistribution> stage({
+    required String destination,
+    required String packageRoot,
+    required String buildDirectory,
+  }) async {
+    calls += 1;
+    if (!started.isCompleted) started.complete();
+    await release.future;
+    return _writeDistribution(destination);
+  }
+}
+
+final class _FailOnceLuaHostStager implements LuaHostDistributionStager {
+  int calls = 0;
+  final List<String> destinations = <String>[];
+
+  @override
+  Future<lua.LuaHostDistribution> stage({
+    required String destination,
+    required String packageRoot,
+    required String buildDirectory,
+  }) async {
+    calls += 1;
+    destinations.add(destination);
+    if (calls == 1) {
+      File(p.join(destination, _hostExecutableName))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('partial');
+      throw StateError('staging failed');
+    }
+    return _writeDistribution(destination);
+  }
+}
+
+Directory _developmentWorkspace(String prefix) {
+  final workspace = Directory.systemTemp.createTempSync(prefix);
+  File(
+      p.join(workspace.path, '.dart_tool', 'package_config.json'),
+    )
+    ..createSync(recursive: true)
+    ..writeAsStringSync(
+      jsonEncode(<String, Object?>{
+        'configVersion': 2,
+        'packages': <Map<String, Object?>>[
+          <String, Object?>{
+            'name': 'lua_tool_runtime',
+            'rootUri': '../runtime/',
+            'packageUri': 'lib/',
+            'languageVersion': '3.12',
+          },
+        ],
+      }),
+    );
+  File(
+    p.join(workspace.path, 'runtime', 'native', 'bootstrap.lua'),
+  ).createSync(recursive: true);
+  return workspace;
+}
+
+lua.LuaHostDistribution _writeDistribution(String destination) {
+  final host = File(p.join(destination, _hostExecutableName))
+    ..createSync(recursive: true);
+  final bootstrap = File(
+    p.join(destination, 'lua_tool_runtime', 'bootstrap.lua'),
+  )..createSync(recursive: true);
+  return lua.LuaHostDistribution(
+    hostPath: host.path,
+    bootstrapPath: bootstrap.path,
+  );
+}
+
+String get _hostExecutableName =>
+    Platform.isWindows ? 'lua-tool-runtime-host.exe' : 'lua-tool-runtime-host';
 
 final class _Ids implements lua.LuaIdGenerator {
   int value = 0;

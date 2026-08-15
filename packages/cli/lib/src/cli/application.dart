@@ -4,9 +4,11 @@ import 'package:cli/src/cli/agent.dart';
 import 'package:cli/src/cli/autocomplete.dart';
 import 'package:cli/src/cli/context.dart';
 import 'package:cli/src/cli/daemon.dart';
+import 'package:cli/src/cli/plugin.dart';
 import 'package:cli/src/cli/provider.dart';
 import 'package:cli/src/cli/shared_flags.dart';
 import 'package:cli/src/daemon_host.dart';
+import 'package:cli/src/plugin_cli.dart';
 import 'package:cli/src/version.g.dart';
 import 'package:client/client.dart';
 import 'package:client/local_daemon.dart';
@@ -93,6 +95,7 @@ RouteMap<TinestCliContext> buildRootRoutes() => buildRouteMap(
     'daemon': buildDaemonRoutes(),
     'provider': buildProviderRoutes(),
     'agent': buildAgentRoutes(),
+    'plugin': buildPluginRoutes(),
     'completion': buildCompletionRoutes(),
     '__complete': completeCommand,
   },
@@ -135,6 +138,7 @@ Future<int> runCli(
   LocalDaemonDirectories? directories,
   DaemonStarter? startDaemon,
   Future<void> Function()? shutdownSignal,
+  PluginExternalProcessRunner? runPluginProcess,
 }) async {
   final stdoutStream = stdout ?? StdioWriteStream(io.stdout);
   final stderrStream = stderr ?? StdioWriteStream(io.stderr);
@@ -153,6 +157,7 @@ Future<int> runCli(
     environment: resolvedEnvironment,
     startDaemon: startDaemon ?? DaemonApplication.start,
     shutdownSignal: shutdownSignal ?? processShutdownSignal,
+    runPluginProcess: runPluginProcess ?? _runPluginProcess,
     directories:
         directories ??
         resolveLocalDaemonDirectories(
@@ -177,7 +182,7 @@ Future<TinestClient> _connectTinestClient({
         scheme: 'ws',
         host: host,
         port: port,
-        path: '/v4/ws',
+        path: '/v5/ws',
       ),
     ),
     credentials: DaemonCredentials(bearerToken: bearerToken),
@@ -187,6 +192,18 @@ Future<TinestClient> _connectTinestClient({
 }
 
 Future<String> _readFile(String path) => io.File(path).readAsString();
+
+Future<PluginExternalProcessResult> _runPluginProcess(
+  String executable,
+  List<String> arguments,
+) async {
+  final result = await io.Process.run(executable, arguments);
+  return PluginExternalProcessResult(
+    exitCode: result.exitCode,
+    stdout: '${result.stdout}',
+    stderr: '${result.stderr}',
+  );
+}
 
 Future<String> _promptForSecret() async {
   io.stdout.write('API key: ');

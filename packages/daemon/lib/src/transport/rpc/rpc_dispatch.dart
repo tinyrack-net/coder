@@ -1,6 +1,6 @@
 import 'package:protocol/protocol.dart';
 
-/// Feature ownership for every authenticated v4 RPC procedure.
+/// Feature ownership for every authenticated v5 RPC procedure.
 final Map<String, List<RpcProcedureDescriptor>> daemonRpcProcedureGroups =
     <String, List<RpcProcedureDescriptor>>{
       'workspaces': workspacesProcedures,
@@ -10,6 +10,7 @@ final Map<String, List<RpcProcedureDescriptor>> daemonRpcProcedureGroups =
       'providers': providersProcedures,
       'relay': relayProcedures,
       'mcp': mcpProcedures,
+      'plugins': pluginsProcedures,
       'sessions': sessionsProcedures,
       'terminals': terminalsProcedures,
     };

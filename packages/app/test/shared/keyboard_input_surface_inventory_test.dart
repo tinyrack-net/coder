@@ -24,8 +24,6 @@ void main() {
             'SettingsScaffold(',
         'lib/src/features/conversation/presentation/chat_question_card.dart':
             'ChatQuestionCard',
-        'lib/src/features/conversation/presentation/goal_status_bar.dart':
-            'showTRDialog<',
         'lib/src/features/conversation/presentation/widgets/session_composer.dart':
             'SessionComposer',
         'lib/src/features/hosts/presentation/pages/host_settings_page.dart':
@@ -34,6 +32,10 @@ void main() {
             'SettingsScaffold(',
         'lib/src/features/mcp/presentation/pages/mcp_settings_page.dart':
             'showTRDialog<',
+        'lib/src/features/plugins/presentation/pages/plugin_settings_page.dart':
+            'SettingsScaffold(',
+        'lib/src/features/plugins/presentation/plugin_ui_document_view.dart':
+            'PluginUiDocumentView',
         'lib/src/features/providers/presentation/pages/provider_settings_page.dart':
             'SettingsScaffold(',
         'lib/src/features/workspace/presentation/pages/project_settings_page.dart':

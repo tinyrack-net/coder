@@ -20,6 +20,7 @@ final class ScriptedMcpServer {
     List<List<Map<String, dynamic>>>? toolPages,
     this.callResult,
     this.callError,
+    this.answerToolCalls = true,
     this.answerPing = true,
     this.answerToolsList = true,
   }) : toolPages =
@@ -77,6 +78,9 @@ final class ScriptedMcpServer {
 
   /// The JSON-RPC error returned instead of [callResult].
   Map<String, dynamic>? callError;
+
+  /// Whether `tools/call` requests get an answer.
+  bool answerToolCalls;
 
   /// Whether inbound `ping` requests get an answer.
   bool answerPing;
@@ -175,6 +179,7 @@ final class ScriptedMcpServer {
               },
         );
       case McpMethod.toolsCall:
+        if (!answerToolCalls) return;
         if (callError != null) {
           _transport.deliver(<String, dynamic>{
             'jsonrpc': '2.0',

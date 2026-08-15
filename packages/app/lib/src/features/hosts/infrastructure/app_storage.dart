@@ -16,8 +16,6 @@ final class SharedPreferencesAppStore
   /// Single versioned document key; legacy singleton keys are not read.
   static const String documentKey =
       '${AppIdentity.storagePrefix}.app_document_v5';
-  static const String _legacyDocumentKey =
-      '${AppIdentity.storagePrefix}.app_document_v4';
 
   final SharedPreferences _preferences;
   Future<void> _writes = Future<void>.value();
@@ -80,12 +78,6 @@ final class SharedPreferencesAppStore
   Future<_AppDocument> _read() async {
     final source = _preferences.getString(documentKey);
     if (source == null) {
-      if (_preferences.containsKey(_legacyDocumentKey)) {
-        throw const FormatException(
-          'incompatible_settings: remove the app_document_v4 preference '
-          'to reset development data.',
-        );
-      }
       return const _AppDocument();
     }
     final decoded = jsonDecode(source);

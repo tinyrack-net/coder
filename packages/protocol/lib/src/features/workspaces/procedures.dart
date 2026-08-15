@@ -2,7 +2,7 @@ import 'package:protocol/src/common/rpc_values.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesCatalogProcedure =
     RpcProcedure<EmptyParamsDto, WorkspaceCatalogResultDto>(
       name: 'workspaces.catalog',
@@ -12,7 +12,7 @@ final workspacesCatalogProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesRegisterProcedure =
     RpcProcedure<WorkspaceRegisterParamsDto, WorkspaceRegisterResultDto>(
       name: 'workspaces.register',
@@ -22,7 +22,7 @@ final workspacesRegisterProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesRefreshProcedure =
     RpcProcedure<WorkspaceIdParamsDto, WorkspaceCatalogResultDto>(
       name: 'workspaces.refresh',
@@ -32,7 +32,7 @@ final workspacesRefreshProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesUnregisterProcedure =
     RpcProcedure<WorkspaceIdParamsDto, WorkspaceUnregisterResultDto>(
       name: 'workspaces.unregister',
@@ -42,7 +42,7 @@ final workspacesUnregisterProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesSuggestDirectoriesProcedure =
     RpcProcedure<DirectorySuggestParamsDto, DirectorySuggestResultDto>(
       name: 'workspaces.suggestDirectories',
@@ -52,7 +52,7 @@ final workspacesSuggestDirectoriesProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesSearchFilesProcedure =
     RpcProcedure<FileSearchParamsDto, FileSearchResultDto>(
       name: 'workspaces.searchFiles',
@@ -62,7 +62,7 @@ final workspacesSearchFilesProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesListBranchesProcedure =
     RpcProcedure<GitBranchesListParamsDto, GitBranchesListResultDto>(
       name: 'workspaces.listBranches',
@@ -72,7 +72,7 @@ final workspacesListBranchesProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesCreateWorktreeProcedure =
     RpcProcedure<WorktreeCreateParamsDto, WorktreeResultDto>(
       name: 'workspaces.createWorktree',
@@ -82,7 +82,7 @@ final workspacesCreateWorktreeProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesPreviewArchiveProcedure =
     RpcProcedure<WorktreeIdParamsDto, WorktreeArchivePreviewResultDto>(
       name: 'workspaces.previewArchive',
@@ -92,7 +92,7 @@ final workspacesPreviewArchiveProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesArchiveWorktreeProcedure =
     RpcProcedure<WorktreeArchiveParamsDto, WorktreeResultDto>(
       name: 'workspaces.archiveWorktree',
@@ -102,7 +102,7 @@ final workspacesArchiveWorktreeProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesGetProjectSettingsProcedure =
     RpcProcedure<ProjectSettingsGetParamsDto, ProjectSettingsResultDto>(
       name: 'workspaces.getProjectSettings',
@@ -112,7 +112,7 @@ final workspacesGetProjectSettingsProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final workspacesSaveProjectSettingsProcedure =
     RpcProcedure<ProjectSettingsSaveParamsDto, ProjectSettingsResultDto>(
       name: 'workspaces.saveProjectSettings',

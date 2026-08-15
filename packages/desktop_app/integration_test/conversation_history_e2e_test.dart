@@ -22,6 +22,8 @@ import 'support/real_daemon_fixture.dart';
 const int _deltasPerAnswer = 60;
 const int _turns = 5;
 const double _geometryTolerance = 0.01;
+const String _historyModelId = 'openai/gpt-5.6-sol';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,7 +39,7 @@ void main() {
       final fixture = await RealDaemonFixture.start(
         id: 'conversation-history',
         provider: _HistoryProvider(),
-        modelDiscovery: const _HistoryModelDiscovery(),
+        providerCatalogMetadataSource: const _HistoryCatalogMetadataSource(),
       );
       addTearDown(fixture.dispose);
       final client = await fixture.connect(clientId: 'history-setup');
@@ -52,21 +54,14 @@ void main() {
       );
       final registeredWorktree =
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
-      final connection = await client.providers.createCustomProvider(
-        'history',
-        const CustomProviderConfigDto(
-          name: 'History provider',
-          baseUrl: 'http://127.0.0.1:1/v1',
-          wireFormatId: 'openai-chat-completions',
-          authenticationRequired: false,
-          models: <ManualProviderModelDto>[
-            ManualProviderModelDto(id: 'test-model', label: 'Test model'),
-          ],
-        ),
-      );
-      final model = (await client.providers.listProviderModels(
-        connection.id,
-      )).singleWhere((candidate) => candidate.providerModelId == 'test-model');
+      // The default Agent includes function, freeform, and deferred tools.
+      // Manual custom-provider models advertise function tools only, so use a
+      // deterministic full-surface bundled model with the injected gateway.
+      final model = (await client.providers.listProviderModels('openai'))
+          .singleWhere((candidate) => candidate.id == _historyModelId);
+      expect(model.capabilities.streaming, CapabilitySupport.supported);
+      expect(model.capabilities.functionTools, CapabilitySupport.supported);
+      expect(model.capabilities.freeformTools, CapabilitySupport.supported);
 
       // A conversation the reader is coming back to, not one they are starting:
       // the history exists before the app is ever mounted.
@@ -185,9 +180,18 @@ Finder _newest() => find.textContaining('질문 5 응답 59', findRichText: true
 Finder _oldest() => find.textContaining('질문 1 응답 0', findRichText: true);
 
 Future<void> _awaitIdle(TinestApi client, String sessionId) => awaitCondition(
-  () async => (await client.sessions.listSessions())
-      .where((session) => session.id == sessionId)
-      .any((session) => session.status == SessionStatus.idle),
+  () async {
+    final session = (await client.sessions.listSessions()).singleWhere(
+      (candidate) => candidate.id == sessionId,
+    );
+    if (session.status == SessionStatus.failed) {
+      throw TestFailure(
+        'Session $sessionId failed before becoming idle: '
+        '${session.lastError ?? 'unknown error'}.',
+      );
+    }
+    return session.status == SessionStatus.idle;
+  },
   'session $sessionId to finish its turn',
   budget: e2eTurnBudget,
 );
@@ -309,18 +313,37 @@ Future<void> _openSession(
   );
 }
 
-final class _HistoryModelDiscovery implements ProviderModelDiscovery {
-  const _HistoryModelDiscovery();
+final class _HistoryCatalogMetadataSource
+    implements ProviderCatalogMetadataSource {
+  const _HistoryCatalogMetadataSource();
 
   @override
-  Future<List<String>> fetchModelIds(
-    ProviderEndpoint endpoint,
-    ProviderCredential? credential,
-  ) async => const <String>['test-model'];
+  Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
+    Set<String> providerIds,
+  ) async => <String, List<ProviderCatalogMetadata>>{
+    if (providerIds.contains('openai'))
+      'openai': const <ProviderCatalogMetadata>[
+        ProviderCatalogMetadata(
+          id: 'gpt-5.6-sol',
+          label: 'History model',
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.supported,
+            toolCalling: CapabilitySupport.supported,
+            functionTools: CapabilitySupport.supported,
+            freeformTools: CapabilitySupport.supported,
+            deferredTools: CapabilitySupport.supported,
+            source: CapabilitySource.refreshed,
+          ),
+        ),
+      ],
+  };
+
+  @override
+  Future<void> close() async {}
 }
 
 /// Answers every prompt with enough deltas to outgrow a single page.
-final class _HistoryProvider implements ModelProvider {
+final class _HistoryProvider implements ModelGateway {
   @override
   String get id => 'conversation-history';
 

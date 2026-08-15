@@ -9,17 +9,9 @@ AgentToolRisk agentRisk(ToolRisk value) =>
 ToolRisk protocolRisk(AgentToolRisk value) =>
     ToolRisk.values.byName(value.name);
 
-/// Converts an agent tool group to the protocol contract.
-ToolGroup protocolToolGroup(AgentToolGroup value) =>
-    ToolGroup.values.byName(value.name);
-
 /// Converts protocol permissions to the agent domain.
 AgentPermissionMode agentPermission(PermissionMode value) =>
     AgentPermissionMode.values.byName(value.name);
-
-/// Converts protocol session mode to the agent domain.
-AgentSessionMode agentSessionMode(SessionMode value) =>
-    AgentSessionMode.values.byName(value.name);
 
 /// Converts agent runtime status to the protocol contract.
 SessionStatus protocolSessionStatus(AgentSessionStatus value) =>
@@ -46,9 +38,18 @@ AgentModelCapabilities agentCapabilities(ModelCapabilitiesDto value) =>
     AgentModelCapabilities(
       streaming: AgentCapabilitySupport.values.byName(value.streaming.name),
       toolCalling: AgentCapabilitySupport.values.byName(value.toolCalling.name),
+      functionTools: AgentCapabilitySupport.values.byName(
+        value.functionTools.name,
+      ),
+      freeformTools: AgentCapabilitySupport.values.byName(
+        value.freeformTools.name,
+      ),
+      deferredTools: AgentCapabilitySupport.values.byName(
+        value.deferredTools.name,
+      ),
       imageInput: AgentCapabilitySupport.values.byName(value.imageInput.name),
       fileInput: AgentCapabilitySupport.values.byName(value.fileInput.name),
-      toolSurface: AgentToolSurfaceMode.values.byName(value.toolSurface.name),
+      roles: value.roles,
       controls: value.controls.map(agentControlDescriptor).toList(),
       source: AgentCapabilitySource.values.byName(value.source.name),
     );
@@ -58,9 +59,12 @@ ModelCapabilitiesDto protocolCapabilities(AgentModelCapabilities value) =>
     ModelCapabilitiesDto(
       streaming: CapabilitySupport.values.byName(value.streaming.name),
       toolCalling: CapabilitySupport.values.byName(value.toolCalling.name),
+      functionTools: CapabilitySupport.values.byName(value.functionTools.name),
+      freeformTools: CapabilitySupport.values.byName(value.freeformTools.name),
+      deferredTools: CapabilitySupport.values.byName(value.deferredTools.name),
       imageInput: CapabilitySupport.values.byName(value.imageInput.name),
       fileInput: CapabilitySupport.values.byName(value.fileInput.name),
-      toolSurface: ModelToolSurface.values.byName(value.toolSurface.name),
+      roles: value.roles,
       controls: value.controls.map(protocolControlDescriptor).toList(),
       source: CapabilitySource.values.byName(value.source.name),
     );
@@ -188,15 +192,3 @@ ProviderDefinitionDto protocolProviderDefinition(
   experimental: value.experimental,
   documentationUrl: value.documentationUrl,
 );
-
-/// Converts tool metadata to the protocol contract.
-AgentToolDefinitionDto protocolToolDefinition(AgentToolDefinition value) =>
-    AgentToolDefinitionDto(
-      id: value.id,
-      name: value.name,
-      description: value.description,
-      risk: protocolRisk(value.risk),
-      group: protocolToolGroup(value.group),
-      available: value.available,
-      alwaysOn: value.alwaysOn,
-    );

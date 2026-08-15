@@ -7,6 +7,66 @@ import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'Messages preserves ordered system and conversational role blocks',
+    () async {
+      final adapter = _RecordingAdapter('''
+event: message_start
+data: {"type":"message_start","message":{"usage":{}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+
+''');
+      await AnthropicMessagesProvider(
+            const AnthropicProviderConfig(apiKey: 'secret'),
+            dio: Dio()..httpClientAdapter = adapter,
+          )
+          .stream(
+            const ModelRequest(
+              model: 'claude-sonnet-5',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'system', content: 'system-1'),
+                ModelRoleBlock(role: 'developer', content: 'developer-1'),
+                ModelRoleBlock(role: 'user', content: 'user-1'),
+                ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
+              ],
+              history: <ConversationItem>[],
+              tools: <ModelToolDefinition>[],
+              safetyIdentifier: 'safe',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(
+        body['system'],
+        <Map<String, dynamic>>[
+          <String, dynamic>{'type': 'text', 'text': 'system-1'},
+          <String, dynamic>{'type': 'text', 'text': 'developer-1'},
+        ],
+      );
+      expect(
+        body['messages'],
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'role': 'user',
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{'type': 'text', 'text': 'user-1'},
+            ],
+          },
+          <String, dynamic>{
+            'role': 'assistant',
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{'type': 'text', 'text': 'assistant-1'},
+            ],
+          },
+        ],
+      );
+    },
+  );
+
   test('Messages accumulates tools and preserves thinking blocks', () async {
     final adapter = _RecordingAdapter(r'''
 event: message_start
@@ -126,7 +186,9 @@ ModelRequest _request({
   List<ConversationItem> history = const <ConversationItem>[],
 }) => ModelRequest(
   model: 'claude-sonnet-5',
-  instructions: 'test',
+  blocks: const <ModelRoleBlock>[
+    ModelRoleBlock(role: 'developer', content: 'test'),
+  ],
   history: history,
   tools: const <ModelToolDefinition>[],
   safetyIdentifier: 'safe',

@@ -23,7 +23,7 @@ final class RealDaemonFixture {
     required String id,
     bool configureRemoteProfile = true,
     AppSettings settings = const AppSettings(embeddedDaemonEnabled: false),
-    ModelProvider? provider,
+    ModelGateway? provider,
     ProviderModelDiscovery? modelDiscovery,
     ProviderOAuthGateway? oauthGateway,
     ProviderCatalogMetadataSource? providerCatalogMetadataSource,

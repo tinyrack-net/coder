@@ -610,40 +610,6 @@ void _registerConversationControllerTests() {
   );
 
   test(
-    'a turn setting shows before the daemon confirms it and rolls back',
-    () async {
-      final api = FakeTinestApi(
-        worktrees: <WorktreeDto>[worktree],
-        agents: <SessionDto>[agent],
-      );
-      final container = _container(api);
-      addTearDown(container.dispose);
-      await container.read(hostRegistryControllerProvider.future);
-      await Future<void>.delayed(Duration.zero);
-      final provider = sessionsControllerProvider('server', worktree.id);
-      await container.read(provider.future);
-      final notifier = container.read(provider.notifier);
-      final gate = Completer<void>();
-      api.sessionUpdateGate = gate;
-      final pending = notifier.setMode(agent.id, SessionMode.plan);
-      // The chip must not wait a round trip to flip.
-      expect(container.read(provider).value!.single.mode, SessionMode.plan);
-      gate.complete();
-      expect((await pending).mode, SessionMode.plan);
-
-      api
-        ..sessionUpdateGate = null
-        ..sessionUpdateError = Exception('offline');
-      await expectLater(
-        notifier.setMode(agent.id, SessionMode.normal),
-        throwsException,
-      );
-      expect(container.read(provider).value!.single.mode, SessionMode.plan);
-    },
-    tags: const <String>['feature_test__session_lifecycle__unit'],
-  );
-
-  test(
     'conversation ignores a transport event delivered after disposal',
     () async {
       final lateEvents = _LateClientEventStream();

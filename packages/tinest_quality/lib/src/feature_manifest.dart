@@ -11,6 +11,16 @@ const Set<FeatureSurface> _allSurfaces = <FeatureSurface>{
   FeatureSurface.web,
 };
 
+const Set<FeatureVerificationLayer> _pluginFeatureLayers =
+    <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+      FeatureVerificationLayer.platformSmoke,
+    };
+
 /// Complete traceability manifest for user-visible Tinest capabilities.
 const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
@@ -507,10 +517,9 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'session.lifecycle',
     description:
-        'Starts sessions from the chat composer with a selected Agent, model, '
-        'and collaboration mode, resolves the model provider automatically, '
-        'and atomically changes the session model, dynamic model controls, '
-        'mode, or permission mode afterwards.',
+        'Starts sessions from the chat composer with a selected Agent and '
+        'model, resolves the model provider automatically, and atomically '
+        'changes the model, dynamic model controls, or permission mode.',
     apiMethods: <String>[
       'sessions.listSessions',
       'sessions.createSession',
@@ -527,12 +536,12 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     e2eScenarios: <FeatureScenario>[
       FeatureScenario(
         id: 'create_with_configuration',
-        description: 'Creates a session with chosen agent, model, and mode.',
+        description: 'Creates a session with a chosen Agent and model.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(
-        id: 'update_model_and_mode',
-        description: 'Changes model and collaboration mode after creation.',
+        id: 'update_model_and_controls',
+        description: 'Changes model and model controls after creation.',
         surfaces: _allSurfaces,
       ),
       FeatureScenario(
@@ -543,17 +552,25 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     ],
   ),
   FeatureContract(
+    id: 'session.plan',
+    description:
+        'Uses the tinest.plan Lua extension to expose an Agent-selected, '
+        'durable session-scoped control, contribute the exact Plan prompt, '
+        'restrictions, '
+        'atomically replace plans, and render historical plan snapshots.',
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+    },
+  ),
+  FeatureContract(
     id: 'session.goal',
     description:
-        'Persists a root-session objective, accounts model usage and active '
-        'time, automatically continues work in Run mode, and exposes goal '
-        'status and controls in the conversation.',
-    apiMethods: <String>[
-      'sessions.getGoal',
-      'sessions.replaceGoal',
-      'sessions.updateGoal',
-      'sessions.clearGoal',
-    ],
+        'Uses the tinest.goal Lua extension to persist a session-scoped '
+        'objective, account usage, schedule serialized continuations, and '
+        'publish goal status and actions through declarative plugin UI.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -849,10 +866,9 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'context.compaction',
     description:
-        'Summarizes the conversation and replaces the model context window '
-        'when its token budget is spent, when the user asks, or when a '
-        'provider refuses the history as too long.',
-    apiMethods: <String>['sessions.compactSession'],
+        'Lets the selected Lua Agent driver summarize and replace its durable '
+        'model history when its token budget is spent, a context tool asks, '
+        'or a provider refuses the history as too long.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -863,9 +879,9 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
   FeatureContract(
     id: 'tool.context.budget',
     description:
-        'Normalizes provider token counters, reports the tokens left in the '
-        'model context window, reports the output rate each response was '
-        'generated at, and starts a fresh window on request.',
+        'Exposes the selected model window and normalized turn usage to an '
+        'individually selectable Lua tool, and lets a driver start a fresh '
+        'durable provider context on request.',
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,
       FeatureVerificationLayer.contract,
@@ -965,6 +981,137 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
       FeatureScenario(
         id: 'archive_and_reset',
         description: 'Archives a custom Agent and resets a built-in Agent.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'agent.harness',
+    description:
+        'Treats each version 5 Agent definition as the complete model harness '
+        'with exactly one driver, ordered extensions, independently selected '
+        'tools, plugin settings, callable Agents, and prompt data.',
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'custom_driver_zero_tools_restart',
+        description:
+            'Runs and restores an Agent whose custom driver exposes no tools.',
+        surfaces: _allSurfaces,
+      ),
+      FeatureScenario(
+        id: 'incompatible_model_blocked',
+        description:
+            'Blocks a selected model that lacks the Agent driver requirements.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'plugin.management',
+    description:
+        'Lists, validates, reloads, and scaffolds built-in and app-data Lua '
+        'plugins without a global activation switch.',
+    apiMethods: <String>[
+      'plugins.listPlugins',
+      'plugins.getPlugin',
+      'plugins.validatePlugin',
+      'plugins.reloadPlugin',
+      'plugins.scaffoldPlugin',
+      'plugins.forkPlugin',
+    ],
+    routes: <String>['PluginSettingsRoute'],
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'scaffold_detect_reload_lkg_restart',
+        description:
+            'Scaffolds a plugin, retains its LKG after an invalid reload, '
+            'repairs it, and restores it after restart.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'plugin.runtime',
+    description:
+        'Loads immutable Lua and Markdown bundles, pins revisions per turn, '
+        'and provides scoped state and durable serialized handler jobs.',
+    apiMethods: <String>[
+      'plugins.getPluginSessionControl',
+      'plugins.setPluginSessionControl',
+    ],
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'user_tool_state_and_continuation',
+        description:
+            'Runs an app-data tool, persists scoped state, and resumes a '
+            'scheduled handler after daemon restart.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'plugin.authoring',
+    description:
+        'Publishes the exact runtime SDK ABI as editor-neutral LuaCATS files, '
+        'synchronizes sandboxed LuaLS configuration, and exposes CLI health '
+        'and type-checking workflows.',
+    apiMethods: <String>[
+      'plugins.getPluginAuthoringEnvironment',
+      'plugins.syncPluginAuthoringEnvironment',
+    ],
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'scaffold_sdk_sync_reload_restart',
+        description:
+            'Scaffolds an app-data plugin, synchronizes its exact SDK ABI, '
+            'reloads it, and restores the revision after daemon restart.',
+        surfaces: _desktop,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'plugin.permissions',
+    description:
+        'Stores capability grants per Agent and plugin, enforces the core '
+        'capability broker, and cancels a live primitive after revocation.',
+    apiMethods: <String>[
+      'plugins.listPluginGrants',
+      'plugins.grantPluginCapability',
+      'plugins.revokePluginCapability',
+      'plugins.setPluginSecret',
+      'plugins.removePluginSecret',
+    ],
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'agent_grant_revoke_live_primitive',
+        description:
+            'Grants one Agent a capability, keeps another Agent isolated, '
+            'and revokes an active host primitive.',
+        surfaces: _allSurfaces,
+      ),
+    ],
+  ),
+  FeatureContract(
+    id: 'plugin.ui',
+    description:
+        'Renders allowlisted declarative plugin documents with host-owned '
+        'chrome, accessibility, action dispatch, fallback, and snapshots.',
+    apiMethods: <String>[
+      'plugins.renderPluginUi',
+      'plugins.dispatchPluginUiAction',
+    ],
+    requiredLayers: _pluginFeatureLayers,
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'render_action_invalid_fallback_history',
+        description:
+            'Renders a plugin surface, dispatches an action, falls back for '
+            'invalid UI, and restores its historical snapshot.',
         surfaces: _allSurfaces,
       ),
     ],
@@ -1401,6 +1548,11 @@ _uiRouteRegistrations = <({String id, String featureId, String description})>[
     id: 'agent_settings_route',
     featureId: 'agent.definition.management',
     description: 'Agent definition management.',
+  ),
+  (
+    id: 'plugin_settings_route',
+    featureId: 'plugin.management',
+    description: 'Installed plugin revisions, diagnostics, and authoring.',
   ),
   (
     id: 'mcp_settings_route',

@@ -958,8 +958,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // All three sources reach the one catalog: the app's own commands, the
-      // daemon's authored commands, and its effective skills.
-      expect(find.text('mode'), findsOneWidget);
+      // daemon's authored commands, and its enabled skills.
+      expect(find.text('mode'), findsNothing);
       expect(find.text('agents'), findsOneWidget);
       expect(find.text('review'), findsOneWidget);
       expect(find.text('commit'), findsOneWidget);
@@ -971,7 +971,7 @@ void main() {
   );
 
   testWidgets(
-    'a client command typed in the home composer runs instead of sending',
+    'a removed host command is submitted as ordinary prompt text',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -989,22 +989,12 @@ void main() {
         '/mode',
       );
       await tester.pumpAndSettle();
-      // Escape hands the token back so Enter submits rather than completing.
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await tester.pumpAndSettle();
 
-      final compactSettings = find.byKey(
-        const ValueKey<String>('session-composer-settings'),
-      );
-      if (compactSettings.evaluate().isNotEmpty) {
-        await tester.tap(compactSettings);
-        await tester.pumpAndSettle();
-      }
-      expect(find.text('Plan'), findsOneWidget);
-      expect(api.createdSessions, isEmpty);
-      expect(api.startedPrompts, isEmpty);
+      expect(find.text('Plan'), findsNothing);
+      expect(api.createdSessions, hasLength(1));
+      expect(api.startedPrompts, <String>['/mode']);
     },
     tags: const <String>['feature_test__composer_slash_command__widget'],
   );
@@ -1108,13 +1098,14 @@ void main() {
       expect(find.text('lib/parser.dart'), findsNothing);
       expect(api.searchedQueries, isEmpty);
 
-      // Commands still complete without a checkout.
+      // Removed host-owned harness commands do not autocomplete. A plugin can
+      // provide its own composer control independently of checkout creation.
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
         '/mo',
       );
       await tester.pumpAndSettle();
-      expect(find.text('mode'), findsOneWidget);
+      expect(find.text('mode'), findsNothing);
     },
     tags: const <String>['feature_test__composer_file_mention__widget'],
   );

@@ -17,7 +17,7 @@ final class ResolvedAgentModel {
     required this.connectionId,
     required this.modelId,
     required this.provider,
-    required this.toolSurface,
+    this.capabilities = const AgentModelCapabilities(),
     this.limits,
     this.pricing,
   });
@@ -29,10 +29,10 @@ final class ResolvedAgentModel {
   final String modelId;
 
   /// Executable provider adapter.
-  final ModelProvider provider;
+  final ModelGateway provider;
 
-  /// Tool orchestration surface selected by the model profile.
-  final ModelToolSurface toolSurface;
+  /// Provider-neutral features the selected driver may require.
+  final AgentModelCapabilities capabilities;
 
   /// Advertised limits of the model, when the catalog knows them.
   final ModelLimitsDto? limits;
@@ -59,9 +59,30 @@ final class ProviderConnectionFailure implements Exception {
 /// Resolves configured model selections into executable provider instances.
 final class ProviderModelResolver {
   /// Creates a model resolver over the provider connection registry.
-  const ProviderModelResolver(this._connections);
+  const ProviderModelResolver(
+    this._connections, {
+    required this._defaultModel,
+  });
 
   final ProviderConnectionService _connections;
+  final Future<ModelSelectionDto> Function() _defaultModel;
+
+  /// Resolves the model policy declared by an Agent definition.
+  Future<ResolvedAgentModel> resolveAgentModel(
+    AgentModelSelectionDto selection,
+  ) async {
+    final selected = switch (selection.source) {
+      AgentModelSource.fixed => ModelSelectionDto(
+        modelId:
+            selection.modelId ??
+            (throw const FormatException(
+              'A fixed Agent model requires a modelId.',
+            )),
+      ),
+      AgentModelSource.session => await _defaultModel(),
+    };
+    return resolveSelection(selected);
+  }
 
   /// Resolves one concrete model selection.
   Future<ResolvedAgentModel> resolveSelection(ModelSelectionDto selection) =>
@@ -155,9 +176,9 @@ final class ProviderConnectionService
     required BuiltInProviderCatalog catalog,
     IdGenerator ids = const UuidIdGenerator(),
     ProviderModelDiscovery? modelDiscovery,
-    ModelProviderFactory? providerFactory,
+    ModelGatewayFactory? providerFactory,
     ProviderCredentialRefresher? oauthRefresher,
-    ModelProvider? fixedProvider,
+    ModelGateway? fixedProvider,
     ProviderModelReferenceUpdater? referenceUpdater,
   }) => ProviderConnectionService._(
     referenceUpdater,
@@ -182,7 +203,7 @@ final class ProviderConnectionService
     required this._registry,
     required this._catalog,
     ProviderModelDiscovery? modelDiscovery,
-    ModelProviderFactory? providerFactory,
+    ModelGatewayFactory? providerFactory,
     this._oauthRefresher,
     this._fixedProvider,
   }) : _discoveryOverride = modelDiscovery,
@@ -195,9 +216,9 @@ final class ProviderConnectionService
   final ProviderRegistry _registry;
   final BuiltInProviderCatalog _catalog;
   final ProviderModelDiscovery? _discoveryOverride;
-  final ModelProviderFactory? _factoryOverride;
+  final ModelGatewayFactory? _factoryOverride;
   final ProviderCredentialRefresher? _oauthRefresher;
-  final ModelProvider? _fixedProvider;
+  final ModelGateway? _fixedProvider;
   ProviderModelReferenceUpdater? _referenceUpdater;
   final StreamController<ProviderCatalogDto> _catalogUpdates =
       StreamController<ProviderCatalogDto>.broadcast(sync: true);
@@ -224,7 +245,7 @@ final class ProviderConnectionService
   /// A fixed provider replaces every transport, so which vendor lends its
   /// bundled models is arbitrary; the first registered one keeps embedded
   /// runs deterministic.
-  String get _fixedProviderDefinitionId => _registry.plugins.first.id;
+  String get _fixedProviderDefinitionId => _registry.adapters.first.id;
 
   /// Loads explicitly stored credentials and starts catalog refresh.
   Future<void> initialize() async {
@@ -391,7 +412,7 @@ final class ProviderConnectionService
       connectionId: connectionId,
       modelId: model.providerModelId,
       provider: await resolve(connectionId, modelId: modelId),
-      toolSurface: model.capabilities.toolSurface,
+      capabilities: agentCapabilities(model.capabilities),
       limits: model.limits,
       pricing: model.pricing,
     );
@@ -688,7 +709,7 @@ final class ProviderConnectionService
       );
 
   /// Creates an executable provider without exposing secrets or endpoints.
-  Future<ModelProvider> resolve(
+  Future<ModelGateway> resolve(
     String connectionId, {
     required String modelId,
   }) async {
@@ -717,7 +738,7 @@ final class ProviderConnectionService
         ? modelId
         : _qualify(connection.modelPrefix, modelId);
     final model = await _repository.getModel(connection.id, qualifiedModelId);
-    final request = ModelProviderRequest(
+    final request = ModelGatewayRequest(
       connectionId: connection.id,
       endpoint: _endpointFor(connection),
       credential: credential,
@@ -820,7 +841,7 @@ final class ProviderConnectionService
   }
 
   Future<ProviderConnectionDto> _connectBuiltIn(
-    ProviderPlugin plugin,
+    ProviderAdapter adapter,
     ProviderAuthKind authKind,
     ProviderCredentialOrigin origin,
     ProviderCredential? credential, {
@@ -839,7 +860,7 @@ final class ProviderConnectionService
         'Provider connection not found: $id',
       );
     }
-    if (existing != null && existing.definitionId != plugin.id) {
+    if (existing != null && existing.definitionId != adapter.id) {
       throw const ProviderConnectionFailure(
         'provider_definition_mismatch',
         'An existing connection cannot change provider definition.',
@@ -851,13 +872,13 @@ final class ProviderConnectionService
         await _reservePrefixFor(
           id,
           requested: modelPrefix ?? existing?.modelPrefix,
-          fallback: plugin.id,
+          fallback: adapter.id,
         );
     final connection = ProviderConnectionDto(
       id: id,
-      definitionId: plugin.id,
+      definitionId: adapter.id,
       modelPrefix: prefix,
-      displayName: plugin.definition.name,
+      displayName: adapter.definition.name,
       status: ProviderConnectionStatus.connecting,
       authKind: authKind,
       credentialOrigin: origin,
@@ -976,6 +997,9 @@ final class ProviderConnectionService
         capabilities: ModelCapabilitiesDto(
           streaming: CapabilitySupport.supported,
           toolCalling: CapabilitySupport.supported,
+          functionTools: CapabilitySupport.supported,
+          freeformTools: CapabilitySupport.unsupported,
+          deferredTools: CapabilitySupport.unsupported,
           controls: model.controls,
           source: CapabilitySource.manual,
         ),
@@ -1013,7 +1037,7 @@ final class ProviderConnectionService
   /// A built-in connection asks its vendor; a custom connection asks the wire
   /// protocol its configuration names.
   ({
-    ModelProvider Function(ModelProviderRequest request) createProvider,
+    ModelGateway Function(ModelGatewayRequest request) createProvider,
     Future<List<String>> Function(
       ProviderEndpoint endpoint,
       ProviderCredential? credential,
@@ -1139,9 +1163,9 @@ final class ProviderConnectionService
       '$prefix/$providerModelId';
 
   static bool _supportsFlow(
-    ProviderPlugin plugin,
+    ProviderAdapter adapter,
     AgentProviderAuthFlow flow,
-  ) => plugin.definition.authMethods.any((method) => method.flow == flow);
+  ) => adapter.definition.authMethods.any((method) => method.flow == flow);
 
   static bool _canRun(ProviderConnectionStatus status) =>
       status == ProviderConnectionStatus.connected ||

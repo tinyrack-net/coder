@@ -4,7 +4,7 @@ import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the MCP feature's complete v4 RPC surface.
+/// Builds the MCP feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> mcpRpcBindings({
   required McpRuntime runtime,
   required McpAdminPort servers,

@@ -371,8 +371,6 @@ SessionComposerBar _bar() => SessionComposerBar(
   selection: null,
   onAgentChanged: (_) {},
   onModelChanged: (_, _) {},
-  mode: SessionMode.normal,
-  onModeChanged: (_) {},
 );
 
 final class _FakeAttachmentInput implements AttachmentInputPort {

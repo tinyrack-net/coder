@@ -32,7 +32,6 @@ class SessionsController extends _$SessionsController {
   Future<SessionDto> create({
     required String title,
     required String agentDefinitionId,
-    SessionMode mode = SessionMode.normal,
     ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
@@ -53,7 +52,6 @@ class SessionsController extends _$SessionsController {
       worktreeId: worktreeId,
       title: title,
       agentDefinitionId: agentDefinitionId,
-      mode: mode,
       model: model,
       modelControls: modelControls,
       permissionMode: permissionMode,
@@ -64,25 +62,6 @@ class SessionsController extends _$SessionsController {
       ...current.where((item) => item.id != session.id),
     ]);
     return session;
-  }
-
-  /// Switches one session between planning and normal collaboration.
-  Future<SessionDto> setMode(String sessionId, SessionMode mode) => _apply(
-    sessionId,
-    (session) => session.copyWith(mode: mode),
-    (api) => api.sessions.updateSettings(
-      sessionId,
-      SessionSettingsPatchDto(mode: mode),
-    ),
-  );
-
-  /// Summarizes one session's conversation and starts a fresh window.
-  ///
-  /// Nothing is patched optimistically: the meter only moves once the daemon
-  /// has actually replaced the window, and it emits the session itself.
-  Future<void> compact(String sessionId) async {
-    final api = await requireHostApi(ref, hostId);
-    await api.sessions.compactSession(sessionId);
   }
 
   /// Replaces the concrete provider and model snapshot of one session.
@@ -99,6 +78,7 @@ class SessionsController extends _$SessionsController {
     (api) => api.sessions.updateSettings(
       sessionId,
       SessionSettingsPatchDto(
+        hasModel: true,
         model: model,
         hasModelControls: true,
         modelControls: modelControls,

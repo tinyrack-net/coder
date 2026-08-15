@@ -189,6 +189,83 @@ VerificationTask _dart(String name, List<String> arguments) =>
   return (dart: dartJobs, flutter: flutterJobs);
 }
 
+/// Canonical ordering for every immutable workspace source generator.
+abstract final class WorkspaceGenerationPlans {
+  /// Generates direct source snapshots before package build runners consume
+  /// them or verify the rest of the generated tree.
+  static VerificationPlan generate({required int jobs}) => VerificationPlan(
+    phases: <VerificationPhase>[
+      const VerificationPhase(
+        tasks: <VerificationTask>[
+          VerificationTask(
+            name: 'desktop app version',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'packages/tinest_quality/bin/sync_desktop_version.dart',
+            ],
+          ),
+          VerificationTask(
+            name: 'Flutter localizations',
+            executable: 'flutter',
+            arguments: <String>['gen-l10n'],
+            workingDirectory: 'packages/app',
+            exclusiveResources: <String>{'flutter-build'},
+          ),
+          VerificationTask(
+            name: 'provider catalog',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'packages/daemon/tool/generate_provider_catalog.dart',
+            ],
+          ),
+          VerificationTask(
+            name: 'built-in Lua plugins',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'packages/daemon/tool/generate_builtin_plugins.dart',
+            ],
+          ),
+        ],
+      ),
+      VerificationPhase(
+        tasks: <VerificationTask>[
+          VerificationTask(
+            name: 'build_runner',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'melos',
+              'exec',
+              '--depends-on=build_runner',
+              '-c',
+              '$jobs',
+              '-o',
+              '--',
+              'dart run build_runner build',
+            ],
+            cpuSlots: jobs,
+          ),
+        ],
+      ),
+      const VerificationPhase(
+        tasks: <VerificationTask>[
+          VerificationTask(
+            name: 'generated source whitespace',
+            executable: 'dart',
+            arguments: <String>[
+              'run',
+              'packages/tinest_quality/tool/normalize_generated_sources.dart',
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 /// Canonical plans used by the four public Melos quality commands.
 abstract final class WorkspaceVerificationPlans {
   static VerificationPhase _generated(int jobs) => VerificationPhase(
@@ -244,6 +321,10 @@ abstract final class WorkspaceVerificationPlans {
         'run',
         'tinyrack_workspace',
         'source-check',
+      ]),
+      _dart('LuaLS plugin SDK conformance', const <String>[
+        'run',
+        'packages/daemon/tool/luals_conformance.dart',
       ]),
       _dart('architecture', const <String>[
         'run',

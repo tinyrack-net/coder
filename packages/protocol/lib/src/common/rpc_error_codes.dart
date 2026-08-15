@@ -76,6 +76,9 @@ abstract final class RpcErrorCodes {
   /// succeed.
   static const String sessionTurnActive = 'session_turn_active';
 
+  /// A plugin UI render or action request was safely rejected by the host.
+  static const String pluginUiRejected = 'plugin_ui_rejected';
+
   /// Every code this protocol revision defines.
   ///
   /// Clients use this to assert their translation table stays exhaustive.
@@ -101,5 +104,6 @@ abstract final class RpcErrorCodes {
     terminalStartFailed,
     invalidProjectSettings,
     sessionTurnActive,
+    pluginUiRejected,
   };
 }

@@ -373,6 +373,8 @@ jobs:
             scenario: daemon-workspace
           - shard: project-worktree
             scenario: project-worktree
+          - shard: plugin-harness
+            scenario: plugin-harness
           - shard: relay
             scenario: relay
           - shard: conversation-adversity
@@ -1188,6 +1190,7 @@ jobs:
         scenario:
           - daemon-workspace
           - project-worktree
+          - plugin-harness
           - relay
           - conversation-adversity
           - conversation-history

@@ -138,12 +138,12 @@ void main() {
     final process = gateway.started.single.process;
     // Well past the shared tool-output ceiling.
     for (var index = 0; index < 3; index += 1) {
-      process.emit('${'x' * (maxToolOutputBytes ~/ 2)}$index');
+      process.emit('${'x' * (maxExecSessionOutputBytes ~/ 2)}$index');
     }
     await pumpEventQueue();
 
     final chunk = await session.read(const Duration(milliseconds: 10));
-    expect(chunk.output.length, lessThanOrEqualTo(maxToolOutputBytes));
+    expect(chunk.output.length, lessThanOrEqualTo(maxExecSessionOutputBytes));
     // The newest bytes survive; the oldest are dropped.
     expect(chunk.output, endsWith('2'));
   });

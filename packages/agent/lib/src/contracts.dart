@@ -13,36 +13,6 @@ enum AgentToolRisk {
   dangerous,
 }
 
-/// The related set of capabilities a client presents and toggles together.
-///
-/// A capability declares its own group, so the one list in
-/// `builtInAgentToolRegistry` stays the whole registration surface. Declaration
-/// order here is the order groups are presented in, which is why it is separate
-/// from registry order: the registry order is what the model is advertised, and
-/// reordering it to suit a settings screen would change what the model sees.
-enum AgentToolGroup {
-  /// Finds and reads workspace files.
-  filesystem,
-
-  /// Changes workspace files.
-  editing,
-
-  /// Starts processes.
-  execution,
-
-  /// Moves files in and out of the conversation as attachments.
-  attachments,
-
-  /// Reaches MCP servers and the resources they publish.
-  mcp,
-
-  /// Drives collaborating subagents.
-  collaboration,
-
-  /// Steers the turn itself: plans, questions, and time.
-  session,
-}
-
 /// Permission policy selected for one agent turn.
 enum AgentPermissionMode {
   /// Refuses mutation.
@@ -56,24 +26,6 @@ enum AgentPermissionMode {
 
   /// Allows every tool.
   fullAccess,
-}
-
-/// Collaboration mode of one agent run.
-enum AgentSessionMode {
-  /// Executes normal turns.
-  normal,
-
-  /// Restricts a turn to planning.
-  plan,
-}
-
-/// Model-facing tool surface selected for one turn.
-enum AgentToolSurfaceMode {
-  /// Tools are exposed directly.
-  direct,
-
-  /// Only Lua orchestration entrypoints are exposed directly.
-  luaCode,
 }
 
 /// Runtime lifecycle states emitted by the agent engine.
@@ -163,7 +115,7 @@ enum AgentModelControlPresentation {
   numberDialog,
 }
 
-/// Stable control IDs understood by built-in provider plugins.
+/// Stable control IDs understood by built-in provider adapters.
 abstract final class AgentModelControlIds {
   /// Provider-specific reasoning effort or level.
   static const String reasoningEffort = 'reasoning_effort';
@@ -309,9 +261,17 @@ final class AgentModelCapabilities {
   const AgentModelCapabilities({
     this.streaming = AgentCapabilitySupport.unknown,
     this.toolCalling = AgentCapabilitySupport.unknown,
+    this.functionTools = AgentCapabilitySupport.unknown,
+    this.freeformTools = AgentCapabilitySupport.unknown,
+    this.deferredTools = AgentCapabilitySupport.unknown,
     this.imageInput = AgentCapabilitySupport.unknown,
     this.fileInput = AgentCapabilitySupport.unknown,
-    this.toolSurface = AgentToolSurfaceMode.direct,
+    this.roles = const <String>[
+      'system',
+      'developer',
+      'user',
+      'assistant',
+    ],
     this.controls = const <AgentModelControlDescriptor>[],
     this.source = AgentCapabilitySource.unknown,
   });
@@ -322,14 +282,23 @@ final class AgentModelCapabilities {
   /// Tool-calling support.
   final AgentCapabilitySupport toolCalling;
 
+  /// JSON-schema function-tool support.
+  final AgentCapabilitySupport functionTools;
+
+  /// Raw freeform/custom-tool support.
+  final AgentCapabilitySupport freeformTools;
+
+  /// Provider-native deferred tool-discovery support.
+  final AgentCapabilitySupport deferredTools;
+
   /// Image-input support.
   final AgentCapabilitySupport imageInput;
 
   /// File-input support.
   final AgentCapabilitySupport fileInput;
 
-  /// Model-selected orchestration surface.
-  final AgentToolSurfaceMode toolSurface;
+  /// Ordered role kinds accepted by the transport.
+  final List<String> roles;
 
   /// Provider-owned controls accepted by this model and endpoint.
   final List<AgentModelControlDescriptor> controls;
@@ -341,17 +310,23 @@ final class AgentModelCapabilities {
   AgentModelCapabilities copyWith({
     AgentCapabilitySupport? streaming,
     AgentCapabilitySupport? toolCalling,
+    AgentCapabilitySupport? functionTools,
+    AgentCapabilitySupport? freeformTools,
+    AgentCapabilitySupport? deferredTools,
     AgentCapabilitySupport? imageInput,
     AgentCapabilitySupport? fileInput,
-    AgentToolSurfaceMode? toolSurface,
+    List<String>? roles,
     List<AgentModelControlDescriptor>? controls,
     AgentCapabilitySource? source,
   }) => AgentModelCapabilities(
     streaming: streaming ?? this.streaming,
     toolCalling: toolCalling ?? this.toolCalling,
+    functionTools: functionTools ?? this.functionTools,
+    freeformTools: freeformTools ?? this.freeformTools,
+    deferredTools: deferredTools ?? this.deferredTools,
     imageInput: imageInput ?? this.imageInput,
     fileInput: fileInput ?? this.fileInput,
-    toolSurface: toolSurface ?? this.toolSurface,
+    roles: roles ?? this.roles,
     controls: controls ?? this.controls,
     source: source ?? this.source,
   );
@@ -395,7 +370,7 @@ final class AgentModelLimits {
   final int? output;
 }
 
-/// One public authentication choice of a provider plugin.
+/// One public authentication choice of a provider adapter.
 final class AgentProviderAuthMethod {
   /// Creates an authentication method.
   const AgentProviderAuthMethod({
@@ -459,53 +434,6 @@ final class AgentProviderDefinition {
 
   /// Optional documentation URL.
   final String? documentationUrl;
-}
-
-/// Tool metadata exposed by the pure agent runtime.
-final class AgentToolDefinition {
-  /// Creates tool metadata.
-  const AgentToolDefinition({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.risk,
-    required this.group,
-    this.available = true,
-    this.alwaysOn = false,
-  });
-
-  /// Stable tool identifier.
-  final String id;
-
-  /// Display name.
-  final String name;
-
-  /// User-facing description.
-  final String description;
-
-  /// Approval risk.
-  final AgentToolRisk risk;
-
-  /// The related capabilities this one is presented and toggled with.
-  final AgentToolGroup group;
-
-  /// Whether the tool is available.
-  final bool available;
-
-  /// Whether every turn receives it.
-  final bool alwaysOn;
-}
-
-/// Minimal session context required to build one turn's tools.
-final class AgentSessionContext {
-  /// Creates a session context.
-  const AgentSessionContext({required this.id, this.value});
-
-  /// Stable session identifier.
-  final String id;
-
-  /// Adapter-owned metadata opaque to the agent runtime.
-  final Object? value;
 }
 
 /// Agent definition marker kept independent from wire DTOs.

@@ -177,9 +177,6 @@ _SessionCreateParamsDto _$SessionCreateParamsDtoFromJson(
   worktreeId: json['worktreeId'] as String,
   title: json['title'] as String,
   agentDefinitionId: json['agentDefinitionId'] as String,
-  mode:
-      $enumDecodeNullable(_$SessionModeEnumMap, json['mode']) ??
-      SessionMode.normal,
   model: json['model'] == null
       ? null
       : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
@@ -204,15 +201,9 @@ Map<String, dynamic> _$SessionCreateParamsDtoToJson(
   'worktreeId': instance.worktreeId,
   'title': instance.title,
   'agentDefinitionId': instance.agentDefinitionId,
-  'mode': _$SessionModeEnumMap[instance.mode]!,
   'model': instance.model,
   'modelControls': instance.modelControls,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
-};
-
-const _$SessionModeEnumMap = {
-  SessionMode.plan: 'plan',
-  SessionMode.normal: 'normal',
 };
 
 const _$PermissionModeEnumMap = {
@@ -225,7 +216,7 @@ const _$PermissionModeEnumMap = {
 _SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
   Map<String, dynamic> json,
 ) => _SessionSettingsPatchDto(
-  mode: $enumDecodeNullable(_$SessionModeEnumMap, json['mode']),
+  hasModel: json['hasModel'] as bool? ?? false,
   model: json['model'] == null
       ? null
       : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
@@ -248,7 +239,7 @@ _SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
 Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
   _SessionSettingsPatchDto instance,
 ) => <String, dynamic>{
-  'mode': _$SessionModeEnumMap[instance.mode],
+  'hasModel': instance.hasModel,
   'model': instance.model,
   'hasModelControls': instance.hasModelControls,
   'modelControls': instance.modelControls,
@@ -271,98 +262,6 @@ Map<String, dynamic> _$SessionSettingsUpdateParamsDtoToJson(
   'sessionId': instance.sessionId,
   'patch': instance.patch,
 };
-
-_GoalReplaceParamsDto _$GoalReplaceParamsDtoFromJson(
-  Map<String, dynamic> json,
-) => _GoalReplaceParamsDto(
-  sessionId: json['sessionId'] as String,
-  objective: json['objective'] as String,
-  tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
-);
-
-Map<String, dynamic> _$GoalReplaceParamsDtoToJson(
-  _GoalReplaceParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'objective': instance.objective,
-  'tokenBudget': instance.tokenBudget,
-};
-
-_GoalUpdateDto _$GoalUpdateDtoFromJson(Map<String, dynamic> json) =>
-    _GoalUpdateDto(
-      expectedGoalId: json['expectedGoalId'] as String,
-      objective: json['objective'] as String?,
-      status: $enumDecodeNullable(_$GoalStatusEnumMap, json['status']),
-      hasTokenBudget: json['hasTokenBudget'] as bool? ?? false,
-      tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
-    );
-
-Map<String, dynamic> _$GoalUpdateDtoToJson(_GoalUpdateDto instance) =>
-    <String, dynamic>{
-      'expectedGoalId': instance.expectedGoalId,
-      'objective': instance.objective,
-      'status': _$GoalStatusEnumMap[instance.status],
-      'hasTokenBudget': instance.hasTokenBudget,
-      'tokenBudget': instance.tokenBudget,
-    };
-
-const _$GoalStatusEnumMap = {
-  GoalStatus.active: 'active',
-  GoalStatus.paused: 'paused',
-  GoalStatus.blocked: 'blocked',
-  GoalStatus.usageLimited: 'usageLimited',
-  GoalStatus.budgetLimited: 'budgetLimited',
-  GoalStatus.complete: 'complete',
-};
-
-_GoalUpdateParamsDto _$GoalUpdateParamsDtoFromJson(Map<String, dynamic> json) =>
-    _GoalUpdateParamsDto(
-      sessionId: json['sessionId'] as String,
-      update: GoalUpdateDto.fromJson(json['update'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$GoalUpdateParamsDtoToJson(
-  _GoalUpdateParamsDto instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'update': instance.update,
-};
-
-_GoalGetResultDto _$GoalGetResultDtoFromJson(Map<String, dynamic> json) =>
-    _GoalGetResultDto(
-      goal: json['goal'] == null
-          ? null
-          : GoalDto.fromJson(json['goal'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$GoalGetResultDtoToJson(_GoalGetResultDto instance) =>
-    <String, dynamic>{'goal': instance.goal};
-
-_GoalResultDto _$GoalResultDtoFromJson(Map<String, dynamic> json) =>
-    _GoalResultDto(
-      goal: GoalDto.fromJson(json['goal'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$GoalResultDtoToJson(_GoalResultDto instance) =>
-    <String, dynamic>{'goal': instance.goal};
-
-_GoalClearResultDto _$GoalClearResultDtoFromJson(Map<String, dynamic> json) =>
-    _GoalClearResultDto(cleared: json['cleared'] as bool);
-
-Map<String, dynamic> _$GoalClearResultDtoToJson(_GoalClearResultDto instance) =>
-    <String, dynamic>{'cleared': instance.cleared};
-
-_GoalClearedDto _$GoalClearedDtoFromJson(Map<String, dynamic> json) =>
-    _GoalClearedDto(
-      sessionId: json['sessionId'] as String,
-      goalId: json['goalId'] as String,
-    );
-
-Map<String, dynamic> _$GoalClearedDtoToJson(_GoalClearedDto instance) =>
-    <String, dynamic>{
-      'sessionId': instance.sessionId,
-      'goalId': instance.goalId,
-    };
 
 _AgentDefinitionIdParamsDto _$AgentDefinitionIdParamsDtoFromJson(
   Map<String, dynamic> json,
@@ -413,6 +312,183 @@ _AgentDefinitionValidateParamsDto _$AgentDefinitionValidateParamsDtoFromJson(
 Map<String, dynamic> _$AgentDefinitionValidateParamsDtoToJson(
   _AgentDefinitionValidateParamsDto instance,
 ) => <String, dynamic>{'id': instance.id, 'markdown': instance.markdown};
+
+_PluginIdParamsDto _$PluginIdParamsDtoFromJson(Map<String, dynamic> json) =>
+    _PluginIdParamsDto(id: json['id'] as String);
+
+Map<String, dynamic> _$PluginIdParamsDtoToJson(_PluginIdParamsDto instance) =>
+    <String, dynamic>{'id': instance.id};
+
+_PluginReloadParamsDto _$PluginReloadParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginReloadParamsDto(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+);
+
+Map<String, dynamic> _$PluginReloadParamsDtoToJson(
+  _PluginReloadParamsDto instance,
+) => <String, dynamic>{'id': instance.id, 'agentId': instance.agentId};
+
+_PluginScaffoldParamsDto _$PluginScaffoldParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginScaffoldParamsDto(
+  id: json['id'] as String,
+  name: json['name'] as String,
+);
+
+Map<String, dynamic> _$PluginScaffoldParamsDtoToJson(
+  _PluginScaffoldParamsDto instance,
+) => <String, dynamic>{'id': instance.id, 'name': instance.name};
+
+_PluginForkParamsDto _$PluginForkParamsDtoFromJson(Map<String, dynamic> json) =>
+    _PluginForkParamsDto(
+      sourceId: json['sourceId'] as String,
+      id: json['id'] as String,
+      name: json['name'] as String,
+    );
+
+Map<String, dynamic> _$PluginForkParamsDtoToJson(
+  _PluginForkParamsDto instance,
+) => <String, dynamic>{
+  'sourceId': instance.sourceId,
+  'id': instance.id,
+  'name': instance.name,
+};
+
+_AgentPluginGrantsParamsDto _$AgentPluginGrantsParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentPluginGrantsParamsDto(agentId: json['agentId'] as String);
+
+Map<String, dynamic> _$AgentPluginGrantsParamsDtoToJson(
+  _AgentPluginGrantsParamsDto instance,
+) => <String, dynamic>{'agentId': instance.agentId};
+
+_PluginGrantParamsDto _$PluginGrantParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginGrantParamsDto(
+  grant: AgentPluginGrantDto.fromJson(json['grant'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$PluginGrantParamsDtoToJson(
+  _PluginGrantParamsDto instance,
+) => <String, dynamic>{'grant': instance.grant};
+
+_PluginSecretSetParamsDto _$PluginSecretSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSecretSetParamsDto(
+  agentId: json['agentId'] as String,
+  pluginId: json['pluginId'] as String,
+  name: json['name'] as String,
+  value: json['value'] as String,
+);
+
+Map<String, dynamic> _$PluginSecretSetParamsDtoToJson(
+  _PluginSecretSetParamsDto instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'name': instance.name,
+  'value': instance.value,
+};
+
+_PluginSecretRemoveParamsDto _$PluginSecretRemoveParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSecretRemoveParamsDto(
+  agentId: json['agentId'] as String,
+  pluginId: json['pluginId'] as String,
+  name: json['name'] as String,
+);
+
+Map<String, dynamic> _$PluginSecretRemoveParamsDtoToJson(
+  _PluginSecretRemoveParamsDto instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'name': instance.name,
+};
+
+_PluginSessionControlParamsDto _$PluginSessionControlParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSessionControlParamsDto(
+  sessionId: json['sessionId'] as String,
+  pluginId: json['pluginId'] as String,
+  contributionId: json['contributionId'] as String,
+);
+
+Map<String, dynamic> _$PluginSessionControlParamsDtoToJson(
+  _PluginSessionControlParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'pluginId': instance.pluginId,
+  'contributionId': instance.contributionId,
+};
+
+_PluginSessionControlSetParamsDto _$PluginSessionControlSetParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSessionControlSetParamsDto(
+  sessionId: json['sessionId'] as String,
+  pluginId: json['pluginId'] as String,
+  contributionId: json['contributionId'] as String,
+  value: json['value'],
+);
+
+Map<String, dynamic> _$PluginSessionControlSetParamsDtoToJson(
+  _PluginSessionControlSetParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'pluginId': instance.pluginId,
+  'contributionId': instance.contributionId,
+  'value': instance.value,
+};
+
+_PluginUiRenderParamsDto _$PluginUiRenderParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginUiRenderParamsDto(
+  agentId: json['agentId'] as String,
+  pluginId: json['pluginId'] as String,
+  contributionId: json['contributionId'] as String,
+  slot: $enumDecode(_$PluginUiSlotEnumMap, json['slot']),
+  input: json['input'],
+  context:
+      json['context'] as Map<String, dynamic>? ?? const <String, dynamic>{},
+);
+
+Map<String, dynamic> _$PluginUiRenderParamsDtoToJson(
+  _PluginUiRenderParamsDto instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'contributionId': instance.contributionId,
+  'slot': _$PluginUiSlotEnumMap[instance.slot]!,
+  'input': instance.input,
+  'context': instance.context,
+};
+
+const _$PluginUiSlotEnumMap = {
+  PluginUiSlot.agentSettings: 'agentSettings',
+  PluginUiSlot.composerControl: 'composerControl',
+  PluginUiSlot.conversationStatus: 'conversationStatus',
+  PluginUiSlot.timeline: 'timeline',
+  PluginUiSlot.dialog: 'dialog',
+  PluginUiSlot.toast: 'toast',
+};
+
+_PluginUiActionParamsDto _$PluginUiActionParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginUiActionParamsDto(
+  agentId: json['agentId'] as String,
+  pluginId: json['pluginId'] as String,
+  action: PluginUiActionDto.fromJson(json['action'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$PluginUiActionParamsDtoToJson(
+  _PluginUiActionParamsDto instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'action': instance.action,
+};
 
 _SkillListParamsDto _$SkillListParamsDtoFromJson(Map<String, dynamic> json) =>
     _SkillListParamsDto(
@@ -1072,6 +1148,75 @@ _AgentDefinitionResultDto _$AgentDefinitionResultDtoFromJson(
 Map<String, dynamic> _$AgentDefinitionResultDtoToJson(
   _AgentDefinitionResultDto instance,
 ) => <String, dynamic>{'definition': instance.definition};
+
+_PluginListResultDto _$PluginListResultDtoFromJson(Map<String, dynamic> json) =>
+    _PluginListResultDto(
+      plugins: (json['plugins'] as List<dynamic>)
+          .map((e) => PluginDescriptorDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$PluginListResultDtoToJson(
+  _PluginListResultDto instance,
+) => <String, dynamic>{'plugins': instance.plugins};
+
+_PluginResultDto _$PluginResultDtoFromJson(Map<String, dynamic> json) =>
+    _PluginResultDto(
+      plugin: PluginDescriptorDto.fromJson(
+        json['plugin'] as Map<String, dynamic>,
+      ),
+    );
+
+Map<String, dynamic> _$PluginResultDtoToJson(_PluginResultDto instance) =>
+    <String, dynamic>{'plugin': instance.plugin};
+
+_PluginAuthoringEnvironmentResultDto
+_$PluginAuthoringEnvironmentResultDtoFromJson(Map<String, dynamic> json) =>
+    _PluginAuthoringEnvironmentResultDto(
+      environment: PluginAuthoringEnvironmentDto.fromJson(
+        json['environment'] as Map<String, dynamic>,
+      ),
+    );
+
+Map<String, dynamic> _$PluginAuthoringEnvironmentResultDtoToJson(
+  _PluginAuthoringEnvironmentResultDto instance,
+) => <String, dynamic>{'environment': instance.environment};
+
+_PluginGrantListResultDto _$PluginGrantListResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginGrantListResultDto(
+  grants: (json['grants'] as List<dynamic>)
+      .map((e) => AgentPluginGrantDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$PluginGrantListResultDtoToJson(
+  _PluginGrantListResultDto instance,
+) => <String, dynamic>{'grants': instance.grants};
+
+_PluginSessionControlResultDto _$PluginSessionControlResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSessionControlResultDto(
+  control: PluginSessionControlValueDto.fromJson(
+    json['control'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$PluginSessionControlResultDtoToJson(
+  _PluginSessionControlResultDto instance,
+) => <String, dynamic>{'control': instance.control};
+
+_PluginUiDocumentResultDto _$PluginUiDocumentResultDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginUiDocumentResultDto(
+  document: PluginUiDocumentDto.fromJson(
+    json['document'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$PluginUiDocumentResultDtoToJson(
+  _PluginUiDocumentResultDto instance,
+) => <String, dynamic>{'document': instance.document};
 
 _AgentToolCatalogParamsDto _$AgentToolCatalogParamsDtoFromJson(
   Map<String, dynamic> json,

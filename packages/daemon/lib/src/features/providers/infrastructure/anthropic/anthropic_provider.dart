@@ -50,7 +50,7 @@ final class AnthropicProviderException implements Exception {
 }
 
 /// Stateless Anthropic Messages streaming adapter.
-final class AnthropicMessagesProvider implements ModelProvider {
+final class AnthropicMessagesProvider implements ModelGateway {
   /// Creates a Messages adapter.
   AnthropicMessagesProvider(AnthropicProviderConfig config, {Dio? dio})
     : _config = config,
@@ -122,8 +122,24 @@ final class AnthropicMessagesProvider implements ModelProvider {
     final fast = _boolControl(request, AgentModelControlIds.fastMode);
     return <String, dynamic>{
       'model': request.model,
-      'system': request.instructions,
-      'messages': _messages(request.history),
+      'system': <Map<String, dynamic>>[
+        for (final block in request.blocks.where(
+          (block) => block.role == 'system' || block.role == 'developer',
+        ))
+          <String, dynamic>{'type': 'text', 'text': block.content},
+      ],
+      'messages': <Map<String, dynamic>>[
+        for (final block in request.blocks.where(
+          (block) => block.role == 'user' || block.role == 'assistant',
+        ))
+          <String, dynamic>{
+            'role': block.role,
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{'type': 'text', 'text': block.content},
+            ],
+          },
+        ..._messages(request.history),
+      ],
       'max_tokens': _config.maxOutputTokens,
       'stream': true,
       if (effort != null) 'output_config': <String, dynamic>{'effort': effort},

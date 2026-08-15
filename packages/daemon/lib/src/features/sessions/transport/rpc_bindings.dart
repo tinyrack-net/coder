@@ -3,14 +3,13 @@ import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart
 import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/agent_service.dart';
-import 'package:daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_settings.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the session feature's complete v4 RPC surface.
+/// Builds the session feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> sessionRpcBindings({
   required SessionRepository sessions,
   required TimelineRepository timeline,
@@ -19,9 +18,7 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   required SessionInteractionPort interactions,
   required AgentDefinitionService agentDefinitions,
   required ProviderModelResolver models,
-  required DaemonModelSettingsService modelSettings,
   required Clock clock,
-  required SessionGoalService goals,
 }) => <RpcBindingDescriptor>[
   RpcBinding(sessionsListProcedure, (request, _) async {
     return SessionListResultDto(
@@ -51,24 +48,11 @@ List<RpcBindingDescriptor> sessionRpcBindings({
           },
         );
       }
-      final ModelSelectionDto selected;
-      final Map<String, ModelControlValueDto> controls;
-      if (request.model case final chatModel?) {
-        await modelSettings.requireRunnable(chatModel);
-        selected = chatModel;
-        controls = request.modelControls;
-      } else if (definition.model case final agentModel?) {
-        await modelSettings.requireRunnable(agentModel);
-        selected = agentModel;
-        controls = definition.modelControls;
+      if (request.model case final selected?) {
+        await models.validateQualifiedModel(selected.qualifiedModelId);
       } else {
-        selected = await modelSettings.requireDefaultModel();
-        controls = const <String, ModelControlValueDto>{};
+        await models.resolveAgentModel(definition.model);
       }
-      await models.validateQualifiedModelControls(
-        selected.qualifiedModelId,
-        controls,
-      );
       final now = clock.nowUtc();
       return SessionResultDto(
         session: await sessions.create(
@@ -79,9 +63,8 @@ List<RpcBindingDescriptor> sessionRpcBindings({
             agentDefinitionId: definition.id,
             origin: SessionOrigin.manual,
             status: SessionStatus.idle,
-            mode: request.mode,
-            model: selected,
-            modelControls: controls,
+            model: request.model,
+            modelControls: request.modelControls,
             permissionMode: request.permissionMode,
             createdAt: now,
             updatedAt: now,
@@ -104,12 +87,12 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   }),
   RpcBinding(sessionsUpdateSettingsProcedure, (request, _) async {
     try {
-      final session = await settings.updateSettings(
-        request.sessionId,
-        request.patch,
+      return SessionResultDto(
+        session: await settings.updateSettings(
+          request.sessionId,
+          request.patch,
+        ),
       );
-      await goals.reconsider(request.sessionId);
-      return SessionResultDto(session: session);
     } on SessionTurnActiveFailure catch (error) {
       throw RpcFailureException(
         code: RpcErrorCodes.sessionTurnActive,
@@ -123,26 +106,6 @@ List<RpcBindingDescriptor> sessionRpcBindings({
       throw RpcFailureException(code: error.code, message: error.message);
     }
   }),
-  RpcBinding(sessionsGetGoalProcedure, (request, _) async {
-    return GoalGetResultDto(goal: await goals.get(request.sessionId));
-  }),
-  RpcBinding(sessionsReplaceGoalProcedure, (request, _) async {
-    return GoalResultDto(
-      goal: await goals.replace(
-        sessionId: request.sessionId,
-        objective: request.objective,
-        tokenBudget: request.tokenBudget,
-      ),
-    );
-  }),
-  RpcBinding(sessionsUpdateGoalProcedure, (request, _) async {
-    return GoalResultDto(
-      goal: await goals.update(request.sessionId, request.update),
-    );
-  }),
-  RpcBinding(sessionsClearGoalProcedure, (request, _) async {
-    return GoalClearResultDto(cleared: await goals.clear(request.sessionId));
-  }),
   RpcBinding(sessionsStartTurnProcedure, (request, _) async {
     try {
       return TurnStartResultDto(
@@ -154,6 +117,8 @@ List<RpcBindingDescriptor> sessionRpcBindings({
         ),
       );
     } on ProviderConnectionFailure catch (error) {
+      throw RpcFailureException(code: error.code, message: error.message);
+    } on ModelSettingsFailure catch (error) {
       throw RpcFailureException(code: error.code, message: error.message);
     } on AgentDefinitionLookupFailure catch (error) {
       throw RpcFailureException(
@@ -167,10 +132,6 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   }),
   RpcBinding(sessionsCancelTurnProcedure, (request, _) async {
     await turns.cancelTurn(request.sessionId);
-    return const EmptyResultDto();
-  }),
-  RpcBinding(sessionsCompactProcedure, (request, _) async {
-    await turns.compactSession(request.sessionId);
     return const EmptyResultDto();
   }),
   RpcBinding(sessionsResolveApprovalProcedure, (request, _) async {

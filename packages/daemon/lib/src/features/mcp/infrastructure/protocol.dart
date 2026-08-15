@@ -89,6 +89,18 @@ class McpServerException implements Exception {
   String toString() => 'McpServerException($code): $message';
 }
 
+/// One correlated JSON-RPC request was cancelled without closing its client.
+final class McpRequestCancelled implements Exception {
+  /// Creates a cancellation carrying the reason sent to the MCP server.
+  const McpRequestCancelled(this.reason);
+
+  /// Human-readable reason included in `notifications/cancelled`.
+  final String reason;
+
+  @override
+  String toString() => 'McpRequestCancelled: $reason';
+}
+
 /// Identity a server reports during `initialize`.
 class McpServerIdentity {
   /// Creates a [McpServerIdentity].
@@ -365,6 +377,7 @@ class McpToolDescriptor {
     this.title,
     this.description,
     this.inputSchema,
+    this.outputSchema,
     this.annotations = const McpToolAnnotations(),
   });
 
@@ -382,6 +395,9 @@ class McpToolDescriptor {
           : null,
       inputSchema: json['inputSchema'] is Map<String, dynamic>
           ? Map<String, dynamic>.from(json['inputSchema'] as Map)
+          : null,
+      outputSchema: json['outputSchema'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['outputSchema'] as Map)
           : null,
       annotations: json['annotations'] is Map<String, dynamic>
           ? McpToolAnnotations.fromJson(
@@ -402,6 +418,9 @@ class McpToolDescriptor {
 
   /// The JSON Schema describing the tool arguments.
   final Map<String, dynamic>? inputSchema;
+
+  /// The optional JSON Schema describing a structured tool result.
+  final Map<String, dynamic>? outputSchema;
 
   /// What the server claims about the tool's effects.
   final McpToolAnnotations annotations;

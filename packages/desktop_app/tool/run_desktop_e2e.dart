@@ -88,6 +88,72 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
   const _IoDesktopE2eRuntime();
 
   @override
+  Future<DesktopE2eBuildLease> acquireProjectBuildLease(
+    String projectDirectory,
+  ) => _acquireBuildLease(projectDirectory, 'project');
+
+  @override
+  Future<DesktopE2eBuildLease> acquireLaneBuildLease(
+    String projectDirectory,
+    int laneIndex,
+  ) => _acquireBuildLease(
+    projectDirectory,
+    desktopE2eWindowsLaneBuildPath(laneIndex),
+  );
+
+  Future<DesktopE2eBuildLease> _acquireBuildLease(
+    String projectDirectory,
+    String resource,
+  ) async {
+    final projectPath = Directory(projectDirectory).absolute.path.toLowerCase();
+    final lockKey = '$projectPath|$resource';
+    final lockFile = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}'
+      'tinest-desktop-e2e-${_stablePathHash(lockKey)}.lock',
+    );
+    final handle = await lockFile.open(mode: FileMode.append);
+    try {
+      await handle.lock();
+      return _IoDesktopE2eBuildLease(handle);
+    } catch (_) {
+      await handle.close();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> prepareWindowsBuild(
+    String projectDirectory,
+    int laneIndex,
+  ) async {
+    final project = Directory(projectDirectory).absolute;
+    final wrapper = Directory(
+      '${project.path}${Platform.pathSeparator}windows'
+      '${Platform.pathSeparator}flutter${Platform.pathSeparator}ephemeral'
+      '${Platform.pathSeparator}cpp_client_wrapper',
+    );
+    final generatedStateIsComplete = desktopE2eWindowsGeneratedSources.every(
+      (name) =>
+          File('${wrapper.path}${Platform.pathSeparator}$name').existsSync(),
+    );
+    if (generatedStateIsComplete) return;
+
+    final relativeLanePath = desktopE2eWindowsLaneBuildPath(
+      laneIndex,
+    ).replaceAll('/', Platform.pathSeparator);
+    final laneWindows = Directory(
+      '${project.path}${Platform.pathSeparator}$relativeLanePath',
+    ).absolute;
+    final projectPrefix = '${project.path}${Platform.pathSeparator}';
+    if (!laneWindows.path.startsWith(projectPrefix)) {
+      throw StateError('Windows E2E build path escaped the desktop project.');
+    }
+    if (laneWindows.existsSync()) {
+      await laneWindows.delete(recursive: true);
+    }
+  }
+
+  @override
   Future<DesktopE2eLaneResources> createLaneResources(int laneIndex) async {
     final root = await Directory.systemTemp.createTemp(
       'tinest-e2e-lane-$laneIndex-',
@@ -144,6 +210,33 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
       readinessMarker: command.environment['TINYRACK_TINEST_E2E_READY_FILE']!,
     );
   }
+}
+
+final class _IoDesktopE2eBuildLease implements DesktopE2eBuildLease {
+  _IoDesktopE2eBuildLease(this._handle);
+
+  RandomAccessFile? _handle;
+
+  @override
+  Future<void> release() async {
+    final handle = _handle;
+    if (handle == null) return;
+    _handle = null;
+    try {
+      await handle.unlock();
+    } finally {
+      await handle.close();
+    }
+  }
+}
+
+String _stablePathHash(String value) {
+  var hash = 0x811c9dc5;
+  for (final codeUnit in value.codeUnits) {
+    hash ^= codeUnit;
+    hash = (hash * 0x01000193) & 0xffffffff;
+  }
+  return hash.toRadixString(16).padLeft(8, '0');
 }
 
 final class _IoDesktopE2eProcess implements DesktopE2eProcess {

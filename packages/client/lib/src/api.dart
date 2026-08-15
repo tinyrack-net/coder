@@ -46,7 +46,7 @@ enum ClientConnectionState {
   disconnected,
 }
 
-/// Workspace operations exposed by the v4 client.
+/// Workspace operations exposed by the v5 client.
 abstract interface class WorkspacesApi {
   /// Returns repositories and active checkouts atomically.
   Future<WorkspaceCatalogDto> getWorkspaceCatalog();
@@ -115,16 +115,10 @@ abstract interface class WorkspacesApi {
   });
 }
 
-/// Session operations and updates exposed by the v4 client.
+/// Session operations and updates exposed by the v5 client.
 abstract interface class SessionsApi {
   /// Session lifecycle updates.
   Stream<SessionDto> get sessionUpdates;
-
-  /// Goal creations and state changes.
-  Stream<GoalDto> get goalUpdates;
-
-  /// Goal removals.
-  Stream<GoalClearedDto> get goalClears;
 
   /// Ordered timeline events.
   Stream<TimelineEventDto> get timelineEvents;
@@ -147,7 +141,6 @@ abstract interface class SessionsApi {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
-    SessionMode mode = SessionMode.normal,
     ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
@@ -160,22 +153,6 @@ abstract interface class SessionsApi {
     SessionSettingsPatchDto patch,
   );
 
-  /// Reads the current persistent goal.
-  Future<GoalDto?> getGoal(String sessionId);
-
-  /// Starts a fresh goal generation and resets its usage.
-  Future<GoalDto> replaceGoal({
-    required String sessionId,
-    required String objective,
-    int? tokenBudget,
-  });
-
-  /// Atomically updates the current goal generation.
-  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update);
-
-  /// Clears the current goal.
-  Future<bool> clearGoal(String sessionId);
-
   /// Starts a turn.
   Future<void> startTurn({
     required String sessionId,
@@ -186,9 +163,6 @@ abstract interface class SessionsApi {
 
   /// Cancels a running turn.
   Future<void> cancelTurn(String sessionId);
-
-  /// Compacts a session context.
-  Future<void> compactSession(String sessionId);
 
   /// Resolves a pending approval.
   Future<void> resolveApproval({
@@ -228,7 +202,7 @@ abstract interface class SessionsApi {
   });
 }
 
-/// Agent-definition operations exposed by the v4 client.
+/// Agent-definition operations exposed by the v5 client.
 abstract interface class AgentsApi {
   /// Emits whenever the agent-definition catalog changes.
   Stream<void> get definitionChanges;
@@ -276,7 +250,105 @@ abstract interface class AgentsApi {
   );
 }
 
-/// Prompt, command, and skill operations exposed by the v4 client.
+/// Plugin package, grant, and declarative UI operations exposed by v5.
+abstract interface class PluginsApi {
+  /// Emits when app-data plugin source files may have changed.
+  Stream<void> get pluginChanges;
+
+  /// Lists installed built-in and app-data plugins.
+  Future<List<PluginDescriptorDto>> listPlugins();
+
+  /// Reads one plugin descriptor.
+  Future<PluginDescriptorDto> getPlugin(String id);
+
+  /// Validates a source revision without activating it.
+  Future<PluginDescriptorDto> validatePlugin(String id);
+
+  /// Activates a valid source revision within one Agent's grants.
+  Future<PluginDescriptorDto> reloadPlugin(String id, String agentId);
+
+  /// Creates a user plugin package under the app-data directory.
+  Future<PluginDescriptorDto> scaffoldPlugin(String id, String name);
+
+  /// Copies one installed validated revision into a new app-data plugin.
+  Future<PluginDescriptorDto> forkPlugin({
+    required String sourceId,
+    required String id,
+    required String name,
+  });
+
+  /// Reads the exact SDK ABI and LuaLS sidecar state for a user plugin.
+  Future<PluginAuthoringEnvironmentDto> getPluginAuthoringEnvironment(
+    String id,
+  );
+
+  /// Atomically synchronizes the exact SDK ABI and LuaLS sidecar.
+  Future<PluginAuthoringEnvironmentDto> syncPluginAuthoringEnvironment(
+    String id,
+  );
+
+  /// Lists the capability grants owned by one Agent.
+  Future<List<AgentPluginGrantDto>> listPluginGrants(String agentId);
+
+  /// Grants one exact Agent, plugin, and capability tuple.
+  Future<List<AgentPluginGrantDto>> grantPluginCapability(
+    AgentPluginGrantDto grant,
+  );
+
+  /// Revokes one exact Agent, plugin, and capability tuple.
+  Future<List<AgentPluginGrantDto>> revokePluginCapability(
+    AgentPluginGrantDto grant,
+  );
+
+  /// Stores a secret in one Agent/plugin namespace without returning it.
+  Future<void> setPluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+    required String value,
+  });
+
+  /// Removes one Agent/plugin secret without exposing whether it existed.
+  Future<void> removePluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+  });
+
+  /// Reads one durable session-control value from an Agent-active plugin.
+  Future<PluginSessionControlValueDto> getPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+  });
+
+  /// Normalizes and replaces one durable plugin session-control value.
+  Future<PluginSessionControlValueDto> setPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+    required Object? value,
+  });
+
+  /// Renders one declarative plugin UI contribution.
+  Future<PluginUiDocumentDto> renderPluginUi({
+    required String agentId,
+    required String pluginId,
+    required String contributionId,
+    required PluginUiSlot slot,
+    Object? input,
+    Map<String, dynamic> context = const <String, dynamic>{},
+  });
+
+  /// Dispatches an action from a previously rendered document.
+  Future<PluginUiDocumentDto> dispatchPluginUiAction({
+    required String agentId,
+    required String pluginId,
+    required PluginUiActionDto action,
+  });
+}
+
+/// Prompt, command, and skill operations exposed by the v5 client.
 abstract interface class PromptsApi {
   /// Emits whenever the skill catalog changes.
   Stream<void> get skillChanges;
@@ -303,7 +375,7 @@ abstract interface class ModelsApi {
   Future<DaemonModelSettingsDto> setDefaultModel(ModelSelectionDto model);
 }
 
-/// Provider operations exposed by the v4 client.
+/// Provider operations exposed by the v5 client.
 abstract interface class ProvidersApi {
   /// Provider authorization updates.
   Stream<ProviderAuthAttemptDto> get authUpdates;
@@ -383,7 +455,7 @@ abstract interface class ProvidersApi {
   Future<void> deleteCustomProvider(String connectionId);
 }
 
-/// MCP operations exposed by the v4 client.
+/// MCP operations exposed by the v5 client.
 abstract interface class McpApi {
   /// Emits whenever MCP server state changes.
   Stream<void> get serverChanges;
@@ -407,7 +479,7 @@ abstract interface class McpApi {
   Future<void> setMcpSecret(String key, String value);
 }
 
-/// Terminal operations and output exposed by the v4 client.
+/// Terminal operations and output exposed by the v5 client.
 abstract interface class TerminalsApi {
   /// Ordered terminal output chunks.
   Stream<TerminalOutputDto> get output;
@@ -460,7 +532,7 @@ abstract interface class TerminalsApi {
   Future<void> setTerminalShell(ShellSpecDto? shell);
 }
 
-/// Attachment transfer operations exposed by the v4 client.
+/// Attachment transfer operations exposed by the v5 client.
 abstract interface class AttachmentsApi {
   /// Uploads an attachment.
   Future<AttachmentDto> uploadAttachment({
@@ -509,6 +581,9 @@ abstract interface class TinestApi {
   /// Agent-definition operations.
   AgentsApi get agents;
 
+  /// Plugin package and runtime operations.
+  PluginsApi get plugins;
+
   /// Prompt, command, and skill operations.
   PromptsApi get prompts;
 
@@ -533,7 +608,7 @@ abstract interface class TinestApi {
   /// Connection-state changes.
   Stream<ClientConnectionState> get states;
 
-  /// Metadata returned by the v4 handshake.
+  /// Metadata returned by the v5 handshake.
   ServerInfoDto get serverInfo;
 
   /// Closes the connection and all feature streams.

@@ -6,7 +6,7 @@ void main() {
   final direct = DirectHostConnection(
     id: 'direct',
     credentialKey: 'direct-secret',
-    endpoint: HostEndpoint.parse('ws://127.0.0.1:7337/v4/ws'),
+    endpoint: HostEndpoint.parse('ws://127.0.0.1:7337/v5/ws'),
   );
   final relay = RelayHostConnection(
     id: 'relay',

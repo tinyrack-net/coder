@@ -10,6 +10,63 @@ const _task = VerificationTask(
 );
 
 void main() {
+  test(
+    'generation normalizes Freezed output after build_runner',
+    () async {
+      final plan = WorkspaceGenerationPlans.generate(jobs: 4);
+      expect(plan.phases, hasLength(3));
+      expect(
+        plan.phases.first.tasks.map((task) => task.name),
+        <String>[
+          'desktop app version',
+          'Flutter localizations',
+          'provider catalog',
+          'built-in Lua plugins',
+        ],
+      );
+      final builtIns = plan.phases.first.tasks.last;
+      expect(builtIns.executable, 'dart');
+      expect(builtIns.arguments, <String>[
+        'run',
+        'packages/daemon/tool/generate_builtin_plugins.dart',
+      ]);
+      expect(plan.phases[1].tasks.single.name, 'build_runner');
+      final normalization = plan.phases.last.tasks.single;
+      expect(normalization.name, 'generated source whitespace');
+      expect(normalization.arguments, <String>[
+        'run',
+        'packages/tinest_quality/tool/normalize_generated_sources.dart',
+      ]);
+
+      final executor = _ControlledExecutor();
+      final run = VerificationRunner(
+        executor: executor,
+        maxJobs: 4,
+      ).run(plan);
+      expect(executor.started, <String>[
+        'desktop app version',
+        'Flutter localizations',
+        'provider catalog',
+        'built-in Lua plugins',
+      ]);
+      executor.complete('built-in Lua plugins');
+      await pumpEventQueue();
+      expect(executor.started, isNot(contains('build_runner')));
+      executor
+        ..complete('desktop app version')
+        ..complete('Flutter localizations')
+        ..complete('provider catalog');
+      await pumpEventQueue();
+      expect(executor.started.last, 'build_runner');
+      executor.complete('build_runner');
+      await pumpEventQueue();
+      expect(executor.started.last, 'generated source whitespace');
+      executor.complete('generated source whitespace');
+
+      expect((await run).succeeded, isTrue);
+    },
+  );
+
   test('runs phases in order and tasks within a phase concurrently', () async {
     final executor = _ControlledExecutor();
     final run = VerificationRunner(executor: executor, maxJobs: 2).run(
@@ -162,6 +219,26 @@ void main() {
     expect(_commands(full), contains(contains('_coverage-dart --jobs=21')));
     expect(_commands(full), contains(contains('_coverage-flutter --jobs=11')));
     expect(_commands(full), contains(contains('exec -c 16')));
+    expect(
+      _commands(full),
+      contains(
+        'dart run packages/daemon/tool/luals_conformance.dart',
+      ),
+    );
+  });
+
+  test('full verification finishes generation before the format gate', () {
+    final full = WorkspaceVerificationPlans.full(jobs: 8);
+    final generatedPhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any((task) => task.name == 'generated sources'),
+    );
+    final formatPhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any((task) => task.name == 'format'),
+    );
+
+    expect(generatedPhase, isNonNegative);
+    expect(formatPhase, greaterThan(generatedPhase));
+    expect(full.phases[generatedPhase].tasks, hasLength(1));
   });
 
   test('full verification overlaps Dart and Flutter coverage', () {

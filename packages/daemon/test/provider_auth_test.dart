@@ -14,7 +14,7 @@ void main() {
   /// coordinator resolves methods exactly as the daemon would.
   ProviderRegistry registryWith(ProviderOAuthGateway gateway) =>
       ProviderRegistry(
-        plugins: openAIFamilyPlugins(
+        adapters: openAIFamilyAdapters(
           clock: _FixedClock(now),
           openAIOAuth: gateway,
         ),

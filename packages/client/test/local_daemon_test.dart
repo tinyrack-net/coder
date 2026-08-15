@@ -241,7 +241,7 @@ void main() {
     tearDown(() => directory.deleteSync(recursive: true));
 
     void write(Object? value) {
-      final versionDirectory = Directory(p.join(directory.path, 'v4'))
+      final versionDirectory = Directory(p.join(directory.path, 'v5'))
         ..createSync();
       File(
         p.join(versionDirectory.path, 'secrets.json'),

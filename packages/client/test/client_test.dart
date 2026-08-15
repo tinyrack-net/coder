@@ -47,29 +47,79 @@ void main() {
     isImplicit: false,
   );
   const agentDefinition = AgentDefinitionDto(
+    version: 5,
     id: 'tinest',
     name: 'Tinest',
     description: 'Coding agent',
     mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: 'Code carefully.',
-    model: selectedModel,
-    modelControls: <String, ModelControlValueDto>{
-      'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-    },
-    permissionMode: PermissionMode.ask,
-    toolIds: <String>['read_file'],
+    model: AgentModelSelectionDto(
+      source: AgentModelSource.session,
+    ),
+    driverId: 'tinest.standard/driver',
+    extensionIds: <String>[],
+    toolIds: <String>['tinest.files/read_file'],
+    pluginSettings: <String, Map<String, dynamic>>{},
     callableAgentIds: <String>[],
+    prompt: 'Code carefully.',
     contentHash: 'hash',
-    sourcePath: '/config/agents/tinest.md',
+    sourcePath: '/config/v5/agents/tinest.md',
     isBuiltIn: true,
   );
   const agentTool = AgentToolDefinitionDto(
-    id: 'read_file',
+    id: 'tinest.files/read_file',
+    originPluginId: 'tinest.files',
+    contributionId: 'read_file',
     name: 'read_file',
     description: 'Read a file.',
     risk: ToolRisk.read,
-    group: ToolGroup.filesystem,
+    group: 'filesystem',
+    kind: AgentToolKind.function,
+    inputSchema: <String, dynamic>{'type': 'object'},
+    effects: <String>['filesystem.read'],
+    presentation: <String, dynamic>{'group': 'filesystem'},
+  );
+  const plugin = PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'acme.reader',
+    version: '1.0.0',
+    name: 'Reader',
+    entrypoint: 'main.lua',
+    source: PluginSource.user,
+    sourcePath: '/config/v5/plugins/acme.reader',
+    requestedCapabilities: <String>['workspace.read'],
+  );
+  const pluginGrant = AgentPluginGrantDto(
+    agentId: 'tinest',
+    pluginId: 'acme.reader',
+    capability: 'workspace.read',
+  );
+  const pluginAuthoring = PluginAuthoringEnvironmentDto(
+    pluginId: 'acme.reader',
+    apiMajor: 5,
+    sdkAbiHash: 'sdk-abi-hash',
+    luaRuntimeVersion: '5.5.1',
+    luaLanguageServerVersion: '3.18.2',
+    pluginPath: '/config/v5/plugins/acme.reader',
+    sdkLibraryPath: '/config/v5/plugin-sdk/api-5/sdk-abi-hash/library',
+    configurationPath: '/config/v5/plugins/acme.reader/.luarc.json',
+    synchronized: true,
+  );
+  const pluginSessionControl = PluginSessionControlValueDto(
+    sessionId: 'agent',
+    agentId: 'tinest',
+    pluginId: 'acme.reader',
+    contributionId: 'acme.reader/mode',
+    revisionHash: 'revision',
+    schema: <String, dynamic>{'type': 'boolean'},
+    defaultValue: false,
+    value: true,
+  );
+  const pluginDocument = PluginUiDocumentDto(
+    id: 'reader-settings',
+    pluginId: 'acme.reader',
+    revisionHash: 'revision',
+    slot: PluginUiSlot.agentSettings,
+    root: <String, dynamic>{'type': 'section'},
   );
   const mcpServer = McpServerStateDto(
     config: McpServerConfigDto(
@@ -162,18 +212,6 @@ void main() {
     data: const <String, dynamic>{'text': 'Plan the response.'},
     createdAt: now,
   );
-  final goal = GoalDto(
-    sessionId: agent.id,
-    goalId: 'goal',
-    objective: 'Finish the client contract',
-    status: GoalStatus.active,
-    tokenBudget: 2000,
-    tokensUsed: 100,
-    timeUsedSeconds: 1,
-    createdAt: now,
-    updatedAt: now,
-  );
-
   test(
     'attachments use authenticated streaming HTTP with typed failures',
     tags: const <String>['feature_test__conversation_attachments__contract'],
@@ -263,6 +301,7 @@ void main() {
         isA<Stream<UserQuestionRequestDto>>(),
       );
       expect(client.agents.definitionChanges, isA<Stream<void>>());
+      expect(client.plugins.pluginChanges, isA<Stream<void>>());
       expect(client.prompts.skillChanges, isA<Stream<void>>());
       expect(client.prompts.commandChanges, isA<Stream<void>>());
       expect(
@@ -346,6 +385,11 @@ void main() {
             agent: agent,
             agentDefinition: agentDefinition,
             agentTool: agentTool,
+            plugin: plugin,
+            pluginAuthoring: pluginAuthoring,
+            pluginGrant: pluginGrant,
+            pluginSessionControl: pluginSessionControl,
+            pluginDocument: pluginDocument,
             mcpServer: mcpServer,
             skill: skill,
             definition: definition,
@@ -354,7 +398,6 @@ void main() {
             approval: approval,
             userQuestion: userQuestion,
             timeline: timeline,
-            goal: goal,
           );
         },
       );
@@ -373,7 +416,7 @@ void main() {
       addTearDown(client.close);
 
       expect(client.serverInfo.protocolVersion, tinestProtocolMajor);
-      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v4/ws'));
+      expect(connector.lastUri, Uri.parse('ws://127.0.0.1:7337/v5/ws'));
       expect(
         connector.lastHeaders,
         const <String, String>{
@@ -485,7 +528,6 @@ void main() {
           worktreeId: worktree.id,
           title: agent.title,
           agentDefinitionId: agent.agentDefinitionId,
-          mode: SessionMode.plan,
           model: const ModelSelectionDto(
             modelId: 'provider/model',
           ),
@@ -496,6 +538,7 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
+            hasModel: true,
             model: ModelSelectionDto(
               modelId: 'provider/model',
             ),
@@ -503,30 +546,10 @@ void main() {
         ),
         agent,
       );
-      expect(await client.sessions.getGoal(agent.id), goal);
-      expect(
-        await client.sessions.replaceGoal(
-          sessionId: agent.id,
-          objective: goal.objective,
-          tokenBudget: goal.tokenBudget,
-        ),
-        goal,
-      );
-      expect(
-        await client.sessions.updateGoal(
-          agent.id,
-          GoalUpdateDto(
-            expectedGoalId: goal.goalId,
-            status: GoalStatus.paused,
-          ),
-        ),
-        goal,
-      );
-      expect(await client.sessions.clearGoal(agent.id), isTrue);
       expect(
         await client.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(mode: SessionMode.plan),
+          const SessionSettingsPatchDto(hasModel: true),
         ),
         agent,
       );
@@ -643,6 +666,100 @@ void main() {
       expect(
         await client.listAgentTools(worktreeId: 'worktree-1'),
         <AgentToolDefinitionDto>[agentTool],
+      );
+      expect(client.plugins, same(client));
+      expect(await client.listPlugins(), <PluginDescriptorDto>[plugin]);
+      expect(await client.getPlugin(plugin.id), plugin);
+      expect(await client.validatePlugin(plugin.id), plugin);
+      expect(await client.reloadPlugin(plugin.id, 'tinest'), plugin);
+      expect(await client.scaffoldPlugin(plugin.id, plugin.name), plugin);
+      expect(
+        await client.forkPlugin(
+          sourceId: 'tinest.files',
+          id: plugin.id,
+          name: plugin.name,
+        ),
+        plugin,
+      );
+      expect(
+        await client.getPluginAuthoringEnvironment(plugin.id),
+        pluginAuthoring,
+      );
+      expect(
+        await client.syncPluginAuthoringEnvironment(plugin.id),
+        pluginAuthoring,
+      );
+      expect(await client.listPluginGrants('tinest'), <AgentPluginGrantDto>[
+        pluginGrant,
+      ]);
+      expect(
+        await client.grantPluginCapability(pluginGrant),
+        <AgentPluginGrantDto>[pluginGrant],
+      );
+      expect(
+        await client.revokePluginCapability(pluginGrant),
+        <AgentPluginGrantDto>[pluginGrant],
+      );
+      await client.setPluginSecret(
+        agentId: 'tinest',
+        pluginId: plugin.id,
+        name: 'API_TOKEN',
+        value: 'wire-only-secret',
+      );
+      await client.removePluginSecret(
+        agentId: 'tinest',
+        pluginId: plugin.id,
+        name: 'API_TOKEN',
+      );
+      expect(
+        connector.requests
+            .lastWhere(
+              (request) => request.method == pluginsSetSecretProcedure.name,
+            )
+            .payload,
+        const PluginSecretSetParamsDto(
+          agentId: 'tinest',
+          pluginId: 'acme.reader',
+          name: 'API_TOKEN',
+          value: 'wire-only-secret',
+        ).toJson(),
+      );
+      expect(
+        await client.getPluginSessionControl(
+          sessionId: agent.id,
+          pluginId: plugin.id,
+          contributionId: 'acme.reader/mode',
+        ),
+        pluginSessionControl,
+      );
+      expect(
+        await client.setPluginSessionControl(
+          sessionId: agent.id,
+          pluginId: plugin.id,
+          contributionId: 'acme.reader/mode',
+          value: true,
+        ),
+        pluginSessionControl,
+      );
+      expect(
+        await client.renderPluginUi(
+          agentId: 'tinest',
+          pluginId: plugin.id,
+          contributionId: 'settings',
+          slot: PluginUiSlot.agentSettings,
+        ),
+        pluginDocument,
+      );
+      expect(
+        await client.dispatchPluginUiAction(
+          agentId: 'tinest',
+          pluginId: plugin.id,
+          action: const PluginUiActionDto(
+            documentId: 'reader-settings',
+            actionId: 'save',
+          ),
+        ),
+        pluginDocument,
       );
       expect(await client.listMcpServers(), <McpServerStateDto>[mcpServer]);
       expect(
@@ -802,7 +919,6 @@ void main() {
         prompt: 'hello',
       );
       await client.cancelTurn(agent.id);
-      await client.compactSession(agent.id);
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await client.notePendingInput(agent.id);
       expect(
@@ -824,24 +940,22 @@ void main() {
 
       final timelines = <TimelineEventDto>[];
       final sessions = <SessionDto>[];
-      final goals = <GoalDto>[];
-      final clearedGoals = <GoalClearedDto>[];
       final approvals = <ApprovalRequestDto>[];
       final questions = <UserQuestionRequestDto>[];
       final authUpdates = <ProviderAuthAttemptDto>[];
       final terminalOutput = <TerminalOutputDto>[];
       final terminalUpdates = <TerminalDto>[];
       var agentChanges = 0;
+      var pluginChanges = 0;
       var skillChanges = 0;
       var commandChanges = 0;
       final eventSubscriptions = <StreamSubscription<Object?>>[
         client.sessions.timelineEvents.listen(timelines.add),
         client.sessions.sessionUpdates.listen(sessions.add),
-        client.sessions.goalUpdates.listen(goals.add),
-        client.sessions.goalClears.listen(clearedGoals.add),
         client.sessions.approvalRequests.listen(approvals.add),
         client.sessions.questionRequests.listen(questions.add),
         client.agents.definitionChanges.listen((_) => agentChanges += 1),
+        client.plugins.pluginChanges.listen((_) => pluginChanges += 1),
         client.prompts.skillChanges.listen((_) => skillChanges += 1),
         client.prompts.commandChanges.listen((_) => commandChanges += 1),
         client.providers.authUpdates.listen(authUpdates.add),
@@ -863,13 +977,12 @@ void main() {
           timeline.copyWith(sequence: 3).toJson(),
         )
         ..sendNotification(sessionsUpdatedNotification.name, agent.toJson())
-        ..sendNotification(sessionsGoalUpdatedNotification.name, goal.toJson())
-        ..sendNotification(
-          sessionsGoalClearedNotification.name,
-          GoalClearedDto(sessionId: agent.id, goalId: goal.goalId).toJson(),
-        )
         ..sendNotification(
           agentsChangedNotification.name,
+          const <String, dynamic>{},
+        )
+        ..sendNotification(
+          pluginsChangedNotification.name,
           const <String, dynamic>{},
         )
         ..sendNotification(
@@ -908,14 +1021,8 @@ void main() {
 
       expect(timelines, <TimelineEventDto>[timeline.copyWith(sequence: 3)]);
       expect(sessions, <SessionDto>[agent]);
-      expect(goals, <GoalDto>[goal]);
-      expect(
-        clearedGoals,
-        <GoalClearedDto>[
-          GoalClearedDto(sessionId: agent.id, goalId: goal.goalId),
-        ],
-      );
       expect(agentChanges, 1);
+      expect(pluginChanges, 1);
       expect(skillChanges, 1);
       expect(commandChanges, 1);
       expect(approvals, <ApprovalRequestDto>[approval]);
@@ -943,10 +1050,6 @@ void main() {
           sessionsListSubagentsProcedure.name,
           sessionsCreateProcedure.name,
           sessionsUpdateSettingsProcedure.name,
-          sessionsGetGoalProcedure.name,
-          sessionsReplaceGoalProcedure.name,
-          sessionsUpdateGoalProcedure.name,
-          sessionsClearGoalProcedure.name,
           agentsListProcedure.name,
           agentsGetProcedure.name,
           agentsCreateProcedure.name,
@@ -979,7 +1082,6 @@ void main() {
           providersDeleteCustomProcedure.name,
           sessionsStartTurnProcedure.name,
           sessionsCancelTurnProcedure.name,
-          sessionsCompactProcedure.name,
           sessionsResolveApprovalProcedure.name,
           sessionsAnswerQuestionProcedure.name,
           sessionsNotePendingInputProcedure.name,
@@ -989,7 +1091,6 @@ void main() {
       expect(states, isNot(contains(ClientConnectionState.disconnected)));
     },
     tags: const <String>[
-      'feature_test__context_compaction__contract',
       'feature_test__daemon_management__contract',
       'feature_test__daemon_authentication__contract',
       'feature_test__workspace_catalog__contract',
@@ -997,7 +1098,6 @@ void main() {
       'feature_test__worktree_lifecycle__contract',
       'feature_test__project_settings__contract',
       'feature_test__session_lifecycle__contract',
-      'feature_test__session_goal__contract',
       'feature_test__turn_execution__contract',
       'feature_test__turn_question__contract',
       'feature_test__conversation_turn_queue__contract',
@@ -1570,6 +1670,11 @@ void _registerFixtureMethods(
   required SessionDto agent,
   required AgentDefinitionDto agentDefinition,
   required AgentToolDefinitionDto agentTool,
+  required PluginDescriptorDto plugin,
+  required PluginAuthoringEnvironmentDto pluginAuthoring,
+  required AgentPluginGrantDto pluginGrant,
+  required PluginSessionControlValueDto pluginSessionControl,
+  required PluginUiDocumentDto pluginDocument,
   required McpServerStateDto mcpServer,
   required SkillSummaryDto skill,
   required ProviderDefinitionDto definition,
@@ -1578,7 +1683,6 @@ void _registerFixtureMethods(
   required ApprovalRequestDto approval,
   required UserQuestionRequestDto userQuestion,
   required TimelineEventDto timeline,
-  required GoalDto goal,
 }) {
   _registerHello(peer, requests);
   final attempt = ProviderAuthAttemptDto(
@@ -1695,13 +1799,6 @@ void _registerFixtureMethods(
     sessionsUpdateSettingsProcedure.name: SessionResultDto(
       session: agent,
     ).toJson(),
-    sessionsGetGoalProcedure.name: GoalGetResultDto(goal: goal).toJson(),
-    sessionsReplaceGoalProcedure.name: GoalResultDto(goal: goal).toJson(),
-    sessionsUpdateGoalProcedure.name: GoalResultDto(goal: goal).toJson(),
-    sessionsClearGoalProcedure.name: const GoalClearResultDto(
-      cleared: true,
-    ).toJson(),
-
     terminalsListProcedure.name: const TerminalListResultDto(
       terminals: <TerminalDto>[terminal],
     ).toJson(),
@@ -1745,6 +1842,45 @@ void _registerFixtureMethods(
     ).toJson(),
     agentsListToolsProcedure.name: AgentToolCatalogResultDto(
       tools: <AgentToolDefinitionDto>[agentTool],
+    ).toJson(),
+    pluginsListProcedure.name: PluginListResultDto(
+      plugins: <PluginDescriptorDto>[plugin],
+    ).toJson(),
+    pluginsGetProcedure.name: PluginResultDto(plugin: plugin).toJson(),
+    pluginsValidateProcedure.name: PluginResultDto(plugin: plugin).toJson(),
+    pluginsReloadProcedure.name: PluginResultDto(plugin: plugin).toJson(),
+    pluginsScaffoldProcedure.name: PluginResultDto(plugin: plugin).toJson(),
+    pluginsForkProcedure.name: PluginResultDto(plugin: plugin).toJson(),
+    pluginsGetPluginAuthoringEnvironmentProcedure.name:
+        PluginAuthoringEnvironmentResultDto(
+          environment: pluginAuthoring,
+        ).toJson(),
+    pluginsSyncPluginAuthoringEnvironmentProcedure.name:
+        PluginAuthoringEnvironmentResultDto(
+          environment: pluginAuthoring,
+        ).toJson(),
+    pluginsListGrantsProcedure.name: PluginGrantListResultDto(
+      grants: <AgentPluginGrantDto>[pluginGrant],
+    ).toJson(),
+    pluginsGrantProcedure.name: PluginGrantListResultDto(
+      grants: <AgentPluginGrantDto>[pluginGrant],
+    ).toJson(),
+    pluginsRevokeProcedure.name: PluginGrantListResultDto(
+      grants: <AgentPluginGrantDto>[pluginGrant],
+    ).toJson(),
+    pluginsSetSecretProcedure.name: const <String, dynamic>{},
+    pluginsRemoveSecretProcedure.name: const <String, dynamic>{},
+    pluginsGetSessionControlProcedure.name: PluginSessionControlResultDto(
+      control: pluginSessionControl,
+    ).toJson(),
+    pluginsSetSessionControlProcedure.name: PluginSessionControlResultDto(
+      control: pluginSessionControl,
+    ).toJson(),
+    pluginsRenderUiProcedure.name: PluginUiDocumentResultDto(
+      document: pluginDocument,
+    ).toJson(),
+    pluginsDispatchUiActionProcedure.name: PluginUiDocumentResultDto(
+      document: pluginDocument,
     ).toJson(),
     mcpListServersProcedure.name: McpServersResultDto(
       servers: <McpServerStateDto>[mcpServer],
@@ -1830,7 +1966,6 @@ void _registerFixtureMethods(
       created: true,
     ).toJson(),
     sessionsCancelTurnProcedure.name: const <String, dynamic>{},
-    sessionsCompactProcedure.name: const <String, dynamic>{},
     sessionsResolveApprovalProcedure.name: ApprovalResultDto(
       approval: approval,
     ).toJson(),

@@ -1,1 +1,0 @@
-Filesystem permissions define which files can be read or written. `sandbox_mode` is `read-only`: the host permits reading files and rejects every tool call that writes a file, starts a process, or has effects it cannot classify. Rejected calls are not escalated, so do not retry them and do not look for another tool that reaches the same effect.

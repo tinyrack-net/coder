@@ -66,7 +66,6 @@ final class SessionComposerDraft {
   const SessionComposerDraft({
     this.agentDefinitionId,
     this.model,
-    this.mode = SessionMode.normal,
     this.modelControls = const <String, ModelControlValueDto>{},
     this.permissionMode,
   });
@@ -76,9 +75,6 @@ final class SessionComposerDraft {
 
   /// Explicit chat model; null resolves through the agent and daemon defaults.
   final ModelSelectionDto? model;
-
-  /// Collaboration mode the next session starts in.
-  final SessionMode mode;
 
   /// Explicit values for the selected provider model.
   final Map<String, ModelControlValueDto> modelControls;
@@ -91,7 +87,6 @@ final class SessionComposerDraft {
   /// Every nullable field takes a wrapper so passing an explicit null clears
   /// the override instead of being read as "leave unchanged".
   SessionComposerDraft copyWith({
-    SessionMode? mode,
     ({String? value})? agentDefinitionId,
     ({ModelSelectionDto? value})? model,
     Map<String, ModelControlValueDto>? modelControls,
@@ -101,7 +96,6 @@ final class SessionComposerDraft {
         ? this.agentDefinitionId
         : agentDefinitionId.value,
     model: model == null ? this.model : model.value,
-    mode: mode ?? this.mode,
     modelControls: modelControls ?? this.modelControls,
     permissionMode: permissionMode == null
         ? this.permissionMode
@@ -121,19 +115,14 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
 
   /// Chooses the agent definition and drops every override bound to the old
   /// agent, so the new definition supplies its own defaults.
-  void selectAgent(String agentDefinitionId) => state = SessionComposerDraft(
-    agentDefinitionId: agentDefinitionId,
-    mode: state.mode,
-  );
+  void selectAgent(String agentDefinitionId) =>
+      state = SessionComposerDraft(agentDefinitionId: agentDefinitionId);
 
   /// Chooses one concrete provider and model override.
   void selectModel(ModelSelectionDto model) => state = state.copyWith(
     model: (value: model),
     modelControls: const <String, ModelControlValueDto>{},
   );
-
-  /// Chooses the collaboration mode the next session starts in.
-  void selectMode(SessionMode mode) => state = state.copyWith(mode: mode);
 
   /// Replaces all values for the currently selected provider model.
   void selectModelControls(Map<String, ModelControlValueDto> controls) =>

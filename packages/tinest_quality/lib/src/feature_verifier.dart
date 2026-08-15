@@ -876,6 +876,7 @@ final class FeatureVerifier {
       'WorkspacesApi': 'workspaces',
       'SessionsApi': 'sessions',
       'AgentsApi': 'agents',
+      'PluginsApi': 'plugins',
       'PromptsApi': 'prompts',
       'ModelsApi': 'models',
       'ProvidersApi': 'providers',

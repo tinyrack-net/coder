@@ -230,16 +230,16 @@ void main() {
 
       // Unpushed work in a managed checkout has to survive the reset.
       final checkout = File(
-        _join(<String>[home.path, 'v4', 'worktrees', 'repo', 'main.dart']),
+        _join(<String>[home.path, 'v5', 'worktrees', 'repo', 'main.dart']),
       );
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
       expect(
-        File(_join(<String>[home.path, 'v4', 'tinest.sqlite'])).existsSync(),
+        File(_join(<String>[home.path, 'v5', 'tinest.sqlite'])).existsSync(),
         isTrue,
       );
       expect(
-        File(_join(<String>[home.path, 'v4', 'secrets.json'])).existsSync(),
+        File(_join(<String>[home.path, 'v5', 'secrets.json'])).existsSync(),
         isTrue,
       );
 
@@ -329,6 +329,7 @@ void main() {
         () => launcher.session != null,
         'the embedded daemon session to exist',
       );
+      addTearDown(() => launcher.session!.stop());
       await pumpUntilCondition(
         tester,
         () =>
@@ -347,6 +348,7 @@ void main() {
       );
 
       expect(launcher.session!.stops, 1);
+      expect(launcher.session!.completedStops, 1);
       expect(tray.destroys, 1);
       expect(terminator.terminations, 1);
       expect(
@@ -356,9 +358,17 @@ void main() {
           'destroyTray',
           'releaseClose',
           'stopDaemon',
+          'stopDaemonCompleted',
           'terminate',
         ]),
       );
+      final abandonedWrites = await home
+          .list(recursive: true)
+          .where(
+            (entity) => entity is Directory && entity.path.endsWith('.tmp'),
+          )
+          .toList();
+      expect(abandonedWrites, isEmpty);
     },
     tags: const <String>[
       'feature_scenario__desktop_residency__tray_quit__e2e',
@@ -495,6 +505,8 @@ final class _RecordingEmbeddedSession implements EmbeddedDaemonSession {
   final EmbeddedDaemonSession delegate;
   final List<String> calls;
   int stops = 0;
+  int completedStops = 0;
+  Future<void>? _stopFuture;
 
   @override
   DaemonCredentials get credentials => delegate.credentials;
@@ -506,10 +518,14 @@ final class _RecordingEmbeddedSession implements EmbeddedDaemonSession {
   String get serverId => delegate.serverId;
 
   @override
-  Future<void> stop() async {
+  Future<void> stop() => _stopFuture ??= _stop();
+
+  Future<void> _stop() async {
     stops += 1;
     calls.add('stopDaemon');
     await delegate.stop();
+    completedStops += 1;
+    calls.add('stopDaemonCompleted');
   }
 }
 

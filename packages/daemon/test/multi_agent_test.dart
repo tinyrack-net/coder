@@ -2,15 +2,17 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:agent/agent.dart';
+import 'package:daemon/src/features/plugins/runtime/built_in_host_primitives.dart';
+import 'package:daemon/src/features/plugins/runtime/host_primitives.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
-import 'package:daemon/src/features/sessions/infrastructure/multi_agent_tools.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:drift/native.dart';
+import 'package:file/memory.dart';
+import 'package:platform/platform.dart';
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -62,33 +64,35 @@ final class _FakeRuntime implements SessionTurnPort {
 }
 
 const AgentDefinitionDto _tinestDefinition = AgentDefinitionDto(
+  version: 5,
   id: 'tinest',
   name: 'Tinest',
   description: 'Primary agent.',
   mode: AgentMode.primary,
-  promptEnabled: false,
-  systemPrompt: '',
-  permissionMode: PermissionMode.workspaceWrite,
-  toolIds: <String>[collaborationCapabilityId],
+  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: <String>['tinest.collaboration'],
+  toolIds: <String>['tinest.collaboration/spawn_agent'],
+  pluginSettings: <String, Map<String, dynamic>>{},
   callableAgentIds: <String>['reviewer'],
+  prompt: '',
   contentHash: 'hash',
   sourcePath: '/config/agents/tinest.md',
 );
 
 const AgentDefinitionDto _reviewerDefinition = AgentDefinitionDto(
+  version: 5,
   id: 'reviewer',
   name: 'Reviewer',
   description: 'Reviews code.',
   mode: AgentMode.subagent,
-  promptEnabled: false,
-  systemPrompt: '',
-  model: ModelSelectionDto(modelId: 'anthropic/claude-reviewer'),
-  modelControls: <String, ModelControlValueDto>{
-    'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-  },
-  permissionMode: PermissionMode.readOnly,
+  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: <String>[],
   toolIds: <String>[],
+  pluginSettings: <String, Map<String, dynamic>>{},
   callableAgentIds: <String>[],
+  prompt: '',
   contentHash: 'hash',
   sourcePath: '/config/agents/reviewer.md',
 );
@@ -132,6 +136,40 @@ void main() {
     createdAt: now,
     updatedAt: now,
   );
+
+  HostPrimitiveRegistry collaborationRegistry(
+    SessionDto caller,
+    AgentDefinitionDto definition,
+  ) {
+    final fileSystem = MemoryFileSystem.test()
+      ..directory('/workspace').createSync(recursive: true);
+    return builtInHostPrimitiveRegistry(
+      BuiltInHostPrimitivePorts(
+        workspaceRoot: '/workspace',
+        attachments: _UnusedAttachmentPublisher(),
+        attachmentReader: _UnusedAttachmentReader(),
+        clock: _PrimitiveClock(now),
+        questions: _UnusedQuestions(),
+        processes: _UnusedProcesses(),
+        skills: _EmptySkills(),
+        callId: 'turn-1',
+        fileSystem: fileSystem,
+        platform: FakePlatform(operatingSystem: 'linux'),
+        session: caller,
+        definition: definition,
+        collaboration: service,
+      ),
+    );
+  }
+
+  HostPrimitiveContext collaborationContext(Set<String> capabilities) =>
+      HostPrimitiveContext(
+        pluginId: 'tinest.collaboration',
+        agentId: 'tinest',
+        sessionId: 'root',
+        workspaceRoot: '/workspace',
+        allowedCapabilities: capabilities,
+      );
 
   setUp(() async {
     database = TinestDatabase.forTesting(
@@ -237,8 +275,8 @@ void main() {
       expect(child.taskName, 'review_task');
       expect(child.lifecycle, AgentLifecycle.pendingInit);
       expect(child.agentDefinitionId, 'reviewer');
-      expect(child.model, _reviewerDefinition.model);
-      expect(child.modelControls, _reviewerDefinition.modelControls);
+      expect(child.model, root.model);
+      expect(child.modelControls, root.modelControls);
       expect(child.origin, SessionOrigin.delegated);
 
       // NEW_TASK mail is queued for the child and its delivery turn started.
@@ -362,7 +400,7 @@ void main() {
       ))!;
       expect(
         child.model,
-        const ModelSelectionDto(modelId: 'openai/gpt-default'),
+        const ModelSelectionDto(modelId: 'openai/gpt-test'),
       );
       expect(
         child.modelControls,
@@ -414,7 +452,7 @@ void main() {
         'root',
         '/root/fast_task',
       ))!;
-      expect(child.model.modelId, 'openai/gpt-cheap');
+      expect(child.model!.modelId, 'openai/gpt-cheap');
       await expectLater(
         service.spawn(
           caller: root,
@@ -1041,115 +1079,193 @@ void main() {
     });
   });
 
-  group('tools', () {
-    test('v2 schemas require only canonical mandatory fields', () async {
-      final root = await database.sessionDao.create(session('root'));
-      final spawn = SpawnAgentTool(service, root, _tinestDefinition, 'turn-1');
-      expect(spawn.strictJsonSchema['required'], <String>[
-        'task_name',
-        'message',
-      ]);
-      expect(
-        (spawn.strictJsonSchema['properties'] as Map<String, dynamic>).keys,
-        containsAll(<String>[
-          'fork_turns',
-          'model',
-          'reasoning_effort',
-          'service_tier',
-        ]),
+  group('host collaboration primitives', () {
+    test('descriptors expose safety metadata without model tool data', () {
+      final registry = collaborationRegistry(
+        session('root'),
+        _tinestDefinition,
       );
       expect(
-        WaitAgentTool(service, root).strictJsonSchema['required'],
-        isEmpty,
-      );
-      expect(
-        ListAgentsTool(service, root).strictJsonSchema['required'],
-        isEmpty,
-      );
-
-      final tools = <AgentTool>[
-        spawn,
-        SendMessageTool(service, root),
-        FollowupTaskTool(service, root),
-        WaitAgentTool(service, root),
-        InterruptAgentTool(service, root),
-        ListAgentsTool(service, root),
-      ];
-      for (final tool in tools) {
-        expect(tool.name, isNotEmpty);
-        expect(tool.description, isNotEmpty, reason: tool.name);
-        expect(tool.risk, AgentToolRisk.read, reason: tool.name);
-        expect(tool.strictJsonSchema['type'], 'object', reason: tool.name);
-        expect(
-          tool.strictJsonSchema['additionalProperties'],
-          isFalse,
-          reason: tool.name,
-        );
-      }
-    });
-
-    test('surface collaboration failures as error results', () async {
-      final root = await database.sessionDao.create(session('root'));
-      final tool = SpawnAgentTool(service, root, _tinestDefinition, 'turn-1');
-      final context = ToolExecutionContext(
-        workspaceRoot: '/workspace',
-        cancellation: CancellationToken(),
-        callId: 'call',
-      );
-      final result = await tool.execute(<String, dynamic>{
-        'task_name': 'BAD NAME',
-        'message': 'x',
-        'agent_type': null,
-        'fork_turns': null,
-        'model': null,
-        'reasoning_effort': null,
-      }, context);
-      expect(result.isError, isTrue);
-      expect(
-        jsonDecode(result.output),
-        containsPair('error', contains('task_name')),
-      );
-    });
-
-    test('only sessions with the capability or a parent get tools', () {
-      final root = session('root');
-      expect(
-        service
-            .collaborationToolsFor(root, _tinestDefinition, 'turn')
-            .map((tool) => tool.name),
-        <String>[
-          'spawn_agent',
-          'send_message',
-          'followup_task',
-          'wait_agent',
-          'interrupt_agent',
-          'list_agents',
+        registry.descriptors
+            .where(
+              (descriptor) => descriptor.operation.startsWith(
+                'host.collaboration.',
+              ),
+            )
+            .map((descriptor) => descriptor.toJson()),
+        <Map<String, Object?>>[
+          <String, Object?>{
+            'operation': 'host.collaboration.followup_task',
+            'capability': 'collaboration.message',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationMessageInput',
+            'luaOutputType': 'tinest.CollaborationFollowupOutput',
+          },
+          <String, Object?>{
+            'operation': 'host.collaboration.interrupt_agent',
+            'capability': 'collaboration.interrupt',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationTargetInput',
+            'luaOutputType': 'tinest.CollaborationInterruptOutput',
+          },
+          <String, Object?>{
+            'operation': 'host.collaboration.list_agents',
+            'capability': 'collaboration.list',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationListInput',
+            'luaOutputType': 'tinest.CollaborationListOutput',
+          },
+          <String, Object?>{
+            'operation': 'host.collaboration.send_message',
+            'capability': 'collaboration.message',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationMessageInput',
+            'luaOutputType': 'tinest.CollaborationQueuedOutput',
+          },
+          <String, Object?>{
+            'operation': 'host.collaboration.spawn_agent',
+            'capability': 'collaboration.spawn',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationSpawnInput',
+            'luaOutputType': 'tinest.CollaborationSpawnOutput',
+          },
+          <String, Object?>{
+            'operation': 'host.collaboration.wait_agent',
+            'capability': 'collaboration.wait',
+            'effect': 'read',
+            'luaInputType': 'tinest.CollaborationWaitInput',
+            'luaOutputType': 'tinest.CollaborationWaitOutput',
+          },
         ],
       );
-      expect(
-        service.collaborationToolsFor(root, _reviewerDefinition, 'turn'),
-        isEmpty,
-      );
-      final child = session(
-        'child',
-        parentSessionId: 'root',
-        taskName: 'task_a',
-        agentPath: '/root/task_a',
-        rootSessionId: 'root',
-      );
-      expect(
-        service.collaborationToolsFor(child, _reviewerDefinition, 'turn'),
-        isNotEmpty,
-      );
     });
 
-    test('usage hints identify root and subagent roles', () {
+    test('capability and service failures use structured envelopes', () async {
+      final root = await database.sessionDao.create(session('root'));
+      final registry = collaborationRegistry(root, _tinestDefinition);
+
+      final denied = await registry.invoke(
+        'host.collaboration.spawn_agent',
+        const <String, Object?>{},
+        collaborationContext(const <String>{}),
+      );
+      expect(denied.toJson(), <String, Object?>{
+        'ok': false,
+        'error': <String, Object?>{
+          'code': 'capability_denied',
+          'message': 'Capability collaboration.spawn is not granted.',
+          'retryable': false,
+        },
+      });
+
+      final invalid = await registry.invoke(
+        'host.collaboration.spawn_agent',
+        const <String, Object?>{
+          'task_name': 'BAD NAME',
+          'message': 'x',
+        },
+        collaborationContext(const <String>{'collaboration.spawn'}),
+      );
+      expect(invalid.ok, isFalse);
+      expect(invalid.error?.code, 'collaboration_error');
+      expect(invalid.error?.message, contains('task_name'));
+      expect(invalid.error?.retryable, isFalse);
+    });
+
+    test('list and interrupt preserve lifecycle wire values', () async {
+      final root = await database.sessionDao.create(session('root'));
+      await database.sessionDao.create(
+        session(
+          'child',
+          parentSessionId: 'root',
+          taskName: 'task_a',
+          agentPath: '/root/task_a',
+          rootSessionId: 'root',
+          lifecycle: AgentLifecycle.pendingInit,
+          agentDefinitionId: 'reviewer',
+        ),
+      );
+      final registry = collaborationRegistry(root, _tinestDefinition);
+
+      final listed = await registry.invoke(
+        'host.collaboration.list_agents',
+        const <String, Object?>{},
+        collaborationContext(const <String>{'collaboration.list'}),
+      );
+      expect(listed.toJson(), <String, Object?>{
+        'ok': true,
+        'value': <String, Object?>{
+          'agents': <Map<String, Object?>>[
+            <String, Object?>{
+              'agent_name': '/root',
+              'agent_status': 'completed',
+            },
+            <String, Object?>{
+              'agent_name': '/root/task_a',
+              'agent_status': 'pending_init',
+            },
+          ],
+        },
+      });
+
+      final interrupted = await registry.invoke(
+        'host.collaboration.interrupt_agent',
+        const <String, Object?>{'target': '/root/task_a'},
+        collaborationContext(const <String>{'collaboration.interrupt'}),
+      );
+      expect(interrupted.toJson(), <String, Object?>{
+        'ok': true,
+        'value': <String, Object?>{'previous_status': 'pending_init'},
+      });
+      expect(fakeRuntime.cancelled, <String>['child']);
+    });
+
+    test(
+      'extension data identifies root and subagent roles without prompts',
+      () {
+        final root = session('root');
+        expect(
+          service.extensionDataFor(root, _tinestDefinition),
+          <String, Object?>{
+            'path': '/root',
+            'is_root': true,
+            'max_concurrent_turns': maxConcurrentSubagentTurnsPerTree,
+          },
+        );
+        expect(
+          service.extensionDataFor(root, _reviewerDefinition),
+          <String, Object?>{
+            'path': '/root',
+            'is_root': true,
+            'max_concurrent_turns': maxConcurrentSubagentTurnsPerTree,
+          },
+        );
+        final child = session(
+          'child',
+          parentSessionId: 'root',
+          taskName: 'task_a',
+          agentPath: '/root/task_a',
+          rootSessionId: 'root',
+        );
+        expect(
+          service.extensionDataFor(
+            child,
+            _reviewerDefinition.copyWith(
+              extensionIds: const <String>['tinest.collaboration'],
+              toolIds: const <String>['tinest.collaboration/spawn_agent'],
+            ),
+          ),
+          <String, Object?>{
+            'path': '/root/task_a',
+            'is_root': false,
+            'max_concurrent_turns': maxConcurrentSubagentTurnsPerTree,
+          },
+        );
+      },
+    );
+
+    test('Dart collaboration data contains no model prompt text', () {
       final root = session('root');
-      expect(
-        service.usageHintFor(root, _tinestDefinition),
-        contains('root agent at path `/root`'),
-      );
-      expect(service.usageHintFor(root, _reviewerDefinition), isNull);
       final child = session(
         'child',
         parentSessionId: 'root',
@@ -1157,41 +1273,86 @@ void main() {
         agentPath: '/root/task_a',
         rootSessionId: 'root',
       );
-      expect(
-        service.usageHintFor(child, _reviewerDefinition),
-        contains('subagent `/root/task_a`'),
-      );
-    });
-
-    test('only the root is coached to orchestrate', () {
-      final root = session('root');
-      final child = session(
-        'child',
-        parentSessionId: 'root',
-        taskName: 'task_a',
-        agentPath: '/root/task_a',
-        rootSessionId: 'root',
-      );
-      final rootHint = service.usageHintFor(root, _tinestDefinition)!;
-      final childHint = service.usageHintFor(child, _reviewerDefinition)!;
-      // The orchestrator prompt tells its reader to delegate rather than work.
-      // Handing it to a subagent makes every child spawn grandchildren and
-      // wait on them, so the tree expands instead of terminating.
-      expect(rootHint, contains(orchestratorPrompt));
-      expect(childHint, isNot(contains(orchestratorPrompt)));
-      expect(childHint, contains(subagentPrompt));
-      expect(rootHint, isNot(contains(subagentPrompt)));
-    });
-
-    test('lifecycle wire names are stable', () {
-      expect(AgentLifecycle.values.map(agentLifecycleWireName), <String>[
-        'pending_init',
-        'running',
-        'interrupted',
-        'completed',
-        'errored',
-      ]);
-      expect(emitted, isNotNull);
+      final rootData = service.extensionDataFor(root, _tinestDefinition)!;
+      final childData = service.extensionDataFor(
+        child,
+        _reviewerDefinition.copyWith(
+          extensionIds: const <String>['tinest.collaboration'],
+          toolIds: const <String>['tinest.collaboration/spawn_agent'],
+        ),
+      )!;
+      expect(rootData.values.whereType<String>(), <String>['/root']);
+      expect(childData.values.whereType<String>(), <String>['/root/task_a']);
     });
   });
+}
+
+final class _UnusedAttachmentPublisher implements AttachmentPublisher {
+  @override
+  Future<ConversationAttachment> publish(String path) =>
+      throw UnimplementedError();
+}
+
+final class _UnusedAttachmentReader implements AttachmentReader {
+  @override
+  Future<ConversationAttachment> read(String id) => throw UnimplementedError();
+}
+
+final class _PrimitiveClock implements AgentClock {
+  const _PrimitiveClock(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowUtc() => now;
+
+  @override
+  Future<SleepOutcome> sleep(
+    Duration duration,
+    CancellationToken cancellation,
+  ) => throw UnimplementedError();
+}
+
+final class _UnusedQuestions implements UserQuestionCoordinator {
+  @override
+  Future<List<UserAnswer>> ask(
+    String callId,
+    List<UserQuestion> questions,
+    CancellationToken cancellation,
+  ) => throw UnimplementedError();
+}
+
+final class _UnusedProcesses implements ExecSessionHost {
+  @override
+  bool isApproved(int sessionId) => false;
+
+  @override
+  ExecSession? lookup(int sessionId) => null;
+
+  @override
+  void markApproved(int sessionId) {}
+
+  @override
+  Future<ExecSession> start({
+    required String command,
+    required String workingDirectory,
+    required bool tty,
+    String? shell,
+    bool login = true,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<bool> terminate(int sessionId) async => false;
+}
+
+final class _EmptySkills implements SkillCatalog {
+  @override
+  Future<SkillContent> read(String name) => throw UnimplementedError();
+
+  @override
+  Future<String> readResource(String name, String relativePath) =>
+      throw UnimplementedError();
+
+  @override
+  List<SkillSummary> summaries() => const <SkillSummary>[];
 }

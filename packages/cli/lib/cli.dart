@@ -4,6 +4,7 @@ export 'src/cli/autocomplete.dart';
 export 'src/cli/context.dart';
 export 'src/cli/shared_flags.dart';
 export 'src/daemon_host.dart';
+export 'src/plugin_cli.dart';
 export 'src/progress.dart';
 export 'src/provider_cli.dart';
 export 'src/relay_cli.dart';

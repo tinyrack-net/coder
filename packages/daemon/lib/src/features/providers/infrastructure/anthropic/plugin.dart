@@ -62,6 +62,9 @@ const AgentModelControlDescriptor _budget = AgentModelControlDescriptor(
 const AgentModelCapabilities _adaptiveCapabilities = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
+  functionTools: AgentCapabilitySupport.supported,
+  freeformTools: AgentCapabilitySupport.unsupported,
+  deferredTools: AgentCapabilitySupport.unsupported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
   controls: <AgentModelControlDescriptor>[_effort, _adaptive, _fast],
@@ -87,6 +90,9 @@ const List<ProviderCatalogModel> anthropicBundledModels =
         capabilities: AgentModelCapabilities(
           streaming: AgentCapabilitySupport.supported,
           toolCalling: AgentCapabilitySupport.supported,
+          functionTools: AgentCapabilitySupport.supported,
+          freeformTools: AgentCapabilitySupport.unsupported,
+          deferredTools: AgentCapabilitySupport.unsupported,
           imageInput: AgentCapabilitySupport.supported,
           fileInput: AgentCapabilitySupport.supported,
           controls: <AgentModelControlDescriptor>[_effort, _budget],
@@ -95,10 +101,10 @@ const List<ProviderCatalogModel> anthropicBundledModels =
       ),
     ];
 
-/// Built-in Anthropic public API plugin.
-final class AnthropicPlugin extends ProviderPlugin {
-  /// Creates the plugin.
-  const AnthropicPlugin({this.wire = const AnthropicMessagesWire()});
+/// Built-in Anthropic public API adapter.
+final class AnthropicAdapter extends ProviderAdapter {
+  /// Creates the adapter.
+  const AnthropicAdapter({this.wire = const AnthropicMessagesWire()});
 
   /// Messages wire shared with custom connections.
   final AnthropicMessagesWire wire;
@@ -120,7 +126,7 @@ final class AnthropicPlugin extends ProviderPlugin {
       );
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
+  ModelGateway createProvider(ModelGatewayRequest request) =>
       wire.createProvider(request);
 
   @override

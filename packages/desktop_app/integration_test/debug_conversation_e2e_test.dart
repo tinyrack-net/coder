@@ -11,8 +11,10 @@ import 'package:app/testing/features/conversation/presentation/chat_reasoning_ca
 import 'package:app/testing/features/conversation/presentation/chat_tool_card.dart';
 import 'package:app/testing/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/testing/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:app/testing/features/hosts/application/host_controller.dart';
 import 'package:app/testing/features/hosts/domain/host_models.dart';
 import 'package:app/testing/features/hosts/domain/host_ports.dart';
+import 'package:app/testing/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/testing/shared/presentation/settings_layout.dart';
 import 'package:app/testing/shared/presentation/tinest_icons.dart';
 import 'package:app/testing/shared/presentation/tinest_selection_row.dart';
@@ -21,6 +23,7 @@ import 'package:daemon/daemon.dart';
 import 'package:dropwell/dropwell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -72,7 +75,7 @@ void main() {
           'vendor/reasoning-model-with-an-extremely-long-identifier';
       await _initializeGitRepository(workspace.path);
       await _writeProjectCommand(workspace.path);
-      final globalSkillsRoot = '${home.path}/v4/skills';
+      final globalSkillsRoot = '${home.path}/v5/skills';
       final userSkillsRoot = '${userHome.path}/.agents/skills';
       final projectSkillsRoot = '${workspace.path}/.agents/skills';
       await _writeSkill(
@@ -296,9 +299,20 @@ void main() {
           ),
         ),
       );
-      // Unmount before the daemons stop so no provider request outlives its
-      // client; tear-downs registered earlier run after this one.
-      addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+      final hostRegistry = ProviderScope.containerOf(
+        tester.element(find.byType(MaterialApp)),
+        listen: false,
+      ).read(hostRegistryControllerProvider.notifier);
+      // Await every client and the embedded daemon before unmounting. Riverpod
+      // disposal cannot itself be awaited, so capture the controller while its
+      // container is live and join that same cached close during tear-down.
+      addTearDown(() async {
+        try {
+          await hostRegistry.shutdown();
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+        }
+      });
       // The sidebar has no daemon level; each daemon names the workspace rows
       // it serves, so a subtitle is the evidence that it connected.
       await pumpUntil(tester, find.text('E2E Workspace'));
@@ -450,9 +464,38 @@ void main() {
         '시스템 프롬프트 (Markdown)',
       ).hitTestable();
       await tester.enterText(promptField, 'Review the current change.');
-      await tester.tap(
-        find.widgetWithText(TRButton, '저장').hitTestable(),
+      final saveAgent = find.widgetWithText(TRButton, '저장').hitTestable();
+      final currentReviewer = await setupClient.agents.getAgentDefinition(
+        'reviewer',
       );
+      final installedPlugins = await setupClient.plugins.listPlugins();
+      final diagnosticCard = find.byKey(
+        const ValueKey<String>('agent-harness-diagnostics'),
+      );
+      final renderedDiagnostics = diagnosticCard.evaluate().isEmpty
+          ? const <String>[]
+          : tester
+                .widgetList<TRText>(
+                  find.descendant(
+                    of: diagnosticCard,
+                    matching: find.byType(TRText),
+                  ),
+                )
+                .map((text) => text.data)
+                .toList(growable: false);
+      expect(
+        tester.widget<TRButton>(saveAgent).onPressed,
+        isNotNull,
+        reason:
+            'A daemon-validated Agent must remain savable. '
+            'driver=${currentReviewer.driverId}, '
+            'extensions=${currentReviewer.extensionIds}, '
+            'tools=${currentReviewer.toolIds}, '
+            'plugins=${installedPlugins.map((plugin) => plugin.id).toList()}, '
+            'diagnostics=$renderedDiagnostics',
+      );
+      await tester.tap(saveAgent);
+      await tester.pump();
       await _waitForAgentPrompt(
         setupClient,
         'reviewer',
@@ -506,7 +549,13 @@ void main() {
       final archiveAgent = find.byKey(
         const ValueKey('agent-archive-button'),
       );
-      await _centerSettingsAction(tester, archiveAgent);
+      await _centerSettingsAction(
+        tester,
+        archiveAgent,
+        settingsOwner: find.byKey(
+          const ValueKey<String>('agent-settings-editor-temporary'),
+        ),
+      );
       await tester.tap(archiveAgent);
       await tester.pumpAndSettle();
       await tester.tap(
@@ -523,34 +572,33 @@ void main() {
       await tester.tap(find.text('Tinest').first);
       await tester.pumpAndSettle();
       final resetAgent = find.byKey(const ValueKey('agent-reset-button'));
-      await _centerSettingsAction(tester, resetAgent);
+      await _centerSettingsAction(
+        tester,
+        resetAgent,
+        settingsOwner: find.byKey(
+          const ValueKey<String>('agent-settings-editor-tinest'),
+        ),
+      );
       await tester.tap(resetAgent);
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-reset-confirm')),
       );
       await tester.pumpAndSettle();
-      final editorList = find.byType(ListView).last;
-      final editorScrollable = find
-          .descendant(of: editorList, matching: find.byType(Scrollable))
-          .first;
-      // Two steps, and both are needed. scrollUntilVisible builds the section
-      // the row lives in, but stops as soon as the row exists rather than when
-      // it is on screen; ensureVisible then brings it fully into view. The row
-      // is addressed by key because a section builds as a unit, so a text match
-      // can resolve to an occurrence far below the fold. The group header is
-      // the waypoint rather than the tool: a group starts closed, so its tools
-      // are not in the tree until someone opens it.
+      final tinestEditor = find.byKey(
+        const ValueKey<String>('agent-settings-editor-tinest'),
+      );
+      await pumpUntil(tester, tinestEditor);
+      // The group header is the waypoint rather than the tool: a group starts
+      // closed, so its tools are not in the tree until someone opens it.
       final collaborationGroup = find.byKey(
         const ValueKey<String>('agent-tool-group-collaboration'),
       );
-      await tester.scrollUntilVisible(
+      await _centerSettingsAction(
+        tester,
         collaborationGroup,
-        400,
-        scrollable: editorScrollable,
+        settingsOwner: tinestEditor,
       );
-      await tester.ensureVisible(collaborationGroup);
-      await tester.pumpAndSettle();
       // Opening it proves the group really does carry the tool the reset
       // default turned on, which the assertion below reads back off disk.
       await tester.tap(collaborationGroup);
@@ -559,17 +607,19 @@ void main() {
         tester
             .widget<TinestCheckboxRow>(
               find.byKey(
-                const ValueKey<String>('agent-tool-tile-collaboration'),
+                const ValueKey<String>(
+                  'agent-tool-tile-tinest.collaboration-spawn_agent',
+                ),
               ),
             )
             .value,
         isTrue,
       );
 
-      await tester.scrollUntilVisible(
+      await _centerSettingsAction(
+        tester,
         find.text('호출 가능한 Subagent'),
-        400,
-        scrollable: editorScrollable,
+        settingsOwner: tinestEditor,
       );
       final reviewerSubagent = find.text('Reviewer').last;
       await tester.ensureVisible(reviewerSubagent);
@@ -584,7 +634,10 @@ void main() {
         'tinest',
       );
       expect(collaboratingTinest.callableAgentIds, <String>['reviewer']);
-      expect(collaboratingTinest.toolIds, contains('collaboration'));
+      expect(
+        collaboratingTinest.toolIds,
+        contains('tinest.collaboration/spawn_agent'),
+      );
 
       await _openSettingsCategory(tester, 'agent');
       await _openSettingsCategory(tester, 'skill');
@@ -874,13 +927,22 @@ void main() {
       final tinestDefinition = await setupClient.agents.getAgentDefinition(
         'tinest',
       );
-      // The remaining turn fixtures invoke individual tools directly, so they
-      // need the MCP echo capability on top of the shipped set. The Lua
-      // surface stays out of them because these models declare the direct
-      // tool surface, not because of anything listed here.
+      // The remaining turn fixtures invoke individual tools directly. v5 has
+      // no hidden or always-on tools, so every static capability the fixture
+      // calls is declared on this Agent. MCP tools themselves are materialized
+      // only after the selected Lua search contribution discovers them.
       await setupClient.agents.updateAgentDefinition(
         tinestDefinition.copyWith(
-          toolIds: <String>[...tinestDefinition.toolIds, 'mcp__e2e__echo'],
+          toolIds: <String>[
+            ...tinestDefinition.toolIds.where(
+              (toolId) => toolId != 'tinest.mcp/tool_search',
+            ),
+            'tinest.attachments/attach_file',
+            'tinest.interaction/request_user_input',
+            'tinest.skills/list_skills',
+            'tinest.skills/skill',
+            'tinest.mcp/tool_search',
+          ],
         ),
         expectedContentHash: tinestDefinition.contentHash,
       );
@@ -1045,7 +1107,7 @@ void main() {
       // The child works asynchronously and parks on an approval only a human
       // can answer; the track has to surface it or the agent never finishes.
       late SessionDto spawnedChild;
-      await pumpUntilCondition(
+      await _pumpUntilConditionWithSessionDiagnostics(
         tester,
         () async {
           final sessions = await setupClient.sessions.listSessions(
@@ -1063,6 +1125,7 @@ void main() {
           return true;
         },
         'the spawned subagent to block on an approval',
+        setupClient,
         budget: e2eTurnBudget,
       );
       expect(spawnedChild.taskName, 'review_task');
@@ -1135,86 +1198,6 @@ void main() {
       // The composer only exists on a drivable pane, so its return is the
       // evidence that the root session is on screen again, not the child.
       await pumpUntil(tester, find.byKey(composer));
-
-      final goalSessionId = (await setupClient.sessions.listSessions(
-        worktreeId: 'checkout-e2e',
-      )).singleWhere((session) => session.origin == SessionOrigin.manual).id;
-      await _waitForComposerReady(tester, send);
-      await _typeComposerPrompt(tester, composer, '/goal');
-      // The catalog merges agent commands and skills that the daemon sends over
-      // the wire, so the row arrives a round trip after the keystroke and
-      // `pumpAndSettle` returns long before it. Enter pressed into a closed
-      // overlay sends `/goal` as an ordinary prompt and the editor never opens.
-      await pumpUntil(tester, find.text('goal'));
-      // First Enter accepts the highlighted command completion; the second
-      // dispatches `/goal` and opens the editor. The overlay closing is the
-      // evidence that the first one landed as an acceptance.
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await pumpUntilGone(tester, find.text('goal'));
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await pumpUntil(tester, find.text('세션 Goal'));
-      final goalDialog = find.byType(TRAlertDialog);
-      final goalObjective = find
-          .descendant(of: goalDialog, matching: find.byType(EditableText))
-          .first;
-      await tester.enterText(goalObjective, 'Complete persistent goal e2e');
-      final startGoal = find
-          .descendant(
-            of: goalDialog,
-            matching: find.widgetWithText(TRButton, 'Goal 시작'),
-          )
-          .hitTestable();
-      expect(startGoal, findsOneWidget);
-      await tester.tap(startGoal);
-      await pumpUntilGone(tester, goalDialog);
-      await pumpUntilCondition(
-        tester,
-        () async {
-          final goal = await setupClient.sessions.getGoal(goalSessionId);
-          return goal?.objective == 'Complete persistent goal e2e';
-        },
-        'the submitted goal editor to create the persistent goal',
-      );
-      late GoalDto completedGoal;
-      var observedGoalState = 'no goal state observed';
-      try {
-        await pumpUntilCondition(
-          tester,
-          () async {
-            final session = (await setupClient.sessions.listSessions())
-                .singleWhere((session) => session.id == goalSessionId);
-            final goal = await setupClient.sessions.getGoal(goalSessionId);
-            observedGoalState =
-                '${session.status.name}:${session.mode.name}:'
-                '${goal?.status.name}:${goal?.objective}';
-            if (goal?.objective == 'Complete persistent goal e2e' &&
-                goal?.status == GoalStatus.complete) {
-              completedGoal = goal!;
-              return true;
-            }
-            return false;
-          },
-          'the persistent goal to complete after continuation turns',
-          budget: e2eTurnBudget,
-        );
-      } on TestFailure catch (error) {
-        throw TestFailure(
-          '$error Provider goal rounds: ${agentProvider._goalRounds}. '
-          'Observed: $observedGoalState',
-        );
-      }
-      await pumpUntil(tester, find.text('완료'));
-      final reconnectClient = await TinestClient.connect(
-        endpoint: endpoint,
-        credentials: DaemonCredentials(bearerToken: handle.bearerToken),
-        clientId: 'goal-reconnect',
-        clientKind: 'integration-test',
-      );
-      expect(
-        await reconnectClient.sessions.getGoal(completedGoal.sessionId),
-        completedGoal,
-      );
-      await reconnectClient.close();
 
       // An app-owned command runs in the app: the draft clears and no turn
       // starts for it. This needs the live session, which is where the app
@@ -1307,20 +1290,32 @@ void main() {
       );
       await tester.tap(find.byKey(send));
       await tester.pump();
+      final failedToolSnapshot = find.byWidgetPredicate(
+        (widget) =>
+            widget is PluginUiDocumentView &&
+            widget.document.pluginId == 'tinest.collaboration' &&
+            jsonEncode(
+              widget.document.root,
+            ).contains('Agent type is not allowed: not-allowed'),
+      );
       await _pumpUntilWithSessionDiagnostics(
         tester,
-        find.text(
-          '실패',
-          findRichText: true,
-        ),
+        failedToolSnapshot,
         setupClient,
       );
-      final failedToolCard = find.byWidgetPredicate(
-        (widget) =>
-            widget is ChatToolCard &&
-            widget.activity.callId == 'disallowed-delegate-call',
-      );
-      expect(failedToolCard, findsOneWidget);
+      expect(failedToolSnapshot, findsOneWidget);
+      final rootSession = (await setupClient.sessions.listSessions(
+        worktreeId: 'checkout-e2e',
+      )).singleWhere((session) => session.origin == SessionOrigin.manual);
+      final failedToolEvent =
+          (await setupClient.sessions.subscribeTimeline(
+            rootSession.id,
+          )).singleWhere(
+            (event) =>
+                event.type == 'tool.completed' &&
+                event.data['callId'] == 'disallowed-delegate-call',
+          );
+      expect(failedToolEvent.data['isError'], isTrue);
       // Expansion and the structured error body are owned by the focused
       // chat-view widget test. This real-daemon slice pins the failed card and
       // the exact tool event below without depending on virtual-list details.
@@ -1385,12 +1380,23 @@ void main() {
         await File('${workspace.path}/result.txt').readAsString(),
         'done\n',
       );
-      // Collapsed tool activity renders only its localized action and status;
-      // no request or result payload reaches the UI until it is expanded.
-      expect(find.text('파일 편집', findRichText: true), findsWidgets);
-      expect(find.textContaining('Edit('), findsNothing);
-      expect(find.textContaining('changedFiles'), findsNothing);
-      expect(find.textContaining('"isError"'), findsNothing);
+      // Completion is replaced by the plugin-owned immutable presentation
+      // snapshot; the running host card above is deliberately no longer kept.
+      final patchSnapshot = find.byWidgetPredicate(
+        (widget) =>
+            widget is PluginUiDocumentView &&
+            widget.document.pluginId == 'tinest.edit',
+      );
+      expect(patchSnapshot, findsOneWidget);
+      final patchEvent =
+          (await setupClient.sessions.subscribeTimeline(
+            rootSession.id,
+          )).singleWhere(
+            (event) =>
+                event.type == 'tool.completed' &&
+                event.data['callId'] == 'patch-call',
+          );
+      expect(patchEvent.data['isError'], isFalse);
       expect(tester.takeException(), isNull);
       // Attachments use the authenticated HTTP transport even though the turn
       // and timeline continue to use the WebSocket API.
@@ -1523,7 +1529,11 @@ void main() {
       );
       expect(
         (await setupClient.agents.listAgentTools()).map((tool) => tool.id),
-        contains('mcp__e2e__echo'),
+        allOf(
+          contains('tinest.mcp/tool_search'),
+          isNot(contains('tinest.mcp/tool_bridge')),
+          isNot(contains('tinest.mcp/mcp__e2e__echo')),
+        ),
       );
       await _submitComposerPrompt(tester, composer, send, 'MCP echo');
       final mcpApproval = _approvalForCall('mcp-call');
@@ -1559,12 +1569,14 @@ void main() {
       await pumpUntil(tester, find.text('MCP rejected', findRichText: true));
 
       await setupClient.mcp.removeMcpServer('e2e');
-      await pumpUntilCondition(
-        tester,
-        () async => (await setupClient.agents.listAgentTools()).every(
-          (tool) => tool.id != 'mcp__e2e__echo',
+      final staticCatalog = await setupClient.agents.listAgentTools();
+      expect(
+        staticCatalog.map((tool) => tool.id),
+        allOf(
+          contains('tinest.mcp/tool_search'),
+          isNot(contains('tinest.mcp/tool_bridge')),
+          isNot(contains('tinest.mcp/mcp__e2e__echo')),
         ),
-        'the offline MCP tool to leave the agent catalog',
       );
       await _submitComposerPrompt(tester, composer, send, 'Offline MCP');
       await pumpUntil(
@@ -1653,7 +1665,7 @@ void main() {
                   event.data['name'] == 'mcp__e2e__echo',
             )
             .map((event) => event.data['output']),
-        contains('secret-through MCP'),
+        contains(contains('secret-through MCP')),
       );
       expect(
         turnBranches
@@ -1665,43 +1677,6 @@ void main() {
             .map((event) => event.data['output'])
             .join('\n'),
         contains('Use the deterministic E2E instructions.'),
-      );
-
-      // Plan mode proposes work and hands it back for approval.
-      await _selectComposerMode(tester, SessionMode.plan);
-      await pumpUntilCondition(
-        tester,
-        () async =>
-            (await setupClient.sessions.listSessions(
-                  worktreeId: 'checkout-e2e',
-                ))
-                .singleWhere((session) => session.id == attachmentSession.id)
-                .mode ==
-            SessionMode.plan,
-        'the attachment session to enter plan mode',
-      );
-      await tester.pumpAndSettle();
-      await _submitComposerPrompt(tester, composer, send, 'Plan the change');
-      await pumpUntil(
-        tester,
-        find.text('Plan ready: Create result.txt', findRichText: true),
-      );
-      // update_plan records execution progress and is unavailable in Plan
-      // Mode. The user explicitly returns to Default mode after reading the
-      // prose proposal.
-      await _selectComposerMode(tester, SessionMode.normal);
-      // Confirm the daemon agrees before sending a prompt that must not be
-      // planned again.
-      await pumpUntilCondition(
-        tester,
-        () async =>
-            (await setupClient.sessions.listSessions(
-                  worktreeId: 'checkout-e2e',
-                ))
-                .singleWhere((session) => session.id == attachmentSession.id)
-                .mode ==
-            SessionMode.normal,
-        'the attachment session to leave plan mode',
       );
 
       // A blocking agent question stops the turn until the user answers it,
@@ -1805,10 +1780,6 @@ void main() {
         worktreeId: 'checkout-e2e',
       );
       expect(agents, hasLength(2));
-      expect(
-        agents.every((session) => session.mode == SessionMode.normal),
-        isTrue,
-      );
       final parent = agents.singleWhere(
         (session) => session.origin == SessionOrigin.manual,
       );
@@ -2348,8 +2319,6 @@ void main() {
       'feature_test__worktree_lifecycle__e2e',
       'feature_test__session_lifecycle__e2e',
       'feature_test__session_tabs__e2e',
-      'feature_test__session_goal__e2e',
-      'feature_scenario__session_goal__multi_turn_completion_reconnect__e2e',
       'feature_test__terminal_lifecycle__e2e',
       'feature_test__terminal_lifecycle__platformSmoke',
       'feature_scenario__terminal_lifecycle__create_write_terminate__e2e',
@@ -2375,7 +2344,6 @@ void main() {
       'feature_scenario__workspace_catalog__multi_host_merge_refresh__e2e',
       'feature_scenario__worktree_lifecycle__create_and_archive__e2e',
       'feature_scenario__session_lifecycle__create_with_configuration__e2e',
-      'feature_scenario__session_lifecycle__update_model_and_mode__e2e',
       'feature_scenario__session_lifecycle__reconnect_persistence__e2e',
       'feature_test__session_home__e2e',
       'feature_scenario__session_home__create_without_project__e2e',
@@ -2485,7 +2453,7 @@ Future<void> _waitForAgentPrompt(
   String id,
   String prompt,
 ) => awaitCondition(
-  () async => (await api.agents.getAgentDefinition(id)).systemPrompt == prompt,
+  () async => (await api.agents.getAgentDefinition(id)).prompt == prompt,
   'the external agent file to reload',
 );
 
@@ -2575,25 +2543,43 @@ Future<void> _openSettingsCategory(
 
 Future<void> _centerSettingsAction(
   WidgetTester tester,
-  Finder action,
-) async {
+  Finder action, {
+  Finder? settingsOwner,
+}) async {
   // Saving can briefly replace the editor with its loading state. Wait for the
-  // settings scrollable to remount before revealing the trailing action.
-  // Re-resolve the real settings surface after every drag because the editor
-  // can remount between frames.
-  for (var attempt = 0; action.evaluate().isEmpty; attempt += 1) {
-    if (attempt >= 50) {
+  // settings list to remount before revealing the trailing action. An adaptive
+  // navigator can retain an offstage settings pane, so callers with a known
+  // detail destination provide its exact owner. Jump one currently known
+  // extent at a time: lazily built sections can extend the list after a jump,
+  // and reaching a stable end without the action is a real contract failure.
+  var anchoredAtStart = false;
+  while (action.evaluate().isEmpty) {
+    final settingsLists = find.descendant(
+      of: settingsOwner ?? find.byType(SettingsScaffold),
+      matching: find.byType(ListView),
+    );
+    await pumpUntil(tester, settingsLists);
+    final settingsScrollable = find
+        .descendant(
+          of: settingsLists.first,
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await pumpUntil(tester, settingsScrollable);
+    final position = tester.state<ScrollableState>(settingsScrollable).position;
+    if (!anchoredAtStart) {
+      anchoredAtStart = true;
+      if (position.pixels > position.minScrollExtent) {
+        position.jumpTo(position.minScrollExtent);
+        await tester.pumpAndSettle();
+        continue;
+      }
+    }
+    final nextExtent = position.maxScrollExtent;
+    if (!position.hasContentDimensions || nextExtent <= position.pixels) {
       throw TestFailure('Settings action was not built after scrolling.');
     }
-    final settingsScrollables = find.descendant(
-      of: find.byType(SettingsScaffold),
-      matching: find.byType(Scrollable),
-    );
-    await pumpUntil(tester, settingsScrollables);
-    await tester.drag(
-      settingsScrollables.first,
-      const Offset(0, -TRSpacing.fourExtraLarge),
-    );
+    position.jumpTo(nextExtent);
     await tester.pumpAndSettle();
   }
   await pumpUntil(tester, action);
@@ -2788,36 +2774,6 @@ Future<void> _selectComposerModel(
   }
 }
 
-Future<void> _selectComposerMode(
-  WidgetTester tester,
-  SessionMode mode,
-) async {
-  final direct = find
-      .byKey(const ValueKey<String>('session-composer-mode'))
-      .hitTestable();
-  if (direct.evaluate().isNotEmpty) {
-    await tester.tap(direct);
-    await tester.pump();
-    return;
-  }
-  await tester.tap(
-    find.byKey(const ValueKey<String>('session-composer-settings')),
-  );
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find.byKey(const ValueKey<String>('session-composer-settings-mode')),
-  );
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find.byKey(
-      ValueKey<String>('session-composer-mode-${mode.name}-sheet'),
-    ),
-  );
-  await tester.pumpAndSettle();
-  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-  await tester.pumpAndSettle();
-}
-
 /// Types [prompt] into the composer and proves it arrived.
 ///
 /// `tester.enterText` grants focus and pumps once, which is not enough: the
@@ -2910,9 +2866,18 @@ Future<void> _pumpUntilWithSessionDiagnostics(
       diagnostics[session.id] = <String, Object?>{
         'status': session.status.name,
         'definition': session.agentDefinitionId,
-        'events': (await api.sessions.subscribeTimeline(
-          session.id,
-        )).map((event) => event.type).toList(growable: false),
+        'lastError': session.lastError,
+        'events': (await api.sessions.subscribeTimeline(session.id))
+            .map(
+              (event) => <String, Object?>{
+                'type': event.type,
+                if (event.type.startsWith('tool.') ||
+                    event.type.startsWith('plugin.lifecycle.') ||
+                    event.type.endsWith('.failed'))
+                  'data': event.data,
+              },
+            )
+            .toList(growable: false),
       };
     }
     final composers = tester.widgetList<SessionComposer>(
@@ -2943,6 +2908,49 @@ Future<void> _pumpUntilWithSessionDiagnostics(
   }
 }
 
+Future<void> _pumpUntilConditionWithSessionDiagnostics(
+  WidgetTester tester,
+  FutureOr<bool> Function() condition,
+  String description,
+  TinestApi api, {
+  Duration budget = e2eWaitBudget,
+}) async {
+  try {
+    await pumpUntilCondition(
+      tester,
+      condition,
+      description,
+      budget: budget,
+    );
+  } on TestFailure catch (failure) {
+    final sessions = await api.sessions.listSessions(
+      worktreeId: 'checkout-e2e',
+    );
+    final diagnostics = <String, Object?>{};
+    for (final session in sessions) {
+      diagnostics[session.id] = <String, Object?>{
+        'status': session.status.name,
+        'definition': session.agentDefinitionId,
+        'origin': session.origin.name,
+        'taskName': session.taskName,
+        'lastError': session.lastError,
+        'events': (await api.sessions.subscribeTimeline(session.id))
+            .map(
+              (event) => <String, Object?>{
+                'type': event.type,
+                if (event.type.startsWith('tool.') ||
+                    event.type.startsWith('plugin.lifecycle.') ||
+                    event.type.endsWith('.failed'))
+                  'data': event.data,
+              },
+            )
+            .toList(growable: false),
+      };
+    }
+    throw TestFailure('${failure.message} Sessions: $diagnostics');
+  }
+}
+
 final class _RestartableLauncher implements EmbeddedDaemonLauncher {
   _RestartableLauncher({
     required EmbeddedDaemonHandle initialHandle,
@@ -2957,7 +2965,7 @@ final class _RestartableLauncher implements EmbeddedDaemonLauncher {
   /// Stands in for the machine home so a restart keeps the home workspace.
   final String userHomeDirectory;
   final String bearerToken;
-  final ModelProvider provider;
+  final ModelGateway provider;
   final List<EmbeddedDaemonExposure> exposures = <EmbeddedDaemonExposure>[];
   EmbeddedDaemonHandle? _current;
   bool _initial = true;
@@ -3024,7 +3032,7 @@ final class _ExistingSession implements EmbeddedDaemonSession {
   }
 }
 
-final class _PatchProvider implements ModelProvider {
+final class _PatchProvider implements ModelGateway {
   int _round = 0;
 
   @override
@@ -3095,12 +3103,11 @@ final class _E2eModelDiscovery implements ProviderModelDiscovery {
   }
 }
 
-final class _AgentE2eProvider implements ModelProvider {
+final class _AgentE2eProvider implements ModelGateway {
   _AgentE2eProvider(this.attachmentCapturePath);
 
   final String attachmentCapturePath;
   int _providerFailures = 0;
-  int _goalRounds = 0;
 
   @override
   String get id => 'agent-e2e-fake';
@@ -3111,64 +3118,8 @@ final class _AgentE2eProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    final latestHistoryItem = request.history.lastOrNull;
-    if (latestHistoryItem is ToolResultConversationItem &&
-        latestHistoryItem.callId == 'goal-complete-call') {
-      yield const ModelTextDelta('Persistent goal complete.');
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(
-          text: 'Persistent goal complete.',
-        ),
-      );
-      return;
-    }
-    // Matched on the objective inside its element rather than on one exact
-    // line, so the goal prompt can be reworded without silently turning this
-    // branch off and leaving the goal to time out.
-    if (RegExp(
-      r'<objective>\s*Complete persistent goal e2e\s*</objective>',
-    ).hasMatch(request.instructions)) {
-      _goalRounds += 1;
-      if (_goalRounds < 3) {
-        yield ModelTextDelta('Goal progress $_goalRounds.');
-        yield ModelResponseCompleted(
-          assistant: AssistantConversationItem(
-            text: 'Goal progress $_goalRounds.',
-          ),
-        );
-        return;
-      }
-      const arguments = <String, dynamic>{'status': 'complete'};
-      yield const ModelFunctionCall(
-        callId: 'goal-complete-call',
-        name: 'update_goal',
-        arguments: arguments,
-      );
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(
-          text: '',
-          toolCalls: <ConversationToolCall>[
-            ConversationToolCall.function(
-              callId: 'goal-complete-call',
-              name: 'update_goal',
-              arguments: arguments,
-            ),
-          ],
-        ),
-      );
-      return;
-    }
     final latestUser = request.history.whereType<UserConversationItem>().last;
     final latestPrompt = latestUser.text;
-    if (request.instructions.contains('You are in Plan Mode')) {
-      yield const ModelTextDelta('Plan ready: Create result.txt');
-      yield const ModelResponseCompleted(
-        assistant: AssistantConversationItem(
-          text: 'Plan ready: Create result.txt',
-        ),
-      );
-      return;
-    }
     if (latestPrompt == 'Ask me about storage') {
       final answered = request.history
           .whereType<ToolResultConversationItem>()
@@ -3368,6 +3319,21 @@ final class _AgentE2eProvider implements ModelProvider {
     final hasRejectedMcpResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'reject-mcp-call');
+    final mcpSearchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'mcp-search-call')
+        .map((item) => item.output)
+        .firstOrNull;
+    final rejectedMcpSearchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'reject-mcp-search-call')
+        .map((item) => item.output)
+        .firstOrNull;
+    final offlineMcpSearchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'offline-mcp-search-call')
+        .map((item) => item.output)
+        .firstOrNull;
     final hasSkillResult = request.history
         .whereType<ToolResultConversationItem>()
         .any((item) => item.callId == 'skill-call');
@@ -3425,11 +3391,12 @@ final class _AgentE2eProvider implements ModelProvider {
     }
 
     if (latestPrompt == 'Use E2E skill' && skillListing == null) {
-      // The prompt names no skill any more, only how many there are and which
-      // tool finds them, so its size no longer tracks the catalog.
-      if (!request.instructions.contains('list_skills') ||
-          request.instructions.contains('Loaded during an end-to-end turn.')) {
-        throw StateError('the skill prompt still carried the catalog');
+      // v5 does not inject a host-owned skill catalog into the prompt. The
+      // Agent exposes discovery through its selected Lua tool schema instead.
+      final prompt = request.blocks.map((block) => block.content).join('\n\n');
+      if (!request.tools.any((tool) => tool.name == 'list_skills') ||
+          prompt.contains('Loaded during an end-to-end turn.')) {
+        throw StateError('the skill tool surface or prompt was incorrect');
       }
       const listArguments = <String, dynamic>{'cursor': null};
       yield const ModelFunctionCall(
@@ -3495,6 +3462,15 @@ final class _AgentE2eProvider implements ModelProvider {
         name: 'list_skills',
         arguments: listArguments,
       );
+      // The prompt carries no skill text at all now, so this only guards
+      // against a regression that puts the catalog back. That a disabled
+      // skill leaves the catalog is pinned by the daemon vertical slice,
+      // which asserts on the listing the tool actually returns.
+      if (request.blocks.any(
+        (block) => block.content.contains('Loaded during an end-to-end turn.'),
+      )) {
+        throw StateError('disabled skill remained in the turn catalog');
+      }
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
@@ -3524,11 +3500,38 @@ final class _AgentE2eProvider implements ModelProvider {
       return;
     }
 
+    if (latestPrompt == 'Offline MCP' && offlineMcpSearchResult == null) {
+      if (!request.tools.any((tool) => tool.name == 'tool_search_mcp')) {
+        throw StateError('the selected MCP search tool was not advertised');
+      }
+      const arguments = <String, dynamic>{'query': 'echo', 'limit': 8};
+      yield const ModelDeferredSearchCall(
+        callId: 'offline-mcp-search-call',
+        name: 'tool_search_mcp',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.deferredSearch(
+              callId: 'offline-mcp-search-call',
+              name: 'tool_search_mcp',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (latestPrompt == 'Offline MCP') {
       final available = request.tools.any(
         (tool) => tool.name == 'mcp__e2e__echo',
       );
       if (available) throw StateError('offline MCP tool remained available');
+      if (offlineMcpSearchResult!.contains('mcp__e2e__echo')) {
+        throw StateError('offline MCP tool remained discoverable');
+      }
       yield const ModelTextDelta('MCP unavailable safely');
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
@@ -3537,9 +3540,37 @@ final class _AgentE2eProvider implements ModelProvider {
       );
       return;
     }
+    if (latestPrompt == 'MCP echo' && mcpSearchResult == null) {
+      if (!request.tools.any((tool) => tool.name == 'tool_search_mcp') ||
+          request.tools.any((tool) => tool.name == 'mcp__e2e__echo')) {
+        throw StateError('MCP search surface was not initially isolated');
+      }
+      const arguments = <String, dynamic>{'query': 'echo', 'limit': 8};
+      yield const ModelDeferredSearchCall(
+        callId: 'mcp-search-call',
+        name: 'tool_search_mcp',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.deferredSearch(
+              callId: 'mcp-search-call',
+              name: 'tool_search_mcp',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (latestPrompt == 'MCP echo' && !hasMcpResult) {
+      if (!mcpSearchResult!.contains('mcp__e2e__echo')) {
+        throw StateError('MCP search did not return the echo tool');
+      }
       if (!request.tools.any((tool) => tool.name == 'mcp__e2e__echo')) {
-        throw StateError('MCP echo tool was not injected');
+        throw StateError('MCP echo tool was not dynamically surfaced');
       }
       const arguments = <String, dynamic>{'value': 'through MCP'};
       yield const ModelFunctionCall(
@@ -3568,7 +3599,35 @@ final class _AgentE2eProvider implements ModelProvider {
       );
       return;
     }
+    if (latestPrompt == 'Reject MCP' && rejectedMcpSearchResult == null) {
+      if (!request.tools.any((tool) => tool.name == 'tool_search_mcp')) {
+        throw StateError('the selected MCP search tool was not advertised');
+      }
+      const arguments = <String, dynamic>{'query': 'echo', 'limit': 8};
+      yield const ModelDeferredSearchCall(
+        callId: 'reject-mcp-search-call',
+        name: 'tool_search_mcp',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.deferredSearch(
+              callId: 'reject-mcp-search-call',
+              name: 'tool_search_mcp',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (latestPrompt == 'Reject MCP' && !hasRejectedMcpResult) {
+      if (!rejectedMcpSearchResult!.contains('mcp__e2e__echo') ||
+          !request.tools.any((tool) => tool.name == 'mcp__e2e__echo')) {
+        throw StateError('rejected MCP tool was not dynamically surfaced');
+      }
       const arguments = <String, dynamic>{'value': 'must not run'};
       yield const ModelFunctionCall(
         callId: 'reject-mcp-call',

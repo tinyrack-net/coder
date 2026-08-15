@@ -123,9 +123,9 @@ final class ModelsDevCatalogMetadataSource
             toolCalling: toolCalling
                 ? CapabilitySupport.supported
                 : CapabilitySupport.unsupported,
-            toolSurface: id.startsWith('gpt-5.6')
-                ? ModelToolSurface.luaCode
-                : ModelToolSurface.direct,
+            functionTools: toolCalling
+                ? CapabilitySupport.supported
+                : CapabilitySupport.unsupported,
             controls: reasoning
                 ? <ModelControlDescriptorDto>[
                     ModelControlDescriptorDto(
@@ -234,7 +234,7 @@ final class BuiltInProviderCatalog {
   /// Returns public provider metadata without endpoint or transport details.
   ProviderCatalogDto catalog() => ProviderCatalogDto(
     definitions: <ProviderDefinitionDto>[
-      for (final plugin in _registry.plugins)
+      for (final plugin in _registry.adapters)
         protocolProviderDefinition(plugin.definition),
     ],
     wireFormats: <ProviderWireFormatDto>[
@@ -274,9 +274,9 @@ final class BuiltInProviderCatalog {
       return catalog();
     }
     _lastAttemptAt = _clock.nowUtc();
-    final providerIds = _registry.plugins
-        .where((plugin) => plugin.usesRemoteCatalog)
-        .map((plugin) => plugin.id)
+    final providerIds = _registry.adapters
+        .where((adapter) => adapter.usesRemoteCatalog)
+        .map((adapter) => adapter.id)
         .toSet();
     final Map<String, List<ProviderCatalogMetadata>> fetched;
     try {
@@ -363,6 +363,21 @@ final class BuiltInProviderCatalog {
                         CapabilitySupport.unknown
                     ? model.capabilities.toolCalling
                     : bundled.capabilities.toolCalling,
+                functionTools:
+                    bundled.capabilities.functionTools ==
+                        CapabilitySupport.unknown
+                    ? model.capabilities.functionTools
+                    : bundled.capabilities.functionTools,
+                freeformTools:
+                    bundled.capabilities.freeformTools ==
+                        CapabilitySupport.unknown
+                    ? model.capabilities.freeformTools
+                    : bundled.capabilities.freeformTools,
+                deferredTools:
+                    bundled.capabilities.deferredTools ==
+                        CapabilitySupport.unknown
+                    ? model.capabilities.deferredTools
+                    : bundled.capabilities.deferredTools,
                 imageInput:
                     bundled.capabilities.imageInput == CapabilitySupport.unknown
                     ? model.capabilities.imageInput

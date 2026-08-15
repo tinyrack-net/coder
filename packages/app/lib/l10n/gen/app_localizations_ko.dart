@@ -592,6 +592,9 @@ class AppLocalizationsKo extends AppLocalizations {
       'Daemon에서 예기치 못한 문제가 발생했습니다. 문제를 알릴 때 아래 내용을 복사해 주세요.';
 
   @override
+  String get errorPluginUiRejected => '플러그인 인터페이스 요청이 거부되었습니다.';
+
+  @override
   String get errorSessionTurnActive =>
       '이 session은 turn을 실행 중입니다. 끝나기를 기다리거나 중지한 뒤 설정을 바꿔 주세요.';
 
@@ -1011,10 +1014,112 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentSettingsModelHeading => '모델';
 
   @override
+  String get agentSettingsSessionModel => '세션 모델 사용';
+
+  @override
+  String get agentSettingsPinnedModel => '모델 고정';
+
+  @override
   String get agentSettingsProviderConnectionId => 'Provider 연결 ID';
 
   @override
   String get agentSettingsModelId => '모델 ID';
+
+  @override
+  String get agentSettingsHarnessHeading => 'Agent 하네스';
+
+  @override
+  String get agentSettingsHarnessDescription =>
+      'Agent가 하나의 드라이버, 순서가 있는 확장, 모델에 노출할 도구를 소유합니다.';
+
+  @override
+  String get agentSettingsDriver => '드라이버';
+
+  @override
+  String get agentSettingsNoDrivers => '설치된 플러그인 드라이버가 없습니다.';
+
+  @override
+  String get agentSettingsExtensions => '순서가 있는 확장';
+
+  @override
+  String get agentSettingsExtensionsDescription => '확장은 이 순서대로 직렬 실행됩니다.';
+
+  @override
+  String get agentSettingsMoveUp => '앞으로 이동';
+
+  @override
+  String get agentSettingsMoveDown => '뒤로 이동';
+
+  @override
+  String get agentSettingsPluginTools => '플러그인 도구';
+
+  @override
+  String get agentSettingsPluginToolsDescription =>
+      '모델에 노출되는 모든 도구를 이 Agent에서 개별적으로 끌 수 있습니다.';
+
+  @override
+  String get agentSettingsPluginSettings => '플러그인 설정';
+
+  @override
+  String get agentSettingsPluginSettingsDescription =>
+      '설정은 이 Agent 정의에 JSON 객체로 저장됩니다.';
+
+  @override
+  String get agentSettingsPluginSettingsRemove => '기존 설정 항목을 제거하려면 필드를 비우세요.';
+
+  @override
+  String agentSettingsPluginSettingsLabel(String plugin) {
+    return '$plugin 설정 (JSON)';
+  }
+
+  @override
+  String get agentSettingsCapabilities => '플러그인 capability';
+
+  @override
+  String get agentSettingsCapabilitiesDescription =>
+      'Grant는 편집 가능한 Agent 파일이 아니라 이 Agent의 daemon state에 저장됩니다.';
+
+  @override
+  String get agentSettingsNoCapabilities => '선택한 플러그인이 요청하는 capability가 없습니다.';
+
+  @override
+  String get agentSettingsHarnessDiagnostics => '하네스 진단';
+
+  @override
+  String agentSettingsHarnessMissing(String kind, String id) {
+    return '설정한 $kind을(를) 사용할 수 없습니다: $id';
+  }
+
+  @override
+  String get agentSettingsHarnessKindDriver => '드라이버';
+
+  @override
+  String get agentSettingsHarnessKindExtension => '확장';
+
+  @override
+  String get agentSettingsHarnessKindTool => '도구';
+
+  @override
+  String get agentSettingsHarnessKindPlugin => '플러그인';
+
+  @override
+  String get agentSettingsHarnessKindDependency => '의존성';
+
+  @override
+  String get agentSettingsHarnessKindModel => '모델';
+
+  @override
+  String agentSettingsHarnessModelMismatch(String capability) {
+    return '선택한 모델이 드라이버 capability를 만족하지 않습니다: $capability';
+  }
+
+  @override
+  String agentSettingsHarnessInvalidSettings(String plugin) {
+    return '$plugin 설정은 올바른 JSON 객체여야 합니다.';
+  }
+
+  @override
+  String get agentSettingsPluginsLoading => '플러그인 contribution을 불러오는 중…';
 
   @override
   String get agentSettingsBehaviourHeading => '동작';
@@ -1053,9 +1158,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String agentSettingsToolGroupSummary(int enabled, int total) {
     return '$total개 중 $enabled개 사용';
   }
-
-  @override
-  String get agentSettingsToolGroupAlwaysOn => '항상 사용 가능';
 
   @override
   String get agentSettingsSubagents => '호출 가능한 Subagent';
@@ -1322,21 +1424,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get modelPickerNoResults => '검색 결과가 없습니다.';
 
   @override
-  String get composerPlan => 'Plan';
-
-  @override
-  String get composerRun => '실행';
-
-  @override
-  String get composerMode => '모드';
-
-  @override
-  String get composerPlanTooltip => '계획만 세웁니다. Shift+Tab으로 전환';
-
-  @override
-  String get composerRunTooltip => '요청을 바로 수행합니다. Shift+Tab으로 전환';
-
-  @override
   String get composerSelectAgent => 'Agent 선택';
 
   @override
@@ -1542,9 +1629,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatApprovalAllow => '승인';
 
   @override
-  String get chatPlanTitle => '계획';
-
-  @override
   String usageInput(int tokens) {
     return '입력 $tokens';
   }
@@ -1580,11 +1664,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String toolExecRunning(int lines) {
-    return '실행 중 · $lines줄';
-  }
-
-  @override
   String chatAnswerTyped(String answer) {
     return '$answer (직접 입력)';
   }
@@ -1600,11 +1679,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String chatSleepDone(int seconds) {
     return '$seconds초 대기함';
-  }
-
-  @override
-  String toolSearchFound(int found, int remaining) {
-    return '$found개 로드 · $remaining개 남음';
   }
 
   @override
@@ -1651,26 +1725,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String toolMcpResources(int count) {
-    return '리소스 $count개';
-  }
-
-  @override
-  String toolMcpResourceTemplates(int count) {
-    return '템플릿 $count개';
-  }
-
-  @override
-  String toolMcpResourceRead(int count) {
-    return '블록 $count개';
-  }
-
-  @override
-  String toolImageLoaded(int bytes) {
-    return '$bytes바이트 확인';
-  }
-
-  @override
   String get chatQuestionSubmit => '답변';
 
   @override
@@ -1689,279 +1743,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get chatQuestionOtherPlaceholder => '답변을 입력하세요';
 
   @override
-  String get chatPlanStepPending => '시작 전';
-
-  @override
-  String get chatPlanStepInProgress => '진행 중';
-
-  @override
-  String get chatPlanStepCompleted => '완료';
-
-  @override
-  String get chatPlanPrompt => '이 계획대로 진행할까요?';
-
-  @override
-  String get chatPlanKeepPlanning => '계속 계획';
-
-  @override
-  String get chatPlanRunInNewSession => '새 세션에서 실행';
-
-  @override
-  String get chatPlanRun => '계획대로 실행';
-
-  @override
-  String get planImplementPrompt => '계획을 실행해줘.';
-
-  @override
-  String get planFreshSessionPreamble =>
-      '이전 에이전트가 사용자의 요청을 위해 아래 계획을 세웠습니다. 이 계획을 새로운 컨텍스트에서 구현하세요. 계획을 사용자 의도의 근거로 삼되, 필요한 파일은 다시 읽고 구현과 검증까지 진행하세요.';
-
-  @override
   String get toolRejected => '거부됨';
 
   @override
   String get toolFailed => '실패';
-
-  @override
-  String get toolEmptyFile => '빈 파일';
-
-  @override
-  String toolReadLines(int count) {
-    return '$count줄 읽음';
-  }
-
-  @override
-  String toolListItems(int count) {
-    return '항목 $count개';
-  }
-
-  @override
-  String toolListEntries(int directories, int files) {
-    return '디렉터리 $directories · 파일 $files';
-  }
-
-  @override
-  String get toolNoMatches => '일치 없음';
-
-  @override
-  String toolMatches(int matches, int files) {
-    return '$files개 파일에서 $matches건';
-  }
-
-  @override
-  String toolMatchesTruncated(int matches, int files) {
-    return '$files개 파일에서 $matches건 이상';
-  }
-
-  @override
-  String get toolNoPaths => '파일 없음';
-
-  @override
-  String toolPaths(int count) {
-    return '파일 $count개';
-  }
-
-  @override
-  String toolPathsTruncated(int count) {
-    return '파일 $count개 이상';
-  }
-
-  @override
-  String toolAttached(String name) {
-    return '$name 첨부';
-  }
-
-  @override
-  String toolSkillLoaded(String name) {
-    return '$name 불러옴';
-  }
-
-  @override
-  String toolSkills(int count) {
-    return '스킬 $count개';
-  }
-
-  @override
-  String toolSkillsTruncated(int count) {
-    return '스킬 $count개 이상';
-  }
-
-  @override
-  String toolEditFiles(int count) {
-    return '편집($count개 파일)';
-  }
-
-  @override
-  String toolPatchSummary(int added, int removed, int files) {
-    return '+$added -$removed · $files개 파일';
-  }
-
-  @override
-  String toolCommandResult(int exitCode, int lines) {
-    return '종료 코드 $exitCode · $lines줄';
-  }
-
-  @override
-  String get toolTitleEdit => '편집';
-
-  @override
-  String toolTitleEditPath(String path) {
-    return '편집($path)';
-  }
-
-  @override
-  String toolTitleAttach(String path) {
-    return '첨부($path)';
-  }
-
-  @override
-  String toolTitleAttachment(String id) {
-    return '첨부 파일($id)';
-  }
-
-  @override
-  String get toolTitleNow => '현재 시각()';
-
-  @override
-  String toolTitleSleep(int milliseconds) {
-    return '슬립(${milliseconds}ms)';
-  }
-
-  @override
-  String get toolTitleSleepUnknown => '슬립()';
-
-  @override
-  String toolTitleSpawn(String task) {
-    return '생성($task)';
-  }
-
-  @override
-  String toolTitleSend(String target) {
-    return '전송($target)';
-  }
-
-  @override
-  String toolTitleFollowup(String target) {
-    return '후속 작업($target)';
-  }
-
-  @override
-  String get toolTitleWait => '대기()';
-
-  @override
-  String toolTitleInterrupt(String target) {
-    return '중단($target)';
-  }
-
-  @override
-  String get toolTitleAgents => '에이전트()';
-
-  @override
-  String get toolTitleContext => '컨텍스트()';
-
-  @override
-  String get toolTitleNewContext => '새 컨텍스트()';
-
-  @override
-  String toolTitleBash(String command) {
-    return '실행($command)';
-  }
-
-  @override
-  String toolTitleStdin(String session) {
-    return '입력($session)';
-  }
-
-  @override
-  String toolTitleStdinChars(String session, String chars) {
-    return '입력($session ← $chars)';
-  }
-
-  @override
-  String toolTitleGlob(String pattern) {
-    return '파일 찾기($pattern)';
-  }
-
-  @override
-  String toolTitleGlobIn(String pattern, String path) {
-    return '파일 찾기($path에서 $pattern)';
-  }
-
-  @override
-  String toolTitleList(String path) {
-    return '목록($path)';
-  }
-
-  @override
-  String toolTitleMcpResources(String server) {
-    return '리소스($server)';
-  }
-
-  @override
-  String toolTitleMcpResourceTemplates(String server) {
-    return '리소스 템플릿($server)';
-  }
-
-  @override
-  String toolTitleMcpResource(String server, String uri) {
-    return '리소스($server: $uri)';
-  }
-
-  @override
-  String toolTitleRead(String path) {
-    return '읽기($path)';
-  }
-
-  @override
-  String toolTitleReadRange(String path, String offset, String limit) {
-    return '읽기($path @$offset+$limit)';
-  }
-
-  @override
-  String toolTitleAsk(String headers) {
-    return '질문($headers)';
-  }
-
-  @override
-  String toolTitleSearch(String query) {
-    return '검색($query)';
-  }
-
-  @override
-  String toolTitleSearchIn(String query, String path) {
-    return '검색($path에서 $query)';
-  }
-
-  @override
-  String get toolTitleSkills => '스킬()';
-
-  @override
-  String toolTitleSkill(String name) {
-    return '스킬($name)';
-  }
-
-  @override
-  String toolTitleSkillResource(String name, String resource) {
-    return '스킬($name:$resource)';
-  }
-
-  @override
-  String toolTitleToolSearch(String query) {
-    return '도구($query)';
-  }
-
-  @override
-  String toolTitlePlan(int count) {
-    return '계획($count)';
-  }
-
-  @override
-  String toolTitleView(String path) {
-    return '이미지 보기($path)';
-  }
-
-  @override
-  String get toolArgumentAllServers => '전체';
 
   @override
   String get directoryBrowserTitle => 'Daemon의 폴더 선택';
@@ -2220,31 +2005,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mcpSettingsSecretValue => '값';
 
   @override
-  String get agentSettingsToolAlwaysOn => '항상 사용 가능';
-
-  @override
-  String toolContextRemaining(int remaining, int window) {
-    return '토큰 $remaining/$window 남음';
-  }
-
-  @override
-  String toolContextRemainingUnknown(int used) {
-    return '토큰 $used개 사용';
-  }
-
-  @override
-  String get chatContextReset => '새 컨텍스트 창';
-
-  @override
-  String get chatContextCompacted => '대화 요약됨';
-
-  @override
-  String get composerCommandCompactLabel => 'compact';
-
-  @override
-  String get composerCommandCompactDescription => '대화를 요약해 컨텍스트 창을 비웁니다.';
-
-  @override
   String get sessionContextMeter => '컨텍스트';
 
   @override
@@ -2345,12 +2105,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerCommandNewDescription => '새 세션을 시작합니다.';
 
   @override
-  String get composerCommandModeLabel => 'mode';
-
-  @override
-  String get composerCommandModeDescription => '계획과 작업 모드를 전환합니다.';
-
-  @override
   String get composerCommandAgentsLabel => 'agents';
 
   @override
@@ -2367,82 +2121,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerCommandHelpDescription => '사용할 수 있는 명령을 보여줍니다.';
-
-  @override
-  String get composerCommandGoalLabel => 'goal';
-
-  @override
-  String get composerCommandGoalDescription => '세션의 영속 작업 목표를 만들거나 관리합니다.';
-
-  @override
-  String get goalStatusActive => '실행 중';
-
-  @override
-  String get goalStatusPaused => '일시 정지';
-
-  @override
-  String get goalStatusBlocked => '막힘';
-
-  @override
-  String get goalStatusUsageLimited => '사용량 제한';
-
-  @override
-  String get goalStatusBudgetLimited => '예산 도달';
-
-  @override
-  String get goalStatusComplete => '완료';
-
-  @override
-  String get goalPlanHold => 'Run 모드에서 재개';
-
-  @override
-  String goalElapsed(int seconds) {
-    return '$seconds초 경과';
-  }
-
-  @override
-  String goalTokenUsage(int used, int budget) {
-    return '$used / $budget 토큰';
-  }
-
-  @override
-  String get goalPause => 'Goal 일시 정지';
-
-  @override
-  String get goalResume => 'Goal 재개';
-
-  @override
-  String get goalEdit => 'Goal 편집';
-
-  @override
-  String get goalClear => 'Goal 지우기';
-
-  @override
-  String get goalDialogTitle => '세션 Goal';
-
-  @override
-  String get goalObjectiveLabel => '목표';
-
-  @override
-  String get goalObjectiveRequired => '1–4,000자로 입력하세요.';
-
-  @override
-  String get goalBudgetLabel => '토큰 예산(선택)';
-
-  @override
-  String get goalBudgetInvalid => '양수 토큰 예산을 입력하세요.';
-
-  @override
-  String get goalStart => 'Goal 시작';
-
-  @override
-  String get goalReplaceTitle => '현재 Goal을 교체할까요?';
-
-  @override
-  String get goalReplaceDescription => '새 Goal을 시작하고 기록된 사용량을 초기화합니다.';
-
-  @override
-  String get goalReplaceAction => 'Goal 교체';
 
   @override
   String get composerSuggestionsLabel => '제안';
@@ -2467,9 +2145,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get chatToolActionDelegate => '에이전트 조율';
-
-  @override
-  String get chatToolActionPlan => '계획 업데이트';
 
   @override
   String get chatToolActionAsk => '질문하기';
@@ -2515,4 +2190,197 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get chatToolDetailsResult => '결과';
+
+  @override
+  String get settingsCategoryPlugin => '플러그인';
+
+  @override
+  String get pluginSettingsHeading => '플러그인';
+
+  @override
+  String pluginSettingsCount(int count) {
+    return '플러그인 $count개';
+  }
+
+  @override
+  String get pluginSettingsSelect => '플러그인을 선택하세요.';
+
+  @override
+  String get pluginSettingsAdd => '플러그인 만들기';
+
+  @override
+  String get pluginSettingsAddTitle => '플러그인 스타터 만들기';
+
+  @override
+  String get pluginSettingsEmpty => '설치된 플러그인이 없습니다.';
+
+  @override
+  String get pluginSettingsSource => '소스';
+
+  @override
+  String get pluginSettingsSourceBuiltIn => '내장';
+
+  @override
+  String get pluginSettingsSourceUser => '사용자';
+
+  @override
+  String get pluginSettingsSourcePath => '소스 경로';
+
+  @override
+  String get pluginSettingsApi => '플러그인 API';
+
+  @override
+  String pluginSettingsApiValue(int api) {
+    return 'API $api';
+  }
+
+  @override
+  String get pluginSettingsRevision => '활성 리비전';
+
+  @override
+  String get pluginSettingsRevisionMissing => '활성 리비전 없음';
+
+  @override
+  String get pluginSettingsStale => '마지막 정상 리비전 사용 중';
+
+  @override
+  String get pluginSettingsAuthoring => 'Lua 개발 환경';
+
+  @override
+  String get pluginSettingsAuthoringStatus => '개발 환경 상태';
+
+  @override
+  String get pluginSettingsAuthoringSynchronized => '동기화됨';
+
+  @override
+  String get pluginSettingsAuthoringNeedsSync => '동기화 필요';
+
+  @override
+  String get pluginSettingsSdkAbi => 'SDK ABI';
+
+  @override
+  String get pluginSettingsLuaRuntime => 'Lua 런타임';
+
+  @override
+  String get pluginSettingsLuaLs => 'Lua 언어 서버';
+
+  @override
+  String get pluginSettingsLuaConfig => 'LuaLS 설정';
+
+  @override
+  String get pluginSettingsSdkSync => 'SDK 동기화';
+
+  @override
+  String get pluginSettingsCapabilities => '요청 기능';
+
+  @override
+  String get pluginSettingsCapabilitiesNone => '요청한 호스트 기능이 없습니다.';
+
+  @override
+  String get pluginSettingsAgents => '참조하는 에이전트';
+
+  @override
+  String get pluginSettingsAgentsNone => '이 플러그인을 참조하는 에이전트가 없습니다.';
+
+  @override
+  String get pluginSettingsContributions => '기여 기능';
+
+  @override
+  String get pluginSettingsDiagnostics => '진단';
+
+  @override
+  String get pluginSettingsDiagnosticsNone => '진단이 없습니다.';
+
+  @override
+  String get pluginSettingsValidate => '검증';
+
+  @override
+  String get pluginSettingsReload => '다시 불러오기';
+
+  @override
+  String get pluginSettingsOpenPath => '플러그인 폴더 열기';
+
+  @override
+  String get pluginSettingsFork => '복제';
+
+  @override
+  String pluginSettingsForkTitle(String plugin) {
+    return '$plugin 복제';
+  }
+
+  @override
+  String get pluginSettingsForkDescription =>
+      '검증된 revision을 새 앱 데이터 플러그인으로 복사합니다. 어떤 Agent에도 자동으로 활성화되지 않습니다.';
+
+  @override
+  String get pluginSettingsReloadAgent => '다시 불러올 때 사용할 에이전트 권한';
+
+  @override
+  String get pluginSettingsReloadNeedsAgent =>
+      '다시 불러오기 전에 에이전트에서 이 플러그인을 참조하세요.';
+
+  @override
+  String get pluginSettingsId => '플러그인 ID';
+
+  @override
+  String get pluginSettingsName => '이름';
+
+  @override
+  String get pluginSettingsIdInvalid =>
+      'example.tools처럼 소문자 점 구분 네임스페이스를 사용하세요.';
+
+  @override
+  String get pluginSettingsIdTaken => '이미 존재하는 플러그인 ID입니다.';
+
+  @override
+  String get pluginSettingsUi => '플러그인 인터페이스';
+
+  @override
+  String get pluginUiLoading => '플러그인 인터페이스 불러오는 중';
+
+  @override
+  String get pluginUiLoadFailed => '플러그인 인터페이스를 불러오지 못했습니다.';
+
+  @override
+  String get pluginUiInvalidTitle => '지원하지 않는 플러그인 인터페이스';
+
+  @override
+  String pluginUiInvalidDescription(String appName) {
+    return '문서가 유효하지 않아 $appName가 소스를 읽기 전용 펼침 영역으로 표시했습니다.';
+  }
+
+  @override
+  String pluginUiSemanticLabel(String plugin) {
+    return '$plugin 플러그인 인터페이스';
+  }
+
+  @override
+  String get pluginSessionControlLoading => '세션 컨트롤 불러오는 중';
+
+  @override
+  String get pluginSessionControlLoadFailed => '플러그인 세션 컨트롤을 불러오지 못했습니다.';
+
+  @override
+  String get pluginSessionControlUnsupported => '지원하지 않는 플러그인 세션 컨트롤';
+
+  @override
+  String get pluginSessionControlSaveFailed => '플러그인 세션 컨트롤을 저장하지 못했습니다.';
+
+  @override
+  String get pluginContributionDriver => '드라이버';
+
+  @override
+  String get pluginContributionExtension => '확장';
+
+  @override
+  String get pluginContributionTool => '도구';
+
+  @override
+  String get pluginContributionSessionControl => '세션 컨트롤';
+
+  @override
+  String get pluginContributionUi => '인터페이스';
+
+  @override
+  String get pluginSettingsActionFailed => '플러그인 작업 실패';
 }

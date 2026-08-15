@@ -3,7 +3,7 @@ import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the workspace feature's complete v4 RPC surface.
+/// Builds the workspace feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> workspaceRpcBindings({
   required WorkspaceCatalogPort workspaces,
   required WorktreeLifecyclePort worktrees,

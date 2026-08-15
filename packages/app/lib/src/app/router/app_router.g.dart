@@ -62,6 +62,11 @@ RouteBase get $settingsShellRoute => ShellRouteData.$route(
       factory: $AgentSettingsRoute._fromState,
     ),
     GoRouteData.$route(
+      path: '/settings/plugins',
+      hasOverriddenOnExit: false,
+      factory: $PluginSettingsRoute._fromState,
+    ),
+    GoRouteData.$route(
       path: '/settings/mcp',
       hasOverriddenOnExit: false,
       factory: $McpSettingsRoute._fromState,
@@ -274,6 +279,32 @@ mixin $AgentSettingsRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/settings/agents',
+    queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $PluginSettingsRoute on GoRouteData {
+  static PluginSettingsRoute _fromState(GoRouterState state) =>
+      PluginSettingsRoute(hostId: state.uri.queryParameters['host-id']);
+
+  PluginSettingsRoute get _self => this as PluginSettingsRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/settings/plugins',
     queryParams: {if (_self.hostId != null) 'host-id': _self.hostId},
   );
 

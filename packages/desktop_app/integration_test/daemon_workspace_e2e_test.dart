@@ -276,6 +276,11 @@ void main() {
         'the embedded daemon port to persist',
       );
       expect(store.settings.embeddedDaemonPort, changedPort);
+      await pumpUntilCondition(
+        tester,
+        () => launcher.starts == 2 && launcher.stops == 1,
+        'the port-change restart to finish',
+      );
       await _pumpUntil(tester, find.textContaining('온라인'));
 
       final toggle = find.widgetWithText(TinestSwitchRow, '내장 daemon');
@@ -284,6 +289,11 @@ void main() {
       await tester.tap(find.widgetWithText(TRButton, '중지'));
       await tester.pumpAndSettle();
       expect(store.settings.embeddedDaemonEnabled, isFalse);
+      await pumpUntilCondition(
+        tester,
+        () => launcher.stops == 2,
+        'the disabled embedded daemon to stop',
+      );
       expect(launcher.stops, 2);
 
       launcher.failNext = true;

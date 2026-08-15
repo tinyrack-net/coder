@@ -24,6 +24,10 @@ import 'package:web_socket_channel/io.dart';
 /// something is genuinely broken.
 const Duration _eventTimeout = Duration(minutes: 1);
 
+/// Bundled deterministic model whose declared surface supports every default
+/// v5 Agent contribution, including freeform and deferred tools.
+const String _testModelId = 'openai/gpt-5.6-sol';
+
 void main() {
   test(
     'daemon stop cancels and drains an active turn before closing storage',
@@ -70,14 +74,19 @@ void main() {
         worktreeId: catalog.worktrees.single.id,
         title: 'Shutdown session',
         agentDefinitionId: 'tinest',
-        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: _testModelId),
       );
       await client.startTurn(
         sessionId: session.id,
         turnId: 'shutdown-turn',
         prompt: 'Wait until shutdown.',
       );
-      await provider.started.future.timeout(_eventTimeout);
+      await _waitForProviderStartOrTurnFailure(
+        client: client,
+        worktreeId: session.worktreeId,
+        sessionId: session.id,
+        started: provider.started,
+      );
 
       await handle.stop().timeout(_eventTimeout);
 
@@ -399,7 +408,7 @@ void main() {
         title: 'Model inherited',
         agentDefinitionId: 'tinest',
       );
-      expect(inherited.model, wireDefault);
+      expect(inherited.model, isNull);
       await expectLater(
         client.models.setDefaultModel(
           const ModelSelectionDto(modelId: 'local-test/missing-model'),
@@ -426,7 +435,7 @@ void main() {
           isA<TinestClientException>().having(
             (error) => error.code,
             'code',
-            'model_unavailable',
+            'provider_not_connected',
           ),
         ),
       );
@@ -435,7 +444,6 @@ void main() {
         worktreeId: checkout.id,
         title: 'Session',
         agentDefinitionId: 'tinest',
-        mode: SessionMode.plan,
         model: const ModelSelectionDto(
           modelId: 'local-test/test-model',
         ),
@@ -453,35 +461,18 @@ void main() {
         )).singleWhere((session) => session.id == agent.id).model,
         agent.model,
       );
-      expect(agent.mode, SessionMode.plan);
-      final normalFuture = client.sessions.sessionUpdates
-          .firstWhere((session) => session.mode == SessionMode.normal)
-          .timeout(_eventTimeout);
-      expect(
-        (await client.sessions.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(mode: SessionMode.normal),
-        )).mode,
-        SessionMode.normal,
-      );
-      expect((await normalFuture).id, agent.id);
-      expect(
-        (await client.sessions.listSessions(
-          worktreeId: checkout.id,
-        )).singleWhere((session) => session.id == agent.id).mode,
-        SessionMode.normal,
-      );
       final tinest = (await client.listAgentDefinitions()).single;
       final configuredDefinition = await client.updateAgentDefinition(
         tinest.copyWith(
-          model: const ModelSelectionDto(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
             modelId: 'local-test/test-model',
           ),
-          modelControls: const <String, ModelControlValueDto>{},
         ),
         expectedContentHash: tinest.contentHash,
       );
-      expect(configuredDefinition.model!.modelId, 'local-test/test-model');
+      expect(configuredDefinition.model.source, AgentModelSource.fixed);
+      expect(configuredDefinition.model.modelId, 'local-test/test-model');
       expect(
         await client.sessions.listSessions(worktreeId: checkout.id),
         hasLength(2),
@@ -495,7 +486,7 @@ void main() {
         title: 'Agent priority',
         agentDefinitionId: 'tinest',
       );
-      expect(agentPriority.model, wireDefault);
+      expect(agentPriority.model, isNull);
       final chatPriority = await client.createSession(
         id: 'chat-priority',
         worktreeId: checkout.id,
@@ -509,6 +500,18 @@ void main() {
       );
       await client.models.setDefaultModel(wireDefault);
       expect(await client.subscribeTimeline(agent.id), isEmpty);
+
+      // The default v5 Agent selects function, freeform, and deferred tools.
+      // Manual custom-provider models intentionally advertise function tools
+      // only, so use the deterministic full-surface fixture for this harness
+      // turn while retaining the custom-provider CRUD assertions above.
+      await client.sessions.updateSettings(
+        agent.id,
+        const SessionSettingsPatchDto(
+          hasModel: true,
+          model: ModelSelectionDto(modelId: _testModelId),
+        ),
+      );
 
       final approvalFuture = client.sessions.approvalRequests.first.timeout(
         _eventTimeout,
@@ -527,18 +530,12 @@ void main() {
       await client.resolveApproval(approvalId: approval.id, approved: true);
       await completedFuture;
       await _waitForIdleSession(client, checkout.id, agent.id);
-      final afterTurn = await client.updateAgentDefinition(
-        configuredDefinition.copyWith(
-          modelControls: const <String, ModelControlValueDto>{},
-        ),
-        expectedContentHash: configuredDefinition.contentHash,
-      );
-      expect(afterTurn.modelControls, isEmpty);
 
       expect(
         (await client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
+            hasModel: true,
             model: ModelSelectionDto(
               modelId: 'local-test/test-model',
             ),
@@ -551,7 +548,14 @@ void main() {
       expect(
         (await client.sessions.updateSettings(
           agent.id,
-          SessionSettingsPatchDto(model: agent.model),
+          const SessionSettingsPatchDto(hasModel: true),
+        )).model,
+        isNull,
+      );
+      expect(
+        (await client.sessions.updateSettings(
+          agent.id,
+          SessionSettingsPatchDto(hasModel: true, model: agent.model),
         )).model,
         agent.model,
       );
@@ -565,6 +569,7 @@ void main() {
         client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
+            hasModel: true,
             model: ModelSelectionDto(
               modelId: 'local-test/missing-model',
             ),
@@ -633,12 +638,13 @@ void main() {
         ]),
       );
       final invalidAgentDefinition = await client.updateAgentDefinition(
-        afterTurn.copyWith(
-          model: const ModelSelectionDto(
+        configuredDefinition.copyWith(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
             modelId: 'local-test/missing-model',
           ),
         ),
-        expectedContentHash: afterTurn.contentHash,
+        expectedContentHash: configuredDefinition.contentHash,
       );
       await expectLater(
         client.createSession(
@@ -656,7 +662,12 @@ void main() {
         ),
       );
       final restoredAgentDefinition = await client.updateAgentDefinition(
-        invalidAgentDefinition.copyWith(model: wireDefault),
+        invalidAgentDefinition.copyWith(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
+            modelId: 'local-test/test-model',
+          ),
+        ),
         expectedContentHash: invalidAgentDefinition.contentHash,
       );
       await client.disconnectProvider(custom.id);
@@ -686,8 +697,9 @@ void main() {
       );
       final withoutAgentModel = await client.updateAgentDefinition(
         restoredAgentDefinition.copyWith(
-          model: null,
-          modelControls: const <String, ModelControlValueDto>{},
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.session,
+          ),
         ),
         expectedContentHash: restoredAgentDefinition.contentHash,
       );
@@ -707,7 +719,12 @@ void main() {
         ),
       );
       await client.updateAgentDefinition(
-        withoutAgentModel.copyWith(model: wireDefault),
+        withoutAgentModel.copyWith(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
+            modelId: 'local-test/test-model',
+          ),
+        ),
         expectedContentHash: withoutAgentModel.contentHash,
       );
       final renamed = await client.updateProviderModelPrefix(
@@ -721,17 +738,20 @@ void main() {
       );
       expect(
         (await client.listAgentDefinitions()).single.model,
-        const ModelSelectionDto(modelId: 'local-renamed/test-model'),
+        const AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          modelId: 'local-renamed/test-model',
+        ),
       );
-      final renamedSessions = <String, String>{
+      final renamedSessions = <String, String?>{
         for (final session in await client.sessions.listSessions(
           worktreeId: checkout.id,
         ))
-          session.id: session.model.modelId,
+          session.id: session.model?.modelId,
       };
-      expect(renamedSessions['model-inherited'], 'local-renamed/test-model');
+      expect(renamedSessions['model-inherited'], isNull);
       expect(renamedSessions['agent-1'], 'local-renamed/test-model');
-      expect(renamedSessions['agent-priority'], 'local-renamed/test-model');
+      expect(renamedSessions['agent-priority'], isNull);
       expect(renamedSessions['chat-priority'], 'openai/gpt-4');
     },
     tags: const <String>[
@@ -788,8 +808,7 @@ void main() {
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
-          permissionMode: PermissionMode.readOnly,
-          toolIds: const <String>['apply_patch'],
+          toolIds: const <String>['tinest.edit/apply_patch'],
           callableAgentIds: const <String>[],
           contentHash: '',
           sourcePath: '',
@@ -798,7 +817,6 @@ void main() {
       );
       await client.updateAgentDefinition(
         tinest.copyWith(
-          permissionMode: PermissionMode.workspaceWrite,
           callableAgentIds: <String>[reviewer.id],
         ),
         expectedContentHash: tinest.contentHash,
@@ -817,7 +835,14 @@ void main() {
         model: const ModelSelectionDto(
           // Collaboration is the subject of this slice. Lua orchestration has
           // its own vertical slice and must not add a native cold start here.
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
+        ),
+      );
+      await client.sessions.updateSettings(
+        parent.id,
+        const SessionSettingsPatchDto(
+          hasPermissionMode: true,
+          permissionMode: PermissionMode.readOnly,
         ),
       );
       final timelineEvents = client.sessions.timelineEvents;
@@ -864,11 +889,9 @@ void main() {
       expect(child.agentPath, '/root/review_task');
       expect(child.lifecycle, AgentLifecycle.completed);
       expect(child.agentDefinitionId, reviewer.id);
-      expect(
-        child.model,
-        (await client.models.getSettings()).defaultModel,
-      );
-      expect(child.model, isNot(parent.model));
+      // A source=session child inherits the caller's effective session model;
+      // selecting another Agent changes its harness, not its model policy.
+      expect(child.model, parent.model);
 
       // The read-only clamp still denies the child's write attempt.
       final childTimeline = await client.subscribeTimeline(child.id);
@@ -958,8 +981,7 @@ void main() {
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
-          permissionMode: PermissionMode.ask,
-          toolIds: const <String>['apply_patch'],
+          toolIds: const <String>['tinest.edit/apply_patch'],
           callableAgentIds: const <String>[],
           contentHash: '',
           sourcePath: '',
@@ -968,7 +990,6 @@ void main() {
       );
       await client.updateAgentDefinition(
         tinest.copyWith(
-          permissionMode: PermissionMode.fullAccess,
           callableAgentIds: <String>[reviewer.id],
         ),
         expectedContentHash: tinest.contentHash,
@@ -984,7 +1005,14 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Parent',
         agentDefinitionId: 'tinest',
-        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: _testModelId),
+      );
+      await client.sessions.updateSettings(
+        parent.id,
+        const SessionSettingsPatchDto(
+          hasPermissionMode: true,
+          permissionMode: PermissionMode.fullAccess,
+        ),
       );
       final finalAnswerMailed = client.sessions.timelineEvents
           .firstWhere(
@@ -1100,7 +1128,7 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -1193,21 +1221,65 @@ void main() {
       expect(ready.tools.single.toolId, 'mcp__fake__echo');
 
       final catalog = await client.listAgentTools();
-      final published = catalog.singleWhere(
-        (tool) => tool.id == 'mcp__fake__echo',
-      );
-      expect(published.risk, ToolRisk.dangerous);
-      // Read tools are supplied by the daemon, not opted into.
       expect(
-        catalog.where((tool) => tool.alwaysOn).map((tool) => tool.id),
-        containsAll(<String>['list_directory', 'read_file', 'search_text']),
+        catalog.map((tool) => tool.id),
+        allOf(
+          contains('tinest.mcp/tool_search'),
+          isNot(contains('tinest.mcp/tool_bridge')),
+          isNot(contains('tinest.mcp/mcp__fake__echo')),
+        ),
+      );
+      final forked = await client.forkPlugin(
+        sourceId: 'tinest.mcp',
+        id: 'acme.mcp',
+        name: 'Acme MCP',
+      );
+      expect(forked.id, 'acme.mcp');
+      for (final capability in const <String>[
+        'mcp.read',
+        'mcp.invoke',
+        'tools.list',
+      ]) {
+        await client.grantPluginCapability(
+          AgentPluginGrantDto(
+            agentId: 'tinest',
+            pluginId: 'acme.mcp',
+            capability: capability,
+          ),
+        );
+      }
+      await client.reloadPlugin('acme.mcp', 'tinest');
+      final catalogAfterFork = await client.listAgentTools();
+      expect(
+        catalogAfterFork.map((tool) => tool.id),
+        allOf(
+          contains('acme.mcp/tool_search'),
+          isNot(contains('acme.mcp/tool_bridge')),
+        ),
+      );
+      // File tools remain independent catalog contributions. The Agent must
+      // select each one explicitly; no model-visible tool is implicitly on.
+      expect(
+        catalog.map((tool) => tool.id),
+        containsAll(<String>[
+          'tinest.files/list_directory',
+          'tinest.files/read_file',
+          'tinest.files/search_text',
+        ]),
       );
 
       final tinest = (await client.listAgentDefinitions()).single;
       await client.updateAgentDefinition(
         tinest.copyWith(
-          permissionMode: PermissionMode.workspaceWrite,
-          toolIds: <String>[...tinest.toolIds, 'mcp__fake__echo'],
+          toolIds: <String>[
+            ...tinest.toolIds.where(
+              (toolId) => toolId != 'tinest.mcp/tool_search',
+            ),
+            'tinest.files/list_directory',
+            'tinest.files/read_file',
+            'tinest.files/search_text',
+            'acme.mcp/tool_search',
+          ],
         ),
         expectedContentHash: tinest.contentHash,
       );
@@ -1224,17 +1296,25 @@ void main() {
         title: 'MCP',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
+        ),
+      );
+      await client.sessions.updateSettings(
+        session.id,
+        const SessionSettingsPatchDto(
+          hasPermissionMode: true,
+          permissionMode: PermissionMode.workspaceWrite,
         ),
       );
       // A dangerous tool always asks, even under workspaceWrite.
       final approvalFuture = client.sessions.approvalRequests.first.timeout(
         _eventTimeout,
       );
-      final completed = client.sessions.timelineEvents
+      final terminal = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
-                event.sessionId == session.id && event.type == 'turn.completed',
+                event.sessionId == session.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
           )
           .timeout(_eventTimeout);
       await client.subscribeTimeline(session.id);
@@ -1243,12 +1323,28 @@ void main() {
         turnId: 'mcp-turn',
         prompt: 'Echo something through MCP.',
       );
-      final approval = await approvalFuture;
+      late ApprovalRequestDto approval;
+      try {
+        approval = await approvalFuture;
+      } on TimeoutException catch (error) {
+        final diagnosticTimeline = await client.subscribeTimeline(session.id);
+        final diagnostics = diagnosticTimeline
+            .map((event) => '${event.type}: ${event.data}')
+            .join('\n');
+        throw TestFailure(
+          '$error while waiting for dynamic MCP approval.\n$diagnostics',
+        );
+      }
       expect(approval.toolName, 'mcp__fake__echo');
       expect(approval.risk, ToolRisk.dangerous);
       expect(approval.preview, 'fake.echo');
       await client.resolveApproval(approvalId: approval.id, approved: true);
-      await completed;
+      final terminalEvent = await terminal;
+      expect(
+        terminalEvent.type,
+        'turn.completed',
+        reason: '${terminalEvent.data}',
+      );
       // turn.completed precedes the daemon's own final writes, so let the
       // session settle before the teardown closes its database.
       await _waitForIdleSession(
@@ -1258,25 +1354,47 @@ void main() {
       );
 
       final timeline = await client.subscribeTimeline(session.id);
-      final requested = timeline
+      final requestedNames = timeline
           .where((event) => event.type == 'tool.requested')
-          .single;
-      expect(requested.data['name'], 'mcp__fake__echo');
+          .map((event) => event.data['name'])
+          .toList(growable: false);
+      expect(
+        requestedNames,
+        containsAll(<String>['tool_search_mcp', 'mcp__fake__echo']),
+      );
       // Dangerous tools need approval, and workspaceWrite does not grant it.
       expect(
         timeline.map((event) => event.type),
         contains('approval.resolved'),
       );
-      final completedTool = timeline
+      final completedTools = timeline
           .where((event) => event.type == 'tool.completed')
-          .single;
+          .toList();
+      expect(
+        completedTools,
+        hasLength(2),
+        reason: timeline
+            .map((event) => '${event.type}: ${event.data}')
+            .join('\n'),
+      );
+      final searchTool = completedTools.singleWhere(
+        (event) => event.data['name'] == 'tool_search_mcp',
+      );
+      expect(searchTool.data['output'], contains('mcp__fake__echo'));
+      final completedTool = completedTools.singleWhere(
+        (event) => event.data['name'] == 'mcp__fake__echo',
+      );
       // The configured secret reached the child process.
-      expect(completedTool.data['output'], 'secret-through MCP');
+      expect(completedTool.data['output'], contains('secret-through MCP'));
 
       await client.removeMcpServer('fake');
       expect(
         (await client.listAgentTools()).map((tool) => tool.id),
-        isNot(contains('mcp__fake__echo')),
+        allOf(
+          contains('acme.mcp/tool_search'),
+          isNot(contains('acme.mcp/tool_bridge')),
+          isNot(contains('acme.mcp/mcp__fake__echo')),
+        ),
       );
       expect(await client.mcp.listMcpServers(), isEmpty);
     },
@@ -1302,7 +1420,7 @@ void main() {
       await projectConfig.parent.create(recursive: true);
       await projectConfig.writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 4,
+          'schemaVersion': 5,
           'mcp': <String, dynamic>{
             'servers': <String, dynamic>{
               'repo': <String, dynamic>{
@@ -1360,17 +1478,26 @@ void main() {
       );
       expect(ready.shadowed, isFalse);
 
-      expect(
-        (await client.listAgentTools(
-          worktreeId: worktreeId,
-        )).map((tool) => tool.id),
-        contains('mcp__repo__echo'),
+      final worktreeCatalog = await client.listAgentTools(
+        worktreeId: worktreeId,
       );
-      // The daemon-wide catalog never sees a repository's servers.
-      expect(
-        (await client.listAgentTools()).map((tool) => tool.id),
-        isNot(contains('mcp__repo__echo')),
-      );
+      final daemonCatalog = await client.listAgentTools();
+      // Agent catalogs expose the selectable Lua search contribution, never
+      // one Dart-synthesized contribution per remote MCP tool. Project scope
+      // remains enforced by the raw catalog primitive used during that turn.
+      for (final catalog in <List<AgentToolDefinitionDto>>[
+        worktreeCatalog,
+        daemonCatalog,
+      ]) {
+        expect(
+          catalog.map((tool) => tool.id),
+          allOf(
+            contains('tinest.mcp/tool_search'),
+            isNot(contains('tinest.mcp/tool_bridge')),
+            isNot(contains('tinest.mcp/mcp__repo__echo')),
+          ),
+        );
+      }
       expect(await client.mcp.listMcpServers(), isEmpty);
     },
     tags: const <String>[
@@ -1421,20 +1548,20 @@ void main() {
           rootPath: workspace.path,
           name: 'Workspace',
         );
-        final tinest = (await client.listAgentDefinitions()).single;
-        await client.updateAgentDefinition(
-          tinest.copyWith(
-            permissionMode: PermissionMode.workspaceWrite,
-          ),
-          expectedContentHash: tinest.contentHash,
-        );
         final session = await client.createSession(
           id: 'exec-session',
           worktreeId: registered.worktrees.single.id,
           title: 'Exec',
           agentDefinitionId: 'tinest',
           model: const ModelSelectionDto(
-            modelId: 'openai/gpt-5.2',
+            modelId: _testModelId,
+          ),
+        );
+        await client.sessions.updateSettings(
+          session.id,
+          const SessionSettingsPatchDto(
+            hasPermissionMode: true,
+            permissionMode: PermissionMode.workspaceWrite,
           ),
         );
         await client.subscribeTimeline(session.id);
@@ -1515,6 +1642,9 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>[
+        'tinest.files/view_image',
+      ]);
 
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -1528,7 +1658,7 @@ void main() {
         title: 'Image',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1541,11 +1671,18 @@ void main() {
       final request = await provider.secondRequest.future.timeout(
         _eventTimeout,
       );
-      final injected = request.history
+      final imageContext = request.history
           .whereType<UserConversationItem>()
           .last
-          .attachments
-          .single;
+          .attachments;
+      expect(
+        imageContext,
+        hasLength(1),
+        reason:
+            'Second model history: '
+            '${request.history.map((item) => item.toJson()).toList()}',
+      );
+      final injected = imageContext.single;
       expect(injected.mimeType, 'image/png');
       expect(injected.imageDetail, 'high');
       // The bytes are hydrated, so the provider can actually encode the image.
@@ -1589,6 +1726,7 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>['tinest.time/sleep']);
 
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -1602,7 +1740,7 @@ void main() {
         title: 'Sleep',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -1664,6 +1802,7 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>['tinest.time/sleep']);
 
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -1676,7 +1815,7 @@ void main() {
         worktreeId: registered.worktrees.single.id,
         title: 'Busy',
         agentDefinitionId: 'tinest',
-        model: const ModelSelectionDto(modelId: 'openai/gpt-5.2'),
+        model: const ModelSelectionDto(modelId: _testModelId),
       );
       await client.subscribeTimeline(session.id);
       await client.startTurn(
@@ -1689,7 +1828,7 @@ void main() {
       await expectLater(
         client.sessions.updateSettings(
           session.id,
-          const SessionSettingsPatchDto(mode: SessionMode.plan),
+          const SessionSettingsPatchDto(hasModelControls: true),
         ),
         throwsA(
           isA<TinestClientException>()
@@ -1717,231 +1856,12 @@ void main() {
       expect(
         (await client.sessions.updateSettings(
           session.id,
-          const SessionSettingsPatchDto(mode: SessionMode.plan),
-        )).mode,
-        SessionMode.plan,
+          const SessionSettingsPatchDto(hasModelControls: true),
+        )).modelControls,
+        isEmpty,
       );
     },
     tags: const <String>['feature_test__session_lifecycle__verticalSlice'],
-  );
-
-  test(
-    'new_context discards the stored history but keeps the timeline',
-    () async {
-      final home = await Directory.systemTemp.createTemp('tinest-reset-home-');
-      final workspace = await Directory.systemTemp.createTemp(
-        'tinest-reset-workspace-',
-      );
-      const bearerToken = 'reset-tool-token-0123456789abcdef01234';
-      final provider = _ContextResetProvider();
-      final handle = await DaemonApplication.start(
-        DaemonConfig(
-          homeDirectory: home.path,
-          port: 0,
-          bearerToken: bearerToken,
-          useEnvironmentCredentials: false,
-        ),
-        provider: provider,
-      );
-      addTearDown(() async {
-        await handle.stop();
-        await home.delete(recursive: true);
-        await workspace.delete(recursive: true);
-      });
-      final client = await TinestClient.connect(
-        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: const DaemonCredentials(bearerToken: bearerToken),
-        clientId: 'reset-tool-test',
-        clientKind: 'test',
-      );
-      addTearDown(client.close);
-
-      final registered = await client.registerWorkspace(
-        workspaceId: 'workspace',
-        checkoutId: 'checkout',
-        rootPath: workspace.path,
-        name: 'Workspace',
-      );
-      final worktreeId = registered.worktrees.single.id;
-      final session = await client.createSession(
-        id: 'reset-session',
-        worktreeId: worktreeId,
-        title: 'Reset',
-        agentDefinitionId: 'tinest',
-        model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
-        ),
-      );
-      await client.subscribeTimeline(session.id);
-
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'reset-turn-one',
-        prompt: 'Remember the release date.',
-      );
-      await _waitForIdleSession(client, worktreeId, session.id);
-
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'reset-turn-two',
-        prompt: 'Start fresh.',
-      );
-      await _waitForIdleSession(client, worktreeId, session.id);
-
-      // The request made after the reset is the whole point: it must carry the
-      // assistant item that called new_context and that call's own output, and
-      // nothing from the retired window.
-      expect(provider.requests, hasLength(3));
-      final afterReset = provider.requests[2];
-      expect(
-        afterReset.whereType<UserConversationItem>(),
-        isEmpty,
-        reason: 'the retired window must not be replayed',
-      );
-      final calls = afterReset
-          .whereType<AssistantConversationItem>()
-          .expand((item) => item.toolCalls)
-          .map((call) => call.callId)
-          .toList();
-      final outputs = afterReset
-          .whereType<ToolResultConversationItem>()
-          .map((item) => item.callId)
-          .toList();
-      expect(calls, <String>['reset-call']);
-      expect(
-        outputs,
-        calls,
-        reason: 'both provider APIs reject an orphaned function_call_output',
-      );
-
-      // The user still sees everything; only the model forgot.
-      final timeline = await client.subscribeTimeline(session.id);
-      expect(
-        timeline.map((event) => event.turnId).toSet(),
-        containsAll(<String>['reset-turn-one', 'reset-turn-two']),
-      );
-      expect(timeline.map((event) => event.type), contains('context.reset'));
-
-      // The meter is back to zero even though the first turn reported usage.
-      final refreshed = await client.sessions.listSessions(
-        worktreeId: worktreeId,
-      );
-      final refreshedSession = refreshed.firstWhere(
-        (item) => item.id == session.id,
-      );
-      expect(refreshedSession.contextTokens, 0);
-      expect(
-        refreshedSession.totalCostUsd,
-        greaterThan(0),
-        reason: 'resetting context does not erase priced session usage',
-      );
-    },
-    tags: const <String>['feature_test__tool_context_budget__verticalSlice'],
-  );
-
-  test(
-    'compacting a session replaces its window with a summary',
-    () async {
-      final home = await Directory.systemTemp.createTemp(
-        'tinest-compact-home-',
-      );
-      final workspace = await Directory.systemTemp.createTemp(
-        'tinest-compact-workspace-',
-      );
-      const bearerToken = 'compact-token-0123456789abcdef0123456';
-      final provider = _CompactingProvider();
-      final handle = await DaemonApplication.start(
-        DaemonConfig(
-          homeDirectory: home.path,
-          port: 0,
-          bearerToken: bearerToken,
-          useEnvironmentCredentials: false,
-        ),
-        provider: provider,
-      );
-      addTearDown(() async {
-        await handle.stop();
-        await home.delete(recursive: true);
-        await workspace.delete(recursive: true);
-      });
-      final client = await TinestClient.connect(
-        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
-        credentials: const DaemonCredentials(bearerToken: bearerToken),
-        clientId: 'compact-test',
-        clientKind: 'test',
-      );
-      addTearDown(client.close);
-
-      final registered = await client.registerWorkspace(
-        workspaceId: 'workspace',
-        checkoutId: 'checkout',
-        rootPath: workspace.path,
-        name: 'Workspace',
-      );
-      final worktreeId = registered.worktrees.single.id;
-      final session = await client.createSession(
-        id: 'compact-session',
-        worktreeId: worktreeId,
-        title: 'Compact',
-        agentDefinitionId: 'tinest',
-        model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
-        ),
-      );
-      await client.subscribeTimeline(session.id);
-
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'compact-turn-one',
-        prompt: 'Remember the release date.',
-      );
-      await _waitForIdleSession(client, worktreeId, session.id);
-
-      await client.compactSession(session.id);
-
-      await client.startTurn(
-        sessionId: session.id,
-        turnId: 'compact-turn-two',
-        prompt: 'What was it?',
-      );
-      await _waitForIdleSession(client, worktreeId, session.id);
-
-      // Request 0 is the first turn, 1 is the summary request, 2 is the turn
-      // that resumes on the compacted window.
-      expect(provider.requests, hasLength(3));
-      expect(
-        provider.requests[1].last,
-        isA<UserConversationItem>().having(
-          (item) => item.text,
-          'text',
-          CompactionPolicy.summarizationPrompt,
-        ),
-      );
-
-      final resumed = provider.requests[2];
-      expect(
-        resumed.map((item) => (item as UserConversationItem).text),
-        <String>[
-          'Remember the release date.',
-          '${CompactionPolicy.summaryPrefix}\nThe release date is Tuesday.',
-          'What was it?',
-        ],
-      );
-      // The assistant turn it replaced is gone from the model's view.
-      expect(resumed.whereType<AssistantConversationItem>(), isEmpty);
-
-      // The user still sees the original exchange.
-      final timeline = await client.subscribeTimeline(session.id);
-      expect(
-        timeline.map((event) => event.type),
-        contains('context.compacted'),
-      );
-      expect(
-        timeline.map((event) => event.turnId),
-        contains('compact-turn-one'),
-      );
-    },
-    tags: const <String>['feature_test__context_compaction__verticalSlice'],
   );
 
   test(
@@ -1951,19 +1871,56 @@ void main() {
       final workspace = await Directory.systemTemp.createTemp(
         'tinest-search-workspace-',
       );
-      await Directory(p.join(workspace.path, 'generated')).create();
+      for (final directory in <String>[
+        'blocked',
+        'classes',
+        'deep/x/y',
+        'generated',
+        'nested',
+      ]) {
+        await Directory(
+          p.joinAll(<String>[workspace.path, ...directory.split('/')]),
+        ).create(recursive: true);
+      }
       await File(
         p.join(workspace.path, '.gitignore'),
-      ).writeAsString('generated/\n*.log\n');
-      await File(
-        p.join(workspace.path, 'main.dart'),
-      ).writeAsString('const marker = 1;\n');
-      await File(
-        p.join(workspace.path, 'generated', 'out.dart'),
-      ).writeAsString('const marker = 2;\n');
-      await File(
-        p.join(workspace.path, 'notes.log'),
-      ).writeAsString('marker\n');
+      ).writeAsString(r'''
+generated/
+*.log
+!keep.log
+/root-only.dart
+deep/**/secret?.dart
+classes/[a-c].tmp
+escaped\[.txt
+*.cache
+blocked/
+''');
+      await File(p.join(workspace.path, 'nested', '.gitignore')).writeAsString(
+        '!keep.cache\n',
+      );
+      await File(p.join(workspace.path, 'blocked', '.gitignore')).writeAsString(
+        '!resurrect.dart\n',
+      );
+      final files = <String, String>{
+        'main.dart': 'const marker = 1;\n',
+        'keep.log': 'marker\n',
+        'notes.log': 'marker\n',
+        'root-only.dart': 'const marker = 2;\n',
+        'nested/root-only.dart': 'const marker = 3;\n',
+        'nested/keep.cache': 'marker\n',
+        'nested/drop.cache': 'marker\n',
+        'generated/out.dart': 'const marker = 4;\n',
+        'deep/secret1.dart': 'const marker = 5;\n',
+        'deep/x/y/secret2.dart': 'const marker = 6;\n',
+        'classes/b.tmp': 'marker\n',
+        'escaped[.txt': 'marker\n',
+        'blocked/resurrect.dart': 'const marker = 7;\n',
+      };
+      for (final entry in files.entries) {
+        await File(
+          p.joinAll(<String>[workspace.path, ...entry.key.split('/')]),
+        ).writeAsString(entry.value);
+      }
       const bearerToken = 'search-tool-token-0123456789abcdef0123';
       final provider = _SearchProvider();
       final handle = await DaemonApplication.start(
@@ -1974,9 +1931,6 @@ void main() {
           useEnvironmentCredentials: false,
         ),
         provider: provider,
-        // Without this the daemon would consult whatever global git excludes
-        // the machine running the test happens to have.
-        gitignoreEnvironment: const GitignoreEnvironment.none(),
       );
       addTearDown(() async {
         await handle.stop();
@@ -1990,6 +1944,10 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>[
+        'tinest.files/search_text',
+        'tinest.files/glob',
+      ]);
 
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -2003,26 +1961,61 @@ void main() {
         title: 'Search',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
       await client.subscribeTimeline(session.id);
+      final failed = client.sessions.timelineEvents.firstWhere(
+        (event) => event.sessionId == session.id && event.type == 'turn.failed',
+      );
       await client.startTurn(
         sessionId: session.id,
         turnId: 'search-turn',
         prompt: 'Find the marker',
       );
 
-      final results = await provider.results.future.timeout(_eventTimeout);
+      final results = await Future.any(<Future<_SearchResults>>[
+        provider.results.future,
+        failed.then<_SearchResults>(
+          (event) => throw TestFailure('Search turn failed: ${event.data}'),
+        ),
+      ]).timeout(_eventTimeout);
       final matches = results.search['matches']! as List;
       // The ignored copies of the marker are not reachable, so the model sees
       // exactly the file a developer would expect.
       expect(
         matches.map((match) => (match! as Map<String, dynamic>)['path']),
-        <String>['main.dart'],
+        <String>[
+          'keep.log',
+          'main.dart',
+          'nested/keep.cache',
+          'nested/root-only.dart',
+        ],
       );
       expect(results.search['truncated'], isFalse);
-      expect(results.glob['paths'], <String>['main.dart']);
+      expect(results.glob['paths'], <String>[
+        'main.dart',
+        'nested/root-only.dart',
+      ]);
+      expect(
+        (results.searchIgnored['matches']! as List).map(
+          (match) => (match! as Map<String, dynamic>)['path'],
+        ),
+        containsAll(<String>[
+          'blocked/resurrect.dart',
+          'generated/out.dart',
+          'notes.log',
+          'root-only.dart',
+        ]),
+      );
+      expect(
+        results.globIgnored['paths'],
+        containsAll(<String>[
+          'blocked/resurrect.dart',
+          'generated/out.dart',
+          'root-only.dart',
+        ]),
+      );
       await _waitForIdleSession(
         client,
         registered.worktrees.single.id,
@@ -2061,6 +2054,9 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>[
+        'tinest.interaction/request_user_input',
+      ]);
 
       final registered = await client.registerWorkspace(
         workspaceId: 'workspace',
@@ -2074,7 +2070,7 @@ void main() {
         title: 'Ask',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -2175,10 +2171,10 @@ void main() {
         'tinest-mcp-broken-workspace-',
       );
       const bearerToken = 'mcp-broken-token-0123456789abcdef01234';
-      await Directory(p.join(home.path, 'v4')).create();
-      await File(p.join(home.path, 'v4', 'config.json')).writeAsString(
+      await Directory(p.join(home.path, 'v5')).create();
+      await File(p.join(home.path, 'v5', 'config.json')).writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 4,
+          'schemaVersion': 5,
           'mcp': <String, dynamic>{
             'servers': <String, dynamic>{
               'broken': <String, dynamic>{
@@ -2217,20 +2213,20 @@ void main() {
         rootPath: workspace.path,
         name: 'Workspace',
       );
-      final tinest = (await client.listAgentDefinitions()).single;
-      await client.updateAgentDefinition(
-        tinest.copyWith(
-          permissionMode: PermissionMode.workspaceWrite,
-        ),
-        expectedContentHash: tinest.contentHash,
-      );
       final session = await client.createSession(
         id: 'broken-session',
         worktreeId: registered.worktrees.single.id,
         title: 'Broken',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
+        ),
+      );
+      await client.sessions.updateSettings(
+        session.id,
+        const SessionSettingsPatchDto(
+          hasPermissionMode: true,
+          permissionMode: PermissionMode.workspaceWrite,
         ),
       );
       final completed = client.sessions.timelineEvents
@@ -2300,7 +2296,7 @@ void main() {
 
       // Development databases may still contain values written by the
       // removed enablement API. The read-only catalog never consults them.
-      final state = Directory(p.join(home.path, 'v4'))..createSync();
+      final state = Directory(p.join(home.path, 'v5'))..createSync();
       final legacyDatabase = TinestDatabase(
         p.join(state.path, 'tinest.sqlite'),
       );
@@ -2328,6 +2324,10 @@ void main() {
         clientKind: 'test',
       );
       addTearDown(client.close);
+      await _selectTinestTools(client, const <String>[
+        'tinest.skills/list_skills',
+        'tinest.skills/skill',
+      ]);
 
       expect(client.serverInfo.features['skills'], isTrue);
 
@@ -2397,7 +2397,7 @@ void main() {
       // after daemon startup must refresh the RPC catalog through its watcher.
       final changed = client.skillChanges.first;
       await _writeSkill(
-        p.join(home.path, 'v4', 'skills', 'release'),
+        p.join(home.path, 'v5', 'skills', 'release'),
         description: 'Ships a release.',
         body: 'Tag, build, publish.',
       );
@@ -2415,13 +2415,14 @@ void main() {
         title: 'Skills',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(
-          modelId: 'openai/gpt-5.2',
+          modelId: _testModelId,
         ),
       );
-      final completed = client.sessions.timelineEvents
+      final terminal = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
-                event.sessionId == session.id && event.type == 'turn.completed',
+                event.sessionId == session.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
           )
           .timeout(_eventTimeout);
       await client.subscribeTimeline(session.id);
@@ -2430,7 +2431,12 @@ void main() {
         turnId: 'skill-turn',
         prompt: 'Use the shared skill.',
       );
-      await completed;
+      final outcome = await terminal;
+      expect(
+        outcome.type,
+        'turn.completed',
+        reason: 'Skill turn failed: ${outcome.data}',
+      );
 
       final timeline = await client.subscribeTimeline(session.id);
       final loaded = timeline
@@ -2474,12 +2480,18 @@ void main() {
       );
       final tinest = (await firstClient.listAgentDefinitions()).single;
       expect(tinest.toolIds, <String>[
-        'apply_patch',
-        'list_mcp_resources',
-        'list_mcp_resource_templates',
-        'read_mcp_resource',
-        'exec_command',
-        'collaboration',
+        'tinest.edit/apply_patch',
+        'tinest.mcp/list_resources',
+        'tinest.mcp/list_resource_templates',
+        'tinest.mcp/read_resource',
+        'tinest.terminal/exec_command',
+        'tinest.terminal/write_stdin',
+        'tinest.collaboration/spawn_agent',
+        'tinest.collaboration/send_message',
+        'tinest.collaboration/followup_task',
+        'tinest.collaboration/wait_agent',
+        'tinest.collaboration/interrupt_agent',
+        'tinest.collaboration/list_agents',
       ]);
       // What the user reads in the agent editor: a freshly seeded Tinest is
       // clean, with no unavailable_tool warning against the real catalog.
@@ -2507,7 +2519,7 @@ void main() {
         contains('reviewer'),
       );
       expect(
-        File('${home.path}/v4/agents/reviewer.md').existsSync(),
+        File('${home.path}/v5/agents/reviewer.md').existsSync(),
         isTrue,
       );
       await firstClient.close();
@@ -3227,12 +3239,15 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
+      await _selectTinestTools(client, const <String>[
+        'tinest.attachments/attach_file',
+      ]);
 
       final unauthorizedClient = HttpClient();
       final unauthorized = await unauthorizedClient.getUrl(
         handle.boundEndpoint.replace(
           scheme: 'http',
-          path: '/v4/attachments/missing',
+          path: '/v5/attachments/missing',
         ),
       );
       expect(
@@ -3268,24 +3283,22 @@ void main() {
         rootPath: workspace.path,
         name: 'Attachments',
       );
-      final models = await client.listProviderModels('openai');
-      final runnableModel = models.firstWhere(
-        (model) =>
-            model.capabilities.streaming == CapabilitySupport.supported &&
-            model.capabilities.toolCalling == CapabilitySupport.supported,
-      );
       final session = await client.createSession(
         id: 'attachment-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Attachment session',
         agentDefinitionId: 'tinest',
-        model: ModelSelectionDto(
-          modelId: runnableModel.id,
-        ),
+        // The default v5 Agent exposes function, freeform, and deferred tools;
+        // its queue fixture must select a model supporting the whole surface.
+        model: const ModelSelectionDto(modelId: _testModelId),
       );
       await client.subscribeTimeline(session.id);
-      final completed = client.sessions.timelineEvents
-          .firstWhere((event) => event.type == 'turn.completed')
+      final terminal = client.sessions.timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
+          )
           .timeout(_eventTimeout);
       await client.startTurn(
         sessionId: session.id,
@@ -3293,7 +3306,12 @@ void main() {
         prompt: '',
         attachmentIds: <String>[uploaded.id],
       );
-      await completed;
+      final outcome = await terminal;
+      expect(
+        outcome.type,
+        'turn.completed',
+        reason: 'Attachment turn failed: ${outcome.data}',
+      );
 
       final request = await provider.firstRequest.future;
       final input = request.history.whereType<UserConversationItem>().last;
@@ -3395,6 +3413,9 @@ void main() {
         await home.delete(recursive: true);
         await workspace.delete(recursive: true);
       });
+      await _selectTinestTools(client, const <String>[
+        'tinest.attachments/attach_file',
+      ]);
 
       final imageBytes = <int>[
         0x89,
@@ -3508,13 +3529,13 @@ void main() {
     }
     expect(persisted.toString(), isNot(contains(token)));
     final credentials = await File(
-      '${config.path}/v4/secrets.json',
+      '${config.path}/v5/secrets.json',
     ).readAsString();
     expect(credentials, contains(token));
     expect(File('${config.path}/auth.json').existsSync(), isFalse);
     if (!Platform.isWindows) {
       expect(
-        File('${config.path}/v4/secrets.json').statSync().mode & 0x1ff,
+        File('${config.path}/v5/secrets.json').statSync().mode & 0x1ff,
         0x180,
       );
     }
@@ -3536,6 +3557,42 @@ void main() {
     await handle.stop();
     await home.delete(recursive: true);
   });
+
+  test(
+    'concurrent embedded daemon stops join the same completed shutdown',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-embedded-concurrent-stop-',
+      );
+      final handle = await EmbeddedDaemonHandle.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'embedded-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+      );
+      var firstStopCompleted = false;
+      final firstStop = handle.stop().whenComplete(() {
+        firstStopCompleted = true;
+      });
+      addTearDown(() async {
+        await firstStop;
+        if (home.existsSync()) {
+          await home.delete(recursive: true);
+        }
+      });
+
+      await handle.stop();
+
+      expect(firstStopCompleted, isTrue);
+      await firstStop;
+      await home.delete(recursive: true);
+    },
+    tags: const <String>[
+      'feature_test__daemon_management__contract',
+    ],
+  );
 
   test('embedded daemon reports a typed port conflict', () async {
     final occupied = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
@@ -3609,19 +3666,13 @@ void main() {
         rootPath: workspace.path,
         name: 'Queue',
       );
-      final models = await client.listProviderModels('openai');
-      final runnableModel = models.firstWhere(
-        (model) =>
-            model.capabilities.streaming == CapabilitySupport.supported &&
-            model.capabilities.toolCalling == CapabilitySupport.supported,
-      );
       final session = await client.createSession(
         id: 'queue-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Queue session',
         agentDefinitionId: 'tinest',
-        model: ModelSelectionDto(
-          modelId: runnableModel.id,
+        model: const ModelSelectionDto(
+          modelId: _testModelId,
         ),
       );
       await client.subscribeTimeline(session.id);
@@ -3649,7 +3700,21 @@ void main() {
         turnId: 'first-turn',
         prompt: 'The first prompt.',
       );
-      await drained.future.timeout(_eventTimeout);
+      try {
+        await drained.future.timeout(_eventTimeout);
+      } on TimeoutException catch (error) {
+        final current = (await client.sessions.listSessions(
+          worktreeId: catalog.worktrees.single.id,
+        )).singleWhere((item) => item.id == session.id);
+        final timeline = await client.subscribeTimeline(session.id);
+        throw TestFailure(
+          '$error while waiting for the idle queue drain; '
+          'status=${current.status}, error=${current.lastError}\n'
+          '${timeline.map(
+            (event) => '${event.type}: ${event.data}',
+          ).join('\n')}',
+        );
+      }
 
       await _waitForIdleSession(
         client,
@@ -3837,6 +3902,28 @@ void main() {
   );
 }
 
+Future<void> _waitForProviderStartOrTurnFailure({
+  required TinestApi client,
+  required String worktreeId,
+  required String sessionId,
+  required Completer<void> started,
+}) async {
+  for (var attempt = 0; attempt < 600; attempt += 1) {
+    if (started.isCompleted) return;
+    final current = (await client.sessions.listSessions(
+      worktreeId: worktreeId,
+    )).singleWhere((item) => item.id == sessionId);
+    if (current.status == SessionStatus.failed) {
+      throw StateError(
+        'Turn failed before the provider started: '
+        '${current.lastError ?? 'unknown error'}',
+      );
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  await started.future.timeout(_eventTimeout);
+}
+
 Future<void> _writeCommand(
   String directory, {
   required String name,
@@ -3855,7 +3942,7 @@ Future<void> _writeCommand(
 }
 
 /// Provider that answers every turn with one assistant message.
-final class _TextProvider implements ModelProvider {
+final class _TextProvider implements ModelGateway {
   @override
   String get id => 'text-fake';
 
@@ -3872,7 +3959,7 @@ final class _TextProvider implements ModelProvider {
 }
 
 /// Holds a provider request open until daemon shutdown cancels its turn.
-final class _ShutdownProvider implements ModelProvider {
+final class _ShutdownProvider implements ModelGateway {
   final Completer<void> started = Completer<void>();
   final Completer<void> cancelled = Completer<void>();
 
@@ -3934,6 +4021,24 @@ Future<TimelineEventDto> _waitForTimelineEvent(
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   throw StateError('Timed out waiting for "$type" on session $sessionId.');
+}
+
+Future<void> _selectTinestTools(
+  TinestClient client,
+  List<String> contributionIds,
+) async {
+  final definition = (await client.listAgentDefinitions()).singleWhere(
+    (item) => item.id == 'tinest',
+  );
+  await client.updateAgentDefinition(
+    definition.copyWith(
+      toolIds: <String>{
+        ...definition.toolIds,
+        ...contributionIds,
+      }.toList(growable: false),
+    ),
+    expectedContentHash: definition.contentHash,
+  );
 }
 
 Future<void> _waitForIdleSession(
@@ -4094,9 +4199,7 @@ Future<McpServerStateDto> _awaitReadyMcpServer(
   fail('MCP server "$serverId" never became ready.');
 }
 
-class _EchoingMcpProvider implements ModelProvider {
-  var _round = 0;
-
+class _EchoingMcpProvider implements ModelGateway {
   @override
   String get id => 'fake';
 
@@ -4105,7 +4208,51 @@ class _EchoingMcpProvider implements ModelProvider {
     ModelRequest request,
     CancellationToken cancellation,
   ) async* {
-    if (_round++ == 0) {
+    final searchResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .where((item) => item.callId == 'mcp-search-call')
+        .map((item) => item.output)
+        .firstOrNull;
+    final hasEchoResult = request.history
+        .whereType<ToolResultConversationItem>()
+        .any((item) => item.callId == 'echo-call');
+    if (searchResult == null) {
+      expect(
+        request.tools.map((tool) => tool.name),
+        allOf(
+          contains('tool_search_mcp'),
+          isNot(contains('mcp__fake__echo')),
+        ),
+      );
+      const arguments = <String, dynamic>{
+        'query': 'echo',
+        'limit': 8,
+      };
+      yield const ModelDeferredSearchCall(
+        callId: 'mcp-search-call',
+        name: 'tool_search_mcp',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.deferredSearch(
+              callId: 'mcp-search-call',
+              name: 'tool_search_mcp',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    if (!hasEchoResult) {
+      expect(searchResult, contains('mcp__fake__echo'));
+      expect(
+        request.tools.map((tool) => tool.name),
+        contains('mcp__fake__echo'),
+      );
       const arguments = <String, dynamic>{'value': 'through MCP'};
       yield const ModelFunctionCall(
         callId: 'echo-call',
@@ -4133,7 +4280,7 @@ class _EchoingMcpProvider implements ModelProvider {
   }
 }
 
-class _PatchProvider implements ModelProvider {
+class _PatchProvider implements ModelGateway {
   var _round = 0;
 
   @override
@@ -4178,7 +4325,7 @@ class _PatchProvider implements ModelProvider {
   }
 }
 
-class _SleepProvider implements ModelProvider {
+class _SleepProvider implements ModelGateway {
   /// Completes once the sleep call has been issued.
   final Completer<void> sleeping = Completer<void>();
 
@@ -4198,7 +4345,6 @@ class _SleepProvider implements ModelProvider {
     if (_round++ == 0) {
       const arguments = <String, dynamic>{
         'duration_ms': 300000,
-        'reason': 'the build',
       };
       yield const ModelFunctionCall(
         callId: 'sleep-call',
@@ -4236,107 +4382,7 @@ class _SleepProvider implements ModelProvider {
   }
 }
 
-/// Calls `new_context` in the first turn, then reports what survived.
-///
-/// Round 1 answers the first prompt plainly, round 2 resets, and round 3 (the
-/// second turn) records the history the provider was actually given.
-class _ContextResetProvider implements ModelProvider {
-  /// History of every request, so the test can assert on the one after a reset.
-  final List<List<ConversationItem>> requests = <List<ConversationItem>>[];
-
-  var _round = 0;
-
-  @override
-  String get id => 'context-reset-fake';
-
-  @override
-  Stream<ModelEvent> stream(
-    ModelRequest request,
-    CancellationToken cancellation,
-  ) async* {
-    requests.add(request.history);
-    switch (_round++) {
-      case 0:
-        yield const ModelTextDelta('Noted.');
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(text: 'Noted.'),
-          usage: ModelUsage(
-            inputTokens: 900,
-            outputTokens: 100,
-            totalTokens: 1000,
-          ),
-        );
-      case 1:
-        const arguments = <String, dynamic>{};
-        yield const ModelFunctionCall(
-          callId: 'reset-call',
-          name: 'new_context',
-          arguments: arguments,
-        );
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(
-            text: 'Starting over.',
-            toolCalls: <ConversationToolCall>[
-              ConversationToolCall.function(
-                callId: 'reset-call',
-                name: 'new_context',
-                arguments: arguments,
-              ),
-            ],
-          ),
-        );
-      default:
-        yield const ModelTextDelta('Fresh.');
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(text: 'Fresh.'),
-        );
-    }
-  }
-}
-
-/// Answers a turn, then writes a summary when the compaction request arrives.
-class _CompactingProvider implements ModelProvider {
-  final List<List<ConversationItem>> requests = <List<ConversationItem>>[];
-
-  var _round = 0;
-
-  @override
-  String get id => 'compacting-fake';
-
-  @override
-  Stream<ModelEvent> stream(
-    ModelRequest request,
-    CancellationToken cancellation,
-  ) async* {
-    requests.add(request.history);
-    switch (_round++) {
-      case 0:
-        yield const ModelTextDelta('Noted.');
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(text: 'Noted.'),
-          usage: ModelUsage(
-            inputTokens: 900,
-            outputTokens: 100,
-            totalTokens: 1000,
-          ),
-        );
-      case 1:
-        yield const ModelTextDelta('The release date is Tuesday.');
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(
-            text: 'The release date is Tuesday.',
-          ),
-        );
-      default:
-        yield const ModelTextDelta('Tuesday.');
-        yield const ModelResponseCompleted(
-          assistant: AssistantConversationItem(text: 'Tuesday.'),
-        );
-    }
-  }
-}
-
-class _AskingProvider implements ModelProvider {
+class _AskingProvider implements ModelGateway {
   var _round = 0;
 
   @override
@@ -4397,7 +4443,7 @@ class _AskingProvider implements ModelProvider {
   }
 }
 
-final class _AttachmentProvider implements ModelProvider {
+final class _AttachmentProvider implements ModelGateway {
   final Completer<ModelRequest> firstRequest = Completer<ModelRequest>();
 
   @override
@@ -4439,7 +4485,7 @@ final class _AttachmentProvider implements ModelProvider {
   }
 }
 
-class _ExecProvider implements ModelProvider {
+class _ExecProvider implements ModelGateway {
   _ExecProvider({required this.tty});
 
   /// Whether the command is asked for a pseudo-terminal or plain pipes.
@@ -4534,7 +4580,7 @@ class _ExecProvider implements ModelProvider {
   }
 }
 
-final class _ViewImageProvider implements ModelProvider {
+final class _ViewImageProvider implements ModelGateway {
   /// The request that carried the image back into the model's context.
   final Completer<ModelRequest> secondRequest = Completer<ModelRequest>();
 
@@ -4583,13 +4629,20 @@ final class _ViewImageProvider implements ModelProvider {
 
 /// The two tool results the search vertical slice inspects.
 final class _SearchResults {
-  const _SearchResults({required this.search, required this.glob});
+  const _SearchResults({
+    required this.search,
+    required this.glob,
+    required this.searchIgnored,
+    required this.globIgnored,
+  });
 
   final Map<String, dynamic> search;
   final Map<String, dynamic> glob;
+  final Map<String, dynamic> searchIgnored;
+  final Map<String, dynamic> globIgnored;
 }
 
-final class _SearchProvider implements ModelProvider {
+final class _SearchProvider implements ModelGateway {
   /// Completes once both tools have answered.
   final Completer<_SearchResults> results = Completer<_SearchResults>();
 
@@ -4605,7 +4658,14 @@ final class _SearchProvider implements ModelProvider {
       for (final item
           in request.history.whereType<ToolResultConversationItem>()) {
         if (item.callId == callId) {
-          return jsonDecode(item.output) as Map<String, dynamic>;
+          final structured = item.structuredContent;
+          if (structured is! Map) {
+            throw StateError(
+              'Tool $callId returned no structured content: '
+              'output=${item.output}, error=${item.isError}',
+            );
+          }
+          return Map<String, dynamic>.from(structured);
         }
       }
       return null;
@@ -4615,12 +4675,6 @@ final class _SearchProvider implements ModelProvider {
     if (search == null) {
       const arguments = <String, dynamic>{
         'query': 'marker',
-        'path': null,
-        'regex': null,
-        'case_sensitive': null,
-        'context_lines': null,
-        'include_ignored': null,
-        'max_results': null,
       };
       yield const ModelFunctionCall(
         callId: 'search-call',
@@ -4645,9 +4699,6 @@ final class _SearchProvider implements ModelProvider {
     if (glob == null) {
       const arguments = <String, dynamic>{
         'pattern': '**/*.dart',
-        'path': null,
-        'include_ignored': null,
-        'max_results': null,
       };
       yield const ModelFunctionCall(
         callId: 'glob-call',
@@ -4668,8 +4719,65 @@ final class _SearchProvider implements ModelProvider {
       );
       return;
     }
+    final searchIgnored = resultFor('search-ignored-call');
+    if (searchIgnored == null) {
+      const arguments = <String, dynamic>{
+        'query': 'marker',
+        'include_ignored': true,
+      };
+      yield const ModelFunctionCall(
+        callId: 'search-ignored-call',
+        name: 'search_text',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.function(
+              callId: 'search-ignored-call',
+              name: 'search_text',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final globIgnored = resultFor('glob-ignored-call');
+    if (globIgnored == null) {
+      const arguments = <String, dynamic>{
+        'pattern': '**/*.dart',
+        'include_ignored': true,
+      };
+      yield const ModelFunctionCall(
+        callId: 'glob-ignored-call',
+        name: 'glob',
+        arguments: arguments,
+      );
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(
+          text: '',
+          toolCalls: <ConversationToolCall>[
+            ConversationToolCall.function(
+              callId: 'glob-ignored-call',
+              name: 'glob',
+              arguments: arguments,
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (!results.isCompleted) {
-      results.complete(_SearchResults(search: search, glob: glob));
+      results.complete(
+        _SearchResults(
+          search: search,
+          glob: glob,
+          searchIgnored: searchIgnored,
+          globIgnored: globIgnored,
+        ),
+      );
     }
     yield const ModelTextDelta('Found it.');
     yield const ModelResponseCompleted(
@@ -4678,7 +4786,7 @@ final class _SearchProvider implements ModelProvider {
   }
 }
 
-final class _CollaboratingProvider implements ModelProvider {
+final class _CollaboratingProvider implements ModelGateway {
   _CollaboratingProvider({this.agentType = 'reviewer'});
 
   /// The `agent_type` the scripted root passes to `spawn_agent`.
@@ -4767,8 +4875,6 @@ final class _CollaboratingProvider implements ModelProvider {
           'message': 'Review without changing files.',
           'agent_type': agentType,
           'fork_turns': 'none',
-          'model': null,
-          'reasoning_effort': null,
         }),
       );
       return;
@@ -4796,7 +4902,7 @@ Future<void> _writeSkill(
 }
 
 /// Loads one skill through the `skill` tool, then finishes the turn.
-final class _SkillProvider implements ModelProvider {
+final class _SkillProvider implements ModelGateway {
   @override
   String get id => 'skill-fake';
 
@@ -4806,9 +4912,14 @@ final class _SkillProvider implements ModelProvider {
     CancellationToken cancellation,
   ) async* {
     cancellation.throwIfCancelled();
-    expect(request.instructions, contains('## Implicit skills'));
-    expect(request.instructions, contains('Before writing code'));
-    expect(request.instructions, isNot(contains('Project instructions.')));
+    final instructions = request.blocks
+        .map((block) => block.content)
+        .join(
+          '\n\n',
+        );
+    expect(instructions, contains('## Implicit skills'));
+    expect(instructions, contains('Before writing code'));
+    expect(instructions, isNot(contains('Project instructions.')));
     String? outputFor(String callId) {
       for (final item
           in request.history.whereType<ToolResultConversationItem>()) {
@@ -4845,15 +4956,18 @@ final class _SkillProvider implements ModelProvider {
     if (listed == null) {
       // The prompt no longer names the skills, only how many there are and
       // which tool finds them.
-      yield* call('list-call', 'list_skills', <String, dynamic>{
-        'cursor': null,
-      });
+      yield* call('list-call', 'list_skills', const <String, dynamic>{});
       return;
     }
     if (outputFor('skill-call') == null) {
-      // The turn catalog is the same effective projection as the RPC catalog:
-      // global skills remain available alongside the winning project skill.
-      final page = jsonDecode(listed) as Map<String, dynamic>;
+      // The turn catalog is the same effective projection as the RPC catalog;
+      // read its typed Lua tool result rather than parsing display text.
+      final page =
+          request.history
+                  .whereType<ToolResultConversationItem>()
+                  .firstWhere((item) => item.callId == 'list-call')
+                  .structuredContent!
+              as Map<String, dynamic>;
       final names = (page['skills']! as List)
           .map((skill) => (skill! as Map<String, dynamic>)['name'])
           .toList();
@@ -4862,7 +4976,6 @@ final class _SkillProvider implements ModelProvider {
       expect(page['total'], names.length);
       yield* call('skill-call', 'skill', <String, dynamic>{
         'name': 'shared',
-        'resource': null,
       });
       return;
     }

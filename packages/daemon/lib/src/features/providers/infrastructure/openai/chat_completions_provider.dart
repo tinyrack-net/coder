@@ -4,12 +4,13 @@ import 'dart:typed_data';
 
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/error_body.dart';
+import 'package:daemon/src/features/providers/infrastructure/openai/media.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/openai_provider.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/sse.dart';
 import 'package:dio/dio.dart';
 
 /// OpenAIChatCompletionsProvider defines a public contract.
-class OpenAIChatCompletionsProvider implements ModelProvider {
+class OpenAIChatCompletionsProvider implements ModelGateway {
   /// Creates a [OpenAIChatCompletionsProvider].
   OpenAIChatCompletionsProvider(OpenAIProviderConfig config, {Dio? dio})
     : _config = config,
@@ -71,7 +72,8 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
   Map<String, dynamic> _requestBody(ModelRequest request) => <String, dynamic>{
     'model': request.model,
     'messages': <Map<String, dynamic>>[
-      <String, dynamic>{'role': 'system', 'content': request.instructions},
+      for (final block in request.blocks)
+        <String, dynamic>{'role': block.role, 'content': block.content},
       ..._messages(request.history),
     ],
     if (_config.supportsReasoningEffort)
@@ -116,7 +118,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
             final bytes = attachment.bytes;
             if (_config.supportsImageInput &&
                 bytes != null &&
-                supportedContextImageTypes.contains(attachment.mimeType)) {
+                openAiSupportedImageTypes.contains(attachment.mimeType)) {
               images.add(<String, dynamic>{
                 'type': 'image_url',
                 'image_url': <String, dynamic>{
@@ -132,8 +134,7 @@ class OpenAIChatCompletionsProvider implements ModelProvider {
             content.write(
               '[Attachment id=${attachment.id}, '
               'file=${attachment.fileName}, mime=${attachment.mimeType}, '
-              'bytes=${attachment.byteSize}, path=${attachment.path}. '
-              'Use read_attachment with the attachment id.]',
+              'bytes=${attachment.byteSize}, path=${attachment.path}]',
             );
           }
           result.add(<String, dynamic>{

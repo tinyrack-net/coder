@@ -521,7 +521,6 @@ void main() {
         'session-composer-agent',
         'session-composer-model',
         'session-composer-permission',
-        'session-composer-mode',
       ];
       const overflowKey = ValueKey<String>('session-composer-overflow');
       const settingsKey = ValueKey<String>('session-composer-settings');
@@ -555,7 +554,6 @@ void main() {
       }
       expect(find.byKey(overflowKey), findsNothing);
       expect(find.byKey(settingsKey), findsNothing);
-      expect(find.text(testL10n.composerRun), findsOneWidget);
       final standardSelects = tester
           .widgetList<TRSelect<dynamic>>(
             find.byWidgetPredicate((widget) => widget is TRSelect<dynamic>),
@@ -566,6 +564,10 @@ void main() {
         expect(select.appearance, TRFieldAppearance.ghost);
         expect(select.uiSize, TRUiSize.sm);
       }
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-mode')),
+        findsNothing,
+      );
 
       // Local composer width does not override the application density.
       await pumpAt(600, composerWidth: 500);
@@ -818,7 +820,6 @@ void main() {
         'control-fast_mode',
         'control-thinking_budget',
         'permission',
-        'mode',
       ]) {
         expect(
           find.byKey(ValueKey<String>('session-composer-settings-$setting')),
@@ -945,14 +946,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(hostKey.currentState!.permissionMode, PermissionMode.readOnly);
 
-      final modeSetting = find.byKey(
-        const ValueKey<String>('session-composer-settings-mode'),
+      expect(
+        find.byKey(
+          const ValueKey<String>('session-composer-settings-mode'),
+        ),
+        findsNothing,
       );
-      await tester.ensureVisible(modeSetting);
-      await tester.pumpAndSettle();
-      await tester.tap(modeSetting);
-      await tester.pumpAndSettle();
-      expect(hostKey.currentState!.mode, SessionMode.plan);
       expect(find.byType(TRDrawer), findsOneWidget);
     },
   );
@@ -1513,15 +1512,11 @@ void main() {
   );
 
   testWidgets(
-    'an open list takes plain Tab but leaves the modified one alone',
+    'an open list takes plain Tab and leaves modified Tab alone',
     tags: const <String>['feature_test__composer_file_mention__widget'],
     (tester) async {
-      var toggles = 0;
       await tester.pumpWidget(
-        _completionHarness(
-          onSubmit: (_) {},
-          onModeToggled: () => toggles += 1,
-        ),
+        _completionHarness(onSubmit: (_) {}),
       );
       await tester.pumpAndSettle();
 
@@ -1532,28 +1527,31 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Closed, Shift+Tab cycles the mode.
+      // Closed, Shift+Tab is left to the host/plugin layer.
       await tester.enterText(find.byKey(inputKey), 'plain');
       await tester.pumpAndSettle();
       await shiftTab();
-      expect(toggles, 1);
+      expect(
+        tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
+        'plain',
+      );
 
-      // Open, it still does: a held modifier makes the key the host's, so the
-      // list never takes the mode shortcut away.
+      // A held modifier is not interpreted by the completion list.
       await tester.enterText(find.byKey(inputKey), '@li');
       await tester.pumpAndSettle();
       expect(find.text('lib/app.dart'), findsOneWidget);
       await shiftTab();
-      expect(toggles, 2);
       expect(
         tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
         '@li',
       );
 
-      // Plain Tab is the list's, and commits the highlighted row.
+      // The host focus traversal owns modified Tab. Refocus the input before
+      // proving that an unmodified Tab belongs to the still-open list.
+      await tester.tap(find.byKey(inputKey));
+      await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
-      expect(toggles, 2);
       expect(
         tester.widget<TRTextField>(find.byKey(inputKey)).controller!.text,
         '@lib/app.dart ',
@@ -1681,7 +1679,10 @@ void main() {
 
   testWidgets(
     'a skill command is expanded into the prompt that is sent',
-    tags: const <String>['feature_test__composer_slash_command__widget'],
+    tags: const <String>[
+      'feature_test__composer_slash_command__widget',
+      'feature_test__skill_invocation__widget',
+    ],
     (tester) async {
       final submitted = <String>[];
       await tester.pumpWidget(
@@ -1882,27 +1883,35 @@ void main() {
 
 const _compactAgentDefinitions = <AgentDefinitionDto>[
   AgentDefinitionDto(
+    version: 5,
     id: 'tinest',
     name: 'Tinest',
     description: 'Codes',
     mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: 'Code.',
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    driverId: 'tinest.standard/driver',
+    extensionIds: <String>[],
     toolIds: <String>[],
+    pluginSettings: <String, Map<String, dynamic>>{},
     callableAgentIds: <String>[],
+    prompt: 'Code.',
     contentHash: 'tinest-hash',
     sourcePath: '/agents/tinest.md',
     isBuiltIn: true,
   ),
   AgentDefinitionDto(
+    version: 5,
     id: 'planner',
     name: 'Planner',
     description: 'Plans',
     mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: 'Plan.',
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    driverId: 'tinest.standard/driver',
+    extensionIds: <String>[],
     toolIds: <String>[],
+    pluginSettings: <String, Map<String, dynamic>>{},
     callableAgentIds: <String>[],
+    prompt: 'Plan.',
     contentHash: 'planner-hash',
     sourcePath: '/agents/planner.md',
   ),
@@ -1958,7 +1967,6 @@ class _CompactSettingsHost extends StatefulWidget {
 
 class _CompactSettingsHostState extends State<_CompactSettingsHost> {
   String agentId = 'tinest';
-  SessionMode mode = SessionMode.normal;
   PermissionMode? permissionMode;
   Map<String, ModelControlValueDto> controls = <String, ModelControlValueDto>{};
 
@@ -1976,8 +1984,6 @@ class _CompactSettingsHostState extends State<_CompactSettingsHost> {
       onAgentChanged: (value) => setState(() => agentId = value),
       onModelChanged: (_, nextControls) =>
           setState(() => controls = nextControls),
-      mode: mode,
-      onModeChanged: (value) => setState(() => mode = value),
       modelControls: controls,
       onModelControlsChanged: (value) => setState(() => controls = value),
       permissionMode: permissionMode,
@@ -2045,8 +2051,6 @@ SessionComposerBar _bar() => SessionComposerBar(
   selection: null,
   onAgentChanged: (_) {},
   onModelChanged: (_, _) {},
-  mode: SessionMode.normal,
-  onModeChanged: (_) {},
 );
 
 /// A composer wired to a fixed catalog, so the tests exercise the composer
@@ -2054,7 +2058,6 @@ SessionComposerBar _bar() => SessionComposerBar(
 Widget _completionHarness({
   required void Function(ComposerSubmission submission) onSubmit,
   Future<bool> Function(ComposerCommandInvocation invocation)? onClientCommand,
-  VoidCallback? onModeToggled,
   AttachmentInputPort? attachmentInput,
   bool suppressList = false,
   List<String> files = _files,
@@ -2062,7 +2065,6 @@ Widget _completionHarness({
   composer: _CompletionHost(
     onSubmit: onSubmit,
     onClientCommand: onClientCommand,
-    onModeToggled: onModeToggled,
     attachmentInput: attachmentInput,
     suppressList: suppressList,
     files: files,
@@ -2080,7 +2082,6 @@ class _CompletionHost extends StatefulWidget {
   const _CompletionHost({
     required this.onSubmit,
     this.onClientCommand,
-    this.onModeToggled,
     this.attachmentInput,
     this.suppressList = false,
     this.files = _files,
@@ -2089,7 +2090,6 @@ class _CompletionHost extends StatefulWidget {
   final void Function(ComposerSubmission submission) onSubmit;
   final Future<bool> Function(ComposerCommandInvocation invocation)?
   onClientCommand;
-  final VoidCallback? onModeToggled;
   final AttachmentInputPort? attachmentInput;
   final bool suppressList;
   final List<String> files;
@@ -2153,7 +2153,6 @@ class _CompletionHostState extends State<_CompletionHost> {
     suggestions: _suggestions,
     onCompletionQueryChanged: (trigger) => setState(() => _trigger = trigger),
     onClientCommand: widget.onClientCommand,
-    onModeToggled: widget.onModeToggled,
     attachmentInput: widget.attachmentInput,
     onSubmit: widget.onSubmit,
     bar: _bar(),

@@ -7,11 +7,11 @@ import 'package:app/src/app/presentation/workspace_page.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/app/tinest_app.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
-import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
@@ -61,15 +61,6 @@ const liveTerminal = TerminalDto(
   rows: 24,
   lastSequence: 0,
 );
-
-/// Arguments of an `update_plan` call, as the model sends them.
-const Map<String, dynamic> _planArguments = <String, dynamic>{
-  'plan': <Map<String, dynamic>>[
-    <String, dynamic>{'step': 'Move the parser', 'status': 'pending'},
-    <String, dynamic>{'step': 'Add tests', 'status': 'pending'},
-  ],
-  'explanation': 'Parser first.',
-};
 
 void main() {
   _registerSharedAppFlows();
@@ -180,33 +171,6 @@ Future<void> _openComposerSetting(
   );
   await tester.tap(select.evaluate().isEmpty ? row : select);
   await tester.pumpAndSettle();
-}
-
-Future<void> _dismissComposerSettings(WidgetTester tester) async {
-  if (find
-      .byKey(const ValueKey<String>('session-composer-settings-sheet'))
-      .evaluate()
-      .isEmpty) {
-    return;
-  }
-  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-  await tester.pumpAndSettle();
-}
-
-Future<void> _selectComposerMode(
-  WidgetTester tester,
-  SessionMode mode,
-) async {
-  final direct = find.byKey(
-    const ValueKey<String>('session-composer-mode'),
-  );
-  if (direct.evaluate().isNotEmpty) {
-    await tester.tap(direct);
-    await tester.pumpAndSettle();
-    return;
-  }
-  await _openComposerSetting(tester, 'mode');
-  await _dismissComposerSettings(tester);
 }
 
 final class _MappedClients implements HostClientFactory {

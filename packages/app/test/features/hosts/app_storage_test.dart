@@ -13,10 +13,10 @@ void main() {
     FlutterSecureStorage.setMockInitialValues(<String, String>{});
   });
 
-  test('v4 app storage does not read or remove the v3 document', () async {
-    const legacyKey = 'tinyrack_tinest.app_document_v3';
+  test('v5 app storage ignores and preserves the v4 document', () async {
+    const legacyKey = 'tinyrack_tinest.app_document_v4';
     SharedPreferences.setMockInitialValues(<String, Object>{
-      legacyKey: '{"version":3,"settings":{},"profiles":[]}',
+      legacyKey: '{"version":4,"settings":{},"profiles":[]}',
     });
     final preferences = await SharedPreferences.getInstance();
     final store = SharedPreferencesAppStore(preferences);

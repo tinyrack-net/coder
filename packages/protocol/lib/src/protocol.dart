@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 /// Breaking wire protocol major.
-const int tinestProtocolMajor = 4;
+const int tinestProtocolMajor = 5;
 
 /// Exact revision supported by this implementation.
 ///
@@ -10,8 +10,8 @@ const int tinestProtocolMajor = 4;
 /// rejects the pairing rather than letting it fail later at an arbitrary RPC.
 const int tinestProtocolRevision = 2;
 
-/// WebSocket subprotocol offered by v4 clients and servers.
-const String tinestWebSocketProtocol = 'tinyrack.tinest.v4';
+/// WebSocket subprotocol offered by v5 clients and servers.
+const String tinestWebSocketProtocol = 'tinyrack.tinest.v5';
 
 /// Prefix for browser-compatible bearer-token subprotocols.
 const String tinestWebSocketTokenPrefix = 'tinyrack.tinest.token.';

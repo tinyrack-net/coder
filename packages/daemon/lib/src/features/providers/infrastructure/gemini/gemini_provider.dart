@@ -42,7 +42,7 @@ final class GeminiProviderException implements Exception {
 }
 
 /// Stateless Gemini Interactions v1 streaming adapter.
-final class GeminiInteractionsProvider implements ModelProvider {
+final class GeminiInteractionsProvider implements ModelGateway {
   /// Creates an Interactions adapter.
   GeminiInteractionsProvider(GeminiProviderConfig config, {Dio? dio})
     : _config = config,
@@ -107,8 +107,24 @@ final class GeminiInteractionsProvider implements ModelProvider {
     );
     return <String, dynamic>{
       'model': request.model,
-      'input': _input(request.history),
-      'system_instruction': request.instructions,
+      'input': <Map<String, dynamic>>[
+        for (final block in request.blocks.where(
+          (block) => block.role == 'user' || block.role == 'assistant',
+        ))
+          <String, dynamic>{
+            'role': block.role,
+            'content': <Map<String, dynamic>>[
+              <String, dynamic>{'type': 'text', 'text': block.content},
+            ],
+          },
+        ..._input(request.history),
+      ],
+      'system_instruction': request.blocks
+          .where(
+            (block) => block.role == 'system' || block.role == 'developer',
+          )
+          .map((block) => block.content)
+          .join('\n\n'),
       'stream': true,
       'store': false,
       if (level != null)

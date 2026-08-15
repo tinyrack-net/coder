@@ -400,7 +400,7 @@ void main() {
             label: 'Remote daemon',
             serverId: 'device-server',
             connections: directHostConnections(
-              Uri.parse('wss://daemon.example/v4/ws'),
+              Uri.parse('wss://daemon.example/v5/ws'),
             ),
             autoConnect: true,
             createdAt: now,

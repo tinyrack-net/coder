@@ -11,6 +11,7 @@ import 'package:app/src/features/hosts/presentation/pages/relay_pairing_pages.da
 import 'package:app/src/features/mcp/presentation/pages/mcp_settings_page.dart';
 import 'package:app/src/features/models/presentation/pages/model_settings_page.dart';
 import 'package:app/src/features/permissions/presentation/pages/permission_settings_page.dart';
+import 'package:app/src/features/plugins/presentation/pages/plugin_settings_page.dart';
 import 'package:app/src/features/providers/presentation/pages/provider_settings_page.dart';
 import 'package:app/src/features/settings/domain/settings_category.dart';
 import 'package:app/src/features/settings/presentation/pages/advanced_settings_page.dart';
@@ -63,6 +64,7 @@ class UnifiedSettingsPage extends ConsumerStatefulWidget {
 class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   late final ProjectSettingsPaneController _projectPanes;
   late final AgentSettingsPaneController _agentPanes;
+  late final PluginSettingsPaneController _pluginPanes;
   late final McpSettingsPaneController _mcpPanes;
   late final ProviderSettingsPaneController _providerPanes;
   late final Map<SettingsCategory, SettingsPaneCoordinator> _paneControllers;
@@ -79,11 +81,13 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     super.initState();
     _projectPanes = ProjectSettingsPaneController();
     _agentPanes = AgentSettingsPaneController();
+    _pluginPanes = PluginSettingsPaneController();
     _mcpPanes = McpSettingsPaneController();
     _providerPanes = ProviderSettingsPaneController();
     _paneControllers = <SettingsCategory, SettingsPaneCoordinator>{
       SettingsCategory.project: _projectPanes,
       SettingsCategory.agent: _agentPanes,
+      SettingsCategory.plugin: _pluginPanes,
       SettingsCategory.mcp: _mcpPanes,
       SettingsCategory.provider: _providerPanes,
     };
@@ -93,6 +97,7 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   void dispose() {
     _projectPanes.dispose();
     _agentPanes.dispose();
+    _pluginPanes.dispose();
     _mcpPanes.dispose();
     _providerPanes.dispose();
     super.dispose();
@@ -156,6 +161,16 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           builder: (hostId, slot) => AgentSettingsPage(
             hostId: hostId,
             paneController: _agentPanes,
+            slot: slot,
+          ),
+        ),
+        SettingsCategory.plugin => _hostListDetailPanes(
+          host: host,
+          loading: registryLoading,
+          semanticLabel: l10n.settingsLoading,
+          builder: (hostId, slot) => PluginSettingsPage(
+            hostId: hostId,
+            paneController: _pluginPanes,
             slot: slot,
           ),
         ),
@@ -890,6 +905,7 @@ IconData _settingsCategoryIcon(SettingsCategory category) => switch (category) {
   SettingsCategory.general => TinestIcons.tune,
   SettingsCategory.project => TinestIcons.projects,
   SettingsCategory.agent => TinestIcons.agent,
+  SettingsCategory.plugin => TinestIcons.extension,
   SettingsCategory.mcp => TinestIcons.extension,
   SettingsCategory.connection => TinestIcons.link,
   SettingsCategory.skill => TinestIcons.sparkle,
@@ -907,6 +923,7 @@ String _settingsCategoryLabel(
   SettingsCategory.general => l10n.settingsCategoryGeneral,
   SettingsCategory.project => l10n.settingsCategoryProjects,
   SettingsCategory.agent => l10n.settingsCategoryAgent,
+  SettingsCategory.plugin => l10n.settingsCategoryPlugin,
   SettingsCategory.mcp => l10n.settingsCategoryMcp,
   SettingsCategory.connection => l10n.settingsCategoryConnection,
   SettingsCategory.skill => l10n.settingsCategorySkill,
@@ -951,6 +968,11 @@ void _goToSettingsCategory(
       navigate(
         () => AgentSettingsRoute(hostId: hostId).replace(context),
         () => AgentSettingsRoute(hostId: hostId).push<void>(context),
+      );
+    case SettingsCategory.plugin:
+      navigate(
+        () => PluginSettingsRoute(hostId: hostId).replace(context),
+        () => PluginSettingsRoute(hostId: hostId).push<void>(context),
       );
     case SettingsCategory.mcp:
       navigate(

@@ -138,11 +138,8 @@ String _clientName(AppLocalizations l10n, ClientCommandAction action) =>
     switch (action) {
       ClientCommandAction.clear => l10n.composerCommandClearLabel,
       ClientCommandAction.newSession => l10n.composerCommandNewLabel,
-      ClientCommandAction.toggleMode => l10n.composerCommandModeLabel,
       ClientCommandAction.openAgentSettings => l10n.composerCommandAgentsLabel,
       ClientCommandAction.openSkillSettings => l10n.composerCommandSkillsLabel,
-      ClientCommandAction.compact => l10n.composerCommandCompactLabel,
-      ClientCommandAction.goal => l10n.composerCommandGoalLabel,
       ClientCommandAction.help => l10n.composerCommandHelpLabel,
     };
 
@@ -150,12 +147,9 @@ String _clientDescription(AppLocalizations l10n, ClientCommandAction action) =>
     switch (action) {
       ClientCommandAction.clear => l10n.composerCommandClearDescription,
       ClientCommandAction.newSession => l10n.composerCommandNewDescription,
-      ClientCommandAction.toggleMode => l10n.composerCommandModeDescription,
       ClientCommandAction.openAgentSettings =>
         l10n.composerCommandAgentsDescription,
       ClientCommandAction.openSkillSettings =>
         l10n.composerCommandSkillsDescription,
-      ClientCommandAction.compact => l10n.composerCommandCompactDescription,
-      ClientCommandAction.goal => l10n.composerCommandGoalDescription,
       ClientCommandAction.help => l10n.composerCommandHelpDescription,
     };

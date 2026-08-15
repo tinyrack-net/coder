@@ -6,9 +6,12 @@ import 'dart:async';
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_config.dart';
+import 'package:daemon/src/features/mcp/infrastructure/mcp_host_primitives.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_service.dart';
 import 'package:daemon/src/features/mcp/infrastructure/testing.dart';
+import 'package:daemon/src/features/plugins/runtime/host_primitives.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:daemon/src/shared/ports/request_cancellation.dart';
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -49,22 +52,38 @@ void main() {
 
     await service.initialize();
 
-    expect(service.tools(), isEmpty);
+    expect(service.availableTools(), isEmpty);
     expect(service.states(), isEmpty);
-    expect(service.tool('mcp__github__echo'), isNull);
   });
 
   test('a connected server publishes its tools and state', () async {
     store.user = <McpServerConfigDto>[stdioServer];
+    transports.nextServer = ScriptedMcpServer(
+      toolPages: <List<Map<String, dynamic>>>[
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'name': 'echo',
+            'description': 'Echoes its argument.',
+            'inputSchema': <String, dynamic>{'type': 'object'},
+            'outputSchema': <String, dynamic>{'type': 'string'},
+          },
+        ],
+      ],
+    );
     final service = build();
     addTearDown(service.close);
 
     await service.initialize();
     await pumpEventQueue();
 
-    expect(service.tools().single.id, 'mcp__github__echo');
-    expect(service.tools().single.risk, ToolRisk.dangerous);
-    expect(service.tool('mcp__github__echo'), isNotNull);
+    final published = service.availableTools().single;
+    expect(published.server, 'github');
+    expect(published.descriptor.name, 'echo');
+    expect(published.descriptor.inputSchema?['type'], 'object');
+    expect(
+      published.descriptor.outputSchema,
+      <String, dynamic>{'type': 'string'},
+    );
 
     final state = service.states().single;
     expect(state.status, McpServerStatus.ready);
@@ -79,25 +98,169 @@ void main() {
   });
 
   test(
-    'an MCP tool is advertised or withheld as the caller asks',
-    tags: const <String>['feature_test__tool_search_deferred__unit'],
+    'raw MCP gateway catalogs and invokes without model tool policy',
     () async {
+      final server = ScriptedMcpServer(
+        toolPages: <List<Map<String, dynamic>>>[
+          <Map<String, dynamic>>[
+            <String, dynamic>{
+              'name': 'echo',
+              'title': 'Echo',
+              'description': 'External descriptor text.',
+              'inputSchema': <String, dynamic>{
+                'type': 'object',
+                'properties': <String, dynamic>{
+                  'value': <String, dynamic>{'type': 'string'},
+                },
+              },
+              'annotations': <String, dynamic>{'readOnlyHint': true},
+            },
+          ],
+        ],
+        callResult: <String, dynamic>{
+          'content': <Map<String, dynamic>>[
+            <String, dynamic>{'type': 'text', 'text': 'pong'},
+          ],
+          'structuredContent': <String, dynamic>{'echo': 'pong'},
+        },
+      );
+      transports.nextServer = server;
       store.user = <McpServerConfigDto>[stdioServer];
       final service = build();
       addTearDown(service.close);
       await service.initialize();
       await pumpEventQueue();
+      final gateway = SessionMcpHostPrimitiveGateway(service, '/workspace');
 
+      final catalog = await gateway.catalogTools(const <String, Object?>{});
+      expect(catalog['tools'], <Map<String, Object?>>[
+        <String, Object?>{
+          'server': 'github',
+          'name': 'echo',
+          'title': 'Echo',
+          'description': 'External descriptor text.',
+          'inputSchema': <String, dynamic>{
+            'type': 'object',
+            'properties': <String, dynamic>{
+              'value': <String, dynamic>{'type': 'string'},
+            },
+          },
+          'annotations': <String, Object?>{'readOnlyHint': true},
+        },
+      ]);
+
+      final result = await gateway.invokeTool(<String, Object?>{
+        'server': 'github',
+        'name': 'echo',
+        'arguments': <String, Object?>{'value': 'ping'},
+      });
+      expect(result['isError'], isFalse);
+      expect(result['structuredContent'], <String, dynamic>{'echo': 'pong'});
+      expect(result['content'], <Map<String, Object?>>[
+        <String, Object?>{'type': 'text', 'text': 'pong'},
+      ]);
       expect(
-        service.tool('mcp__github__echo')!.exposure,
-        ToolExposure.advertised,
+        server.requests.last['params'],
+        <String, dynamic>{
+          'name': 'echo',
+          'arguments': <String, Object?>{'value': 'ping'},
+        },
       );
-      expect(
-        service
-            .tool('mcp__github__echo', exposure: ToolExposure.deferred)!
-            .exposure,
-        ToolExposure.deferred,
+    },
+  );
+
+  test(
+    'raw MCP gateway maps host-await cancellation to a structured failure',
+    () async {
+      final server = ScriptedMcpServer(answerToolCalls: false);
+      transports.nextServer = server;
+      store.user = <McpServerConfigDto>[stdioServer];
+      final service = build();
+      addTearDown(service.close);
+      await service.initialize();
+      await pumpEventQueue();
+      final gateway = SessionMcpHostPrimitiveGateway(service, '/workspace');
+      final cancellation = _TestRequestCancellation();
+
+      final pending = gateway.invokeTool(
+        const <String, Object?>{
+          'server': 'github',
+          'name': 'echo',
+          'arguments': <String, Object?>{},
+        },
+        cancellation: cancellation,
       );
+      await pumpEventQueue();
+      cancellation.cancel();
+
+      await expectLater(
+        pending,
+        throwsA(
+          isA<HostPrimitiveException>().having(
+            (error) => error.error.code,
+            'code',
+            'cancelled',
+          ),
+        ),
+      );
+      expect(service.isReady('github'), isTrue);
+    },
+  );
+
+  test(
+    'raw MCP resource read and catalog behavior remains unchanged',
+    () async {
+      transports.nextServer = ScriptedMcpServer(
+        publishesResources: true,
+        resourcePages: <List<Map<String, dynamic>>>[
+          <Map<String, dynamic>>[
+            <String, dynamic>{'uri': 'file:///guide.md', 'name': 'guide'},
+          ],
+        ],
+        resourceTemplates: <Map<String, dynamic>>[
+          <String, dynamic>{'uriTemplate': 'file:///{path}'},
+        ],
+      );
+      store.user = <McpServerConfigDto>[stdioServer];
+      final service = build();
+      addTearDown(service.close);
+      await service.initialize();
+      await pumpEventQueue();
+      final gateway = SessionMcpHostPrimitiveGateway(service, '/workspace');
+
+      final resources = await gateway.listResources(
+        const <String, Object?>{'server': 'github'},
+      );
+      final templates = await gateway.listResourceTemplates(
+        const <String, Object?>{'server': 'github'},
+      );
+      final content = await gateway.readResource(
+        const <String, Object?>{
+          'server': 'github',
+          'uri': 'file:///guide.md',
+        },
+      );
+
+      expect(resources['resources'], <Map<String, Object?>>[
+        <String, Object?>{
+          'server': 'github',
+          'uri': 'file:///guide.md',
+          'name': 'guide',
+        },
+      ]);
+      expect(templates['resourceTemplates'], <Map<String, Object?>>[
+        <String, Object?>{
+          'server': 'github',
+          'uriTemplate': 'file:///{path}',
+        },
+      ]);
+      expect(content['contents'], <Map<String, Object?>>[
+        <String, Object?>{
+          'uri': 'file:///guide.md',
+          'mimeType': 'text/plain',
+          'text': 'body',
+        },
+      ]);
     },
   );
 
@@ -194,7 +357,7 @@ void main() {
     await service.initialize();
 
     expect(service.states().single.status, McpServerStatus.connecting);
-    expect(service.tools(), isEmpty);
+    expect(service.availableTools(), isEmpty);
   });
 
   test('secrets and environment expand into the transport spec', () async {
@@ -235,7 +398,7 @@ void main() {
 
     expect(transports.specs, isEmpty);
     expect(service.states().single.status, McpServerStatus.disabled);
-    expect(service.tools(), isEmpty);
+    expect(service.availableTools(), isEmpty);
   });
 
   test('a server that cannot start fails without taking the rest', () async {
@@ -262,7 +425,7 @@ void main() {
     expect(broken.diagnostics, isNotEmpty);
     expect(broken.nextRetryAt, isNotNull);
     // The healthy server still published its tools.
-    expect(service.tools().single.id, 'mcp__github__echo');
+    expect(service.availableTools().single.descriptor.name, 'echo');
   });
 
   test('an unresolvable secret fails only its own server', () async {
@@ -305,7 +468,7 @@ void main() {
     await pumpEventQueue();
 
     expect(changes, isNotEmpty);
-    expect(service.tools().single.id, 'mcp__github__renamed');
+    expect(service.availableTools().single.descriptor.name, 'renamed');
   });
 
   test('saving reconciles instead of restarting everything', () async {
@@ -426,7 +589,7 @@ void main() {
     await pumpEventQueue();
 
     expect(service.states().single.status, McpServerStatus.failed);
-    expect(service.tools(), isEmpty);
+    expect(service.availableTools(), isEmpty);
     expect(service.states().single.nextRetryAt, isNotNull);
   });
 
@@ -440,8 +603,34 @@ void main() {
     await service.close();
 
     expect(service.states(), isEmpty);
-    expect(service.tools(), isEmpty);
+    expect(service.availableTools(), isEmpty);
   });
+}
+
+final class _TestRequestCancellation implements RequestCancellation {
+  final List<void Function()> _callbacks = <void Function()>[];
+  bool _cancelled = false;
+
+  @override
+  bool get isCancelled => _cancelled;
+
+  @override
+  void onCancel(void Function() callback) {
+    if (_cancelled) {
+      callback();
+      return;
+    }
+    _callbacks.add(callback);
+  }
+
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    for (final callback in List<void Function()>.of(_callbacks)) {
+      callback();
+    }
+    _callbacks.clear();
+  }
 }
 
 final class _ScheduledRetry {

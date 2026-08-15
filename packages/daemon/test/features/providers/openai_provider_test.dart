@@ -6,6 +6,71 @@ import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('both OpenAI wires preserve exact role block order', () async {
+    const blocks = <ModelRoleBlock>[
+      ModelRoleBlock(role: 'system', content: 'system-1'),
+      ModelRoleBlock(role: 'developer', content: 'developer-1'),
+      ModelRoleBlock(role: 'user', content: 'user-1'),
+      ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
+      ModelRoleBlock(role: 'developer', content: 'developer-2'),
+    ];
+    const request = ModelRequest(
+      model: 'gpt-5.6-sol',
+      blocks: blocks,
+      history: <ConversationItem>[],
+      tools: <ModelToolDefinition>[],
+      safetyIdentifier: 'safe-user',
+    );
+    final responsesAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+    await OpenAIResponsesProvider(
+      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = responsesAdapter,
+    ).stream(request, CancellationToken()).toList();
+    final responsesInput =
+        Map<String, dynamic>.from(
+              responsesAdapter.options!.data as Map,
+            )['input']!
+            as List;
+    expect(
+      responsesInput.map((item) => (item as Map)['role']),
+      blocks.map((block) => block.role),
+    );
+    expect(
+      responsesInput.map(
+        (item) => (((item as Map)['content'] as List).single as Map)['text'],
+      ),
+      blocks.map((block) => block.content),
+    );
+
+    final chatAdapter = _RecordingAdapter('''
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+''');
+    await OpenAIChatCompletionsProvider(
+      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = chatAdapter,
+    ).stream(request, CancellationToken()).toList();
+    final messages =
+        Map<String, dynamic>.from(
+              chatAdapter.options!.data as Map,
+            )['messages']!
+            as List;
+    expect(
+      messages,
+      <Map<String, dynamic>>[
+        for (final block in blocks)
+          <String, dynamic>{'role': block.role, 'content': block.content},
+      ],
+    );
+  });
+
   test(
     'Responses maps hydrated image and document attachments to content parts',
     tags: const <String>['feature_test__conversation_attachments__unit'],
@@ -29,7 +94,9 @@ data: [DONE]
                 AgentModelControlIds.reasoningEffort:
                     const AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: const <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[
                 UserConversationItem(
                   'inspect these',
@@ -68,7 +135,7 @@ data: [DONE]
           .toList();
 
       final body = Map<String, dynamic>.from(adapter.options!.data as Map);
-      final input = (body['input'] as List).single as Map;
+      final input = (body['input'] as List).last as Map;
       final content = input['content']! as List;
       expect(
         content,
@@ -88,8 +155,7 @@ data: [DONE]
             'text':
                 '[Attachment id=archive, file=source.zip, '
                 'mime=application/zip, bytes=12, '
-                'path=/attachments/archive.blob. '
-                'Use read_attachment with the attachment id.]',
+                'path=/attachments/archive.blob]',
           }),
         ),
       );
@@ -144,7 +210,9 @@ data: [DONE]
                 AgentModelControlIds.reasoningEffort:
                     const AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: const <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: history,
               tools: const <ModelToolDefinition>[],
               safetyIdentifier: 'safe-user',
@@ -156,7 +224,7 @@ data: [DONE]
         responsesAdapter.options!.data as Map,
       );
       expect(
-        ((responsesBody['input'] as List).single as Map)['content'],
+        ((responsesBody['input'] as List).last as Map)['content'],
         contains(
           equals(<String, dynamic>{
             'type': 'input_image',
@@ -185,7 +253,9 @@ data: [DONE]
                 AgentModelControlIds.reasoningEffort:
                     const AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                const ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[
                 ...history,
                 const UserConversationItem('plain text'),
@@ -246,7 +316,9 @@ data: [DONE]
                 AgentModelControlIds.reasoningEffort:
                     AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[
                 ModelFunctionToolDefinition(
@@ -389,7 +461,9 @@ data: [DONE]
                   AgentModelControlIds.fastMode:
                       const AgentModelControlBoolValue(value: true),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                const ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: const <ConversationItem>[],
               tools: const <ModelToolDefinition>[],
               safetyIdentifier: 'safe-user',
@@ -429,7 +503,9 @@ data: [DONE]
                 AgentModelControlIds.reasoningEffort:
                     AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
               safetyIdentifier: 'safe-user',
@@ -472,7 +548,9 @@ data: [DONE]
               AgentModelControlIds.reasoningEffort:
                   AgentModelControlStringValue(value: 'medium'),
             },
-            instructions: 'test',
+            blocks: <ModelRoleBlock>[
+              ModelRoleBlock(role: 'developer', content: 'test'),
+            ],
             history: <ConversationItem>[
               UserConversationItem('inspect'),
               AssistantConversationItem(text: 'earlier'),
@@ -630,7 +708,7 @@ data: [DONE]
         'definition': 'start: patch',
       },
     });
-    expect((body['input'] as List).single, <String, dynamic>{
+    expect((body['input'] as List).last, <String, dynamic>{
       'type': 'custom_tool_call_output',
       'call_id': 'earlier-patch',
       'output': 'Done!',
@@ -673,6 +751,7 @@ data: [DONE]
                   ],
                   tools: const <ModelToolDefinition>[
                     ModelDeferredSearchToolDefinition(
+                      name: 'discover_tools',
                       description: 'Discover deferred tools.',
                       parameters: <String, dynamic>{'type': 'object'},
                     ),
@@ -689,7 +768,7 @@ data: [DONE]
         'description': 'Discover deferred tools.',
         'parameters': <String, dynamic>{'type': 'object'},
       });
-      expect((body['input'] as List).single, <String, dynamic>{
+      expect((body['input'] as List).last, <String, dynamic>{
         'type': 'tool_search_output',
         'call_id': 'search-0',
         'status': 'completed',
@@ -702,7 +781,12 @@ data: [DONE]
         events.whereType<ModelDeferredSearchCall>().single.arguments,
         <String, dynamic>{'query': 'calendar', 'limit': 1},
       );
+      expect(
+        events.whereType<ModelDeferredSearchCall>().single.name,
+        'discover_tools',
+      );
       final completed = events.whereType<ModelResponseCompleted>().single;
+      expect(completed.assistant.toolCalls.single.name, 'discover_tools');
       expect(
         completed.assistant.toolCalls.single.kind,
         ModelToolKind.deferredSearch,
@@ -776,9 +860,9 @@ data: [DONE]
 
       final body = Map<String, dynamic>.from(adapter.options!.data as Map);
       expect((body['tools'] as List).single, containsPair('type', 'namespace'));
-      expect((body['input'] as List).first, containsPair('namespace', 'clock'));
+      expect((body['input'] as List)[1], containsPair('namespace', 'clock'));
       expect(
-        ((body['input'] as List)[1] as Map)['output'],
+        ((body['input'] as List)[2] as Map)['output'],
         <Map<String, dynamic>>[
           <String, dynamic>{'type': 'input_text', 'text': 'now'},
           <String, dynamic>{
@@ -818,7 +902,9 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
                 AgentModelControlIds.reasoningEffort:
                     AgentModelControlStringValue(value: 'medium'),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
               safetyIdentifier: 'safe-user',
@@ -894,6 +980,7 @@ data: [DONE]
       expect(
         input.map((item) => (item as Map<String, dynamic>)['type']),
         <Object?>[
+          'message',
           null,
           'reasoning',
           'message',
@@ -980,7 +1067,7 @@ data: [DONE]
     const payload =
         '{"error":{"message":"Unsupported parameter: \'service_tier\'.", '
         '"type":"invalid_request_error","param":"service_tier"}}';
-    for (final build in <ModelProvider Function(Dio)>[
+    for (final build in <ModelGateway Function(Dio)>[
       (dio) => OpenAIResponsesProvider(
         const OpenAIProviderConfig(
           requiresApiKey: false,
@@ -1076,7 +1163,7 @@ data: [DONE]
   });
 
   test('both adapters translate transport cancellation', () async {
-    for (final providerFactory in <ModelProvider Function(Dio)>[
+    for (final providerFactory in <ModelGateway Function(Dio)>[
       (dio) => OpenAIResponsesProvider(
         const OpenAIProviderConfig(requiresApiKey: false),
         dio: dio,
@@ -1297,7 +1384,9 @@ ModelRequest _request({
       value: 'medium',
     ),
   },
-  instructions: 'instructions',
+  blocks: const <ModelRoleBlock>[
+    ModelRoleBlock(role: 'developer', content: 'instructions'),
+  ],
   history: history,
   tools: tools,
   safetyIdentifier: 'safe',

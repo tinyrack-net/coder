@@ -627,6 +627,7 @@ void main() {
     for (final scenario in <String>[
       'daemon-workspace',
       'project-worktree',
+      'plugin-harness',
       'relay',
       'conversation-adversity',
       'conversation-history',

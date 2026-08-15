@@ -22,6 +22,27 @@ final class _RuntimeResource {
   StreamSubscription<ClientConnectionState>? states;
 }
 
+final class _CleanupFailures {
+  Object? _firstError;
+  late StackTrace _firstStackTrace;
+
+  Future<void> attempt(FutureOr<void> Function() operation) async {
+    try {
+      await operation();
+    } on Object catch (error, stackTrace) {
+      if (_firstError != null) return;
+      _firstError = error;
+      _firstStackTrace = stackTrace;
+    }
+  }
+
+  void throwFirst() {
+    final error = _firstError;
+    if (error == null) return;
+    Error.throwWithStackTrace(error, _firstStackTrace);
+  }
+}
+
 /// Owns every daemon runtime while keeping connection failures independent.
 final class HostRegistry {
   /// Creates a host registry from typed persistence and transport ports.
@@ -90,6 +111,7 @@ final class HostRegistry {
       StreamController<HostRegistryState>.broadcast(sync: true);
   EmbeddedDaemonSession? _embeddedSession;
   Future<void> _embeddedLifecycle = Future<void>.value();
+  Future<void>? _closeFuture;
   HostRegistryState? _state;
   bool _closed = false;
   bool _resetting = false;
@@ -1184,10 +1206,12 @@ final class HostRegistry {
     final resource = _resources.remove(hostId);
     if (resource == null) return;
     resource.generation += 1;
-    resource.probeTask?.cancel();
-    await resource.states?.cancel();
-    await resource.api?.close();
+    final failures = _CleanupFailures();
+    await failures.attempt(() => resource.probeTask?.cancel());
+    await failures.attempt(() => resource.states?.cancel());
+    await failures.attempt(() => resource.api?.close());
     _serverOwners.removeWhere((serverId, owner) => owner == hostId);
+    failures.throwFirst();
   }
 
   Future<void> _serializeEmbedded(
@@ -1263,17 +1287,20 @@ final class HostRegistry {
   Future<void> shutdown() => close();
 
   /// Closes every client and the app-owned daemon.
-  Future<void> close() async {
-    if (_closed) return;
+  Future<void> close() => _closeFuture ??= _close();
+
+  Future<void> _close() async {
     _closed = true;
-    await _embeddedLifecycle;
+    final failures = _CleanupFailures();
+    await failures.attempt(() => _embeddedLifecycle);
     for (final hostId in List<String>.of(_resources.keys)) {
-      await _stopRuntime(hostId);
+      await failures.attempt(() => _stopRuntime(hostId));
     }
     final session = _embeddedSession;
     _embeddedSession = null;
-    await session?.stop();
-    await _changes.close();
+    if (session != null) await failures.attempt(session.stop);
+    await failures.attempt(_changes.close);
+    failures.throwFirst();
   }
 
   static RemoteHostRepository _requireProfiles(AppSettingsRepository store) {

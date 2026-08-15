@@ -22,16 +22,16 @@ void main() {
 
   String userPath() => store.sourcePath(McpConfigScope.user);
 
-  Map<String, dynamic> v4Document(Map<String, dynamic> document) =>
+  Map<String, dynamic> v5Document(Map<String, dynamic> document) =>
       <String, dynamic>{
-        'schemaVersion': document['version'] == 1 ? 4 : document['version'],
+        'schemaVersion': document['version'] == 1 ? 5 : document['version'],
         'mcp': <String, dynamic>{
           'servers': document['servers'] ?? <String, dynamic>{},
         },
       };
 
   Future<void> writeUser(Map<String, dynamic> document) =>
-      File(userPath()).writeAsString(jsonEncode(v4Document(document)));
+      File(userPath()).writeAsString(jsonEncode(v5Document(document)));
 
   Future<void> writeProject(String root, String contents) async {
     final file = File(
@@ -39,7 +39,7 @@ void main() {
     );
     await file.parent.create(recursive: true);
     final document = jsonDecode(contents) as Map<String, dynamic>;
-    await file.writeAsString(jsonEncode(v4Document(document)));
+    await file.writeAsString(jsonEncode(v5Document(document)));
   }
 
   test('the user and project scopes name their own files', () {
@@ -66,6 +66,31 @@ void main() {
     );
     expect(project.servers, isEmpty);
     expect(project.scope, McpConfigScope.project);
+  });
+
+  test('v5 rejects a preserved v4 MCP document without importing it', () {
+    expect(
+      () => parseMcpConfig(
+        jsonEncode(<String, dynamic>{
+          'schemaVersion': 4,
+          'mcp': <String, dynamic>{'servers': <String, dynamic>{}},
+        }),
+        scope: McpConfigScope.user,
+        sourcePath: 'v4-config.json',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      parseMcpConfig(
+        jsonEncode(<String, dynamic>{
+          'schemaVersion': 5,
+          'mcp': <String, dynamic>{'servers': <String, dynamic>{}},
+        }),
+        scope: McpConfigScope.user,
+        sourcePath: 'v5-config.json',
+      ).servers,
+      isEmpty,
+    );
   });
 
   test('servers round-trip through a written user document', () async {
@@ -127,7 +152,7 @@ void main() {
     );
 
     final contents = await File(userPath()).readAsString();
-    expect(contents, contains('\n  "schemaVersion": 4'));
+    expect(contents, contains('\n  "schemaVersion": 5'));
     if (!Platform.isWindows) {
       // Read the mode through dart:io rather than stat, whose flags differ
       // between GNU and BSD userlands.

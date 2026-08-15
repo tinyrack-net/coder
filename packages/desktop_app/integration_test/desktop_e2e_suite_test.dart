@@ -5,6 +5,7 @@ import 'conversation_history_e2e_test.dart' as conversation_history;
 import 'daemon_workspace_e2e_test.dart' as daemon_workspace;
 import 'debug_conversation_e2e_test.dart' as conversation;
 import 'debug_desktop_shell_e2e_test.dart' as desktop_shell;
+import 'plugin_harness_e2e_test.dart' as plugin_harness;
 import 'project_worktree_e2e_test.dart' as project_worktree;
 import 'provider_e2e_test.dart' as provider;
 import 'relay_e2e_test.dart' as relay;
@@ -18,6 +19,7 @@ void main() {
   final registrations = <String, void Function()>{
     'daemon-workspace': daemon_workspace.main,
     'project-worktree': project_worktree.main,
+    'plugin-harness': plugin_harness.main,
     'relay': relay.main,
     'conversation-adversity': conversation_adversity.main,
     'conversation-history': conversation_history.main,

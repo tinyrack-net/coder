@@ -358,6 +358,22 @@ void main() {
   );
 
   testWidgets(
+    'PluginSettingsRoute renders at desktop, tablet, and mobile sizes',
+    (tester) => _verifyRoute(
+      tester,
+      api,
+      const PluginSettingsRoute(hostId: 'server').location,
+      find.text('플러그인'),
+    ),
+    tags: const <String>[
+      'route_test__plugin_settings_route__widget',
+      'feature_test__plugin_management__widget',
+      'ui_state__plugin_settings_route__rendered__widget',
+      'ui_variant__plugin_settings_route__desktop_mobile_light_korean__widget',
+    ],
+  );
+
+  testWidgets(
     'SkillSettingsRoute renders at desktop, tablet, and mobile sizes',
     (tester) => _verifyRoute(
       tester,

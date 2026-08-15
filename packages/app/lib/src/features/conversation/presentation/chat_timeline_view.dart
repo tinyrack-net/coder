@@ -1,21 +1,26 @@
 import 'dart:typed_data';
 
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Builds the controls belonging to one actionable plan row.
-typedef ChatPlanActionBuilder = Widget? Function(ChatPlanProposal proposal);
+/// Dispatches an action from a persisted plugin timeline snapshot.
+typedef ChatPluginUiActionDispatcher = Future<PluginUiDocumentDto> Function(
+  PluginUiDocumentDto document,
+  PluginUiActionDto action,
+);
 
 /// Scrolling conversation body rendered from projected chat items.
 class ChatTimelineView extends StatefulWidget {
@@ -32,7 +37,7 @@ class ChatTimelineView extends StatefulWidget {
     this.olderFailed = false,
     this.onLoadOlder,
     this.hostId,
-    this.planActionBuilder,
+    this.onPluginUiAction,
     this.loadAttachment,
     this.exportAttachment,
     super.key,
@@ -90,8 +95,8 @@ class ChatTimelineView extends StatefulWidget {
   /// Host used to resolve approval and question interactions.
   final String? hostId;
 
-  /// Builds actions inside the latest plan card.
-  final ChatPlanActionBuilder? planActionBuilder;
+  /// Dispatches actions from revision-pinned plugin timeline snapshots.
+  final ChatPluginUiActionDispatcher? onPluginUiAction;
 
   /// Authenticated attachment byte loader.
   final ChatAttachmentLoader? loadAttachment;
@@ -226,15 +231,13 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         _ChatTimelineItemEntry(:final item) => switch (item) {
           ChatAttachmentMessage() ||
           ChatNotice() ||
-          ChatContextReset() ||
-          ChatContextCompacted() ||
           ChatDeferredTools() ||
           ChatUsage() ||
           ChatUnknownEvent() => TRMeasurements.measureXs,
           ChatUserMessage() ||
           ChatAssistantMessage() ||
           ChatReasoningActivity() ||
-          ChatPlanProposal() ||
+          ChatPluginUiDocument() ||
           ChatApprovalInteraction() ||
           ChatQuestionInteraction() ||
           ChatToolActivity() ||
@@ -295,7 +298,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             loadAttachment: widget.loadAttachment == null ? null : _load,
             exportAttachment: widget.exportAttachment,
             hostId: widget.hostId,
-            planActionBuilder: widget.planActionBuilder,
+            onPluginUiAction: widget.onPluginUiAction,
           ),
         };
         return _ChatTimelineContentColumn(
@@ -384,7 +387,7 @@ class ChatItemView extends StatelessWidget {
     this.loadAttachment,
     this.exportAttachment,
     this.hostId,
-    this.planActionBuilder,
+    this.onPluginUiAction,
     super.key,
   });
 
@@ -406,8 +409,8 @@ class ChatItemView extends StatelessWidget {
   /// Host used by actionable interaction rows.
   final String? hostId;
 
-  /// Builds actions inside a plan card.
-  final ChatPlanActionBuilder? planActionBuilder;
+  /// Dispatches actions from a persisted plugin timeline snapshot.
+  final ChatPluginUiActionDispatcher? onPluginUiAction;
 
   @override
   Widget build(BuildContext context) {
@@ -429,9 +432,20 @@ class ChatItemView extends StatelessWidget {
         expanded: expanded,
         onToggle: onToggle,
       ),
-      ChatPlanProposal() => ChatPlanCard(
-        proposal: value,
-        actions: planActionBuilder?.call(value),
+      ChatPluginUiDocument() => PluginUiDocumentView(
+        document: value.document,
+        semanticLabel: AppLocalizations.of(
+          context,
+        ).pluginUiSemanticLabel(value.document.pluginId),
+        invalidDocumentLabel: AppLocalizations.of(
+          context,
+        ).pluginUiInvalidTitle,
+        invalidDocumentDescription: AppLocalizations.of(
+          context,
+        ).pluginUiInvalidDescription(AppIdentity.displayName),
+        onAction: onPluginUiAction == null
+            ? null
+            : (action) => onPluginUiAction!(value.document, action),
       ),
       ChatApprovalInteraction() => ApprovalCard(
         hostId: hostId,
@@ -451,8 +465,6 @@ class ChatItemView extends StatelessWidget {
       ChatUserAnswer() => ChatUserAnswerLine(answer: value),
       ChatSleep() => ChatSleepCard(sleep: value),
       ChatDeferredTools() => ChatDeferredToolsLine(notice: value),
-      ChatContextReset() => ChatContextResetLine(reset: value),
-      ChatContextCompacted() => ChatContextCompactedLine(compacted: value),
       ChatUsage() => ChatUsageLine(usage: value),
       ChatUnknownEvent() => ChatUnknownEventLine(event: value),
     };

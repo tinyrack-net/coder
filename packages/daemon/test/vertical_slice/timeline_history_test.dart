@@ -13,6 +13,9 @@ import 'package:test/test.dart';
 const int _deltasPerTurn = 40;
 const int _turns = 4;
 
+/// Bundled deterministic model whose declared surface supports the v5 Agent.
+const String _testModelId = 'openai/gpt-5.6-sol';
+
 void main() {
   test(
     'a real daemon serves a bounded newest window and pages backwards through '
@@ -56,6 +59,7 @@ void main() {
           worktreeId: checkout.id,
           title: 'History session',
           agentDefinitionId: 'tinest',
+          model: const ModelSelectionDto(modelId: _testModelId),
         );
         for (var turn = 1; turn <= _turns; turn += 1) {
           await client.sessions.startTurn(
@@ -184,7 +188,7 @@ Future<void> _waitForIdle(TinestApi client, String sessionId) async {
 }
 
 /// Streams enough deltas that one turn alone spans several pages.
-final class _ChattyProvider implements ModelProvider {
+final class _ChattyProvider implements ModelGateway {
   @override
   String get id => 'history-test';
 

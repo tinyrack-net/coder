@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:daemon/src/features/mcp/infrastructure/protocol.dart';
 import 'package:daemon/src/features/mcp/infrastructure/transport.dart';
+import 'package:daemon/src/shared/ports/request_cancellation.dart';
 
 /// Speaks MCP to one server over a [McpTransport].
 ///
@@ -170,12 +171,13 @@ final class McpClient {
   /// Invokes [name] on the server and decodes its result.
   Future<McpCallToolResult> callTool(
     String name,
-    Map<String, dynamic> arguments,
-  ) async {
+    Map<String, dynamic> arguments, {
+    RequestCancellation? cancellation,
+  }) async {
     final result = await _request(McpMethod.toolsCall, <String, dynamic>{
       'name': name,
       'arguments': arguments,
-    });
+    }, cancellation: cancellation);
     return McpCallToolResult.fromJson(result);
   }
 
@@ -325,33 +327,53 @@ final class McpClient {
     String method,
     Map<String, dynamic> params, {
     Duration? timeout,
+    RequestCancellation? cancellation,
   }) async {
     if (!_connected) {
       throw const McpTransportClosed('the client is not connected');
     }
+    const cancellationReason = 'the request was cancelled by its caller';
+    if (cancellation?.isCancelled ?? false) {
+      throw const McpRequestCancelled(cancellationReason);
+    }
     final id = _nextRequestId++;
     final completer = Completer<Map<String, dynamic>>();
     _pending[id] = completer;
-    await transport.send(<String, dynamic>{
-      'jsonrpc': '2.0',
-      'id': id,
-      'method': method,
-      'params': params,
-    });
+    var active = true;
+
+    void cancel() {
+      if (!active) return;
+      final pending = _pending.remove(id);
+      if (pending == null || pending.isCompleted) return;
+      active = false;
+      pending.completeError(const McpRequestCancelled(cancellationReason));
+      unawaited(_cancelQuietly(id, cancellationReason));
+    }
+
     try {
+      await transport.send(<String, dynamic>{
+        'jsonrpc': '2.0',
+        'id': id,
+        'method': method,
+        'params': params,
+      });
+      cancellation?.onCancel(cancel);
+      if (cancellation?.isCancelled ?? false) cancel();
       return await completer.future.timeout(timeout ?? requestTimeout);
     } on TimeoutException {
       _pending.remove(id);
-      unawaited(_cancelQuietly(id));
+      unawaited(_cancelQuietly(id, 'the request exceeded its timeout'));
       rethrow;
+    } finally {
+      active = false;
     }
   }
 
-  Future<void> _cancelQuietly(int requestId) async {
+  Future<void> _cancelQuietly(int requestId, String reason) async {
     try {
       await _notify(McpMethod.cancelled, <String, dynamic>{
         'requestId': requestId,
-        'reason': 'the request exceeded its timeout',
+        'reason': reason,
       });
     } on Object {
       // The peer is already gone; there is nothing left to cancel.

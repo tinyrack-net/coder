@@ -32,21 +32,18 @@ void main() {
 
   AgentDefinitionDto definition(String id, {String contentHash = 'hash'}) =>
       AgentDefinitionDto(
+        version: 5,
         id: id,
         name: id,
         description: '',
         mode: AgentMode.primary,
-        promptEnabled: true,
-        systemPrompt: 'prompt',
-        model: const ModelSelectionDto(modelId: 'openai/gpt-5'),
-        modelControls: <String, ModelControlValueDto>{
-          'reasoning_effort': const ModelControlValueDto.stringValue(
-            value: 'medium',
-          ),
-        },
-        permissionMode: PermissionMode.ask,
+        model: const AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: const <String>[],
         toolIds: const <String>[],
+        pluginSettings: const <String, Map<String, dynamic>>{},
         callableAgentIds: const <String>[],
+        prompt: 'prompt',
         contentHash: contentHash,
         sourcePath: '/config/agents/$id.md',
       );

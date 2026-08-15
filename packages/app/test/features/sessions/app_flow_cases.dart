@@ -1230,15 +1230,20 @@ void _registerSessionsAppFlows() {
       await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const planner = AgentDefinitionDto(
+        version: 5,
         id: 'planner',
         name: 'Planner',
         description: 'Plans changes',
         mode: AgentMode.primary,
-        promptEnabled: true,
-        systemPrompt: 'Plan first.',
-        permissionMode: PermissionMode.readOnly,
-        toolIds: <String>['read_file'],
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.session,
+        ),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>[],
+        toolIds: <String>['tinest.files/read_file'],
+        pluginSettings: <String, Map<String, dynamic>>{},
         callableAgentIds: <String>[],
+        prompt: 'Plan first.',
         contentHash: 'planner-hash',
         sourcePath: '/config/agents/planner.md',
       );
@@ -1385,23 +1390,21 @@ void _registerSessionsAppFlows() {
         ],
         agentDefinitions: const <AgentDefinitionDto>[
           AgentDefinitionDto(
+            version: 5,
             id: 'tinest',
             name: 'Tinest',
             description: 'Coding agent',
             mode: AgentMode.primary,
-            promptEnabled: true,
-            systemPrompt: 'Code carefully.',
-            model: ModelSelectionDto(
+            model: AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
               modelId: 'openai/gpt-5.6-sol',
             ),
-            modelControls: <String, ModelControlValueDto>{
-              'reasoning_effort': ModelControlValueDto.stringValue(
-                value: 'medium',
-              ),
-            },
-            permissionMode: PermissionMode.ask,
-            toolIds: <String>['read_file'],
+            driverId: 'tinest.standard/driver',
+            extensionIds: <String>[],
+            toolIds: <String>['tinest.files/read_file'],
+            pluginSettings: <String, Map<String, dynamic>>{},
             callableAgentIds: <String>[],
+            prompt: 'Code carefully.',
             contentHash: 'tinest-hash',
             sourcePath: '/config/agents/tinest.md',
             isBuiltIn: true,
@@ -1697,7 +1700,7 @@ void _registerSessionsAppFlows() {
   );
 
   testWidgets(
-    'the draft composer runs a client command instead of sending it',
+    'the draft composer submits a removed host command as prompt text',
     (tester) async {
       await _setTestViewport(tester, const Size(1500, 760));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1723,7 +1726,7 @@ void _registerSessionsAppFlows() {
         '/',
       );
       await tester.pumpAndSettle();
-      expect(find.text('mode'), findsOneWidget);
+      expect(find.text('mode'), findsNothing);
       expect(find.text('new'), findsNothing);
 
       expect(find.text('Plan'), findsNothing);
@@ -1732,14 +1735,12 @@ void _registerSessionsAppFlows() {
         '/mode',
       );
       await tester.pumpAndSettle();
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('session-composer-send')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Plan'), findsOneWidget);
-      expect(api.createdSessions, isEmpty);
-      expect(api.startedPrompts, isEmpty);
+      expect(find.text('Plan'), findsNothing);
+      expect(api.createdSessions, hasLength(1));
+      expect(api.startedPrompts, <String>['/mode']);
     },
     tags: const <String>['feature_test__composer_slash_command__widget'],
   );

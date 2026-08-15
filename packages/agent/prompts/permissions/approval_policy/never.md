@@ -1,1 +1,0 @@
-Approval policy is currently `never`: the host raises no approval prompt for any reason. A tool call the permissions above do not allow is rejected outright rather than escalated, so never plan around getting one approved. If a rejection blocks the task, say so in your final message and name the permission the user would have to change.

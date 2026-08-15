@@ -3,39 +3,43 @@ import 'dart:async';
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:daemon/src/features/attachments/infrastructure/attachment_service.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_ports.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_service.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_session_control_service.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_ui_service.dart';
+import 'package:daemon/src/features/plugins/runtime/built_in_host_primitives.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_agent_harness.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_execution_lifecycle.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_runtime.dart';
 import 'package:daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/agent_clock.dart';
-import 'package:daemon/src/features/sessions/infrastructure/goal_service.dart';
+import 'package:daemon/src/features/sessions/infrastructure/lua_code_mode_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/model_usage_cost.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/shared/ports/agent_protocol_mapping.dart';
+import 'package:daemon/src/shared/ports/daemon_ports.dart';
+import 'package:daemon/src/shared/ports/mcp_host_primitives.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
 /// Signature used by DaemonEventSink.
 typedef DaemonEventSink = void Function(OutboundNotification event);
 
-/// Resolves the tools published at runtime rather than compiled in.
-///
-/// MCP servers publish their tools as they connect, and a worktree's own
-/// servers only exist for turns running in that worktree, so the lookup is
-/// prepared per turn rather than held as a fixed map.
-abstract interface class ExternalToolSource {
-  /// Prepares [workspaceRoot] and returns the lookup this turn resolves with.
-  AgentTool? Function(String id) lookupFor(String workspaceRoot);
-}
-
 /// Resolves the pseudo-terminals one tinest session owns.
 typedef ExecHostFactory = ExecSessionHost Function(String sessionId);
 
-/// Resolves the Lua cells one tinest session owns in its current worktree.
-typedef LuaHostFactory = LuaCodeModeHost Function(
-  String sessionId,
-  String workingDirectory,
-);
+/// Resolves the raw MCP transport scoped to one worktree.
+typedef McpHostFactory = McpHostPrimitiveGateway Function(String workspaceRoot);
+
+String _pluginId(String contributionId) {
+  final separator = contributionId.indexOf('/');
+  return separator < 0
+      ? contributionId
+      : contributionId.substring(0, separator);
+}
 
 /// Coordinates model-turn execution and lifecycle for tinest sessions.
 class SessionTurnCoordinator implements SessionTurnPort {
@@ -49,20 +53,35 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required this._events,
     required this._safetyIdentifier,
     required this._clock,
-    required this._toolRegistry,
-    required this._externalTools,
+    required this._ids,
+    required this._hostPrimitiveRegistryFactory,
     required this._skills,
     required this._attachments,
     required this._execHostFor,
-    required this._luaHostFor,
     required this._settings,
     required this._interactions,
+    required this._plugins,
+    required this._pluginSessionControls,
+    required this._pluginUi,
+    required this._pluginRuntime,
+    required this._pluginState,
+    required this._pluginJobs,
+    required this._luaCodeMode,
+    this._mcpFor,
+    this._pluginNetwork,
+    this._pluginSecrets,
+    PluginExecutionLifecycleRegistry<ConversationAttachment>? pluginLifecycle,
     ProjectDocLoader? projectDocs,
-  }) : _projectDocs = projectDocs ?? ProjectDocLoader();
+  }) : _projectDocs = projectDocs ?? ProjectDocLoader(),
+       _pluginLifecycle =
+           pluginLifecycle ??
+           PluginExecutionLifecycleRegistry<ConversationAttachment>(
+             runtime: _pluginRuntime,
+             state: _pluginState,
+           );
 
   final ProjectDocLoader _projectDocs;
   final ExecHostFactory _execHostFor;
-  final LuaHostFactory _luaHostFor;
   final SessionRepository _sessions;
   final AgentDefinitionService _definitions;
   final WorktreeRepository _worktrees;
@@ -71,12 +90,25 @@ class SessionTurnCoordinator implements SessionTurnPort {
   final DaemonEventSink _events;
   final String _safetyIdentifier;
   final Clock _clock;
-  final AgentToolRegistry _toolRegistry;
-  final ExternalToolSource _externalTools;
+  final IdGenerator _ids;
+  final HostPrimitiveRegistryFactory _hostPrimitiveRegistryFactory;
   final SkillCatalogService _skills;
   final AttachmentService _attachments;
   final SettingsRepository _settings;
   final SessionInteractionCoordinator _interactions;
+  final PluginManagementService _plugins;
+  final PluginSessionControlService<ConversationAttachment>
+  _pluginSessionControls;
+  final PluginUiService _pluginUi;
+  final PluginRuntime<ConversationAttachment> _pluginRuntime;
+  final PluginStateStore _pluginState;
+  final PluginJobStore _pluginJobs;
+  final LuaCodeModeService _luaCodeMode;
+  final McpHostFactory? _mcpFor;
+  final PluginNetworkGateway? _pluginNetwork;
+  final PluginSecretStore? _pluginSecrets;
+  final PluginExecutionLifecycleRegistry<ConversationAttachment>
+  _pluginLifecycle;
   final Map<String, CancellationToken> _activeTurns =
       <String, CancellationToken>{};
   final Map<String, Completer<AgentRunResult>> _turnCompletions =
@@ -89,9 +121,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
 
   /// The collaboration layer, bound once from the composition root.
   MultiAgentService? multiAgent;
-
-  /// Goal lifecycle bound once from the composition root.
-  SessionGoalService? goals;
 
   @override
   bool hasActiveTurn(String sessionId) => _activeTurns.containsKey(sessionId);
@@ -114,8 +143,14 @@ class SessionTurnCoordinator implements SessionTurnPort {
       final session = await _sessions.getById(sessionId);
       if (session == null) throw StateError('Session not found: $sessionId');
       final definition = await _definitions.resolve(session.agentDefinitionId);
-      final resolvedModel = await _models.resolveSelection(session.model);
-      final controls = session.modelControls;
+      final sessionModel = session.model;
+      // A session override wins over the model of its agent definition.
+      final resolvedModel = sessionModel == null
+          ? await _models.resolveAgentModel(definition.model)
+          : await _models.resolveQualifiedModel(sessionModel.qualifiedModelId);
+      final controls = sessionModel != null
+          ? session.modelControls
+          : const <String, ModelControlValueDto>{};
       await _models.validateModelControls(
         resolvedModel.connectionId,
         resolvedModel.modelId,
@@ -197,7 +232,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
         activeTurnId: turnId,
       );
       await multiAgent?.onTurnStarted(session);
-      await goals?.onTurnStarted(session, internal: internal);
       // Cached on the row so the context meter reads the same window the turn
       // runs against, without a catalog lookup on every session read.
       _emitSession(
@@ -242,49 +276,45 @@ class SessionTurnCoordinator implements SessionTurnPort {
       // Skills resolve against the worktree, so a branch carries the project
       // skills that were committed to it.
       final skills = await _skills.viewFor(worktree.path);
-      final scope = AgentToolScope(
-        session: AgentSessionContext(id: session.id, value: session),
-        definition: AgentDefinitionContext(
-          id: definition.id,
-          value: definition,
-        ),
-        selectedToolIds: _toolRegistry.resolveIds(definition.toolIds).toSet(),
-        workspaceRoot: worktree.path,
+      final attachmentPublisher = TurnAttachmentPublisher(
+        _attachments,
+        turnId,
+      );
+      final attachmentReader = SessionAttachmentReader(
+        _attachments,
+        sessionId,
+      );
+      final questions = _interactions.questionsFor(
+        sessionId: sessionId,
         turnId: turnId,
-        attachmentPublisher: TurnAttachmentPublisher(_attachments, turnId),
-        attachmentReader: SessionAttachmentReader(_attachments, sessionId),
-        clock: agentClock,
-        questions: _interactions.questionsFor(
-          sessionId: sessionId,
-          turnId: turnId,
-          reportStatus: reportStatus,
-        ),
-        execHost: _execHostFor(sessionId),
-        luaCodeModeHost: _luaHostFor(sessionId, worktree.path),
-        skills: skills,
-        sessionMode: agentSessionMode(session.mode),
-        isRootAgent: session.parentSessionId == null,
-        toolSurfaceMode: resolvedModel.toolSurface == ModelToolSurface.luaCode
-            ? AgentToolSurfaceMode.luaCode
-            : AgentToolSurfaceMode.direct,
+        reportStatus: reportStatus,
       );
-      final turnTools = _toolRegistry.build(
-        scope,
-        external: _externalTools.lookupFor(worktree.path),
-      );
-
-      final runner = AgentRunner(
-        provider: resolvedModel.provider,
-        tools: turnTools.tools,
-        nestedTools: turnTools.nestedTools,
-        clock: _clock,
-        // The summary is written by the model that produced the work, so the
-        // compactor rides the same provider the turn already resolved.
-        compactor: ConversationCompactor(resolvedModel.provider),
-        approvals: _interactions.approvalsFor(
+      final execHost = _execHostFor(sessionId);
+      final isRootAgent = session.parentSessionId == null;
+      final allowedCapabilities = await _preparePlugins(definition);
+      await _pluginLifecycle.enter(
+        PluginExecutionLifecycleRequest(
+          definition: definition,
           sessionId: sessionId,
-          turnId: turnId,
+          workspaceId: worktree.workspaceId,
+          workingDirectory: worktree.path,
+          allowedCapabilitiesByPlugin: allowedCapabilities,
         ),
+      );
+      final sessionControlValues = await _pluginSessionControls.valuesForTurn(
+        session: session,
+        definition: definition,
+        worktree: worktree,
+      );
+      final referencedPlugins = allowedCapabilities.keys.toSet();
+      final revocations = _plugins.grants.revocations.listen((grant) {
+        if (grant.agentId == definition.id &&
+            referencedPlugins.contains(grant.pluginId)) {
+          cancellation.cancel();
+        }
+      });
+      final harness = LuaAgentHarness(runtime: _pluginRuntime);
+      final callbacks = LuaAgentHarnessCallbacks(
         onEvent: (type, data) async {
           await _appendEvent(
             sessionId: sessionId,
@@ -303,29 +333,18 @@ class SessionTurnCoordinator implements SessionTurnPort {
                 usageCostUsd: modelUsageCostUsd(usage, resolvedModel.pricing),
               ),
             );
-            await goals?.accountUsage(sessionId, usage);
           }
         },
         onStatus: (status, {error}) =>
             reportStatus(protocolSessionStatus(status), error: error),
         onProviderItems: (items) =>
             _timeline.appendProviderItems(sessionId, items),
-        pendingTurnInput: multiAgent?.drainSourceFor(sessionId),
-        permissions: _LivePermissionModeSource(
-          () => _effectivePermissionForSession(sessionId),
+        onUiSnapshot: (snapshot) => _pluginUi.rememberPublished(
+          plugin: snapshot.plugin,
+          contribution: snapshot.contribution,
+          request: snapshot.request,
+          document: snapshot.document,
         ),
-        // The runner emits `context.reset` itself; this only makes the discard
-        // durable so a reconnect does not replay the retired window.
-        contextResets: _DatabaseContextResetCoordinator(
-          timeline: _timeline,
-          sessions: _sessions,
-          emitSession: _emitSession,
-          sessionId: sessionId,
-        ),
-        // A shell the user allowed stays writable, so an interactive session
-        // does not raise a dialog for every keystroke.
-        policyFactory: (mode) =>
-            turnTools.decoratePolicy(DefaultApprovalPolicy(mode)),
       );
 
       final turnAttachments = await _attachments.resolveAll(
@@ -335,43 +354,95 @@ class SessionTurnCoordinator implements SessionTurnPort {
       final history = await _hydrateHistory(
         await _timeline.providerHistory(sessionId),
       );
+      final pendingInputs = await multiAgent
+          ?.drainSourceFor(sessionId)
+          .drainPending();
+      if (pendingInputs != null && pendingInputs.isNotEmpty) {
+        await _timeline.appendProviderItems(sessionId, pendingInputs);
+      }
       // Read per turn rather than per session: the worktree is a live checkout,
       // so a turn that follows an edit to AGENTS.md must see the edit.
       final projectDoc = await _projectDocs.load(workspaceRoot: worktree.path);
+      final selectedLuaTools = InvocationLocalSelectedLuaToolInvoker();
       late final Future<void> running;
       running = _run(
-        runner,
-        AgentRunRequest(
-          sessionId: sessionId,
-          turnId: turnId,
-          workspaceRoot: worktree.path,
-          prompt: prompt,
-          model: resolvedModel.modelId,
-          modelControls: agentModelControls(modelControls),
-          history: history,
-          attachments: turnAttachments,
-          safetyIdentifier: _safetyIdentifier,
-          sessionMode: agentSessionMode(session.mode),
-          toolSurfaceMode: turnTools.nestedTools.isEmpty
-              ? AgentToolSurfaceMode.direct
-              : AgentToolSurfaceMode.luaCode,
-          customSystemPrompt: _composeCustomPrompt(
-            definition.promptEnabled ? definition.systemPrompt : null,
-            multiAgent?.usageHintFor(session, definition),
+        harness.startTurn(
+          request: LuaAgentHarnessRequest(
+            definition: definition,
+            sessionId: sessionId,
+            turnId: turnId,
+            workspaceId: worktree.workspaceId,
+            workspaceRoot: worktree.path,
+            prompt: prompt,
+            modelId: resolvedModel.modelId,
+            model: resolvedModel.provider,
+            modelCapabilities: resolvedModel.capabilities,
+            modelControls: agentModelControls(modelControls),
+            history: history,
+            attachments: turnAttachments,
+            turnInputs: pendingInputs ?? const <ConversationItem>[],
+            safetyIdentifier: _safetyIdentifier,
+            allowedCapabilitiesByPlugin: allowedCapabilities,
+            primitives: _hostPrimitiveRegistryFactory.create(
+              workspaceRoot: worktree.path,
+              attachments: attachmentPublisher,
+              attachmentReader: attachmentReader,
+              clock: agentClock,
+              questions: questions,
+              processes: execHost,
+              skills: skills,
+              callId: turnId,
+              isRootAgent: isRootAgent,
+              session: session,
+              definition: definition,
+              collaboration: multiAgent,
+              mcp: _mcpFor?.call(worktree.path),
+              luaCodeMode: SessionLuaCodeModeHost(
+                _luaCodeMode,
+                sessionId,
+                worktree.path,
+              ),
+              selectedTools: selectedLuaTools,
+            ),
+            projectDocument: projectDoc?.render(),
+            extensionData: <String, Object?>{
+              'host_policy': <String, Object?>{
+                'permission_mode': (await _effectivePermissionForSession(
+                  sessionId,
+                )).name,
+                'workspace_root': worktree.path,
+              },
+              'collaboration': ?multiAgent?.extensionDataFor(
+                session,
+                definition,
+              ),
+            },
+            sessionControlValues: sessionControlValues,
+            contextWindowTokens: resolvedModel.limits?.context,
+            internal: internal,
+            approvals: _interactions.approvalsFor(
+              sessionId: sessionId,
+              turnId: turnId,
+            ),
+            permissions: _LivePermissionModeSource(
+              () => _effectivePermissionForSession(sessionId),
+            ),
+            policyFactory: DefaultApprovalPolicy.new,
+            state: _pluginState,
+            jobs: _pluginJobs,
+            clock: _clock,
+            ids: _ids,
+            network: _pluginNetwork,
+            secrets: _pluginSecrets,
+            selectedLuaTools: selectedLuaTools,
           ),
-          projectDoc: projectDoc?.render(),
-          toolPrompts: <String>[
-            ...turnTools.promptFragments,
-            ?skills.implicitInstructions,
-          ],
-          contextWindowTokens: resolvedModel.limits?.context,
-          // What the live window already holds, so a turn that starts on a
-          // full window compacts before it samples rather than failing.
-          priorUsage: ModelUsage(totalTokens: session.contextTokens),
-          internal: internal,
-          internalInstructions: () async => goals?.instructionsFor(sessionId),
+          callbacks: callbacks,
+          cancellation: cancellation,
         ),
-        cancellation,
+        sessionId: sessionId,
+        turnId: turnId,
+        cancellation: cancellation,
+        revocations: revocations,
       ).whenComplete(() => _runningTurns.remove(running));
       _runningTurns.add(running);
       unawaited(running);
@@ -438,15 +509,36 @@ class SessionTurnCoordinator implements SessionTurnPort {
     while (_runningTurns.isNotEmpty) {
       await Future.wait(_runningTurns.toList());
     }
+    Object? lifecycleError;
+    try {
+      await _pluginLifecycle.close();
+    } on Object catch (error) {
+      lifecycleError = error;
+    }
+    if (lifecycleError != null) {
+      throw StateError('Plugin lifecycle close failed: $lifecycleError');
+    }
   }
 
-  String? _composeCustomPrompt(String? definitionPrompt, String? collabHint) {
-    final trimmedDefinition =
-        definitionPrompt != null && definitionPrompt.trim().isNotEmpty
-        ? definitionPrompt
-        : null;
-    final parts = <String>[?trimmedDefinition, ?collabHint];
-    return parts.isEmpty ? null : parts.join('\n\n');
+  Future<Map<String, Set<String>>> _preparePlugins(
+    AgentDefinitionDto definition,
+  ) async {
+    final pluginIds = <String>{
+      _pluginId(definition.driverId),
+      ...definition.extensionIds.map(_pluginId),
+      ...definition.toolIds.map(_pluginId),
+    };
+    for (final pluginId in pluginIds) {
+      await _plugins.prepareForAgent(definition.id, pluginId);
+    }
+    final grants = await _plugins.grants.list(definition.id);
+    return <String, Set<String>>{
+      for (final pluginId in pluginIds)
+        pluginId: <String>{
+          for (final grant in grants)
+            if (grant.pluginId == pluginId) grant.capability,
+        },
+    };
   }
 
   Future<List<ConversationItem>> _hydrateHistory(
@@ -467,17 +559,19 @@ class SessionTurnCoordinator implements SessionTurnPort {
   );
 
   Future<void> _run(
-    AgentRunner runner,
-    AgentRunRequest request,
-    CancellationToken cancellation,
-  ) async {
+    Future<AgentRunResult> running, {
+    required String sessionId,
+    required String turnId,
+    required CancellationToken cancellation,
+    required StreamSubscription<AgentPluginGrantDto> revocations,
+  }) async {
     TurnStatus outcome;
     String? finalText;
     String? failure;
     try {
-      final result = await runner.startTurn(request, cancellation);
-      await _sessions.updateTurn(request.turnId, TurnStatus.completed);
-      _completeTurn(request.turnId, result);
+      final result = await running;
+      await _sessions.updateTurn(turnId, TurnStatus.completed);
+      _completeTurn(turnId, result);
       outcome = TurnStatus.completed;
       finalText = result.conversationItems
           .whereType<AssistantConversationItem>()
@@ -485,24 +579,30 @@ class SessionTurnCoordinator implements SessionTurnPort {
           .where((text) => text.isNotEmpty)
           .lastOrNull;
     } on AgentCancelledException {
-      await _sessions.updateTurn(request.turnId, TurnStatus.cancelled);
-      _failTurnCompletion(request.turnId, const AgentCancelledException());
+      await _sessions.updateTurn(turnId, TurnStatus.cancelled);
+      _failTurnCompletion(turnId, const AgentCancelledException());
       outcome = TurnStatus.cancelled;
-    } on Exception catch (error) {
-      await _markTurnFailed(request.turnId, error);
-      _failTurnCompletion(request.turnId, error);
+      // This is the terminal boundary of a detached turn. Lua/provider
+      // contract validation can report Dart [Error] values (for example
+      // [StateError]); if one escaped here, the durable turn would be marked
+      // failed but the unowned Future would still surface as an unhandled
+      // isolate error.
+    } on Object catch (error) {
+      await _markTurnFailed(turnId, error);
+      _failTurnCompletion(turnId, error);
       outcome = TurnStatus.failed;
       failure = '$error';
     } finally {
-      if (identical(_activeTurns[request.sessionId], cancellation)) {
-        _activeTurns.remove(request.sessionId);
+      await revocations.cancel();
+      if (identical(_activeTurns[sessionId], cancellation)) {
+        _activeTurns.remove(sessionId);
       }
     }
     // Runs after the turn slot is free so collaboration follow-ups can start
     // the session's next turn immediately.
     try {
       await multiAgent?.onTurnFinished(
-        sessionId: request.sessionId,
+        sessionId: sessionId,
         outcome: outcome,
         finalText: finalText,
         error: failure,
@@ -520,22 +620,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
     on StateError {
       // Nothing to salvage; see above.
     }
-    try {
-      await goals?.onTurnFinished(
-        request.sessionId,
-        outcome,
-        error: failure,
-      );
-    } on Exception {
-      // Restart recovery reconsiders durable active goals.
-    }
-    // A detached turn may finish after daemon shutdown has closed drift.
-    // Durable active goals are reconsidered during restart recovery, so this
-    // shutdown-only database StateError must not escape the runner.
-    // ignore: avoid_catching_errors
-    on StateError {
-      // Nothing to salvage; see above.
-    }
   }
 
   Future<void> _markTurnFailed(String turnId, Object error) =>
@@ -544,57 +628,7 @@ class SessionTurnCoordinator implements SessionTurnPort {
   /// The cancelTurn public API member.
   @override
   Future<void> cancelTurn(String sessionId) async {
-    await goals?.pauseForCancellation(sessionId);
     _activeTurns[sessionId]?.cancel();
-  }
-
-  /// Summarizes a session's context window on request and retires it.
-  ///
-  /// Only between turns: a running turn owns the live history, so rewriting it
-  /// underneath would strand a tool call halfway through its round. The
-  /// automatic trigger inside a turn goes through the runner instead.
-  Future<void> compactSession(String sessionId) async {
-    final session = await _sessions.getById(sessionId);
-    if (session == null) throw StateError('Session not found: $sessionId');
-    if (_activeTurns.containsKey(sessionId)) {
-      throw StateError('Cannot compact while a turn is running.');
-    }
-    final history = await _hydrateHistory(
-      await _timeline.providerHistory(sessionId),
-    );
-    // Nothing to hand off, and a summary request on an empty history would
-    // spend a model call to say so.
-    if (history.isEmpty) return;
-
-    final resolvedModel = await _models.resolveSelection(session.model);
-    final modelControls = session.modelControls;
-    await _models.validateModelControls(
-      resolvedModel.connectionId,
-      resolvedModel.modelId,
-      modelControls,
-    );
-    final compacted = await ConversationCompactor(resolvedModel.provider)
-        .compact(
-          history: history,
-          target: CompactionTarget(
-            model: resolvedModel.modelId,
-            modelControls: agentModelControls(modelControls),
-            safetyIdentifier: _safetyIdentifier,
-          ),
-          cancellation: CancellationToken(),
-        );
-
-    await _timeline.resetContextWindow(sessionId, compacted);
-    await _appendEvent(
-      sessionId: sessionId,
-      turnId: session.activeTurnId,
-      type: 'context.compacted',
-      data: <String, dynamic>{
-        'retained': compacted.length,
-        'trigger': 'manual',
-      },
-    );
-    _emitSession(await _sessions.getById(sessionId));
   }
 
   /// Completes once the client queues input for [sessionId].
@@ -647,25 +681,20 @@ class SessionTurnCoordinator implements SessionTurnPort {
   ) async {
     final session = await _sessions.getById(sessionId);
     if (session == null) return PermissionMode.readOnly;
-    final definition = await _definitions.resolve(session.agentDefinitionId);
     final storedDefault = await _settings.getValue('permission.defaultMode');
     final defaultMode = storedDefault == null || storedDefault.isEmpty
         ? PermissionMode.ask
         : PermissionMode.values.byName(storedDefault);
     // A session override may narrow an ancestor's permissions but never widen
     // them, so no agent in a nested tree can escalate past any ancestor.
-    var mode =
-        session.permissionMode ?? definition.permissionMode ?? defaultMode;
+    var mode = session.permissionMode ?? defaultMode;
     var parentId = session.parentSessionId;
     final visited = <String>{session.id};
     while (parentId != null && visited.add(parentId)) {
       final parent = await _sessions.getById(parentId);
       if (parent == null) return PermissionMode.readOnly;
-      final parentDefinition = await _definitions.resolve(
-        parent.agentDefinitionId,
-      );
       mode = _moreRestrictive(
-        parent.permissionMode ?? parentDefinition.permissionMode ?? defaultMode,
+        parent.permissionMode ?? defaultMode,
         mode,
       );
       parentId = parent.parentSessionId;
@@ -706,29 +735,4 @@ final class _LivePermissionModeSource implements PermissionModeSource {
   @override
   Future<AgentPermissionMode> currentMode() async =>
       agentPermission(await _read());
-}
-
-/// Makes a `new_context` reset durable.
-///
-/// The runner has already trimmed its in-memory conversation; this retires the
-/// stored window so a reconnect or a daemon restart replays exactly the same
-/// items, and clears the token counter the meter reads.
-class _DatabaseContextResetCoordinator implements ContextResetCoordinator {
-  _DatabaseContextResetCoordinator({
-    required this.timeline,
-    required this.sessions,
-    required this.emitSession,
-    required this.sessionId,
-  });
-
-  final TimelineRepository timeline;
-  final SessionRepository sessions;
-  final void Function(SessionDto?) emitSession;
-  final String sessionId;
-
-  @override
-  Future<void> reset(List<ConversationItem> retain) async {
-    await timeline.resetContextWindow(sessionId, retain);
-    emitSession(await sessions.getById(sessionId));
-  }
 }

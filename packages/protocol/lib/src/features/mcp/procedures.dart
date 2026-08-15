@@ -2,7 +2,7 @@ import 'package:protocol/src/common/rpc_values.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpListServersProcedure =
     RpcProcedure<McpServersParamsDto, McpServersResultDto>(
       name: 'mcp.listServers',
@@ -12,7 +12,7 @@ final mcpListServersProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpAddServerProcedure =
     RpcProcedure<McpServerParamsDto, McpServerStateResultDto>(
       name: 'mcp.addServer',
@@ -22,7 +22,7 @@ final mcpAddServerProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpUpdateServerProcedure =
     RpcProcedure<McpServerParamsDto, McpServerStateResultDto>(
       name: 'mcp.updateServer',
@@ -32,7 +32,7 @@ final mcpUpdateServerProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpRemoveServerProcedure =
     RpcProcedure<McpServerIdParamsDto, EmptyResultDto>(
       name: 'mcp.removeServer',
@@ -42,7 +42,7 @@ final mcpRemoveServerProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpTestServerProcedure =
     RpcProcedure<McpServerParamsDto, McpServerStateResultDto>(
       name: 'mcp.testServer',
@@ -52,7 +52,7 @@ final mcpTestServerProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpSetSecretProcedure = RpcProcedure<McpSecretParamsDto, EmptyResultDto>(
   name: 'mcp.setSecret',
   decodeParams: McpSecretParamsDto.fromJson,
@@ -61,7 +61,7 @@ final mcpSetSecretProcedure = RpcProcedure<McpSecretParamsDto, EmptyResultDto>(
   encodeResult: (value) => value.toJson(),
 );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final mcpChangedNotification = RpcNotification<EmptyResultDto>(
   name: 'mcp.changed',
   decode: EmptyResultDto.fromJson,

@@ -257,8 +257,7 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
         status: session.status.name,
         activeTurnId: Value<String?>(session.activeTurnId),
         lastError: Value<String?>(session.lastError),
-        mode: Value<String>(session.mode.name),
-        modelId: session.model.qualifiedModelId,
+        modelId: Value<String?>(session.model?.qualifiedModelId),
         modelControlsJson: Value<String>(
           jsonEncode(
             session.modelControls.map(
@@ -275,25 +274,17 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
   }
 
   @override
-  Future<SessionDto> updateMode(String id, SessionMode mode) async {
-    await (update(sessions)..where((row) => row.id.equals(id))).write(
-      SessionsCompanion(
-        mode: Value<String>(mode.name),
-        updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
-      ),
-    );
-    return (await getById(id))!;
-  }
-
-  @override
   Future<SessionDto> updateModelSettings(
     String id, {
-    required ModelSelectionDto model,
+    required bool hasModel,
     required Map<String, ModelControlValueDto> modelControls,
+    ModelSelectionDto? model,
   }) async {
     await (update(sessions)..where((row) => row.id.equals(id))).write(
       SessionsCompanion(
-        modelId: Value<String>(model.qualifiedModelId),
+        modelId: hasModel
+            ? Value<String?>(model?.qualifiedModelId)
+            : const Value<String?>.absent(),
         modelControlsJson: Value<String>(
           jsonEncode(
             modelControls.map(
@@ -317,6 +308,7 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
               .get();
       for (final session in affected) {
         final modelId = session.modelId;
+        if (modelId == null) continue;
         await (update(
           sessions,
         )..where((row) => row.id.equals(session.id))).write(
@@ -519,15 +511,9 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
           .where((value) => value.name == row.lifecycle)
           .firstOrNull,
       status: SessionStatus.values.byName(row.status),
-      // A row written by a newer build must still render as a session.
-      mode:
-          SessionMode.values
-              .where((value) => value.name == row.mode)
-              .firstOrNull ??
-          SessionMode.normal,
       activeTurnId: row.activeTurnId,
       lastError: row.lastError,
-      model: ModelSelectionDto(modelId: modelId),
+      model: modelId == null ? null : ModelSelectionDto(modelId: modelId),
       modelControls: <String, ModelControlValueDto>{
         for (final entry in (jsonDecode(
           row.modelControlsJson,
@@ -547,134 +533,6 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
       updatedAt: row.updatedAt,
     );
   }
-}
-
-@DriftAccessor(tables: <Type>[Goals])
-/// Drift adapter for persistent session goals.
-class GoalDao extends DatabaseAccessor<TinestDatabase>
-    with _$GoalDaoMixin
-    implements GoalRepository {
-  /// Creates a goal DAO.
-  GoalDao(super.attachedDatabase);
-
-  @override
-  Future<GoalDto?> get(String sessionId) async {
-    final row = await (select(
-      goals,
-    )..where((table) => table.sessionId.equals(sessionId))).getSingleOrNull();
-    return row == null ? null : _toDto(row);
-  }
-
-  @override
-  Future<GoalDto> replace(GoalDto goal) async {
-    await into(goals).insertOnConflictUpdate(
-      GoalsCompanion.insert(
-        sessionId: goal.sessionId,
-        goalId: goal.goalId,
-        objective: goal.objective,
-        status: goal.status.name,
-        tokenBudget: Value<int?>(goal.tokenBudget),
-        tokensUsed: Value<int>(goal.tokensUsed),
-        timeUsedSeconds: Value<int>(goal.timeUsedSeconds),
-        createdAt: goal.createdAt,
-        updatedAt: goal.updatedAt,
-      ),
-    );
-    return (await get(goal.sessionId))!;
-  }
-
-  @override
-  Future<GoalDto?> updateGoal(String sessionId, GoalUpdateDto update) =>
-      transaction(() async {
-        final current = await get(sessionId);
-        if (current == null || current.goalId != update.expectedGoalId) {
-          return null;
-        }
-        var status = update.status ?? current.status;
-        final budget = update.hasTokenBudget
-            ? update.tokenBudget
-            : current.tokenBudget;
-        if (status == GoalStatus.active &&
-            budget != null &&
-            current.tokensUsed >= budget) {
-          status = GoalStatus.budgetLimited;
-        }
-        await (attachedDatabase.update(goals)..where(
-              (row) =>
-                  row.sessionId.equals(sessionId) &
-                  row.goalId.equals(update.expectedGoalId),
-            ))
-            .write(
-              GoalsCompanion(
-                objective: update.objective == null
-                    ? const Value<String>.absent()
-                    : Value<String>(update.objective!),
-                status: Value<String>(status.name),
-                tokenBudget: update.hasTokenBudget
-                    ? Value<int?>(update.tokenBudget)
-                    : const Value<int?>.absent(),
-                updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
-              ),
-            );
-        return get(sessionId);
-      });
-
-  @override
-  Future<GoalDto?> account({
-    required String sessionId,
-    required String expectedGoalId,
-    required int tokenDelta,
-    required int timeDeltaSeconds,
-  }) => transaction(() async {
-    final current = await get(sessionId);
-    if (current == null ||
-        current.goalId != expectedGoalId ||
-        current.status != GoalStatus.active) {
-      return current;
-    }
-    final tokens = current.tokensUsed + (tokenDelta < 0 ? 0 : tokenDelta);
-    final seconds =
-        current.timeUsedSeconds + (timeDeltaSeconds < 0 ? 0 : timeDeltaSeconds);
-    final status = current.tokenBudget != null && tokens >= current.tokenBudget!
-        ? GoalStatus.budgetLimited
-        : GoalStatus.active;
-    await (attachedDatabase.update(goals)..where(
-          (row) =>
-              row.sessionId.equals(sessionId) &
-              row.goalId.equals(expectedGoalId),
-        ))
-        .write(
-          GoalsCompanion(
-            status: Value<String>(status.name),
-            tokensUsed: Value<int>(tokens),
-            timeUsedSeconds: Value<int>(seconds),
-            updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
-          ),
-        );
-    return get(sessionId);
-  });
-
-  @override
-  Future<GoalDto?> clear(String sessionId) => transaction(() async {
-    final current = await get(sessionId);
-    if (current == null) return null;
-    await (delete(
-      goals,
-    )..where((row) => row.sessionId.equals(sessionId))).go();
-    return current;
-  });
-
-  GoalDto _toDto(Goal row) => GoalDto(
-    sessionId: row.sessionId,
-    goalId: row.goalId,
-    objective: row.objective,
-    status: GoalStatus.values.byName(row.status),
-    tokenBudget: row.tokenBudget,
-    tokensUsed: row.tokensUsed,
-    timeUsedSeconds: row.timeUsedSeconds,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  );
 }
 
 @DriftAccessor(tables: <Type>[AgentMailboxMessages])

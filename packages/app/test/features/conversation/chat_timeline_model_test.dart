@@ -216,11 +216,13 @@ void main() {
         event('tool.requested', <String, dynamic>{
           'callId': 'attach-1',
           'name': 'attach_file',
+          'presentation': <String, dynamic>{'timeline': 'suppressed'},
           'arguments': <String, dynamic>{'path': 'result.txt'},
         }),
         event('tool.completed', <String, dynamic>{
           'callId': 'attach-1',
           'name': 'attach_file',
+          'presentation': <String, dynamic>{'timeline': 'suppressed'},
           'output': '{"attachmentId":"attachment-1"}',
           'isError': false,
         }),
@@ -424,6 +426,7 @@ void main() {
       final tool = event('tool.requested', <String, dynamic>{
         'callId': 'call-ask',
         'name': 'request_user_input',
+        'presentation': <String, dynamic>{'timeline': 'question'},
         'arguments': <String, dynamic>{
           'questions': <Map<String, dynamic>>[
             <String, dynamic>{
@@ -494,6 +497,7 @@ void main() {
                 event('tool.completed', <String, dynamic>{
                   'callId': 'call-ask',
                   'name': 'request_user_input',
+                  'presentation': <String, dynamic>{'timeline': 'question'},
                   'output':
                       '[{"questionId":"storage","answer":"SQLite",'
                       '"isFreeForm":false}]',
@@ -506,6 +510,45 @@ void main() {
       expect(answered.key, persisted.key);
       expect(concurrentKeys.toSet(), hasLength(2));
       expect(answered.entries.single.answer, 'SQLite');
+    },
+    tags: const <String>['feature_test__turn_question__widget'],
+  );
+
+  test(
+    'a failed question keeps the Lua contribution identity and presentation',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'choose_storage',
+          'presentation': <String, dynamic>{
+            'timeline': 'question',
+            'label': 'Choose storage',
+            'glyph': 'ask',
+          },
+          'arguments': <String, dynamic>{
+            'questions': <Map<String, dynamic>>[],
+          },
+        }),
+        event('tool.failed', <String, dynamic>{
+          'callId': 'call-ask',
+          'name': 'choose_storage',
+          'presentation': <String, dynamic>{
+            'timeline': 'question',
+            'label': 'Choose storage',
+            'glyph': 'ask',
+          },
+          'error': 'Unavailable',
+        }),
+      ]);
+
+      final failed = items.single as ChatToolActivity;
+      expect(failed.toolName, 'choose_storage');
+      expect(failed.presentation, <String, dynamic>{
+        'timeline': 'question',
+        'label': 'Choose storage',
+        'glyph': 'ask',
+      });
     },
     tags: const <String>['feature_test__turn_question__widget'],
   );
