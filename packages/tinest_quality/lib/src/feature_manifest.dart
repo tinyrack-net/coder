@@ -736,6 +736,30 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     },
   ),
   FeatureContract(
+    id: 'conversation.history.pagination',
+    description:
+        'Opens a conversation on its newest page and loads earlier messages '
+        'as the reader scrolls back, so history never arrives as one frame.',
+    apiMethods: <String>['sessions.readTimelineHistory'],
+    requiredLayers: <FeatureVerificationLayer>{
+      FeatureVerificationLayer.unit,
+      FeatureVerificationLayer.contract,
+      FeatureVerificationLayer.verticalSlice,
+      FeatureVerificationLayer.widget,
+      FeatureVerificationLayer.e2e,
+    },
+    e2eScenarios: <FeatureScenario>[
+      FeatureScenario(
+        id: 'page_back',
+        description:
+            'Opens a conversation longer than one page at its newest message, '
+            'drags back to load earlier pages, and reopens where the reader '
+            'left it.',
+        surfaces: _desktop,
+      ),
+    ],
+  ),
+  FeatureContract(
     id: 'turn.question',
     description:
         'Blocks a turn on a structured agent question and records the user '
@@ -1469,8 +1493,15 @@ tinestUiReachabilityManifest = <UiReachabilityContract>[
       UiStateContract(
         id: 'history_anchored',
         description:
-            'Streaming, disclosure growth, and session restoration preserve '
-            "the reader's visible history anchor.",
+            'Streaming and disclosure growth preserve the visible history '
+            'anchor, and a conversation opens at its newest message unless '
+            'the reader left it with messages below them.',
+      ),
+      UiStateContract(
+        id: 'history_paging',
+        description:
+            'Reaching the oldest loaded message loads the page before it '
+            'exactly once, without moving the reader.',
       ),
       UiStateContract(
         id: 'approval_pending',

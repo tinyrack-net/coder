@@ -70,6 +70,11 @@ final class ArchitectureVerifier {
         'Single-keyed. Holds a map keyed by session id whose entries are '
         'cleared when a conversation pane mounts; a failure whose pane never '
         'mounts is retained. Bounded work is tracked, not yet done.',
+    'ConversationReadingPositions':
+        'Single-keyed. Holds at most retainedReadingPositions entries, keyed '
+        'by host and session and evicted least-recently-read first, so a long '
+        'run cannot accumulate layout snapshots. An entry is dropped as soon '
+        'as its reader returns to the newest message.',
     'SessionComposerDraftController':
         'Keyed by (hostId, worktreeId, draftId) and NOT yet bounded: every '
         'draft ever opened is retained for the process. Ends only via the '

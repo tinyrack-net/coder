@@ -69,7 +69,7 @@ void main() {
     expect(lanes.first.scenarios.map((scenario) => scenario.id), <String>[
       'conversation',
     ]);
-    expect(lanes.last.estimatedSeconds, 68);
+    expect(lanes.last.estimatedSeconds, 82);
   });
 
   test('second lane waits for application readiness', () async {

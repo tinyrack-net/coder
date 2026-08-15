@@ -11216,7 +11216,7 @@ as List<UserQuestionAnswerDto>,
 /// @nodoc
 mixin _$TimelineSubscribeParamsDto {
 
- String get sessionId; int get afterSequence;
+ String get sessionId; int get afterSequence; int? get tailLimit;
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -11229,16 +11229,16 @@ $TimelineSubscribeParamsDtoCopyWith<TimelineSubscribeParamsDto> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence)&&(identical(other.tailLimit, tailLimit) || other.tailLimit == tailLimit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,afterSequence);
+int get hashCode => Object.hash(runtimeType,sessionId,afterSequence,tailLimit);
 
 @override
 String toString() {
-  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence)';
+  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence, tailLimit: $tailLimit)';
 }
 
 
@@ -11249,7 +11249,7 @@ abstract mixin class $TimelineSubscribeParamsDtoCopyWith<$Res>  {
   factory $TimelineSubscribeParamsDtoCopyWith(TimelineSubscribeParamsDto value, $Res Function(TimelineSubscribeParamsDto) _then) = _$TimelineSubscribeParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String sessionId, int afterSequence
+ String sessionId, int afterSequence, int? tailLimit
 });
 
 
@@ -11266,11 +11266,12 @@ class _$TimelineSubscribeParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? afterSequence = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? afterSequence = null,Object? tailLimit = freezed,}) {
   return _then(_self.copyWith(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
-as int,
+as int,tailLimit: freezed == tailLimit ? _self.tailLimit : tailLimit // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -11355,10 +11356,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence,  int? tailLimit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto() when $default != null:
-return $default(_that.sessionId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence,_that.tailLimit);case _:
   return orElse();
 
 }
@@ -11376,10 +11377,10 @@ return $default(_that.sessionId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  int afterSequence,  int? tailLimit)  $default,) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto():
-return $default(_that.sessionId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence,_that.tailLimit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -11396,10 +11397,10 @@ return $default(_that.sessionId,_that.afterSequence);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  int afterSequence)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  int afterSequence,  int? tailLimit)?  $default,) {final _that = this;
 switch (_that) {
 case _TimelineSubscribeParamsDto() when $default != null:
-return $default(_that.sessionId,_that.afterSequence);case _:
+return $default(_that.sessionId,_that.afterSequence,_that.tailLimit);case _:
   return null;
 
 }
@@ -11411,11 +11412,12 @@ return $default(_that.sessionId,_that.afterSequence);case _:
 @JsonSerializable()
 
 class _TimelineSubscribeParamsDto implements TimelineSubscribeParamsDto {
-  const _TimelineSubscribeParamsDto({required this.sessionId, required this.afterSequence});
+  const _TimelineSubscribeParamsDto({required this.sessionId, required this.afterSequence, this.tailLimit});
   factory _TimelineSubscribeParamsDto.fromJson(Map<String, dynamic> json) => _$TimelineSubscribeParamsDtoFromJson(json);
 
 @override final  String sessionId;
 @override final  int afterSequence;
+@override final  int? tailLimit;
 
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
@@ -11430,16 +11432,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineSubscribeParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.afterSequence, afterSequence) || other.afterSequence == afterSequence)&&(identical(other.tailLimit, tailLimit) || other.tailLimit == tailLimit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,afterSequence);
+int get hashCode => Object.hash(runtimeType,sessionId,afterSequence,tailLimit);
 
 @override
 String toString() {
-  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence)';
+  return 'TimelineSubscribeParamsDto(sessionId: $sessionId, afterSequence: $afterSequence, tailLimit: $tailLimit)';
 }
 
 
@@ -11450,7 +11452,7 @@ abstract mixin class _$TimelineSubscribeParamsDtoCopyWith<$Res> implements $Time
   factory _$TimelineSubscribeParamsDtoCopyWith(_TimelineSubscribeParamsDto value, $Res Function(_TimelineSubscribeParamsDto) _then) = __$TimelineSubscribeParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String sessionId, int afterSequence
+ String sessionId, int afterSequence, int? tailLimit
 });
 
 
@@ -11467,10 +11469,280 @@ class __$TimelineSubscribeParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of TimelineSubscribeParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? afterSequence = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? afterSequence = null,Object? tailLimit = freezed,}) {
   return _then(_TimelineSubscribeParamsDto(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,afterSequence: null == afterSequence ? _self.afterSequence : afterSequence // ignore: cast_nullable_to_non_nullable
+as int,tailLimit: freezed == tailLimit ? _self.tailLimit : tailLimit // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$TimelineHistoryParamsDto {
+
+ String get sessionId; int get beforeSequence; int get limit;
+/// Create a copy of TimelineHistoryParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TimelineHistoryParamsDtoCopyWith<TimelineHistoryParamsDto> get copyWith => _$TimelineHistoryParamsDtoCopyWithImpl<TimelineHistoryParamsDto>(this as TimelineHistoryParamsDto, _$identity);
+
+  /// Serializes this TimelineHistoryParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineHistoryParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.beforeSequence, beforeSequence) || other.beforeSequence == beforeSequence)&&(identical(other.limit, limit) || other.limit == limit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,beforeSequence,limit);
+
+@override
+String toString() {
+  return 'TimelineHistoryParamsDto(sessionId: $sessionId, beforeSequence: $beforeSequence, limit: $limit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TimelineHistoryParamsDtoCopyWith<$Res>  {
+  factory $TimelineHistoryParamsDtoCopyWith(TimelineHistoryParamsDto value, $Res Function(TimelineHistoryParamsDto) _then) = _$TimelineHistoryParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, int beforeSequence, int limit
+});
+
+
+
+
+}
+/// @nodoc
+class _$TimelineHistoryParamsDtoCopyWithImpl<$Res>
+    implements $TimelineHistoryParamsDtoCopyWith<$Res> {
+  _$TimelineHistoryParamsDtoCopyWithImpl(this._self, this._then);
+
+  final TimelineHistoryParamsDto _self;
+  final $Res Function(TimelineHistoryParamsDto) _then;
+
+/// Create a copy of TimelineHistoryParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? beforeSequence = null,Object? limit = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,beforeSequence: null == beforeSequence ? _self.beforeSequence : beforeSequence // ignore: cast_nullable_to_non_nullable
+as int,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TimelineHistoryParamsDto].
+extension TimelineHistoryParamsDtoPatterns on TimelineHistoryParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TimelineHistoryParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TimelineHistoryParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TimelineHistoryParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  int beforeSequence,  int limit)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto() when $default != null:
+return $default(_that.sessionId,_that.beforeSequence,_that.limit);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  int beforeSequence,  int limit)  $default,) {final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto():
+return $default(_that.sessionId,_that.beforeSequence,_that.limit);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  int beforeSequence,  int limit)?  $default,) {final _that = this;
+switch (_that) {
+case _TimelineHistoryParamsDto() when $default != null:
+return $default(_that.sessionId,_that.beforeSequence,_that.limit);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TimelineHistoryParamsDto implements TimelineHistoryParamsDto {
+  const _TimelineHistoryParamsDto({required this.sessionId, required this.beforeSequence, required this.limit});
+  factory _TimelineHistoryParamsDto.fromJson(Map<String, dynamic> json) => _$TimelineHistoryParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  int beforeSequence;
+@override final  int limit;
+
+/// Create a copy of TimelineHistoryParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TimelineHistoryParamsDtoCopyWith<_TimelineHistoryParamsDto> get copyWith => __$TimelineHistoryParamsDtoCopyWithImpl<_TimelineHistoryParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TimelineHistoryParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimelineHistoryParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.beforeSequence, beforeSequence) || other.beforeSequence == beforeSequence)&&(identical(other.limit, limit) || other.limit == limit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,beforeSequence,limit);
+
+@override
+String toString() {
+  return 'TimelineHistoryParamsDto(sessionId: $sessionId, beforeSequence: $beforeSequence, limit: $limit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TimelineHistoryParamsDtoCopyWith<$Res> implements $TimelineHistoryParamsDtoCopyWith<$Res> {
+  factory _$TimelineHistoryParamsDtoCopyWith(_TimelineHistoryParamsDto value, $Res Function(_TimelineHistoryParamsDto) _then) = __$TimelineHistoryParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, int beforeSequence, int limit
+});
+
+
+
+
+}
+/// @nodoc
+class __$TimelineHistoryParamsDtoCopyWithImpl<$Res>
+    implements _$TimelineHistoryParamsDtoCopyWith<$Res> {
+  __$TimelineHistoryParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _TimelineHistoryParamsDto _self;
+  final $Res Function(_TimelineHistoryParamsDto) _then;
+
+/// Create a copy of TimelineHistoryParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? beforeSequence = null,Object? limit = null,}) {
+  return _then(_TimelineHistoryParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,beforeSequence: null == beforeSequence ? _self.beforeSequence : beforeSequence // ignore: cast_nullable_to_non_nullable
+as int,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

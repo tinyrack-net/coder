@@ -274,9 +274,14 @@ class TinestClient
         _timelineSubscriptions,
       ).entries) {
         unawaited(
-          subscribeTimeline(entry.key, afterSequence: entry.value).then((
-            events,
-          ) {
+          // Bounded like a first load: a long disconnect can leave thousands
+          // of events to catch up on, and an unbounded snapshot would arrive
+          // as one frame large enough for a relay to drop the daemon.
+          subscribeTimeline(
+            entry.key,
+            afterSequence: entry.value,
+            tailLimit: timelineHistoryPageSize,
+          ).then((events) {
             events.forEach(_timelineEvents.add);
           }),
         );
@@ -1366,6 +1371,7 @@ class TinestClient
   Future<List<TimelineEventDto>> subscribeTimeline(
     String sessionId, {
     int afterSequence = 0,
+    int? tailLimit,
   }) async {
     _timelineSubscriptions[sessionId] = afterSequence;
     final response = await _call(
@@ -1373,6 +1379,7 @@ class TinestClient
       TimelineSubscribeParamsDto(
         sessionId: sessionId,
         afterSequence: afterSequence,
+        tailLimit: tailLimit,
       ),
     );
     final events = response.events;
@@ -1384,6 +1391,20 @@ class TinestClient
     }
     return events;
   }
+
+  @override
+  Future<List<TimelineEventDto>> readTimelineHistory(
+    String sessionId, {
+    required int beforeSequence,
+    required int limit,
+  }) async => (await _call(
+    sessionsTimelineHistoryProcedure,
+    TimelineHistoryParamsDto(
+      sessionId: sessionId,
+      beforeSequence: beforeSequence,
+      limit: limit,
+    ),
+  )).events;
 
   @override
   Future<RelayStatusDto> getRelayStatus() =>

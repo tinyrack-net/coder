@@ -629,6 +629,7 @@ void main() {
       'project-worktree',
       'relay',
       'conversation-adversity',
+      'conversation-history',
       'conversation',
       'provider',
       'settings-desktop',

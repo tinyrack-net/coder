@@ -2128,16 +2128,45 @@ final class FakeTinestApi
   Future<List<TimelineEventDto>> subscribeTimeline(
     String sessionId, {
     int afterSequence = 0,
+    int? tailLimit,
   }) async {
     subscribeTimelineCount += 1;
     if (subscribeTimelineGate case final gate?) await gate.future;
-    return (_timelines[sessionId] ?? const <TimelineEventDto>[])
+    final events = (_timelines[sessionId] ?? const <TimelineEventDto>[])
         .where((event) => event.sequence > afterSequence)
         .toList(growable: false);
+    if (tailLimit == null || events.length <= tailLimit) return events;
+    return events.sublist(events.length - tailLimit);
   }
 
   /// Optional gate used to keep a timeline subscription pending.
   Completer<void>? subscribeTimelineGate;
+
+  @override
+  Future<List<TimelineEventDto>> readTimelineHistory(
+    String sessionId, {
+    required int beforeSequence,
+    required int limit,
+  }) async {
+    readTimelineHistoryCount += 1;
+    if (readTimelineHistoryGate case final gate?) await gate.future;
+    if (readTimelineHistoryFailure case final failure?) throw failure;
+    final older = (_timelines[sessionId] ?? const <TimelineEventDto>[])
+        .where((event) => event.sequence < beforeSequence)
+        .toList(growable: false);
+    if (older.length <= limit) return older;
+    return older.sublist(older.length - limit);
+  }
+
+  /// Number of [readTimelineHistory] calls, counted so a test can prove a
+  /// page is fetched exactly once per cursor.
+  int readTimelineHistoryCount = 0;
+
+  /// Optional gate used to keep a history page pending.
+  Completer<void>? readTimelineHistoryGate;
+
+  /// Optional error thrown instead of returning a history page.
+  Exception? readTimelineHistoryFailure;
 
   @override
   Future<void> close() async {

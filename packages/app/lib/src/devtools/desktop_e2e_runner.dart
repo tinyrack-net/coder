@@ -23,6 +23,7 @@ const desktopE2eScenarios = <DesktopE2eScenario>[
   DesktopE2eScenario(id: 'project-worktree', estimatedSeconds: 12),
   DesktopE2eScenario(id: 'relay', estimatedSeconds: 1),
   DesktopE2eScenario(id: 'conversation-adversity', estimatedSeconds: 6),
+  DesktopE2eScenario(id: 'conversation-history', estimatedSeconds: 14),
   DesktopE2eScenario(id: 'conversation', estimatedSeconds: 84),
   DesktopE2eScenario(id: 'provider', estimatedSeconds: 12),
   DesktopE2eScenario(id: 'settings-desktop', estimatedSeconds: 18),

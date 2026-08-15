@@ -1,5 +1,13 @@
 part of '../../app/application_controllers_test.dart';
 
+/// Stands in for a host that cannot be reached while a page is requested.
+final class _OfflineFailure implements Exception {
+  const _OfflineFailure();
+
+  @override
+  String toString() => 'offline';
+}
+
 void _registerConversationControllerTests() {
   final now = DateTime.utc(2026, 8, 2);
   final workspace = WorkspaceDto(
@@ -769,5 +777,152 @@ void _registerConversationControllerTests() {
       unawaited(api.close());
     },
     tags: const <String>['feature_test__composer_file_mention__unit'],
+  );
+
+  TimelineEventDto historyEvent(int sequence) => TimelineEventDto(
+    sessionId: agent.id,
+    sequence: sequence,
+    turnId: 'turn-$sequence',
+    type: 'user.message',
+    data: <String, dynamic>{
+      'text': 'history $sequence',
+      'attachments': const <Map<String, dynamic>>[],
+    },
+    createdAt: now.add(Duration(seconds: sequence)),
+  );
+
+  test(
+    'a conversation opens on the newest page and pages backwards on demand',
+    () async {
+      final history = <TimelineEventDto>[
+        for (
+          var sequence = 1;
+          sequence <= timelineHistoryPageSize * 2 + 20;
+          sequence += 1
+        )
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final initial = await container.read(provider.future);
+
+      expect(initial.timeline, hasLength(timelineHistoryPageSize));
+      expect(initial.timeline.last.sequence, history.last.sequence);
+      expect(initial.hasMoreOlder, isTrue);
+      expect(initial.loadingOlder, isFalse);
+
+      await container.read(provider.notifier).loadOlderHistory();
+      final second = container.read(provider).requireValue;
+      expect(second.timeline, hasLength(timelineHistoryPageSize * 2));
+      expect(second.timeline.first.sequence, 21);
+      expect(second.hasMoreOlder, isTrue);
+      expect(second.loadingOlder, isFalse);
+      expect(
+        second.timeline.map((event) => event.sequence).toSet(),
+        hasLength(second.timeline.length),
+        reason: 'a prepended page never repeats an event already loaded',
+      );
+
+      // The last page is short, which is how the beginning announces itself.
+      await container.read(provider.notifier).loadOlderHistory();
+      final third = container.read(provider).requireValue;
+      expect(third.timeline, hasLength(history.length));
+      expect(third.timeline.first.sequence, 1);
+      expect(third.hasMoreOlder, isFalse);
+
+      // Nothing left to ask for, so nothing is asked for.
+      final calls = api.readTimelineHistoryCount;
+      await container.read(provider.notifier).loadOlderHistory();
+      expect(api.readTimelineHistoryCount, calls);
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
+  );
+
+  test(
+    'a session that fits one page never asks for older history',
+    () async {
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{
+          agent.id: <TimelineEventDto>[historyEvent(1), historyEvent(2)],
+        },
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final initial = await container.read(provider.future);
+
+      expect(initial.hasMoreOlder, isFalse);
+      await container.read(provider.notifier).loadOlderHistory();
+      expect(api.readTimelineHistoryCount, 0);
+      expect(container.read(provider).requireValue.timeline, hasLength(2));
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
+  );
+
+  test(
+    'a failed page keeps the timeline and lets the reader ask again',
+    () async {
+      final history = <TimelineEventDto>[
+        for (
+          var sequence = 1;
+          sequence <= timelineHistoryPageSize + 5;
+          sequence += 1
+        )
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      )..readTimelineHistoryFailure = const _OfflineFailure();
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final loaded = await container.read(provider.future);
+
+      await container.read(provider.notifier).loadOlderHistory();
+      final failed = container.read(provider).requireValue;
+      expect(failed.timeline, loaded.timeline);
+      expect(failed.loadingOlder, isFalse);
+      expect(failed.hasMoreOlder, isTrue);
+      expect(failed.olderFailed, isTrue);
+      expect(
+        failed.olderAttempt,
+        1,
+        reason: 'the retry identity must change or the page is unreachable',
+      );
+
+      api.readTimelineHistoryFailure = null;
+      await container.read(provider.notifier).loadOlderHistory();
+      final recovered = container.read(provider).requireValue;
+      expect(recovered.timeline, hasLength(history.length));
+      expect(recovered.hasMoreOlder, isFalse);
+      expect(
+        recovered.olderFailed,
+        isFalse,
+        reason: 'a page that succeeded must clear the failure it replaced',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
   );
 }

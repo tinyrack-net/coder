@@ -357,6 +357,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get conversationLoading => '会話を読み込み中';
 
   @override
+  String get conversationLoadingOlder => '以前のメッセージを読み込み中';
+
+  @override
+  String get conversationLoadOlderFailed => '以前のメッセージを読み込めませんでした';
+
+  @override
   String get directoryBrowserLoading => 'ディレクトリを読み込み中';
 
   @override

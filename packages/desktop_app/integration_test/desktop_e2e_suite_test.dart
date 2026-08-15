@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'conversation_adversity_e2e_test.dart' as conversation_adversity;
+import 'conversation_history_e2e_test.dart' as conversation_history;
 import 'daemon_workspace_e2e_test.dart' as daemon_workspace;
 import 'debug_conversation_e2e_test.dart' as conversation;
 import 'debug_desktop_shell_e2e_test.dart' as desktop_shell;
@@ -19,6 +20,7 @@ void main() {
     'project-worktree': project_worktree.main,
     'relay': relay.main,
     'conversation-adversity': conversation_adversity.main,
+    'conversation-history': conversation_history.main,
     'conversation': conversation.main,
     'provider': provider.main,
     'settings-desktop': settings_desktop.main,
