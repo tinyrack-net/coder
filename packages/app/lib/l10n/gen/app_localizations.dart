@@ -742,6 +742,18 @@ abstract class AppLocalizations {
   /// **'Loading conversation'**
   String get conversationLoading;
 
+  /// Row shown above the oldest loaded message while an earlier page of chat history is being fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading earlier messages'**
+  String get conversationLoadingOlder;
+
+  /// Row shown above the oldest loaded message when fetching an earlier page of chat history failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load earlier messages'**
+  String get conversationLoadOlderFailed;
+
   /// Announced once for the row skeletons shown while the first directory listing loads.
   ///
   /// In en, this message translates to:

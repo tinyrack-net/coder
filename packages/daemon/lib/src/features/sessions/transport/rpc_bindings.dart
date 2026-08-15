@@ -195,8 +195,27 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   }),
   RpcBinding(sessionsSubscribeTimelineProcedure, (request, context) async {
     context.timelineSubscriptions.add(request.sessionId);
+    final tailLimit = request.tailLimit;
     return TimelineResultDto(
-      events: await timeline.after(request.sessionId, request.afterSequence),
+      events: tailLimit == null
+          ? await timeline.after(request.sessionId, request.afterSequence)
+          : await timeline.tail(
+              request.sessionId,
+              request.afterSequence,
+              limit: tailLimit,
+            ),
+    );
+  }),
+  // Deliberately does not touch `context.timelineSubscriptions`: that set is
+  // also the live delivery cursor, and rewinding it to read history would
+  // drop the events arriving during the round trip.
+  RpcBinding(sessionsTimelineHistoryProcedure, (request, _) async {
+    return TimelineResultDto(
+      events: await timeline.before(
+        request.sessionId,
+        request.beforeSequence,
+        limit: request.limit,
+      ),
     );
   }),
 ];

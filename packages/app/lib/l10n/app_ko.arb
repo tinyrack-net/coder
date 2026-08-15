@@ -106,6 +106,8 @@
   "terminalConnectionFailed": "터미널 연결에 실패했어요",
   "terminalConnecting": "터미널 연결 중",
   "conversationLoading": "대화 불러오는 중",
+  "conversationLoadingOlder": "이전 메시지 불러오는 중",
+  "conversationLoadOlderFailed": "이전 메시지를 불러오지 못했어요",
   "directoryBrowserLoading": "디렉터리 불러오는 중",
   "terminalCreationFailed": "터미널을 만들 수 없어요",
   "terminalWorktreeUnavailable": "이 worktree는 더 이상 사용할 수 없습니다. 다른 worktree를 선택하세요.",

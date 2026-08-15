@@ -14,6 +14,7 @@ import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
+import 'package:app/src/features/conversation/presentation/reading_positions_controller.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
@@ -1410,6 +1411,46 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ),
       ];
     }
+    // Read, not watched: a position is consumed when the pane mounts, and
+    // watching it would rebuild the pane every time the reader scrolls away.
+    // The notifier is resolved here rather than inside the callback, which
+    // runs while the pane is being torn down and can no longer look up
+    // ancestors.
+    // Narrow on purpose: paging ticks several times per page, and watching the
+    // whole controller would rebuild this pane's agents, providers, plan
+    // actions, and subagent track along with the timeline.
+    final paging = ref.watch(
+      conversationControllerProvider(
+        widget.selection.hostId,
+        current.id,
+      ).select(
+        (value) => (
+          hasMoreOlder: value.asData?.value.hasMoreOlder ?? false,
+          loading: value.asData?.value.loadingOlder ?? false,
+          failed: value.asData?.value.olderFailed ?? false,
+          oldest: value.asData?.value.oldestLoadedSequence ?? 0,
+          attempt: value.asData?.value.olderAttempt ?? 0,
+        ),
+      ),
+    );
+    // Resolved during build for the same reason the store below is: the edge
+    // callback runs a microtask later, by which time this pane may be gone and
+    // unable to look up an ancestor.
+    final loadOlderHistory = ref
+        .read(
+          conversationControllerProvider(
+            widget.selection.hostId,
+            current.id,
+          ).notifier,
+        )
+        .loadOlderHistory;
+    final sessionKey = 'conversation:${widget.selection.hostId}:${current.id}';
+    final readingPositions = ref.read(
+      conversationReadingPositionsProvider.notifier,
+    );
+    final readingPosition = ref.read(
+      conversationReadingPositionsProvider,
+    )[sessionKey];
     final agentsAsync = ref.watch(
       agentDefinitionsControllerProvider(widget.selection.hostId),
     );
@@ -1474,8 +1515,22 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             ),
             Expanded(
               child: ChatTimelineView(
-                pageStorageId:
-                    'conversation:${widget.selection.hostId}:${current.id}',
+                sessionKey: sessionKey,
+                readingPosition: readingPosition,
+                // Reported while the pane is being torn down, which is a
+                // widget life-cycle: the store has to be written after the
+                // tree settles rather than during it.
+                onReadingPositionChanged: (key, position) => scheduleMicrotask(
+                  () => readingPositions.remember(key, position),
+                ),
+                olderPageKey: paging.hasMoreOlder
+                    ? 'older:${paging.oldest}:${paging.attempt}'
+                    : null,
+                loadingOlder: paging.loading,
+                olderFailed: paging.failed,
+                // The list reports an edge from inside a scroll notification,
+                // and mutating a provider there is a build-phase write.
+                onLoadOlder: () => scheduleMicrotask(loadOlderHistory),
                 items: visibleItems,
                 busy: busy || optimistic,
                 loading: conversation.isLoading && !conversation.hasValue,

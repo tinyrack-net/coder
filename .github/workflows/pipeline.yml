@@ -377,6 +377,8 @@ jobs:
             scenario: relay
           - shard: conversation-adversity
             scenario: conversation-adversity
+          - shard: conversation-history
+            scenario: conversation-history
           - shard: conversation
             scenario: conversation
           - shard: provider
@@ -1188,6 +1190,7 @@ jobs:
           - project-worktree
           - relay
           - conversation-adversity
+          - conversation-history
           - conversation
           - provider
           - settings-desktop

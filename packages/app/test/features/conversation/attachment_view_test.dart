@@ -39,7 +39,7 @@ void main() {
           supportedLocales: testSupportedLocales,
           home: Scaffold(
             body: ChatTimelineView(
-              pageStorageId: 'attachment-view-test',
+              sessionKey: 'attachment-view-test',
               busy: false,
               items: <ChatItem>[
                 ChatUserMessage(

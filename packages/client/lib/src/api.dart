@@ -1,5 +1,13 @@
 import 'package:protocol/protocol.dart';
 
+/// Timeline events requested per history page.
+///
+/// A session stores one row per streamed delta, so an unbounded history is
+/// unbounded in bytes too, and a relay drops a daemon whose frame exceeds its
+/// limit. This is the count that keeps one page comfortably under it while
+/// still filling a tall viewport in a single request.
+const int timelineHistoryPageSize = 200;
+
 /// Authenticated streaming attachment download.
 final class AttachmentDownload {
   /// Creates a download stream and response metadata.
@@ -198,9 +206,25 @@ abstract interface class SessionsApi {
   });
 
   /// Subscribes to a session timeline.
+  ///
+  /// A non-null [tailLimit] returns only the newest events rather than the
+  /// whole history, which is what keeps a long conversation's first frame off
+  /// the relay's frame-size limit.
   Future<List<TimelineEventDto>> subscribeTimeline(
     String sessionId, {
     int afterSequence = 0,
+    int? tailLimit,
+  });
+
+  /// Reads the page of history immediately preceding [beforeSequence].
+  ///
+  /// A pure read: it never moves the live delivery cursor, so paging backwards
+  /// cannot drop events arriving at the same time. An empty result means the
+  /// beginning of the conversation has been reached.
+  Future<List<TimelineEventDto>> readTimelineHistory(
+    String sessionId, {
+    required int beforeSequence,
+    required int limit,
   });
 }
 

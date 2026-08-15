@@ -281,3 +281,5 @@ tags:
   feature_test__tool_search_deferred__widget:
   feature_test__tool_clock__widget:
   feature_test__tool_search__widget:
+  feature_test__conversation_history_pagination__e2e:
+  feature_scenario__conversation_history_pagination__page_back__e2e:

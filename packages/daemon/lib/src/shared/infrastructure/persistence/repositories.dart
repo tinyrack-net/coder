@@ -213,6 +213,26 @@ abstract interface class TimelineRepository {
   /// The after public API member.
   Future<List<TimelineEventDto>> after(String sessionId, int sequence);
 
+  /// Newest events after [sequence], at most [limit] of them.
+  ///
+  /// The window is extended backwards to the start of its oldest turn, so a
+  /// turn is never delivered half-formed: a reader that receives an assistant
+  /// reply must receive the prompt and tool calls that produced it.
+  Future<List<TimelineEventDto>> tail(
+    String sessionId,
+    int sequence, {
+    required int limit,
+  });
+
+  /// The page of at most [limit] events immediately preceding [sequence].
+  ///
+  /// Turn-aligned like [tail], and empty once the beginning is reached.
+  Future<List<TimelineEventDto>> before(
+    String sessionId,
+    int sequence, {
+    required int limit,
+  });
+
   /// The appendProviderItems public API member.
   Future<void> appendProviderItems(
     String sessionId,

@@ -80,3 +80,5 @@ tags:
   feature_test__lua_tool_orchestration__contract:
   feature_test__lua_tool_orchestration__verticalSlice:
   feature_test__lua_tool_orchestration__platformSmoke:
+  feature_test__conversation_history_pagination__contract:
+  feature_test__conversation_history_pagination__verticalSlice:

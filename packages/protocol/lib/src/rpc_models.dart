@@ -616,14 +616,40 @@ abstract class UserQuestionAnswerParamsDto with _$UserQuestionAnswerParamsDto {
 /// TimelineSubscribeParamsDto defines a public contract.
 abstract class TimelineSubscribeParamsDto with _$TimelineSubscribeParamsDto {
   /// The TimelineSubscribeParamsDto public API member.
+  ///
+  /// A non-null [tailLimit] asks for only the newest events instead of the
+  /// whole history. It is optional because an unbounded subscribe is still the
+  /// right request for a caller that wants everything, such as the reconnect
+  /// catch-up that resumes from the last sequence it already saw.
   const factory TimelineSubscribeParamsDto({
     required String sessionId,
     required int afterSequence,
+    int? tailLimit,
   }) = _TimelineSubscribeParamsDto;
 
   /// Creates a [TimelineSubscribeParamsDto].
   factory TimelineSubscribeParamsDto.fromJson(Map<String, dynamic> json) =>
       _$TimelineSubscribeParamsDtoFromJson(json);
+}
+
+@freezed
+/// Request for the page of timeline history preceding a known sequence.
+///
+/// This is a pure read. It deliberately does not go through
+/// `sessions.subscribeTimeline`, whose parameters double as the live-delivery
+/// cursor: rewinding that cursor to fetch older events would drop every event
+/// the daemon emitted during the round trip.
+abstract class TimelineHistoryParamsDto with _$TimelineHistoryParamsDto {
+  /// Creates a timeline history request.
+  const factory TimelineHistoryParamsDto({
+    required String sessionId,
+    required int beforeSequence,
+    required int limit,
+  }) = _TimelineHistoryParamsDto;
+
+  /// Creates a [TimelineHistoryParamsDto].
+  factory TimelineHistoryParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$TimelineHistoryParamsDtoFromJson(json);
 }
 
 @freezed

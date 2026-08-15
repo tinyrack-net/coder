@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:agent/agent.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
@@ -920,11 +921,129 @@ class TimelineDao extends DatabaseAccessor<TinestDatabase>
 
   @override
   Future<List<TimelineEventDto>> after(String sessionId, int sequence) async =>
+      _ascending(sessionId, lowerExclusive: sequence);
+
+  @override
+  Future<List<TimelineEventDto>> tail(
+    String sessionId,
+    int sequence, {
+    required int limit,
+  }) async {
+    final newest = await _newest(
+      sessionId,
+      lowerExclusive: sequence,
+      limit: limit,
+    );
+    if (newest.isEmpty) return const <TimelineEventDto>[];
+    // Never reach back past what the caller already excluded: a tail is a
+    // window over the events it asked for, not a licence to resend older ones.
+    final start = await _turnStart(
+      sessionId,
+      newest.last,
+      floor: math.max(sequence + 1, newest.first.sequence - _span(limit) + 1),
+    );
+    return _ascending(
+      sessionId,
+      lowerExclusive: start - 1,
+      upperInclusive: newest.first.sequence,
+    );
+  }
+
+  @override
+  Future<List<TimelineEventDto>> before(
+    String sessionId,
+    int sequence, {
+    required int limit,
+  }) async {
+    final newest = await _newest(
+      sessionId,
+      upperExclusive: sequence,
+      limit: limit,
+    );
+    if (newest.isEmpty) return const <TimelineEventDto>[];
+    final start = await _turnStart(
+      sessionId,
+      newest.last,
+      floor: math.max(1, newest.first.sequence - _span(limit) + 1),
+    );
+    return _ascending(
+      sessionId,
+      lowerExclusive: start - 1,
+      upperInclusive: newest.first.sequence,
+    );
+  }
+
+  /// The hard ceiling on a window, alignment included.
+  ///
+  /// Turn alignment exists so a reply is never delivered without the prompt
+  /// that produced it, but a turn is not small: one streamed answer is one row
+  /// per delta and can run to thousands. Without this the alignment would undo
+  /// the limit it is extending, and the oversized frame that follows is the
+  /// failure paging exists to prevent. A turn longer than this is split, and
+  /// the reader closes the gap by paging again.
+  static int _span(int limit) => limit * 2;
+
+  /// The first sequence of [row]'s turn, floored at [floor].
+  ///
+  /// An event with no turn is its own boundary; nothing groups it.
+  Future<int> _turnStart(
+    String sessionId,
+    TimelineEvent row, {
+    required int floor,
+  }) async {
+    final turnId = row.turnId;
+    if (turnId == null) return row.sequence;
+    final query = selectOnly(timelineEvents)
+      ..addColumns(<Expression<Object>>[timelineEvents.sequence.min()])
+      ..where(
+        timelineEvents.sessionId.equals(sessionId) &
+            timelineEvents.turnId.equals(turnId),
+      );
+    final start =
+        (await query
+            .map((row) => row.read(timelineEvents.sequence.min()))
+            .getSingleOrNull()) ??
+        row.sequence;
+    return start < floor ? floor : start;
+  }
+
+  /// The [limit] highest sequences in range, newest first.
+  Future<List<TimelineEvent>> _newest(
+    String sessionId, {
+    required int limit,
+    int? lowerExclusive,
+    int? upperExclusive,
+  }) =>
+      (select(timelineEvents)
+            ..where(
+              (row) =>
+                  row.sessionId.equals(sessionId) &
+                  (lowerExclusive == null
+                      ? const Constant<bool>(true)
+                      : row.sequence.isBiggerThanValue(lowerExclusive)) &
+                  (upperExclusive == null
+                      ? const Constant<bool>(true)
+                      : row.sequence.isSmallerThanValue(upperExclusive)),
+            )
+            ..orderBy(<OrderClauseGenerator<$TimelineEventsTable>>[
+              (row) => OrderingTerm.desc(row.sequence),
+            ])
+            ..limit(limit))
+          .get();
+
+  Future<List<TimelineEventDto>> _ascending(
+    String sessionId, {
+    required int lowerExclusive,
+    int? upperInclusive,
+  }) async =>
       (await (select(timelineEvents)
                 ..where(
                   (row) =>
                       row.sessionId.equals(sessionId) &
-                      row.sequence.isBiggerThanValue(sequence),
+                      row.sequence.isBiggerThanValue(lowerExclusive) &
+                      (upperInclusive == null
+                          ? const Constant<bool>(true)
+                          : row.sequence.isSmallerOrEqualValue(upperInclusive)),
                 )
                 ..orderBy(<OrderClauseGenerator<$TimelineEventsTable>>[
                   (row) => OrderingTerm.asc(row.sequence),

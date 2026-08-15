@@ -1166,6 +1166,103 @@ void main() {
           .toList(growable: false);
       expect(subscriptions, hasLength(2));
       expect(subscriptions.last.payload['afterSequence'], 7);
+      expect(
+        subscriptions.last.payload['tailLimit'],
+        timelineHistoryPageSize,
+        reason:
+            'a long disconnect must not be caught up in one unbounded frame',
+      );
+    },
+  );
+
+  test(
+    'reading history never rewinds the live delivery cursor',
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__contract',
+    ],
+    () async {
+      final older = <TimelineEventDto>[
+        TimelineEventDto(
+          sessionId: 'agent',
+          sequence: 3,
+          type: 'assistant.delta',
+          data: const <String, dynamic>{'text': 'older'},
+          createdAt: DateTime.utc(2026, 8, 15),
+        ),
+      ];
+      final live = TimelineEventDto(
+        sessionId: 'agent',
+        sequence: 12,
+        type: 'assistant.delta',
+        data: const <String, dynamic>{'text': 'live'},
+        createdAt: DateTime.utc(2026, 8, 15, 1),
+      );
+      final connector = _TestConnector(
+        onConfigure: (peer, requests) {
+          _registerHello(peer, requests);
+          peer
+            ..registerMethod(sessionsSubscribeTimelineProcedure.name, (
+              json_rpc.Parameters parameters,
+            ) {
+              final request = TimelineSubscribeParamsDto.fromJson(
+                Map<String, dynamic>.from(parameters.asMap),
+              );
+              requests.add((
+                method: sessionsSubscribeTimelineProcedure.name,
+                payload: request.toJson(),
+              ));
+              return const TimelineResultDto(
+                events: <TimelineEventDto>[],
+              ).toJson();
+            })
+            ..registerMethod(sessionsTimelineHistoryProcedure.name, (
+              json_rpc.Parameters parameters,
+            ) {
+              final request = TimelineHistoryParamsDto.fromJson(
+                Map<String, dynamic>.from(parameters.asMap),
+              );
+              requests.add((
+                method: sessionsTimelineHistoryProcedure.name,
+                payload: request.toJson(),
+              ));
+              return TimelineResultDto(events: older).toJson();
+            });
+        },
+      );
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint.parse('ws://localhost/ws'),
+        credentials: const DaemonCredentials(bearerToken: 'token'),
+        clientId: 'client',
+        clientKind: 'test',
+        connector: connector,
+        reconnectDelay: (_) => Duration.zero,
+      );
+      addTearDown(client.close);
+      await client.subscribeTimeline('agent', afterSequence: 11);
+
+      final delivered = client.timelineEvents.first;
+      final page = await client.readTimelineHistory(
+        'agent',
+        beforeSequence: 4,
+        limit: 30,
+      );
+      expect(page.single.sequence, 3);
+      final history = connector.requests.singleWhere(
+        (request) => request.method == sessionsTimelineHistoryProcedure.name,
+      );
+      expect(history.payload['beforeSequence'], 4);
+      expect(history.payload['limit'], 30);
+
+      // The cursor still accepts 12: a backwards read must be invisible to
+      // live delivery, which a rewound subscribe cursor would not be.
+      connector.connections.single.peer.sendNotification(
+        sessionsTimelineEventNotification.name,
+        sessionsTimelineEventNotification.encode(live),
+      );
+      expect(
+        (await delivered.timeout(const Duration(seconds: 2))).sequence,
+        12,
+      );
     },
   );
 

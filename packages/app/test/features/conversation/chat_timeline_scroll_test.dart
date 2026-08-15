@@ -64,30 +64,37 @@ Future<void> _useDesktopViewport(WidgetTester tester) async {
   addTearDown(() => tester.binding.setSurfaceSize(null));
 }
 
+/// Stands in for the app's retained conversation reading positions.
+typedef _PositionStore = Map<String, TRVirtualListSnapshot<String>>;
+
 Future<void> _pumpTimeline(
   WidgetTester tester, {
   required List<ChatItem> items,
-  required PageStorageBucket bucket,
+  required _PositionStore positions,
   required String sessionId,
   bool busy = false,
   ChatAttachmentLoader? loadAttachment,
-}) => tester.pumpWidget(
-  ProviderScope(
-    overrides: [
-      externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
-    ],
-    child: MaterialApp(
-      theme: testLightTheme,
-      darkTheme: testDarkTheme,
-      locale: testLocale,
-      localizationsDelegates: testLocalizationsDelegates,
-      supportedLocales: testSupportedLocales,
-      builder: (context, child) => TinestUiDensity(child: child!),
-      home: Scaffold(
-        body: PageStorage(
-          bucket: bucket,
-          child: ChatTimelineView(
-            pageStorageId: 'conversation:$_hostId:$sessionId',
+}) {
+  final sessionKey = 'conversation:$_hostId:$sessionId';
+  return tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        externalUrlOpenerProvider.overrideWithValue(const _NoopUrlOpener()),
+      ],
+      child: MaterialApp(
+        theme: testLightTheme,
+        darkTheme: testDarkTheme,
+        locale: testLocale,
+        localizationsDelegates: testLocalizationsDelegates,
+        supportedLocales: testSupportedLocales,
+        builder: (context, child) => TinestUiDensity(child: child!),
+        home: Scaffold(
+          body: ChatTimelineView(
+            sessionKey: sessionKey,
+            readingPosition: positions[sessionKey],
+            onReadingPositionChanged: (key, position) => position == null
+                ? positions.remove(key)
+                : positions[key] = position,
             items: items,
             busy: busy,
             hostId: _hostId,
@@ -96,8 +103,8 @@ Future<void> _pumpTimeline(
         ),
       ),
     ),
-  ),
-);
+  );
+}
 
 Finder get _scrollable => find
     .descendant(
@@ -145,7 +152,6 @@ final class _StreamingConversationHarness extends StatefulWidget {
 
 final class _StreamingConversationHarnessState
     extends State<_StreamingConversationHarness> {
-  final PageStorageBucket _bucket = PageStorageBucket();
   final List<ChatItem> _history = _messages(24, prefix: 'composer-history');
   String? submittedPrompt;
   String _assistantMarkdown = '';
@@ -179,14 +185,11 @@ final class _StreamingConversationHarnessState
   Widget build(BuildContext context) => Column(
     children: [
       Expanded(
-        child: PageStorage(
-          bucket: _bucket,
-          child: ChatTimelineView(
-            pageStorageId: 'conversation:$_hostId:composer-streaming-session',
-            items: _items,
-            busy: _busy,
-            hostId: _hostId,
-          ),
+        child: ChatTimelineView(
+          sessionKey: 'conversation:$_hostId:composer-streaming-session',
+          items: _items,
+          busy: _busy,
+          hostId: _hostId,
         ),
       ),
       SessionComposer(
@@ -236,7 +239,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: history,
-        bucket: PageStorageBucket(),
+        positions: _PositionStore(),
         sessionId: 'spacing-session',
       );
       await tester.pumpAndSettle();
@@ -279,12 +282,12 @@ void main() {
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       final history = _messages(64);
       await _pumpTimeline(
         tester,
         items: <ChatItem>[...history, _streamingMessage('Starting')],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'anchor-session',
         busy: true,
       );
@@ -310,7 +313,7 @@ void main() {
             ).join('\n\n'),
           ),
         ],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'anchor-session',
         busy: true,
       );
@@ -340,13 +343,13 @@ void main() {
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       final history = _messages(24);
       const responseKey = ValueKey<String>('streaming-response');
       await _pumpTimeline(
         tester,
         items: <ChatItem>[...history, _streamingMessage('Starting')],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'pinned-session',
         busy: true,
       );
@@ -371,7 +374,7 @@ void main() {
             ).join('\n\n'),
           ),
         ],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'pinned-session',
         busy: true,
       );
@@ -456,11 +459,11 @@ void main() {
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       await _pumpTimeline(
         tester,
         items: <ChatItem>[..._messages(24), _disclosure()],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'disclosure-session',
       );
       await tester.pumpAndSettle();
@@ -493,7 +496,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: <ChatItem>[_disclosure()],
-        bucket: PageStorageBucket(),
+        positions: _PositionStore(),
         sessionId: 'underfilled-disclosure-session',
       );
       await tester.pumpAndSettle();
@@ -525,12 +528,12 @@ void main() {
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       final history = _messages(60);
       await _pumpTimeline(
         tester,
         items: history,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'follow-session',
       );
       await tester.pumpAndSettle();
@@ -547,7 +550,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: withFirstAppend,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'follow-session',
       );
 
@@ -569,7 +572,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: <ChatItem>[...withFirstAppend, latest],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'follow-session',
       );
 
@@ -596,11 +599,11 @@ void main() {
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       await _pumpTimeline(
         tester,
         items: <ChatItem>[_disclosure()],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'first-disclosure-session',
       );
       await tester.pumpAndSettle();
@@ -611,7 +614,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: <ChatItem>[_disclosure()],
-        bucket: bucket,
+        positions: positions,
         sessionId: 'second-disclosure-session',
       );
       await tester.pump();
@@ -625,7 +628,7 @@ void main() {
     tags: const <String>['feature_test__conversation_attachments__widget'],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       final firstBytes = Completer<Uint8List>();
       final secondBytes = Completer<Uint8List>();
       var firstLoads = 0;
@@ -647,7 +650,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: items,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'first-attachment-session',
         loadAttachment: (_) {
           firstLoads += 1;
@@ -660,7 +663,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: items,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'second-attachment-session',
         loadAttachment: (_) {
           secondLoads += 1;
@@ -675,19 +678,20 @@ void main() {
   );
 
   testWidgets(
-    'switching sessions restores each PageStorage history anchor',
+    'switching sessions restores the history anchor of a reader who left with '
+    'messages below them',
     tags: const <String>[
       'feature_test__turn_execution__widget',
       'ui_state__conversation_timeline__history_anchored__widget',
     ],
     (tester) async {
       await _useDesktopViewport(tester);
-      final bucket = PageStorageBucket();
+      final positions = _PositionStore();
       final firstSession = _messages(60, prefix: 'first');
       await _pumpTimeline(
         tester,
         items: firstSession,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'first-session',
       );
       await tester.pumpAndSettle();
@@ -704,7 +708,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: secondSession,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'second-session',
       );
       await tester.pumpAndSettle();
@@ -716,7 +720,7 @@ void main() {
       await _pumpTimeline(
         tester,
         items: firstSession,
-        bucket: bucket,
+        positions: positions,
         sessionId: 'first-session',
       );
       await tester.pumpAndSettle();
@@ -726,6 +730,51 @@ void main() {
         closeTo(saved.top, _geometryTolerance),
       );
       expect(find.byKey(const ValueKey<String>('second-35')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a session left at its newest message reopens there rather than on the '
+    'row that happened to be under the reader',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final history = _messages(60, prefix: 'latest');
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: 'latest-session',
+      );
+      await tester.pumpAndSettle();
+      _expectTrailingPinned(tester, reason: 'first entry');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      expect(
+        positions,
+        isEmpty,
+        reason: 'a reader at the end has no position worth restoring',
+      );
+
+      // Messages that arrived while away must not be hidden behind a restored
+      // anchor: the reader asked for the end, so the end is what they get.
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[
+          ...history,
+          ..._messages(4, prefix: 'arrived'),
+        ],
+        positions: positions,
+        sessionId: 'latest-session',
+      );
+      await tester.pumpAndSettle();
+
+      _expectTrailingPinned(tester, reason: 're-entry after new messages');
+      expect(find.byKey(const ValueKey<String>('arrived-3')), findsOneWidget);
     },
   );
 }

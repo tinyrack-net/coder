@@ -23,8 +23,14 @@ class ChatTimelineView extends StatefulWidget {
   const ChatTimelineView({
     required this.items,
     required this.busy,
-    required this.pageStorageId,
+    required this.sessionKey,
     this.loading = false,
+    this.readingPosition,
+    this.onReadingPositionChanged,
+    this.olderPageKey,
+    this.loadingOlder = false,
+    this.olderFailed = false,
+    this.onLoadOlder,
     this.hostId,
     this.planActionBuilder,
     this.loadAttachment,
@@ -38,8 +44,41 @@ class ChatTimelineView extends StatefulWidget {
   /// Whether the session is currently running a turn.
   final bool busy;
 
-  /// Stable restoration identity for this conversation's scroll position.
-  final String pageStorageId;
+  /// Stable identity of the conversation being rendered.
+  ///
+  /// Per-conversation view state — disclosure expansion, attachment futures,
+  /// row identity, the reading position — is scoped to this rather than to the
+  /// widget's own lifetime, which does not survive a tab switch.
+  final String sessionKey;
+
+  /// Reading position to restore, or null to open at the newest message.
+  final TRVirtualListSnapshot<String>? readingPosition;
+
+  /// Reports the position worth restoring for a conversation being left.
+  ///
+  /// A null snapshot means the reader was at the newest message and should
+  /// arrive there again rather than at whatever row they last stopped on.
+  final void Function(
+    String sessionKey,
+    TRVirtualListSnapshot<String>? position,
+  )?
+  onReadingPositionChanged;
+
+  /// Identity of the next page of older history, or null when there is none.
+  ///
+  /// It must change whenever the same page becomes requestable again, because
+  /// the list asks for each identity exactly once for its whole lifetime — a
+  /// page that failed is otherwise unreachable.
+  final Object? olderPageKey;
+
+  /// Whether a page of older history is in flight.
+  final bool loadingOlder;
+
+  /// Whether the last page of older history failed to load.
+  final bool olderFailed;
+
+  /// Called when the reader approaches the oldest loaded message.
+  final VoidCallback? onLoadOlder;
 
   /// Whether history is still loading and no snapshot has ever arrived.
   ///
@@ -72,19 +111,99 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
       <String, Future<Uint8List>>{};
   final TRVirtualListController<String> _virtualListController =
       TRVirtualListController<String>();
+  // The position to hand back when this conversation is left, kept current
+  // while the list is laid out because `deactivate` is too late to ask it
+  // anything: by then the sliver may already be detached.
+  //
+  // Null means the reader is at the newest message. Their next entry belongs
+  // at the end, not on the row they last stopped on — and a list shorter than
+  // its viewport must never be snapshotted at all, because the inset that
+  // bottom-aligns it is baked into the anchor offset and cannot be reproduced
+  // once the conversation grows past the viewport.
+  TRVirtualListSnapshot<String>? _readingPosition;
+  // Rows currently handed to the list, which is zero whenever the skeleton or
+  // the empty state replaced it and there is therefore nothing to snapshot.
+  int _entryCount = 0;
 
   @override
   void didUpdateWidget(covariant ChatTimelineView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.pageStorageId == widget.pageStorageId) return;
+    if (oldWidget.sessionKey == widget.sessionKey) return;
+    _reportReadingPosition(oldWidget.sessionKey);
+    _readingPosition = null;
     _expanded.clear();
     _attachmentCache.clear();
+  }
+
+  @override
+  void deactivate() {
+    _reportReadingPosition(widget.sessionKey);
+    super.deactivate();
   }
 
   @override
   void dispose() {
     _virtualListController.dispose();
     super.dispose();
+  }
+
+  /// Hands the position of [sessionKey] back to whoever retains it.
+  void _reportReadingPosition(String sessionKey) =>
+      widget.onReadingPositionChanged?.call(sessionKey, _readingPosition);
+
+  /// The "load earlier messages" edge, or null when there is nothing above.
+  ///
+  /// Null matters as much as the object: an underfilled list already sits at
+  /// its leading edge, so a request that exists is a request that fires
+  /// immediately — every short conversation would spend a round trip proving
+  /// it has no history.
+  ///
+  /// It carries no slot. A row occupying the leading edge is content directly
+  /// above the reader: the list anchors to it, and once it is the anchor a
+  /// page landing underneath leaves the viewport where it is, sending the
+  /// reader back to the oldest message instead of holding their place. The
+  /// progress it would have shown is overlaid in [build] instead, outside the
+  /// scrollable, where appearing and disappearing moves nothing.
+  TRVirtualListEdgeRequest? _olderPageRequest() {
+    final pageKey = widget.olderPageKey;
+    final load = widget.onLoadOlder;
+    if (pageKey == null || load == null) return null;
+    return TRVirtualListEdgeRequest(
+      requestKey: pageKey,
+      onRequest: load,
+      triggerExtent: const TRVirtualListTriggerExtent.viewports(2),
+    );
+  }
+
+  /// Progress for an in-flight or failed page of older history.
+  Widget? _olderPageStatus(BuildContext context) {
+    if (!widget.loadingOlder && !widget.olderFailed) return null;
+    final l10n = AppLocalizations.of(context);
+    return IgnorePointer(
+      child: _ChatTimelineContentColumn(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: TRSpacing.extraLarge,
+            vertical: TRSpacing.small,
+          ),
+          child: TRChatStatusRow(
+            label: widget.olderFailed
+                ? l10n.conversationLoadOlderFailed
+                : l10n.conversationLoadingOlder,
+            status: widget.olderFailed
+                ? TRChatToolStatus.failed
+                : TRChatToolStatus.running,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onVisibleRangeChanged(TRVirtualListRange<String> range) {
+    final hasUnreadBelow = range.lastIndex < _entryCount - 1;
+    _readingPosition = hasUnreadBelow
+        ? _virtualListController.takeSnapshot()
+        : null;
   }
 
   /// Folds or unfolds a row while holding it still on screen.
@@ -134,6 +253,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         (items.last as ChatReasoningActivity).isStreaming;
     final showRunning = busy && !reasoningActive;
     if (widget.loading && items.isEmpty) {
+      _entryCount = 0;
       return _ChatTimelineContentColumn(
         child: ChatTimelineSkeleton(
           semanticLabel: AppLocalizations.of(context).conversationLoading,
@@ -141,21 +261,30 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
       );
     }
     if (items.isEmpty && !busy) {
+      _entryCount = 0;
       return const _ChatTimelineContentColumn(child: ChatEmptyState());
     }
     final entries = <_ChatTimelineEntry>[
       for (final item in items) _ChatTimelineItemEntry(item),
       if (showRunning) const _ChatTimelineRunningEntry(),
     ];
-    return TRVirtualList<_ChatTimelineEntry, String>(
+    _entryCount = entries.length;
+    final olderStatus = _olderPageStatus(context);
+    final list = TRVirtualList<_ChatTimelineEntry, String>(
       items: entries,
       itemKey: (entry) => entry.key,
       estimatedItemExtent: _estimatedItemExtent,
       controller: _virtualListController,
+      // No `pageStorageId`: the component's own restore outranks
+      // `initialPosition`, so a conversation that was ever shorter than its
+      // viewport reopens pinned to its oldest message forever. Restoration is
+      // owned here instead, and only offered when it is what the reader wants.
       initialPosition: const TRVirtualListInitialPosition<String>.trailing(),
+      initialSnapshot: widget.readingPosition,
       follow: TRVirtualListFollow.trailing,
       scrollCacheExtent: const .viewport(4),
-      pageStorageId: widget.pageStorageId,
+      onVisibleRangeChanged: _onVisibleRangeChanged,
+      leadingEdgeRequest: _olderPageRequest(),
       itemBuilder: (context, entry, index) {
         final content = switch (entry) {
           _ChatTimelineRunningEntry() => const ChatRunningIndicator(),
@@ -181,7 +310,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
                     ? const EdgeInsets.only(bottom: TRSpacing.large)
                     : const EdgeInsets.only(bottom: TRSpacing.small)),
             child: KeyedSubtree(
-              key: ValueKey<String>(widget.pageStorageId),
+              key: ValueKey<String>(widget.sessionKey),
               child: KeyedSubtree(
                 key: ValueKey<String>(entry.key),
                 child: content,
@@ -190,6 +319,17 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           ),
         );
       },
+    );
+    // The stack is unconditional: making it appear only while a page is in
+    // flight would re-inflate the list beneath it, and one controller drives
+    // exactly one list at a time.
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        list,
+        if (olderStatus != null)
+          Positioned(top: 0, left: 0, right: 0, child: olderStatus),
+      ],
     );
   }
 }

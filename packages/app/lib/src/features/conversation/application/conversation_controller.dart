@@ -65,10 +65,31 @@ final class ConversationState {
     this.queued = const <QueuedTurn>[],
     this.questions = const <String, UserQuestionRequestDto>{},
     this.goal,
+    this.hasMoreOlder = false,
+    this.loadingOlder = false,
+    this.olderFailed = false,
+    this.olderAttempt = 0,
   });
 
-  /// The timeline public API member.
+  /// Loaded events, oldest first. A window, not necessarily the whole history.
   final List<TimelineEventDto> timeline;
+
+  /// Whether events exist before [timeline].
+  final bool hasMoreOlder;
+
+  /// Whether a page of older events is in flight.
+  final bool loadingOlder;
+
+  /// Whether the most recent page attempt failed.
+  final bool olderFailed;
+
+  /// Failed page attempts, which the view folds into its request identity so a
+  /// page that errored can be asked for again.
+  final int olderAttempt;
+
+  /// Sequence of the oldest loaded event, or zero when nothing is loaded.
+  int get oldestLoadedSequence =>
+      timeline.isEmpty ? 0 : timeline.first.sequence;
 
   /// The approvals public API member.
   final Map<String, ApprovalRequestDto> approvals;
@@ -90,12 +111,20 @@ final class ConversationState {
     Map<String, UserQuestionRequestDto>? questions,
     GoalDto? goal,
     bool clearGoal = false,
+    bool? hasMoreOlder,
+    bool? loadingOlder,
+    bool? olderFailed,
+    int? olderAttempt,
   }) => ConversationState(
     timeline: timeline ?? this.timeline,
     approvals: approvals ?? this.approvals,
     queued: queued ?? this.queued,
     questions: questions ?? this.questions,
     goal: clearGoal ? null : goal ?? this.goal,
+    hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
+    loadingOlder: loadingOlder ?? this.loadingOlder,
+    olderFailed: olderFailed ?? this.olderFailed,
+    olderAttempt: olderAttempt ?? this.olderAttempt,
   );
 }
 
@@ -124,7 +153,15 @@ class ConversationController extends _$ConversationController {
     if (api == null || sessionId == null) {
       return const ConversationState();
     }
-    final timeline = await api.sessions.subscribeTimeline(sessionId);
+    // Only the newest page: a session stores one row per streamed delta, so
+    // the whole history is both a slow first frame and, over a relay, a frame
+    // large enough to get the daemon dropped. The daemon aligns the window to
+    // a turn boundary, which is also what guarantees the newest `user.message`
+    // is present for `_syncPendingFirstTurn` below.
+    final timeline = await api.sessions.subscribeTimeline(
+      sessionId,
+      tailLimit: timelineHistoryPageSize,
+    );
     _timelineEvents = api.sessions.timelineEvents.listen(_handleTimeline);
     _approvalEvents = api.sessions.approvalRequests.listen(_handleApproval);
     _sessionEvents = api.sessions.sessionUpdates.listen(_handleSession);
@@ -145,10 +182,65 @@ class ConversationController extends _$ConversationController {
       ..onDispose(() => _drainRetry?.cancel());
     return ConversationState(
       timeline: timeline,
+      // Blocking cards belong to the turn that is still running, and the
+      // window always contains that turn whole, so folding the window rather
+      // than the whole history cannot lose one.
       approvals: _pendingApprovals(timeline),
       questions: _pendingQuestions(timeline),
       goal: goal,
+      hasMoreOlder: timeline.isNotEmpty && timeline.first.sequence > 1,
     );
+  }
+
+  /// Loads the page of history preceding the oldest loaded event.
+  ///
+  /// A failure leaves the loaded timeline untouched and bumps [
+  /// ConversationState.olderAttempt] so the same page can be requested again;
+  /// the view's request identity is otherwise stable and would never re-arm.
+  Future<void> loadOlderHistory() async {
+    final sessionId = _sessionId;
+    final current = _currentEventState;
+    if (sessionId == null || current == null) return;
+    if (current.loadingOlder || !current.hasMoreOlder) return;
+    final cursor = current.oldestLoadedSequence;
+    if (cursor <= 1) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(loadingOlder: true),
+    );
+    try {
+      final api = await requireHostApi(ref, hostId);
+      final page = await api.sessions.readTimelineHistory(
+        sessionId,
+        beforeSequence: cursor,
+        limit: timelineHistoryPageSize,
+      );
+      final live = _currentEventState;
+      if (live == null) return;
+      // Re-read the cursor: a reconnect may have rewound the window while the
+      // page was in flight, and the projector sorts but does not de-duplicate.
+      final older = page
+          .where((event) => event.sequence < live.oldestLoadedSequence)
+          .toList(growable: false);
+      final timeline = <TimelineEventDto>[...older, ...live.timeline];
+      state = AsyncData<ConversationState>(
+        live.copyWith(
+          timeline: timeline,
+          loadingOlder: false,
+          olderFailed: false,
+          hasMoreOlder: timeline.isNotEmpty && timeline.first.sequence > 1,
+        ),
+      );
+    } on Object {
+      final live = _currentEventState;
+      if (live == null) return;
+      state = AsyncData<ConversationState>(
+        live.copyWith(
+          loadingOlder: false,
+          olderFailed: true,
+          olderAttempt: live.olderAttempt + 1,
+        ),
+      );
+    }
   }
 
   /// Starts a fresh goal generation.
@@ -496,12 +588,41 @@ class ConversationController extends _$ConversationController {
     if (event.type == 'approval.resolved') {
       approvals.remove(event.data['approvalId']);
     }
-    final timeline = <TimelineEventDto>[...current.timeline, event];
+    // Applied as a delta rather than re-folded from the timeline. A question
+    // delivered by its own notification is not in the loaded window, and
+    // recomputing would erase it on the very next delta.
+    final questions = Map<String, UserQuestionRequestDto>.of(current.questions);
+    final request = _questionFromTimeline(event);
+    if (request != null && request.status == UserQuestionStatus.pending) {
+      questions[request.id] = request;
+    }
+    if (event.type == 'userQuestion.answered') {
+      questions.remove(event.data['requestId']);
+    }
+    if (event.type == 'turn.completed' ||
+        event.type == 'turn.failed' ||
+        event.type == 'turn.cancelled') {
+      // The daemon cancels a blocked question on restart without writing an
+      // answer, so a card whose turn ended can never be resolved.
+      questions.removeWhere((_, item) => item.turnId == event.turnId);
+    }
+    // A bounded reconnect catch-up can resume above the last event seen. The
+    // events between are real but unloaded, so the window restarts here rather
+    // than pretending the timeline is contiguous; the reader pages back for
+    // the rest.
+    final resumed =
+        current.timeline.isNotEmpty &&
+        event.sequence > current.timeline.last.sequence + 1;
+    final timeline = <TimelineEventDto>[
+      if (!resumed) ...current.timeline,
+      event,
+    ];
     state = AsyncData<ConversationState>(
       current.copyWith(
         timeline: timeline,
         approvals: approvals,
-        questions: _pendingQuestions(timeline),
+        questions: questions,
+        hasMoreOlder: current.hasMoreOlder || (resumed && event.sequence > 1),
       ),
     );
   }

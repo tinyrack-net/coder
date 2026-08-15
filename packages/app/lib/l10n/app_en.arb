@@ -462,6 +462,14 @@
   "@conversationLoading": {
     "description": "Announced once for the chat timeline skeleton shown while session history loads."
   },
+  "conversationLoadingOlder": "Loading earlier messages",
+  "@conversationLoadingOlder": {
+    "description": "Row shown above the oldest loaded message while an earlier page of chat history is being fetched."
+  },
+  "conversationLoadOlderFailed": "Could not load earlier messages",
+  "@conversationLoadOlderFailed": {
+    "description": "Row shown above the oldest loaded message when fetching an earlier page of chat history failed."
+  },
   "directoryBrowserLoading": "Loading directories",
   "@directoryBrowserLoading": {
     "description": "Announced once for the row skeletons shown while the first directory listing loads."

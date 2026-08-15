@@ -1262,6 +1262,50 @@ void main() {
   });
 
   test(
+    'history pagination contracts round-trip',
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__contract',
+    ],
+    () {
+      // An unbounded subscribe stays expressible: the daemon's existing
+      // full-history callers must keep working untouched.
+      _roundTrip(
+        const TimelineSubscribeParamsDto(
+          sessionId: 'agent',
+          afterSequence: 0,
+        ),
+        (value) => value.toJson(),
+        TimelineSubscribeParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TimelineSubscribeParamsDto(
+          sessionId: 'agent',
+          afterSequence: 0,
+          tailLimit: 200,
+        ),
+        (value) => value.toJson(),
+        TimelineSubscribeParamsDto.fromJson,
+      );
+      _roundTrip(
+        const TimelineHistoryParamsDto(
+          sessionId: 'agent',
+          beforeSequence: 900,
+          limit: 200,
+        ),
+        (value) => value.toJson(),
+        TimelineHistoryParamsDto.fromJson,
+      );
+
+      expect(sessionsTimelineHistoryProcedure.name, 'sessions.timelineHistory');
+      expect(sessionsProcedures, contains(sessionsTimelineHistoryProcedure));
+      expect(
+        rpcProcedures.map((procedure) => procedure.name),
+        contains('sessions.timelineHistory'),
+      );
+    },
+  );
+
+  test(
     'attachment contracts round-trip',
     tags: const <String>['feature_test__conversation_attachments__contract'],
     () {

@@ -637,6 +637,7 @@ _TimelineSubscribeParamsDto _$TimelineSubscribeParamsDtoFromJson(
 ) => _TimelineSubscribeParamsDto(
   sessionId: json['sessionId'] as String,
   afterSequence: (json['afterSequence'] as num).toInt(),
+  tailLimit: (json['tailLimit'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$TimelineSubscribeParamsDtoToJson(
@@ -644,6 +645,23 @@ Map<String, dynamic> _$TimelineSubscribeParamsDtoToJson(
 ) => <String, dynamic>{
   'sessionId': instance.sessionId,
   'afterSequence': instance.afterSequence,
+  'tailLimit': instance.tailLimit,
+};
+
+_TimelineHistoryParamsDto _$TimelineHistoryParamsDtoFromJson(
+  Map<String, dynamic> json,
+) => _TimelineHistoryParamsDto(
+  sessionId: json['sessionId'] as String,
+  beforeSequence: (json['beforeSequence'] as num).toInt(),
+  limit: (json['limit'] as num).toInt(),
+);
+
+Map<String, dynamic> _$TimelineHistoryParamsDtoToJson(
+  _TimelineHistoryParamsDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'beforeSequence': instance.beforeSequence,
+  'limit': instance.limit,
 };
 
 _WorkspaceCatalogResultDto _$WorkspaceCatalogResultDtoFromJson(

@@ -357,6 +357,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get conversationLoading => '대화 불러오는 중';
 
   @override
+  String get conversationLoadingOlder => '이전 메시지 불러오는 중';
+
+  @override
+  String get conversationLoadOlderFailed => '이전 메시지를 불러오지 못했어요';
+
+  @override
   String get directoryBrowserLoading => '디렉터리 불러오는 중';
 
   @override

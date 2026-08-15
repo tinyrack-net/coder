@@ -154,6 +154,20 @@ final sessionsSubscribeTimelineProcedure =
     );
 
 /// Typed v4 transport descriptor.
+///
+/// Read-only: unlike `sessions.subscribeTimeline` this never moves the live
+/// delivery cursor, so paging backwards through history cannot swallow events
+/// arriving in the same moment.
+final sessionsTimelineHistoryProcedure =
+    RpcProcedure<TimelineHistoryParamsDto, TimelineResultDto>(
+      name: 'sessions.timelineHistory',
+      decodeParams: TimelineHistoryParamsDto.fromJson,
+      encodeParams: (value) => value.toJson(),
+      decodeResult: TimelineResultDto.fromJson,
+      encodeResult: (value) => value.toJson(),
+    );
+
+/// Typed v4 transport descriptor.
 final sessionsTimelineEventNotification = RpcNotification<TimelineEventDto>(
   name: 'sessions.timelineEvent',
   decode: TimelineEventDto.fromJson,
@@ -214,6 +228,7 @@ final sessionsProcedures = <RpcProcedureDescriptor>[
   sessionsAnswerQuestionProcedure,
   sessionsNotePendingInputProcedure,
   sessionsSubscribeTimelineProcedure,
+  sessionsTimelineHistoryProcedure,
 ];
 
 /// Feature-owned descriptor catalog.
