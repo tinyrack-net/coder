@@ -253,7 +253,7 @@ final class NativePluginRevisionCache implements PluginRevisionCache {
       final temporary = Directory(
         p.join(
           pluginRoot.path,
-          '.${bundle.revision.contentHash}.$pid.tmp',
+          '.${bundle.revision.contentHash}.$pid.${_nextStagingId()}.tmp',
         ),
       );
       await temporary.create();
@@ -270,8 +270,16 @@ final class NativePluginRevisionCache implements PluginRevisionCache {
           await target.parent.create(recursive: true);
           await target.writeAsBytes(entry.value, flush: true);
         }
-        await temporary.rename(revisionDirectory.path);
-        moved = true;
+        try {
+          await temporary.rename(revisionDirectory.path);
+          moved = true;
+        } on FileSystemException {
+          // Revisions are content-addressed, so a concurrent writer that
+          // renamed the same revision first has produced byte-identical
+          // content; losing the rename race is success, anything else is a
+          // real filesystem failure.
+          if (!revisionDirectory.existsSync()) rethrow;
+        }
       } finally {
         if (!moved && temporary.existsSync()) {
           await temporary.delete(recursive: true);
@@ -1100,13 +1108,41 @@ void _requireWithin(String root, String candidate) {
   }
 }
 
+/// Monotonic staging counter.
+///
+/// Temporary names carry it beside the process ID so concurrent writers in
+/// one daemon never share a staging path; the process ID alone collided when
+/// two turns stored the same revision together.
+int _stagingSequence = 0;
+
+int _nextStagingId() => _stagingSequence += 1;
+
 Future<void> _writeAtomic(File target, String contents) async {
   final temporary = File(
-    '${target.path}.$pid.tmp',
+    '${target.path}.$pid.${_nextStagingId()}.tmp',
   );
   try {
     await temporary.writeAsString(contents, flush: true);
-    await temporary.rename(target.path);
+    for (var attempt = 1; ; attempt += 1) {
+      try {
+        await temporary.rename(target.path);
+        return;
+      } on FileSystemException {
+        // Windows denies replacing a destination while a concurrent writer
+        // is replacing it at the same instant. Pointer writes for one
+        // revision carry identical content, so the write has succeeded once
+        // the destination carries this content; otherwise yield to let the
+        // competing replace finish and retry, and only a destination that
+        // never converges is a real filesystem failure.
+        try {
+          if (await target.readAsString() == contents) return;
+        } on FileSystemException {
+          // Destination unreadable mid-replacement; retry below.
+        }
+        if (attempt >= 32) rethrow;
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
   } finally {
     if (temporary.existsSync()) await temporary.delete();
   }
