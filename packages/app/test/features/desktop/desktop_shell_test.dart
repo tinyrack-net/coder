@@ -23,6 +23,7 @@ void main() {
             },
             readyToShow: (onReady) => onReady(),
             hideWindow: () async {},
+            windowIsVisible: () async => false,
           );
           await window.prepare(startHidden: true);
           return (window, hidden);
@@ -86,11 +87,19 @@ void main() {
         var initialized = 0;
         var shown = 0;
         var hidden = 0;
+        var nativeVisible = false;
         final window = PluginDesktopWindow(
           initialize: () async => initialized += 1,
           readyToShow: (onReady) => onReady(),
-          showWindow: () async => shown += 1,
-          hideWindow: () async => hidden += 1,
+          showWindow: () async {
+            shown += 1;
+            nativeVisible = true;
+          },
+          hideWindow: () async {
+            hidden += 1;
+            nativeVisible = false;
+          },
+          windowIsVisible: () async => nativeVisible,
         );
 
         await window.prepare(startHidden: false);
@@ -112,10 +121,18 @@ void main() {
       () async {
         var shown = 0;
         var hidden = 0;
+        var nativeVisible = true;
         final listeners = <WindowListener>[];
         final window = PluginDesktopWindow(
-          showWindow: () async => shown += 1,
-          hideWindow: () async => hidden += 1,
+          showWindow: () async {
+            shown += 1;
+            nativeVisible = true;
+          },
+          hideWindow: () async {
+            hidden += 1;
+            nativeVisible = false;
+          },
+          windowIsVisible: () async => nativeVisible,
           preventClose: ({required prevent}) async {},
           addWindowListener: listeners.add,
           removeWindowListener: listeners.remove,
@@ -187,41 +204,81 @@ void main() {
       () async {
         var shown = 0;
         var hidden = 0;
+        var nativeVisible = false;
         final window = PluginDesktopWindow(
-          showWindow: () async => shown += 1,
-          hideWindow: () async => hidden += 1,
-          windowIsVisible: () async => true,
+          showWindow: () async {
+            shown += 1;
+            nativeVisible = true;
+          },
+          hideWindow: () async {
+            hidden += 1;
+            nativeVisible = false;
+          },
+          windowIsVisible: () async => nativeVisible,
         );
 
         await window.show();
-        await window.hide();
         expect(await window.isVisible(), isTrue);
+        await window.hide();
+        expect(await window.isVisible(), isFalse);
         expect(<int>[shown, hidden], <int>[1, 1]);
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );
 
+    for (final platform in <TargetPlatform>[
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+    ]) {
+      test(
+        '$platform hide retries while the native window remains visible',
+        () async {
+          var hidden = 0;
+          var nativeVisible = true;
+          final waits = <Duration>[];
+          final window = PluginDesktopWindow(
+            platform: platform,
+            hideWindow: () async {
+              hidden += 1;
+              if (hidden == 3) nativeVisible = false;
+            },
+            windowIsVisible: () async => nativeVisible,
+            waitForWindowState: (duration) async => waits.add(duration),
+          );
+
+          await window.hide();
+
+          expect(hidden, 3);
+          expect(waits, hasLength(2));
+          expect(window.visible.value, isFalse);
+        },
+        tags: const <String>['feature_test__desktop_residency__unit'],
+      );
+    }
+
     test(
-      'Linux hide retries while the native window remains visible',
+      'a hidden prepare confirms the native window really hid',
       () async {
         var hidden = 0;
         var nativeVisible = true;
-        final waits = <Duration>[];
         final window = PluginDesktopWindow(
-          platform: TargetPlatform.linux,
+          platform: TargetPlatform.macOS,
+          initialize: () async {},
+          readyToShow: (onReady) => onReady(),
           hideWindow: () async {
             hidden += 1;
-            if (hidden == 3) nativeVisible = false;
+            if (hidden == 2) nativeVisible = false;
           },
           windowIsVisible: () async => nativeVisible,
-          waitForWindowState: (duration) async => waits.add(duration),
+          waitForWindowState: (_) async {},
         );
 
-        await window.hide();
+        await window.prepare(startHidden: true);
 
-        expect(hidden, 3);
-        expect(waits, hasLength(2));
+        expect(hidden, 2);
         expect(window.visible.value, isFalse);
+        expect(await window.isVisible(), isFalse);
       },
       tags: const <String>['feature_test__desktop_residency__unit'],
     );
