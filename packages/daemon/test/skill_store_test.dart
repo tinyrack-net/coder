@@ -477,9 +477,15 @@ void main() {
 
       final catalog = await service.viewFor(project.path);
 
-      expect(catalog.implicitInstructions, contains('Before writing code'));
       expect(
-        catalog.implicitInstructions,
+        catalog.implicitSkillDocuments().single.instructions,
+        contains('Before writing code'),
+      );
+      expect(
+        catalog
+            .implicitSkillDocuments()
+            .map((document) => document.instructions)
+            .join('\n\n'),
         isNot(contains('Project instructions.')),
       );
       expect(

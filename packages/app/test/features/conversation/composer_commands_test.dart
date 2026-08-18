@@ -272,20 +272,16 @@ void main() {
     );
 
     test(
-      'goal command preserves its objective or management verb',
+      'host command catalog leaves goal behavior to plugins',
       () {
-        final objective = parseComposerCommand(
-          '/goal finish the full feature',
-          clientComposerCommands,
-        )!;
-        final pause = parseComposerCommand(
-          '/goal pause',
-          clientComposerCommands,
-        )!;
-
-        expect(objective.command.action, ClientCommandAction.goal);
-        expect(objective.arguments, 'finish the full feature');
-        expect(pause.arguments, 'pause');
+        expect(
+          clientComposerCommands.any((command) => command.name == 'goal'),
+          isFalse,
+        );
+        expect(
+          parseComposerCommand('/goal pause', clientComposerCommands),
+          isNull,
+        );
       },
       tags: const <String>['feature_test__session_goal__unit'],
     );

@@ -11,19 +11,19 @@ final class AttachmentHttpTransport implements AttachmentHttpBinding {
 
   final AttachmentService _attachments;
 
-  /// Whether [request] targets the v4 attachment route.
+  /// Whether [request] targets the v5 attachment route.
   @override
   bool matches(Request request) =>
-      request.url.path == 'v4/attachments' ||
+      request.url.path == 'v5/attachments' ||
       (request.url.pathSegments.length >= 2 &&
-          request.url.pathSegments[0] == 'v4' &&
+          request.url.pathSegments[0] == 'v5' &&
           request.url.pathSegments[1] == 'attachments');
 
   /// Handles an authenticated attachment request.
   @override
   Future<Response> call(Request request, Map<String, String> cors) async {
     try {
-      if (request.method == 'POST' && request.url.path == 'v4/attachments') {
+      if (request.method == 'POST' && request.url.path == 'v5/attachments') {
         final encodedName = request.headers['x-file-name'];
         final contentLength = int.tryParse(
           request.headers['content-length'] ?? '',

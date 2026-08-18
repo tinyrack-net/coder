@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan.dart';
+import 'package:app/src/features/plugins/application/plugin_ui_events.dart';
 import 'package:protocol/protocol.dart';
 
 /// Loads authenticated attachment bytes for preview.
@@ -136,22 +136,18 @@ final class ChatReasoningActivity extends ChatItem {
   final bool isStreaming;
 }
 
-/// A plan the agent recorded with the `update_plan` tool.
-final class ChatPlanProposal extends ChatItem {
-  /// Creates a plan proposal.
-  const ChatPlanProposal({
+/// A declarative plugin UI snapshot persisted with the conversation event.
+final class ChatPluginUiDocument extends ChatItem {
+  /// Creates a historical plugin UI timeline item.
+  const ChatPluginUiDocument({
     required super.key,
     required super.turnId,
     required super.createdAt,
-    required this.steps,
-    required this.explanation,
+    required this.document,
   });
 
-  /// The plan's steps in execution order; never empty.
-  final List<ChatPlanStep> steps;
-
-  /// Why the plan looks like this; empty when the agent gave no rationale.
-  final String explanation;
+  /// Exact revision-pinned document recorded when the event was emitted.
+  final PluginUiDocumentDto document;
 }
 
 /// Lifecycle shared by actionable conversation rows.
@@ -225,6 +221,7 @@ final class ChatToolActivity extends ChatItem {
     required this.toolName,
     required this.arguments,
     required this.status,
+    this.presentation = const <String, dynamic>{},
     this.output,
     this.error,
     this.isError = false,
@@ -238,6 +235,9 @@ final class ChatToolActivity extends ChatItem {
 
   /// Requested arguments; empty when only the result survived in history.
   final Map<String, dynamic> arguments;
+
+  /// Immutable presentation metadata captured from the pinned contribution.
+  final Map<String, dynamic> presentation;
 
   /// Lifecycle state of this call.
   final ChatToolStatus status;
@@ -350,31 +350,6 @@ final class ChatSleep extends ChatItem {
   final String? reason;
 }
 
-/// The point where `new_context` discarded the model's history.
-///
-/// The conversation above it stays on screen: only the model forgot it.
-final class ChatContextReset extends ChatItem {
-  /// Creates a context reset divider.
-  const ChatContextReset({
-    required super.key,
-    required super.turnId,
-    required super.createdAt,
-  });
-}
-
-/// The point where the model's history was replaced by a summary of itself.
-///
-/// Unlike [ChatContextReset] the work above was carried forward rather than
-/// dropped, so the two read differently even though both retire a window.
-final class ChatContextCompacted extends ChatItem {
-  /// Creates a compaction divider.
-  const ChatContextCompacted({
-    required super.key,
-    required super.turnId,
-    required super.createdAt,
-  });
-}
-
 /// A notice that some tools were withheld from the model's tool list.
 final class ChatDeferredTools extends ChatItem {
   /// Creates a deferred-tools notice.
@@ -439,7 +414,6 @@ List<ChatItem> projectChatTimeline(
   final openAssistant = <String?, _AssistantBuilder>{};
   final openReasoning = <String?, _ReasoningBuilder>{};
   final openTools = <String, _ToolBuilder>{};
-  final openPlans = <String, _PlanBuilder>{};
   final openSleeps = <String, _SleepBuilder>{};
   final openQuestions = <String, _QuestionBuilder>{};
   final openApprovals = <String, _ApprovalBuilder>{};
@@ -452,6 +426,35 @@ List<ChatItem> projectChatTimeline(
 
   for (final event in ordered) {
     final turnId = event.turnId;
+    final pluginDocument = pluginUiDocumentFromJson(
+      event.data['uiDocument'] ??
+          (event.type == 'plugin.ui' ? event.data['document'] : null),
+    );
+    if (pluginDocument != null &&
+        pluginDocument.slot == PluginUiSlot.timeline) {
+      closeAssistant(turnId);
+      closeReasoning(turnId);
+      final callId = _string(event.data['callId']);
+      if (callId != null) {
+        final tool = openTools.remove('$turnId/$callId');
+        if (tool != null) builders.remove(tool);
+      }
+      builders.add(
+        _StaticBuilder(
+          ChatPluginUiDocument(
+            key: 'plugin-ui-${pluginDocument.id}-${event.sequence}',
+            turnId: turnId,
+            createdAt: event.createdAt,
+            document: pluginDocument,
+          ),
+        ),
+      );
+      continue;
+    }
+    // Non-timeline plugin publications are consumed by their host-owned slot.
+    // They remain durable events for audit/replay, but must not fall through to
+    // the generic unknown-event disclosure in the conversation.
+    if (event.type == 'plugin.ui' && event.data['document'] != null) continue;
     if (event.type != 'assistant.reasoning.started' &&
         event.type != 'assistant.reasoning.delta') {
       closeReasoning(turnId);
@@ -534,30 +537,7 @@ List<ChatItem> projectChatTimeline(
         // is a fact each presenter states rather than a set kept here.
         if (_timelineOf(event) == ChatToolTimeline.suppressed) continue;
         final callId = _string(event.data['callId']) ?? '';
-        if (_timelineOf(event) == ChatToolTimeline.card &&
-            _string(event.data['name']) == 'update_plan' &&
-            !openPlans.containsKey('$turnId/$callId')) {
-          // A plan renders as its own card; a plan the model malformed badly
-          // enough to parse to nothing falls through to a plain tool row so the
-          // failure stays visible.
-          final update = parseUpdatePlanArguments(
-            _map(event.data['arguments']),
-          );
-          if (update != null) {
-            final builder = _PlanBuilder(
-              key: 'plan-$callId-${event.sequence}',
-              turnId: turnId,
-              createdAt: event.createdAt,
-              callId: callId,
-              update: update,
-            );
-            openPlans['$turnId/$callId'] = builder;
-            builders.add(builder);
-            continue;
-          }
-        }
-        if (_timelineOf(event) == ChatToolTimeline.card &&
-            _string(event.data['name']) == 'request_user_input' &&
+        if (_timelineOf(event) == ChatToolTimeline.question &&
             !openQuestions.containsKey('$turnId/$callId')) {
           // A pending question renders from conversation state, so a tool row
           // beside it would only duplicate it; the answer replaces both.
@@ -566,14 +546,15 @@ List<ChatItem> projectChatTimeline(
             turnId: turnId,
             createdAt: event.createdAt,
             callId: callId,
+            toolName: _string(event.data['name']) ?? '',
+            presentation: _map(event.data['presentation']),
             questions: _map(event.data['arguments'])['questions'],
           );
           openQuestions['$turnId/$callId'] = builder;
           builders.add(builder);
           continue;
         }
-        if (_timelineOf(event) == ChatToolTimeline.card &&
-            _string(event.data['name']) == 'clock__sleep' &&
+        if (_timelineOf(event) == ChatToolTimeline.sleep &&
             !openSleeps.containsKey('$turnId/$callId')) {
           final arguments = _map(event.data['arguments']);
           final milliseconds = arguments['duration_ms'];
@@ -598,6 +579,8 @@ List<ChatItem> projectChatTimeline(
           // A truncated history delivered the result first; this request only
           // restores the arguments instead of starting a second activity.
           existing.arguments = _map(event.data['arguments']);
+          final presentation = _map(event.data['presentation']);
+          if (presentation.isNotEmpty) existing.presentation = presentation;
           continue;
         }
         final builder = _ToolBuilder(
@@ -607,6 +590,7 @@ List<ChatItem> projectChatTimeline(
           callId: callId,
           toolName: _string(event.data['name']) ?? '',
           arguments: _map(event.data['arguments']),
+          presentation: _map(event.data['presentation']),
         );
         openTools['$turnId/$callId'] = builder;
         builders.add(builder);
@@ -641,20 +625,6 @@ List<ChatItem> projectChatTimeline(
           sleep.finish();
           continue;
         }
-        final plan = openPlans['$turnId/$callId'];
-        if (plan != null) {
-          if (status != ChatToolStatus.succeeded ||
-              event.data['isError'] == true) {
-            // The daemon rejected the plan, so surface the rejection rather
-            // than a card built from arguments that were never accepted.
-            plan.reject(
-              status: status,
-              output: _string(event.data['output']),
-              error: _string(event.data['error']),
-            );
-          }
-          continue;
-        }
         final existing = openTools['$turnId/$callId'];
         if (existing != null && existing.status != ChatToolStatus.running) {
           continue;
@@ -668,6 +638,7 @@ List<ChatItem> projectChatTimeline(
               callId: callId,
               toolName: _string(event.data['name']) ?? '',
               arguments: const <String, dynamic>{},
+              presentation: _map(event.data['presentation']),
               synthesized: true,
             ));
         if (existing == null) {
@@ -679,28 +650,7 @@ List<ChatItem> projectChatTimeline(
           output: _string(event.data['output']),
           error: _string(event.data['error']),
           isError: event.data['isError'] == true,
-        );
-      case 'context.reset':
-        closeAssistant(turnId);
-        builders.add(
-          _StaticBuilder(
-            ChatContextReset(
-              key: 'context-reset-${event.sequence}',
-              turnId: turnId,
-              createdAt: event.createdAt,
-            ),
-          ),
-        );
-      case 'context.compacted':
-        closeAssistant(turnId);
-        builders.add(
-          _StaticBuilder(
-            ChatContextCompacted(
-              key: 'context-compacted-${event.sequence}',
-              turnId: turnId,
-              createdAt: event.createdAt,
-            ),
-          ),
+          presentation: _map(event.data['presentation']),
         );
       case 'tools.deferred':
         closeAssistant(turnId);
@@ -840,19 +790,6 @@ List<ChatItem> projectChatTimeline(
     if (builder is _AssistantBuilder) lastAssistant[builder.turnId] = builder;
   }
 
-  // A turn shows one plan card: repeated update_plan calls revise the same
-  // plan, so every accepted call but the last is superseded.
-  final lastPlan = <String?, _PlanBuilder>{};
-  for (final builder in builders) {
-    if (builder is _PlanBuilder && !builder.rejected) {
-      lastPlan[builder.turnId] = builder;
-    }
-  }
-  for (final builder in builders) {
-    if (builder is _PlanBuilder && !builder.rejected) {
-      builder.superseded = !identical(lastPlan[builder.turnId], builder);
-    }
-  }
   final items = <ChatItem>[];
   for (final builder in builders) {
     items.addAll(
@@ -1027,82 +964,14 @@ final class _ReasoningBuilder extends _ChatItemBuilder {
   }
 }
 
-final class _PlanBuilder extends _ChatItemBuilder {
-  _PlanBuilder({
-    required this.key,
-    required this.turnId,
-    required this.createdAt,
-    required this.callId,
-    required this.update,
-  });
-
-  final String key;
-
-  @override
-  final String? turnId;
-
-  final DateTime createdAt;
-  final String callId;
-  final ChatPlanUpdate update;
-
-  /// Whether a later accepted plan in the same turn replaced this one.
-  bool superseded = false;
-
-  /// Whether the daemon refused this plan; set by [reject].
-  bool rejected = false;
-
-  ChatToolStatus _status = ChatToolStatus.succeeded;
-  String? _output;
-  String? _error;
-
-  void reject({
-    required ChatToolStatus status,
-    required String? output,
-    required String? error,
-  }) {
-    rejected = true;
-    _status = status;
-    _output = output;
-    _error = error;
-  }
-
-  @override
-  List<ChatItem> build({required bool isStreaming}) {
-    if (rejected) {
-      return <ChatItem>[
-        ChatToolActivity(
-          key: key,
-          turnId: turnId,
-          createdAt: createdAt,
-          callId: callId,
-          toolName: 'update_plan',
-          arguments: const <String, dynamic>{},
-          status: _status,
-          output: _output,
-          error: _error,
-          isError: _status == ChatToolStatus.succeeded,
-        ),
-      ];
-    }
-    if (superseded) return const <ChatItem>[];
-    return <ChatItem>[
-      ChatPlanProposal(
-        key: key,
-        turnId: turnId,
-        createdAt: createdAt,
-        steps: update.steps,
-        explanation: update.explanation,
-      ),
-    ];
-  }
-}
-
 final class _QuestionBuilder extends _ChatItemBuilder {
   _QuestionBuilder({
     required this.key,
     required this.turnId,
     required this.createdAt,
     required this.callId,
+    required this.toolName,
+    required this.presentation,
     required this.questions,
   });
 
@@ -1113,6 +982,8 @@ final class _QuestionBuilder extends _ChatItemBuilder {
 
   final DateTime createdAt;
   final String callId;
+  final String toolName;
+  final Map<String, dynamic> presentation;
   final Object? questions;
   UserQuestionRequestDto? request;
 
@@ -1187,8 +1058,9 @@ final class _QuestionBuilder extends _ChatItemBuilder {
           turnId: turnId,
           createdAt: createdAt,
           callId: callId,
-          toolName: 'request_user_input',
+          toolName: toolName,
           arguments: const <String, dynamic>{},
+          presentation: presentation,
           status: _status,
           output: _output,
           error: _error,
@@ -1250,6 +1122,7 @@ final class _ToolBuilder extends _ChatItemBuilder {
     required this.callId,
     required this.toolName,
     required this.arguments,
+    required this.presentation,
     this.synthesized = false,
   });
 
@@ -1267,6 +1140,7 @@ final class _ToolBuilder extends _ChatItemBuilder {
 
   /// Requested arguments, restored later when the result arrived first.
   Map<String, dynamic> arguments;
+  Map<String, dynamic> presentation;
 
   ChatToolStatus status = ChatToolStatus.running;
 
@@ -1279,11 +1153,13 @@ final class _ToolBuilder extends _ChatItemBuilder {
     required String? output,
     required String? error,
     required bool isError,
+    required Map<String, dynamic> presentation,
   }) {
     this.status = status;
     this.output = output;
     this.error = error;
     this.isError = isError;
+    if (presentation.isNotEmpty) this.presentation = presentation;
   }
 
   @override
@@ -1295,6 +1171,7 @@ final class _ToolBuilder extends _ChatItemBuilder {
       callId: callId,
       toolName: toolName,
       arguments: arguments,
+      presentation: Map<String, dynamic>.unmodifiable(presentation),
       status: status,
       output: output,
       error: error,
@@ -1305,7 +1182,7 @@ final class _ToolBuilder extends _ChatItemBuilder {
 
 /// Where the tool behind [event] belongs in the timeline.
 ///
-/// The answer is the tool's own, so a tool that renders as a card or as
-/// nothing says so once in its presenter instead of being listed here.
+/// The answer comes from the immutable contribution metadata recorded on the
+/// event, never from a Dart table keyed by a tool name.
 ChatToolTimeline _timelineOf(TimelineEventDto event) =>
-    presenterFor(_string(event.data['name']) ?? '').timeline;
+    chatToolTimelineFromPresentation(_map(event.data['presentation']));

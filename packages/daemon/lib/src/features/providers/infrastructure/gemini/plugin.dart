@@ -34,6 +34,9 @@ const AgentModelControlDescriptor _thinkingLevel = AgentModelControlDescriptor(
 const AgentModelCapabilities _geminiCapabilities = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
+  functionTools: AgentCapabilitySupport.supported,
+  freeformTools: AgentCapabilitySupport.unsupported,
+  deferredTools: AgentCapabilitySupport.unsupported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
   controls: <AgentModelControlDescriptor>[_thinkingLevel],
@@ -54,10 +57,10 @@ const List<ProviderCatalogModel> googleBundledModels = <ProviderCatalogModel>[
   ),
 ];
 
-/// Built-in Google public Gemini API plugin.
-final class GoogleGeminiPlugin extends ProviderPlugin {
-  /// Creates the plugin.
-  const GoogleGeminiPlugin({this.wire = const GeminiInteractionsWire()});
+/// Built-in Google public Gemini API adapter.
+final class GoogleGeminiAdapter extends ProviderAdapter {
+  /// Creates the adapter.
+  const GoogleGeminiAdapter({this.wire = const GeminiInteractionsWire()});
 
   /// Interactions wire shared with custom connections.
   final GeminiInteractionsWire wire;
@@ -79,7 +82,7 @@ final class GoogleGeminiPlugin extends ProviderPlugin {
       );
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
+  ModelGateway createProvider(ModelGatewayRequest request) =>
       wire.createProvider(request);
 
   @override

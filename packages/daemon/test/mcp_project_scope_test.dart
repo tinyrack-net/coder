@@ -47,15 +47,15 @@ void main() {
       await pumpEventQueue();
 
       expect(transports.specs, isEmpty);
-      expect(service.tools(workspaceRoot: '/repo'), isEmpty);
+      expect(service.availableTools(workspaceRoot: '/repo'), isEmpty);
 
       await service.ensureProject('/repo');
       await pumpEventQueue();
 
       expect(transports.specs, hasLength(1));
       expect(
-        service.tools(workspaceRoot: '/repo').single.id,
-        'mcp__repo__echo',
+        service.availableTools(workspaceRoot: '/repo').single.descriptor.name,
+        'echo',
       );
     },
   );
@@ -68,18 +68,18 @@ void main() {
     await service.ensureProject('/repo');
     await pumpEventQueue();
 
-    expect(service.tools(), isEmpty);
-    expect(service.tools(workspaceRoot: '/other'), isEmpty);
+    expect(service.availableTools(), isEmpty);
+    expect(service.availableTools(workspaceRoot: '/other'), isEmpty);
     // A caller that has not named a worktree sees only user-scoped servers,
     // never what some other repository happens to declare.
     expect(service.states(), isEmpty);
     expect(service.states(workspaceRoot: '/other'), isEmpty);
     expect(service.states(workspaceRoot: '/repo'), hasLength(1));
-    expect(service.tool('mcp__repo__echo'), isNull);
-    expect(service.tool('mcp__repo__echo', workspaceRoot: '/other'), isNull);
+    expect(service.availableTools(), isEmpty);
+    expect(service.availableTools(workspaceRoot: '/other'), isEmpty);
     expect(
-      service.tool('mcp__repo__echo', workspaceRoot: '/repo'),
-      isNotNull,
+      service.availableTools(workspaceRoot: '/repo').single.descriptor.name,
+      'echo',
     );
   });
 
@@ -95,8 +95,8 @@ void main() {
     await pumpEventQueue();
 
     expect(transports.specs, hasLength(2));
-    expect(service.tools(workspaceRoot: '/a'), hasLength(1));
-    expect(service.tools(workspaceRoot: '/b'), hasLength(1));
+    expect(service.availableTools(workspaceRoot: '/a'), hasLength(1));
+    expect(service.availableTools(workspaceRoot: '/b'), hasLength(1));
     expect(service.states(workspaceRoot: '/a'), hasLength(1));
     expect(service.states(workspaceRoot: '/b'), hasLength(1));
     expect(
@@ -148,12 +148,10 @@ void main() {
       hasLength(1),
     );
 
-    // The user server's tool is the one a turn resolves.
-    expect(
-      service.tool('mcp__repo__echo', workspaceRoot: '/repo'),
-      isNotNull,
-    );
-    expect(service.tools(workspaceRoot: '/repo'), hasLength(1));
+    // The user server's raw descriptor is the one the Lua bridge receives.
+    final tool = service.availableTools(workspaceRoot: '/repo').single;
+    expect(tool.server, 'repo');
+    expect(tool.descriptor.name, 'echo');
   });
 
   test('an edited .mcp.json is reconciled, not restarted wholesale', () async {
@@ -200,7 +198,7 @@ void main() {
       await service.ensureProject('/repo');
       await pumpEventQueue();
 
-      expect(service.tools(workspaceRoot: '/repo'), isEmpty);
+      expect(service.availableTools(workspaceRoot: '/repo'), isEmpty);
       expect(service.projectError('/repo'), contains('invalid_mcp_config'));
     },
   );
@@ -212,19 +210,19 @@ void main() {
     await service.initialize();
     await service.ensureProject('/repo');
     await pumpEventQueue();
-    expect(service.tools(workspaceRoot: '/repo'), hasLength(1));
+    expect(service.availableTools(workspaceRoot: '/repo'), hasLength(1));
 
     clock.advance(const Duration(minutes: 31));
     service.releaseIdleProjects();
     await pumpEventQueue();
 
-    expect(service.tools(workspaceRoot: '/repo'), isEmpty);
+    expect(service.availableTools(workspaceRoot: '/repo'), isEmpty);
     expect(service.states(workspaceRoot: '/repo'), isEmpty);
 
     // Using it again reconnects from scratch.
     await service.ensureProject('/repo');
     await pumpEventQueue();
-    expect(service.tools(workspaceRoot: '/repo'), hasLength(1));
+    expect(service.availableTools(workspaceRoot: '/repo'), hasLength(1));
   });
 
   test('a recently used worktree survives the idle sweep', () async {
@@ -239,7 +237,7 @@ void main() {
     service.releaseIdleProjects();
     await pumpEventQueue();
 
-    expect(service.tools(workspaceRoot: '/repo'), hasLength(1));
+    expect(service.availableTools(workspaceRoot: '/repo'), hasLength(1));
   });
 
   test('closing releases the project connections too', () async {
@@ -252,7 +250,7 @@ void main() {
     await service.close();
 
     expect(service.states(), isEmpty);
-    expect(service.tools(workspaceRoot: '/repo'), isEmpty);
+    expect(service.availableTools(workspaceRoot: '/repo'), isEmpty);
   });
 }
 

@@ -13,14 +13,16 @@ dependencies:
   crypto: ^3.0.6
   dio: ^5.11.0
   drift: 2.34.3
+  file: ^7.0.1
   http: ^1.5.0
   json_rpc_2: ^4.1.0
   lua_tool_runtime:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: ce0e88b6430dc7afd18ba767409543d3273af5f1
+      ref: 63435787c9720146f67812cb0f17e93abc794a5c
       path: packages/lua_tool_runtime
   path: ^1.9.1
+  platform: ^3.1.6
   process: ^5.0.5
   protocol: ^0.1.0
   ptyworld:

@@ -292,6 +292,25 @@ _ModelSelectionDto _$ModelSelectionDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ModelSelectionDtoToJson(_ModelSelectionDto instance) =>
     <String, dynamic>{'modelId': instance.modelId};
 
+_AgentModelSelectionDto _$AgentModelSelectionDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentModelSelectionDto(
+  source: $enumDecode(_$AgentModelSourceEnumMap, json['source']),
+  modelId: json['modelId'] as String?,
+);
+
+Map<String, dynamic> _$AgentModelSelectionDtoToJson(
+  _AgentModelSelectionDto instance,
+) => <String, dynamic>{
+  'source': _$AgentModelSourceEnumMap[instance.source]!,
+  'modelId': instance.modelId,
+};
+
+const _$AgentModelSourceEnumMap = {
+  AgentModelSource.session: 'session',
+  AgentModelSource.fixed: 'fixed',
+};
+
 _AgentDefinitionDiagnosticDto _$AgentDefinitionDiagnosticDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentDefinitionDiagnosticDto(
@@ -310,66 +329,59 @@ Map<String, dynamic> _$AgentDefinitionDiagnosticDtoToJson(
   'column': instance.column,
 };
 
-_AgentDefinitionDto _$AgentDefinitionDtoFromJson(Map<String, dynamic> json) =>
-    _AgentDefinitionDto(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      mode: $enumDecode(_$AgentModeEnumMap, json['mode']),
-      promptEnabled: json['promptEnabled'] as bool,
-      systemPrompt: json['systemPrompt'] as String,
-      toolIds: (json['toolIds'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      contentHash: json['contentHash'] as String,
-      sourcePath: json['sourcePath'] as String,
-      model: json['model'] == null
-          ? null
-          : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
-      modelControls:
-          (json['modelControls'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(
-              k,
-              ModelControlValueDto.fromJson(e as Map<String, dynamic>),
+_AgentDefinitionDto _$AgentDefinitionDtoFromJson(
+  Map<String, dynamic> json,
+) => _AgentDefinitionDto(
+  version: (json['version'] as num).toInt(),
+  id: json['id'] as String,
+  name: json['name'] as String,
+  description: json['description'] as String,
+  mode: $enumDecode(_$AgentModeEnumMap, json['mode']),
+  model: AgentModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
+  driverId: json['driverId'] as String,
+  extensionIds: (json['extensionIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  toolIds: (json['toolIds'] as List<dynamic>).map((e) => e as String).toList(),
+  pluginSettings: (json['pluginSettings'] as Map<String, dynamic>).map(
+    (k, e) => MapEntry(k, e as Map<String, dynamic>),
+  ),
+  callableAgentIds: (json['callableAgentIds'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  prompt: json['prompt'] as String,
+  contentHash: json['contentHash'] as String,
+  sourcePath: json['sourcePath'] as String,
+  isBuiltIn: json['isBuiltIn'] as bool? ?? false,
+  isArchived: json['isArchived'] as bool? ?? false,
+  isStale: json['isStale'] as bool? ?? false,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map(
+            (e) => AgentDefinitionDiagnosticDto.fromJson(
+              e as Map<String, dynamic>,
             ),
-          ) ??
-          const <String, ModelControlValueDto>{},
-      permissionMode: $enumDecodeNullable(
-        _$PermissionModeEnumMap,
-        json['permissionMode'],
-      ),
-      isBuiltIn: json['isBuiltIn'] as bool? ?? false,
-      isArchived: json['isArchived'] as bool? ?? false,
-      isStale: json['isStale'] as bool? ?? false,
-      diagnostics:
-          (json['diagnostics'] as List<dynamic>?)
-              ?.map(
-                (e) => AgentDefinitionDiagnosticDto.fromJson(
-                  e as Map<String, dynamic>,
-                ),
-              )
-              .toList() ??
-          const <AgentDefinitionDiagnosticDto>[],
-    );
+          )
+          .toList() ??
+      const <AgentDefinitionDiagnosticDto>[],
+);
 
 Map<String, dynamic> _$AgentDefinitionDtoToJson(_AgentDefinitionDto instance) =>
     <String, dynamic>{
+      'version': instance.version,
       'id': instance.id,
       'name': instance.name,
       'description': instance.description,
       'mode': _$AgentModeEnumMap[instance.mode]!,
-      'promptEnabled': instance.promptEnabled,
-      'systemPrompt': instance.systemPrompt,
+      'model': instance.model,
+      'driverId': instance.driverId,
+      'extensionIds': instance.extensionIds,
       'toolIds': instance.toolIds,
+      'pluginSettings': instance.pluginSettings,
       'callableAgentIds': instance.callableAgentIds,
+      'prompt': instance.prompt,
       'contentHash': instance.contentHash,
       'sourcePath': instance.sourcePath,
-      'model': instance.model,
-      'modelControls': instance.modelControls,
-      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'isBuiltIn': instance.isBuiltIn,
       'isArchived': instance.isArchived,
       'isStale': instance.isStale,
@@ -381,35 +393,304 @@ const _$AgentModeEnumMap = {
   AgentMode.subagent: 'subagent',
 };
 
-const _$PermissionModeEnumMap = {
-  PermissionMode.readOnly: 'readOnly',
-  PermissionMode.ask: 'ask',
-  PermissionMode.workspaceWrite: 'workspaceWrite',
-  PermissionMode.fullAccess: 'fullAccess',
+_PluginDiagnosticDto _$PluginDiagnosticDtoFromJson(Map<String, dynamic> json) =>
+    _PluginDiagnosticDto(
+      code: json['code'] as String,
+      message: json['message'] as String,
+      severity: $enumDecode(
+        _$PluginDiagnosticSeverityEnumMap,
+        json['severity'],
+      ),
+      path: json['path'] as String?,
+      line: (json['line'] as num?)?.toInt(),
+      column: (json['column'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$PluginDiagnosticDtoToJson(
+  _PluginDiagnosticDto instance,
+) => <String, dynamic>{
+  'code': instance.code,
+  'message': instance.message,
+  'severity': _$PluginDiagnosticSeverityEnumMap[instance.severity]!,
+  'path': instance.path,
+  'line': instance.line,
+  'column': instance.column,
 };
+
+const _$PluginDiagnosticSeverityEnumMap = {
+  PluginDiagnosticSeverity.info: 'info',
+  PluginDiagnosticSeverity.warning: 'warning',
+  PluginDiagnosticSeverity.error: 'error',
+};
+
+_PluginRevisionDto _$PluginRevisionDtoFromJson(Map<String, dynamic> json) =>
+    _PluginRevisionDto(
+      pluginId: json['pluginId'] as String,
+      contentHash: json['contentHash'] as String,
+      manifestHash: json['manifestHash'] as String,
+      sdkAbiHash: json['sdkAbiHash'] as String,
+      executionRevisionHash: json['executionRevisionHash'] as String,
+      requestedCapabilities: (json['requestedCapabilities'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+    );
+
+Map<String, dynamic> _$PluginRevisionDtoToJson(_PluginRevisionDto instance) =>
+    <String, dynamic>{
+      'pluginId': instance.pluginId,
+      'contentHash': instance.contentHash,
+      'manifestHash': instance.manifestHash,
+      'sdkAbiHash': instance.sdkAbiHash,
+      'executionRevisionHash': instance.executionRevisionHash,
+      'requestedCapabilities': instance.requestedCapabilities,
+    };
+
+_PluginContributionDto _$PluginContributionDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginContributionDto(
+  pluginId: json['pluginId'] as String,
+  id: json['id'] as String,
+  kind: $enumDecode(_$PluginContributionKindEnumMap, json['kind']),
+  requiredCapabilities:
+      (json['requiredCapabilities'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  tool: json['tool'] == null
+      ? null
+      : AgentToolDefinitionDto.fromJson(json['tool'] as Map<String, dynamic>),
+  metadata:
+      json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{},
+);
+
+Map<String, dynamic> _$PluginContributionDtoToJson(
+  _PluginContributionDto instance,
+) => <String, dynamic>{
+  'pluginId': instance.pluginId,
+  'id': instance.id,
+  'kind': _$PluginContributionKindEnumMap[instance.kind]!,
+  'requiredCapabilities': instance.requiredCapabilities,
+  'tool': instance.tool,
+  'metadata': instance.metadata,
+};
+
+const _$PluginContributionKindEnumMap = {
+  PluginContributionKind.driver: 'driver',
+  PluginContributionKind.extension: 'extension',
+  PluginContributionKind.tool: 'tool',
+  PluginContributionKind.sessionControl: 'sessionControl',
+  PluginContributionKind.ui: 'ui',
+};
+
+_PluginDescriptorDto _$PluginDescriptorDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginDescriptorDto(
+  apiMajor: (json['apiMajor'] as num).toInt(),
+  id: json['id'] as String,
+  version: json['version'] as String,
+  name: json['name'] as String,
+  entrypoint: json['entrypoint'] as String,
+  source: $enumDecode(_$PluginSourceEnumMap, json['source']),
+  sourcePath: json['sourcePath'] as String,
+  requestedCapabilities: (json['requestedCapabilities'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  revision: json['revision'] == null
+      ? null
+      : PluginRevisionDto.fromJson(json['revision'] as Map<String, dynamic>),
+  contributions:
+      (json['contributions'] as List<dynamic>?)
+          ?.map(
+            (e) => PluginContributionDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <PluginContributionDto>[],
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map((e) => PluginDiagnosticDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PluginDiagnosticDto>[],
+  isStale: json['isStale'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$PluginDescriptorDtoToJson(
+  _PluginDescriptorDto instance,
+) => <String, dynamic>{
+  'apiMajor': instance.apiMajor,
+  'id': instance.id,
+  'version': instance.version,
+  'name': instance.name,
+  'entrypoint': instance.entrypoint,
+  'source': _$PluginSourceEnumMap[instance.source]!,
+  'sourcePath': instance.sourcePath,
+  'requestedCapabilities': instance.requestedCapabilities,
+  'revision': instance.revision,
+  'contributions': instance.contributions,
+  'diagnostics': instance.diagnostics,
+  'isStale': instance.isStale,
+};
+
+const _$PluginSourceEnumMap = {
+  PluginSource.builtIn: 'builtIn',
+  PluginSource.user: 'user',
+};
+
+_PluginAuthoringEnvironmentDto _$PluginAuthoringEnvironmentDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginAuthoringEnvironmentDto(
+  pluginId: json['pluginId'] as String,
+  apiMajor: (json['apiMajor'] as num).toInt(),
+  sdkAbiHash: json['sdkAbiHash'] as String,
+  luaRuntimeVersion: json['luaRuntimeVersion'] as String,
+  luaLanguageServerVersion: json['luaLanguageServerVersion'] as String,
+  pluginPath: json['pluginPath'] as String,
+  sdkLibraryPath: json['sdkLibraryPath'] as String,
+  configurationPath: json['configurationPath'] as String,
+  synchronized: json['synchronized'] as bool,
+  diagnostics:
+      (json['diagnostics'] as List<dynamic>?)
+          ?.map((e) => PluginDiagnosticDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PluginDiagnosticDto>[],
+);
+
+Map<String, dynamic> _$PluginAuthoringEnvironmentDtoToJson(
+  _PluginAuthoringEnvironmentDto instance,
+) => <String, dynamic>{
+  'pluginId': instance.pluginId,
+  'apiMajor': instance.apiMajor,
+  'sdkAbiHash': instance.sdkAbiHash,
+  'luaRuntimeVersion': instance.luaRuntimeVersion,
+  'luaLanguageServerVersion': instance.luaLanguageServerVersion,
+  'pluginPath': instance.pluginPath,
+  'sdkLibraryPath': instance.sdkLibraryPath,
+  'configurationPath': instance.configurationPath,
+  'synchronized': instance.synchronized,
+  'diagnostics': instance.diagnostics,
+};
+
+_AgentPluginGrantDto _$AgentPluginGrantDtoFromJson(Map<String, dynamic> json) =>
+    _AgentPluginGrantDto(
+      agentId: json['agentId'] as String,
+      pluginId: json['pluginId'] as String,
+      capability: json['capability'] as String,
+    );
+
+Map<String, dynamic> _$AgentPluginGrantDtoToJson(
+  _AgentPluginGrantDto instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'capability': instance.capability,
+};
+
+_PluginSessionControlValueDto _$PluginSessionControlValueDtoFromJson(
+  Map<String, dynamic> json,
+) => _PluginSessionControlValueDto(
+  sessionId: json['sessionId'] as String,
+  agentId: json['agentId'] as String,
+  pluginId: json['pluginId'] as String,
+  contributionId: json['contributionId'] as String,
+  revisionHash: json['revisionHash'] as String,
+  schema: json['schema'] as Map<String, dynamic>,
+  defaultValue: json['defaultValue'],
+  value: json['value'],
+  isDefault: json['isDefault'] as bool? ?? false,
+  metadata:
+      json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{},
+);
+
+Map<String, dynamic> _$PluginSessionControlValueDtoToJson(
+  _PluginSessionControlValueDto instance,
+) => <String, dynamic>{
+  'sessionId': instance.sessionId,
+  'agentId': instance.agentId,
+  'pluginId': instance.pluginId,
+  'contributionId': instance.contributionId,
+  'revisionHash': instance.revisionHash,
+  'schema': instance.schema,
+  'defaultValue': instance.defaultValue,
+  'value': instance.value,
+  'isDefault': instance.isDefault,
+  'metadata': instance.metadata,
+};
+
+_PluginUiDocumentDto _$PluginUiDocumentDtoFromJson(Map<String, dynamic> json) =>
+    _PluginUiDocumentDto(
+      id: json['id'] as String,
+      pluginId: json['pluginId'] as String,
+      revisionHash: json['revisionHash'] as String,
+      slot: $enumDecode(_$PluginUiSlotEnumMap, json['slot']),
+      root: json['root'] as Map<String, dynamic>,
+    );
+
+Map<String, dynamic> _$PluginUiDocumentDtoToJson(
+  _PluginUiDocumentDto instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'pluginId': instance.pluginId,
+  'revisionHash': instance.revisionHash,
+  'slot': _$PluginUiSlotEnumMap[instance.slot]!,
+  'root': instance.root,
+};
+
+const _$PluginUiSlotEnumMap = {
+  PluginUiSlot.agentSettings: 'agentSettings',
+  PluginUiSlot.composerControl: 'composerControl',
+  PluginUiSlot.conversationStatus: 'conversationStatus',
+  PluginUiSlot.timeline: 'timeline',
+  PluginUiSlot.dialog: 'dialog',
+  PluginUiSlot.toast: 'toast',
+};
+
+_PluginUiActionDto _$PluginUiActionDtoFromJson(Map<String, dynamic> json) =>
+    _PluginUiActionDto(
+      documentId: json['documentId'] as String,
+      actionId: json['actionId'] as String,
+      data: json['data'] ?? const <String, dynamic>{},
+    );
+
+Map<String, dynamic> _$PluginUiActionDtoToJson(_PluginUiActionDto instance) =>
+    <String, dynamic>{
+      'documentId': instance.documentId,
+      'actionId': instance.actionId,
+      'data': instance.data,
+    };
 
 _AgentToolDefinitionDto _$AgentToolDefinitionDtoFromJson(
   Map<String, dynamic> json,
 ) => _AgentToolDefinitionDto(
   id: json['id'] as String,
+  originPluginId: json['originPluginId'] as String,
+  contributionId: json['contributionId'] as String,
   name: json['name'] as String,
   description: json['description'] as String,
   risk: $enumDecode(_$ToolRiskEnumMap, json['risk']),
-  group: $enumDecode(_$ToolGroupEnumMap, json['group']),
+  group: json['group'] as String,
+  kind: $enumDecode(_$AgentToolKindEnumMap, json['kind']),
+  inputSchema: json['inputSchema'] as Map<String, dynamic>,
+  effects: (json['effects'] as List<dynamic>).map((e) => e as String).toList(),
+  presentation: json['presentation'] as Map<String, dynamic>,
+  outputSchema: json['outputSchema'] as Map<String, dynamic>?,
   available: json['available'] as bool? ?? true,
-  alwaysOn: json['alwaysOn'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$AgentToolDefinitionDtoToJson(
   _AgentToolDefinitionDto instance,
 ) => <String, dynamic>{
   'id': instance.id,
+  'originPluginId': instance.originPluginId,
+  'contributionId': instance.contributionId,
   'name': instance.name,
   'description': instance.description,
   'risk': _$ToolRiskEnumMap[instance.risk]!,
-  'group': _$ToolGroupEnumMap[instance.group]!,
+  'group': instance.group,
+  'kind': _$AgentToolKindEnumMap[instance.kind]!,
+  'inputSchema': instance.inputSchema,
+  'effects': instance.effects,
+  'presentation': instance.presentation,
+  'outputSchema': instance.outputSchema,
   'available': instance.available,
-  'alwaysOn': instance.alwaysOn,
 };
 
 const _$ToolRiskEnumMap = {
@@ -419,14 +700,10 @@ const _$ToolRiskEnumMap = {
   ToolRisk.dangerous: 'dangerous',
 };
 
-const _$ToolGroupEnumMap = {
-  ToolGroup.filesystem: 'filesystem',
-  ToolGroup.editing: 'editing',
-  ToolGroup.execution: 'execution',
-  ToolGroup.attachments: 'attachments',
-  ToolGroup.mcp: 'mcp',
-  ToolGroup.collaboration: 'collaboration',
-  ToolGroup.session: 'session',
+const _$AgentToolKindEnumMap = {
+  AgentToolKind.function: 'function',
+  AgentToolKind.freeform: 'freeform',
+  AgentToolKind.deferred: 'deferred',
 };
 
 _McpServerConfigDto _$McpServerConfigDtoFromJson(Map<String, dynamic> json) =>
@@ -660,10 +937,9 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
   status: $enumDecode(_$SessionStatusEnumMap, json['status']),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
-  model: ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
-  mode:
-      $enumDecodeNullable(_$SessionModeEnumMap, json['mode']) ??
-      SessionMode.normal,
+  model: json['model'] == null
+      ? null
+      : ModelSelectionDto.fromJson(json['model'] as Map<String, dynamic>),
   modelControls:
       (json['modelControls'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(
@@ -699,7 +975,6 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'model': instance.model,
-      'mode': _$SessionModeEnumMap[instance.mode]!,
       'modelControls': instance.modelControls,
       'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
       'parentSessionId': instance.parentSessionId,
@@ -729,9 +1004,11 @@ const _$SessionStatusEnumMap = {
   SessionStatus.closed: 'closed',
 };
 
-const _$SessionModeEnumMap = {
-  SessionMode.plan: 'plan',
-  SessionMode.normal: 'normal',
+const _$PermissionModeEnumMap = {
+  PermissionMode.readOnly: 'readOnly',
+  PermissionMode.ask: 'ask',
+  PermissionMode.workspaceWrite: 'workspaceWrite',
+  PermissionMode.fullAccess: 'fullAccess',
 };
 
 const _$AgentLifecycleEnumMap = {
@@ -740,39 +1017,6 @@ const _$AgentLifecycleEnumMap = {
   AgentLifecycle.interrupted: 'interrupted',
   AgentLifecycle.completed: 'completed',
   AgentLifecycle.errored: 'errored',
-};
-
-_GoalDto _$GoalDtoFromJson(Map<String, dynamic> json) => _GoalDto(
-  sessionId: json['sessionId'] as String,
-  goalId: json['goalId'] as String,
-  objective: json['objective'] as String,
-  status: $enumDecode(_$GoalStatusEnumMap, json['status']),
-  tokensUsed: (json['tokensUsed'] as num).toInt(),
-  timeUsedSeconds: (json['timeUsedSeconds'] as num).toInt(),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-  tokenBudget: (json['tokenBudget'] as num?)?.toInt(),
-);
-
-Map<String, dynamic> _$GoalDtoToJson(_GoalDto instance) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'goalId': instance.goalId,
-  'objective': instance.objective,
-  'status': _$GoalStatusEnumMap[instance.status]!,
-  'tokensUsed': instance.tokensUsed,
-  'timeUsedSeconds': instance.timeUsedSeconds,
-  'createdAt': instance.createdAt.toIso8601String(),
-  'updatedAt': instance.updatedAt.toIso8601String(),
-  'tokenBudget': instance.tokenBudget,
-};
-
-const _$GoalStatusEnumMap = {
-  GoalStatus.active: 'active',
-  GoalStatus.paused: 'paused',
-  GoalStatus.blocked: 'blocked',
-  GoalStatus.usageLimited: 'usageLimited',
-  GoalStatus.budgetLimited: 'budgetLimited',
-  GoalStatus.complete: 'complete',
 };
 
 _AgentMailboxMessageDto _$AgentMailboxMessageDtoFromJson(
@@ -924,12 +1168,24 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   toolCalling:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['toolCalling']) ??
       CapabilitySupport.unknown,
+  functionTools:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['functionTools']) ??
+      CapabilitySupport.unknown,
+  freeformTools:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['freeformTools']) ??
+      CapabilitySupport.unknown,
+  deferredTools:
+      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['deferredTools']) ??
+      CapabilitySupport.unknown,
   imageInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['imageInput']) ??
       CapabilitySupport.unknown,
   fileInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
       CapabilitySupport.unknown,
+  roles:
+      (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>['system', 'developer', 'user', 'assistant'],
   controls:
       (json['controls'] as List<dynamic>?)
           ?.map(
@@ -938,9 +1194,6 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
           )
           .toList() ??
       const <ModelControlDescriptorDto>[],
-  toolSurface:
-      $enumDecodeNullable(_$ModelToolSurfaceEnumMap, json['toolSurface']) ??
-      ModelToolSurface.direct,
   source:
       $enumDecodeNullable(_$CapabilitySourceEnumMap, json['source']) ??
       CapabilitySource.unknown,
@@ -951,10 +1204,13 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
 ) => <String, dynamic>{
   'streaming': _$CapabilitySupportEnumMap[instance.streaming]!,
   'toolCalling': _$CapabilitySupportEnumMap[instance.toolCalling]!,
+  'functionTools': _$CapabilitySupportEnumMap[instance.functionTools]!,
+  'freeformTools': _$CapabilitySupportEnumMap[instance.freeformTools]!,
+  'deferredTools': _$CapabilitySupportEnumMap[instance.deferredTools]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
+  'roles': instance.roles,
   'controls': instance.controls,
-  'toolSurface': _$ModelToolSurfaceEnumMap[instance.toolSurface]!,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };
 
@@ -962,11 +1218,6 @@ const _$CapabilitySupportEnumMap = {
   CapabilitySupport.unknown: 'unknown',
   CapabilitySupport.supported: 'supported',
   CapabilitySupport.unsupported: 'unsupported',
-};
-
-const _$ModelToolSurfaceEnumMap = {
-  ModelToolSurface.direct: 'direct',
-  ModelToolSurface.luaCode: 'luaCode',
 };
 
 const _$CapabilitySourceEnumMap = {

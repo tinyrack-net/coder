@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cli/src/daemon_host.dart';
+import 'package:cli/src/plugin_cli.dart';
 import 'package:cli/src/progress.dart';
 import 'package:client/client.dart';
 import 'package:client/local_daemon.dart';
@@ -82,6 +83,7 @@ final class TinestCliContext implements CommandContext {
     required this.directories,
     required this.startDaemon,
     required this.shutdownSignal,
+    required this.runPluginProcess,
   });
 
   @override
@@ -110,6 +112,9 @@ final class TinestCliContext implements CommandContext {
 
   /// Completes when the process is asked to shut down.
   final Future<void> Function() shutdownSignal;
+
+  /// Starts optional local plugin authoring tools such as LuaLS.
+  final PluginExternalProcessRunner runPluginProcess;
 
   /// The running application, needed by the hidden completion command.
   ///

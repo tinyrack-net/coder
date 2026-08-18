@@ -111,21 +111,20 @@ final class _AgentBackend implements AgentCliBackend {
   final List<String> resetIds = <String>[];
 
   AgentDefinitionDto definition(String id) => AgentDefinitionDto(
+    version: 5,
     id: id,
     name: id,
     description: '',
     mode: id == 'tinest' ? AgentMode.primary : AgentMode.subagent,
-    promptEnabled: true,
-    systemPrompt: 'prompt',
-    model: const ModelSelectionDto(modelId: 'openai/gpt-5'),
-    modelControls: <String, ModelControlValueDto>{
-      'reasoning_effort': const ModelControlValueDto.stringValue(
-        value: 'medium',
-      ),
-    },
-    permissionMode: PermissionMode.ask,
+    model: const AgentModelSelectionDto(
+      source: AgentModelSource.session,
+    ),
+    driverId: 'tinest.standard/driver',
+    extensionIds: const <String>[],
     toolIds: const <String>[],
+    pluginSettings: const <String, Map<String, dynamic>>{},
     callableAgentIds: const <String>[],
+    prompt: 'prompt',
     contentHash: 'hash',
     sourcePath: '/config/agents/$id.md',
     isBuiltIn: id == 'tinest',

@@ -3,7 +3,7 @@ import 'package:protocol/src/models.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsListProcedure =
     RpcProcedure<TerminalListParamsDto, TerminalListResultDto>(
       name: 'terminals.list',
@@ -13,7 +13,7 @@ final terminalsListProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsCreateProcedure =
     RpcProcedure<TerminalCreateParamsDto, TerminalResultDto>(
       name: 'terminals.create',
@@ -23,7 +23,7 @@ final terminalsCreateProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsAttachProcedure =
     RpcProcedure<TerminalAttachParamsDto, TerminalAttachResultDto>(
       name: 'terminals.attach',
@@ -33,7 +33,7 @@ final terminalsAttachProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsWriteProcedure =
     RpcProcedure<TerminalWriteParamsDto, EmptyResultDto>(
       name: 'terminals.write',
@@ -43,7 +43,7 @@ final terminalsWriteProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsResizeProcedure =
     RpcProcedure<TerminalResizeParamsDto, TerminalResultDto>(
       name: 'terminals.resize',
@@ -53,7 +53,7 @@ final terminalsResizeProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsTerminateProcedure =
     RpcProcedure<TerminalIdParamsDto, EmptyResultDto>(
       name: 'terminals.terminate',
@@ -63,7 +63,7 @@ final terminalsTerminateProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsGetDefaultShellProcedure =
     RpcProcedure<EmptyParamsDto, TerminalShellDto>(
       name: 'terminals.getDefaultShell',
@@ -73,7 +73,7 @@ final terminalsGetDefaultShellProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsSetDefaultShellProcedure =
     RpcProcedure<TerminalShellDto, EmptyResultDto>(
       name: 'terminals.setDefaultShell',
@@ -83,14 +83,14 @@ final terminalsSetDefaultShellProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsOutputNotification = RpcNotification<TerminalOutputDto>(
   name: 'terminals.output',
   decode: TerminalOutputDto.fromJson,
   encode: (value) => value.toJson(),
 );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final terminalsUpdatedNotification = RpcNotification<TerminalDto>(
   name: 'terminals.updated',
   decode: TerminalDto.fromJson,

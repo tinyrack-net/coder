@@ -16,7 +16,7 @@ void main() {
 
   setUp(() async {
     home = await Directory.systemTemp.createTemp('tinest-daemon-lock-');
-    await Directory(p.join(home.path, 'v4')).create();
+    await Directory(p.join(home.path, 'v5')).create();
   });
 
   tearDown(() => deleteWithRetry(home));
@@ -24,7 +24,7 @@ void main() {
   test(
     'a daemon over a home another process holds reports the running daemon',
     () async {
-      final lockPath = p.join(home.path, 'v4', 'daemon.lock');
+      final lockPath = p.join(home.path, 'v5', 'daemon.lock');
       final holder = await DaemonLockHolder.start(
         root: home,
         lockPath: lockPath,
@@ -38,7 +38,7 @@ void main() {
               .having(
                 (failure) => failure.homeDirectory,
                 'homeDirectory',
-                p.join(home.path, 'v4'),
+                p.join(home.path, 'v5'),
               )
               .having(
                 (failure) => failure.diagnostic,
@@ -56,7 +56,7 @@ void main() {
     () async {
       final holder = await DaemonLockHolder.start(
         root: home,
-        lockPath: p.join(home.path, 'v4', 'daemon.lock'),
+        lockPath: p.join(home.path, 'v5', 'daemon.lock'),
       );
       await holder.stop();
 
@@ -73,7 +73,7 @@ void main() {
     () async {
       final holder = await DaemonLockHolder.start(
         root: home,
-        lockPath: p.join(home.path, 'v4', 'daemon.lock'),
+        lockPath: p.join(home.path, 'v5', 'daemon.lock'),
       );
       addTearDown(holder.stop);
 

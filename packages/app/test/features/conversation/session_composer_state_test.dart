@@ -13,25 +13,22 @@ void main() {
     AgentMode mode = AgentMode.primary,
     bool isArchived = false,
     bool isStale = false,
-    ModelSelectionDto? model,
+    AgentModelSelectionDto model = const AgentModelSelectionDto(
+      source: AgentModelSource.session,
+    ),
   }) => AgentDefinitionDto(
+    version: 5,
     id: id,
     name: id,
     description: 'description',
     mode: mode,
-    promptEnabled: true,
-    systemPrompt: 'prompt',
     model: model,
-    modelControls: model == null
-        ? const <String, ModelControlValueDto>{}
-        : const <String, ModelControlValueDto>{
-            'reasoning_effort': ModelControlValueDto.stringValue(
-              value: 'medium',
-            ),
-          },
-    permissionMode: PermissionMode.ask,
-    toolIds: const <String>['read_file'],
+    driverId: 'tinest.standard/driver',
+    extensionIds: const <String>[],
+    toolIds: const <String>['tinest.files/read_file'],
+    pluginSettings: const <String, Map<String, dynamic>>{},
     callableAgentIds: const <String>[],
+    prompt: 'prompt',
     contentHash: 'hash',
     sourcePath: '/config/agents/$id.md',
     isArchived: isArchived,
@@ -86,7 +83,8 @@ void main() {
         definition(id: 'stale', isStale: true),
         definition(
           id: 'broken',
-          model: const ModelSelectionDto(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
             modelId: 'missing/model',
           ),
         ),
@@ -118,7 +116,8 @@ void main() {
       expect(
         agentSelectionFor(
           definition(
-            model: const ModelSelectionDto(
+            model: const AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
               modelId: 'deepseek/deepseek-v4',
             ),
           ),
@@ -130,7 +129,8 @@ void main() {
       expect(
         agentSelectionFor(
           definition(
-            model: const ModelSelectionDto(
+            model: const AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
               modelId: 'missing/model',
             ),
           ),
@@ -197,7 +197,8 @@ void main() {
       expect(
         resolve(
           agent: definition(
-            model: const ModelSelectionDto(
+            model: const AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
               modelId: 'openai/gpt-5-mini',
             ),
           ),

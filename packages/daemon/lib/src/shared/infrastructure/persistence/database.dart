@@ -106,11 +106,8 @@ class Sessions extends Table {
   /// The lastError public API member.
   TextColumn get lastError => text().nullable()();
 
-  /// Collaboration mode: `plan` proposes work, `normal` performs it.
-  TextColumn get mode => text().withDefault(const Constant('normal'))();
-
-  /// Concrete qualified model snapshotted for this session.
-  TextColumn get modelId => text()();
+  /// Qualified model pinned for this session; null inherits the agent.
+  TextColumn get modelId => text().nullable()();
 
   /// JSON-encoded typed model-control values for this session.
   TextColumn get modelControlsJson =>
@@ -174,40 +171,6 @@ class Turns extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
-}
-
-/// One persistent objective owned by a manually-created root session.
-class Goals extends Table {
-  /// Session owning the goal; also enforces one goal per session.
-  TextColumn get sessionId =>
-      text().references(Sessions, #id, onDelete: KeyAction.cascade)();
-
-  /// Identity of the current goal generation.
-  TextColumn get goalId => text()();
-
-  /// User-authored objective.
-  TextColumn get objective => text()();
-
-  /// Current goal-status wire name.
-  TextColumn get status => text()();
-
-  /// Optional maximum billable tokens.
-  IntColumn get tokenBudget => integer().nullable()();
-
-  /// Billable tokens consumed by this goal.
-  IntColumn get tokensUsed => integer().withDefault(const Constant(0))();
-
-  /// Wall-clock seconds spent pursuing this goal.
-  IntColumn get timeUsedSeconds => integer().withDefault(const Constant(0))();
-
-  /// Creation instant of this goal generation.
-  DateTimeColumn get createdAt => dateTime()();
-
-  /// Last persisted mutation or accounting instant.
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{sessionId};
 }
 
 /// Immutable attachment metadata; payload bytes live in the attachment store.
@@ -507,7 +470,6 @@ class ProviderModels extends Table {
     Worktrees,
     Sessions,
     Turns,
-    Goals,
     AgentMailboxMessages,
     Attachments,
     TurnAttachments,
@@ -524,7 +486,6 @@ class ProviderModels extends Table {
     WorkspaceDao,
     WorktreeDao,
     SessionDao,
-    GoalDao,
     AgentMailboxDao,
     AttachmentDao,
     TimelineDao,

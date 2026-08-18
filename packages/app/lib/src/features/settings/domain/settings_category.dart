@@ -9,6 +9,9 @@ enum SettingsCategory {
   /// Markdown-backed agent definitions owned by one daemon.
   agent,
 
+  /// Built-in and app-data Lua plugins owned by one daemon.
+  plugin,
+
   /// External MCP servers owned by one daemon.
   mcp,
 
@@ -55,6 +58,7 @@ extension SettingsCategoryScopeX on SettingsCategory {
     SettingsCategory.advanced => SettingsCategoryScope.app,
     SettingsCategory.project ||
     SettingsCategory.agent ||
+    SettingsCategory.plugin ||
     SettingsCategory.mcp ||
     SettingsCategory.connection ||
     SettingsCategory.skill ||

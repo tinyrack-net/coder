@@ -358,7 +358,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ShellSpecDtoCopyWith<$Res> get shell {
-  
+
   return $ShellSpecDtoCopyWith<$Res>(_self.shell, (value) {
     return _then(_self.copyWith(shell: value));
   });
@@ -585,7 +585,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ShellSpecDtoCopyWith<$Res> get shell {
-  
+
   return $ShellSpecDtoCopyWith<$Res>(_self.shell, (value) {
     return _then(_self.copyWith(shell: value));
   });
@@ -3921,6 +3921,272 @@ as String,
 
 
 /// @nodoc
+mixin _$AgentModelSelectionDto {
+
+ AgentModelSource get source; String? get modelId;
+/// Create a copy of AgentModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentModelSelectionDtoCopyWith<AgentModelSelectionDto> get copyWith => _$AgentModelSelectionDtoCopyWithImpl<AgentModelSelectionDto>(this as AgentModelSelectionDto, _$identity);
+
+  /// Serializes this AgentModelSelectionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,source,modelId);
+
+@override
+String toString() {
+  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentModelSelectionDtoCopyWith<$Res>  {
+  factory $AgentModelSelectionDtoCopyWith(AgentModelSelectionDto value, $Res Function(AgentModelSelectionDto) _then) = _$AgentModelSelectionDtoCopyWithImpl;
+@useResult
+$Res call({
+ AgentModelSource source, String? modelId
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentModelSelectionDtoCopyWithImpl<$Res>
+    implements $AgentModelSelectionDtoCopyWith<$Res> {
+  _$AgentModelSelectionDtoCopyWithImpl(this._self, this._then);
+
+  final AgentModelSelectionDto _self;
+  final $Res Function(AgentModelSelectionDto) _then;
+
+/// Create a copy of AgentModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? modelId = freezed,}) {
+  return _then(_self.copyWith(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentModelSelectionDto].
+extension AgentModelSelectionDtoPatterns on AgentModelSelectionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentModelSelectionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentModelSelectionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentModelSelectionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto() when $default != null:
+return $default(_that.source,_that.modelId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentModelSource source,  String? modelId)  $default,) {final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto():
+return $default(_that.source,_that.modelId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentModelSource source,  String? modelId)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentModelSelectionDto() when $default != null:
+return $default(_that.source,_that.modelId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentModelSelectionDto extends AgentModelSelectionDto {
+  const _AgentModelSelectionDto({required this.source, this.modelId}): super._();
+  factory _AgentModelSelectionDto.fromJson(Map<String, dynamic> json) => _$AgentModelSelectionDtoFromJson(json);
+
+@override final  AgentModelSource source;
+@override final  String? modelId;
+
+/// Create a copy of AgentModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentModelSelectionDtoCopyWith<_AgentModelSelectionDto> get copyWith => __$AgentModelSelectionDtoCopyWithImpl<_AgentModelSelectionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentModelSelectionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentModelSelectionDto&&(identical(other.source, source) || other.source == source)&&(identical(other.modelId, modelId) || other.modelId == modelId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,source,modelId);
+
+@override
+String toString() {
+  return 'AgentModelSelectionDto(source: $source, modelId: $modelId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentModelSelectionDtoCopyWith<$Res> implements $AgentModelSelectionDtoCopyWith<$Res> {
+  factory _$AgentModelSelectionDtoCopyWith(_AgentModelSelectionDto value, $Res Function(_AgentModelSelectionDto) _then) = __$AgentModelSelectionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ AgentModelSource source, String? modelId
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentModelSelectionDtoCopyWithImpl<$Res>
+    implements _$AgentModelSelectionDtoCopyWith<$Res> {
+  __$AgentModelSelectionDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentModelSelectionDto _self;
+  final $Res Function(_AgentModelSelectionDto) _then;
+
+/// Create a copy of AgentModelSelectionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? modelId = freezed,}) {
+  return _then(_AgentModelSelectionDto(
+source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as AgentModelSource,modelId: freezed == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$AgentDefinitionDiagnosticDto {
 
  String get code; String get message; int? get line; int? get column;
@@ -4195,7 +4461,7 @@ as int?,
 /// @nodoc
 mixin _$AgentDefinitionDto {
 
- String get id; String get name; String get description; AgentMode get mode; bool get promptEnabled; String get systemPrompt; List<String> get toolIds; List<String> get callableAgentIds; String get contentHash; String get sourcePath; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
+ int get version; String get id; String get name; String get description; AgentMode get mode; AgentModelSelectionDto get model; String get driverId; List<String> get extensionIds; List<String> get toolIds; Map<String, Map<String, dynamic>> get pluginSettings; List<String> get callableAgentIds; String get prompt; String get contentHash; String get sourcePath; bool get isBuiltIn; bool get isArchived; bool get isStale; List<AgentDefinitionDiagnosticDto> get diagnostics;
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4208,16 +4474,16 @@ $AgentDefinitionDtoCopyWith<AgentDefinitionDto> get copyWith => _$AgentDefinitio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentDefinitionDto&&(identical(other.version, version) || other.version == version)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&const DeepCollectionEquality().equals(other.extensionIds, extensionIds)&&const DeepCollectionEquality().equals(other.toolIds, toolIds)&&const DeepCollectionEquality().equals(other.pluginSettings, pluginSettings)&&const DeepCollectionEquality().equals(other.callableAgentIds, callableAgentIds)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(callableAgentIds),contentHash,sourcePath,model,const DeepCollectionEquality().hash(modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
+int get hashCode => Object.hash(runtimeType,version,id,name,description,mode,model,driverId,const DeepCollectionEquality().hash(extensionIds),const DeepCollectionEquality().hash(toolIds),const DeepCollectionEquality().hash(pluginSettings),const DeepCollectionEquality().hash(callableAgentIds),prompt,contentHash,sourcePath,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(version: $version, id: $id, name: $name, description: $description, mode: $mode, model: $model, driverId: $driverId, extensionIds: $extensionIds, toolIds: $toolIds, pluginSettings: $pluginSettings, callableAgentIds: $callableAgentIds, prompt: $prompt, contentHash: $contentHash, sourcePath: $sourcePath, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4228,11 +4494,11 @@ abstract mixin class $AgentDefinitionDtoCopyWith<$Res>  {
   factory $AgentDefinitionDtoCopyWith(AgentDefinitionDto value, $Res Function(AgentDefinitionDto) _then) = _$AgentDefinitionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ int version, String id, String name, String description, AgentMode mode, AgentModelSelectionDto model, String driverId, List<String> extensionIds, List<String> toolIds, Map<String, Map<String, dynamic>> pluginSettings, List<String> callableAgentIds, String prompt, String contentHash, String sourcePath, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
-$ModelSelectionDtoCopyWith<$Res>? get model;
+$AgentModelSelectionDtoCopyWith<$Res> get model;
 
 }
 /// @nodoc
@@ -4245,22 +4511,23 @@ class _$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? version = null,Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? model = null,Object? driverId = null,Object? extensionIds = null,Object? toolIds = null,Object? pluginSettings = null,Object? callableAgentIds = null,Object? prompt = null,Object? contentHash = null,Object? sourcePath = null,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : promptEnabled // ignore: cast_nullable_to_non_nullable
-as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
-as String,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
-as List<String>,callableAgentIds: null == callableAgentIds ? _self.callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
-as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as AgentMode,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as AgentModelSelectionDto,driverId: null == driverId ? _self.driverId : driverId // ignore: cast_nullable_to_non_nullable
+as String,extensionIds: null == extensionIds ? _self.extensionIds : extensionIds // ignore: cast_nullable_to_non_nullable
+as List<String>,toolIds: null == toolIds ? _self.toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as List<String>,pluginSettings: null == pluginSettings ? _self.pluginSettings : pluginSettings // ignore: cast_nullable_to_non_nullable
+as Map<String, Map<String, dynamic>>,callableAgentIds: null == callableAgentIds ? _self.callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
+as List<String>,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
+as String,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
+as String,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
 as bool,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
@@ -4271,12 +4538,9 @@ as List<AgentDefinitionDiagnosticDto>,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
-    return null;
-  }
+$AgentModelSelectionDtoCopyWith<$Res> get model {
 
-  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $AgentModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -4361,10 +4625,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int version,  String id,  String name,  String description,  AgentMode mode,  AgentModelSelectionDto model,  String driverId,  List<String> extensionIds,  List<String> toolIds,  Map<String, Map<String, dynamic>> pluginSettings,  List<String> callableAgentIds,  String prompt,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.version,_that.id,_that.name,_that.description,_that.mode,_that.model,_that.driverId,_that.extensionIds,_that.toolIds,_that.pluginSettings,_that.callableAgentIds,_that.prompt,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return orElse();
 
 }
@@ -4382,10 +4646,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int version,  String id,  String name,  String description,  AgentMode mode,  AgentModelSelectionDto model,  String driverId,  List<String> extensionIds,  List<String> toolIds,  Map<String, Map<String, dynamic>> pluginSettings,  List<String> callableAgentIds,  String prompt,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto():
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.version,_that.id,_that.name,_that.description,_that.mode,_that.model,_that.driverId,_that.extensionIds,_that.toolIds,_that.pluginSettings,_that.callableAgentIds,_that.prompt,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4402,10 +4666,10 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AgentMode mode,  bool promptEnabled,  String systemPrompt,  List<String> toolIds,  List<String> callableAgentIds,  String contentHash,  String sourcePath,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int version,  String id,  String name,  String description,  AgentMode mode,  AgentModelSelectionDto model,  String driverId,  List<String> extensionIds,  List<String> toolIds,  Map<String, Map<String, dynamic>> pluginSettings,  List<String> callableAgentIds,  String prompt,  String contentHash,  String sourcePath,  bool isBuiltIn,  bool isArchived,  bool isStale,  List<AgentDefinitionDiagnosticDto> diagnostics)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEnabled,_that.systemPrompt,_that.toolIds,_that.callableAgentIds,_that.contentHash,_that.sourcePath,_that.model,_that.modelControls,_that.permissionMode,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
+return $default(_that.version,_that.id,_that.name,_that.description,_that.mode,_that.model,_that.driverId,_that.extensionIds,_that.toolIds,_that.pluginSettings,_that.callableAgentIds,_that.prompt,_that.contentHash,_that.sourcePath,_that.isBuiltIn,_that.isArchived,_that.isStale,_that.diagnostics);case _:
   return null;
 
 }
@@ -4417,20 +4681,35 @@ return $default(_that.id,_that.name,_that.description,_that.mode,_that.promptEna
 @JsonSerializable()
 
 class _AgentDefinitionDto implements AgentDefinitionDto {
-  const _AgentDefinitionDto({required this.id, required this.name, required this.description, required this.mode, required this.promptEnabled, required this.systemPrompt, required final  List<String> toolIds, required final  List<String> callableAgentIds, required this.contentHash, required this.sourcePath, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _toolIds = toolIds,_callableAgentIds = callableAgentIds,_modelControls = modelControls,_diagnostics = diagnostics;
+  const _AgentDefinitionDto({required this.version, required this.id, required this.name, required this.description, required this.mode, required this.model, required this.driverId, required final  List<String> extensionIds, required final  List<String> toolIds, required final  Map<String, Map<String, dynamic>> pluginSettings, required final  List<String> callableAgentIds, required this.prompt, required this.contentHash, required this.sourcePath, this.isBuiltIn = false, this.isArchived = false, this.isStale = false, final  List<AgentDefinitionDiagnosticDto> diagnostics = const <AgentDefinitionDiagnosticDto>[]}): _extensionIds = extensionIds,_toolIds = toolIds,_pluginSettings = pluginSettings,_callableAgentIds = callableAgentIds,_diagnostics = diagnostics;
   factory _AgentDefinitionDto.fromJson(Map<String, dynamic> json) => _$AgentDefinitionDtoFromJson(json);
 
+@override final  int version;
 @override final  String id;
 @override final  String name;
 @override final  String description;
 @override final  AgentMode mode;
-@override final  bool promptEnabled;
-@override final  String systemPrompt;
+@override final  AgentModelSelectionDto model;
+@override final  String driverId;
+ final  List<String> _extensionIds;
+@override List<String> get extensionIds {
+  if (_extensionIds is EqualUnmodifiableListView) return _extensionIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_extensionIds);
+}
+
  final  List<String> _toolIds;
 @override List<String> get toolIds {
   if (_toolIds is EqualUnmodifiableListView) return _toolIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_toolIds);
+}
+
+ final  Map<String, Map<String, dynamic>> _pluginSettings;
+@override Map<String, Map<String, dynamic>> get pluginSettings {
+  if (_pluginSettings is EqualUnmodifiableMapView) return _pluginSettings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_pluginSettings);
 }
 
  final  List<String> _callableAgentIds;
@@ -4440,17 +4719,9 @@ class _AgentDefinitionDto implements AgentDefinitionDto {
   return EqualUnmodifiableListView(_callableAgentIds);
 }
 
+@override final  String prompt;
 @override final  String contentHash;
 @override final  String sourcePath;
-@override final  ModelSelectionDto? model;
- final  Map<String, ModelControlValueDto> _modelControls;
-@override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
-  if (_modelControls is EqualUnmodifiableMapView) return _modelControls;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_modelControls);
-}
-
-@override final  PermissionMode? permissionMode;
 @override@JsonKey() final  bool isBuiltIn;
 @override@JsonKey() final  bool isArchived;
 @override@JsonKey() final  bool isStale;
@@ -4475,16 +4746,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.promptEnabled, promptEnabled) || other.promptEnabled == promptEnabled)&&(identical(other.systemPrompt, systemPrompt) || other.systemPrompt == systemPrompt)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentDefinitionDto&&(identical(other.version, version) || other.version == version)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&const DeepCollectionEquality().equals(other._extensionIds, _extensionIds)&&const DeepCollectionEquality().equals(other._toolIds, _toolIds)&&const DeepCollectionEquality().equals(other._pluginSettings, _pluginSettings)&&const DeepCollectionEquality().equals(other._callableAgentIds, _callableAgentIds)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.isBuiltIn, isBuiltIn) || other.isBuiltIn == isBuiltIn)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isStale, isStale) || other.isStale == isStale)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,mode,promptEnabled,systemPrompt,const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_callableAgentIds),contentHash,sourcePath,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
+int get hashCode => Object.hash(runtimeType,version,id,name,description,mode,model,driverId,const DeepCollectionEquality().hash(_extensionIds),const DeepCollectionEquality().hash(_toolIds),const DeepCollectionEquality().hash(_pluginSettings),const DeepCollectionEquality().hash(_callableAgentIds),prompt,contentHash,sourcePath,isBuiltIn,isArchived,isStale,const DeepCollectionEquality().hash(_diagnostics));
 
 @override
 String toString() {
-  return 'AgentDefinitionDto(id: $id, name: $name, description: $description, mode: $mode, promptEnabled: $promptEnabled, systemPrompt: $systemPrompt, toolIds: $toolIds, callableAgentIds: $callableAgentIds, contentHash: $contentHash, sourcePath: $sourcePath, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
+  return 'AgentDefinitionDto(version: $version, id: $id, name: $name, description: $description, mode: $mode, model: $model, driverId: $driverId, extensionIds: $extensionIds, toolIds: $toolIds, pluginSettings: $pluginSettings, callableAgentIds: $callableAgentIds, prompt: $prompt, contentHash: $contentHash, sourcePath: $sourcePath, isBuiltIn: $isBuiltIn, isArchived: $isArchived, isStale: $isStale, diagnostics: $diagnostics)';
 }
 
 
@@ -4495,11 +4766,11 @@ abstract mixin class _$AgentDefinitionDtoCopyWith<$Res> implements $AgentDefinit
   factory _$AgentDefinitionDtoCopyWith(_AgentDefinitionDto value, $Res Function(_AgentDefinitionDto) _then) = __$AgentDefinitionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, AgentMode mode, bool promptEnabled, String systemPrompt, List<String> toolIds, List<String> callableAgentIds, String contentHash, String sourcePath, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
+ int version, String id, String name, String description, AgentMode mode, AgentModelSelectionDto model, String driverId, List<String> extensionIds, List<String> toolIds, Map<String, Map<String, dynamic>> pluginSettings, List<String> callableAgentIds, String prompt, String contentHash, String sourcePath, bool isBuiltIn, bool isArchived, bool isStale, List<AgentDefinitionDiagnosticDto> diagnostics
 });
 
 
-@override $ModelSelectionDtoCopyWith<$Res>? get model;
+@override $AgentModelSelectionDtoCopyWith<$Res> get model;
 
 }
 /// @nodoc
@@ -4512,22 +4783,23 @@ class __$AgentDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? promptEnabled = null,Object? systemPrompt = null,Object? toolIds = null,Object? callableAgentIds = null,Object? contentHash = null,Object? sourcePath = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? version = null,Object? id = null,Object? name = null,Object? description = null,Object? mode = null,Object? model = null,Object? driverId = null,Object? extensionIds = null,Object? toolIds = null,Object? pluginSettings = null,Object? callableAgentIds = null,Object? prompt = null,Object? contentHash = null,Object? sourcePath = null,Object? isBuiltIn = null,Object? isArchived = null,Object? isStale = null,Object? diagnostics = null,}) {
   return _then(_AgentDefinitionDto(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as AgentMode,promptEnabled: null == promptEnabled ? _self.promptEnabled : promptEnabled // ignore: cast_nullable_to_non_nullable
-as bool,systemPrompt: null == systemPrompt ? _self.systemPrompt : systemPrompt // ignore: cast_nullable_to_non_nullable
-as String,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
-as List<String>,callableAgentIds: null == callableAgentIds ? _self._callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
-as List<String>,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as AgentMode,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as AgentModelSelectionDto,driverId: null == driverId ? _self.driverId : driverId // ignore: cast_nullable_to_non_nullable
+as String,extensionIds: null == extensionIds ? _self._extensionIds : extensionIds // ignore: cast_nullable_to_non_nullable
+as List<String>,toolIds: null == toolIds ? _self._toolIds : toolIds // ignore: cast_nullable_to_non_nullable
+as List<String>,pluginSettings: null == pluginSettings ? _self._pluginSettings : pluginSettings // ignore: cast_nullable_to_non_nullable
+as Map<String, Map<String, dynamic>>,callableAgentIds: null == callableAgentIds ? _self._callableAgentIds : callableAgentIds // ignore: cast_nullable_to_non_nullable
+as List<String>,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
+as String,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
-as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
+as String,isBuiltIn: null == isBuiltIn ? _self.isBuiltIn : isBuiltIn // ignore: cast_nullable_to_non_nullable
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
 as bool,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
@@ -4539,12 +4811,9 @@ as List<AgentDefinitionDiagnosticDto>,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ModelSelectionDtoCopyWith<$Res>? get model {
-    if (_self.model == null) {
-    return null;
-  }
+$AgentModelSelectionDtoCopyWith<$Res> get model {
 
-  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
+  return $AgentModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -4552,9 +4821,2634 @@ $ModelSelectionDtoCopyWith<$Res>? get model {
 
 
 /// @nodoc
+mixin _$PluginDiagnosticDto {
+
+ String get code; String get message; PluginDiagnosticSeverity get severity; String? get path; int? get line; int? get column;
+/// Create a copy of PluginDiagnosticDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginDiagnosticDtoCopyWith<PluginDiagnosticDto> get copyWith => _$PluginDiagnosticDtoCopyWithImpl<PluginDiagnosticDto>(this as PluginDiagnosticDto, _$identity);
+
+  /// Serializes this PluginDiagnosticDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginDiagnosticDto&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.path, path) || other.path == path)&&(identical(other.line, line) || other.line == line)&&(identical(other.column, column) || other.column == column));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,code,message,severity,path,line,column);
+
+@override
+String toString() {
+  return 'PluginDiagnosticDto(code: $code, message: $message, severity: $severity, path: $path, line: $line, column: $column)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginDiagnosticDtoCopyWith<$Res>  {
+  factory $PluginDiagnosticDtoCopyWith(PluginDiagnosticDto value, $Res Function(PluginDiagnosticDto) _then) = _$PluginDiagnosticDtoCopyWithImpl;
+@useResult
+$Res call({
+ String code, String message, PluginDiagnosticSeverity severity, String? path, int? line, int? column
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginDiagnosticDtoCopyWithImpl<$Res>
+    implements $PluginDiagnosticDtoCopyWith<$Res> {
+  _$PluginDiagnosticDtoCopyWithImpl(this._self, this._then);
+
+  final PluginDiagnosticDto _self;
+  final $Res Function(PluginDiagnosticDto) _then;
+
+/// Create a copy of PluginDiagnosticDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? message = null,Object? severity = null,Object? path = freezed,Object? line = freezed,Object? column = freezed,}) {
+  return _then(_self.copyWith(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,severity: null == severity ? _self.severity : severity // ignore: cast_nullable_to_non_nullable
+as PluginDiagnosticSeverity,path: freezed == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String?,line: freezed == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
+as int?,column: freezed == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginDiagnosticDto].
+extension PluginDiagnosticDtoPatterns on PluginDiagnosticDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginDiagnosticDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginDiagnosticDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginDiagnosticDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String message,  PluginDiagnosticSeverity severity,  String? path,  int? line,  int? column)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto() when $default != null:
+return $default(_that.code,_that.message,_that.severity,_that.path,_that.line,_that.column);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String message,  PluginDiagnosticSeverity severity,  String? path,  int? line,  int? column)  $default,) {final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto():
+return $default(_that.code,_that.message,_that.severity,_that.path,_that.line,_that.column);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String message,  PluginDiagnosticSeverity severity,  String? path,  int? line,  int? column)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginDiagnosticDto() when $default != null:
+return $default(_that.code,_that.message,_that.severity,_that.path,_that.line,_that.column);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginDiagnosticDto implements PluginDiagnosticDto {
+  const _PluginDiagnosticDto({required this.code, required this.message, required this.severity, this.path, this.line, this.column});
+  factory _PluginDiagnosticDto.fromJson(Map<String, dynamic> json) => _$PluginDiagnosticDtoFromJson(json);
+
+@override final  String code;
+@override final  String message;
+@override final  PluginDiagnosticSeverity severity;
+@override final  String? path;
+@override final  int? line;
+@override final  int? column;
+
+/// Create a copy of PluginDiagnosticDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginDiagnosticDtoCopyWith<_PluginDiagnosticDto> get copyWith => __$PluginDiagnosticDtoCopyWithImpl<_PluginDiagnosticDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginDiagnosticDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginDiagnosticDto&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.path, path) || other.path == path)&&(identical(other.line, line) || other.line == line)&&(identical(other.column, column) || other.column == column));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,code,message,severity,path,line,column);
+
+@override
+String toString() {
+  return 'PluginDiagnosticDto(code: $code, message: $message, severity: $severity, path: $path, line: $line, column: $column)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginDiagnosticDtoCopyWith<$Res> implements $PluginDiagnosticDtoCopyWith<$Res> {
+  factory _$PluginDiagnosticDtoCopyWith(_PluginDiagnosticDto value, $Res Function(_PluginDiagnosticDto) _then) = __$PluginDiagnosticDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String code, String message, PluginDiagnosticSeverity severity, String? path, int? line, int? column
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginDiagnosticDtoCopyWithImpl<$Res>
+    implements _$PluginDiagnosticDtoCopyWith<$Res> {
+  __$PluginDiagnosticDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginDiagnosticDto _self;
+  final $Res Function(_PluginDiagnosticDto) _then;
+
+/// Create a copy of PluginDiagnosticDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? message = null,Object? severity = null,Object? path = freezed,Object? line = freezed,Object? column = freezed,}) {
+  return _then(_PluginDiagnosticDto(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,severity: null == severity ? _self.severity : severity // ignore: cast_nullable_to_non_nullable
+as PluginDiagnosticSeverity,path: freezed == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String?,line: freezed == line ? _self.line : line // ignore: cast_nullable_to_non_nullable
+as int?,column: freezed == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginRevisionDto {
+
+ String get pluginId; String get contentHash; String get manifestHash; String get sdkAbiHash; String get executionRevisionHash; List<String> get requestedCapabilities;
+/// Create a copy of PluginRevisionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginRevisionDtoCopyWith<PluginRevisionDto> get copyWith => _$PluginRevisionDtoCopyWithImpl<PluginRevisionDto>(this as PluginRevisionDto, _$identity);
+
+  /// Serializes this PluginRevisionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginRevisionDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.manifestHash, manifestHash) || other.manifestHash == manifestHash)&&(identical(other.sdkAbiHash, sdkAbiHash) || other.sdkAbiHash == sdkAbiHash)&&(identical(other.executionRevisionHash, executionRevisionHash) || other.executionRevisionHash == executionRevisionHash)&&const DeepCollectionEquality().equals(other.requestedCapabilities, requestedCapabilities));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,contentHash,manifestHash,sdkAbiHash,executionRevisionHash,const DeepCollectionEquality().hash(requestedCapabilities));
+
+@override
+String toString() {
+  return 'PluginRevisionDto(pluginId: $pluginId, contentHash: $contentHash, manifestHash: $manifestHash, sdkAbiHash: $sdkAbiHash, executionRevisionHash: $executionRevisionHash, requestedCapabilities: $requestedCapabilities)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginRevisionDtoCopyWith<$Res>  {
+  factory $PluginRevisionDtoCopyWith(PluginRevisionDto value, $Res Function(PluginRevisionDto) _then) = _$PluginRevisionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String pluginId, String contentHash, String manifestHash, String sdkAbiHash, String executionRevisionHash, List<String> requestedCapabilities
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginRevisionDtoCopyWithImpl<$Res>
+    implements $PluginRevisionDtoCopyWith<$Res> {
+  _$PluginRevisionDtoCopyWithImpl(this._self, this._then);
+
+  final PluginRevisionDto _self;
+  final $Res Function(PluginRevisionDto) _then;
+
+/// Create a copy of PluginRevisionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? pluginId = null,Object? contentHash = null,Object? manifestHash = null,Object? sdkAbiHash = null,Object? executionRevisionHash = null,Object? requestedCapabilities = null,}) {
+  return _then(_self.copyWith(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as String,manifestHash: null == manifestHash ? _self.manifestHash : manifestHash // ignore: cast_nullable_to_non_nullable
+as String,sdkAbiHash: null == sdkAbiHash ? _self.sdkAbiHash : sdkAbiHash // ignore: cast_nullable_to_non_nullable
+as String,executionRevisionHash: null == executionRevisionHash ? _self.executionRevisionHash : executionRevisionHash // ignore: cast_nullable_to_non_nullable
+as String,requestedCapabilities: null == requestedCapabilities ? _self.requestedCapabilities : requestedCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginRevisionDto].
+extension PluginRevisionDtoPatterns on PluginRevisionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginRevisionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginRevisionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginRevisionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginRevisionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginRevisionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginRevisionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String pluginId,  String contentHash,  String manifestHash,  String sdkAbiHash,  String executionRevisionHash,  List<String> requestedCapabilities)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginRevisionDto() when $default != null:
+return $default(_that.pluginId,_that.contentHash,_that.manifestHash,_that.sdkAbiHash,_that.executionRevisionHash,_that.requestedCapabilities);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String pluginId,  String contentHash,  String manifestHash,  String sdkAbiHash,  String executionRevisionHash,  List<String> requestedCapabilities)  $default,) {final _that = this;
+switch (_that) {
+case _PluginRevisionDto():
+return $default(_that.pluginId,_that.contentHash,_that.manifestHash,_that.sdkAbiHash,_that.executionRevisionHash,_that.requestedCapabilities);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String pluginId,  String contentHash,  String manifestHash,  String sdkAbiHash,  String executionRevisionHash,  List<String> requestedCapabilities)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginRevisionDto() when $default != null:
+return $default(_that.pluginId,_that.contentHash,_that.manifestHash,_that.sdkAbiHash,_that.executionRevisionHash,_that.requestedCapabilities);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginRevisionDto implements PluginRevisionDto {
+  const _PluginRevisionDto({required this.pluginId, required this.contentHash, required this.manifestHash, required this.sdkAbiHash, required this.executionRevisionHash, required final  List<String> requestedCapabilities}): _requestedCapabilities = requestedCapabilities;
+  factory _PluginRevisionDto.fromJson(Map<String, dynamic> json) => _$PluginRevisionDtoFromJson(json);
+
+@override final  String pluginId;
+@override final  String contentHash;
+@override final  String manifestHash;
+@override final  String sdkAbiHash;
+@override final  String executionRevisionHash;
+ final  List<String> _requestedCapabilities;
+@override List<String> get requestedCapabilities {
+  if (_requestedCapabilities is EqualUnmodifiableListView) return _requestedCapabilities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_requestedCapabilities);
+}
+
+
+/// Create a copy of PluginRevisionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginRevisionDtoCopyWith<_PluginRevisionDto> get copyWith => __$PluginRevisionDtoCopyWithImpl<_PluginRevisionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginRevisionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginRevisionDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contentHash, contentHash) || other.contentHash == contentHash)&&(identical(other.manifestHash, manifestHash) || other.manifestHash == manifestHash)&&(identical(other.sdkAbiHash, sdkAbiHash) || other.sdkAbiHash == sdkAbiHash)&&(identical(other.executionRevisionHash, executionRevisionHash) || other.executionRevisionHash == executionRevisionHash)&&const DeepCollectionEquality().equals(other._requestedCapabilities, _requestedCapabilities));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,contentHash,manifestHash,sdkAbiHash,executionRevisionHash,const DeepCollectionEquality().hash(_requestedCapabilities));
+
+@override
+String toString() {
+  return 'PluginRevisionDto(pluginId: $pluginId, contentHash: $contentHash, manifestHash: $manifestHash, sdkAbiHash: $sdkAbiHash, executionRevisionHash: $executionRevisionHash, requestedCapabilities: $requestedCapabilities)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginRevisionDtoCopyWith<$Res> implements $PluginRevisionDtoCopyWith<$Res> {
+  factory _$PluginRevisionDtoCopyWith(_PluginRevisionDto value, $Res Function(_PluginRevisionDto) _then) = __$PluginRevisionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String pluginId, String contentHash, String manifestHash, String sdkAbiHash, String executionRevisionHash, List<String> requestedCapabilities
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginRevisionDtoCopyWithImpl<$Res>
+    implements _$PluginRevisionDtoCopyWith<$Res> {
+  __$PluginRevisionDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginRevisionDto _self;
+  final $Res Function(_PluginRevisionDto) _then;
+
+/// Create a copy of PluginRevisionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? pluginId = null,Object? contentHash = null,Object? manifestHash = null,Object? sdkAbiHash = null,Object? executionRevisionHash = null,Object? requestedCapabilities = null,}) {
+  return _then(_PluginRevisionDto(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contentHash: null == contentHash ? _self.contentHash : contentHash // ignore: cast_nullable_to_non_nullable
+as String,manifestHash: null == manifestHash ? _self.manifestHash : manifestHash // ignore: cast_nullable_to_non_nullable
+as String,sdkAbiHash: null == sdkAbiHash ? _self.sdkAbiHash : sdkAbiHash // ignore: cast_nullable_to_non_nullable
+as String,executionRevisionHash: null == executionRevisionHash ? _self.executionRevisionHash : executionRevisionHash // ignore: cast_nullable_to_non_nullable
+as String,requestedCapabilities: null == requestedCapabilities ? _self._requestedCapabilities : requestedCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginContributionDto {
+
+ String get pluginId; String get id; PluginContributionKind get kind; List<String> get requiredCapabilities; AgentToolDefinitionDto? get tool; Map<String, dynamic> get metadata;
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginContributionDtoCopyWith<PluginContributionDto> get copyWith => _$PluginContributionDtoCopyWithImpl<PluginContributionDto>(this as PluginContributionDto, _$identity);
+
+  /// Serializes this PluginContributionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginContributionDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other.requiredCapabilities, requiredCapabilities)&&(identical(other.tool, tool) || other.tool == tool)&&const DeepCollectionEquality().equals(other.metadata, metadata));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,id,kind,const DeepCollectionEquality().hash(requiredCapabilities),tool,const DeepCollectionEquality().hash(metadata));
+
+@override
+String toString() {
+  return 'PluginContributionDto(pluginId: $pluginId, id: $id, kind: $kind, requiredCapabilities: $requiredCapabilities, tool: $tool, metadata: $metadata)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginContributionDtoCopyWith<$Res>  {
+  factory $PluginContributionDtoCopyWith(PluginContributionDto value, $Res Function(PluginContributionDto) _then) = _$PluginContributionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String pluginId, String id, PluginContributionKind kind, List<String> requiredCapabilities, AgentToolDefinitionDto? tool, Map<String, dynamic> metadata
+});
+
+
+$AgentToolDefinitionDtoCopyWith<$Res>? get tool;
+
+}
+/// @nodoc
+class _$PluginContributionDtoCopyWithImpl<$Res>
+    implements $PluginContributionDtoCopyWith<$Res> {
+  _$PluginContributionDtoCopyWithImpl(this._self, this._then);
+
+  final PluginContributionDto _self;
+  final $Res Function(PluginContributionDto) _then;
+
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? pluginId = null,Object? id = null,Object? kind = null,Object? requiredCapabilities = null,Object? tool = freezed,Object? metadata = null,}) {
+  return _then(_self.copyWith(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as PluginContributionKind,requiredCapabilities: null == requiredCapabilities ? _self.requiredCapabilities : requiredCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,tool: freezed == tool ? _self.tool : tool // ignore: cast_nullable_to_non_nullable
+as AgentToolDefinitionDto?,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentToolDefinitionDtoCopyWith<$Res>? get tool {
+    if (_self.tool == null) {
+    return null;
+  }
+
+  return $AgentToolDefinitionDtoCopyWith<$Res>(_self.tool!, (value) {
+    return _then(_self.copyWith(tool: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginContributionDto].
+extension PluginContributionDtoPatterns on PluginContributionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginContributionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginContributionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginContributionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginContributionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginContributionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginContributionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String pluginId,  String id,  PluginContributionKind kind,  List<String> requiredCapabilities,  AgentToolDefinitionDto? tool,  Map<String, dynamic> metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginContributionDto() when $default != null:
+return $default(_that.pluginId,_that.id,_that.kind,_that.requiredCapabilities,_that.tool,_that.metadata);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String pluginId,  String id,  PluginContributionKind kind,  List<String> requiredCapabilities,  AgentToolDefinitionDto? tool,  Map<String, dynamic> metadata)  $default,) {final _that = this;
+switch (_that) {
+case _PluginContributionDto():
+return $default(_that.pluginId,_that.id,_that.kind,_that.requiredCapabilities,_that.tool,_that.metadata);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String pluginId,  String id,  PluginContributionKind kind,  List<String> requiredCapabilities,  AgentToolDefinitionDto? tool,  Map<String, dynamic> metadata)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginContributionDto() when $default != null:
+return $default(_that.pluginId,_that.id,_that.kind,_that.requiredCapabilities,_that.tool,_that.metadata);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginContributionDto implements PluginContributionDto {
+  const _PluginContributionDto({required this.pluginId, required this.id, required this.kind, final  List<String> requiredCapabilities = const <String>[], this.tool, final  Map<String, dynamic> metadata = const <String, dynamic>{}}): _requiredCapabilities = requiredCapabilities,_metadata = metadata;
+  factory _PluginContributionDto.fromJson(Map<String, dynamic> json) => _$PluginContributionDtoFromJson(json);
+
+@override final  String pluginId;
+@override final  String id;
+@override final  PluginContributionKind kind;
+ final  List<String> _requiredCapabilities;
+@override@JsonKey() List<String> get requiredCapabilities {
+  if (_requiredCapabilities is EqualUnmodifiableListView) return _requiredCapabilities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_requiredCapabilities);
+}
+
+@override final  AgentToolDefinitionDto? tool;
+ final  Map<String, dynamic> _metadata;
+@override@JsonKey() Map<String, dynamic> get metadata {
+  if (_metadata is EqualUnmodifiableMapView) return _metadata;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_metadata);
+}
+
+
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginContributionDtoCopyWith<_PluginContributionDto> get copyWith => __$PluginContributionDtoCopyWithImpl<_PluginContributionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginContributionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginContributionDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other._requiredCapabilities, _requiredCapabilities)&&(identical(other.tool, tool) || other.tool == tool)&&const DeepCollectionEquality().equals(other._metadata, _metadata));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,id,kind,const DeepCollectionEquality().hash(_requiredCapabilities),tool,const DeepCollectionEquality().hash(_metadata));
+
+@override
+String toString() {
+  return 'PluginContributionDto(pluginId: $pluginId, id: $id, kind: $kind, requiredCapabilities: $requiredCapabilities, tool: $tool, metadata: $metadata)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginContributionDtoCopyWith<$Res> implements $PluginContributionDtoCopyWith<$Res> {
+  factory _$PluginContributionDtoCopyWith(_PluginContributionDto value, $Res Function(_PluginContributionDto) _then) = __$PluginContributionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String pluginId, String id, PluginContributionKind kind, List<String> requiredCapabilities, AgentToolDefinitionDto? tool, Map<String, dynamic> metadata
+});
+
+
+@override $AgentToolDefinitionDtoCopyWith<$Res>? get tool;
+
+}
+/// @nodoc
+class __$PluginContributionDtoCopyWithImpl<$Res>
+    implements _$PluginContributionDtoCopyWith<$Res> {
+  __$PluginContributionDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginContributionDto _self;
+  final $Res Function(_PluginContributionDto) _then;
+
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? pluginId = null,Object? id = null,Object? kind = null,Object? requiredCapabilities = null,Object? tool = freezed,Object? metadata = null,}) {
+  return _then(_PluginContributionDto(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as PluginContributionKind,requiredCapabilities: null == requiredCapabilities ? _self._requiredCapabilities : requiredCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,tool: freezed == tool ? _self.tool : tool // ignore: cast_nullable_to_non_nullable
+as AgentToolDefinitionDto?,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+/// Create a copy of PluginContributionDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentToolDefinitionDtoCopyWith<$Res>? get tool {
+    if (_self.tool == null) {
+    return null;
+  }
+
+  return $AgentToolDefinitionDtoCopyWith<$Res>(_self.tool!, (value) {
+    return _then(_self.copyWith(tool: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginDescriptorDto {
+
+ int get apiMajor; String get id; String get version; String get name; String get entrypoint; PluginSource get source; String get sourcePath; List<String> get requestedCapabilities; PluginRevisionDto? get revision; List<PluginContributionDto> get contributions; List<PluginDiagnosticDto> get diagnostics; bool get isStale;
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginDescriptorDtoCopyWith<PluginDescriptorDto> get copyWith => _$PluginDescriptorDtoCopyWithImpl<PluginDescriptorDto>(this as PluginDescriptorDto, _$identity);
+
+  /// Serializes this PluginDescriptorDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginDescriptorDto&&(identical(other.apiMajor, apiMajor) || other.apiMajor == apiMajor)&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.name, name) || other.name == name)&&(identical(other.entrypoint, entrypoint) || other.entrypoint == entrypoint)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&const DeepCollectionEquality().equals(other.requestedCapabilities, requestedCapabilities)&&(identical(other.revision, revision) || other.revision == revision)&&const DeepCollectionEquality().equals(other.contributions, contributions)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics)&&(identical(other.isStale, isStale) || other.isStale == isStale));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,apiMajor,id,version,name,entrypoint,source,sourcePath,const DeepCollectionEquality().hash(requestedCapabilities),revision,const DeepCollectionEquality().hash(contributions),const DeepCollectionEquality().hash(diagnostics),isStale);
+
+@override
+String toString() {
+  return 'PluginDescriptorDto(apiMajor: $apiMajor, id: $id, version: $version, name: $name, entrypoint: $entrypoint, source: $source, sourcePath: $sourcePath, requestedCapabilities: $requestedCapabilities, revision: $revision, contributions: $contributions, diagnostics: $diagnostics, isStale: $isStale)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginDescriptorDtoCopyWith<$Res>  {
+  factory $PluginDescriptorDtoCopyWith(PluginDescriptorDto value, $Res Function(PluginDescriptorDto) _then) = _$PluginDescriptorDtoCopyWithImpl;
+@useResult
+$Res call({
+ int apiMajor, String id, String version, String name, String entrypoint, PluginSource source, String sourcePath, List<String> requestedCapabilities, PluginRevisionDto? revision, List<PluginContributionDto> contributions, List<PluginDiagnosticDto> diagnostics, bool isStale
+});
+
+
+$PluginRevisionDtoCopyWith<$Res>? get revision;
+
+}
+/// @nodoc
+class _$PluginDescriptorDtoCopyWithImpl<$Res>
+    implements $PluginDescriptorDtoCopyWith<$Res> {
+  _$PluginDescriptorDtoCopyWithImpl(this._self, this._then);
+
+  final PluginDescriptorDto _self;
+  final $Res Function(PluginDescriptorDto) _then;
+
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? apiMajor = null,Object? id = null,Object? version = null,Object? name = null,Object? entrypoint = null,Object? source = null,Object? sourcePath = null,Object? requestedCapabilities = null,Object? revision = freezed,Object? contributions = null,Object? diagnostics = null,Object? isStale = null,}) {
+  return _then(_self.copyWith(
+apiMajor: null == apiMajor ? _self.apiMajor : apiMajor // ignore: cast_nullable_to_non_nullable
+as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,entrypoint: null == entrypoint ? _self.entrypoint : entrypoint // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as PluginSource,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,requestedCapabilities: null == requestedCapabilities ? _self.requestedCapabilities : requestedCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
+as PluginRevisionDto?,contributions: null == contributions ? _self.contributions : contributions // ignore: cast_nullable_to_non_nullable
+as List<PluginContributionDto>,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<PluginDiagnosticDto>,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginRevisionDtoCopyWith<$Res>? get revision {
+    if (_self.revision == null) {
+    return null;
+  }
+
+  return $PluginRevisionDtoCopyWith<$Res>(_self.revision!, (value) {
+    return _then(_self.copyWith(revision: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginDescriptorDto].
+extension PluginDescriptorDtoPatterns on PluginDescriptorDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginDescriptorDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginDescriptorDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginDescriptorDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginDescriptorDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginDescriptorDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginDescriptorDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int apiMajor,  String id,  String version,  String name,  String entrypoint,  PluginSource source,  String sourcePath,  List<String> requestedCapabilities,  PluginRevisionDto? revision,  List<PluginContributionDto> contributions,  List<PluginDiagnosticDto> diagnostics,  bool isStale)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginDescriptorDto() when $default != null:
+return $default(_that.apiMajor,_that.id,_that.version,_that.name,_that.entrypoint,_that.source,_that.sourcePath,_that.requestedCapabilities,_that.revision,_that.contributions,_that.diagnostics,_that.isStale);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int apiMajor,  String id,  String version,  String name,  String entrypoint,  PluginSource source,  String sourcePath,  List<String> requestedCapabilities,  PluginRevisionDto? revision,  List<PluginContributionDto> contributions,  List<PluginDiagnosticDto> diagnostics,  bool isStale)  $default,) {final _that = this;
+switch (_that) {
+case _PluginDescriptorDto():
+return $default(_that.apiMajor,_that.id,_that.version,_that.name,_that.entrypoint,_that.source,_that.sourcePath,_that.requestedCapabilities,_that.revision,_that.contributions,_that.diagnostics,_that.isStale);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int apiMajor,  String id,  String version,  String name,  String entrypoint,  PluginSource source,  String sourcePath,  List<String> requestedCapabilities,  PluginRevisionDto? revision,  List<PluginContributionDto> contributions,  List<PluginDiagnosticDto> diagnostics,  bool isStale)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginDescriptorDto() when $default != null:
+return $default(_that.apiMajor,_that.id,_that.version,_that.name,_that.entrypoint,_that.source,_that.sourcePath,_that.requestedCapabilities,_that.revision,_that.contributions,_that.diagnostics,_that.isStale);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginDescriptorDto implements PluginDescriptorDto {
+  const _PluginDescriptorDto({required this.apiMajor, required this.id, required this.version, required this.name, required this.entrypoint, required this.source, required this.sourcePath, required final  List<String> requestedCapabilities, this.revision, final  List<PluginContributionDto> contributions = const <PluginContributionDto>[], final  List<PluginDiagnosticDto> diagnostics = const <PluginDiagnosticDto>[], this.isStale = false}): _requestedCapabilities = requestedCapabilities,_contributions = contributions,_diagnostics = diagnostics;
+  factory _PluginDescriptorDto.fromJson(Map<String, dynamic> json) => _$PluginDescriptorDtoFromJson(json);
+
+@override final  int apiMajor;
+@override final  String id;
+@override final  String version;
+@override final  String name;
+@override final  String entrypoint;
+@override final  PluginSource source;
+@override final  String sourcePath;
+ final  List<String> _requestedCapabilities;
+@override List<String> get requestedCapabilities {
+  if (_requestedCapabilities is EqualUnmodifiableListView) return _requestedCapabilities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_requestedCapabilities);
+}
+
+@override final  PluginRevisionDto? revision;
+ final  List<PluginContributionDto> _contributions;
+@override@JsonKey() List<PluginContributionDto> get contributions {
+  if (_contributions is EqualUnmodifiableListView) return _contributions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_contributions);
+}
+
+ final  List<PluginDiagnosticDto> _diagnostics;
+@override@JsonKey() List<PluginDiagnosticDto> get diagnostics {
+  if (_diagnostics is EqualUnmodifiableListView) return _diagnostics;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_diagnostics);
+}
+
+@override@JsonKey() final  bool isStale;
+
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginDescriptorDtoCopyWith<_PluginDescriptorDto> get copyWith => __$PluginDescriptorDtoCopyWithImpl<_PluginDescriptorDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginDescriptorDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginDescriptorDto&&(identical(other.apiMajor, apiMajor) || other.apiMajor == apiMajor)&&(identical(other.id, id) || other.id == id)&&(identical(other.version, version) || other.version == version)&&(identical(other.name, name) || other.name == name)&&(identical(other.entrypoint, entrypoint) || other.entrypoint == entrypoint)&&(identical(other.source, source) || other.source == source)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&const DeepCollectionEquality().equals(other._requestedCapabilities, _requestedCapabilities)&&(identical(other.revision, revision) || other.revision == revision)&&const DeepCollectionEquality().equals(other._contributions, _contributions)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics)&&(identical(other.isStale, isStale) || other.isStale == isStale));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,apiMajor,id,version,name,entrypoint,source,sourcePath,const DeepCollectionEquality().hash(_requestedCapabilities),revision,const DeepCollectionEquality().hash(_contributions),const DeepCollectionEquality().hash(_diagnostics),isStale);
+
+@override
+String toString() {
+  return 'PluginDescriptorDto(apiMajor: $apiMajor, id: $id, version: $version, name: $name, entrypoint: $entrypoint, source: $source, sourcePath: $sourcePath, requestedCapabilities: $requestedCapabilities, revision: $revision, contributions: $contributions, diagnostics: $diagnostics, isStale: $isStale)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginDescriptorDtoCopyWith<$Res> implements $PluginDescriptorDtoCopyWith<$Res> {
+  factory _$PluginDescriptorDtoCopyWith(_PluginDescriptorDto value, $Res Function(_PluginDescriptorDto) _then) = __$PluginDescriptorDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ int apiMajor, String id, String version, String name, String entrypoint, PluginSource source, String sourcePath, List<String> requestedCapabilities, PluginRevisionDto? revision, List<PluginContributionDto> contributions, List<PluginDiagnosticDto> diagnostics, bool isStale
+});
+
+
+@override $PluginRevisionDtoCopyWith<$Res>? get revision;
+
+}
+/// @nodoc
+class __$PluginDescriptorDtoCopyWithImpl<$Res>
+    implements _$PluginDescriptorDtoCopyWith<$Res> {
+  __$PluginDescriptorDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginDescriptorDto _self;
+  final $Res Function(_PluginDescriptorDto) _then;
+
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? apiMajor = null,Object? id = null,Object? version = null,Object? name = null,Object? entrypoint = null,Object? source = null,Object? sourcePath = null,Object? requestedCapabilities = null,Object? revision = freezed,Object? contributions = null,Object? diagnostics = null,Object? isStale = null,}) {
+  return _then(_PluginDescriptorDto(
+apiMajor: null == apiMajor ? _self.apiMajor : apiMajor // ignore: cast_nullable_to_non_nullable
+as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,entrypoint: null == entrypoint ? _self.entrypoint : entrypoint // ignore: cast_nullable_to_non_nullable
+as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as PluginSource,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
+as String,requestedCapabilities: null == requestedCapabilities ? _self._requestedCapabilities : requestedCapabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,revision: freezed == revision ? _self.revision : revision // ignore: cast_nullable_to_non_nullable
+as PluginRevisionDto?,contributions: null == contributions ? _self._contributions : contributions // ignore: cast_nullable_to_non_nullable
+as List<PluginContributionDto>,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<PluginDiagnosticDto>,isStale: null == isStale ? _self.isStale : isStale // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of PluginDescriptorDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginRevisionDtoCopyWith<$Res>? get revision {
+    if (_self.revision == null) {
+    return null;
+  }
+
+  return $PluginRevisionDtoCopyWith<$Res>(_self.revision!, (value) {
+    return _then(_self.copyWith(revision: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginAuthoringEnvironmentDto {
+
+ String get pluginId; int get apiMajor; String get sdkAbiHash; String get luaRuntimeVersion; String get luaLanguageServerVersion; String get pluginPath; String get sdkLibraryPath; String get configurationPath; bool get synchronized; List<PluginDiagnosticDto> get diagnostics;
+/// Create a copy of PluginAuthoringEnvironmentDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginAuthoringEnvironmentDtoCopyWith<PluginAuthoringEnvironmentDto> get copyWith => _$PluginAuthoringEnvironmentDtoCopyWithImpl<PluginAuthoringEnvironmentDto>(this as PluginAuthoringEnvironmentDto, _$identity);
+
+  /// Serializes this PluginAuthoringEnvironmentDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginAuthoringEnvironmentDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.apiMajor, apiMajor) || other.apiMajor == apiMajor)&&(identical(other.sdkAbiHash, sdkAbiHash) || other.sdkAbiHash == sdkAbiHash)&&(identical(other.luaRuntimeVersion, luaRuntimeVersion) || other.luaRuntimeVersion == luaRuntimeVersion)&&(identical(other.luaLanguageServerVersion, luaLanguageServerVersion) || other.luaLanguageServerVersion == luaLanguageServerVersion)&&(identical(other.pluginPath, pluginPath) || other.pluginPath == pluginPath)&&(identical(other.sdkLibraryPath, sdkLibraryPath) || other.sdkLibraryPath == sdkLibraryPath)&&(identical(other.configurationPath, configurationPath) || other.configurationPath == configurationPath)&&(identical(other.synchronized, synchronized) || other.synchronized == synchronized)&&const DeepCollectionEquality().equals(other.diagnostics, diagnostics));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,apiMajor,sdkAbiHash,luaRuntimeVersion,luaLanguageServerVersion,pluginPath,sdkLibraryPath,configurationPath,synchronized,const DeepCollectionEquality().hash(diagnostics));
+
+@override
+String toString() {
+  return 'PluginAuthoringEnvironmentDto(pluginId: $pluginId, apiMajor: $apiMajor, sdkAbiHash: $sdkAbiHash, luaRuntimeVersion: $luaRuntimeVersion, luaLanguageServerVersion: $luaLanguageServerVersion, pluginPath: $pluginPath, sdkLibraryPath: $sdkLibraryPath, configurationPath: $configurationPath, synchronized: $synchronized, diagnostics: $diagnostics)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginAuthoringEnvironmentDtoCopyWith<$Res>  {
+  factory $PluginAuthoringEnvironmentDtoCopyWith(PluginAuthoringEnvironmentDto value, $Res Function(PluginAuthoringEnvironmentDto) _then) = _$PluginAuthoringEnvironmentDtoCopyWithImpl;
+@useResult
+$Res call({
+ String pluginId, int apiMajor, String sdkAbiHash, String luaRuntimeVersion, String luaLanguageServerVersion, String pluginPath, String sdkLibraryPath, String configurationPath, bool synchronized, List<PluginDiagnosticDto> diagnostics
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginAuthoringEnvironmentDtoCopyWithImpl<$Res>
+    implements $PluginAuthoringEnvironmentDtoCopyWith<$Res> {
+  _$PluginAuthoringEnvironmentDtoCopyWithImpl(this._self, this._then);
+
+  final PluginAuthoringEnvironmentDto _self;
+  final $Res Function(PluginAuthoringEnvironmentDto) _then;
+
+/// Create a copy of PluginAuthoringEnvironmentDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? pluginId = null,Object? apiMajor = null,Object? sdkAbiHash = null,Object? luaRuntimeVersion = null,Object? luaLanguageServerVersion = null,Object? pluginPath = null,Object? sdkLibraryPath = null,Object? configurationPath = null,Object? synchronized = null,Object? diagnostics = null,}) {
+  return _then(_self.copyWith(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,apiMajor: null == apiMajor ? _self.apiMajor : apiMajor // ignore: cast_nullable_to_non_nullable
+as int,sdkAbiHash: null == sdkAbiHash ? _self.sdkAbiHash : sdkAbiHash // ignore: cast_nullable_to_non_nullable
+as String,luaRuntimeVersion: null == luaRuntimeVersion ? _self.luaRuntimeVersion : luaRuntimeVersion // ignore: cast_nullable_to_non_nullable
+as String,luaLanguageServerVersion: null == luaLanguageServerVersion ? _self.luaLanguageServerVersion : luaLanguageServerVersion // ignore: cast_nullable_to_non_nullable
+as String,pluginPath: null == pluginPath ? _self.pluginPath : pluginPath // ignore: cast_nullable_to_non_nullable
+as String,sdkLibraryPath: null == sdkLibraryPath ? _self.sdkLibraryPath : sdkLibraryPath // ignore: cast_nullable_to_non_nullable
+as String,configurationPath: null == configurationPath ? _self.configurationPath : configurationPath // ignore: cast_nullable_to_non_nullable
+as String,synchronized: null == synchronized ? _self.synchronized : synchronized // ignore: cast_nullable_to_non_nullable
+as bool,diagnostics: null == diagnostics ? _self.diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<PluginDiagnosticDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginAuthoringEnvironmentDto].
+extension PluginAuthoringEnvironmentDtoPatterns on PluginAuthoringEnvironmentDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginAuthoringEnvironmentDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginAuthoringEnvironmentDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginAuthoringEnvironmentDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String pluginId,  int apiMajor,  String sdkAbiHash,  String luaRuntimeVersion,  String luaLanguageServerVersion,  String pluginPath,  String sdkLibraryPath,  String configurationPath,  bool synchronized,  List<PluginDiagnosticDto> diagnostics)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto() when $default != null:
+return $default(_that.pluginId,_that.apiMajor,_that.sdkAbiHash,_that.luaRuntimeVersion,_that.luaLanguageServerVersion,_that.pluginPath,_that.sdkLibraryPath,_that.configurationPath,_that.synchronized,_that.diagnostics);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String pluginId,  int apiMajor,  String sdkAbiHash,  String luaRuntimeVersion,  String luaLanguageServerVersion,  String pluginPath,  String sdkLibraryPath,  String configurationPath,  bool synchronized,  List<PluginDiagnosticDto> diagnostics)  $default,) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto():
+return $default(_that.pluginId,_that.apiMajor,_that.sdkAbiHash,_that.luaRuntimeVersion,_that.luaLanguageServerVersion,_that.pluginPath,_that.sdkLibraryPath,_that.configurationPath,_that.synchronized,_that.diagnostics);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String pluginId,  int apiMajor,  String sdkAbiHash,  String luaRuntimeVersion,  String luaLanguageServerVersion,  String pluginPath,  String sdkLibraryPath,  String configurationPath,  bool synchronized,  List<PluginDiagnosticDto> diagnostics)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentDto() when $default != null:
+return $default(_that.pluginId,_that.apiMajor,_that.sdkAbiHash,_that.luaRuntimeVersion,_that.luaLanguageServerVersion,_that.pluginPath,_that.sdkLibraryPath,_that.configurationPath,_that.synchronized,_that.diagnostics);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginAuthoringEnvironmentDto implements PluginAuthoringEnvironmentDto {
+  const _PluginAuthoringEnvironmentDto({required this.pluginId, required this.apiMajor, required this.sdkAbiHash, required this.luaRuntimeVersion, required this.luaLanguageServerVersion, required this.pluginPath, required this.sdkLibraryPath, required this.configurationPath, required this.synchronized, final  List<PluginDiagnosticDto> diagnostics = const <PluginDiagnosticDto>[]}): _diagnostics = diagnostics;
+  factory _PluginAuthoringEnvironmentDto.fromJson(Map<String, dynamic> json) => _$PluginAuthoringEnvironmentDtoFromJson(json);
+
+@override final  String pluginId;
+@override final  int apiMajor;
+@override final  String sdkAbiHash;
+@override final  String luaRuntimeVersion;
+@override final  String luaLanguageServerVersion;
+@override final  String pluginPath;
+@override final  String sdkLibraryPath;
+@override final  String configurationPath;
+@override final  bool synchronized;
+ final  List<PluginDiagnosticDto> _diagnostics;
+@override@JsonKey() List<PluginDiagnosticDto> get diagnostics {
+  if (_diagnostics is EqualUnmodifiableListView) return _diagnostics;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_diagnostics);
+}
+
+
+/// Create a copy of PluginAuthoringEnvironmentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginAuthoringEnvironmentDtoCopyWith<_PluginAuthoringEnvironmentDto> get copyWith => __$PluginAuthoringEnvironmentDtoCopyWithImpl<_PluginAuthoringEnvironmentDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginAuthoringEnvironmentDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginAuthoringEnvironmentDto&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.apiMajor, apiMajor) || other.apiMajor == apiMajor)&&(identical(other.sdkAbiHash, sdkAbiHash) || other.sdkAbiHash == sdkAbiHash)&&(identical(other.luaRuntimeVersion, luaRuntimeVersion) || other.luaRuntimeVersion == luaRuntimeVersion)&&(identical(other.luaLanguageServerVersion, luaLanguageServerVersion) || other.luaLanguageServerVersion == luaLanguageServerVersion)&&(identical(other.pluginPath, pluginPath) || other.pluginPath == pluginPath)&&(identical(other.sdkLibraryPath, sdkLibraryPath) || other.sdkLibraryPath == sdkLibraryPath)&&(identical(other.configurationPath, configurationPath) || other.configurationPath == configurationPath)&&(identical(other.synchronized, synchronized) || other.synchronized == synchronized)&&const DeepCollectionEquality().equals(other._diagnostics, _diagnostics));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pluginId,apiMajor,sdkAbiHash,luaRuntimeVersion,luaLanguageServerVersion,pluginPath,sdkLibraryPath,configurationPath,synchronized,const DeepCollectionEquality().hash(_diagnostics));
+
+@override
+String toString() {
+  return 'PluginAuthoringEnvironmentDto(pluginId: $pluginId, apiMajor: $apiMajor, sdkAbiHash: $sdkAbiHash, luaRuntimeVersion: $luaRuntimeVersion, luaLanguageServerVersion: $luaLanguageServerVersion, pluginPath: $pluginPath, sdkLibraryPath: $sdkLibraryPath, configurationPath: $configurationPath, synchronized: $synchronized, diagnostics: $diagnostics)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginAuthoringEnvironmentDtoCopyWith<$Res> implements $PluginAuthoringEnvironmentDtoCopyWith<$Res> {
+  factory _$PluginAuthoringEnvironmentDtoCopyWith(_PluginAuthoringEnvironmentDto value, $Res Function(_PluginAuthoringEnvironmentDto) _then) = __$PluginAuthoringEnvironmentDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String pluginId, int apiMajor, String sdkAbiHash, String luaRuntimeVersion, String luaLanguageServerVersion, String pluginPath, String sdkLibraryPath, String configurationPath, bool synchronized, List<PluginDiagnosticDto> diagnostics
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginAuthoringEnvironmentDtoCopyWithImpl<$Res>
+    implements _$PluginAuthoringEnvironmentDtoCopyWith<$Res> {
+  __$PluginAuthoringEnvironmentDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginAuthoringEnvironmentDto _self;
+  final $Res Function(_PluginAuthoringEnvironmentDto) _then;
+
+/// Create a copy of PluginAuthoringEnvironmentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? pluginId = null,Object? apiMajor = null,Object? sdkAbiHash = null,Object? luaRuntimeVersion = null,Object? luaLanguageServerVersion = null,Object? pluginPath = null,Object? sdkLibraryPath = null,Object? configurationPath = null,Object? synchronized = null,Object? diagnostics = null,}) {
+  return _then(_PluginAuthoringEnvironmentDto(
+pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,apiMajor: null == apiMajor ? _self.apiMajor : apiMajor // ignore: cast_nullable_to_non_nullable
+as int,sdkAbiHash: null == sdkAbiHash ? _self.sdkAbiHash : sdkAbiHash // ignore: cast_nullable_to_non_nullable
+as String,luaRuntimeVersion: null == luaRuntimeVersion ? _self.luaRuntimeVersion : luaRuntimeVersion // ignore: cast_nullable_to_non_nullable
+as String,luaLanguageServerVersion: null == luaLanguageServerVersion ? _self.luaLanguageServerVersion : luaLanguageServerVersion // ignore: cast_nullable_to_non_nullable
+as String,pluginPath: null == pluginPath ? _self.pluginPath : pluginPath // ignore: cast_nullable_to_non_nullable
+as String,sdkLibraryPath: null == sdkLibraryPath ? _self.sdkLibraryPath : sdkLibraryPath // ignore: cast_nullable_to_non_nullable
+as String,configurationPath: null == configurationPath ? _self.configurationPath : configurationPath // ignore: cast_nullable_to_non_nullable
+as String,synchronized: null == synchronized ? _self.synchronized : synchronized // ignore: cast_nullable_to_non_nullable
+as bool,diagnostics: null == diagnostics ? _self._diagnostics : diagnostics // ignore: cast_nullable_to_non_nullable
+as List<PluginDiagnosticDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AgentPluginGrantDto {
+
+ String get agentId; String get pluginId; String get capability;
+/// Create a copy of AgentPluginGrantDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentPluginGrantDtoCopyWith<AgentPluginGrantDto> get copyWith => _$AgentPluginGrantDtoCopyWithImpl<AgentPluginGrantDto>(this as AgentPluginGrantDto, _$identity);
+
+  /// Serializes this AgentPluginGrantDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentPluginGrantDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.capability, capability) || other.capability == capability));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,capability);
+
+@override
+String toString() {
+  return 'AgentPluginGrantDto(agentId: $agentId, pluginId: $pluginId, capability: $capability)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentPluginGrantDtoCopyWith<$Res>  {
+  factory $AgentPluginGrantDtoCopyWith(AgentPluginGrantDto value, $Res Function(AgentPluginGrantDto) _then) = _$AgentPluginGrantDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId, String pluginId, String capability
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentPluginGrantDtoCopyWithImpl<$Res>
+    implements $AgentPluginGrantDtoCopyWith<$Res> {
+  _$AgentPluginGrantDtoCopyWithImpl(this._self, this._then);
+
+  final AgentPluginGrantDto _self;
+  final $Res Function(AgentPluginGrantDto) _then;
+
+/// Create a copy of AgentPluginGrantDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? pluginId = null,Object? capability = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,capability: null == capability ? _self.capability : capability // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentPluginGrantDto].
+extension AgentPluginGrantDtoPatterns on AgentPluginGrantDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentPluginGrantDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentPluginGrantDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentPluginGrantDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String capability)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.capability);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String capability)  $default,) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto():
+return $default(_that.agentId,_that.pluginId,_that.capability);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String pluginId,  String capability)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.capability);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentPluginGrantDto implements AgentPluginGrantDto {
+  const _AgentPluginGrantDto({required this.agentId, required this.pluginId, required this.capability});
+  factory _AgentPluginGrantDto.fromJson(Map<String, dynamic> json) => _$AgentPluginGrantDtoFromJson(json);
+
+@override final  String agentId;
+@override final  String pluginId;
+@override final  String capability;
+
+/// Create a copy of AgentPluginGrantDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentPluginGrantDtoCopyWith<_AgentPluginGrantDto> get copyWith => __$AgentPluginGrantDtoCopyWithImpl<_AgentPluginGrantDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentPluginGrantDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentPluginGrantDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.capability, capability) || other.capability == capability));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,capability);
+
+@override
+String toString() {
+  return 'AgentPluginGrantDto(agentId: $agentId, pluginId: $pluginId, capability: $capability)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentPluginGrantDtoCopyWith<$Res> implements $AgentPluginGrantDtoCopyWith<$Res> {
+  factory _$AgentPluginGrantDtoCopyWith(_AgentPluginGrantDto value, $Res Function(_AgentPluginGrantDto) _then) = __$AgentPluginGrantDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId, String pluginId, String capability
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentPluginGrantDtoCopyWithImpl<$Res>
+    implements _$AgentPluginGrantDtoCopyWith<$Res> {
+  __$AgentPluginGrantDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentPluginGrantDto _self;
+  final $Res Function(_AgentPluginGrantDto) _then;
+
+/// Create a copy of AgentPluginGrantDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? pluginId = null,Object? capability = null,}) {
+  return _then(_AgentPluginGrantDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,capability: null == capability ? _self.capability : capability // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginSessionControlValueDto {
+
+ String get sessionId; String get agentId; String get pluginId; String get contributionId; String get revisionHash; Map<String, dynamic> get schema; Object? get defaultValue; Object? get value; bool get isDefault; Map<String, dynamic> get metadata;
+/// Create a copy of PluginSessionControlValueDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSessionControlValueDtoCopyWith<PluginSessionControlValueDto> get copyWith => _$PluginSessionControlValueDtoCopyWithImpl<PluginSessionControlValueDto>(this as PluginSessionControlValueDto, _$identity);
+
+  /// Serializes this PluginSessionControlValueDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSessionControlValueDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.revisionHash, revisionHash) || other.revisionHash == revisionHash)&&const DeepCollectionEquality().equals(other.schema, schema)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&const DeepCollectionEquality().equals(other.value, value)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&const DeepCollectionEquality().equals(other.metadata, metadata));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,agentId,pluginId,contributionId,revisionHash,const DeepCollectionEquality().hash(schema),const DeepCollectionEquality().hash(defaultValue),const DeepCollectionEquality().hash(value),isDefault,const DeepCollectionEquality().hash(metadata));
+
+@override
+String toString() {
+  return 'PluginSessionControlValueDto(sessionId: $sessionId, agentId: $agentId, pluginId: $pluginId, contributionId: $contributionId, revisionHash: $revisionHash, schema: $schema, defaultValue: $defaultValue, value: $value, isDefault: $isDefault, metadata: $metadata)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSessionControlValueDtoCopyWith<$Res>  {
+  factory $PluginSessionControlValueDtoCopyWith(PluginSessionControlValueDto value, $Res Function(PluginSessionControlValueDto) _then) = _$PluginSessionControlValueDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String agentId, String pluginId, String contributionId, String revisionHash, Map<String, dynamic> schema, Object? defaultValue, Object? value, bool isDefault, Map<String, dynamic> metadata
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginSessionControlValueDtoCopyWithImpl<$Res>
+    implements $PluginSessionControlValueDtoCopyWith<$Res> {
+  _$PluginSessionControlValueDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSessionControlValueDto _self;
+  final $Res Function(PluginSessionControlValueDto) _then;
+
+/// Create a copy of PluginSessionControlValueDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? agentId = null,Object? pluginId = null,Object? contributionId = null,Object? revisionHash = null,Object? schema = null,Object? defaultValue = freezed,Object? value = freezed,Object? isDefault = null,Object? metadata = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,revisionHash: null == revisionHash ? _self.revisionHash : revisionHash // ignore: cast_nullable_to_non_nullable
+as String,schema: null == schema ? _self.schema : schema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,defaultValue: freezed == defaultValue ? _self.defaultValue : defaultValue ,value: freezed == value ? _self.value : value ,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
+as bool,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSessionControlValueDto].
+extension PluginSessionControlValueDtoPatterns on PluginSessionControlValueDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSessionControlValueDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSessionControlValueDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSessionControlValueDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String agentId,  String pluginId,  String contributionId,  String revisionHash,  Map<String, dynamic> schema,  Object? defaultValue,  Object? value,  bool isDefault,  Map<String, dynamic> metadata)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto() when $default != null:
+return $default(_that.sessionId,_that.agentId,_that.pluginId,_that.contributionId,_that.revisionHash,_that.schema,_that.defaultValue,_that.value,_that.isDefault,_that.metadata);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String agentId,  String pluginId,  String contributionId,  String revisionHash,  Map<String, dynamic> schema,  Object? defaultValue,  Object? value,  bool isDefault,  Map<String, dynamic> metadata)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto():
+return $default(_that.sessionId,_that.agentId,_that.pluginId,_that.contributionId,_that.revisionHash,_that.schema,_that.defaultValue,_that.value,_that.isDefault,_that.metadata);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String agentId,  String pluginId,  String contributionId,  String revisionHash,  Map<String, dynamic> schema,  Object? defaultValue,  Object? value,  bool isDefault,  Map<String, dynamic> metadata)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlValueDto() when $default != null:
+return $default(_that.sessionId,_that.agentId,_that.pluginId,_that.contributionId,_that.revisionHash,_that.schema,_that.defaultValue,_that.value,_that.isDefault,_that.metadata);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSessionControlValueDto implements PluginSessionControlValueDto {
+  const _PluginSessionControlValueDto({required this.sessionId, required this.agentId, required this.pluginId, required this.contributionId, required this.revisionHash, required final  Map<String, dynamic> schema, required this.defaultValue, required this.value, this.isDefault = false, final  Map<String, dynamic> metadata = const <String, dynamic>{}}): _schema = schema,_metadata = metadata;
+  factory _PluginSessionControlValueDto.fromJson(Map<String, dynamic> json) => _$PluginSessionControlValueDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String agentId;
+@override final  String pluginId;
+@override final  String contributionId;
+@override final  String revisionHash;
+ final  Map<String, dynamic> _schema;
+@override Map<String, dynamic> get schema {
+  if (_schema is EqualUnmodifiableMapView) return _schema;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_schema);
+}
+
+@override final  Object? defaultValue;
+@override final  Object? value;
+@override@JsonKey() final  bool isDefault;
+ final  Map<String, dynamic> _metadata;
+@override@JsonKey() Map<String, dynamic> get metadata {
+  if (_metadata is EqualUnmodifiableMapView) return _metadata;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_metadata);
+}
+
+
+/// Create a copy of PluginSessionControlValueDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSessionControlValueDtoCopyWith<_PluginSessionControlValueDto> get copyWith => __$PluginSessionControlValueDtoCopyWithImpl<_PluginSessionControlValueDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSessionControlValueDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSessionControlValueDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.revisionHash, revisionHash) || other.revisionHash == revisionHash)&&const DeepCollectionEquality().equals(other._schema, _schema)&&const DeepCollectionEquality().equals(other.defaultValue, defaultValue)&&const DeepCollectionEquality().equals(other.value, value)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&const DeepCollectionEquality().equals(other._metadata, _metadata));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,agentId,pluginId,contributionId,revisionHash,const DeepCollectionEquality().hash(_schema),const DeepCollectionEquality().hash(defaultValue),const DeepCollectionEquality().hash(value),isDefault,const DeepCollectionEquality().hash(_metadata));
+
+@override
+String toString() {
+  return 'PluginSessionControlValueDto(sessionId: $sessionId, agentId: $agentId, pluginId: $pluginId, contributionId: $contributionId, revisionHash: $revisionHash, schema: $schema, defaultValue: $defaultValue, value: $value, isDefault: $isDefault, metadata: $metadata)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSessionControlValueDtoCopyWith<$Res> implements $PluginSessionControlValueDtoCopyWith<$Res> {
+  factory _$PluginSessionControlValueDtoCopyWith(_PluginSessionControlValueDto value, $Res Function(_PluginSessionControlValueDto) _then) = __$PluginSessionControlValueDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String agentId, String pluginId, String contributionId, String revisionHash, Map<String, dynamic> schema, Object? defaultValue, Object? value, bool isDefault, Map<String, dynamic> metadata
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginSessionControlValueDtoCopyWithImpl<$Res>
+    implements _$PluginSessionControlValueDtoCopyWith<$Res> {
+  __$PluginSessionControlValueDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSessionControlValueDto _self;
+  final $Res Function(_PluginSessionControlValueDto) _then;
+
+/// Create a copy of PluginSessionControlValueDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? agentId = null,Object? pluginId = null,Object? contributionId = null,Object? revisionHash = null,Object? schema = null,Object? defaultValue = freezed,Object? value = freezed,Object? isDefault = null,Object? metadata = null,}) {
+  return _then(_PluginSessionControlValueDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,revisionHash: null == revisionHash ? _self.revisionHash : revisionHash // ignore: cast_nullable_to_non_nullable
+as String,schema: null == schema ? _self._schema : schema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,defaultValue: freezed == defaultValue ? _self.defaultValue : defaultValue ,value: freezed == value ? _self.value : value ,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
+as bool,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginUiDocumentDto {
+
+ String get id; String get pluginId; String get revisionHash; PluginUiSlot get slot; Map<String, dynamic> get root;
+/// Create a copy of PluginUiDocumentDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginUiDocumentDtoCopyWith<PluginUiDocumentDto> get copyWith => _$PluginUiDocumentDtoCopyWithImpl<PluginUiDocumentDto>(this as PluginUiDocumentDto, _$identity);
+
+  /// Serializes this PluginUiDocumentDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginUiDocumentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.revisionHash, revisionHash) || other.revisionHash == revisionHash)&&(identical(other.slot, slot) || other.slot == slot)&&const DeepCollectionEquality().equals(other.root, root));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,pluginId,revisionHash,slot,const DeepCollectionEquality().hash(root));
+
+@override
+String toString() {
+  return 'PluginUiDocumentDto(id: $id, pluginId: $pluginId, revisionHash: $revisionHash, slot: $slot, root: $root)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginUiDocumentDtoCopyWith<$Res>  {
+  factory $PluginUiDocumentDtoCopyWith(PluginUiDocumentDto value, $Res Function(PluginUiDocumentDto) _then) = _$PluginUiDocumentDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String pluginId, String revisionHash, PluginUiSlot slot, Map<String, dynamic> root
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginUiDocumentDtoCopyWithImpl<$Res>
+    implements $PluginUiDocumentDtoCopyWith<$Res> {
+  _$PluginUiDocumentDtoCopyWithImpl(this._self, this._then);
+
+  final PluginUiDocumentDto _self;
+  final $Res Function(PluginUiDocumentDto) _then;
+
+/// Create a copy of PluginUiDocumentDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? pluginId = null,Object? revisionHash = null,Object? slot = null,Object? root = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,revisionHash: null == revisionHash ? _self.revisionHash : revisionHash // ignore: cast_nullable_to_non_nullable
+as String,slot: null == slot ? _self.slot : slot // ignore: cast_nullable_to_non_nullable
+as PluginUiSlot,root: null == root ? _self.root : root // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginUiDocumentDto].
+extension PluginUiDocumentDtoPatterns on PluginUiDocumentDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginUiDocumentDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginUiDocumentDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginUiDocumentDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String pluginId,  String revisionHash,  PluginUiSlot slot,  Map<String, dynamic> root)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto() when $default != null:
+return $default(_that.id,_that.pluginId,_that.revisionHash,_that.slot,_that.root);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String pluginId,  String revisionHash,  PluginUiSlot slot,  Map<String, dynamic> root)  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto():
+return $default(_that.id,_that.pluginId,_that.revisionHash,_that.slot,_that.root);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String pluginId,  String revisionHash,  PluginUiSlot slot,  Map<String, dynamic> root)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentDto() when $default != null:
+return $default(_that.id,_that.pluginId,_that.revisionHash,_that.slot,_that.root);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginUiDocumentDto implements PluginUiDocumentDto {
+  const _PluginUiDocumentDto({required this.id, required this.pluginId, required this.revisionHash, required this.slot, required final  Map<String, dynamic> root}): _root = root;
+  factory _PluginUiDocumentDto.fromJson(Map<String, dynamic> json) => _$PluginUiDocumentDtoFromJson(json);
+
+@override final  String id;
+@override final  String pluginId;
+@override final  String revisionHash;
+@override final  PluginUiSlot slot;
+ final  Map<String, dynamic> _root;
+@override Map<String, dynamic> get root {
+  if (_root is EqualUnmodifiableMapView) return _root;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_root);
+}
+
+
+/// Create a copy of PluginUiDocumentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginUiDocumentDtoCopyWith<_PluginUiDocumentDto> get copyWith => __$PluginUiDocumentDtoCopyWithImpl<_PluginUiDocumentDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginUiDocumentDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginUiDocumentDto&&(identical(other.id, id) || other.id == id)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.revisionHash, revisionHash) || other.revisionHash == revisionHash)&&(identical(other.slot, slot) || other.slot == slot)&&const DeepCollectionEquality().equals(other._root, _root));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,pluginId,revisionHash,slot,const DeepCollectionEquality().hash(_root));
+
+@override
+String toString() {
+  return 'PluginUiDocumentDto(id: $id, pluginId: $pluginId, revisionHash: $revisionHash, slot: $slot, root: $root)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginUiDocumentDtoCopyWith<$Res> implements $PluginUiDocumentDtoCopyWith<$Res> {
+  factory _$PluginUiDocumentDtoCopyWith(_PluginUiDocumentDto value, $Res Function(_PluginUiDocumentDto) _then) = __$PluginUiDocumentDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String pluginId, String revisionHash, PluginUiSlot slot, Map<String, dynamic> root
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginUiDocumentDtoCopyWithImpl<$Res>
+    implements _$PluginUiDocumentDtoCopyWith<$Res> {
+  __$PluginUiDocumentDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginUiDocumentDto _self;
+  final $Res Function(_PluginUiDocumentDto) _then;
+
+/// Create a copy of PluginUiDocumentDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? pluginId = null,Object? revisionHash = null,Object? slot = null,Object? root = null,}) {
+  return _then(_PluginUiDocumentDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,revisionHash: null == revisionHash ? _self.revisionHash : revisionHash // ignore: cast_nullable_to_non_nullable
+as String,slot: null == slot ? _self.slot : slot // ignore: cast_nullable_to_non_nullable
+as PluginUiSlot,root: null == root ? _self._root : root // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginUiActionDto {
+
+ String get documentId; String get actionId; Object? get data;
+/// Create a copy of PluginUiActionDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginUiActionDtoCopyWith<PluginUiActionDto> get copyWith => _$PluginUiActionDtoCopyWithImpl<PluginUiActionDto>(this as PluginUiActionDto, _$identity);
+
+  /// Serializes this PluginUiActionDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginUiActionDto&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.actionId, actionId) || other.actionId == actionId)&&const DeepCollectionEquality().equals(other.data, data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,documentId,actionId,const DeepCollectionEquality().hash(data));
+
+@override
+String toString() {
+  return 'PluginUiActionDto(documentId: $documentId, actionId: $actionId, data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginUiActionDtoCopyWith<$Res>  {
+  factory $PluginUiActionDtoCopyWith(PluginUiActionDto value, $Res Function(PluginUiActionDto) _then) = _$PluginUiActionDtoCopyWithImpl;
+@useResult
+$Res call({
+ String documentId, String actionId, Object? data
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginUiActionDtoCopyWithImpl<$Res>
+    implements $PluginUiActionDtoCopyWith<$Res> {
+  _$PluginUiActionDtoCopyWithImpl(this._self, this._then);
+
+  final PluginUiActionDto _self;
+  final $Res Function(PluginUiActionDto) _then;
+
+/// Create a copy of PluginUiActionDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? documentId = null,Object? actionId = null,Object? data = freezed,}) {
+  return _then(_self.copyWith(
+documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
+as String,actionId: null == actionId ? _self.actionId : actionId // ignore: cast_nullable_to_non_nullable
+as String,data: freezed == data ? _self.data : data ,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginUiActionDto].
+extension PluginUiActionDtoPatterns on PluginUiActionDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginUiActionDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginUiActionDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginUiActionDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiActionDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginUiActionDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiActionDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String documentId,  String actionId,  Object? data)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginUiActionDto() when $default != null:
+return $default(_that.documentId,_that.actionId,_that.data);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String documentId,  String actionId,  Object? data)  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiActionDto():
+return $default(_that.documentId,_that.actionId,_that.data);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String documentId,  String actionId,  Object? data)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiActionDto() when $default != null:
+return $default(_that.documentId,_that.actionId,_that.data);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginUiActionDto implements PluginUiActionDto {
+  const _PluginUiActionDto({required this.documentId, required this.actionId, this.data = const <String, dynamic>{}});
+  factory _PluginUiActionDto.fromJson(Map<String, dynamic> json) => _$PluginUiActionDtoFromJson(json);
+
+@override final  String documentId;
+@override final  String actionId;
+@override@JsonKey() final  Object? data;
+
+/// Create a copy of PluginUiActionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginUiActionDtoCopyWith<_PluginUiActionDto> get copyWith => __$PluginUiActionDtoCopyWithImpl<_PluginUiActionDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginUiActionDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginUiActionDto&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.actionId, actionId) || other.actionId == actionId)&&const DeepCollectionEquality().equals(other.data, data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,documentId,actionId,const DeepCollectionEquality().hash(data));
+
+@override
+String toString() {
+  return 'PluginUiActionDto(documentId: $documentId, actionId: $actionId, data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginUiActionDtoCopyWith<$Res> implements $PluginUiActionDtoCopyWith<$Res> {
+  factory _$PluginUiActionDtoCopyWith(_PluginUiActionDto value, $Res Function(_PluginUiActionDto) _then) = __$PluginUiActionDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String documentId, String actionId, Object? data
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginUiActionDtoCopyWithImpl<$Res>
+    implements _$PluginUiActionDtoCopyWith<$Res> {
+  __$PluginUiActionDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginUiActionDto _self;
+  final $Res Function(_PluginUiActionDto) _then;
+
+/// Create a copy of PluginUiActionDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? documentId = null,Object? actionId = null,Object? data = freezed,}) {
+  return _then(_PluginUiActionDto(
+documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
+as String,actionId: null == actionId ? _self.actionId : actionId // ignore: cast_nullable_to_non_nullable
+as String,data: freezed == data ? _self.data : data ,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$AgentToolDefinitionDto {
 
- String get id; String get name; String get description; ToolRisk get risk; ToolGroup get group; bool get available; bool get alwaysOn;
+ String get id; String get originPluginId; String get contributionId; String get name; String get description; ToolRisk get risk; String get group; AgentToolKind get kind; Map<String, dynamic> get inputSchema; List<String> get effects; Map<String, dynamic> get presentation; Map<String, dynamic>? get outputSchema; bool get available;
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4567,16 +7461,16 @@ $AgentToolDefinitionDtoCopyWith<AgentToolDefinitionDto> get copyWith => _$AgentT
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.group, group) || other.group == group)&&(identical(other.available, available) || other.available == available)&&(identical(other.alwaysOn, alwaysOn) || other.alwaysOn == alwaysOn));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.originPluginId, originPluginId) || other.originPluginId == originPluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.group, group) || other.group == group)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other.inputSchema, inputSchema)&&const DeepCollectionEquality().equals(other.effects, effects)&&const DeepCollectionEquality().equals(other.presentation, presentation)&&const DeepCollectionEquality().equals(other.outputSchema, outputSchema)&&(identical(other.available, available) || other.available == available));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,risk,group,available,alwaysOn);
+int get hashCode => Object.hash(runtimeType,id,originPluginId,contributionId,name,description,risk,group,kind,const DeepCollectionEquality().hash(inputSchema),const DeepCollectionEquality().hash(effects),const DeepCollectionEquality().hash(presentation),const DeepCollectionEquality().hash(outputSchema),available);
 
 @override
 String toString() {
-  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, group: $group, available: $available, alwaysOn: $alwaysOn)';
+  return 'AgentToolDefinitionDto(id: $id, originPluginId: $originPluginId, contributionId: $contributionId, name: $name, description: $description, risk: $risk, group: $group, kind: $kind, inputSchema: $inputSchema, effects: $effects, presentation: $presentation, outputSchema: $outputSchema, available: $available)';
 }
 
 
@@ -4587,7 +7481,7 @@ abstract mixin class $AgentToolDefinitionDtoCopyWith<$Res>  {
   factory $AgentToolDefinitionDtoCopyWith(AgentToolDefinitionDto value, $Res Function(AgentToolDefinitionDto) _then) = _$AgentToolDefinitionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description, ToolRisk risk, ToolGroup group, bool available, bool alwaysOn
+ String id, String originPluginId, String contributionId, String name, String description, ToolRisk risk, String group, AgentToolKind kind, Map<String, dynamic> inputSchema, List<String> effects, Map<String, dynamic> presentation, Map<String, dynamic>? outputSchema, bool available
 });
 
 
@@ -4604,15 +7498,21 @@ class _$AgentToolDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? group = null,Object? available = null,Object? alwaysOn = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? originPluginId = null,Object? contributionId = null,Object? name = null,Object? description = null,Object? risk = null,Object? group = null,Object? kind = null,Object? inputSchema = null,Object? effects = null,Object? presentation = null,Object? outputSchema = freezed,Object? available = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,originPluginId: null == originPluginId ? _self.originPluginId : originPluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,risk: null == risk ? _self.risk : risk // ignore: cast_nullable_to_non_nullable
 as ToolRisk,group: null == group ? _self.group : group // ignore: cast_nullable_to_non_nullable
-as ToolGroup,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
-as bool,alwaysOn: null == alwaysOn ? _self.alwaysOn : alwaysOn // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AgentToolKind,inputSchema: null == inputSchema ? _self.inputSchema : inputSchema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,effects: null == effects ? _self.effects : effects // ignore: cast_nullable_to_non_nullable
+as List<String>,presentation: null == presentation ? _self.presentation : presentation // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,outputSchema: freezed == outputSchema ? _self.outputSchema : outputSchema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -4698,10 +7598,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  ToolGroup group,  bool available,  bool alwaysOn)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String originPluginId,  String contributionId,  String name,  String description,  ToolRisk risk,  String group,  AgentToolKind kind,  Map<String, dynamic> inputSchema,  List<String> effects,  Map<String, dynamic> presentation,  Map<String, dynamic>? outputSchema,  bool available)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_that.available,_that.alwaysOn);case _:
+return $default(_that.id,_that.originPluginId,_that.contributionId,_that.name,_that.description,_that.risk,_that.group,_that.kind,_that.inputSchema,_that.effects,_that.presentation,_that.outputSchema,_that.available);case _:
   return orElse();
 
 }
@@ -4719,10 +7619,10 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  ToolRisk risk,  ToolGroup group,  bool available,  bool alwaysOn)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String originPluginId,  String contributionId,  String name,  String description,  ToolRisk risk,  String group,  AgentToolKind kind,  Map<String, dynamic> inputSchema,  List<String> effects,  Map<String, dynamic> presentation,  Map<String, dynamic>? outputSchema,  bool available)  $default,) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto():
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_that.available,_that.alwaysOn);case _:
+return $default(_that.id,_that.originPluginId,_that.contributionId,_that.name,_that.description,_that.risk,_that.group,_that.kind,_that.inputSchema,_that.effects,_that.presentation,_that.outputSchema,_that.available);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4739,10 +7639,10 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  ToolRisk risk,  ToolGroup group,  bool available,  bool alwaysOn)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String originPluginId,  String contributionId,  String name,  String description,  ToolRisk risk,  String group,  AgentToolKind kind,  Map<String, dynamic> inputSchema,  List<String> effects,  Map<String, dynamic> presentation,  Map<String, dynamic>? outputSchema,  bool available)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentToolDefinitionDto() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_that.available,_that.alwaysOn);case _:
+return $default(_that.id,_that.originPluginId,_that.contributionId,_that.name,_that.description,_that.risk,_that.group,_that.kind,_that.inputSchema,_that.effects,_that.presentation,_that.outputSchema,_that.available);case _:
   return null;
 
 }
@@ -4754,16 +7654,48 @@ return $default(_that.id,_that.name,_that.description,_that.risk,_that.group,_th
 @JsonSerializable()
 
 class _AgentToolDefinitionDto implements AgentToolDefinitionDto {
-  const _AgentToolDefinitionDto({required this.id, required this.name, required this.description, required this.risk, required this.group, this.available = true, this.alwaysOn = false});
+  const _AgentToolDefinitionDto({required this.id, required this.originPluginId, required this.contributionId, required this.name, required this.description, required this.risk, required this.group, required this.kind, required final  Map<String, dynamic> inputSchema, required final  List<String> effects, required final  Map<String, dynamic> presentation, final  Map<String, dynamic>? outputSchema, this.available = true}): _inputSchema = inputSchema,_effects = effects,_presentation = presentation,_outputSchema = outputSchema;
   factory _AgentToolDefinitionDto.fromJson(Map<String, dynamic> json) => _$AgentToolDefinitionDtoFromJson(json);
 
 @override final  String id;
+@override final  String originPluginId;
+@override final  String contributionId;
 @override final  String name;
 @override final  String description;
 @override final  ToolRisk risk;
-@override final  ToolGroup group;
+@override final  String group;
+@override final  AgentToolKind kind;
+ final  Map<String, dynamic> _inputSchema;
+@override Map<String, dynamic> get inputSchema {
+  if (_inputSchema is EqualUnmodifiableMapView) return _inputSchema;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_inputSchema);
+}
+
+ final  List<String> _effects;
+@override List<String> get effects {
+  if (_effects is EqualUnmodifiableListView) return _effects;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_effects);
+}
+
+ final  Map<String, dynamic> _presentation;
+@override Map<String, dynamic> get presentation {
+  if (_presentation is EqualUnmodifiableMapView) return _presentation;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_presentation);
+}
+
+ final  Map<String, dynamic>? _outputSchema;
+@override Map<String, dynamic>? get outputSchema {
+  final value = _outputSchema;
+  if (value == null) return null;
+  if (_outputSchema is EqualUnmodifiableMapView) return _outputSchema;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
 @override@JsonKey() final  bool available;
-@override@JsonKey() final  bool alwaysOn;
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
@@ -4778,16 +7710,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.group, group) || other.group == group)&&(identical(other.available, available) || other.available == available)&&(identical(other.alwaysOn, alwaysOn) || other.alwaysOn == alwaysOn));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentToolDefinitionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.originPluginId, originPluginId) || other.originPluginId == originPluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.risk, risk) || other.risk == risk)&&(identical(other.group, group) || other.group == group)&&(identical(other.kind, kind) || other.kind == kind)&&const DeepCollectionEquality().equals(other._inputSchema, _inputSchema)&&const DeepCollectionEquality().equals(other._effects, _effects)&&const DeepCollectionEquality().equals(other._presentation, _presentation)&&const DeepCollectionEquality().equals(other._outputSchema, _outputSchema)&&(identical(other.available, available) || other.available == available));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,risk,group,available,alwaysOn);
+int get hashCode => Object.hash(runtimeType,id,originPluginId,contributionId,name,description,risk,group,kind,const DeepCollectionEquality().hash(_inputSchema),const DeepCollectionEquality().hash(_effects),const DeepCollectionEquality().hash(_presentation),const DeepCollectionEquality().hash(_outputSchema),available);
 
 @override
 String toString() {
-  return 'AgentToolDefinitionDto(id: $id, name: $name, description: $description, risk: $risk, group: $group, available: $available, alwaysOn: $alwaysOn)';
+  return 'AgentToolDefinitionDto(id: $id, originPluginId: $originPluginId, contributionId: $contributionId, name: $name, description: $description, risk: $risk, group: $group, kind: $kind, inputSchema: $inputSchema, effects: $effects, presentation: $presentation, outputSchema: $outputSchema, available: $available)';
 }
 
 
@@ -4798,7 +7730,7 @@ abstract mixin class _$AgentToolDefinitionDtoCopyWith<$Res> implements $AgentToo
   factory _$AgentToolDefinitionDtoCopyWith(_AgentToolDefinitionDto value, $Res Function(_AgentToolDefinitionDto) _then) = __$AgentToolDefinitionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description, ToolRisk risk, ToolGroup group, bool available, bool alwaysOn
+ String id, String originPluginId, String contributionId, String name, String description, ToolRisk risk, String group, AgentToolKind kind, Map<String, dynamic> inputSchema, List<String> effects, Map<String, dynamic> presentation, Map<String, dynamic>? outputSchema, bool available
 });
 
 
@@ -4815,15 +7747,21 @@ class __$AgentToolDefinitionDtoCopyWithImpl<$Res>
 
 /// Create a copy of AgentToolDefinitionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? risk = null,Object? group = null,Object? available = null,Object? alwaysOn = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? originPluginId = null,Object? contributionId = null,Object? name = null,Object? description = null,Object? risk = null,Object? group = null,Object? kind = null,Object? inputSchema = null,Object? effects = null,Object? presentation = null,Object? outputSchema = freezed,Object? available = null,}) {
   return _then(_AgentToolDefinitionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,originPluginId: null == originPluginId ? _self.originPluginId : originPluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,risk: null == risk ? _self.risk : risk // ignore: cast_nullable_to_non_nullable
 as ToolRisk,group: null == group ? _self.group : group // ignore: cast_nullable_to_non_nullable
-as ToolGroup,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
-as bool,alwaysOn: null == alwaysOn ? _self.alwaysOn : alwaysOn // ignore: cast_nullable_to_non_nullable
+as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as AgentToolKind,inputSchema: null == inputSchema ? _self._inputSchema : inputSchema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,effects: null == effects ? _self._effects : effects // ignore: cast_nullable_to_non_nullable
+as List<String>,presentation: null == presentation ? _self._presentation : presentation // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,outputSchema: freezed == outputSchema ? _self._outputSchema : outputSchema // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -6041,7 +8979,7 @@ as int,
 @override
 @pragma('vm:prefer-inline')
 $McpServerConfigDtoCopyWith<$Res> get config {
-  
+
   return $McpServerConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -6304,7 +9242,7 @@ as int,
 @override
 @pragma('vm:prefer-inline')
 $McpServerConfigDtoCopyWith<$Res> get config {
-  
+
   return $McpServerConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -6868,7 +9806,7 @@ as bool,
 /// @nodoc
 mixin _$SessionDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; ModelSelectionDto get model; SessionMode get mode;/// Values explicitly selected for the resolved provider model.
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; ModelSelectionDto? get model;/// Values explicitly selected for the resolved provider model.
  Map<String, ModelControlValueDto> get modelControls;/// Overrides the permission mode of the agent definition; null inherits.
  PermissionMode? get permissionMode; String? get parentSessionId;/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
  String? get taskName;/// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
@@ -6891,16 +9829,16 @@ $SessionDtoCopyWith<SessionDto> get copyWith => _$SessionDtoCopyWithImpl<Session
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.mode, mode) || other.mode == mode)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,mode,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,const DeepCollectionEquality().hash(modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, mode: $mode, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -6911,11 +9849,11 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto model, SessionMode mode, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
-$ModelSelectionDtoCopyWith<$Res> get model;
+$ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -6928,7 +9866,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = null,Object? mode = null,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -6938,9 +9876,8 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as ModelSelectionDto,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
@@ -6959,9 +9896,12 @@ as double?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ModelSelectionDtoCopyWith<$Res> get model {
-  
-  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
+$ModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
@@ -7046,10 +9986,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return orElse();
 
 }
@@ -7067,10 +10007,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -7087,10 +10027,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto model,  SessionMode mode,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.mode,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
   return null;
 
 }
@@ -7102,7 +10042,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, required this.model, this.mode = SessionMode.normal, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -7113,8 +10053,7 @@ class _SessionDto implements SessionDto {
 @override final  SessionStatus status;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
-@override final  ModelSelectionDto model;
-@override@JsonKey() final  SessionMode mode;
+@override final  ModelSelectionDto? model;
 /// Values explicitly selected for the resolved provider model.
  final  Map<String, ModelControlValueDto> _modelControls;
 /// Values explicitly selected for the resolved provider model.
@@ -7158,16 +10097,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&(identical(other.mode, mode) || other.mode == mode)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode)&&(identical(other.parentSessionId, parentSessionId) || other.parentSessionId == parentSessionId)&&(identical(other.taskName, taskName) || other.taskName == taskName)&&(identical(other.agentPath, agentPath) || other.agentPath == agentPath)&&(identical(other.rootSessionId, rootSessionId) || other.rootSessionId == rootSessionId)&&(identical(other.lifecycle, lifecycle) || other.lifecycle == lifecycle)&&(identical(other.activeTurnId, activeTurnId) || other.activeTurnId == activeTurnId)&&(identical(other.lastError, lastError) || other.lastError == lastError)&&(identical(other.contextTokens, contextTokens) || other.contextTokens == contextTokens)&&(identical(other.contextWindow, contextWindow) || other.contextWindow == contextWindow)&&(identical(other.totalCostUsd, totalCostUsd) || other.totalCostUsd == totalCostUsd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,mode,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
+int get hashCode => Object.hashAll([runtimeType,id,worktreeId,title,agentDefinitionId,origin,status,createdAt,updatedAt,model,const DeepCollectionEquality().hash(_modelControls),permissionMode,parentSessionId,taskName,agentPath,rootSessionId,lifecycle,activeTurnId,lastError,contextTokens,contextWindow,totalCostUsd]);
 
 @override
 String toString() {
-  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, mode: $mode, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
+  return 'SessionDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, origin: $origin, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, model: $model, modelControls: $modelControls, permissionMode: $permissionMode, parentSessionId: $parentSessionId, taskName: $taskName, agentPath: $agentPath, rootSessionId: $rootSessionId, lifecycle: $lifecycle, activeTurnId: $activeTurnId, lastError: $lastError, contextTokens: $contextTokens, contextWindow: $contextWindow, totalCostUsd: $totalCostUsd)';
 }
 
 
@@ -7178,11 +10117,11 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto model, SessionMode mode, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
-@override $ModelSelectionDtoCopyWith<$Res> get model;
+@override $ModelSelectionDtoCopyWith<$Res>? get model;
 
 }
 /// @nodoc
@@ -7195,7 +10134,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = null,Object? mode = null,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -7205,9 +10144,8 @@ as String,origin: null == origin ? _self.origin : origin // ignore: cast_nullabl
 as SessionOrigin,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
-as ModelSelectionDto,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
+as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
@@ -7227,299 +10165,15 @@ as double?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ModelSelectionDtoCopyWith<$Res> get model {
-  
-  return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
+$ModelSelectionDtoCopyWith<$Res>? get model {
+    if (_self.model == null) {
+    return null;
+  }
+
+  return $ModelSelectionDtoCopyWith<$Res>(_self.model!, (value) {
     return _then(_self.copyWith(model: value));
   });
 }
-}
-
-
-/// @nodoc
-mixin _$GoalDto {
-
- String get sessionId; String get goalId; String get objective; GoalStatus get status; int get tokensUsed; int get timeUsedSeconds; DateTime get createdAt; DateTime get updatedAt; int? get tokenBudget;
-/// Create a copy of GoalDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalDtoCopyWith<GoalDto> get copyWith => _$GoalDtoCopyWithImpl<GoalDto>(this as GoalDto, _$identity);
-
-  /// Serializes this GoalDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.tokensUsed, tokensUsed) || other.tokensUsed == tokensUsed)&&(identical(other.timeUsedSeconds, timeUsedSeconds) || other.timeUsedSeconds == timeUsedSeconds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,goalId,objective,status,tokensUsed,timeUsedSeconds,createdAt,updatedAt,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalDto(sessionId: $sessionId, goalId: $goalId, objective: $objective, status: $status, tokensUsed: $tokensUsed, timeUsedSeconds: $timeUsedSeconds, createdAt: $createdAt, updatedAt: $updatedAt, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalDtoCopyWith<$Res>  {
-  factory $GoalDtoCopyWith(GoalDto value, $Res Function(GoalDto) _then) = _$GoalDtoCopyWithImpl;
-@useResult
-$Res call({
- String sessionId, String goalId, String objective, GoalStatus status, int tokensUsed, int timeUsedSeconds, DateTime createdAt, DateTime updatedAt, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class _$GoalDtoCopyWithImpl<$Res>
-    implements $GoalDtoCopyWith<$Res> {
-  _$GoalDtoCopyWithImpl(this._self, this._then);
-
-  final GoalDto _self;
-  final $Res Function(GoalDto) _then;
-
-/// Create a copy of GoalDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? goalId = null,Object? objective = null,Object? status = null,Object? tokensUsed = null,Object? timeUsedSeconds = null,Object? createdAt = null,Object? updatedAt = null,Object? tokenBudget = freezed,}) {
-  return _then(_self.copyWith(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
-as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GoalStatus,tokensUsed: null == tokensUsed ? _self.tokensUsed : tokensUsed // ignore: cast_nullable_to_non_nullable
-as int,timeUsedSeconds: null == timeUsedSeconds ? _self.timeUsedSeconds : timeUsedSeconds // ignore: cast_nullable_to_non_nullable
-as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [GoalDto].
-extension GoalDtoPatterns on GoalDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalDto() when $default != null:
-return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)  $default,) {final _that = this;
-switch (_that) {
-case _GoalDto():
-return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String goalId,  String objective,  GoalStatus status,  int tokensUsed,  int timeUsedSeconds,  DateTime createdAt,  DateTime updatedAt,  int? tokenBudget)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalDto() when $default != null:
-return $default(_that.sessionId,_that.goalId,_that.objective,_that.status,_that.tokensUsed,_that.timeUsedSeconds,_that.createdAt,_that.updatedAt,_that.tokenBudget);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalDto implements GoalDto {
-  const _GoalDto({required this.sessionId, required this.goalId, required this.objective, required this.status, required this.tokensUsed, required this.timeUsedSeconds, required this.createdAt, required this.updatedAt, this.tokenBudget});
-  factory _GoalDto.fromJson(Map<String, dynamic> json) => _$GoalDtoFromJson(json);
-
-@override final  String sessionId;
-@override final  String goalId;
-@override final  String objective;
-@override final  GoalStatus status;
-@override final  int tokensUsed;
-@override final  int timeUsedSeconds;
-@override final  DateTime createdAt;
-@override final  DateTime updatedAt;
-@override final  int? tokenBudget;
-
-/// Create a copy of GoalDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalDtoCopyWith<_GoalDto> get copyWith => __$GoalDtoCopyWithImpl<_GoalDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.tokensUsed, tokensUsed) || other.tokensUsed == tokensUsed)&&(identical(other.timeUsedSeconds, timeUsedSeconds) || other.timeUsedSeconds == timeUsedSeconds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,goalId,objective,status,tokensUsed,timeUsedSeconds,createdAt,updatedAt,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalDto(sessionId: $sessionId, goalId: $goalId, objective: $objective, status: $status, tokensUsed: $tokensUsed, timeUsedSeconds: $timeUsedSeconds, createdAt: $createdAt, updatedAt: $updatedAt, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalDtoCopyWith<$Res> implements $GoalDtoCopyWith<$Res> {
-  factory _$GoalDtoCopyWith(_GoalDto value, $Res Function(_GoalDto) _then) = __$GoalDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String sessionId, String goalId, String objective, GoalStatus status, int tokensUsed, int timeUsedSeconds, DateTime createdAt, DateTime updatedAt, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class __$GoalDtoCopyWithImpl<$Res>
-    implements _$GoalDtoCopyWith<$Res> {
-  __$GoalDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalDto _self;
-  final $Res Function(_GoalDto) _then;
-
-/// Create a copy of GoalDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? goalId = null,Object? objective = null,Object? status = null,Object? tokensUsed = null,Object? timeUsedSeconds = null,Object? createdAt = null,Object? updatedAt = null,Object? tokenBudget = freezed,}) {
-  return _then(_GoalDto(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
-as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GoalStatus,tokensUsed: null == tokensUsed ? _self.tokensUsed : tokensUsed // ignore: cast_nullable_to_non_nullable
-as int,timeUsedSeconds: null == timeUsedSeconds ? _self.timeUsedSeconds : timeUsedSeconds // ignore: cast_nullable_to_non_nullable
-as int,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-
 }
 
 
@@ -8402,7 +11056,7 @@ ModelControlValueDto _$ModelControlValueDtoFromJson(
           return ModelControlIntValueDto.fromJson(
             json
           );
-        
+
           default:
             throw CheckedFromJsonException(
   json,
@@ -8411,7 +11065,7 @@ ModelControlValueDto _$ModelControlValueDtoFromJson(
   'Invalid union type "${json['type']}"!'
 );
         }
-      
+
 }
 
 /// @nodoc
@@ -8805,7 +11459,7 @@ as int,
 /// @nodoc
 mixin _$ModelCapabilitiesDto {
 
- CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get imageInput; CapabilitySupport get fileInput; List<ModelControlDescriptorDto> get controls; ModelToolSurface get toolSurface; CapabilitySource get source;
+ CapabilitySupport get streaming; CapabilitySupport get toolCalling; CapabilitySupport get functionTools; CapabilitySupport get freeformTools; CapabilitySupport get deferredTools; CapabilitySupport get imageInput; CapabilitySupport get fileInput; List<String> get roles; List<ModelControlDescriptorDto> get controls; CapabilitySource get source;
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -8818,16 +11472,16 @@ $ModelCapabilitiesDtoCopyWith<ModelCapabilitiesDto> get copyWith => _$ModelCapab
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other.controls, controls)&&(identical(other.toolSurface, toolSurface) || other.toolSurface == toolSurface)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.functionTools, functionTools) || other.functionTools == functionTools)&&(identical(other.freeformTools, freeformTools) || other.freeformTools == freeformTools)&&(identical(other.deferredTools, deferredTools) || other.deferredTools == deferredTools)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other.roles, roles)&&const DeepCollectionEquality().equals(other.controls, controls)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(controls),toolSurface,source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,functionTools,freeformTools,deferredTools,imageInput,fileInput,const DeepCollectionEquality().hash(roles),const DeepCollectionEquality().hash(controls),source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, toolSurface: $toolSurface, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, functionTools: $functionTools, freeformTools: $freeformTools, deferredTools: $deferredTools, imageInput: $imageInput, fileInput: $fileInput, roles: $roles, controls: $controls, source: $source)';
 }
 
 
@@ -8838,7 +11492,7 @@ abstract mixin class $ModelCapabilitiesDtoCopyWith<$Res>  {
   factory $ModelCapabilitiesDtoCopyWith(ModelCapabilitiesDto value, $Res Function(ModelCapabilitiesDto) _then) = _$ModelCapabilitiesDtoCopyWithImpl;
 @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, ModelToolSurface toolSurface, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport functionTools, CapabilitySupport freeformTools, CapabilitySupport deferredTools, CapabilitySupport imageInput, CapabilitySupport fileInput, List<String> roles, List<ModelControlDescriptorDto> controls, CapabilitySource source
 });
 
 
@@ -8855,15 +11509,18 @@ class _$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? toolSurface = null,Object? source = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? streaming = null,Object? toolCalling = null,Object? functionTools = null,Object? freeformTools = null,Object? deferredTools = null,Object? imageInput = null,Object? fileInput = null,Object? roles = null,Object? controls = null,Object? source = null,}) {
   return _then(_self.copyWith(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,functionTools: null == functionTools ? _self.functionTools : functionTools // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,freeformTools: null == freeformTools ? _self.freeformTools : freeformTools // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,deferredTools: null == deferredTools ? _self.deferredTools : deferredTools // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
-as CapabilitySupport,controls: null == controls ? _self.controls : controls // ignore: cast_nullable_to_non_nullable
-as List<ModelControlDescriptorDto>,toolSurface: null == toolSurface ? _self.toolSurface : toolSurface // ignore: cast_nullable_to_non_nullable
-as ModelToolSurface,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
+as List<String>,controls: null == controls ? _self.controls : controls // ignore: cast_nullable_to_non_nullable
+as List<ModelControlDescriptorDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,
   ));
 }
@@ -8949,10 +11606,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport functionTools,  CapabilitySupport freeformTools,  CapabilitySupport deferredTools,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> roles,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.functionTools,_that.freeformTools,_that.deferredTools,_that.imageInput,_that.fileInput,_that.roles,_that.controls,_that.source);case _:
   return orElse();
 
 }
@@ -8970,10 +11627,10 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport functionTools,  CapabilitySupport freeformTools,  CapabilitySupport deferredTools,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> roles,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto():
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.functionTools,_that.freeformTools,_that.deferredTools,_that.imageInput,_that.fileInput,_that.roles,_that.controls,_that.source);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -8990,10 +11647,10 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<ModelControlDescriptorDto> controls,  ModelToolSurface toolSurface,  CapabilitySource source)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CapabilitySupport streaming,  CapabilitySupport toolCalling,  CapabilitySupport functionTools,  CapabilitySupport freeformTools,  CapabilitySupport deferredTools,  CapabilitySupport imageInput,  CapabilitySupport fileInput,  List<String> roles,  List<ModelControlDescriptorDto> controls,  CapabilitySource source)?  $default,) {final _that = this;
 switch (_that) {
 case _ModelCapabilitiesDto() when $default != null:
-return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInput,_that.controls,_that.toolSurface,_that.source);case _:
+return $default(_that.streaming,_that.toolCalling,_that.functionTools,_that.freeformTools,_that.deferredTools,_that.imageInput,_that.fileInput,_that.roles,_that.controls,_that.source);case _:
   return null;
 
 }
@@ -9005,13 +11662,23 @@ return $default(_that.streaming,_that.toolCalling,_that.imageInput,_that.fileInp
 @JsonSerializable()
 
 class _ModelCapabilitiesDto implements ModelCapabilitiesDto {
-  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.imageInput = CapabilitySupport.unknown, this.fileInput = CapabilitySupport.unknown, final  List<ModelControlDescriptorDto> controls = const <ModelControlDescriptorDto>[], this.toolSurface = ModelToolSurface.direct, this.source = CapabilitySource.unknown}): _controls = controls;
+  const _ModelCapabilitiesDto({this.streaming = CapabilitySupport.unknown, this.toolCalling = CapabilitySupport.unknown, this.functionTools = CapabilitySupport.unknown, this.freeformTools = CapabilitySupport.unknown, this.deferredTools = CapabilitySupport.unknown, this.imageInput = CapabilitySupport.unknown, this.fileInput = CapabilitySupport.unknown, final  List<String> roles = const <String>['system', 'developer', 'user', 'assistant'], final  List<ModelControlDescriptorDto> controls = const <ModelControlDescriptorDto>[], this.source = CapabilitySource.unknown}): _roles = roles,_controls = controls;
   factory _ModelCapabilitiesDto.fromJson(Map<String, dynamic> json) => _$ModelCapabilitiesDtoFromJson(json);
 
 @override@JsonKey() final  CapabilitySupport streaming;
 @override@JsonKey() final  CapabilitySupport toolCalling;
+@override@JsonKey() final  CapabilitySupport functionTools;
+@override@JsonKey() final  CapabilitySupport freeformTools;
+@override@JsonKey() final  CapabilitySupport deferredTools;
 @override@JsonKey() final  CapabilitySupport imageInput;
 @override@JsonKey() final  CapabilitySupport fileInput;
+ final  List<String> _roles;
+@override@JsonKey() List<String> get roles {
+  if (_roles is EqualUnmodifiableListView) return _roles;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_roles);
+}
+
  final  List<ModelControlDescriptorDto> _controls;
 @override@JsonKey() List<ModelControlDescriptorDto> get controls {
   if (_controls is EqualUnmodifiableListView) return _controls;
@@ -9019,7 +11686,6 @@ class _ModelCapabilitiesDto implements ModelCapabilitiesDto {
   return EqualUnmodifiableListView(_controls);
 }
 
-@override@JsonKey() final  ModelToolSurface toolSurface;
 @override@JsonKey() final  CapabilitySource source;
 
 /// Create a copy of ModelCapabilitiesDto
@@ -9035,16 +11701,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other._controls, _controls)&&(identical(other.toolSurface, toolSurface) || other.toolSurface == toolSurface)&&(identical(other.source, source) || other.source == source));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ModelCapabilitiesDto&&(identical(other.streaming, streaming) || other.streaming == streaming)&&(identical(other.toolCalling, toolCalling) || other.toolCalling == toolCalling)&&(identical(other.functionTools, functionTools) || other.functionTools == functionTools)&&(identical(other.freeformTools, freeformTools) || other.freeformTools == freeformTools)&&(identical(other.deferredTools, deferredTools) || other.deferredTools == deferredTools)&&(identical(other.imageInput, imageInput) || other.imageInput == imageInput)&&(identical(other.fileInput, fileInput) || other.fileInput == fileInput)&&const DeepCollectionEquality().equals(other._roles, _roles)&&const DeepCollectionEquality().equals(other._controls, _controls)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,streaming,toolCalling,imageInput,fileInput,const DeepCollectionEquality().hash(_controls),toolSurface,source);
+int get hashCode => Object.hash(runtimeType,streaming,toolCalling,functionTools,freeformTools,deferredTools,imageInput,fileInput,const DeepCollectionEquality().hash(_roles),const DeepCollectionEquality().hash(_controls),source);
 
 @override
 String toString() {
-  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, imageInput: $imageInput, fileInput: $fileInput, controls: $controls, toolSurface: $toolSurface, source: $source)';
+  return 'ModelCapabilitiesDto(streaming: $streaming, toolCalling: $toolCalling, functionTools: $functionTools, freeformTools: $freeformTools, deferredTools: $deferredTools, imageInput: $imageInput, fileInput: $fileInput, roles: $roles, controls: $controls, source: $source)';
 }
 
 
@@ -9055,7 +11721,7 @@ abstract mixin class _$ModelCapabilitiesDtoCopyWith<$Res> implements $ModelCapab
   factory _$ModelCapabilitiesDtoCopyWith(_ModelCapabilitiesDto value, $Res Function(_ModelCapabilitiesDto) _then) = __$ModelCapabilitiesDtoCopyWithImpl;
 @override @useResult
 $Res call({
- CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport imageInput, CapabilitySupport fileInput, List<ModelControlDescriptorDto> controls, ModelToolSurface toolSurface, CapabilitySource source
+ CapabilitySupport streaming, CapabilitySupport toolCalling, CapabilitySupport functionTools, CapabilitySupport freeformTools, CapabilitySupport deferredTools, CapabilitySupport imageInput, CapabilitySupport fileInput, List<String> roles, List<ModelControlDescriptorDto> controls, CapabilitySource source
 });
 
 
@@ -9072,15 +11738,18 @@ class __$ModelCapabilitiesDtoCopyWithImpl<$Res>
 
 /// Create a copy of ModelCapabilitiesDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? imageInput = null,Object? fileInput = null,Object? controls = null,Object? toolSurface = null,Object? source = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? streaming = null,Object? toolCalling = null,Object? functionTools = null,Object? freeformTools = null,Object? deferredTools = null,Object? imageInput = null,Object? fileInput = null,Object? roles = null,Object? controls = null,Object? source = null,}) {
   return _then(_ModelCapabilitiesDto(
 streaming: null == streaming ? _self.streaming : streaming // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,toolCalling: null == toolCalling ? _self.toolCalling : toolCalling // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,functionTools: null == functionTools ? _self.functionTools : functionTools // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,freeformTools: null == freeformTools ? _self.freeformTools : freeformTools // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,deferredTools: null == deferredTools ? _self.deferredTools : deferredTools // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,imageInput: null == imageInput ? _self.imageInput : imageInput // ignore: cast_nullable_to_non_nullable
 as CapabilitySupport,fileInput: null == fileInput ? _self.fileInput : fileInput // ignore: cast_nullable_to_non_nullable
-as CapabilitySupport,controls: null == controls ? _self._controls : controls // ignore: cast_nullable_to_non_nullable
-as List<ModelControlDescriptorDto>,toolSurface: null == toolSurface ? _self.toolSurface : toolSurface // ignore: cast_nullable_to_non_nullable
-as ModelToolSurface,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as CapabilitySupport,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
+as List<String>,controls: null == controls ? _self._controls : controls // ignore: cast_nullable_to_non_nullable
+as List<ModelControlDescriptorDto>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as CapabilitySource,
   ));
 }
@@ -12281,7 +14950,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ModelCapabilitiesDtoCopyWith<$Res> get capabilities {
-  
+
   return $ModelCapabilitiesDtoCopyWith<$Res>(_self.capabilities, (value) {
     return _then(_self.copyWith(capabilities: value));
   });
@@ -12534,7 +15203,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $ModelCapabilitiesDtoCopyWith<$Res> get capabilities {
-  
+
   return $ModelCapabilitiesDtoCopyWith<$Res>(_self.capabilities, (value) {
     return _then(_self.copyWith(capabilities: value));
   });

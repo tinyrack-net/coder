@@ -41,21 +41,10 @@ void _registerConversationAppFlows() {
         parentSessionId: root.id,
         taskName: 'Layout child',
       );
-      final goal = GoalDto(
-        sessionId: root.id,
-        goalId: 'layout-goal',
-        objective: 'Keep the conversation column aligned',
-        status: GoalStatus.active,
-        tokensUsed: 0,
-        timeUsedSeconds: 0,
-        createdAt: now,
-        updatedAt: now,
-      );
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[root, child],
-        goals: <String, GoalDto>{root.id: goal},
         timelines: <String, List<TimelineEventDto>>{
           root.id: <TimelineEventDto>[
             for (var index = 0; index < 24; index += 1)
@@ -95,7 +84,6 @@ void _registerConversationAppFlows() {
       );
       final message = find.byType(ChatUserLine).last;
       final composer = find.byType(SessionComposer);
-      final goalBar = find.byType(GoalStatusBar);
       final subagents = find.byType(SubagentTrack);
       // The pane carries no title header: the tab label already names the
       // session, so the timeline starts flush with the top of the pane.
@@ -119,7 +107,7 @@ void _registerConversationAppFlows() {
             TRSpacing.extraLarge * 2,
       );
       expect(messageRect.center.dx, closeTo(paneRect.center.dx, 0.5));
-      for (final content in <Finder>[composer, goalBar]) {
+      for (final content in <Finder>[composer]) {
         final rect = tester.getRect(content);
         expect(rect.width, TinestLayoutMetrics.conversationContentMaxWidth);
         expect(rect.center.dx, closeTo(paneRect.center.dx, 0.5));
@@ -150,7 +138,7 @@ void _registerConversationAppFlows() {
         narrowPane.width - TRSpacing.extraLarge * 2,
       );
       expect(narrowMessage.center.dx, closeTo(narrowPane.center.dx, 0.5));
-      for (final content in <Finder>[composer, goalBar]) {
+      for (final content in <Finder>[composer]) {
         final rect = tester.getRect(content);
         expect(rect.width, narrowPane.width);
         expect(rect.center.dx, closeTo(narrowPane.center.dx, 0.5));
@@ -219,7 +207,7 @@ void _registerConversationAppFlows() {
   );
 
   testWidgets(
-    'plan mode starts a planning session and implements the proposal',
+    'the standard composer starts a session without a host-owned mode',
     (tester) async {
       await _setTestViewport(tester, const Size(1500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -239,18 +227,16 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      expect(find.text('실행'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-mode')),
+        findsNothing,
+      );
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('model-option-openai-gpt-5.6-sol')),
       );
       await tester.pumpAndSettle();
-      await _selectComposerMode(tester, SessionMode.plan);
-      // The chip label is the whole mode indicator, so the run label is gone.
-      expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('실행'), findsNothing);
-
       await tester.enterText(
         find.byKey(const ValueKey('session-composer-input')),
         'Migrate the parser',
@@ -259,73 +245,22 @@ void _registerConversationAppFlows() {
       await tester.pumpAndSettle();
 
       final created = api.createdSessions.single;
-      expect(created.mode, SessionMode.plan);
-      // Sending a prompt keeps the session in plan mode.
-      expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('실행'), findsNothing);
-
-      api
-        ..emitTimeline(
-          created.id,
-          'assistant.delta',
-          <String, dynamic>{'text': 'Explored it.'},
-        )
-        ..emitTimeline(created.id, 'tool.requested', <String, dynamic>{
-          'callId': 'call-plan',
-          'name': 'update_plan',
-          'arguments': _planArguments,
-        })
-        ..emitTimeline(created.id, 'tool.completed', <String, dynamic>{
-          'callId': 'call-plan',
-          'name': 'update_plan',
-          'output': '{}',
-        })
-        ..emitTimeline(
-          created.id,
-          'turn.completed',
-          <String, dynamic>{'toolRounds': 1},
-        );
-      await tester.pumpAndSettle();
-
-      expect(find.text('계획'), findsOneWidget);
-      expect(
-        find.textContaining('Move the parser', findRichText: true),
-        findsWidgets,
-      );
-      expect(find.text('이 계획대로 진행할까요?'), findsOneWidget);
-
-      final timelineBefore = tester.getRect(find.byType(ChatTimelineView));
-
-      await tester.tap(find.widgetWithText(TRButton, '계획대로 실행'));
-      await tester.pumpAndSettle();
-      expect(api.updatedSessionModes.single.mode, SessionMode.normal);
-      expect(api.startedPrompts.last, '계획을 실행해줘.');
-      expect(find.text('이 계획대로 진행할까요?'), findsNothing);
-      expect(tester.getRect(find.byType(ChatTimelineView)), timelineBefore);
+      expect(created.agentDefinitionId, 'tinest');
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );
 
   testWidgets(
-    'a mode refused during a turn is explained rather than dropped',
+    'a session exposes no host-owned mode control',
     (tester) async {
       await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final planning = session('planning');
-      // The composer keeps the mode reachable while a turn runs because it
-      // applies to the next one, so the daemon's refusal is a normal answer.
-      // It used to be fired and forgotten: the chip snapped back with nothing
-      // said and the failure escaped as an unhandled asynchronous error.
-      final api =
-          FakeTinestApi(
-              workspaces: <WorkspaceDto>[workspace],
-              worktrees: <WorktreeDto>[checkout],
-              agents: <SessionDto>[planning],
-            )
-            ..sessionUpdateError = const TinestClientException(
-              'Cannot change the settings while a turn is running.',
-              code: RpcErrorCodes.sessionTurnActive,
-            );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[planning],
+      );
       final router = await _pumpRoute(
         tester,
         api,
@@ -339,23 +274,21 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      await _selectComposerMode(tester, SessionMode.normal);
-
       expect(tester.takeException(), isNull);
       expect(
-        find.textContaining('turn을 실행 중입니다', findRichText: true),
-        findsOneWidget,
+        find.byKey(const ValueKey<String>('session-composer-mode')),
+        findsNothing,
       );
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
   );
 
   testWidgets(
-    'a plan can be handed to a fresh session or postponed',
+    'a historical plan snapshot renders through generic plugin UI',
     (tester) async {
       await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final planning = session('planning').copyWith(mode: SessionMode.plan);
+      final planning = session('planning');
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
@@ -366,32 +299,19 @@ void _registerConversationAppFlows() {
               sessionId: planning.id,
               sequence: 1,
               turnId: 'turn-1',
-              type: 'tool.requested',
-              data: <String, dynamic>{
-                'callId': 'call-plan',
-                'name': 'update_plan',
-                'arguments': _planArguments,
-              },
-              createdAt: now,
-            ),
-            TimelineEventDto(
-              sessionId: planning.id,
-              sequence: 2,
-              turnId: 'turn-1',
-              type: 'tool.completed',
+              type: 'plugin.ui',
               data: const <String, dynamic>{
-                'callId': 'call-plan',
-                'name': 'update_plan',
-                'output': '{}',
+                'document': <String, dynamic>{
+                  'id': 'plan-snapshot',
+                  'pluginId': 'tinest.plan',
+                  'revisionHash': 'historical-revision',
+                  'slot': 'timeline',
+                  'root': <String, dynamic>{
+                    'type': 'text',
+                    'text': 'Move the parser',
+                  },
+                },
               },
-              createdAt: now,
-            ),
-            TimelineEventDto(
-              sessionId: planning.id,
-              sequence: 3,
-              turnId: 'turn-1',
-              type: 'turn.completed',
-              data: const <String, dynamic>{'toolRounds': 1},
               createdAt: now,
             ),
           ],
@@ -410,15 +330,66 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TRButton, '계속 계획'));
-      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('session-composer-input')),
+        findsOneWidget,
+      );
       expect(find.text('이 계획대로 진행할까요?'), findsNothing);
+      expect(find.text('Move the parser'), findsOneWidget);
       expect(api.startedPrompts, isEmpty);
-
-      await _selectComposerMode(tester, SessionMode.normal);
-      expect(api.updatedSessionModes.single.mode, SessionMode.normal);
     },
     tags: const <String>['feature_test__session_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'live plugin publications reach status, dialog, and toast host slots',
+    (tester) async {
+      final agent = session('plugin-ui-slots');
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[agent],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: agent.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      void publish(String id, PluginUiSlot slot, String text) {
+        api.emitTimeline(agent.id, 'plugin.ui', <String, dynamic>{
+          'document': <String, dynamic>{
+            'id': id,
+            'pluginId': 'example.notifications',
+            'revisionHash': 'revision-1',
+            'slot': slot.name,
+            'root': <String, dynamic>{'type': 'text', 'text': text},
+          },
+        });
+      }
+
+      publish('status', PluginUiSlot.conversationStatus, 'Live goal status');
+      await tester.pumpAndSettle();
+      expect(find.text('Live goal status'), findsOneWidget);
+
+      publish('toast', PluginUiSlot.toast, 'Plugin toast body');
+      await tester.pumpAndSettle();
+      expect(find.text('Plugin toast body'), findsOneWidget);
+
+      publish('dialog', PluginUiSlot.dialog, 'Plugin dialog body');
+      await tester.pumpAndSettle();
+      expect(find.text('Plugin dialog body'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TRButton, '닫기'));
+      await tester.pumpAndSettle();
+      expect(find.text('Plugin dialog body'), findsNothing);
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
   );
 
   testWidgets(
@@ -629,27 +600,15 @@ void _registerConversationAppFlows() {
   );
 
   testWidgets(
-    'session goal controls edit and dispatch every slash command lifecycle',
+    'the composer does not expose the removed host-owned goal command',
     (tester) async {
       await _setTestViewport(tester, const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final agent = session('goal-session');
-      final activeGoal = GoalDto(
-        sessionId: agent.id,
-        goalId: 'goal-1',
-        objective: 'Ship the persistent goal flow',
-        status: GoalStatus.active,
-        tokenBudget: 12000,
-        tokensUsed: 4200,
-        timeUsedSeconds: 30,
-        createdAt: now,
-        updatedAt: now,
-      );
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[agent],
-        goals: <String, GoalDto>{agent.id: activeGoal},
       );
       final router = await _pumpRoute(
         tester,
@@ -664,52 +623,10 @@ void _registerConversationAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      expect(find.text('Ship the persistent goal flow'), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel(testL10n.goalEdit));
-      await tester.pumpAndSettle();
-      final dialog = find.byType(TRAlertDialog);
-      final objective = find
-          .descendant(
-            of: dialog,
-            matching: find.byType(TextField),
-          )
-          .first;
-      await tester.enterText(objective, 'Ship the edited goal flow');
-      await tester.tap(find.widgetWithText(TRButton, testL10n.commonSave));
-      await tester.pumpAndSettle();
       expect(
-        (await api.getGoal(agent.id))?.objective,
-        'Ship the edited goal flow',
+        clientComposerCommands.any((command) => command.name == 'goal'),
+        isFalse,
       );
-
-      Future<void> submitGoalCommand(String command) async {
-        await tester.enterText(
-          find.byKey(const ValueKey('session-composer-input')),
-          command,
-        );
-        await tester.tap(find.byKey(const ValueKey('session-composer-send')));
-        await tester.pumpAndSettle();
-      }
-
-      await submitGoalCommand('/goal pause');
-      expect((await api.getGoal(agent.id))?.status, GoalStatus.paused);
-      await submitGoalCommand('/goal resume');
-      expect((await api.getGoal(agent.id))?.status, GoalStatus.active);
-      await submitGoalCommand('/goal clear');
-      expect(await api.getGoal(agent.id), isNull);
-
-      await submitGoalCommand('/goal Ship a replacement');
-      expect(
-        (await api.getGoal(agent.id))?.objective,
-        'Ship a replacement',
-      );
-      await submitGoalCommand('/goal Replace it again');
-      expect(find.text(testL10n.goalReplaceTitle), findsOneWidget);
-      await tester.tap(
-        find.widgetWithText(TRButton, testL10n.goalReplaceAction),
-      );
-      await tester.pumpAndSettle();
-      expect((await api.getGoal(agent.id))?.objective, 'Replace it again');
     },
     tags: const <String>['feature_test__session_goal__widget'],
   );

@@ -78,7 +78,7 @@ void _registerAgentsAppFlows() {
   );
 
   testWidgets(
-    'agent settings edits Markdown definitions and creates subagents',
+    'agent settings edits v5 definitions and creates subagents',
     (tester) async {
       await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -104,42 +104,72 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).prompt,
         'Always run focused tests.',
       );
+      expect(find.text('Custom system prompt 사용'), findsNothing);
+      final settingsScroll = find
+          .descendant(
+            of: find.byType(SettingsScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first;
       await tester.scrollUntilVisible(
-        find.text('내장 도구'),
+        find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
         400,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: settingsScroll,
       );
-      expect(find.text('내장 도구'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
+        findsOneWidget,
+      );
 
       // Tools are behind their group, so nothing is listed until one opens.
       expect(
-        find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.files-read_file'),
+        ),
         findsNothing,
       );
-      // A group of nothing but always-on tools is checked and locked, and it
-      // still opens: the lock is on the tools, not on the disclosure.
-      final lockedGroup = tester.widget<TinestCheckboxRow>(
+      // The selected read tool is still independently configurable.
+      final filesystemGroup = tester.widget<TinestCheckboxRow>(
         find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
       );
-      expect(lockedGroup.value, isTrue);
-      expect(lockedGroup.onChanged, isNull);
+      expect(filesystemGroup.value, isTrue);
+      expect(filesystemGroup.onChanged, isNotNull);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
       );
       await tester.pumpAndSettle();
-      // An always-on tool is shown checked and locked once its group is open.
-      final alwaysOn = tester.widget<TinestCheckboxRow>(
-        find.byKey(const ValueKey<String>('agent-tool-tile-read_file')),
+      final readFile = tester.widget<TinestCheckboxRow>(
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.files-read_file'),
+        ),
       );
-      expect(alwaysOn.value, isTrue);
-      expect(alwaysOn.onChanged, isNull);
+      expect(readFile.value, isTrue);
+      expect(readFile.onChanged, isNotNull);
       expect(
         find.byKey(const ValueKey<String>('agent-tool-lock-read_file')),
-        findsOneWidget,
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.files-read_file'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TinestCheckboxRow>(
+              find.byKey(
+                const ValueKey<String>(
+                  'agent-tool-tile-tinest.files-read_file',
+                ),
+              ),
+            )
+            .value,
+        isFalse,
       );
 
       await tester.scrollUntilVisible(
@@ -152,7 +182,11 @@ void _registerAgentsAppFlows() {
       );
       await tester.pumpAndSettle();
       final toggleable = tester.widget<TinestCheckboxRow>(
-        find.byKey(const ValueKey<String>('agent-tool-tile-exec_command')),
+        find.byKey(
+          const ValueKey<String>(
+            'agent-tool-tile-tinest.terminal-exec_command',
+          ),
+        ),
       );
       expect(toggleable.onChanged, isNotNull);
 
@@ -181,11 +215,35 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
       expect(find.text('Reviewer'), findsWidgets);
       final created = await api.agents.getAgentDefinition('reviewer');
+      expect(created.version, 5);
       expect(created.mode, AgentMode.subagent);
-      // A new agent starts with an empty prompt, so the override stays off
-      // even though the Tinest template it is cloned from has it enabled.
-      expect(created.systemPrompt, isEmpty);
-      expect(created.promptEnabled, isFalse);
+      expect(created.prompt, isEmpty);
+      expect(created.driverId, 'tinest.standard/driver');
+      expect(created.extensionIds, isEmpty);
+      expect(created.pluginSettings, isEmpty);
+
+      // The adaptive settings navigator can retain more than one lazily built
+      // pane while replacing the create destination with the new editor. The
+      // new definition must expose its own scroll owner so automation and
+      // keyboard reveal target that editor instead of an offstage pane.
+      final reviewerEditor = find.byKey(
+        const ValueKey<String>('agent-settings-editor-reviewer'),
+      );
+      expect(reviewerEditor, findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('agent-archive-button')),
+        400,
+        scrollable: find
+            .descendant(
+              of: reviewerEditor,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('agent-archive-button')),
+        findsOneWidget,
+      );
     },
     tags: const <String>[
       'feature_test__agent_definition_management__widget',
@@ -266,17 +324,21 @@ void _registerAgentsAppFlows() {
       await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const fixedAgent = AgentDefinitionDto(
+        version: 5,
         id: 'tinest',
         name: 'Tinest',
         description: 'General coding',
         mode: AgentMode.primary,
-        promptEnabled: false,
-        systemPrompt: '',
-        model: ModelSelectionDto(
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
           modelId: 'openai/gpt-5.6-sol',
         ),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>[],
         toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
         callableAgentIds: <String>[],
+        prompt: '',
         contentHash: 'fixed-agent-hash',
         sourcePath: '/config/agents/tinest.md',
         isBuiltIn: true,
@@ -397,29 +459,39 @@ void _registerAgentsAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      final switchFinder = find.byKey(
-        const ValueKey<String>('agent-settings-use-model'),
+      final fixedModel = find.byKey(
+        const ValueKey<String>('agent-settings-model-source-fixed'),
       );
-      var modelSwitch = tester.widget<TinestSwitchRow>(switchFinder);
-      expect(modelSwitch.value, isFalse);
+      final sessionModel = find.byKey(
+        const ValueKey<String>('agent-settings-model-source-session'),
+      );
+      expect(
+        tester.widget<TRRadioGroup>(find.byType(TRRadioGroup)).value,
+        AgentModelSource.session.name,
+      );
 
-      modelSwitch.onChanged!(true);
+      await tester.tap(fixedModel);
       await tester.pumpAndSettle();
       expect(find.byType(AsyncModelSelect), findsOneWidget);
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(
         (await api.agents.getAgentDefinition('tinest')).model,
-        const ModelSelectionDto(modelId: 'openai/gpt-5.6-sol'),
+        const AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          modelId: 'openai/gpt-5.6-sol',
+        ),
       );
 
-      modelSwitch = tester.widget<TinestSwitchRow>(switchFinder);
-      modelSwitch.onChanged!(false);
+      await tester.tap(sessionModel);
       await tester.pumpAndSettle();
       expect(find.byType(AsyncModelSelect), findsNothing);
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
-      expect((await api.agents.getAgentDefinition('tinest')).model, isNull);
+      expect(
+        (await api.agents.getAgentDefinition('tinest')).model,
+        const AgentModelSelectionDto(source: AgentModelSource.session),
+      );
     },
     tags: const <String>[
       'feature_test__agent_definition_management__widget',
@@ -443,10 +515,11 @@ void _registerAgentsAppFlows() {
       addTearDown(router.dispose);
       await tester.pumpAndSettle();
 
-      final modelSwitch = tester.widget<TinestSwitchRow>(
-        find.byKey(const ValueKey<String>('agent-settings-use-model')),
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-settings-model-source-fixed'),
+        ),
       );
-      modelSwitch.onChanged!(true);
       await tester.pumpAndSettle();
 
       expect(find.byType(AsyncModelSelect), findsOneWidget);
@@ -494,15 +567,22 @@ void _registerAgentsAppFlows() {
       await _setTestViewport(tester, const Size(1200, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       const tinest = AgentDefinitionDto(
+        version: 5,
         id: 'tinest',
         name: 'Tinest',
         description: 'General coding',
         mode: AgentMode.primary,
-        promptEnabled: true,
-        systemPrompt: 'Code carefully.',
-        permissionMode: PermissionMode.ask,
-        toolIds: <String>['read_file'],
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.session,
+        ),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['tinest.standard'],
+        toolIds: <String>['tinest.files/read_file'],
+        pluginSettings: <String, Map<String, dynamic>>{
+          'tinest.standard': <String, dynamic>{'tone': 'careful'},
+        },
         callableAgentIds: <String>[],
+        prompt: 'Code carefully.',
         contentHash: 'tinest-hash',
         sourcePath: '/config/agents/tinest.md',
         isBuiltIn: true,
@@ -514,15 +594,20 @@ void _registerAgentsAppFlows() {
         ],
       );
       const reviewer = AgentDefinitionDto(
+        version: 5,
         id: 'reviewer',
         name: 'Reviewer',
         description: 'Reviews changes',
         mode: AgentMode.subagent,
-        promptEnabled: true,
-        systemPrompt: 'Review.',
-        permissionMode: PermissionMode.readOnly,
-        toolIds: <String>['read_file'],
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.session,
+        ),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>[],
+        toolIds: <String>['tinest.files/read_file'],
+        pluginSettings: <String, Map<String, dynamic>>{},
         callableAgentIds: <String>[],
+        prompt: 'Review.',
         contentHash: 'reviewer-hash',
         sourcePath: '/config/agents/reviewer.md',
       );
@@ -538,12 +623,30 @@ void _registerAgentsAppFlows() {
       addTearDown(router.dispose);
 
       expect(find.text('unavailable_tool'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('agent-permission-change')),
+        findsNothing,
+      );
       await tester.tap(find.byKey(const ValueKey('agent-copy-path-button')));
-      await tester.tap(find.text('Custom system prompt 사용'));
-      final editorList = find.byType(ListView).last;
-      await tester.drag(editorList, const Offset(0, -500));
+      final settingsScroll = find
+          .descendant(
+            of: find.byType(SettingsScaffold),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.byKey(
+          const ValueKey<String>('agent-settings-model-source-fixed'),
+        ),
+        300,
+        scrollable: settingsScroll,
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이 Agent에 모델 지정'));
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-settings-model-source-fixed'),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byType(TRSelect<ModelPickerOption>).last);
       await tester.pumpAndSettle();
@@ -553,9 +656,24 @@ void _registerAgentsAppFlows() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.drag(editorList, const Offset(0, -600));
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const ValueKey<String>('agent-settings-model-selector'),
+          ),
+          matching: find.text('GPT-5.6 Sol'),
+        ),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('agent-callable-reviewer')),
+        400,
+        scrollable: settingsScroll,
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Reviewer').last);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-callable-reviewer')),
+      );
       await tester.tap(find.widgetWithText(TRButton, '저장'));
       await tester.pumpAndSettle();
       expect(find.text('Agent 저장 실패'), findsOneWidget);
@@ -565,9 +683,15 @@ void _registerAgentsAppFlows() {
       await tester.pumpAndSettle();
 
       final updated = await api.agents.getAgentDefinition('tinest');
-      expect(updated.promptEnabled, isFalse);
-      expect(updated.model!.modelId, 'openai/gpt-5.6-sol');
-      expect(updated.toolIds, isEmpty);
+      expect(updated.version, 5);
+      expect(updated.prompt, 'Code carefully.');
+      expect(updated.model.modelId, 'openai/gpt-5.6-sol');
+      expect(updated.driverId, 'tinest.standard/driver');
+      expect(updated.extensionIds, <String>['tinest.standard']);
+      expect(updated.toolIds, <String>['tinest.files/read_file']);
+      expect(updated.pluginSettings, <String, Map<String, dynamic>>{
+        'tinest.standard': <String, dynamic>{'tone': 'careful'},
+      });
       expect(updated.callableAgentIds, <String>['reviewer']);
 
       final reset = find.byKey(const ValueKey('agent-reset-button'));
@@ -579,7 +703,7 @@ void _registerAgentsAppFlows() {
       );
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).prompt,
         'Code carefully.',
       );
       await tester.tap(find.text('Reviewer').first);
@@ -658,6 +782,69 @@ void _registerAgentsAppFlows() {
     ],
   );
 
+  testWidgets('agent prompt remains savable while the plugin catalog loads', (
+    tester,
+  ) async {
+    await _setTestViewport(tester, const Size(1200, 900));
+    final pluginListGate = Completer<void>();
+    addTearDown(() {
+      if (!pluginListGate.isCompleted) pluginListGate.complete();
+    });
+    final api = FakeTinestApi(pluginListGate: pluginListGate.future);
+    final router = await _pumpRoute(
+      tester,
+      api,
+      const AgentSettingsRoute(hostId: 'server').location,
+    );
+    addTearDown(router.dispose);
+
+    await tester.enterText(
+      _textInput('시스템 프롬프트 (Markdown)'),
+      'Save before the catalog resolves.',
+    );
+    final save = find.widgetWithText(TRButton, '저장');
+    expect(tester.widget<TRButton>(save).onPressed, isNotNull);
+    await tester.tap(save);
+    await tester.pump();
+    expect(
+      (await api.agents.getAgentDefinition('tinest')).prompt,
+      'Save before the catalog resolves.',
+    );
+  });
+
+  testWidgets('an Agent save may finish after its editor unmounts', (
+    tester,
+  ) async {
+    await _setTestViewport(tester, const Size(1200, 900));
+    final updateGate = Completer<void>();
+    addTearDown(() {
+      if (!updateGate.isCompleted) updateGate.complete();
+    });
+    final api = FakeTinestApi(agentUpdateGate: updateGate.future);
+    final router = await _pumpRoute(
+      tester,
+      api,
+      const AgentSettingsRoute(hostId: 'server').location,
+    );
+    addTearDown(router.dispose);
+
+    await tester.enterText(
+      _textInput('시스템 프롬프트 (Markdown)'),
+      'Finish safely after navigation.',
+    );
+    await tester.tap(find.widgetWithText(TRButton, '저장'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+    updateGate.complete();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      (await api.agents.getAgentDefinition('tinest')).prompt,
+      'Finish safely after navigation.',
+    );
+  });
+
   testWidgets(
     'resetting a built-in agent asks first and reports what it did',
     (tester) async {
@@ -688,7 +875,7 @@ void _registerAgentsAppFlows() {
       await tester.tap(find.widgetWithText(TRButton, '취소'));
       await tester.pumpAndSettle();
       expect(
-        (await api.agents.getAgentDefinition('tinest')).systemPrompt,
+        (await api.agents.getAgentDefinition('tinest')).prompt,
         'Always run focused tests.',
         reason: 'declining the question must not discard the edit',
       );
@@ -721,7 +908,12 @@ void _registerAgentsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      final scrollable = find.byType(Scrollable).last;
+      final scrollable = find
+          .descendant(
+            of: find.byType(ListView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first;
       // scrollUntilVisible stops as soon as the row is built, which a list
       // builds before it is on screen, so the row still has to be brought
       // fully into view before it can be tapped.
@@ -755,9 +947,10 @@ void _registerAgentsAppFlows() {
       expect(
         (await api.agents.getAgentDefinition('tinest')).toolIds,
         <String>[
-          'list_mcp_resource_templates',
-          'list_mcp_resources',
-          'read_mcp_resource',
+          'tinest.files/read_file',
+          'tinest.mcp/list_mcp_resource_templates',
+          'tinest.mcp/list_mcp_resources',
+          'tinest.mcp/read_mcp_resource',
         ],
         reason: 'a group is stored as the ids it contains, not as itself',
       );
@@ -768,9 +961,13 @@ void _registerAgentsAppFlows() {
         find.byKey(const ValueKey<String>('agent-tool-group-mcp')),
       );
       await tester.pumpAndSettle();
-      await reveal('agent-tool-tile-read_mcp_resource');
+      await reveal('agent-tool-tile-tinest.mcp-read_mcp_resource');
       await tester.tap(
-        find.byKey(const ValueKey<String>('agent-tool-tile-read_mcp_resource')),
+        find.byKey(
+          const ValueKey<String>(
+            'agent-tool-tile-tinest.mcp-read_mcp_resource',
+          ),
+        ),
       );
       await tester.pumpAndSettle();
       await reveal('agent-tool-group-mcp');
@@ -782,4 +979,453 @@ void _registerAgentsAppFlows() {
       'feature_test__agent_definition_management__widget',
     ],
   );
+
+  testWidgets(
+    'agent harness edits driver ordered extensions tools settings and grants',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const definition = AgentDefinitionDto(
+        version: 5,
+        id: 'tinest',
+        name: 'Tinest',
+        description: 'Plugin harness',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['tinest.plan'],
+        toolIds: <String>['tinest.files/read_file'],
+        pluginSettings: <String, Map<String, dynamic>>{
+          'tinest.plan': <String, dynamic>{'mode': 'guided'},
+        },
+        callableAgentIds: <String>[],
+        prompt: 'Use the configured harness.',
+        contentHash: 'tinest-harness-hash',
+        sourcePath: '/config/v5/agents/tinest.md',
+        isBuiltIn: true,
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[definition],
+        plugins: _agentHarnessPlugins,
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      final driverFinder = find.byKey(
+        const ValueKey<String>('agent-plugin-driver'),
+      );
+      expect(driverFinder, findsOneWidget);
+      final driver = tester.widget<TRSelect<String>>(driverFinder);
+      expect(driver.value, 'tinest.standard/driver');
+      expect(driver.presentation, isA<TRSelectLayerPresentation>());
+      expect(
+        driver.items.map((item) => item.value),
+        contains('acme.xml/driver'),
+      );
+      driver.onValueChange?.call('acme.xml/driver');
+      await tester.pumpAndSettle();
+
+      final scrollable = find
+          .descendant(
+            of: find.byType(ListView).last,
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      Future<void> reveal(String key) async {
+        final finder = find.byKey(ValueKey<String>(key));
+        await tester.scrollUntilVisible(finder, 260, scrollable: scrollable);
+        await tester.ensureVisible(finder);
+        await tester.pumpAndSettle();
+      }
+
+      await reveal('agent-extension-tinest.goal');
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-extension-tinest.goal'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await reveal('agent-extension-up-tinest.goal');
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-extension-up-tinest.goal'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await reveal('agent-tool-group-editing');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('agent-tool-group-editing')),
+      );
+      await tester.pumpAndSettle();
+      await reveal('agent-tool-tile-tinest.edit-apply_patch');
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.edit-apply_patch'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await reveal('agent-plugin-settings-tinest.plan');
+      await tester.enterText(
+        find.byKey(
+          const ValueKey<String>('agent-plugin-settings-tinest.plan'),
+        ),
+        '{"mode":"strict","maxSteps":4}',
+      );
+      await tester.pumpAndSettle();
+
+      await reveal('agent-plugin-grant-tinest.files-workspace.read');
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'agent-plugin-grant-tinest.files-workspace.read',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TRSwitch>(
+              find.byKey(
+                const ValueKey<String>(
+                  'agent-plugin-grant-tinest.files-workspace.read',
+                ),
+              ),
+            )
+            .checked,
+        isTrue,
+      );
+
+      await tester.tap(find.widgetWithText(TRButton, '저장'));
+      await tester.pumpAndSettle();
+      final saved = await api.agents.getAgentDefinition('tinest');
+      expect(saved.driverId, 'acme.xml/driver');
+      expect(saved.extensionIds, <String>[
+        'tinest.goal',
+        'tinest.plan',
+      ]);
+      expect(
+        saved.toolIds,
+        containsAll(<String>[
+          'tinest.files/read_file',
+          'tinest.edit/apply_patch',
+        ]),
+      );
+      expect(saved.pluginSettings['tinest.plan'], <String, dynamic>{
+        'mode': 'strict',
+        'maxSteps': 4,
+      });
+      expect(
+        await api.plugins.listPluginGrants('tinest'),
+        contains(
+          const AgentPluginGrantDto(
+            agentId: 'tinest',
+            pluginId: 'tinest.files',
+            capability: 'workspace.read',
+          ),
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey<String>('agent-session-driver-override')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('plugin-global-enable')),
+        findsNothing,
+      );
+    },
+    tags: const <String>[
+      'feature_test__agent_harness__widget',
+      'feature_test__plugin_permissions__widget',
+      'route_test__agent_settings_route__widget',
+    ],
+  );
+
+  testWidgets(
+    'mobile agent harness reports missing dependencies and model mismatch',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 820));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const definition = AgentDefinitionDto(
+        version: 5,
+        id: 'broken',
+        name: 'Broken harness',
+        description: 'Invalid references',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(
+          source: AgentModelSource.fixed,
+          modelId: 'openai/gpt-5.6-sol',
+        ),
+        driverId: 'acme.xml/driver',
+        extensionIds: <String>['missing.plugin'],
+        toolIds: <String>['missing.plugin/tool'],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: 'This should be diagnosed.',
+        contentHash: 'broken-hash',
+        sourcePath: '/config/v5/agents/broken.md',
+      );
+      final plugins = _agentHarnessPlugins
+          .map(
+            (plugin) => plugin.id == 'acme.xml'
+                ? plugin.copyWith(
+                    contributions: <PluginContributionDto>[
+                      plugin.contributions.single.copyWith(
+                        metadata: const <String, dynamic>{
+                          'name': 'XML driver',
+                          'requiredModelCapabilities': <String>[
+                            'freeform_tools',
+                          ],
+                          'dependencies': <String>['tinest.context'],
+                        },
+                      ),
+                    ],
+                  )
+                : plugin,
+          )
+          .toList(growable: false);
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[definition],
+        plugins: plugins,
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(find.text('Broken harness').first);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('agent-harness-diagnostics')),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).last,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('missing.plugin'), findsWidgets);
+      expect(find.textContaining('missing.plugin/tool'), findsWidgets);
+      expect(find.textContaining('tinest.context'), findsWidgets);
+      expect(find.textContaining('freeform_tools'), findsWidgets);
+      expect(
+        tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
+        isNull,
+      );
+    },
+    tags: const <String>[
+      'feature_test__agent_harness__widget',
+      'feature_test__plugin_runtime__widget',
+      'route_test__agent_settings_route__widget',
+      'ui_state_test__agent_harness_diagnostics__mobile',
+    ],
+  );
+
+  testWidgets(
+    'agent harness diagnoses and blocks an absent driver',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const definition = AgentDefinitionDto(
+        version: 5,
+        id: 'no-driver',
+        name: 'No driver',
+        description: 'Incomplete harness',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: '',
+        extensionIds: <String>[],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'no-driver-hash',
+        sourcePath: '/config/v5/agents/no-driver.md',
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[definition],
+        plugins: _agentHarnessPlugins,
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        const AgentSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('agent-harness-diagnostics')),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).last,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('driver'), findsWidgets);
+      expect(
+        tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
+        isNull,
+      );
+    },
+    tags: const <String>[
+      'feature_test__agent_harness__widget',
+      'route_test__agent_settings_route__widget',
+      'ui_state_test__agent_harness_diagnostics__desktop',
+    ],
+  );
 }
+
+const List<PluginDescriptorDto> _agentHarnessPlugins = <PluginDescriptorDto>[
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.standard',
+    version: '1.0.0',
+    name: 'Standard',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.standard',
+    requestedCapabilities: <String>['model.call'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.standard',
+        id: 'driver',
+        kind: PluginContributionKind.driver,
+        metadata: <String, dynamic>{
+          'name': 'Standard driver',
+          'requiredModelCapabilities': <String>['streaming'],
+        },
+      ),
+    ],
+  ),
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'acme.xml',
+    version: '1.0.0',
+    name: 'XML harness',
+    entrypoint: 'main.lua',
+    source: PluginSource.user,
+    sourcePath: '/config/v5/plugins/acme.xml',
+    requestedCapabilities: <String>['model.call'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'acme.xml',
+        id: 'driver',
+        kind: PluginContributionKind.driver,
+        metadata: <String, dynamic>{
+          'name': 'XML driver',
+          'requiredModelCapabilities': <String>['streaming'],
+        },
+      ),
+    ],
+  ),
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.plan',
+    version: '1.0.0',
+    name: 'Plan',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.plan',
+    requestedCapabilities: <String>['state.write'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.plan',
+        id: 'before-turn',
+        kind: PluginContributionKind.extension,
+        metadata: <String, dynamic>{'lifecycle': 'before_turn'},
+      ),
+    ],
+  ),
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.goal',
+    version: '1.0.0',
+    name: 'Goal',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.goal',
+    requestedCapabilities: <String>['state.write'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.goal',
+        id: 'after-turn',
+        kind: PluginContributionKind.extension,
+        metadata: <String, dynamic>{'lifecycle': 'after_turn'},
+      ),
+    ],
+  ),
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.files',
+    version: '1.0.0',
+    name: 'Files',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.files',
+    requestedCapabilities: <String>['workspace.read'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.files',
+        id: 'tinest.files/read_file',
+        kind: PluginContributionKind.tool,
+        requiredCapabilities: <String>['workspace.read'],
+        tool: AgentToolDefinitionDto(
+          id: 'tinest.files/read_file',
+          originPluginId: 'tinest.files',
+          contributionId: 'read_file',
+          name: 'Read file',
+          description: 'Read a workspace file.',
+          risk: ToolRisk.read,
+          group: 'filesystem',
+          kind: AgentToolKind.function,
+          inputSchema: <String, dynamic>{'type': 'object'},
+          effects: <String>['filesystem.read'],
+          presentation: <String, dynamic>{'group': 'filesystem'},
+        ),
+      ),
+    ],
+  ),
+  PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.edit',
+    version: '1.0.0',
+    name: 'Edit',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.edit',
+    requestedCapabilities: <String>['workspace.patch'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.edit',
+        id: 'tinest.edit/apply_patch',
+        kind: PluginContributionKind.tool,
+        requiredCapabilities: <String>['workspace.patch'],
+        tool: AgentToolDefinitionDto(
+          id: 'tinest.edit/apply_patch',
+          originPluginId: 'tinest.edit',
+          contributionId: 'apply_patch',
+          name: 'Apply patch',
+          description: 'Apply a patch to the workspace.',
+          risk: ToolRisk.write,
+          group: 'editing',
+          kind: AgentToolKind.freeform,
+          inputSchema: <String, dynamic>{'type': 'string'},
+          effects: <String>['filesystem.write'],
+          presentation: <String, dynamic>{'group': 'editing'},
+        ),
+      ),
+    ],
+  ),
+];

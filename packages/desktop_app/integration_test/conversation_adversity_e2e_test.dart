@@ -29,6 +29,7 @@ final String _thirdStreamChunk =
       12,
       (index) => '스트림 청크 3-$index',
     ).join('\n\n')}';
+const String _adversityModelId = 'openai/gpt-5.6-sol';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +47,7 @@ void main() {
       final fixture = await RealDaemonFixture.start(
         id: 'conversation-adversity',
         provider: provider,
-        modelDiscovery: const _AdversityModelDiscovery(),
+        providerCatalogMetadataSource: const _AdversityCatalogMetadataSource(),
       );
       addTearDown(fixture.dispose);
       final client = await fixture.connect(clientId: 'adversity-setup');
@@ -63,21 +64,27 @@ void main() {
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
       final worktreeLabel =
           registeredWorktree.branch ?? registeredWorktree.name;
-      final connection = await client.providers.createCustomProvider(
-        'adversity',
-        const CustomProviderConfigDto(
-          name: 'Adversity provider',
-          baseUrl: 'http://127.0.0.1:1/v1',
-          wireFormatId: 'openai-chat-completions',
-          authenticationRequired: false,
-          models: <ManualProviderModelDto>[
-            ManualProviderModelDto(id: 'test-model', label: 'Test model'),
+      // Manual custom-provider models advertise function tools only. This
+      // scenario later exercises the freeform apply_patch contribution, so it
+      // must select an exact full-surface model before the injected gateway is
+      // allowed to receive a request.
+      final model = (await client.providers.listProviderModels('openai'))
+          .singleWhere(
+            (candidate) => candidate.id == _adversityModelId,
+          );
+      expect(model.capabilities.streaming, CapabilitySupport.supported);
+      expect(model.capabilities.functionTools, CapabilitySupport.supported);
+      expect(model.capabilities.freeformTools, CapabilitySupport.supported);
+      final tinest = await client.agents.getAgentDefinition('tinest');
+      await client.agents.updateAgentDefinition(
+        tinest.copyWith(
+          toolIds: <String>[
+            ...tinest.toolIds,
+            'tinest.interaction/request_user_input',
           ],
         ),
+        expectedContentHash: tinest.contentHash,
       );
-      final model = (await client.providers.listProviderModels(
-        connection.id,
-      )).singleWhere((candidate) => candidate.providerModelId == 'test-model');
       final SessionDto session;
       try {
         session = await client.sessions.createSession(
@@ -100,8 +107,12 @@ void main() {
       const composerKey = ValueKey<String>('session-composer-input');
       const sendKey = ValueKey<String>('session-composer-send');
       await _submit(tester, composerKey, sendKey, 'Stream first');
-      await provider.firstTurnStarted.future.timeout(
-        const Duration(minutes: 1),
+      await _waitForProviderStart(
+        tester,
+        provider,
+        client,
+        session.id,
+        registeredWorktree.id,
       );
       await pumpUntil(
         tester,
@@ -321,17 +332,77 @@ void _expectTimelineTrailing(
   );
 }
 
-final class _AdversityModelDiscovery implements ProviderModelDiscovery {
-  const _AdversityModelDiscovery();
-
-  @override
-  Future<List<String>> fetchModelIds(
-    ProviderEndpoint endpoint,
-    ProviderCredential? credential,
-  ) async => const <String>['test-model'];
+Future<void> _waitForProviderStart(
+  WidgetTester tester,
+  _AdversityProvider provider,
+  TinestApi client,
+  String sessionId,
+  String worktreeId,
+) async {
+  try {
+    await pumpUntilCondition(
+      tester,
+      () async {
+        if (provider.firstTurnStarted.isCompleted) return true;
+        final current = (await client.sessions.listSessions(
+          worktreeId: worktreeId,
+        )).singleWhere((candidate) => candidate.id == sessionId);
+        if (current.status == SessionStatus.failed) {
+          throw TestFailure(
+            'The first adversity turn failed before reaching the provider: '
+            '${current.lastError ?? 'unknown error'}.',
+          );
+        }
+        return false;
+      },
+      'the adversity provider to receive the first turn',
+    );
+  } on TestFailure catch (error) {
+    final session = (await client.sessions.listSessions(
+      worktreeId: worktreeId,
+    )).singleWhere((candidate) => candidate.id == sessionId);
+    final timeline = await client.sessions.subscribeTimeline(sessionId);
+    final events = timeline
+        .map((event) => '${event.sequence}:${event.type}:${event.data}')
+        .join(', ');
+    throw TestFailure(
+      '$error Session status: ${session.status.name}; '
+      'lastError: ${session.lastError}; '
+      'timeline: [$events].',
+    );
+  }
 }
 
-final class _AdversityProvider implements ModelProvider {
+final class _AdversityCatalogMetadataSource
+    implements ProviderCatalogMetadataSource {
+  const _AdversityCatalogMetadataSource();
+
+  @override
+  Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
+    Set<String> providerIds,
+  ) async => <String, List<ProviderCatalogMetadata>>{
+    if (providerIds.contains('openai'))
+      'openai': const <ProviderCatalogMetadata>[
+        ProviderCatalogMetadata(
+          id: 'gpt-5.6-sol',
+          label: 'Adversity model',
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.supported,
+            toolCalling: CapabilitySupport.supported,
+            functionTools: CapabilitySupport.supported,
+            freeformTools: CapabilitySupport.supported,
+            deferredTools: CapabilitySupport.supported,
+            source: CapabilitySource.refreshed,
+          ),
+        ),
+      ],
+  };
+
+  @override
+  Future<void> close() async {}
+}
+
+final class _AdversityProvider implements ModelGateway {
   final Completer<void> firstTurnStarted = Completer<void>();
   final Completer<void> releaseFirstTurn = Completer<void>();
   final Completer<void> secondStreamChunkStarted = Completer<void>();

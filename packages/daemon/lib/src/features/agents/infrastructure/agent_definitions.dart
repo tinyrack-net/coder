@@ -416,8 +416,10 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
         for (final value in _archived.values) (value: value, archived: true),
       ]) {
         final definition = entry.value;
-        final modelId = definition.model?.modelId;
-        if (modelId == null || !modelId.startsWith('$oldPrefix/')) {
+        final modelId = definition.model.modelId;
+        if (definition.model.source != AgentModelSource.fixed ||
+            modelId == null ||
+            !modelId.startsWith('$oldPrefix/')) {
           continue;
         }
         final before = _sources[definition.id];
@@ -427,7 +429,8 @@ final class FileAgentDefinitionStore implements AgentDefinitionStore {
         final after = codec.encodeUpdate(
           originalSource: before,
           definition: definition.copyWith(
-            model: ModelSelectionDto(
+            model: AgentModelSelectionDto(
+              source: AgentModelSource.fixed,
               modelId: '$newPrefix/${modelId.substring(oldPrefix.length + 1)}',
             ),
           ),
@@ -667,88 +670,51 @@ Uri? _yamlSourceUrl(String sourcePath) =>
     p.isAbsolute(sourcePath) ? Uri.file(sourcePath) : null;
 
 AgentDefinitionDto _defaultTinest(String sourcePath) => AgentDefinitionDto(
+  version: 5,
   id: 'tinest',
   name: 'Tinest',
   description: 'General-purpose coding agent',
   mode: AgentMode.primary,
-  // The built-in system prompt is the shipped behaviour, so the override starts
-  // off. The text below is only the starting point a user sees once they turn
-  // it on.
-  promptEnabled: false,
-  systemPrompt:
+  model: const AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: const <String>[
+    'tinest.skills',
+    'tinest.collaboration',
+  ],
+  toolIds: const <String>[
+    'tinest.edit/apply_patch',
+    'tinest.mcp/list_resources',
+    'tinest.mcp/list_resource_templates',
+    'tinest.mcp/read_resource',
+    'tinest.terminal/exec_command',
+    'tinest.terminal/write_stdin',
+    'tinest.collaboration/spawn_agent',
+    'tinest.collaboration/send_message',
+    'tinest.collaboration/followup_task',
+    'tinest.collaboration/wait_agent',
+    'tinest.collaboration/interrupt_agent',
+    'tinest.collaboration/list_agents',
+  ],
+  pluginSettings: const <String, Map<String, dynamic>>{},
+  callableAgentIds: const <String>[],
+  prompt:
       'You are a coding agent. Read relevant code before editing and validate '
       'your work.',
-  // The always-on tools are implicit; every selectable built-in capability is
-  // enabled for the shipped Tinest definition. The Lua tool surface is not
-  // among them: a model that wants it declares `ModelToolSurface.luaCode` and
-  // the registry swaps the surface in for the whole turn, so naming it here
-  // would select nothing.
-  toolIds: const <String>[
-    'apply_patch',
-    'list_mcp_resources',
-    'list_mcp_resource_templates',
-    'read_mcp_resource',
-    'exec_command',
-    'collaboration',
-  ],
-  callableAgentIds: const <String>[],
   contentHash: '',
   sourcePath: sourcePath,
   isBuiltIn: true,
 );
 
-/// How many MCP tools a turn tolerates before they are withheld.
+/// Validated Lua registration metadata available to Agent configuration.
 ///
-/// Below this the model is told about every one, so a user with a couple of
-/// servers sees no behaviour change and pays no search round trip. Above it,
-/// the schemas alone would crowd the context, so they move behind
-/// `tool_search` instead.
-const int mcpDeferralThreshold = 8;
+/// Implementations return revision-backed plugin descriptors, never a Dart
+/// reconstruction of model-visible tool metadata.
+abstract interface class AgentContributionCatalog {
+  /// Lists installed plugin descriptors enriched by Lua registration.
+  Future<List<PluginDescriptorDto>> listPluginDescriptors();
 
-/// A live view of the tools a turn may use.
-///
-/// The set is not fixed at startup: MCP servers publish tools as they connect,
-/// and a worktree's own servers only exist for turns running in that worktree.
-abstract interface class AgentToolCatalog {
-  /// Returns the tools visible to [workspaceRoot], or the unscoped set.
-  List<AgentToolDefinitionDto> tools({String? workspaceRoot});
-
-  /// Emits whenever the returned set would differ.
+  /// Emits whenever the validated contribution set may have changed.
   Stream<void> get changes;
-}
-
-/// A catalog of tools compiled into the daemon.
-final class StaticAgentToolCatalog implements AgentToolCatalog {
-  /// Creates a catalog over a fixed list.
-  const StaticAgentToolCatalog(this._tools);
-
-  final List<AgentToolDefinitionDto> _tools;
-
-  @override
-  List<AgentToolDefinitionDto> tools({String? workspaceRoot}) => _tools;
-
-  @override
-  Stream<void> get changes => const Stream<void>.empty();
-}
-
-/// Presents several catalogs as one.
-final class CompositeAgentToolCatalog implements AgentToolCatalog {
-  /// Creates a catalog presenting every source, in priority order.
-  CompositeAgentToolCatalog(this._sources);
-
-  final List<AgentToolCatalog> _sources;
-
-  @override
-  List<AgentToolDefinitionDto> tools({String? workspaceRoot}) =>
-      <AgentToolDefinitionDto>[
-        for (final source in _sources)
-          ...source.tools(workspaceRoot: workspaceRoot),
-      ];
-
-  @override
-  Stream<void> get changes => StreamGroup.merge(
-    <Stream<void>>[for (final source in _sources) source.changes],
-  );
 }
 
 /// An agent definition a caller referenced could not be used.
@@ -784,32 +750,24 @@ final class AgentDefinitionService {
   /// Creates an agent definition application service.
   AgentDefinitionService({
     required this._store,
-    required AgentToolCatalog tools,
-    required this._alwaysOnToolIds,
+    required this._contributions,
     this.codec = const AgentMarkdownCodec(),
-  }) : _catalog = tools;
+  });
 
   final AgentDefinitionStore _store;
-  final AgentToolCatalog _catalog;
-
-  /// Capabilities an agent gets whether or not the catalog still lists them.
-  ///
-  /// A daemon may drop a built-in from its catalog, but an agent that still
-  /// lists a read tool is not misconfigured: it gets it regardless, so the
-  /// listing is not worth a diagnostic.
-  final Set<String> _alwaysOnToolIds;
+  final AgentContributionCatalog _contributions;
 
   /// Codec used for validation-only RPC requests.
   final AgentMarkdownCodec codec;
 
   /// Emits after source files, diagnostics, or the tool catalog change.
   Stream<void> get changes =>
-      StreamGroup.merge(<Stream<void>>[_store.changes, _catalog.changes]);
+      StreamGroup.merge(<Stream<void>>[_store.changes, _contributions.changes]);
 
   /// Initializes the source store.
   Future<void> initialize() => _store.initialize();
 
-  /// Returns definitions decorated with unavailable-tool diagnostics.
+  /// Returns definitions with source diagnostics preserved.
   Future<List<AgentDefinitionDto>> list() async => Future.wait(
     (await _store.list()).map(_decorate),
   );
@@ -834,14 +792,20 @@ final class AgentDefinitionService {
     return _decorate(definition);
   }
 
-  /// Returns the runtime tool catalog visible to [workspaceRoot].
-  List<AgentToolDefinitionDto> toolCatalog({String? workspaceRoot}) {
-    final tools = _catalog.tools(workspaceRoot: workspaceRoot).toList()
-      ..sort((left, right) => left.name.compareTo(right.name));
+  /// Returns model tools exactly as validated Lua registrations declared them.
+  Future<List<AgentToolDefinitionDto>> toolCatalog() async {
+    final tools = <AgentToolDefinitionDto>[
+      for (final descriptor in await _contributions.listPluginDescriptors())
+        if (descriptor.revision != null)
+          for (final contribution in descriptor.contributions)
+            if (contribution.kind == PluginContributionKind.tool &&
+                contribution.tool != null)
+              contribution.tool!,
+    ]..sort((left, right) => left.name.compareTo(right.name));
     return List<AgentToolDefinitionDto>.unmodifiable(tools);
   }
 
-  /// Whether an active or archived definition references a connection.
+  /// Whether an active or archived definition fixes itself to a connection.
   Future<bool> referencesProvider(String modelPrefix) async {
     final definitions = <AgentDefinitionDto>[
       ...await _store.list(),
@@ -849,7 +813,8 @@ final class AgentDefinitionService {
     ];
     return definitions.any(
       (definition) =>
-          definition.model?.modelId.startsWith('$modelPrefix/') == true,
+          definition.model.source == AgentModelSource.fixed &&
+          definition.model.modelId?.startsWith('$modelPrefix/') == true,
     );
   }
 
@@ -938,29 +903,16 @@ final class AgentDefinitionService {
     }
   }
 
-  Future<AgentDefinitionDto> _decorate(AgentDefinitionDto definition) async {
-    final available = <String>{
-      for (final tool in _catalog.tools()) tool.id,
-    };
-    final unavailable = definition.toolIds
-        .where(
-          (id) => !available.contains(id) && !_alwaysOnToolIds.contains(id),
-        )
-        .map(
-          (id) => AgentDefinitionDiagnosticDto(
-            code: 'unavailable_tool',
-            message: 'Tool is not available in this daemon: $id',
-          ),
-        );
-    return definition.copyWith(
-      diagnostics: <AgentDefinitionDiagnosticDto>[
-        ...definition.diagnostics.where(
-          (diagnostic) => diagnostic.code != 'unavailable_tool',
-        ),
-        ...unavailable,
-      ],
-    );
-  }
+  Future<AgentDefinitionDto> _decorate(AgentDefinitionDto definition) async =>
+      definition.copyWith(
+        // A Dart host-primitive registry cannot validate public Lua plugin
+        // contributions. Plugin management and the revision-pinned harness
+        // own that check, which also lets app-data plugins participate on the
+        // same terms as embedded ones.
+        diagnostics: definition.diagnostics
+            .where((diagnostic) => diagnostic.code != 'unavailable_tool')
+            .toList(growable: false),
+      );
 
   /// Stops file observation.
   Future<void> close() => _store.close();
@@ -996,36 +948,65 @@ final class AgentMarkdownCodec {
       _requiredString(frontmatter, 'mode'),
       'mode',
     );
-    final modelId = _optionalString(frontmatter, 'model');
-    final modelControls = _modelControls(frontmatter['modelControls']);
-    if (modelId == null && modelControls.isNotEmpty) {
+    final modelMap = _requiredMap(frontmatter, 'model');
+    final modelSource = _enumValue(
+      AgentModelSource.values,
+      _requiredString(modelMap, 'source'),
+      'model.source',
+    );
+    final modelId = _optionalString(modelMap, 'modelId');
+    if (modelSource == AgentModelSource.fixed && modelId == null) {
       throw const FormatException(
-        'modelControls require a concrete model.',
+        'Fixed agent models require a qualified modelId.',
       );
     }
+    final driverId = _requiredString(frontmatter, 'driver');
+    _validateContributionId(driverId, field: 'driver');
+    final extensionIds = _stringList(frontmatter, 'extensions');
+    _validateUnique(extensionIds, field: 'extensions');
+    for (final extensionId in extensionIds) {
+      _validatePluginId(extensionId, field: 'extensions');
+    }
+    final toolIds = _stringList(frontmatter, 'tools');
+    _validateUnique(toolIds, field: 'tools');
+    for (final toolId in toolIds) {
+      _validateContributionId(toolId, field: 'tools');
+    }
+    final pluginSettings = _pluginSettings(frontmatter['pluginSettings']);
+    final activePluginIds = <String>{
+      _contributionPluginId(driverId),
+      ...extensionIds,
+      for (final toolId in toolIds) _contributionPluginId(toolId),
+    };
+    for (final pluginId in pluginSettings.keys) {
+      if (!activePluginIds.contains(pluginId)) {
+        throw FormatException(
+          'pluginSettings references an inactive plugin: $pluginId.',
+        );
+      }
+    }
     final callableAgentIds = _stringList(frontmatter, 'callableAgents');
+    _validateUnique(callableAgentIds, field: 'callableAgents');
+    callableAgentIds.forEach(_validateId);
     if (mode == AgentMode.subagent && callableAgentIds.isNotEmpty) {
       throw const FormatException('Subagents cannot call other agents.');
     }
-    final permissionMode = _optionalString(frontmatter, 'permissionMode');
     return AgentDefinitionDto(
+      version: 5,
       id: id,
       name: _requiredString(frontmatter, 'name'),
       description: _requiredStringAllowEmpty(frontmatter, 'description'),
       mode: mode,
-      promptEnabled: _requiredBool(frontmatter, 'promptEnabled'),
-      systemPrompt: document.body.trim(),
-      model: modelId == null ? null : ModelSelectionDto(modelId: modelId),
-      modelControls: modelControls,
-      permissionMode: permissionMode == null
-          ? null
-          : _enumValue(
-              PermissionMode.values,
-              permissionMode,
-              'permissionMode',
-            ),
-      toolIds: _stringList(frontmatter, 'tools'),
+      model: AgentModelSelectionDto(
+        source: modelSource,
+        modelId: modelId,
+      ),
+      driverId: driverId,
+      extensionIds: extensionIds,
+      toolIds: toolIds,
+      pluginSettings: pluginSettings,
       callableAgentIds: callableAgentIds,
+      prompt: document.body.trim(),
       contentHash: sha256.convert(utf8.encode(source)).toString(),
       sourcePath: sourcePath,
       isBuiltIn: id == 'tinest',
@@ -1044,29 +1025,13 @@ final class AgentMarkdownCodec {
       ..update(<Object>['name'], definition.name)
       ..update(<Object>['description'], definition.description)
       ..update(<Object>['mode'], definition.mode.name)
-      ..update(<Object>['promptEnabled'], definition.promptEnabled)
+      ..update(<Object>['model'], _modelMap(definition.model))
+      ..update(<Object>['driver'], definition.driverId)
+      ..update(<Object>['extensions'], definition.extensionIds)
       ..update(<Object>['tools'], definition.toolIds)
+      ..update(<Object>['pluginSettings'], definition.pluginSettings)
       ..update(<Object>['callableAgents'], definition.callableAgentIds);
-    final original = loadYaml(document.frontmatter) as YamlMap;
-    if (definition.model case final model?) {
-      editor.update(<Object>['model'], model.qualifiedModelId);
-    } else if (original.containsKey('model')) {
-      editor.remove(<Object>['model']);
-    }
-    if (definition.modelControls.isNotEmpty) {
-      editor.update(
-        <Object>['modelControls'],
-        _encodedModelControls(definition.modelControls),
-      );
-    } else if (original.containsKey('modelControls')) {
-      editor.remove(<Object>['modelControls']);
-    }
-    if (definition.permissionMode case final permissionMode?) {
-      editor.update(<Object>['permissionMode'], permissionMode.name);
-    } else if (original.containsKey('permissionMode')) {
-      editor.remove(<Object>['permissionMode']);
-    }
-    return '---\n$editor\n---\n\n${definition.systemPrompt.trim()}\n';
+    return '---\n$editor\n---\n\n${definition.prompt.trim()}\n';
   }
 
   /// Creates a canonical new Markdown document.
@@ -1077,28 +1042,21 @@ final class AgentMarkdownCodec {
         'name': definition.name,
         'description': definition.description,
         'mode': definition.mode.name,
-        'promptEnabled': definition.promptEnabled,
-        if (definition.model case final model?) 'model': model.qualifiedModelId,
-        if (definition.modelControls.isNotEmpty)
-          'modelControls': _encodedModelControls(definition.modelControls),
-        if (definition.permissionMode case final permissionMode?)
-          'permissionMode': permissionMode.name,
+        'model': _modelMap(definition.model),
+        'driver': definition.driverId,
+        'extensions': definition.extensionIds,
         'tools': definition.toolIds,
+        'pluginSettings': definition.pluginSettings,
         'callableAgents': definition.callableAgentIds,
       });
-    return '---\n$editor\n---\n\n${definition.systemPrompt.trim()}\n';
+    return '---\n$editor\n---\n\n${definition.prompt.trim()}\n';
   }
 
-  static Map<String, Object> _encodedModelControls(
-    Map<String, ModelControlValueDto> controls,
-  ) => <String, Object>{
-    for (final entry in controls.entries)
-      entry.key: switch (entry.value) {
-        ModelControlStringValueDto(:final value) => value,
-        ModelControlBoolValueDto(:final value) => value,
-        ModelControlIntValueDto(:final value) => value,
-      },
-  };
+  static Map<String, Object?> _modelMap(AgentModelSelectionDto model) =>
+      <String, Object?>{
+        'source': model.source.name,
+        'modelId': ?model.modelId,
+      };
 }
 
 final class _AgentMarkdownDocument {
@@ -1159,22 +1117,12 @@ Object? _plainValue(Object? value) => switch (value) {
   _ => value,
 };
 
-Map<String, ModelControlValueDto> _modelControls(Object? value) {
-  if (value == null) return const <String, ModelControlValueDto>{};
+Map<String, Object?> _requiredMap(Map<String, Object?> map, String key) {
+  final value = map[key];
   if (value is! Map<String, Object?>) {
-    throw const FormatException('modelControls must be a map.');
+    throw FormatException('$key must be a map.');
   }
-  return <String, ModelControlValueDto>{
-    for (final entry in value.entries)
-      entry.key: switch (entry.value) {
-        final String item => ModelControlValueDto.stringValue(value: item),
-        final bool item => ModelControlValueDto.boolValue(value: item),
-        final int item => ModelControlValueDto.intValue(value: item),
-        _ => throw FormatException(
-          'modelControls.${entry.key} must be a string, bool, or int.',
-        ),
-      },
-  };
+  return value;
 }
 
 String _requiredString(Map<String, Object?> map, String key) {
@@ -1204,12 +1152,6 @@ int _requiredInt(Map<String, Object?> map, String key) {
   return value;
 }
 
-bool _requiredBool(Map<String, Object?> map, String key) {
-  final value = map[key];
-  if (value is! bool) throw FormatException('$key must be a boolean.');
-  return value;
-}
-
 List<String> _stringList(Map<String, Object?> map, String key) {
   final value = map[key];
   if (value is! List<Object?> || value.any((item) => item is! String)) {
@@ -1217,6 +1159,69 @@ List<String> _stringList(Map<String, Object?> map, String key) {
   }
   return List<String>.unmodifiable(value.cast<String>());
 }
+
+Map<String, Map<String, dynamic>> _pluginSettings(Object? value) {
+  if (value is! Map<String, Object?>) {
+    throw const FormatException('pluginSettings must be a map.');
+  }
+  final result = <String, Map<String, dynamic>>{};
+  for (final entry in value.entries) {
+    _validatePluginId(entry.key, field: 'pluginSettings');
+    if (entry.value is! Map<String, Object?>) {
+      throw FormatException('pluginSettings.${entry.key} must be a map.');
+    }
+    result[entry.key] = _jsonMap(
+      entry.value! as Map<String, Object?>,
+      field: 'pluginSettings.${entry.key}',
+    );
+  }
+  return Map<String, Map<String, dynamic>>.unmodifiable(result);
+}
+
+Map<String, dynamic> _jsonMap(
+  Map<String, Object?> value, {
+  required String field,
+}) => <String, dynamic>{
+  for (final entry in value.entries)
+    entry.key: _jsonValue(entry.value, field: '$field.${entry.key}'),
+};
+
+Object? _jsonValue(Object? value, {required String field}) => switch (value) {
+  null || String() || bool() || num() => value,
+  List<Object?>() => <Object?>[
+    for (var index = 0; index < value.length; index += 1)
+      _jsonValue(value[index], field: '$field[$index]'),
+  ],
+  Map<String, Object?>() => _jsonMap(value, field: field),
+  _ => throw FormatException('$field must contain only JSON values.'),
+};
+
+void _validateUnique(List<String> values, {required String field}) {
+  if (values.toSet().length != values.length) {
+    throw FormatException('$field cannot contain duplicates.');
+  }
+}
+
+void _validatePluginId(String id, {required String field}) {
+  if (!RegExp(
+    r'^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z][a-z0-9]*(?:-[a-z0-9]+)*)+$',
+  ).hasMatch(id)) {
+    throw FormatException('$field contains an invalid plugin ID: $id.');
+  }
+}
+
+void _validateContributionId(String id, {required String field}) {
+  final slash = id.indexOf('/');
+  if (slash <= 0 || slash != id.lastIndexOf('/') || slash == id.length - 1) {
+    throw FormatException('$field contains an invalid contribution ID: $id.');
+  }
+  _validatePluginId(id.substring(0, slash), field: field);
+  if (!RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(id.substring(slash + 1))) {
+    throw FormatException('$field contains an invalid contribution ID: $id.');
+  }
+}
+
+String _contributionPluginId(String id) => id.substring(0, id.indexOf('/'));
 
 T _enumValue<T extends Enum>(List<T> values, String name, String field) {
   for (final value in values) {

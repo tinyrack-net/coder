@@ -2,7 +2,7 @@ import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('every v4 descriptor owns executable malformed-payload decoding', () {
+  test('every v5 descriptor owns executable malformed-payload decoding', () {
     final procedureNames = <String>{};
     for (final procedure in rpcProcedures) {
       expect(procedureNames.add(procedure.name), isTrue);

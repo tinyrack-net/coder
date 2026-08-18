@@ -4,6 +4,7 @@ export 'src/common/rpc_values.dart';
 export 'src/features/agents/procedures.dart';
 export 'src/features/mcp/procedures.dart';
 export 'src/features/models/procedures.dart';
+export 'src/features/plugins/procedures.dart';
 export 'src/features/prompts/procedures.dart';
 export 'src/features/providers/procedures.dart';
 export 'src/features/relay/procedures.dart';

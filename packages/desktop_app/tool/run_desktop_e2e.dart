@@ -8,6 +8,7 @@ import 'package:app/testing/devtools/io_windows_build_environment.dart';
 import 'package:app/testing/devtools/windows_build_environment.dart';
 
 import 'src/desktop_e2e_cli.dart';
+import 'src/windows_e2e_lane_build.dart';
 
 Future<void> main(List<String> arguments) async {
   exitCode = await runDesktopE2eCli(
@@ -88,14 +89,65 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
   const _IoDesktopE2eRuntime();
 
   @override
+  Future<DesktopE2eBuildLease> acquireProjectBuildLease(
+    String projectDirectory,
+  ) => _acquireBuildLease(projectDirectory, 'project');
+
+  @override
+  Future<DesktopE2eBuildLease> acquireLaneBuildLease(
+    String projectDirectory,
+    int laneIndex,
+  ) => _acquireBuildLease(
+    projectDirectory,
+    desktopE2eWindowsLaneBuildPath(laneIndex),
+  );
+
+  @override
+  Future<void> resetWindowsProjectBuildCache(String projectDirectory) =>
+      resetWindowsE2eProjectBuildCache(projectDirectory);
+
+  Future<DesktopE2eBuildLease> _acquireBuildLease(
+    String projectDirectory,
+    String resource,
+  ) async {
+    final projectPath = Directory(projectDirectory).absolute.path.toLowerCase();
+    final lockKey = '$projectPath|$resource';
+    final lockFile = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}'
+      'tinest-desktop-e2e-${_stablePathHash(lockKey)}.lock',
+    );
+    final handle = await lockFile.open(mode: FileMode.append);
+    try {
+      await handle.lock();
+      return _IoDesktopE2eBuildLease(handle);
+    } catch (_) {
+      await handle.close();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> resetWindowsLaneBuild(
+    String projectDirectory,
+    int laneIndex,
+  ) => resetWindowsE2eLaneBuild(
+    projectDirectory: projectDirectory,
+    laneIndex: laneIndex,
+  );
+
+  @override
   Future<DesktopE2eLaneResources> createLaneResources(int laneIndex) async {
     final root = await Directory.systemTemp.createTemp(
       'tinest-e2e-lane-$laneIndex-',
     );
     final home = Directory('${root.path}${Platform.pathSeparator}home');
     final config = Directory('${root.path}${Platform.pathSeparator}config');
+    final temporary = Directory(
+      '${root.path}${Platform.pathSeparator}temporary',
+    );
     await home.create();
     await config.create();
+    await temporary.create();
     final settings = Platform.isWindows
         ? File('${config.path}${Platform.pathSeparator}.flutter_settings')
         : File(
@@ -109,6 +161,7 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
     return DesktopE2eLaneResources(
       home: home.path,
       configHome: config.path,
+      temporaryDirectory: temporary.path,
       readinessMarker: '${root.path}${Platform.pathSeparator}application.ready',
     );
   }
@@ -144,6 +197,33 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
       readinessMarker: command.environment['TINYRACK_TINEST_E2E_READY_FILE']!,
     );
   }
+}
+
+final class _IoDesktopE2eBuildLease implements DesktopE2eBuildLease {
+  _IoDesktopE2eBuildLease(this._handle);
+
+  RandomAccessFile? _handle;
+
+  @override
+  Future<void> release() async {
+    final handle = _handle;
+    if (handle == null) return;
+    _handle = null;
+    try {
+      await handle.unlock();
+    } finally {
+      await handle.close();
+    }
+  }
+}
+
+String _stablePathHash(String value) {
+  var hash = 0x811c9dc5;
+  for (final codeUnit in value.codeUnits) {
+    hash ^= codeUnit;
+    hash = (hash * 0x01000193) & 0xffffffff;
+  }
+  return hash.toRadixString(16).padLeft(8, '0');
 }
 
 final class _IoDesktopE2eProcess implements DesktopE2eProcess {

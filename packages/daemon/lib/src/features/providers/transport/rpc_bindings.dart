@@ -5,7 +5,7 @@ import 'package:daemon/src/features/providers/infrastructure/provider_usage_serv
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the provider feature's complete v4 RPC surface.
+/// Builds the provider feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> providerRpcBindings({
   required ProviderConnectionService providers,
   required ProviderUsageService usage,

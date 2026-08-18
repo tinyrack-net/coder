@@ -5,7 +5,7 @@ import 'package:protocol/protocol.dart';
 // shapes those ports exchange without importing the agent layer directly.
 export 'package:agent/agent.dart'
     show
-        ModelProviderRequest,
+        ModelGatewayRequest,
         ProviderDiscoveryFailure,
         ProviderDiscoveryFailureKind,
         ProviderEndpoint;
@@ -24,12 +24,12 @@ abstract interface class ProviderModelDiscovery {
 
 /// Overrides every plugin's own adapter construction when provided.
 ///
-/// Same shape as [ProviderPlugin.createProvider]; a test that wants to see
+/// Same shape as [ProviderAdapter.createProvider]; a test that wants to see
 /// exactly what the daemon resolved records the request here instead of
 /// standing up a transport.
-abstract interface class ModelProviderFactory {
+abstract interface class ModelGatewayFactory {
   /// Creates a provider adapter for one connected provider.
-  ModelProvider create(ModelProviderRequest request);
+  ModelGateway create(ModelGatewayRequest request);
 }
 
 /// Secret-bearing transport used only by the provider usage service.

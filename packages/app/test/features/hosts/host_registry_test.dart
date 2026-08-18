@@ -1274,6 +1274,188 @@ void main() {
     tags: const <String>['feature_test__desktop_residency__unit'],
   );
 
+  test(
+    'concurrent shutdown and close join the same in-flight teardown',
+    () async {
+      final stopGate = Completer<void>();
+      final launcher = _EmbeddedLauncher(firstStopGate: stopGate);
+      final registry = HostRegistry(
+        store: MemoryAppStore(),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(
+            FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
+          ),
+        }),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+
+      await registry.load();
+      await _flush();
+
+      final shutdown = registry.shutdown();
+      await _flush();
+      expect(launcher.session.stops, 1);
+
+      var closeCompleted = false;
+      final close = registry.close().then((_) => closeCompleted = true);
+      await _flush();
+      expect(closeCompleted, isFalse);
+      expect(launcher.session.stops, 1);
+
+      stopGate.complete();
+      await Future.wait(<Future<void>>[shutdown, close]);
+      expect(closeCompleted, isTrue);
+      expect(launcher.session.stops, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__unit'],
+  );
+
+  test(
+    'close drains every resource before rethrowing the first failure',
+    () async {
+      final profiles = <RemoteDaemonProfile>[
+        for (final id in <String>['first', 'second'])
+          RemoteDaemonProfile(
+            id: id,
+            label: id,
+            connections: directHostConnections(
+              Uri.parse('ws://$id.test/ws'),
+              credentialKey: id,
+            ),
+            autoConnect: false,
+            createdAt: now,
+            updatedAt: now,
+          ),
+      ];
+      final clientFailure = StateError('first client close failed');
+      final sessionFailure = StateError('embedded session stop failed');
+      final embeddedApi = FakeTinestApi(
+        serverInfo: _serverInfo('embedded-server'),
+      );
+      final firstApi = _ControlledApi(
+        FakeTinestApi(serverInfo: _serverInfo('first-server')),
+        closeFailure: clientFailure,
+      );
+      final secondApi = FakeTinestApi(
+        serverInfo: _serverInfo('second-server'),
+      );
+      final launcher = _EmbeddedLauncher(stopError: sessionFailure);
+      final registry = HostRegistry(
+        store: MemoryAppStore(
+          profiles: profiles,
+          tokens: const <String, String>{'first': 'one', 'second': 'two'},
+        ),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(embeddedApi),
+          'first.test': Future<TinestApi>.value(firstApi),
+          'second.test': Future<TinestApi>.value(secondApi),
+        }),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+
+      await registry.load();
+      await _flush();
+      await registry.reconnect('first');
+      await registry.reconnect('second');
+      expect(
+        registry.value.runtimes['first']!.status,
+        HostRuntimeStatus.online,
+        reason: registry.value.runtimes['first']!.error,
+      );
+      expect(registry.value.runtimes['first']!.api, same(firstApi));
+      expect(registry.value.runtimes['second']!.api, same(secondApi));
+      final changesDone = Completer<void>();
+      registry.changes.listen(null, onDone: changesDone.complete);
+
+      final shutdown = registry.shutdown();
+      final close = registry.close();
+      expect(identical(shutdown, close), isTrue);
+      await expectLater(shutdown, throwsA(same(clientFailure)));
+      await expectLater(close, throwsA(same(clientFailure)));
+
+      expect(embeddedApi.isClosed, isTrue);
+      expect(firstApi.closeCalls, 1);
+      expect(firstApi.delegate.isClosed, isTrue);
+      expect(secondApi.isClosed, isTrue);
+      expect(launcher.session.stops, 1);
+      await changesDone.future;
+
+      await expectLater(registry.close(), throwsA(same(clientFailure)));
+      expect(firstApi.closeCalls, 1);
+      expect(launcher.session.stops, 1);
+    },
+    tags: const <String>['feature_test__desktop_residency__unit'],
+  );
+
+  test(
+    'a state subscription cancel failure still closes its runtime client',
+    () async {
+      final cancelFailure = StateError('state subscription cancel failed');
+      final states = StreamController<ClientConnectionState>(
+        onCancel: () async => throw cancelFailure,
+      );
+      final embeddedApi = _ControlledApi(
+        FakeTinestApi(serverInfo: _serverInfo('embedded-server')),
+        states: states.stream,
+        onClose: states.close,
+      );
+      final remoteApi = FakeTinestApi(serverInfo: _serverInfo('remote-server'));
+      final profile = RemoteDaemonProfile(
+        id: 'remote',
+        label: 'remote',
+        connections: directHostConnections(
+          Uri.parse('ws://remote.test/ws'),
+          credentialKey: 'remote',
+        ),
+        autoConnect: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final launcher = _EmbeddedLauncher();
+      final registry = HostRegistry(
+        store: MemoryAppStore(
+          profiles: <RemoteDaemonProfile>[profile],
+          tokens: const <String, String>{'remote': 'token'},
+        ),
+        clientFactory: _ClientFactory(<String, Future<TinestApi>>{
+          'embedded.test': Future<TinestApi>.value(embeddedApi),
+          'remote.test': Future<TinestApi>.value(remoteApi),
+        }),
+        embeddedLauncher: launcher,
+        ids: const _Ids(),
+        clock: _Clock(now),
+        delay: const _NoDelay(),
+        clientKind: 'desktop',
+      );
+
+      await registry.load();
+      await _flush();
+      await registry.reconnect('remote');
+      final changesDone = Completer<void>();
+      registry.changes.listen(null, onDone: changesDone.complete);
+
+      await expectLater(
+        registry.shutdown(),
+        throwsA(same(cancelFailure)),
+      );
+
+      expect(embeddedApi.closeCalls, 1);
+      expect(embeddedApi.delegate.isClosed, isTrue);
+      expect(remoteApi.isClosed, isTrue);
+      expect(launcher.session.stops, 1);
+      await changesDone.future;
+    },
+    tags: const <String>['feature_test__desktop_residency__unit'],
+  );
+
   test('pairing stores a daemon-scoped relay identity and profile', () async {
     final store = MemoryAppStore(
       settings: const AppSettings(embeddedDaemonEnabled: false),
@@ -1314,7 +1496,7 @@ void main() {
       final direct = DirectHostConnection(
         id: 'direct',
         credentialKey: 'direct-secret',
-        endpoint: HostEndpoint.parse('wss://daemon.example/v4/ws'),
+        endpoint: HostEndpoint.parse('wss://daemon.example/v5/ws'),
       );
       final existing = RemoteDaemonProfile(
         id: 'existing',
@@ -1364,7 +1546,7 @@ void main() {
       final direct = DirectHostConnection(
         id: 'direct',
         credentialKey: 'direct-secret',
-        endpoint: HostEndpoint.parse('ws://private.test/v4/ws'),
+        endpoint: HostEndpoint.parse('ws://private.test/v5/ws'),
       );
       final relay = RelayHostConnection(
         id: 'relay',
@@ -1484,6 +1666,68 @@ final class _ClientFactory implements HostClientFactory {
   }
 }
 
+final class _ControlledApi implements TinestApi {
+  _ControlledApi(
+    this.delegate, {
+    this.closeFailure,
+    Stream<ClientConnectionState>? states,
+    this.onClose,
+  }) : _states = states ?? delegate.states;
+
+  final FakeTinestApi delegate;
+  final Error? closeFailure;
+  final Stream<ClientConnectionState> _states;
+  final Future<void> Function()? onClose;
+  int closeCalls = 0;
+
+  @override
+  WorkspacesApi get workspaces => delegate.workspaces;
+
+  @override
+  SessionsApi get sessions => delegate.sessions;
+
+  @override
+  AgentsApi get agents => delegate.agents;
+
+  @override
+  PluginsApi get plugins => delegate.plugins;
+
+  @override
+  PromptsApi get prompts => delegate.prompts;
+
+  @override
+  ModelsApi get models => delegate.models;
+
+  @override
+  ProvidersApi get providers => delegate.providers;
+
+  @override
+  McpApi get mcp => delegate.mcp;
+
+  @override
+  TerminalsApi get terminals => delegate.terminals;
+
+  @override
+  AttachmentsApi get attachments => delegate.attachments;
+
+  @override
+  RelayApi get relay => delegate.relay;
+
+  @override
+  Stream<ClientConnectionState> get states => _states;
+
+  @override
+  ServerInfoDto get serverInfo => delegate.serverInfo;
+
+  @override
+  Future<void> close() async {
+    closeCalls += 1;
+    await delegate.close();
+    await onClose?.call();
+    if (closeFailure case final failure?) throw failure;
+  }
+}
+
 final class _SequenceClientFactory implements HostClientFactory {
   _SequenceClientFactory(this.results);
 
@@ -1560,11 +1804,13 @@ final class _ManualProbeTask implements HostPathProbeTask {
 final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
   _EmbeddedLauncher({
     this.firstStopGate,
+    this.stopError,
     this.failingStarts = const <int>{},
     this.calls,
   });
 
   final Completer<void>? firstStopGate;
+  final Error? stopError;
   final Set<int> failingStarts;
 
   /// Shared ordered log used by reset tests.
@@ -1590,6 +1836,7 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
     }
     final session = _EmbeddedSession(
       stopGate: sessions.isEmpty ? firstStopGate : null,
+      stopError: stopError,
       calls: calls,
     );
     sessions.add(session);
@@ -1598,9 +1845,10 @@ final class _EmbeddedLauncher implements EmbeddedDaemonLauncher {
 }
 
 final class _EmbeddedSession implements EmbeddedDaemonSession {
-  _EmbeddedSession({this.stopGate, this.calls});
+  _EmbeddedSession({this.stopGate, this.stopError, this.calls});
 
   final Completer<void>? stopGate;
+  final Error? stopError;
   final List<String>? calls;
 
   @override
@@ -1620,6 +1868,7 @@ final class _EmbeddedSession implements EmbeddedDaemonSession {
     stops += 1;
     calls?.add('stop');
     await stopGate?.future;
+    if (stopError case final error?) throw error;
   }
 }
 

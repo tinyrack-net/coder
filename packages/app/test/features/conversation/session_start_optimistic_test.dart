@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:app/src/app/composition/app_primitives.dart';
@@ -127,6 +128,44 @@ void main() {
       'feature_test__workspace_async_loading__widget',
       'feature_test__turn_execution__widget',
     ],
+  );
+
+  testWidgets(
+    'a pending first turn may fail after the provider container unmounts',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final startGate = Completer<void>();
+      addTearDown(() {
+        if (!startGate.isCompleted) startGate.complete();
+      });
+      final api =
+          FakeTinestApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+            )
+            ..startTurnGate = startGate
+            ..startTurnError = Exception('daemon stopped during teardown');
+      final router = await pumpDraft(tester, api);
+      addTearDown(router.dispose);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Turn that outlives the app',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      for (var frame = 0; frame < 8; frame += 1) {
+        await tester.pump();
+      }
+      expect(api.attemptedPrompts, contains('Turn that outlives the app'));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      startGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__turn_execution__widget'],
   );
 
   test('the pending first-turn registry records and forgets prompts', () {

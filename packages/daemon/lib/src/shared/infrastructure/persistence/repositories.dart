@@ -74,14 +74,12 @@ abstract interface class SessionRepository {
   /// The create public API member.
   Future<SessionDto> create(SessionDto session);
 
-  /// Switches one session between planning and normal collaboration.
-  Future<SessionDto> updateMode(String id, SessionMode mode);
-
   /// Atomically updates model selection and model-specific controls.
   Future<SessionDto> updateModelSettings(
     String id, {
-    required ModelSelectionDto model,
+    required bool hasModel,
     required Map<String, ModelControlValueDto> modelControls,
+    ModelSelectionDto? model,
   });
 
   /// Rewrites qualified model selections after a provider prefix rename.
@@ -133,29 +131,6 @@ abstract interface class SessionRepository {
 
   /// Sets the collaboration lifecycle of one session.
   Future<SessionDto> updateLifecycle(String id, AgentLifecycle lifecycle);
-}
-
-/// Persistence boundary for one goal per manually-created root session.
-abstract interface class GoalRepository {
-  /// Reads the current goal, if any.
-  Future<GoalDto?> get(String sessionId);
-
-  /// Replaces any current goal with a new generation.
-  Future<GoalDto> replace(GoalDto goal);
-
-  /// Applies an optimistic patch, returning null for a stale or missing goal.
-  Future<GoalDto?> updateGoal(String sessionId, GoalUpdateDto update);
-
-  /// Adds non-negative usage and applies the budget boundary atomically.
-  Future<GoalDto?> account({
-    required String sessionId,
-    required String expectedGoalId,
-    required int tokenDelta,
-    required int timeDeltaSeconds,
-  });
-
-  /// Removes and returns the current goal.
-  Future<GoalDto?> clear(String sessionId);
 }
 
 /// One queued mailbox message with its delivery trigger flag.

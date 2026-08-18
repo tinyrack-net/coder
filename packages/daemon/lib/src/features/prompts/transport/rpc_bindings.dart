@@ -4,7 +4,7 @@ import 'package:daemon/src/features/workspaces/infrastructure/workspace_service.
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the prompt catalog feature's complete v4 RPC surface.
+/// Builds the prompt catalog feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> promptRpcBindings({
   required SkillCatalogService skills,
   required CommandService commands,

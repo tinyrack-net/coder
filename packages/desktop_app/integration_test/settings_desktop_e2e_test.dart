@@ -4,12 +4,14 @@ import 'package:app/testing/app/composition/app_services.dart';
 import 'package:app/testing/app/tinest_app.dart';
 import 'package:app/testing/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/testing/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:app/testing/features/hosts/application/host_controller.dart';
 import 'package:app/testing/features/hosts/domain/host_models.dart';
 import 'package:app/testing/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:desktop_app/src/embedded_daemon.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -221,6 +223,20 @@ void main() {
           autostart: _RecordingAutostart(),
         ),
       );
+      final hostRegistry = ProviderScope.containerOf(
+        tester.element(find.byType(MaterialApp)),
+        listen: false,
+      ).read(hostRegistryControllerProvider.notifier);
+      // Await the restarted daemon before the earlier temp-directory teardown.
+      // Riverpod disposal is asynchronous and cannot itself be joined by the
+      // test binding, so an unmount alone races the Windows file deletion.
+      addTearDown(() async {
+        try {
+          await hostRegistry.shutdown();
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+        }
+      });
       await pumpUntilCondition(
         tester,
         () => launcher.serverIds.isNotEmpty,
@@ -230,16 +246,16 @@ void main() {
 
       // Unpushed work in a managed checkout has to survive the reset.
       final checkout = File(
-        _join(<String>[home.path, 'v4', 'worktrees', 'repo', 'main.dart']),
+        _join(<String>[home.path, 'v5', 'worktrees', 'repo', 'main.dart']),
       );
       await checkout.create(recursive: true);
       await checkout.writeAsString('void main() {}');
       expect(
-        File(_join(<String>[home.path, 'v4', 'tinest.sqlite'])).existsSync(),
+        File(_join(<String>[home.path, 'v5', 'tinest.sqlite'])).existsSync(),
         isTrue,
       );
       expect(
-        File(_join(<String>[home.path, 'v4', 'secrets.json'])).existsSync(),
+        File(_join(<String>[home.path, 'v5', 'secrets.json'])).existsSync(),
         isTrue,
       );
 
@@ -329,6 +345,7 @@ void main() {
         () => launcher.session != null,
         'the embedded daemon session to exist',
       );
+      addTearDown(() => launcher.session!.stop());
       await pumpUntilCondition(
         tester,
         () =>
@@ -347,6 +364,7 @@ void main() {
       );
 
       expect(launcher.session!.stops, 1);
+      expect(launcher.session!.completedStops, 1);
       expect(tray.destroys, 1);
       expect(terminator.terminations, 1);
       expect(
@@ -356,9 +374,17 @@ void main() {
           'destroyTray',
           'releaseClose',
           'stopDaemon',
+          'stopDaemonCompleted',
           'terminate',
         ]),
       );
+      final abandonedWrites = await home
+          .list(recursive: true)
+          .where(
+            (entity) => entity is Directory && entity.path.endsWith('.tmp'),
+          )
+          .toList();
+      expect(abandonedWrites, isEmpty);
     },
     tags: const <String>[
       'feature_scenario__desktop_residency__tray_quit__e2e',
@@ -495,6 +521,8 @@ final class _RecordingEmbeddedSession implements EmbeddedDaemonSession {
   final EmbeddedDaemonSession delegate;
   final List<String> calls;
   int stops = 0;
+  int completedStops = 0;
+  Future<void>? _stopFuture;
 
   @override
   DaemonCredentials get credentials => delegate.credentials;
@@ -506,10 +534,14 @@ final class _RecordingEmbeddedSession implements EmbeddedDaemonSession {
   String get serverId => delegate.serverId;
 
   @override
-  Future<void> stop() async {
+  Future<void> stop() => _stopFuture ??= _stop();
+
+  Future<void> _stop() async {
     stops += 1;
     calls.add('stopDaemon');
     await delegate.stop();
+    completedStops += 1;
+    calls.add('stopDaemonCompleted');
   }
 }
 

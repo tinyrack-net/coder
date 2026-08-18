@@ -301,8 +301,11 @@ void main() {
       'deepseek',
       'secret',
     );
-    final resolver = ProviderModelResolver(fixture.service);
     const modelId = 'deepseek/deepseek-chat';
+    final resolver = ProviderModelResolver(
+      fixture.service,
+      defaultModel: () async => const ModelSelectionDto(modelId: modelId),
+    );
 
     expect((await fixture.service.listRunnableModels()).first.modelId, modelId);
     expect(
@@ -310,6 +313,12 @@ void main() {
         const ModelSelectionDto(modelId: modelId),
       )).connectionId,
       connection.id,
+    );
+    expect(
+      (await resolver.resolveAgentModel(
+        const AgentModelSelectionDto(source: AgentModelSource.session),
+      )).modelId,
+      'deepseek-chat',
     );
     expect(
       (await resolver.resolveQualifiedModel(modelId)).connectionId,
@@ -1064,12 +1073,12 @@ void main() {
 final class _ServiceFixture {
   _ServiceFixture(
     DateTime now, {
-    ModelProvider? fixedProvider,
+    ModelGateway? fixedProvider,
     ProviderCatalogMetadataSource? metadataSource,
     ProviderModelReferenceUpdater? referenceUpdater,
   }) : clock = _Clock(now),
        registry = ProviderRegistry(
-         plugins: openAIFamilyPlugins(clock: _Clock(now)),
+         adapters: openAIFamilyAdapters(clock: _Clock(now)),
          wireProtocols: openAIWireProtocols(),
        ) {
     service = ProviderConnectionService(
@@ -1284,19 +1293,19 @@ final class _Discovery implements ProviderModelDiscovery {
   }
 }
 
-final class _Factory implements ModelProviderFactory {
-  ModelProviderRequest? lastRequest;
+final class _Factory implements ModelGatewayFactory {
+  ModelGatewayRequest? lastRequest;
 
   ProviderCredential? get lastCredential => lastRequest?.credential;
 
   @override
-  ModelProvider create(ModelProviderRequest request) {
+  ModelGateway create(ModelGatewayRequest request) {
     lastRequest = request;
     return _EventProvider();
   }
 }
 
-final class _EventProvider implements ModelProvider {
+final class _EventProvider implements ModelGateway {
   @override
   String get id => 'created';
 

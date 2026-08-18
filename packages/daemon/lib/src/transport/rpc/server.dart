@@ -36,7 +36,7 @@ final class DaemonRpcServer implements RpcSessionHost {
   /// Feature-owned attachment HTTP transport.
   final AttachmentHttpBinding attachments;
 
-  /// Metadata returned during the v4 handshake.
+  /// Metadata returned during the v5 handshake.
   final ServerInfoDto serverInfo;
 
   /// Bearer credential accepted by HTTP and WebSocket transports.
@@ -67,7 +67,7 @@ final class DaemonRpcServer implements RpcSessionHost {
           ? Response.notFound('Not found')
           : Response.ok(null, headers: cors);
     }
-    if (request.url.path == 'v4/health') {
+    if (request.url.path == 'v5/health') {
       return Response.ok(
         jsonEncode(<String, dynamic>{
           'serverId': serverInfo.serverId,
@@ -78,7 +78,7 @@ final class DaemonRpcServer implements RpcSessionHost {
       );
     }
     final isAttachmentRequest = attachments.matches(request);
-    if (request.url.path != 'v4/ws' && !isAttachmentRequest) {
+    if (request.url.path != 'v5/ws' && !isAttachmentRequest) {
       return Response.notFound('Not found');
     }
     if (!_constantTimeEquals(_presentedToken(request), token)) {

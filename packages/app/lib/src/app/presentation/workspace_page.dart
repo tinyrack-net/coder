@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/app/presentation/new_workspace_pane.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/agents/application/agent_definitions_controller.dart';
@@ -11,9 +12,7 @@ import 'package:app/src/features/conversation/application/conversation_timeline_
 import 'package:app/src/features/conversation/application/pending_turns_controller.dart';
 import 'package:app/src/features/conversation/application/subagent_track_model.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
-import 'package:app/src/features/conversation/presentation/goal_status_bar.dart';
 import 'package:app/src/features/conversation/presentation/reading_positions_controller.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
@@ -21,6 +20,12 @@ import 'package:app/src/features/conversation/presentation/widgets/composer_comp
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
+import 'package:app/src/features/models/application/model_settings_controller.dart';
+import 'package:app/src/features/plugins/application/plugin_settings_controller.dart';
+import 'package:app/src/features/plugins/application/plugin_ui_events.dart';
+import 'package:app/src/features/plugins/presentation/agent_plugin_session_controls.dart';
+import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
+import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
 import 'package:app/src/features/sessions/application/session_tabs_controller.dart';
@@ -1310,8 +1315,18 @@ class _ConversationPane extends ConsumerStatefulWidget {
 }
 
 class _ConversationPaneState extends ConsumerState<_ConversationPane> {
-  final Set<String> _dismissedPlans = <String>{};
   final SessionComposerController _dropController = SessionComposerController();
+  PluginUiDocumentDto? _liveStatusDocument;
+  Future<void> _pluginDialogTail = Future<void>.value();
+
+  @override
+  void didUpdateWidget(_ConversationPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.agent.id != widget.agent.id) {
+      _liveStatusDocument = null;
+      _pluginDialogTail = Future<void>.value();
+    }
+  }
 
   @override
   void dispose() {
@@ -1360,8 +1375,95 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ).notifier,
       );
 
+  Future<PluginUiDocumentDto> _dispatchPluginUi(
+    String agentId,
+    PluginUiDocumentDto document,
+    PluginUiActionDto action,
+  ) => ref
+      .read(pluginSettingsControllerProvider(widget.selection.hostId).notifier)
+      .dispatchUi(
+        agentId: agentId,
+        pluginId: document.pluginId,
+        action: action,
+      );
+
+  void _consumePluginUiEvent(
+    TimelineEventDto event,
+    String agentId,
+  ) {
+    final document = pluginUiDocumentFromEvent(event);
+    if (document == null || !mounted) return;
+    switch (document.slot) {
+      case PluginUiSlot.conversationStatus:
+        setState(() => _liveStatusDocument = document);
+      case PluginUiSlot.dialog:
+        _pluginDialogTail = _pluginDialogTail
+            .then((_) => _showPluginDialog(agentId, document))
+            .catchError((_) {});
+      case PluginUiSlot.toast:
+        _showPluginToast(agentId, document);
+      case PluginUiSlot.agentSettings:
+      case PluginUiSlot.composerControl:
+      case PluginUiSlot.timeline:
+        break;
+    }
+  }
+
+  Future<void> _showPluginDialog(
+    String agentId,
+    PluginUiDocumentDto document,
+  ) async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    await showTRDialog<void>(
+      context: context,
+      builder: (dialogContext) => TRDialog(
+        semanticLabel: l10n.pluginUiSemanticLabel(document.pluginId),
+        content: PluginUiDocumentView(
+          document: document,
+          semanticLabel: l10n.pluginUiSemanticLabel(document.pluginId),
+          invalidDocumentLabel: l10n.pluginUiInvalidTitle,
+          invalidDocumentDescription: l10n.pluginUiInvalidDescription(
+            AppIdentity.displayName,
+          ),
+          onAction: (action) => _dispatchPluginUi(agentId, document, action),
+        ),
+        actions: TRButton(
+          appearance: TRAppearance.outline,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: TRText.inherit(l10n.commonClose),
+        ),
+      ),
+    );
+  }
+
+  void _showPluginToast(
+    String agentId,
+    PluginUiDocumentDto document,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    ref
+        .read(appToastControllerProvider)
+        .show(
+          TRToastData(
+            id: 'plugin-ui-${document.id}',
+            title: PluginUiDocumentView(
+              document: document,
+              semanticLabel: l10n.pluginUiSemanticLabel(document.pluginId),
+              invalidDocumentLabel: l10n.pluginUiInvalidTitle,
+              invalidDocumentDescription: l10n.pluginUiInvalidDescription(
+                AppIdentity.displayName,
+              ),
+              onAction: (action) =>
+                  _dispatchPluginUi(agentId, document, action),
+            ),
+          ),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final sessions =
         ref
             .watch(
@@ -1389,6 +1491,22 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         current.status == SessionStatus.waitingForInput;
     final conversation = ref.watch(
       conversationControllerProvider(widget.selection.hostId, current.id),
+    );
+    ref.listen(
+      conversationControllerProvider(widget.selection.hostId, current.id),
+      (previous, next) {
+        final before = previous?.asData?.value;
+        final after = next.asData?.value;
+        if (before == null || after == null) return;
+        final lastSequence = before.timeline.isEmpty
+            ? 0
+            : before.timeline.last.sequence;
+        for (final event in after.timeline) {
+          if (event.sequence > lastSequence) {
+            _consumePluginUiEvent(event, current.agentDefinitionId);
+          }
+        }
+      },
     );
     final value = conversation.asData?.value;
     final items = ref.watch(
@@ -1487,15 +1605,35 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         providersAsync.value?.connections ?? const <ProviderConnectionDto>[];
     final providersLoading =
         providersAsync.isLoading && !providersAsync.hasValue;
+    final modelSettingsAsync = ref.watch(
+      modelSettingsControllerProvider(widget.selection.hostId),
+    );
+    final modelSettingsLoading =
+        modelSettingsAsync.isLoading && !modelSettingsAsync.hasValue;
     final definitions = selectableAgentDefinitions(
       agents?.definitions ?? const <AgentDefinitionDto>[],
     );
-    final effective = current.model;
-    final effectiveRunnable = isRunnableSelection(
-      effective,
-      connections,
-      providersAsync.value?.models ?? const <String, List<ProviderModelDto>>{},
-    );
+    final definition = agents?.definitions
+        .where((candidate) => candidate.id == current.agentDefinitionId)
+        .firstOrNull;
+    final effective =
+        current.model ??
+        effectiveModelFor(
+          definition: definition,
+          connections: connections,
+          models:
+              providersAsync.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+          defaultModel: modelSettingsAsync.value?.defaultModel,
+        );
+    final effectiveRunnable =
+        effective != null &&
+        isRunnableSelection(
+          effective,
+          connections,
+          providersAsync.value?.models ??
+              const <String, List<ProviderModelDto>>{},
+        );
     final hasRunnableModel =
         firstUsableModel(
           connections,
@@ -1503,16 +1641,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               const <String, List<ProviderModelDto>>{},
         ) !=
         null;
-    // Only the newest plan can still be acted on, and only in plan mode: the
-    // card asks whether to leave planning and carry the plan out.
-    final lastPlan = visibleItems.whereType<ChatPlanProposal>().lastOrNull;
-    final pendingPlan =
-        !busy &&
-            current.mode == SessionMode.plan &&
-            lastPlan != null &&
-            !_dismissedPlans.contains(lastPlan.key)
-        ? lastPlan
-        : null;
     return ComposerDropPane(
       controller: _dropController,
       child: LayoutBuilder(
@@ -1542,48 +1670,52 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                 busy: busy || optimistic,
                 loading: conversation.isLoading && !conversation.hasValue,
                 hostId: widget.selection.hostId,
-                planActionBuilder: pendingPlan == null
-                    ? null
-                    : (proposal) => proposal.key != pendingPlan.key
-                          ? null
-                          : ChatPlanActions(
-                              selection: widget.selection,
-                              session: current,
-                              proposal: proposal,
-                              embedded: true,
-                              onDismiss: () => setState(
-                                () => _dismissedPlans.add(proposal.key),
-                              ),
-                              onSessionCreated: (session) => _goSession(
-                                context,
-                                widget.selection,
-                                session.id,
-                              ),
-                            ),
+                onPluginUiAction: (document, action) => ref
+                    .read(
+                      pluginSettingsControllerProvider(
+                        widget.selection.hostId,
+                      ).notifier,
+                    )
+                    .dispatchUi(
+                      agentId: current.agentDefinitionId,
+                      pluginId: document.pluginId,
+                      action: action,
+                    ),
                 loadAttachment: _loadAttachment,
                 exportAttachment: _exportAttachment,
               ),
             ),
-            if (value?.goal case final GoalDto goal)
-              if (!readOnly)
-                _ConversationContentColumn(
-                  child: GoalStatusBar(
-                    goal: goal,
-                    sessionMode: current.mode,
-                    onEdit: () => unawaited(_editGoal(current.id, goal)),
-                    onStatusChanged: (status) => unawaited(
-                      _conversation(ref, current.id).updateGoal(
-                        GoalUpdateDto(
-                          expectedGoalId: goal.goalId,
-                          status: status,
+            if (definition != null)
+              _ConversationContentColumn(
+                child: _liveStatusDocument == null
+                    ? AgentPluginUiSlot(
+                        hostId: widget.selection.hostId,
+                        agent: definition,
+                        slot: PluginUiSlot.conversationStatus,
+                        context: <String, dynamic>{
+                          'sessionId': current.id,
+                          'workspaceId': widget.selection.workspaceId,
+                          'worktreeId': widget.selection.worktreeId,
+                          'readOnly': readOnly,
+                        },
+                      )
+                    : PluginUiDocumentView(
+                        document: _liveStatusDocument!,
+                        semanticLabel: l10n.pluginUiSemanticLabel(
+                          _liveStatusDocument!.pluginId,
+                        ),
+                        invalidDocumentLabel: l10n.pluginUiInvalidTitle,
+                        invalidDocumentDescription: l10n
+                            .pluginUiInvalidDescription(
+                              AppIdentity.displayName,
+                            ),
+                        onAction: (action) => _dispatchPluginUi(
+                          current.agentDefinitionId,
+                          _liveStatusDocument!,
+                          action,
                         ),
                       ),
-                    ),
-                    onClear: () => unawaited(
-                      _conversation(ref, current.id).clearGoal(),
-                    ),
-                  ),
-                ),
+              ),
             // Keep the auxiliary subagent track bounded so the composer retains
             // its natural height and the timeline receives the remaining space.
             if (!readOnly)
@@ -1602,19 +1734,50 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         worktreeId: widget.selection.worktreeId,
                         builder: (context, completion) => SessionComposer(
                           controller: _dropController,
-                          header: subagentRows.isEmpty
+                          header: definition == null && subagentRows.isEmpty
                               ? null
-                              : SubagentTrack(
-                                  rows: subagentRows,
-                                  // Viewport-derived cap: the expanded list
-                                  // never squeezes the input out of the bottom
-                                  // group.
-                                  maxListHeight: constraints.maxHeight / 4,
-                                  onOpenSubagent: (sessionId) => _goSession(
-                                    context,
-                                    widget.selection,
-                                    sessionId,
-                                  ),
+                              : Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    if (definition != null)
+                                      AgentPluginUiSlot(
+                                        hostId: widget.selection.hostId,
+                                        agent: definition,
+                                        slot: PluginUiSlot.composerControl,
+                                        context: <String, dynamic>{
+                                          'sessionId': current.id,
+                                          'workspaceId':
+                                              widget.selection.workspaceId,
+                                          'worktreeId':
+                                              widget.selection.worktreeId,
+                                        },
+                                      ),
+                                    if (definition != null)
+                                      AgentPluginSessionControls(
+                                        hostId: widget.selection.hostId,
+                                        sessionId: current.id,
+                                        agent: definition,
+                                      ),
+                                    if (definition != null &&
+                                        subagentRows.isNotEmpty)
+                                      const SizedBox(height: TRSpacing.small),
+                                    if (subagentRows.isNotEmpty)
+                                      SubagentTrack(
+                                        rows: subagentRows,
+                                        // Viewport-derived cap: the expanded
+                                        // list never squeezes the input out.
+                                        maxListHeight:
+                                            constraints.maxHeight / 4,
+                                        onOpenSubagent: (sessionId) =>
+                                            _goSession(
+                                              context,
+                                              widget.selection,
+                                              sessionId,
+                                            ),
+                                      ),
+                                  ],
                                 ),
                           // A running turn never takes the keyboard away; the
                           // prompt queues instead.
@@ -1662,9 +1825,10 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           hint:
                               (agentsLoading ||
                                   providersLoading ||
+                                  modelSettingsLoading ||
                                   effectiveRunnable)
                               ? null
-                              : hasRunnableModel
+                              : hasRunnableModel && effective != null
                               ? AppLocalizations.of(
                                   context,
                                 ).modelSettingsUnavailableDescription(
@@ -1678,12 +1842,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                             definitions: definitions,
                             agentDefinitionId: current.agentDefinitionId,
                             selection: effective,
-                            mode: current.mode,
-                            onModeChanged: (mode) => unawaited(
-                              _applySessionSetting(
-                                () => _sessions(ref).setMode(current.id, mode),
-                              ),
-                            ),
                             // Turn settings apply to the next turn, so they
                             // stay reachable while one is running.
                             agentEnabled: false,
@@ -1713,16 +1871,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                 ref,
                               ).setPermissionMode(current.id, mode);
                             },
-                          ),
-                          onModeToggled: () => unawaited(
-                            _applySessionSetting(
-                              () => _sessions(ref).setMode(
-                                current.id,
-                                current.mode == SessionMode.plan
-                                    ? SessionMode.normal
-                                    : SessionMode.plan,
-                              ),
-                            ),
                           ),
                           attachmentInput: ref.read(attachmentInputProvider),
                           commands: completion.commands,
@@ -1778,17 +1926,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               ? AppLocalizations.of(context).workspaceNewSession
               : invocation.arguments,
           agentDefinitionId: session.agentDefinitionId,
-          mode: session.mode,
           model: session.model,
-        );
-      case ClientCommandAction.toggleMode:
-        await _applySessionSetting(
-          () => _sessions(ref).setMode(
-            session.id,
-            session.mode == SessionMode.plan
-                ? SessionMode.normal
-                : SessionMode.plan,
-          ),
         );
       case ClientCommandAction.openAgentSettings:
         if (mounted) {
@@ -1798,122 +1936,11 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         if (mounted) {
           SkillSettingsRoute(hostId: widget.selection.hostId).go(context);
         }
-      case ClientCommandAction.compact:
-        await _sessions(ref).compact(session.id);
-      case ClientCommandAction.goal:
-        await _runGoalCommand(session.id, invocation.arguments);
       case ClientCommandAction.help:
         // Typing `/` already lists every command, so help only reopens it.
         break;
     }
     return true;
-  }
-
-  Future<void> _runGoalCommand(String sessionId, String arguments) async {
-    final command = arguments.trim();
-    final goal = ref
-        .read(
-          conversationControllerProvider(
-            widget.selection.hostId,
-            sessionId,
-          ),
-        )
-        .asData
-        ?.value
-        .goal;
-    switch (command) {
-      case '':
-      case 'edit':
-        await _editGoal(sessionId, goal);
-      case 'pause':
-        if (goal != null) {
-          await _conversation(ref, sessionId).updateGoal(
-            GoalUpdateDto(
-              expectedGoalId: goal.goalId,
-              status: GoalStatus.paused,
-            ),
-          );
-        }
-      case 'resume':
-        if (goal != null) {
-          await _conversation(ref, sessionId).updateGoal(
-            GoalUpdateDto(
-              expectedGoalId: goal.goalId,
-              status: GoalStatus.active,
-            ),
-          );
-        }
-      case 'clear':
-        await _conversation(ref, sessionId).clearGoal();
-      default:
-        await _replaceGoal(sessionId, command, current: goal);
-    }
-  }
-
-  Future<void> _editGoal(String sessionId, GoalDto? goal) async {
-    final edited = await showGoalEditor(context, goal: goal);
-    if (!mounted || edited == null) return;
-    if (goal == null ||
-        goal.status == GoalStatus.complete ||
-        goal.status == GoalStatus.budgetLimited) {
-      await _replaceGoal(
-        sessionId,
-        edited.objective,
-        tokenBudget: edited.tokenBudget,
-        current: goal,
-      );
-      return;
-    }
-    await _conversation(ref, sessionId).updateGoal(
-      GoalUpdateDto(
-        expectedGoalId: goal.goalId,
-        objective: edited.objective,
-        hasTokenBudget: true,
-        tokenBudget: edited.tokenBudget,
-      ),
-    );
-  }
-
-  Future<void> _replaceGoal(
-    String sessionId,
-    String objective, {
-    int? tokenBudget,
-    GoalDto? current,
-  }) async {
-    if (current != null && current.status != GoalStatus.complete) {
-      final replace = await showTRDialog<bool>(
-        context: context,
-        builder: (context) => TRAlertDialog(
-          title: TRText.inherit(
-            AppLocalizations.of(context).goalReplaceTitle,
-          ),
-          content: TRText.inherit(
-            AppLocalizations.of(context).goalReplaceDescription,
-          ),
-          actions: <TRButton>[
-            TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: () => Navigator.pop(context, false),
-              child: TRText.inherit(
-                AppLocalizations.of(context).commonCancel,
-              ),
-            ),
-            TRButton(
-              intent: TRIntent.primary,
-              onPressed: () => Navigator.pop(context, true),
-              child: TRText.inherit(
-                AppLocalizations.of(context).goalReplaceAction,
-              ),
-            ),
-          ],
-        ),
-      );
-      if (replace != true || !mounted) return;
-    }
-    await _conversation(
-      ref,
-      sessionId,
-    ).replaceGoal(objective, tokenBudget: tokenBudget);
   }
 
   Future<void> _send(

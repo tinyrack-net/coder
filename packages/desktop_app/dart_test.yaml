@@ -236,6 +236,29 @@ tags:
   feature_test__skill_catalog__widget:
   feature_test__skill_catalog__e2e:
   feature_test__skill_invocation__widget:
+  feature_test__plugin_management__verticalSlice:
+  feature_test__plugin_management__e2e:
+  feature_test__plugin_management__platformSmoke:
+  feature_test__plugin_authoring__verticalSlice:
+  feature_test__plugin_authoring__e2e:
+  feature_test__plugin_authoring__platformSmoke:
+  feature_test__plugin_ui__verticalSlice:
+  feature_test__plugin_ui__e2e:
+  feature_test__plugin_ui__platformSmoke:
+  feature_test__agent_harness__e2e:
+  feature_test__agent_harness__platformSmoke:
+  feature_test__plugin_permissions__e2e:
+  feature_test__plugin_permissions__platformSmoke:
+  feature_test__plugin_runtime__e2e:
+  feature_test__plugin_runtime__platformSmoke:
+  feature_scenario__agent_harness__custom_driver_zero_tools_restart__e2e:
+  feature_scenario__agent_harness__incompatible_model_blocked__e2e:
+  feature_scenario__plugin_management__scaffold_detect_reload_lkg_restart__e2e:
+  feature_scenario__plugin_authoring__scaffold_sdk_sync_reload_restart__e2e:
+  feature_scenario__plugin_permissions__agent_grant_revoke_live_primitive__e2e:
+  feature_scenario__plugin_runtime__user_tool_state_and_continuation__e2e:
+  feature_scenario__plugin_ui__render_action_invalid_fallback_history__e2e:
+  feature_scenario__session_lifecycle__update_model_and_controls__e2e:
   feature_test__provider_catalog__widget:
   feature_test__provider_catalog__unit:
   feature_test__model_settings__unit:

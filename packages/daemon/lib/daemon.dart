@@ -2,7 +2,7 @@
 library;
 
 export 'package:agent/agent.dart'
-    show Clock, GitignoreEnvironment, ModelProvider, ProviderOAuthGateway;
+    show Clock, ModelGateway, ProviderOAuthGateway;
 
 export 'src/bootstrap/application.dart'
     show
@@ -41,3 +41,4 @@ export 'src/shared/ports/daemon_ports.dart'
         IdGenerator,
         WorkspacePathGateway,
         WorktreeHookRunner;
+export 'src/transport/rpc/diagnostics.dart' show RpcDiagnostics;

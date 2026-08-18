@@ -62,9 +62,9 @@ final class _RecordingDataFiles implements DaemonDataFiles {
 void main() {
   // Canonical, matching what _RecordingDataFiles records.
   String home(String entry) =>
-      p.canonicalize(p.join('/state/tinyrack-tinest', 'v4', entry));
+      p.canonicalize(p.join('/state/tinyrack-tinest', 'v5', entry));
   String config(String entry) =>
-      p.canonicalize(p.join('/config/tinyrack-tinest', 'v4', entry));
+      p.canonicalize(p.join('/config/tinyrack-tinest', 'v5', entry));
 
   DaemonDataReset reset(
     DaemonDataFiles files, {
@@ -84,9 +84,11 @@ void main() {
           home('tinest.sqlite'),
           home('tinest.sqlite-wal'),
           home('attachments'),
+          home('plugin-state.json'),
           home('daemon.lock'),
           home('worktrees'),
           config('secrets.json'),
+          config('plugin-secrets.json'),
           config('config.json'),
           config('agents'),
           config('skills'),
@@ -105,8 +107,10 @@ void main() {
         home('tinest.sqlite'),
         home('tinest.sqlite-wal'),
         home('attachments'),
+        home('plugin-state.json'),
         home('daemon.lock'),
         config('secrets.json'),
+        config('plugin-secrets.json'),
         config('config.json'),
         config('agents'),
         config('skills'),
@@ -120,7 +124,7 @@ void main() {
         files.deleted,
         isNot(contains(p.canonicalize('/config/tinyrack-tinest'))),
       );
-      expect(DaemonDataReset.preservedHomeEntries, <String>['v4/worktrees']);
+      expect(DaemonDataReset.preservedHomeEntries, <String>['v5/worktrees']);
     },
     tags: const <String>['feature_test__settings_reset__unit'],
   );
@@ -142,8 +146,8 @@ void main() {
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
-          p.join('/shared', 'v4', 'tinest.sqlite'),
-          p.join('/shared', 'v4', 'secrets.json'),
+          p.join('/shared', 'v5', 'tinest.sqlite'),
+          p.join('/shared', 'v5', 'secrets.json'),
         },
       );
 
@@ -154,8 +158,8 @@ void main() {
       ).eraseAll();
 
       expect(files.deleted, <String>[
-        p.canonicalize(p.join('/shared', 'v4', 'tinest.sqlite')),
-        p.canonicalize(p.join('/shared', 'v4', 'secrets.json')),
+        p.canonicalize(p.join('/shared', 'v5', 'tinest.sqlite')),
+        p.canonicalize(p.join('/shared', 'v5', 'secrets.json')),
       ]);
       expect(
         files.calls.where((call) => call.startsWith('dir:')).length +
@@ -222,17 +226,19 @@ void main() {
   );
 
   test(
-    'v4 reset never touches preserved v2 or v3 namespaces',
+    'v5 reset never touches preserved v2, v3, or v4 namespaces',
     () async {
       final files = _RecordingDataFiles(
         entries: <String>{
           p.join('/state/tinyrack-tinest', 'v2'),
           p.join('/state/tinyrack-tinest', 'v3'),
+          p.join('/state/tinyrack-tinest', 'v4'),
           home('tinest.sqlite'),
         },
         directories: <String>{
           p.join('/state/tinyrack-tinest', 'v2'),
           p.join('/state/tinyrack-tinest', 'v3'),
+          p.join('/state/tinyrack-tinest', 'v4'),
         },
       );
 
@@ -299,21 +305,21 @@ void main() {
       () async {
         final state = Directory(p.join(root.path, 'state'));
         final configRoot = Directory(p.join(root.path, 'config'));
-        final stateV4 = Directory(p.join(state.path, 'v4'));
-        final configV4 = Directory(p.join(configRoot.path, 'v4'));
-        await stateV4.create(recursive: true);
-        await configV4.create(recursive: true);
-        await File(p.join(stateV4.path, 'tinest.sqlite')).writeAsString('db');
-        await File(p.join(stateV4.path, 'daemon.lock')).writeAsString('');
-        await Directory(p.join(stateV4.path, 'attachments')).create();
+        final stateV5 = Directory(p.join(state.path, 'v5'));
+        final configV5 = Directory(p.join(configRoot.path, 'v5'));
+        await stateV5.create(recursive: true);
+        await configV5.create(recursive: true);
+        await File(p.join(stateV5.path, 'tinest.sqlite')).writeAsString('db');
+        await File(p.join(stateV5.path, 'daemon.lock')).writeAsString('');
+        await Directory(p.join(stateV5.path, 'attachments')).create();
         await File(
-          p.join(stateV4.path, 'worktrees', 'repo', 'main.dart'),
+          p.join(stateV5.path, 'worktrees', 'repo', 'main.dart'),
         ).create(recursive: true);
         await File(
-          p.join(configV4.path, 'secrets.json'),
+          p.join(configV5.path, 'secrets.json'),
         ).writeAsString('{}');
         await File(
-          p.join(configV4.path, 'agents', 'tinest.md'),
+          p.join(configV5.path, 'agents', 'tinest.md'),
         ).create(recursive: true);
 
         await DaemonDataReset(
@@ -322,25 +328,25 @@ void main() {
         ).eraseAll();
 
         expect(
-          File(p.join(stateV4.path, 'tinest.sqlite')).existsSync(),
+          File(p.join(stateV5.path, 'tinest.sqlite')).existsSync(),
           isFalse,
         );
-        expect(File(p.join(stateV4.path, 'daemon.lock')).existsSync(), isFalse);
+        expect(File(p.join(stateV5.path, 'daemon.lock')).existsSync(), isFalse);
         expect(
-          Directory(p.join(stateV4.path, 'attachments')).existsSync(),
-          isFalse,
-        );
-        expect(
-          File(p.join(configV4.path, 'secrets.json')).existsSync(),
+          Directory(p.join(stateV5.path, 'attachments')).existsSync(),
           isFalse,
         );
         expect(
-          Directory(p.join(configV4.path, 'agents')).existsSync(),
+          File(p.join(configV5.path, 'secrets.json')).existsSync(),
+          isFalse,
+        );
+        expect(
+          Directory(p.join(configV5.path, 'agents')).existsSync(),
           isFalse,
         );
         expect(
           File(
-            p.join(stateV4.path, 'worktrees', 'repo', 'main.dart'),
+            p.join(stateV5.path, 'worktrees', 'repo', 'main.dart'),
           ).existsSync(),
           isTrue,
         );
@@ -354,12 +360,12 @@ void main() {
       'refuses to erase while another process holds the daemon lock',
       () async {
         final state = Directory(p.join(root.path, 'locked'));
-        final stateV4 = Directory(p.join(state.path, 'v4'));
-        await stateV4.create(recursive: true);
-        await File(p.join(stateV4.path, 'tinest.sqlite')).writeAsString('db');
+        final stateV5 = Directory(p.join(state.path, 'v5'));
+        await stateV5.create(recursive: true);
+        await File(p.join(stateV5.path, 'tinest.sqlite')).writeAsString('db');
         final holder = await DaemonLockHolder.start(
           root: root,
-          lockPath: p.join(stateV4.path, 'daemon.lock'),
+          lockPath: p.join(stateV5.path, 'daemon.lock'),
         );
 
         try {
@@ -377,7 +383,7 @@ void main() {
             ),
           );
           expect(
-            File(p.join(stateV4.path, 'tinest.sqlite')).existsSync(),
+            File(p.join(stateV5.path, 'tinest.sqlite')).existsSync(),
             isTrue,
           );
         } finally {

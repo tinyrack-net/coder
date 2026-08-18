@@ -1,23 +1,6 @@
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
-import 'package:app/src/features/conversation/presentation/tools/apply_patch.dart';
-import 'package:app/src/features/conversation/presentation/tools/attach_file.dart';
-import 'package:app/src/features/conversation/presentation/tools/clock.dart';
-import 'package:app/src/features/conversation/presentation/tools/collaboration.dart';
-import 'package:app/src/features/conversation/presentation/tools/context_window.dart';
-import 'package:app/src/features/conversation/presentation/tools/exec.dart';
-import 'package:app/src/features/conversation/presentation/tools/glob.dart';
-import 'package:app/src/features/conversation/presentation/tools/list_directory.dart';
-import 'package:app/src/features/conversation/presentation/tools/mcp_resources.dart';
 import 'package:app/src/features/conversation/presentation/tools/presenter.dart';
-import 'package:app/src/features/conversation/presentation/tools/read_attachment.dart';
-import 'package:app/src/features/conversation/presentation/tools/read_file.dart';
-import 'package:app/src/features/conversation/presentation/tools/request_user_input.dart';
-import 'package:app/src/features/conversation/presentation/tools/search_text.dart';
-import 'package:app/src/features/conversation/presentation/tools/skills.dart';
-import 'package:app/src/features/conversation/presentation/tools/tool_search.dart';
-import 'package:app/src/features/conversation/presentation/tools/update_plan.dart';
-import 'package:app/src/features/conversation/presentation/tools/view_image.dart';
 
 export 'package:app/src/features/conversation/presentation/tools/presenter.dart';
 
@@ -62,50 +45,18 @@ String? describeTokenUsage(AppLocalizations l10n, Map<String, num> tokens) {
   return parts.join(' · ');
 }
 
-/// Every tool this app knows how to draw, keyed by the name the model calls.
-///
-/// Assembled from one file per capability rather than written out here, so a
-/// new tool is a new file and one entry in this list.
-final Map<String, ChatToolPresenter> chatToolPresenters =
-    <String, ChatToolPresenter>{
-      ...applyPatchPresenters,
-      ...requestUserInputPresenters,
-      ...attachFilePresenters,
-      ...clockPresenters,
-      ...collaborationPresenters,
-      ...contextWindowPresenters,
-      ...execPresenters,
-      ...globPresenters,
-      ...listDirectoryPresenters,
-      ...mcpResourcesPresenters,
-      ...readAttachmentPresenters,
-      ...readFilePresenters,
-      ...searchTextPresenters,
-      ...skillsPresenters,
-      ...toolSearchPresenters,
-      ...updatePlanPresenters,
-      ...viewImagePresenters,
-    };
-
-/// The presenter for [toolName], falling back when nothing claims it.
-ChatToolPresenter presenterFor(String toolName) =>
-    chatToolPresenters[toolName] ??
-    // MCP tool names are `mcp__server__tool`, made up at runtime, so they
-    // cannot sit in a fixed map the way the built-ins do.
-    (toolName.startsWith('mcp__') ? mcpToolPresenter : genericToolPresenter);
-
 /// Describes one tool activity for the chat timeline.
 ChatToolPresentation describeToolActivity(
   AppLocalizations l10n,
   ChatToolActivity activity,
 ) {
-  final spec = presenterFor(activity.toolName);
-  final title = spec.title(l10n, activity);
-  final argumentBody = spec.argumentBody(activity);
+  final glyph = chatToolGlyphFromPresentation(activity.presentation);
+  final title = _toolTitle(activity);
+  final argumentBody = prettyToolArgumentBody(activity);
   switch (activity.status) {
     case ChatToolStatus.running:
       return ChatToolPresentation(
-        glyph: spec.glyph,
+        glyph: glyph,
         title: title,
         resultLine: l10n.commonRunning,
         body: const ChatToolEmptyBody(),
@@ -114,7 +65,7 @@ ChatToolPresentation describeToolActivity(
       );
     case ChatToolStatus.denied:
       return ChatToolPresentation(
-        glyph: spec.glyph,
+        glyph: glyph,
         title: title,
         resultLine: l10n.toolRejected,
         body: const ChatToolEmptyBody(),
@@ -123,7 +74,7 @@ ChatToolPresentation describeToolActivity(
       );
     case ChatToolStatus.failed:
       return ChatToolPresentation(
-        glyph: spec.glyph,
+        glyph: glyph,
         title: title,
         resultLine: truncateToolText(
           firstToolLine(activity.error ?? l10n.toolFailed),
@@ -136,12 +87,58 @@ ChatToolPresentation describeToolActivity(
     case ChatToolStatus.succeeded:
       final output = decodeToolOutput(activity.output ?? '');
       return ChatToolPresentation(
-        glyph: spec.glyph,
+        glyph: glyph,
         title: title,
-        resultLine: spec.result(l10n, activity, output),
-        body: spec.body(activity, output),
+        // Successful plugin tools normally publish an immutable declarative
+        // UI snapshot. When that document is absent or invalid, the host's
+        // generic disclosure shows the raw result exactly once.
+        resultLine: null,
+        body: plainToolBody(activity, output),
         argumentBody: argumentBody,
-        isFailure: activity.isError || spec.isFailure(output),
+        isFailure: activity.isError,
       );
   }
+}
+
+/// Decodes a plugin-owned semantic glyph without trusting arbitrary icon data.
+ChatToolGlyph chatToolGlyphFromPresentation(Map<String, dynamic> value) =>
+    switch (value['glyph']) {
+      'read' => ChatToolGlyph.read,
+      'list' => ChatToolGlyph.list,
+      'search' => ChatToolGlyph.search,
+      'edit' => ChatToolGlyph.edit,
+      'run' => ChatToolGlyph.run,
+      'delegate' => ChatToolGlyph.delegate,
+      'ask' => ChatToolGlyph.ask,
+      'resource' => ChatToolGlyph.resource,
+      'tools' => ChatToolGlyph.tools,
+      'clock' => ChatToolGlyph.clock,
+      'context' => ChatToolGlyph.context,
+      'image' => ChatToolGlyph.image,
+      _ => ChatToolGlyph.generic,
+    };
+
+/// Host-safe timeline behavior declared by the pinned tool contribution.
+ChatToolTimeline chatToolTimelineFromPresentation(
+  Map<String, dynamic> value,
+) => switch (value['timeline']) {
+  'suppressed' => ChatToolTimeline.suppressed,
+  'question' => ChatToolTimeline.question,
+  'sleep' => ChatToolTimeline.sleep,
+  _ => ChatToolTimeline.row,
+};
+
+String _toolTitle(ChatToolActivity activity) {
+  final rawLabel = activity.presentation['label'];
+  final label = rawLabel is String && rawLabel.trim().isNotEmpty
+      ? rawLabel.trim()
+      : activity.toolName;
+  final summaryKey = activity.presentation['summary_argument'];
+  final selected = summaryKey is String
+      ? activity.arguments[summaryKey]
+      : activity.arguments.values
+            .where((value) => value is String || value is num || value is bool)
+            .firstOrNull;
+  if (selected == null) return '$label()';
+  return '$label(${truncateToolText(firstToolLine('$selected'), 40)})';
 }

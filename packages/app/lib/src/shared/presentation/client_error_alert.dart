@@ -39,6 +39,7 @@ String clientErrorText(
   RpcErrorCodes.invalidParams => l10n.errorProtocolMismatch,
   RpcErrorCodes.requestTimeout => l10n.errorRequestTimeout,
   RpcErrorCodes.internalError => l10n.errorInternalDaemon,
+  RpcErrorCodes.pluginUiRejected => l10n.errorPluginUiRejected,
   _ => error.message,
 };
 

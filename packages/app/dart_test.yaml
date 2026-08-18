@@ -83,11 +83,12 @@ tags:
   feature_test__session_goal__widget:
   feature_test__session_goal__e2e:
   feature_test__session_goal__unit:
+  feature_test__session_plan__widget:
   feature_test__tool_context_budget__unit:
+  feature_test__context_compaction__widget:
   feature_scenario__session_goal__multi_turn_completion_reconnect__e2e:
   feature_test__settings_async_loading__widget:
   feature_test__workspace_async_loading__widget:
-  feature_test__context_compaction__widget:
   feature_test__conversation_turn_queue__unit:
   feature_test__conversation_turn_queue__widget:
   feature_test__conversation_attachments__unit:
@@ -239,6 +240,40 @@ tags:
   feature_test__skill_catalog__widget:
   feature_test__skill_catalog__e2e:
   feature_test__skill_invocation__widget:
+  feature_test__plugin_management__widget:
+  feature_test__plugin_management__verticalSlice:
+  feature_test__plugin_management__e2e:
+  feature_test__plugin_management__platformSmoke:
+  feature_test__plugin_authoring__widget:
+  feature_test__plugin_authoring__verticalSlice:
+  feature_test__plugin_authoring__e2e:
+  feature_test__plugin_authoring__platformSmoke:
+  feature_test__plugin_ui__widget:
+  feature_test__plugin_ui__verticalSlice:
+  feature_test__plugin_ui__e2e:
+  feature_test__plugin_ui__platformSmoke:
+  feature_test__agent_harness__widget:
+  feature_test__agent_harness__e2e:
+  feature_test__agent_harness__platformSmoke:
+  feature_test__plugin_permissions__widget:
+  feature_test__plugin_permissions__e2e:
+  feature_test__plugin_permissions__platformSmoke:
+  feature_test__plugin_runtime__widget:
+  feature_test__plugin_runtime__e2e:
+  feature_test__plugin_runtime__platformSmoke:
+  feature_scenario__agent_harness__custom_driver_zero_tools_restart__e2e:
+  feature_scenario__agent_harness__incompatible_model_blocked__e2e:
+  feature_scenario__plugin_management__scaffold_detect_reload_lkg_restart__e2e:
+  feature_scenario__plugin_authoring__scaffold_sdk_sync_reload_restart__e2e:
+  feature_scenario__plugin_permissions__agent_grant_revoke_live_primitive__e2e:
+  feature_scenario__plugin_runtime__user_tool_state_and_continuation__e2e:
+  feature_scenario__plugin_ui__render_action_invalid_fallback_history__e2e:
+  feature_scenario__session_lifecycle__update_model_and_controls__e2e:
+  route_test__plugin_settings_route__widget:
+  ui_state_test__agent_harness_diagnostics__mobile:
+  ui_state_test__agent_harness_diagnostics__desktop:
+  ui_state__plugin_settings_route__rendered__widget:
+  ui_variant__plugin_settings_route__desktop_mobile_light_korean__widget:
   feature_test__provider_catalog__widget:
   feature_test__provider_catalog__unit:
   feature_test__model_settings__unit:

@@ -64,7 +64,6 @@ final class ConversationState {
     this.approvals = const <String, ApprovalRequestDto>{},
     this.queued = const <QueuedTurn>[],
     this.questions = const <String, UserQuestionRequestDto>{},
-    this.goal,
     this.hasMoreOlder = false,
     this.loadingOlder = false,
     this.olderFailed = false,
@@ -100,17 +99,12 @@ final class ConversationState {
   /// Questions the agent is blocked on, keyed by request id.
   final Map<String, UserQuestionRequestDto> questions;
 
-  /// Persistent execution goal for this root session.
-  final GoalDto? goal;
-
   /// The copyWith public API member.
   ConversationState copyWith({
     List<TimelineEventDto>? timeline,
     Map<String, ApprovalRequestDto>? approvals,
     List<QueuedTurn>? queued,
     Map<String, UserQuestionRequestDto>? questions,
-    GoalDto? goal,
-    bool clearGoal = false,
     bool? hasMoreOlder,
     bool? loadingOlder,
     bool? olderFailed,
@@ -120,7 +114,6 @@ final class ConversationState {
     approvals: approvals ?? this.approvals,
     queued: queued ?? this.queued,
     questions: questions ?? this.questions,
-    goal: clearGoal ? null : goal ?? this.goal,
     hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
     loadingOlder: loadingOlder ?? this.loadingOlder,
     olderFailed: olderFailed ?? this.olderFailed,
@@ -135,8 +128,6 @@ class ConversationController extends _$ConversationController {
   StreamSubscription<ApprovalRequestDto>? _approvalEvents;
   StreamSubscription<SessionDto>? _sessionEvents;
   StreamSubscription<UserQuestionRequestDto>? _questionEvents;
-  StreamSubscription<GoalDto>? _goalEvents;
-  StreamSubscription<GoalClearedDto>? _goalClearEvents;
   late String? _sessionId;
   // Both the idle session event and an explicit promotion can ask for a drain,
   // so one send is in flight at a time.
@@ -166,19 +157,12 @@ class ConversationController extends _$ConversationController {
     _approvalEvents = api.sessions.approvalRequests.listen(_handleApproval);
     _sessionEvents = api.sessions.sessionUpdates.listen(_handleSession);
     _questionEvents = api.sessions.questionRequests.listen(_handleQuestion);
-    _goalEvents = api.sessions.goalUpdates.listen(_handleGoal);
-    _goalClearEvents = api.sessions.goalClears.listen(_handleGoalCleared);
-    // Install notification listeners before the snapshot read so an update
-    // cannot land in the reconnect gap between those two operations.
-    final goal = await api.sessions.getGoal(sessionId);
     _syncPendingFirstTurn(timeline);
     ref
       ..onDispose(() => unawaited(_timelineEvents?.cancel()))
       ..onDispose(() => unawaited(_approvalEvents?.cancel()))
       ..onDispose(() => unawaited(_sessionEvents?.cancel()))
       ..onDispose(() => unawaited(_questionEvents?.cancel()))
-      ..onDispose(() => unawaited(_goalEvents?.cancel()))
-      ..onDispose(() => unawaited(_goalClearEvents?.cancel()))
       ..onDispose(() => _drainRetry?.cancel());
     return ConversationState(
       timeline: timeline,
@@ -187,7 +171,6 @@ class ConversationController extends _$ConversationController {
       // than the whole history cannot lose one.
       approvals: _pendingApprovals(timeline),
       questions: _pendingQuestions(timeline),
-      goal: goal,
       hasMoreOlder: timeline.isNotEmpty && timeline.first.sequence > 1,
     );
   }
@@ -240,37 +223,6 @@ class ConversationController extends _$ConversationController {
           olderAttempt: live.olderAttempt + 1,
         ),
       );
-    }
-  }
-
-  /// Starts a fresh goal generation.
-  Future<void> replaceGoal(String objective, {int? tokenBudget}) async {
-    final sessionId = _sessionId;
-    if (sessionId == null) return;
-    final api = await requireHostApi(ref, hostId);
-    final goal = await api.sessions.replaceGoal(
-      sessionId: sessionId,
-      objective: objective,
-      tokenBudget: tokenBudget,
-    );
-    _handleGoal(goal);
-  }
-
-  /// Changes objective, status, or budget on the current generation.
-  Future<void> updateGoal(GoalUpdateDto update) async {
-    final sessionId = _sessionId;
-    if (sessionId == null) return;
-    final api = await requireHostApi(ref, hostId);
-    _handleGoal(await api.sessions.updateGoal(sessionId, update));
-  }
-
-  /// Clears the current goal.
-  Future<void> clearGoal() async {
-    final sessionId = _sessionId;
-    if (sessionId == null) return;
-    final api = await requireHostApi(ref, hostId);
-    if (await api.sessions.clearGoal(sessionId)) {
-      _handleGoalCleared(GoalClearedDto(sessionId: sessionId, goalId: ''));
     }
   }
 
@@ -683,18 +635,6 @@ class ConversationController extends _$ConversationController {
         },
       ),
     );
-  }
-
-  void _handleGoal(GoalDto goal) {
-    final current = _currentEventState;
-    if (current == null || goal.sessionId != _sessionId) return;
-    state = AsyncData<ConversationState>(current.copyWith(goal: goal));
-  }
-
-  void _handleGoalCleared(GoalClearedDto cleared) {
-    final current = _currentEventState;
-    if (current == null || cleared.sessionId != _sessionId) return;
-    state = AsyncData<ConversationState>(current.copyWith(clearGoal: true));
   }
 
   Map<String, ApprovalRequestDto> _pendingApprovals(

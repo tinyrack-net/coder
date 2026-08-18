@@ -12,7 +12,7 @@ import 'package:test/test.dart';
 void main() {
   final now = DateTime.utc(2026, 8, 2);
   final registry = ProviderRegistry(
-    plugins: openAIFamilyPlugins(clock: _Clock(now)),
+    adapters: openAIFamilyAdapters(clock: _Clock(now)),
     wireProtocols: openAIWireProtocols(),
   );
 
@@ -90,7 +90,7 @@ void main() {
     final catalog = BuiltInProviderCatalog(
       clock: _Clock(now),
       registry: ProviderRegistry(
-        plugins: const <ProviderPlugin>[_UnknownCapabilityPlugin()],
+        adapters: const <ProviderAdapter>[_UnknownCapabilityAdapter()],
         wireProtocols: openAIWireProtocols(),
       ),
       metadataSource: _MetadataSource(),
@@ -303,8 +303,8 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
   Future<void> close() async {}
 }
 
-final class _UnknownCapabilityPlugin extends ProviderPlugin {
-  const _UnknownCapabilityPlugin();
+final class _UnknownCapabilityAdapter extends ProviderAdapter {
+  const _UnknownCapabilityAdapter();
 
   @override
   String get id => deepseekDefinition.id;
@@ -326,7 +326,7 @@ final class _UnknownCapabilityPlugin extends ProviderPlugin {
       const ProviderEndpoint(baseUrl: 'https://api.deepseek.com');
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
+  ModelGateway createProvider(ModelGatewayRequest request) =>
       throw UnsupportedError('Catalog-only test plugin.');
 
   @override

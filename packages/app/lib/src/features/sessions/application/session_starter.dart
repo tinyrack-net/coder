@@ -31,7 +31,6 @@ final class SessionStarter {
     required String prompt,
     String? draftTabId,
     List<PendingAttachment> attachments = const <PendingAttachment>[],
-    SessionMode mode = SessionMode.normal,
     ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
@@ -54,7 +53,6 @@ final class SessionStarter {
           .create(
             title: title,
             agentDefinitionId: agentDefinitionId,
-            mode: mode,
             model: model,
             modelControls: modelControls,
             permissionMode: permissionMode,
@@ -91,6 +89,7 @@ final class SessionStarter {
       // Install the timeline subscription before starting the turn so the
       // opened chat room streams the turn it just kicked off.
       await _ref.read(conversation.future);
+      if (!_ref.mounted) return;
       await _ref
           .read(conversation.notifier)
           .startTurn(
@@ -102,7 +101,9 @@ final class SessionStarter {
       // The session exists but its first turn did not start. The conversation
       // state auto-disposes with this temporary listener, so the prompt stays
       // in the pending registry until the mounted composer restores it.
-      _ref.read(pendingFirstTurnsProvider.notifier).markFailed(session.id);
+      if (_ref.mounted) {
+        _ref.read(pendingFirstTurnsProvider.notifier).markFailed(session.id);
+      }
     } finally {
       conversationHandle.close();
     }

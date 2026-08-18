@@ -14,6 +14,7 @@ void main() {
         'providers',
         'relay',
         'mcp',
+        'plugins',
         'sessions',
         'terminals',
       ],

@@ -3229,7 +3229,7 @@ as String,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionMode get mode; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3242,16 +3242,16 @@ $SessionCreateParamsDtoCopyWith<SessionCreateParamsDto> get copyWith => _$Sessio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(modelControls),permissionMode);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,model,const DeepCollectionEquality().hash(modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3262,7 +3262,7 @@ abstract mixin class $SessionCreateParamsDtoCopyWith<$Res>  {
   factory $SessionCreateParamsDtoCopyWith(SessionCreateParamsDto value, $Res Function(SessionCreateParamsDto) _then) = _$SessionCreateParamsDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
+ String id, String worktreeId, String title, String agentDefinitionId, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3279,14 +3279,13 @@ class _$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
-as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
@@ -3386,10 +3385,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.model,_that.modelControls,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3407,10 +3406,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto():
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.model,_that.modelControls,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3427,10 +3426,10 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionMode mode,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionCreateParamsDto() when $default != null:
-return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.mode,_that.model,_that.modelControls,_that.permissionMode);case _:
+return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.model,_that.modelControls,_that.permissionMode);case _:
   return null;
 
 }
@@ -3442,14 +3441,13 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionCreateParamsDto implements SessionCreateParamsDto {
-  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.mode = SessionMode.normal, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode}): _modelControls = modelControls;
+  const _SessionCreateParamsDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode}): _modelControls = modelControls;
   factory _SessionCreateParamsDto.fromJson(Map<String, dynamic> json) => _$SessionCreateParamsDtoFromJson(json);
 
 @override final  String id;
 @override final  String worktreeId;
 @override final  String title;
 @override final  String agentDefinitionId;
-@override@JsonKey() final  SessionMode mode;
 @override final  ModelSelectionDto? model;
  final  Map<String, ModelControlValueDto> _modelControls;
 @override@JsonKey() Map<String, ModelControlValueDto> get modelControls {
@@ -3473,16 +3471,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionCreateParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.worktreeId, worktreeId) || other.worktreeId == worktreeId)&&(identical(other.title, title) || other.title == title)&&(identical(other.agentDefinitionId, agentDefinitionId) || other.agentDefinitionId == agentDefinitionId)&&(identical(other.model, model) || other.model == model)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,mode,model,const DeepCollectionEquality().hash(_modelControls),permissionMode);
+int get hashCode => Object.hash(runtimeType,id,worktreeId,title,agentDefinitionId,model,const DeepCollectionEquality().hash(_modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, mode: $mode, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
+  return 'SessionCreateParamsDto(id: $id, worktreeId: $worktreeId, title: $title, agentDefinitionId: $agentDefinitionId, model: $model, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3493,7 +3491,7 @@ abstract mixin class _$SessionCreateParamsDtoCopyWith<$Res> implements $SessionC
   factory _$SessionCreateParamsDtoCopyWith(_SessionCreateParamsDto value, $Res Function(_SessionCreateParamsDto) _then) = __$SessionCreateParamsDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionMode mode, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
+ String id, String worktreeId, String title, String agentDefinitionId, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3510,14 +3508,13 @@ class __$SessionCreateParamsDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? mode = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_SessionCreateParamsDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,agentDefinitionId: null == agentDefinitionId ? _self.agentDefinitionId : agentDefinitionId // ignore: cast_nullable_to_non_nullable
-as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
@@ -3543,7 +3540,7 @@ $ModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$SessionSettingsPatchDto {
 
- SessionMode? get mode; ModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
+ bool get hasModel; ModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3556,16 +3553,16 @@ $SessionSettingsPatchDtoCopyWith<SessionSettingsPatchDto> get copyWith => _$Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3576,7 +3573,7 @@ abstract mixin class $SessionSettingsPatchDtoCopyWith<$Res>  {
   factory $SessionSettingsPatchDtoCopyWith(SessionSettingsPatchDto value, $Res Function(SessionSettingsPatchDto) _then) = _$SessionSettingsPatchDtoCopyWithImpl;
 @useResult
 $Res call({
- SessionMode? mode, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3593,10 +3590,10 @@ class _$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mode = freezed,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
-mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode?,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
+as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
@@ -3698,10 +3695,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3719,10 +3716,10 @@ return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControl
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto():
-return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3739,10 +3736,10 @@ return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControl
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( SessionMode? mode,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
   return null;
 
 }
@@ -3754,10 +3751,10 @@ return $default(_that.mode,_that.model,_that.hasModelControls,_that.modelControl
 @JsonSerializable()
 
 class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
-  const _SessionSettingsPatchDto({this.mode, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
+  const _SessionSettingsPatchDto({this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
   factory _SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) => _$SessionSettingsPatchDtoFromJson(json);
 
-@override final  SessionMode? mode;
+@override@JsonKey() final  bool hasModel;
 @override final  ModelSelectionDto? model;
 @override@JsonKey() final  bool hasModelControls;
  final  Map<String, ModelControlValueDto> _modelControls;
@@ -3783,16 +3780,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,mode,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(mode: $mode, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
 }
 
 
@@ -3803,7 +3800,7 @@ abstract mixin class _$SessionSettingsPatchDtoCopyWith<$Res> implements $Session
   factory _$SessionSettingsPatchDtoCopyWith(_SessionSettingsPatchDto value, $Res Function(_SessionSettingsPatchDto) _then) = __$SessionSettingsPatchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- SessionMode? mode, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
 });
 
 
@@ -3820,10 +3817,10 @@ class __$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mode = freezed,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
   return _then(_SessionSettingsPatchDto(
-mode: freezed == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as SessionMode?,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
+as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
 as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
@@ -3913,7 +3910,7 @@ as SessionSettingsPatchDto,
 @override
 @pragma('vm:prefer-inline')
 $SessionSettingsPatchDtoCopyWith<$Res> get patch {
-  
+
   return $SessionSettingsPatchDtoCopyWith<$Res>(_self.patch, (value) {
     return _then(_self.copyWith(patch: value));
   });
@@ -4124,1936 +4121,11 @@ as SessionSettingsPatchDto,
 @override
 @pragma('vm:prefer-inline')
 $SessionSettingsPatchDtoCopyWith<$Res> get patch {
-  
+
   return $SessionSettingsPatchDtoCopyWith<$Res>(_self.patch, (value) {
     return _then(_self.copyWith(patch: value));
   });
 }
-}
-
-
-/// @nodoc
-mixin _$GoalReplaceParamsDto {
-
- String get sessionId; String get objective; int? get tokenBudget;
-/// Create a copy of GoalReplaceParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalReplaceParamsDtoCopyWith<GoalReplaceParamsDto> get copyWith => _$GoalReplaceParamsDtoCopyWithImpl<GoalReplaceParamsDto>(this as GoalReplaceParamsDto, _$identity);
-
-  /// Serializes this GoalReplaceParamsDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalReplaceParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,objective,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalReplaceParamsDto(sessionId: $sessionId, objective: $objective, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalReplaceParamsDtoCopyWith<$Res>  {
-  factory $GoalReplaceParamsDtoCopyWith(GoalReplaceParamsDto value, $Res Function(GoalReplaceParamsDto) _then) = _$GoalReplaceParamsDtoCopyWithImpl;
-@useResult
-$Res call({
- String sessionId, String objective, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class _$GoalReplaceParamsDtoCopyWithImpl<$Res>
-    implements $GoalReplaceParamsDtoCopyWith<$Res> {
-  _$GoalReplaceParamsDtoCopyWithImpl(this._self, this._then);
-
-  final GoalReplaceParamsDto _self;
-  final $Res Function(GoalReplaceParamsDto) _then;
-
-/// Create a copy of GoalReplaceParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? objective = null,Object? tokenBudget = freezed,}) {
-  return _then(_self.copyWith(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [GoalReplaceParamsDto].
-extension GoalReplaceParamsDtoPatterns on GoalReplaceParamsDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalReplaceParamsDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalReplaceParamsDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalReplaceParamsDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String objective,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto() when $default != null:
-return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String objective,  int? tokenBudget)  $default,) {final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto():
-return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String objective,  int? tokenBudget)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalReplaceParamsDto() when $default != null:
-return $default(_that.sessionId,_that.objective,_that.tokenBudget);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalReplaceParamsDto implements GoalReplaceParamsDto {
-  const _GoalReplaceParamsDto({required this.sessionId, required this.objective, this.tokenBudget});
-  factory _GoalReplaceParamsDto.fromJson(Map<String, dynamic> json) => _$GoalReplaceParamsDtoFromJson(json);
-
-@override final  String sessionId;
-@override final  String objective;
-@override final  int? tokenBudget;
-
-/// Create a copy of GoalReplaceParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalReplaceParamsDtoCopyWith<_GoalReplaceParamsDto> get copyWith => __$GoalReplaceParamsDtoCopyWithImpl<_GoalReplaceParamsDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalReplaceParamsDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalReplaceParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,objective,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalReplaceParamsDto(sessionId: $sessionId, objective: $objective, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalReplaceParamsDtoCopyWith<$Res> implements $GoalReplaceParamsDtoCopyWith<$Res> {
-  factory _$GoalReplaceParamsDtoCopyWith(_GoalReplaceParamsDto value, $Res Function(_GoalReplaceParamsDto) _then) = __$GoalReplaceParamsDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String sessionId, String objective, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class __$GoalReplaceParamsDtoCopyWithImpl<$Res>
-    implements _$GoalReplaceParamsDtoCopyWith<$Res> {
-  __$GoalReplaceParamsDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalReplaceParamsDto _self;
-  final $Res Function(_GoalReplaceParamsDto) _then;
-
-/// Create a copy of GoalReplaceParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? objective = null,Object? tokenBudget = freezed,}) {
-  return _then(_GoalReplaceParamsDto(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,objective: null == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$GoalUpdateDto {
-
- String get expectedGoalId; String? get objective; GoalStatus? get status; bool get hasTokenBudget; int? get tokenBudget;
-/// Create a copy of GoalUpdateDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalUpdateDtoCopyWith<GoalUpdateDto> get copyWith => _$GoalUpdateDtoCopyWithImpl<GoalUpdateDto>(this as GoalUpdateDto, _$identity);
-
-  /// Serializes this GoalUpdateDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalUpdateDto&&(identical(other.expectedGoalId, expectedGoalId) || other.expectedGoalId == expectedGoalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.hasTokenBudget, hasTokenBudget) || other.hasTokenBudget == hasTokenBudget)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,expectedGoalId,objective,status,hasTokenBudget,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalUpdateDto(expectedGoalId: $expectedGoalId, objective: $objective, status: $status, hasTokenBudget: $hasTokenBudget, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalUpdateDtoCopyWith<$Res>  {
-  factory $GoalUpdateDtoCopyWith(GoalUpdateDto value, $Res Function(GoalUpdateDto) _then) = _$GoalUpdateDtoCopyWithImpl;
-@useResult
-$Res call({
- String expectedGoalId, String? objective, GoalStatus? status, bool hasTokenBudget, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class _$GoalUpdateDtoCopyWithImpl<$Res>
-    implements $GoalUpdateDtoCopyWith<$Res> {
-  _$GoalUpdateDtoCopyWithImpl(this._self, this._then);
-
-  final GoalUpdateDto _self;
-  final $Res Function(GoalUpdateDto) _then;
-
-/// Create a copy of GoalUpdateDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? expectedGoalId = null,Object? objective = freezed,Object? status = freezed,Object? hasTokenBudget = null,Object? tokenBudget = freezed,}) {
-  return _then(_self.copyWith(
-expectedGoalId: null == expectedGoalId ? _self.expectedGoalId : expectedGoalId // ignore: cast_nullable_to_non_nullable
-as String,objective: freezed == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GoalStatus?,hasTokenBudget: null == hasTokenBudget ? _self.hasTokenBudget : hasTokenBudget // ignore: cast_nullable_to_non_nullable
-as bool,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [GoalUpdateDto].
-extension GoalUpdateDtoPatterns on GoalUpdateDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalUpdateDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalUpdateDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalUpdateDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalUpdateDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalUpdateDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalUpdateDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalUpdateDto() when $default != null:
-return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)  $default,) {final _that = this;
-switch (_that) {
-case _GoalUpdateDto():
-return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String expectedGoalId,  String? objective,  GoalStatus? status,  bool hasTokenBudget,  int? tokenBudget)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalUpdateDto() when $default != null:
-return $default(_that.expectedGoalId,_that.objective,_that.status,_that.hasTokenBudget,_that.tokenBudget);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalUpdateDto implements GoalUpdateDto {
-  const _GoalUpdateDto({required this.expectedGoalId, this.objective, this.status, this.hasTokenBudget = false, this.tokenBudget});
-  factory _GoalUpdateDto.fromJson(Map<String, dynamic> json) => _$GoalUpdateDtoFromJson(json);
-
-@override final  String expectedGoalId;
-@override final  String? objective;
-@override final  GoalStatus? status;
-@override@JsonKey() final  bool hasTokenBudget;
-@override final  int? tokenBudget;
-
-/// Create a copy of GoalUpdateDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalUpdateDtoCopyWith<_GoalUpdateDto> get copyWith => __$GoalUpdateDtoCopyWithImpl<_GoalUpdateDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalUpdateDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalUpdateDto&&(identical(other.expectedGoalId, expectedGoalId) || other.expectedGoalId == expectedGoalId)&&(identical(other.objective, objective) || other.objective == objective)&&(identical(other.status, status) || other.status == status)&&(identical(other.hasTokenBudget, hasTokenBudget) || other.hasTokenBudget == hasTokenBudget)&&(identical(other.tokenBudget, tokenBudget) || other.tokenBudget == tokenBudget));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,expectedGoalId,objective,status,hasTokenBudget,tokenBudget);
-
-@override
-String toString() {
-  return 'GoalUpdateDto(expectedGoalId: $expectedGoalId, objective: $objective, status: $status, hasTokenBudget: $hasTokenBudget, tokenBudget: $tokenBudget)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalUpdateDtoCopyWith<$Res> implements $GoalUpdateDtoCopyWith<$Res> {
-  factory _$GoalUpdateDtoCopyWith(_GoalUpdateDto value, $Res Function(_GoalUpdateDto) _then) = __$GoalUpdateDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String expectedGoalId, String? objective, GoalStatus? status, bool hasTokenBudget, int? tokenBudget
-});
-
-
-
-
-}
-/// @nodoc
-class __$GoalUpdateDtoCopyWithImpl<$Res>
-    implements _$GoalUpdateDtoCopyWith<$Res> {
-  __$GoalUpdateDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalUpdateDto _self;
-  final $Res Function(_GoalUpdateDto) _then;
-
-/// Create a copy of GoalUpdateDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? expectedGoalId = null,Object? objective = freezed,Object? status = freezed,Object? hasTokenBudget = null,Object? tokenBudget = freezed,}) {
-  return _then(_GoalUpdateDto(
-expectedGoalId: null == expectedGoalId ? _self.expectedGoalId : expectedGoalId // ignore: cast_nullable_to_non_nullable
-as String,objective: freezed == objective ? _self.objective : objective // ignore: cast_nullable_to_non_nullable
-as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GoalStatus?,hasTokenBudget: null == hasTokenBudget ? _self.hasTokenBudget : hasTokenBudget // ignore: cast_nullable_to_non_nullable
-as bool,tokenBudget: freezed == tokenBudget ? _self.tokenBudget : tokenBudget // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$GoalUpdateParamsDto {
-
- String get sessionId; GoalUpdateDto get update;
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalUpdateParamsDtoCopyWith<GoalUpdateParamsDto> get copyWith => _$GoalUpdateParamsDtoCopyWithImpl<GoalUpdateParamsDto>(this as GoalUpdateParamsDto, _$identity);
-
-  /// Serializes this GoalUpdateParamsDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalUpdateParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.update, update) || other.update == update));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,update);
-
-@override
-String toString() {
-  return 'GoalUpdateParamsDto(sessionId: $sessionId, update: $update)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalUpdateParamsDtoCopyWith<$Res>  {
-  factory $GoalUpdateParamsDtoCopyWith(GoalUpdateParamsDto value, $Res Function(GoalUpdateParamsDto) _then) = _$GoalUpdateParamsDtoCopyWithImpl;
-@useResult
-$Res call({
- String sessionId, GoalUpdateDto update
-});
-
-
-$GoalUpdateDtoCopyWith<$Res> get update;
-
-}
-/// @nodoc
-class _$GoalUpdateParamsDtoCopyWithImpl<$Res>
-    implements $GoalUpdateParamsDtoCopyWith<$Res> {
-  _$GoalUpdateParamsDtoCopyWithImpl(this._self, this._then);
-
-  final GoalUpdateParamsDto _self;
-  final $Res Function(GoalUpdateParamsDto) _then;
-
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? update = null,}) {
-  return _then(_self.copyWith(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,update: null == update ? _self.update : update // ignore: cast_nullable_to_non_nullable
-as GoalUpdateDto,
-  ));
-}
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalUpdateDtoCopyWith<$Res> get update {
-  
-  return $GoalUpdateDtoCopyWith<$Res>(_self.update, (value) {
-    return _then(_self.copyWith(update: value));
-  });
-}
-}
-
-
-/// Adds pattern-matching-related methods to [GoalUpdateParamsDto].
-extension GoalUpdateParamsDtoPatterns on GoalUpdateParamsDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalUpdateParamsDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalUpdateParamsDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalUpdateParamsDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  GoalUpdateDto update)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto() when $default != null:
-return $default(_that.sessionId,_that.update);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  GoalUpdateDto update)  $default,) {final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto():
-return $default(_that.sessionId,_that.update);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  GoalUpdateDto update)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalUpdateParamsDto() when $default != null:
-return $default(_that.sessionId,_that.update);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalUpdateParamsDto implements GoalUpdateParamsDto {
-  const _GoalUpdateParamsDto({required this.sessionId, required this.update});
-  factory _GoalUpdateParamsDto.fromJson(Map<String, dynamic> json) => _$GoalUpdateParamsDtoFromJson(json);
-
-@override final  String sessionId;
-@override final  GoalUpdateDto update;
-
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalUpdateParamsDtoCopyWith<_GoalUpdateParamsDto> get copyWith => __$GoalUpdateParamsDtoCopyWithImpl<_GoalUpdateParamsDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalUpdateParamsDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalUpdateParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.update, update) || other.update == update));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,update);
-
-@override
-String toString() {
-  return 'GoalUpdateParamsDto(sessionId: $sessionId, update: $update)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalUpdateParamsDtoCopyWith<$Res> implements $GoalUpdateParamsDtoCopyWith<$Res> {
-  factory _$GoalUpdateParamsDtoCopyWith(_GoalUpdateParamsDto value, $Res Function(_GoalUpdateParamsDto) _then) = __$GoalUpdateParamsDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String sessionId, GoalUpdateDto update
-});
-
-
-@override $GoalUpdateDtoCopyWith<$Res> get update;
-
-}
-/// @nodoc
-class __$GoalUpdateParamsDtoCopyWithImpl<$Res>
-    implements _$GoalUpdateParamsDtoCopyWith<$Res> {
-  __$GoalUpdateParamsDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalUpdateParamsDto _self;
-  final $Res Function(_GoalUpdateParamsDto) _then;
-
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? update = null,}) {
-  return _then(_GoalUpdateParamsDto(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,update: null == update ? _self.update : update // ignore: cast_nullable_to_non_nullable
-as GoalUpdateDto,
-  ));
-}
-
-/// Create a copy of GoalUpdateParamsDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalUpdateDtoCopyWith<$Res> get update {
-  
-  return $GoalUpdateDtoCopyWith<$Res>(_self.update, (value) {
-    return _then(_self.copyWith(update: value));
-  });
-}
-}
-
-
-/// @nodoc
-mixin _$GoalGetResultDto {
-
- GoalDto? get goal;
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalGetResultDtoCopyWith<GoalGetResultDto> get copyWith => _$GoalGetResultDtoCopyWithImpl<GoalGetResultDto>(this as GoalGetResultDto, _$identity);
-
-  /// Serializes this GoalGetResultDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalGetResultDto&&(identical(other.goal, goal) || other.goal == goal));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,goal);
-
-@override
-String toString() {
-  return 'GoalGetResultDto(goal: $goal)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalGetResultDtoCopyWith<$Res>  {
-  factory $GoalGetResultDtoCopyWith(GoalGetResultDto value, $Res Function(GoalGetResultDto) _then) = _$GoalGetResultDtoCopyWithImpl;
-@useResult
-$Res call({
- GoalDto? goal
-});
-
-
-$GoalDtoCopyWith<$Res>? get goal;
-
-}
-/// @nodoc
-class _$GoalGetResultDtoCopyWithImpl<$Res>
-    implements $GoalGetResultDtoCopyWith<$Res> {
-  _$GoalGetResultDtoCopyWithImpl(this._self, this._then);
-
-  final GoalGetResultDto _self;
-  final $Res Function(GoalGetResultDto) _then;
-
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? goal = freezed,}) {
-  return _then(_self.copyWith(
-goal: freezed == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
-as GoalDto?,
-  ));
-}
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalDtoCopyWith<$Res>? get goal {
-    if (_self.goal == null) {
-    return null;
-  }
-
-  return $GoalDtoCopyWith<$Res>(_self.goal!, (value) {
-    return _then(_self.copyWith(goal: value));
-  });
-}
-}
-
-
-/// Adds pattern-matching-related methods to [GoalGetResultDto].
-extension GoalGetResultDtoPatterns on GoalGetResultDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalGetResultDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalGetResultDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalGetResultDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalGetResultDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalGetResultDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalGetResultDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GoalDto? goal)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalGetResultDto() when $default != null:
-return $default(_that.goal);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GoalDto? goal)  $default,) {final _that = this;
-switch (_that) {
-case _GoalGetResultDto():
-return $default(_that.goal);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GoalDto? goal)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalGetResultDto() when $default != null:
-return $default(_that.goal);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalGetResultDto implements GoalGetResultDto {
-  const _GoalGetResultDto({this.goal});
-  factory _GoalGetResultDto.fromJson(Map<String, dynamic> json) => _$GoalGetResultDtoFromJson(json);
-
-@override final  GoalDto? goal;
-
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalGetResultDtoCopyWith<_GoalGetResultDto> get copyWith => __$GoalGetResultDtoCopyWithImpl<_GoalGetResultDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalGetResultDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalGetResultDto&&(identical(other.goal, goal) || other.goal == goal));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,goal);
-
-@override
-String toString() {
-  return 'GoalGetResultDto(goal: $goal)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalGetResultDtoCopyWith<$Res> implements $GoalGetResultDtoCopyWith<$Res> {
-  factory _$GoalGetResultDtoCopyWith(_GoalGetResultDto value, $Res Function(_GoalGetResultDto) _then) = __$GoalGetResultDtoCopyWithImpl;
-@override @useResult
-$Res call({
- GoalDto? goal
-});
-
-
-@override $GoalDtoCopyWith<$Res>? get goal;
-
-}
-/// @nodoc
-class __$GoalGetResultDtoCopyWithImpl<$Res>
-    implements _$GoalGetResultDtoCopyWith<$Res> {
-  __$GoalGetResultDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalGetResultDto _self;
-  final $Res Function(_GoalGetResultDto) _then;
-
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? goal = freezed,}) {
-  return _then(_GoalGetResultDto(
-goal: freezed == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
-as GoalDto?,
-  ));
-}
-
-/// Create a copy of GoalGetResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalDtoCopyWith<$Res>? get goal {
-    if (_self.goal == null) {
-    return null;
-  }
-
-  return $GoalDtoCopyWith<$Res>(_self.goal!, (value) {
-    return _then(_self.copyWith(goal: value));
-  });
-}
-}
-
-
-/// @nodoc
-mixin _$GoalResultDto {
-
- GoalDto get goal;
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalResultDtoCopyWith<GoalResultDto> get copyWith => _$GoalResultDtoCopyWithImpl<GoalResultDto>(this as GoalResultDto, _$identity);
-
-  /// Serializes this GoalResultDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalResultDto&&(identical(other.goal, goal) || other.goal == goal));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,goal);
-
-@override
-String toString() {
-  return 'GoalResultDto(goal: $goal)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalResultDtoCopyWith<$Res>  {
-  factory $GoalResultDtoCopyWith(GoalResultDto value, $Res Function(GoalResultDto) _then) = _$GoalResultDtoCopyWithImpl;
-@useResult
-$Res call({
- GoalDto goal
-});
-
-
-$GoalDtoCopyWith<$Res> get goal;
-
-}
-/// @nodoc
-class _$GoalResultDtoCopyWithImpl<$Res>
-    implements $GoalResultDtoCopyWith<$Res> {
-  _$GoalResultDtoCopyWithImpl(this._self, this._then);
-
-  final GoalResultDto _self;
-  final $Res Function(GoalResultDto) _then;
-
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? goal = null,}) {
-  return _then(_self.copyWith(
-goal: null == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
-as GoalDto,
-  ));
-}
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalDtoCopyWith<$Res> get goal {
-  
-  return $GoalDtoCopyWith<$Res>(_self.goal, (value) {
-    return _then(_self.copyWith(goal: value));
-  });
-}
-}
-
-
-/// Adds pattern-matching-related methods to [GoalResultDto].
-extension GoalResultDtoPatterns on GoalResultDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalResultDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalResultDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalResultDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalResultDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalResultDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalResultDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GoalDto goal)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalResultDto() when $default != null:
-return $default(_that.goal);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GoalDto goal)  $default,) {final _that = this;
-switch (_that) {
-case _GoalResultDto():
-return $default(_that.goal);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GoalDto goal)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalResultDto() when $default != null:
-return $default(_that.goal);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalResultDto implements GoalResultDto {
-  const _GoalResultDto({required this.goal});
-  factory _GoalResultDto.fromJson(Map<String, dynamic> json) => _$GoalResultDtoFromJson(json);
-
-@override final  GoalDto goal;
-
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalResultDtoCopyWith<_GoalResultDto> get copyWith => __$GoalResultDtoCopyWithImpl<_GoalResultDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalResultDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalResultDto&&(identical(other.goal, goal) || other.goal == goal));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,goal);
-
-@override
-String toString() {
-  return 'GoalResultDto(goal: $goal)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalResultDtoCopyWith<$Res> implements $GoalResultDtoCopyWith<$Res> {
-  factory _$GoalResultDtoCopyWith(_GoalResultDto value, $Res Function(_GoalResultDto) _then) = __$GoalResultDtoCopyWithImpl;
-@override @useResult
-$Res call({
- GoalDto goal
-});
-
-
-@override $GoalDtoCopyWith<$Res> get goal;
-
-}
-/// @nodoc
-class __$GoalResultDtoCopyWithImpl<$Res>
-    implements _$GoalResultDtoCopyWith<$Res> {
-  __$GoalResultDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalResultDto _self;
-  final $Res Function(_GoalResultDto) _then;
-
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? goal = null,}) {
-  return _then(_GoalResultDto(
-goal: null == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
-as GoalDto,
-  ));
-}
-
-/// Create a copy of GoalResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$GoalDtoCopyWith<$Res> get goal {
-  
-  return $GoalDtoCopyWith<$Res>(_self.goal, (value) {
-    return _then(_self.copyWith(goal: value));
-  });
-}
-}
-
-
-/// @nodoc
-mixin _$GoalClearResultDto {
-
- bool get cleared;
-/// Create a copy of GoalClearResultDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalClearResultDtoCopyWith<GoalClearResultDto> get copyWith => _$GoalClearResultDtoCopyWithImpl<GoalClearResultDto>(this as GoalClearResultDto, _$identity);
-
-  /// Serializes this GoalClearResultDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalClearResultDto&&(identical(other.cleared, cleared) || other.cleared == cleared));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,cleared);
-
-@override
-String toString() {
-  return 'GoalClearResultDto(cleared: $cleared)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalClearResultDtoCopyWith<$Res>  {
-  factory $GoalClearResultDtoCopyWith(GoalClearResultDto value, $Res Function(GoalClearResultDto) _then) = _$GoalClearResultDtoCopyWithImpl;
-@useResult
-$Res call({
- bool cleared
-});
-
-
-
-
-}
-/// @nodoc
-class _$GoalClearResultDtoCopyWithImpl<$Res>
-    implements $GoalClearResultDtoCopyWith<$Res> {
-  _$GoalClearResultDtoCopyWithImpl(this._self, this._then);
-
-  final GoalClearResultDto _self;
-  final $Res Function(GoalClearResultDto) _then;
-
-/// Create a copy of GoalClearResultDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? cleared = null,}) {
-  return _then(_self.copyWith(
-cleared: null == cleared ? _self.cleared : cleared // ignore: cast_nullable_to_non_nullable
-as bool,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [GoalClearResultDto].
-extension GoalClearResultDtoPatterns on GoalClearResultDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalClearResultDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalClearResultDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalClearResultDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalClearResultDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalClearResultDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalClearResultDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool cleared)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalClearResultDto() when $default != null:
-return $default(_that.cleared);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool cleared)  $default,) {final _that = this;
-switch (_that) {
-case _GoalClearResultDto():
-return $default(_that.cleared);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool cleared)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalClearResultDto() when $default != null:
-return $default(_that.cleared);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalClearResultDto implements GoalClearResultDto {
-  const _GoalClearResultDto({required this.cleared});
-  factory _GoalClearResultDto.fromJson(Map<String, dynamic> json) => _$GoalClearResultDtoFromJson(json);
-
-@override final  bool cleared;
-
-/// Create a copy of GoalClearResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalClearResultDtoCopyWith<_GoalClearResultDto> get copyWith => __$GoalClearResultDtoCopyWithImpl<_GoalClearResultDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalClearResultDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalClearResultDto&&(identical(other.cleared, cleared) || other.cleared == cleared));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,cleared);
-
-@override
-String toString() {
-  return 'GoalClearResultDto(cleared: $cleared)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalClearResultDtoCopyWith<$Res> implements $GoalClearResultDtoCopyWith<$Res> {
-  factory _$GoalClearResultDtoCopyWith(_GoalClearResultDto value, $Res Function(_GoalClearResultDto) _then) = __$GoalClearResultDtoCopyWithImpl;
-@override @useResult
-$Res call({
- bool cleared
-});
-
-
-
-
-}
-/// @nodoc
-class __$GoalClearResultDtoCopyWithImpl<$Res>
-    implements _$GoalClearResultDtoCopyWith<$Res> {
-  __$GoalClearResultDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalClearResultDto _self;
-  final $Res Function(_GoalClearResultDto) _then;
-
-/// Create a copy of GoalClearResultDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? cleared = null,}) {
-  return _then(_GoalClearResultDto(
-cleared: null == cleared ? _self.cleared : cleared // ignore: cast_nullable_to_non_nullable
-as bool,
-  ));
-}
-
-
-}
-
-
-/// @nodoc
-mixin _$GoalClearedDto {
-
- String get sessionId; String get goalId;
-/// Create a copy of GoalClearedDto
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$GoalClearedDtoCopyWith<GoalClearedDto> get copyWith => _$GoalClearedDtoCopyWithImpl<GoalClearedDto>(this as GoalClearedDto, _$identity);
-
-  /// Serializes this GoalClearedDto to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalClearedDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,goalId);
-
-@override
-String toString() {
-  return 'GoalClearedDto(sessionId: $sessionId, goalId: $goalId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $GoalClearedDtoCopyWith<$Res>  {
-  factory $GoalClearedDtoCopyWith(GoalClearedDto value, $Res Function(GoalClearedDto) _then) = _$GoalClearedDtoCopyWithImpl;
-@useResult
-$Res call({
- String sessionId, String goalId
-});
-
-
-
-
-}
-/// @nodoc
-class _$GoalClearedDtoCopyWithImpl<$Res>
-    implements $GoalClearedDtoCopyWith<$Res> {
-  _$GoalClearedDtoCopyWithImpl(this._self, this._then);
-
-  final GoalClearedDto _self;
-  final $Res Function(GoalClearedDto) _then;
-
-/// Create a copy of GoalClearedDto
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? goalId = null,}) {
-  return _then(_self.copyWith(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [GoalClearedDto].
-extension GoalClearedDtoPatterns on GoalClearedDto {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalClearedDto value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _GoalClearedDto() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalClearedDto value)  $default,){
-final _that = this;
-switch (_that) {
-case _GoalClearedDto():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalClearedDto value)?  $default,){
-final _that = this;
-switch (_that) {
-case _GoalClearedDto() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String goalId)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _GoalClearedDto() when $default != null:
-return $default(_that.sessionId,_that.goalId);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String goalId)  $default,) {final _that = this;
-switch (_that) {
-case _GoalClearedDto():
-return $default(_that.sessionId,_that.goalId);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String goalId)?  $default,) {final _that = this;
-switch (_that) {
-case _GoalClearedDto() when $default != null:
-return $default(_that.sessionId,_that.goalId);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _GoalClearedDto implements GoalClearedDto {
-  const _GoalClearedDto({required this.sessionId, required this.goalId});
-  factory _GoalClearedDto.fromJson(Map<String, dynamic> json) => _$GoalClearedDtoFromJson(json);
-
-@override final  String sessionId;
-@override final  String goalId;
-
-/// Create a copy of GoalClearedDto
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$GoalClearedDtoCopyWith<_GoalClearedDto> get copyWith => __$GoalClearedDtoCopyWithImpl<_GoalClearedDto>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$GoalClearedDtoToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalClearedDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.goalId, goalId) || other.goalId == goalId));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,sessionId,goalId);
-
-@override
-String toString() {
-  return 'GoalClearedDto(sessionId: $sessionId, goalId: $goalId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$GoalClearedDtoCopyWith<$Res> implements $GoalClearedDtoCopyWith<$Res> {
-  factory _$GoalClearedDtoCopyWith(_GoalClearedDto value, $Res Function(_GoalClearedDto) _then) = __$GoalClearedDtoCopyWithImpl;
-@override @useResult
-$Res call({
- String sessionId, String goalId
-});
-
-
-
-
-}
-/// @nodoc
-class __$GoalClearedDtoCopyWithImpl<$Res>
-    implements _$GoalClearedDtoCopyWith<$Res> {
-  __$GoalClearedDtoCopyWithImpl(this._self, this._then);
-
-  final _GoalClearedDto _self;
-  final $Res Function(_GoalClearedDto) _then;
-
-/// Create a copy of GoalClearedDto
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? goalId = null,}) {
-  return _then(_GoalClearedDto(
-sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
-as String,goalId: null == goalId ? _self.goalId : goalId // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
 }
 
 
@@ -6385,7 +4457,7 @@ as AgentDefinitionDto,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
   });
@@ -6596,7 +4668,7 @@ as AgentDefinitionDto,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
   });
@@ -6670,7 +4742,7 @@ as bool,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
   });
@@ -6883,7 +4955,7 @@ as bool,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
   });
@@ -7154,6 +5226,3263 @@ as String,
 }
 
 
+}
+
+
+/// @nodoc
+mixin _$PluginIdParamsDto {
+
+ String get id;
+/// Create a copy of PluginIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginIdParamsDtoCopyWith<PluginIdParamsDto> get copyWith => _$PluginIdParamsDtoCopyWithImpl<PluginIdParamsDto>(this as PluginIdParamsDto, _$identity);
+
+  /// Serializes this PluginIdParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'PluginIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginIdParamsDtoCopyWith<$Res>  {
+  factory $PluginIdParamsDtoCopyWith(PluginIdParamsDto value, $Res Function(PluginIdParamsDto) _then) = _$PluginIdParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginIdParamsDtoCopyWithImpl<$Res>
+    implements $PluginIdParamsDtoCopyWith<$Res> {
+  _$PluginIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginIdParamsDto _self;
+  final $Res Function(PluginIdParamsDto) _then;
+
+/// Create a copy of PluginIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginIdParamsDto].
+extension PluginIdParamsDtoPatterns on PluginIdParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginIdParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginIdParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginIdParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginIdParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginIdParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id)  $default,) {final _that = this;
+switch (_that) {
+case _PluginIdParamsDto():
+return $default(_that.id);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginIdParamsDto() when $default != null:
+return $default(_that.id);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginIdParamsDto implements PluginIdParamsDto {
+  const _PluginIdParamsDto({required this.id});
+  factory _PluginIdParamsDto.fromJson(Map<String, dynamic> json) => _$PluginIdParamsDtoFromJson(json);
+
+@override final  String id;
+
+/// Create a copy of PluginIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginIdParamsDtoCopyWith<_PluginIdParamsDto> get copyWith => __$PluginIdParamsDtoCopyWithImpl<_PluginIdParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginIdParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginIdParamsDto&&(identical(other.id, id) || other.id == id));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'PluginIdParamsDto(id: $id)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginIdParamsDtoCopyWith<$Res> implements $PluginIdParamsDtoCopyWith<$Res> {
+  factory _$PluginIdParamsDtoCopyWith(_PluginIdParamsDto value, $Res Function(_PluginIdParamsDto) _then) = __$PluginIdParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginIdParamsDtoCopyWithImpl<$Res>
+    implements _$PluginIdParamsDtoCopyWith<$Res> {
+  __$PluginIdParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginIdParamsDto _self;
+  final $Res Function(_PluginIdParamsDto) _then;
+
+/// Create a copy of PluginIdParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(_PluginIdParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginReloadParamsDto {
+
+ String get id; String get agentId;
+/// Create a copy of PluginReloadParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginReloadParamsDtoCopyWith<PluginReloadParamsDto> get copyWith => _$PluginReloadParamsDtoCopyWithImpl<PluginReloadParamsDto>(this as PluginReloadParamsDto, _$identity);
+
+  /// Serializes this PluginReloadParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginReloadParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,agentId);
+
+@override
+String toString() {
+  return 'PluginReloadParamsDto(id: $id, agentId: $agentId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginReloadParamsDtoCopyWith<$Res>  {
+  factory $PluginReloadParamsDtoCopyWith(PluginReloadParamsDto value, $Res Function(PluginReloadParamsDto) _then) = _$PluginReloadParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String agentId
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginReloadParamsDtoCopyWithImpl<$Res>
+    implements $PluginReloadParamsDtoCopyWith<$Res> {
+  _$PluginReloadParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginReloadParamsDto _self;
+  final $Res Function(PluginReloadParamsDto) _then;
+
+/// Create a copy of PluginReloadParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? agentId = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginReloadParamsDto].
+extension PluginReloadParamsDtoPatterns on PluginReloadParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginReloadParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginReloadParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginReloadParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String agentId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto() when $default != null:
+return $default(_that.id,_that.agentId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String agentId)  $default,) {final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto():
+return $default(_that.id,_that.agentId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String agentId)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginReloadParamsDto() when $default != null:
+return $default(_that.id,_that.agentId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginReloadParamsDto implements PluginReloadParamsDto {
+  const _PluginReloadParamsDto({required this.id, required this.agentId});
+  factory _PluginReloadParamsDto.fromJson(Map<String, dynamic> json) => _$PluginReloadParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  String agentId;
+
+/// Create a copy of PluginReloadParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginReloadParamsDtoCopyWith<_PluginReloadParamsDto> get copyWith => __$PluginReloadParamsDtoCopyWithImpl<_PluginReloadParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginReloadParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginReloadParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,agentId);
+
+@override
+String toString() {
+  return 'PluginReloadParamsDto(id: $id, agentId: $agentId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginReloadParamsDtoCopyWith<$Res> implements $PluginReloadParamsDtoCopyWith<$Res> {
+  factory _$PluginReloadParamsDtoCopyWith(_PluginReloadParamsDto value, $Res Function(_PluginReloadParamsDto) _then) = __$PluginReloadParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String agentId
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginReloadParamsDtoCopyWithImpl<$Res>
+    implements _$PluginReloadParamsDtoCopyWith<$Res> {
+  __$PluginReloadParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginReloadParamsDto _self;
+  final $Res Function(_PluginReloadParamsDto) _then;
+
+/// Create a copy of PluginReloadParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,}) {
+  return _then(_PluginReloadParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginScaffoldParamsDto {
+
+ String get id; String get name;
+/// Create a copy of PluginScaffoldParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginScaffoldParamsDtoCopyWith<PluginScaffoldParamsDto> get copyWith => _$PluginScaffoldParamsDtoCopyWithImpl<PluginScaffoldParamsDto>(this as PluginScaffoldParamsDto, _$identity);
+
+  /// Serializes this PluginScaffoldParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginScaffoldParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name);
+
+@override
+String toString() {
+  return 'PluginScaffoldParamsDto(id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginScaffoldParamsDtoCopyWith<$Res>  {
+  factory $PluginScaffoldParamsDtoCopyWith(PluginScaffoldParamsDto value, $Res Function(PluginScaffoldParamsDto) _then) = _$PluginScaffoldParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginScaffoldParamsDtoCopyWithImpl<$Res>
+    implements $PluginScaffoldParamsDtoCopyWith<$Res> {
+  _$PluginScaffoldParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginScaffoldParamsDto _self;
+  final $Res Function(PluginScaffoldParamsDto) _then;
+
+/// Create a copy of PluginScaffoldParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginScaffoldParamsDto].
+extension PluginScaffoldParamsDtoPatterns on PluginScaffoldParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginScaffoldParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginScaffoldParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginScaffoldParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto():
+return $default(_that.id,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginScaffoldParamsDto() when $default != null:
+return $default(_that.id,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginScaffoldParamsDto implements PluginScaffoldParamsDto {
+  const _PluginScaffoldParamsDto({required this.id, required this.name});
+  factory _PluginScaffoldParamsDto.fromJson(Map<String, dynamic> json) => _$PluginScaffoldParamsDtoFromJson(json);
+
+@override final  String id;
+@override final  String name;
+
+/// Create a copy of PluginScaffoldParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginScaffoldParamsDtoCopyWith<_PluginScaffoldParamsDto> get copyWith => __$PluginScaffoldParamsDtoCopyWithImpl<_PluginScaffoldParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginScaffoldParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginScaffoldParamsDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name);
+
+@override
+String toString() {
+  return 'PluginScaffoldParamsDto(id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginScaffoldParamsDtoCopyWith<$Res> implements $PluginScaffoldParamsDtoCopyWith<$Res> {
+  factory _$PluginScaffoldParamsDtoCopyWith(_PluginScaffoldParamsDto value, $Res Function(_PluginScaffoldParamsDto) _then) = __$PluginScaffoldParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginScaffoldParamsDtoCopyWithImpl<$Res>
+    implements _$PluginScaffoldParamsDtoCopyWith<$Res> {
+  __$PluginScaffoldParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginScaffoldParamsDto _self;
+  final $Res Function(_PluginScaffoldParamsDto) _then;
+
+/// Create a copy of PluginScaffoldParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+  return _then(_PluginScaffoldParamsDto(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginForkParamsDto {
+
+ String get sourceId; String get id; String get name;
+/// Create a copy of PluginForkParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginForkParamsDtoCopyWith<PluginForkParamsDto> get copyWith => _$PluginForkParamsDtoCopyWithImpl<PluginForkParamsDto>(this as PluginForkParamsDto, _$identity);
+
+  /// Serializes this PluginForkParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginForkParamsDto&&(identical(other.sourceId, sourceId) || other.sourceId == sourceId)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sourceId,id,name);
+
+@override
+String toString() {
+  return 'PluginForkParamsDto(sourceId: $sourceId, id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginForkParamsDtoCopyWith<$Res>  {
+  factory $PluginForkParamsDtoCopyWith(PluginForkParamsDto value, $Res Function(PluginForkParamsDto) _then) = _$PluginForkParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sourceId, String id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginForkParamsDtoCopyWithImpl<$Res>
+    implements $PluginForkParamsDtoCopyWith<$Res> {
+  _$PluginForkParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginForkParamsDto _self;
+  final $Res Function(PluginForkParamsDto) _then;
+
+/// Create a copy of PluginForkParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sourceId = null,Object? id = null,Object? name = null,}) {
+  return _then(_self.copyWith(
+sourceId: null == sourceId ? _self.sourceId : sourceId // ignore: cast_nullable_to_non_nullable
+as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginForkParamsDto].
+extension PluginForkParamsDtoPatterns on PluginForkParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginForkParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginForkParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginForkParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginForkParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginForkParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginForkParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sourceId,  String id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginForkParamsDto() when $default != null:
+return $default(_that.sourceId,_that.id,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sourceId,  String id,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _PluginForkParamsDto():
+return $default(_that.sourceId,_that.id,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sourceId,  String id,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginForkParamsDto() when $default != null:
+return $default(_that.sourceId,_that.id,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginForkParamsDto implements PluginForkParamsDto {
+  const _PluginForkParamsDto({required this.sourceId, required this.id, required this.name});
+  factory _PluginForkParamsDto.fromJson(Map<String, dynamic> json) => _$PluginForkParamsDtoFromJson(json);
+
+@override final  String sourceId;
+@override final  String id;
+@override final  String name;
+
+/// Create a copy of PluginForkParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginForkParamsDtoCopyWith<_PluginForkParamsDto> get copyWith => __$PluginForkParamsDtoCopyWithImpl<_PluginForkParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginForkParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginForkParamsDto&&(identical(other.sourceId, sourceId) || other.sourceId == sourceId)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sourceId,id,name);
+
+@override
+String toString() {
+  return 'PluginForkParamsDto(sourceId: $sourceId, id: $id, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginForkParamsDtoCopyWith<$Res> implements $PluginForkParamsDtoCopyWith<$Res> {
+  factory _$PluginForkParamsDtoCopyWith(_PluginForkParamsDto value, $Res Function(_PluginForkParamsDto) _then) = __$PluginForkParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sourceId, String id, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginForkParamsDtoCopyWithImpl<$Res>
+    implements _$PluginForkParamsDtoCopyWith<$Res> {
+  __$PluginForkParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginForkParamsDto _self;
+  final $Res Function(_PluginForkParamsDto) _then;
+
+/// Create a copy of PluginForkParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sourceId = null,Object? id = null,Object? name = null,}) {
+  return _then(_PluginForkParamsDto(
+sourceId: null == sourceId ? _self.sourceId : sourceId // ignore: cast_nullable_to_non_nullable
+as String,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AgentPluginGrantsParamsDto {
+
+ String get agentId;
+/// Create a copy of AgentPluginGrantsParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentPluginGrantsParamsDtoCopyWith<AgentPluginGrantsParamsDto> get copyWith => _$AgentPluginGrantsParamsDtoCopyWithImpl<AgentPluginGrantsParamsDto>(this as AgentPluginGrantsParamsDto, _$identity);
+
+  /// Serializes this AgentPluginGrantsParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentPluginGrantsParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId);
+
+@override
+String toString() {
+  return 'AgentPluginGrantsParamsDto(agentId: $agentId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentPluginGrantsParamsDtoCopyWith<$Res>  {
+  factory $AgentPluginGrantsParamsDtoCopyWith(AgentPluginGrantsParamsDto value, $Res Function(AgentPluginGrantsParamsDto) _then) = _$AgentPluginGrantsParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentPluginGrantsParamsDtoCopyWithImpl<$Res>
+    implements $AgentPluginGrantsParamsDtoCopyWith<$Res> {
+  _$AgentPluginGrantsParamsDtoCopyWithImpl(this._self, this._then);
+
+  final AgentPluginGrantsParamsDto _self;
+  final $Res Function(AgentPluginGrantsParamsDto) _then;
+
+/// Create a copy of AgentPluginGrantsParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentPluginGrantsParamsDto].
+extension AgentPluginGrantsParamsDtoPatterns on AgentPluginGrantsParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentPluginGrantsParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentPluginGrantsParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentPluginGrantsParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto() when $default != null:
+return $default(_that.agentId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId)  $default,) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto():
+return $default(_that.agentId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentPluginGrantsParamsDto() when $default != null:
+return $default(_that.agentId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentPluginGrantsParamsDto implements AgentPluginGrantsParamsDto {
+  const _AgentPluginGrantsParamsDto({required this.agentId});
+  factory _AgentPluginGrantsParamsDto.fromJson(Map<String, dynamic> json) => _$AgentPluginGrantsParamsDtoFromJson(json);
+
+@override final  String agentId;
+
+/// Create a copy of AgentPluginGrantsParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentPluginGrantsParamsDtoCopyWith<_AgentPluginGrantsParamsDto> get copyWith => __$AgentPluginGrantsParamsDtoCopyWithImpl<_AgentPluginGrantsParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentPluginGrantsParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentPluginGrantsParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId);
+
+@override
+String toString() {
+  return 'AgentPluginGrantsParamsDto(agentId: $agentId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentPluginGrantsParamsDtoCopyWith<$Res> implements $AgentPluginGrantsParamsDtoCopyWith<$Res> {
+  factory _$AgentPluginGrantsParamsDtoCopyWith(_AgentPluginGrantsParamsDto value, $Res Function(_AgentPluginGrantsParamsDto) _then) = __$AgentPluginGrantsParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentPluginGrantsParamsDtoCopyWithImpl<$Res>
+    implements _$AgentPluginGrantsParamsDtoCopyWith<$Res> {
+  __$AgentPluginGrantsParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _AgentPluginGrantsParamsDto _self;
+  final $Res Function(_AgentPluginGrantsParamsDto) _then;
+
+/// Create a copy of AgentPluginGrantsParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,}) {
+  return _then(_AgentPluginGrantsParamsDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginGrantParamsDto {
+
+ AgentPluginGrantDto get grant;
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginGrantParamsDtoCopyWith<PluginGrantParamsDto> get copyWith => _$PluginGrantParamsDtoCopyWithImpl<PluginGrantParamsDto>(this as PluginGrantParamsDto, _$identity);
+
+  /// Serializes this PluginGrantParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginGrantParamsDto&&(identical(other.grant, grant) || other.grant == grant));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,grant);
+
+@override
+String toString() {
+  return 'PluginGrantParamsDto(grant: $grant)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginGrantParamsDtoCopyWith<$Res>  {
+  factory $PluginGrantParamsDtoCopyWith(PluginGrantParamsDto value, $Res Function(PluginGrantParamsDto) _then) = _$PluginGrantParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ AgentPluginGrantDto grant
+});
+
+
+$AgentPluginGrantDtoCopyWith<$Res> get grant;
+
+}
+/// @nodoc
+class _$PluginGrantParamsDtoCopyWithImpl<$Res>
+    implements $PluginGrantParamsDtoCopyWith<$Res> {
+  _$PluginGrantParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginGrantParamsDto _self;
+  final $Res Function(PluginGrantParamsDto) _then;
+
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? grant = null,}) {
+  return _then(_self.copyWith(
+grant: null == grant ? _self.grant : grant // ignore: cast_nullable_to_non_nullable
+as AgentPluginGrantDto,
+  ));
+}
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentPluginGrantDtoCopyWith<$Res> get grant {
+
+  return $AgentPluginGrantDtoCopyWith<$Res>(_self.grant, (value) {
+    return _then(_self.copyWith(grant: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginGrantParamsDto].
+extension PluginGrantParamsDtoPatterns on PluginGrantParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginGrantParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginGrantParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginGrantParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AgentPluginGrantDto grant)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto() when $default != null:
+return $default(_that.grant);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AgentPluginGrantDto grant)  $default,) {final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto():
+return $default(_that.grant);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AgentPluginGrantDto grant)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginGrantParamsDto() when $default != null:
+return $default(_that.grant);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginGrantParamsDto implements PluginGrantParamsDto {
+  const _PluginGrantParamsDto({required this.grant});
+  factory _PluginGrantParamsDto.fromJson(Map<String, dynamic> json) => _$PluginGrantParamsDtoFromJson(json);
+
+@override final  AgentPluginGrantDto grant;
+
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginGrantParamsDtoCopyWith<_PluginGrantParamsDto> get copyWith => __$PluginGrantParamsDtoCopyWithImpl<_PluginGrantParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginGrantParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginGrantParamsDto&&(identical(other.grant, grant) || other.grant == grant));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,grant);
+
+@override
+String toString() {
+  return 'PluginGrantParamsDto(grant: $grant)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginGrantParamsDtoCopyWith<$Res> implements $PluginGrantParamsDtoCopyWith<$Res> {
+  factory _$PluginGrantParamsDtoCopyWith(_PluginGrantParamsDto value, $Res Function(_PluginGrantParamsDto) _then) = __$PluginGrantParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ AgentPluginGrantDto grant
+});
+
+
+@override $AgentPluginGrantDtoCopyWith<$Res> get grant;
+
+}
+/// @nodoc
+class __$PluginGrantParamsDtoCopyWithImpl<$Res>
+    implements _$PluginGrantParamsDtoCopyWith<$Res> {
+  __$PluginGrantParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginGrantParamsDto _self;
+  final $Res Function(_PluginGrantParamsDto) _then;
+
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? grant = null,}) {
+  return _then(_PluginGrantParamsDto(
+grant: null == grant ? _self.grant : grant // ignore: cast_nullable_to_non_nullable
+as AgentPluginGrantDto,
+  ));
+}
+
+/// Create a copy of PluginGrantParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentPluginGrantDtoCopyWith<$Res> get grant {
+
+  return $AgentPluginGrantDtoCopyWith<$Res>(_self.grant, (value) {
+    return _then(_self.copyWith(grant: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginSecretSetParamsDto {
+
+ String get agentId; String get pluginId; String get name; String get value;
+/// Create a copy of PluginSecretSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSecretSetParamsDtoCopyWith<PluginSecretSetParamsDto> get copyWith => _$PluginSecretSetParamsDtoCopyWithImpl<PluginSecretSetParamsDto>(this as PluginSecretSetParamsDto, _$identity);
+
+  /// Serializes this PluginSecretSetParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSecretSetParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.name, name) || other.name == name)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,name,value);
+
+@override
+String toString() {
+  return 'PluginSecretSetParamsDto(agentId: $agentId, pluginId: $pluginId, name: $name, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSecretSetParamsDtoCopyWith<$Res>  {
+  factory $PluginSecretSetParamsDtoCopyWith(PluginSecretSetParamsDto value, $Res Function(PluginSecretSetParamsDto) _then) = _$PluginSecretSetParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId, String pluginId, String name, String value
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginSecretSetParamsDtoCopyWithImpl<$Res>
+    implements $PluginSecretSetParamsDtoCopyWith<$Res> {
+  _$PluginSecretSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSecretSetParamsDto _self;
+  final $Res Function(PluginSecretSetParamsDto) _then;
+
+/// Create a copy of PluginSecretSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? pluginId = null,Object? name = null,Object? value = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSecretSetParamsDto].
+extension PluginSecretSetParamsDtoPatterns on PluginSecretSetParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSecretSetParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSecretSetParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSecretSetParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String name,  String value)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.name,_that.value);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String name,  String value)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto():
+return $default(_that.agentId,_that.pluginId,_that.name,_that.value);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String pluginId,  String name,  String value)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSecretSetParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.name,_that.value);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSecretSetParamsDto implements PluginSecretSetParamsDto {
+  const _PluginSecretSetParamsDto({required this.agentId, required this.pluginId, required this.name, required this.value});
+  factory _PluginSecretSetParamsDto.fromJson(Map<String, dynamic> json) => _$PluginSecretSetParamsDtoFromJson(json);
+
+@override final  String agentId;
+@override final  String pluginId;
+@override final  String name;
+@override final  String value;
+
+/// Create a copy of PluginSecretSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSecretSetParamsDtoCopyWith<_PluginSecretSetParamsDto> get copyWith => __$PluginSecretSetParamsDtoCopyWithImpl<_PluginSecretSetParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSecretSetParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSecretSetParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.name, name) || other.name == name)&&(identical(other.value, value) || other.value == value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,name,value);
+
+@override
+String toString() {
+  return 'PluginSecretSetParamsDto(agentId: $agentId, pluginId: $pluginId, name: $name, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSecretSetParamsDtoCopyWith<$Res> implements $PluginSecretSetParamsDtoCopyWith<$Res> {
+  factory _$PluginSecretSetParamsDtoCopyWith(_PluginSecretSetParamsDto value, $Res Function(_PluginSecretSetParamsDto) _then) = __$PluginSecretSetParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId, String pluginId, String name, String value
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginSecretSetParamsDtoCopyWithImpl<$Res>
+    implements _$PluginSecretSetParamsDtoCopyWith<$Res> {
+  __$PluginSecretSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSecretSetParamsDto _self;
+  final $Res Function(_PluginSecretSetParamsDto) _then;
+
+/// Create a copy of PluginSecretSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? pluginId = null,Object? name = null,Object? value = null,}) {
+  return _then(_PluginSecretSetParamsDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginSecretRemoveParamsDto {
+
+ String get agentId; String get pluginId; String get name;
+/// Create a copy of PluginSecretRemoveParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSecretRemoveParamsDtoCopyWith<PluginSecretRemoveParamsDto> get copyWith => _$PluginSecretRemoveParamsDtoCopyWithImpl<PluginSecretRemoveParamsDto>(this as PluginSecretRemoveParamsDto, _$identity);
+
+  /// Serializes this PluginSecretRemoveParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSecretRemoveParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,name);
+
+@override
+String toString() {
+  return 'PluginSecretRemoveParamsDto(agentId: $agentId, pluginId: $pluginId, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSecretRemoveParamsDtoCopyWith<$Res>  {
+  factory $PluginSecretRemoveParamsDtoCopyWith(PluginSecretRemoveParamsDto value, $Res Function(PluginSecretRemoveParamsDto) _then) = _$PluginSecretRemoveParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId, String pluginId, String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginSecretRemoveParamsDtoCopyWithImpl<$Res>
+    implements $PluginSecretRemoveParamsDtoCopyWith<$Res> {
+  _$PluginSecretRemoveParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSecretRemoveParamsDto _self;
+  final $Res Function(PluginSecretRemoveParamsDto) _then;
+
+/// Create a copy of PluginSecretRemoveParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? pluginId = null,Object? name = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSecretRemoveParamsDto].
+extension PluginSecretRemoveParamsDtoPatterns on PluginSecretRemoveParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSecretRemoveParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSecretRemoveParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSecretRemoveParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String name)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto():
+return $default(_that.agentId,_that.pluginId,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String pluginId,  String name)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSecretRemoveParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSecretRemoveParamsDto implements PluginSecretRemoveParamsDto {
+  const _PluginSecretRemoveParamsDto({required this.agentId, required this.pluginId, required this.name});
+  factory _PluginSecretRemoveParamsDto.fromJson(Map<String, dynamic> json) => _$PluginSecretRemoveParamsDtoFromJson(json);
+
+@override final  String agentId;
+@override final  String pluginId;
+@override final  String name;
+
+/// Create a copy of PluginSecretRemoveParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSecretRemoveParamsDtoCopyWith<_PluginSecretRemoveParamsDto> get copyWith => __$PluginSecretRemoveParamsDtoCopyWithImpl<_PluginSecretRemoveParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSecretRemoveParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSecretRemoveParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,name);
+
+@override
+String toString() {
+  return 'PluginSecretRemoveParamsDto(agentId: $agentId, pluginId: $pluginId, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSecretRemoveParamsDtoCopyWith<$Res> implements $PluginSecretRemoveParamsDtoCopyWith<$Res> {
+  factory _$PluginSecretRemoveParamsDtoCopyWith(_PluginSecretRemoveParamsDto value, $Res Function(_PluginSecretRemoveParamsDto) _then) = __$PluginSecretRemoveParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId, String pluginId, String name
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginSecretRemoveParamsDtoCopyWithImpl<$Res>
+    implements _$PluginSecretRemoveParamsDtoCopyWith<$Res> {
+  __$PluginSecretRemoveParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSecretRemoveParamsDto _self;
+  final $Res Function(_PluginSecretRemoveParamsDto) _then;
+
+/// Create a copy of PluginSecretRemoveParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? pluginId = null,Object? name = null,}) {
+  return _then(_PluginSecretRemoveParamsDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginSessionControlParamsDto {
+
+ String get sessionId; String get pluginId; String get contributionId;
+/// Create a copy of PluginSessionControlParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSessionControlParamsDtoCopyWith<PluginSessionControlParamsDto> get copyWith => _$PluginSessionControlParamsDtoCopyWithImpl<PluginSessionControlParamsDto>(this as PluginSessionControlParamsDto, _$identity);
+
+  /// Serializes this PluginSessionControlParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSessionControlParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,pluginId,contributionId);
+
+@override
+String toString() {
+  return 'PluginSessionControlParamsDto(sessionId: $sessionId, pluginId: $pluginId, contributionId: $contributionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSessionControlParamsDtoCopyWith<$Res>  {
+  factory $PluginSessionControlParamsDtoCopyWith(PluginSessionControlParamsDto value, $Res Function(PluginSessionControlParamsDto) _then) = _$PluginSessionControlParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String pluginId, String contributionId
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginSessionControlParamsDtoCopyWithImpl<$Res>
+    implements $PluginSessionControlParamsDtoCopyWith<$Res> {
+  _$PluginSessionControlParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSessionControlParamsDto _self;
+  final $Res Function(PluginSessionControlParamsDto) _then;
+
+/// Create a copy of PluginSessionControlParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? pluginId = null,Object? contributionId = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSessionControlParamsDto].
+extension PluginSessionControlParamsDtoPatterns on PluginSessionControlParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSessionControlParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSessionControlParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSessionControlParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String pluginId,  String contributionId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto() when $default != null:
+return $default(_that.sessionId,_that.pluginId,_that.contributionId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String pluginId,  String contributionId)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto():
+return $default(_that.sessionId,_that.pluginId,_that.contributionId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String pluginId,  String contributionId)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlParamsDto() when $default != null:
+return $default(_that.sessionId,_that.pluginId,_that.contributionId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSessionControlParamsDto implements PluginSessionControlParamsDto {
+  const _PluginSessionControlParamsDto({required this.sessionId, required this.pluginId, required this.contributionId});
+  factory _PluginSessionControlParamsDto.fromJson(Map<String, dynamic> json) => _$PluginSessionControlParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String pluginId;
+@override final  String contributionId;
+
+/// Create a copy of PluginSessionControlParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSessionControlParamsDtoCopyWith<_PluginSessionControlParamsDto> get copyWith => __$PluginSessionControlParamsDtoCopyWithImpl<_PluginSessionControlParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSessionControlParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSessionControlParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,pluginId,contributionId);
+
+@override
+String toString() {
+  return 'PluginSessionControlParamsDto(sessionId: $sessionId, pluginId: $pluginId, contributionId: $contributionId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSessionControlParamsDtoCopyWith<$Res> implements $PluginSessionControlParamsDtoCopyWith<$Res> {
+  factory _$PluginSessionControlParamsDtoCopyWith(_PluginSessionControlParamsDto value, $Res Function(_PluginSessionControlParamsDto) _then) = __$PluginSessionControlParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String pluginId, String contributionId
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginSessionControlParamsDtoCopyWithImpl<$Res>
+    implements _$PluginSessionControlParamsDtoCopyWith<$Res> {
+  __$PluginSessionControlParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSessionControlParamsDto _self;
+  final $Res Function(_PluginSessionControlParamsDto) _then;
+
+/// Create a copy of PluginSessionControlParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? pluginId = null,Object? contributionId = null,}) {
+  return _then(_PluginSessionControlParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginSessionControlSetParamsDto {
+
+ String get sessionId; String get pluginId; String get contributionId; Object? get value;
+/// Create a copy of PluginSessionControlSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSessionControlSetParamsDtoCopyWith<PluginSessionControlSetParamsDto> get copyWith => _$PluginSessionControlSetParamsDtoCopyWithImpl<PluginSessionControlSetParamsDto>(this as PluginSessionControlSetParamsDto, _$identity);
+
+  /// Serializes this PluginSessionControlSetParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSessionControlSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&const DeepCollectionEquality().equals(other.value, value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,pluginId,contributionId,const DeepCollectionEquality().hash(value));
+
+@override
+String toString() {
+  return 'PluginSessionControlSetParamsDto(sessionId: $sessionId, pluginId: $pluginId, contributionId: $contributionId, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSessionControlSetParamsDtoCopyWith<$Res>  {
+  factory $PluginSessionControlSetParamsDtoCopyWith(PluginSessionControlSetParamsDto value, $Res Function(PluginSessionControlSetParamsDto) _then) = _$PluginSessionControlSetParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String pluginId, String contributionId, Object? value
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginSessionControlSetParamsDtoCopyWithImpl<$Res>
+    implements $PluginSessionControlSetParamsDtoCopyWith<$Res> {
+  _$PluginSessionControlSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSessionControlSetParamsDto _self;
+  final $Res Function(PluginSessionControlSetParamsDto) _then;
+
+/// Create a copy of PluginSessionControlSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? pluginId = null,Object? contributionId = null,Object? value = freezed,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,value: freezed == value ? _self.value : value ,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSessionControlSetParamsDto].
+extension PluginSessionControlSetParamsDtoPatterns on PluginSessionControlSetParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSessionControlSetParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSessionControlSetParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSessionControlSetParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String pluginId,  String contributionId,  Object? value)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.pluginId,_that.contributionId,_that.value);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String pluginId,  String contributionId,  Object? value)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto():
+return $default(_that.sessionId,_that.pluginId,_that.contributionId,_that.value);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String pluginId,  String contributionId,  Object? value)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlSetParamsDto() when $default != null:
+return $default(_that.sessionId,_that.pluginId,_that.contributionId,_that.value);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSessionControlSetParamsDto implements PluginSessionControlSetParamsDto {
+  const _PluginSessionControlSetParamsDto({required this.sessionId, required this.pluginId, required this.contributionId, required this.value});
+  factory _PluginSessionControlSetParamsDto.fromJson(Map<String, dynamic> json) => _$PluginSessionControlSetParamsDtoFromJson(json);
+
+@override final  String sessionId;
+@override final  String pluginId;
+@override final  String contributionId;
+@override final  Object? value;
+
+/// Create a copy of PluginSessionControlSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSessionControlSetParamsDtoCopyWith<_PluginSessionControlSetParamsDto> get copyWith => __$PluginSessionControlSetParamsDtoCopyWithImpl<_PluginSessionControlSetParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSessionControlSetParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSessionControlSetParamsDto&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&const DeepCollectionEquality().equals(other.value, value));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,pluginId,contributionId,const DeepCollectionEquality().hash(value));
+
+@override
+String toString() {
+  return 'PluginSessionControlSetParamsDto(sessionId: $sessionId, pluginId: $pluginId, contributionId: $contributionId, value: $value)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSessionControlSetParamsDtoCopyWith<$Res> implements $PluginSessionControlSetParamsDtoCopyWith<$Res> {
+  factory _$PluginSessionControlSetParamsDtoCopyWith(_PluginSessionControlSetParamsDto value, $Res Function(_PluginSessionControlSetParamsDto) _then) = __$PluginSessionControlSetParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String pluginId, String contributionId, Object? value
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginSessionControlSetParamsDtoCopyWithImpl<$Res>
+    implements _$PluginSessionControlSetParamsDtoCopyWith<$Res> {
+  __$PluginSessionControlSetParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSessionControlSetParamsDto _self;
+  final $Res Function(_PluginSessionControlSetParamsDto) _then;
+
+/// Create a copy of PluginSessionControlSetParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? pluginId = null,Object? contributionId = null,Object? value = freezed,}) {
+  return _then(_PluginSessionControlSetParamsDto(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,value: freezed == value ? _self.value : value ,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginUiRenderParamsDto {
+
+ String get agentId; String get pluginId; String get contributionId; PluginUiSlot get slot; Object? get input; Map<String, dynamic> get context;
+/// Create a copy of PluginUiRenderParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginUiRenderParamsDtoCopyWith<PluginUiRenderParamsDto> get copyWith => _$PluginUiRenderParamsDtoCopyWithImpl<PluginUiRenderParamsDto>(this as PluginUiRenderParamsDto, _$identity);
+
+  /// Serializes this PluginUiRenderParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginUiRenderParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.slot, slot) || other.slot == slot)&&const DeepCollectionEquality().equals(other.input, input)&&const DeepCollectionEquality().equals(other.context, context));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,contributionId,slot,const DeepCollectionEquality().hash(input),const DeepCollectionEquality().hash(context));
+
+@override
+String toString() {
+  return 'PluginUiRenderParamsDto(agentId: $agentId, pluginId: $pluginId, contributionId: $contributionId, slot: $slot, input: $input, context: $context)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginUiRenderParamsDtoCopyWith<$Res>  {
+  factory $PluginUiRenderParamsDtoCopyWith(PluginUiRenderParamsDto value, $Res Function(PluginUiRenderParamsDto) _then) = _$PluginUiRenderParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId, String pluginId, String contributionId, PluginUiSlot slot, Object? input, Map<String, dynamic> context
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginUiRenderParamsDtoCopyWithImpl<$Res>
+    implements $PluginUiRenderParamsDtoCopyWith<$Res> {
+  _$PluginUiRenderParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginUiRenderParamsDto _self;
+  final $Res Function(PluginUiRenderParamsDto) _then;
+
+/// Create a copy of PluginUiRenderParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? pluginId = null,Object? contributionId = null,Object? slot = null,Object? input = freezed,Object? context = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,slot: null == slot ? _self.slot : slot // ignore: cast_nullable_to_non_nullable
+as PluginUiSlot,input: freezed == input ? _self.input : input ,context: null == context ? _self.context : context // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginUiRenderParamsDto].
+extension PluginUiRenderParamsDtoPatterns on PluginUiRenderParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginUiRenderParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginUiRenderParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginUiRenderParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String contributionId,  PluginUiSlot slot,  Object? input,  Map<String, dynamic> context)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.contributionId,_that.slot,_that.input,_that.context);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  String contributionId,  PluginUiSlot slot,  Object? input,  Map<String, dynamic> context)  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto():
+return $default(_that.agentId,_that.pluginId,_that.contributionId,_that.slot,_that.input,_that.context);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String pluginId,  String contributionId,  PluginUiSlot slot,  Object? input,  Map<String, dynamic> context)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiRenderParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.contributionId,_that.slot,_that.input,_that.context);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginUiRenderParamsDto implements PluginUiRenderParamsDto {
+  const _PluginUiRenderParamsDto({required this.agentId, required this.pluginId, required this.contributionId, required this.slot, this.input, final  Map<String, dynamic> context = const <String, dynamic>{}}): _context = context;
+  factory _PluginUiRenderParamsDto.fromJson(Map<String, dynamic> json) => _$PluginUiRenderParamsDtoFromJson(json);
+
+@override final  String agentId;
+@override final  String pluginId;
+@override final  String contributionId;
+@override final  PluginUiSlot slot;
+@override final  Object? input;
+ final  Map<String, dynamic> _context;
+@override@JsonKey() Map<String, dynamic> get context {
+  if (_context is EqualUnmodifiableMapView) return _context;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_context);
+}
+
+
+/// Create a copy of PluginUiRenderParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginUiRenderParamsDtoCopyWith<_PluginUiRenderParamsDto> get copyWith => __$PluginUiRenderParamsDtoCopyWithImpl<_PluginUiRenderParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginUiRenderParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginUiRenderParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.contributionId, contributionId) || other.contributionId == contributionId)&&(identical(other.slot, slot) || other.slot == slot)&&const DeepCollectionEquality().equals(other.input, input)&&const DeepCollectionEquality().equals(other._context, _context));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,contributionId,slot,const DeepCollectionEquality().hash(input),const DeepCollectionEquality().hash(_context));
+
+@override
+String toString() {
+  return 'PluginUiRenderParamsDto(agentId: $agentId, pluginId: $pluginId, contributionId: $contributionId, slot: $slot, input: $input, context: $context)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginUiRenderParamsDtoCopyWith<$Res> implements $PluginUiRenderParamsDtoCopyWith<$Res> {
+  factory _$PluginUiRenderParamsDtoCopyWith(_PluginUiRenderParamsDto value, $Res Function(_PluginUiRenderParamsDto) _then) = __$PluginUiRenderParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId, String pluginId, String contributionId, PluginUiSlot slot, Object? input, Map<String, dynamic> context
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginUiRenderParamsDtoCopyWithImpl<$Res>
+    implements _$PluginUiRenderParamsDtoCopyWith<$Res> {
+  __$PluginUiRenderParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginUiRenderParamsDto _self;
+  final $Res Function(_PluginUiRenderParamsDto) _then;
+
+/// Create a copy of PluginUiRenderParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? pluginId = null,Object? contributionId = null,Object? slot = null,Object? input = freezed,Object? context = null,}) {
+  return _then(_PluginUiRenderParamsDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,contributionId: null == contributionId ? _self.contributionId : contributionId // ignore: cast_nullable_to_non_nullable
+as String,slot: null == slot ? _self.slot : slot // ignore: cast_nullable_to_non_nullable
+as PluginUiSlot,input: freezed == input ? _self.input : input ,context: null == context ? _self._context : context // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginUiActionParamsDto {
+
+ String get agentId; String get pluginId; PluginUiActionDto get action;
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginUiActionParamsDtoCopyWith<PluginUiActionParamsDto> get copyWith => _$PluginUiActionParamsDtoCopyWithImpl<PluginUiActionParamsDto>(this as PluginUiActionParamsDto, _$identity);
+
+  /// Serializes this PluginUiActionParamsDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginUiActionParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.action, action) || other.action == action));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,action);
+
+@override
+String toString() {
+  return 'PluginUiActionParamsDto(agentId: $agentId, pluginId: $pluginId, action: $action)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginUiActionParamsDtoCopyWith<$Res>  {
+  factory $PluginUiActionParamsDtoCopyWith(PluginUiActionParamsDto value, $Res Function(PluginUiActionParamsDto) _then) = _$PluginUiActionParamsDtoCopyWithImpl;
+@useResult
+$Res call({
+ String agentId, String pluginId, PluginUiActionDto action
+});
+
+
+$PluginUiActionDtoCopyWith<$Res> get action;
+
+}
+/// @nodoc
+class _$PluginUiActionParamsDtoCopyWithImpl<$Res>
+    implements $PluginUiActionParamsDtoCopyWith<$Res> {
+  _$PluginUiActionParamsDtoCopyWithImpl(this._self, this._then);
+
+  final PluginUiActionParamsDto _self;
+  final $Res Function(PluginUiActionParamsDto) _then;
+
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? agentId = null,Object? pluginId = null,Object? action = null,}) {
+  return _then(_self.copyWith(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
+as PluginUiActionDto,
+  ));
+}
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginUiActionDtoCopyWith<$Res> get action {
+
+  return $PluginUiActionDtoCopyWith<$Res>(_self.action, (value) {
+    return _then(_self.copyWith(action: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginUiActionParamsDto].
+extension PluginUiActionParamsDtoPatterns on PluginUiActionParamsDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginUiActionParamsDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginUiActionParamsDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginUiActionParamsDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  PluginUiActionDto action)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.action);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String agentId,  String pluginId,  PluginUiActionDto action)  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto():
+return $default(_that.agentId,_that.pluginId,_that.action);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String agentId,  String pluginId,  PluginUiActionDto action)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiActionParamsDto() when $default != null:
+return $default(_that.agentId,_that.pluginId,_that.action);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginUiActionParamsDto implements PluginUiActionParamsDto {
+  const _PluginUiActionParamsDto({required this.agentId, required this.pluginId, required this.action});
+  factory _PluginUiActionParamsDto.fromJson(Map<String, dynamic> json) => _$PluginUiActionParamsDtoFromJson(json);
+
+@override final  String agentId;
+@override final  String pluginId;
+@override final  PluginUiActionDto action;
+
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginUiActionParamsDtoCopyWith<_PluginUiActionParamsDto> get copyWith => __$PluginUiActionParamsDtoCopyWithImpl<_PluginUiActionParamsDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginUiActionParamsDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginUiActionParamsDto&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.pluginId, pluginId) || other.pluginId == pluginId)&&(identical(other.action, action) || other.action == action));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,agentId,pluginId,action);
+
+@override
+String toString() {
+  return 'PluginUiActionParamsDto(agentId: $agentId, pluginId: $pluginId, action: $action)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginUiActionParamsDtoCopyWith<$Res> implements $PluginUiActionParamsDtoCopyWith<$Res> {
+  factory _$PluginUiActionParamsDtoCopyWith(_PluginUiActionParamsDto value, $Res Function(_PluginUiActionParamsDto) _then) = __$PluginUiActionParamsDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ String agentId, String pluginId, PluginUiActionDto action
+});
+
+
+@override $PluginUiActionDtoCopyWith<$Res> get action;
+
+}
+/// @nodoc
+class __$PluginUiActionParamsDtoCopyWithImpl<$Res>
+    implements _$PluginUiActionParamsDtoCopyWith<$Res> {
+  __$PluginUiActionParamsDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginUiActionParamsDto _self;
+  final $Res Function(_PluginUiActionParamsDto) _then;
+
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? pluginId = null,Object? action = null,}) {
+  return _then(_PluginUiActionParamsDto(
+agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,pluginId: null == pluginId ? _self.pluginId : pluginId // ignore: cast_nullable_to_non_nullable
+as String,action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
+as PluginUiActionDto,
+  ));
+}
+
+/// Create a copy of PluginUiActionParamsDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginUiActionDtoCopyWith<$Res> get action {
+
+  return $PluginUiActionDtoCopyWith<$Res>(_self.action, (value) {
+    return _then(_self.copyWith(action: value));
+  });
+}
 }
 
 
@@ -9361,7 +10690,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $CustomProviderConfigDtoCopyWith<$Res> get config {
-  
+
   return $CustomProviderConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -9576,7 +10905,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $CustomProviderConfigDtoCopyWith<$Res> get config {
-  
+
   return $CustomProviderConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -9650,7 +10979,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $CustomProviderConfigDtoCopyWith<$Res> get config {
-  
+
   return $CustomProviderConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -9863,7 +11192,7 @@ as String?,
 @override
 @pragma('vm:prefer-inline')
 $CustomProviderConfigDtoCopyWith<$Res> get config {
-  
+
   return $CustomProviderConfigDtoCopyWith<$Res>(_self.config, (value) {
     return _then(_self.copyWith(config: value));
   });
@@ -11815,7 +13144,7 @@ as WorkspaceCatalogDto,
 @override
 @pragma('vm:prefer-inline')
 $WorkspaceCatalogDtoCopyWith<$Res> get catalog {
-  
+
   return $WorkspaceCatalogDtoCopyWith<$Res>(_self.catalog, (value) {
     return _then(_self.copyWith(catalog: value));
   });
@@ -12024,7 +13353,7 @@ as WorkspaceCatalogDto,
 @override
 @pragma('vm:prefer-inline')
 $WorkspaceCatalogDtoCopyWith<$Res> get catalog {
-  
+
   return $WorkspaceCatalogDtoCopyWith<$Res>(_self.catalog, (value) {
     return _then(_self.copyWith(catalog: value));
   });
@@ -12097,7 +13426,7 @@ as List<WorktreeDto>,
 @override
 @pragma('vm:prefer-inline')
 $WorkspaceDtoCopyWith<$Res> get workspace {
-  
+
   return $WorkspaceDtoCopyWith<$Res>(_self.workspace, (value) {
     return _then(_self.copyWith(workspace: value));
   });
@@ -12314,7 +13643,7 @@ as List<WorktreeDto>,
 @override
 @pragma('vm:prefer-inline')
 $WorkspaceDtoCopyWith<$Res> get workspace {
-  
+
   return $WorkspaceDtoCopyWith<$Res>(_self.workspace, (value) {
     return _then(_self.copyWith(workspace: value));
   });
@@ -13460,7 +14789,7 @@ as List<WorktreeHookRunDto>,
 @override
 @pragma('vm:prefer-inline')
 $WorktreeDtoCopyWith<$Res> get worktree {
-  
+
   return $WorktreeDtoCopyWith<$Res>(_self.worktree, (value) {
     return _then(_self.copyWith(worktree: value));
   });
@@ -13677,7 +15006,7 @@ as List<WorktreeHookRunDto>,
 @override
 @pragma('vm:prefer-inline')
 $WorktreeDtoCopyWith<$Res> get worktree {
-  
+
   return $WorktreeDtoCopyWith<$Res>(_self.worktree, (value) {
     return _then(_self.copyWith(worktree: value));
   });
@@ -14013,7 +15342,7 @@ as ProjectSettingsDto,
 @override
 @pragma('vm:prefer-inline')
 $ProjectSettingsDtoCopyWith<$Res> get settings {
-  
+
   return $ProjectSettingsDtoCopyWith<$Res>(_self.settings, (value) {
     return _then(_self.copyWith(settings: value));
   });
@@ -14224,7 +15553,7 @@ as ProjectSettingsDto,
 @override
 @pragma('vm:prefer-inline')
 $ProjectSettingsDtoCopyWith<$Res> get settings {
-  
+
   return $ProjectSettingsDtoCopyWith<$Res>(_self.settings, (value) {
     return _then(_self.copyWith(settings: value));
   });
@@ -14297,7 +15626,7 @@ as String,
 @override
 @pragma('vm:prefer-inline')
 $ProjectSettingsDtoCopyWith<$Res> get settings {
-  
+
   return $ProjectSettingsDtoCopyWith<$Res>(_self.settings, (value) {
     return _then(_self.copyWith(settings: value));
   });
@@ -14508,7 +15837,7 @@ as String,
 @override
 @pragma('vm:prefer-inline')
 $ProjectSettingsDtoCopyWith<$Res> get settings {
-  
+
   return $ProjectSettingsDtoCopyWith<$Res>(_self.settings, (value) {
     return _then(_self.copyWith(settings: value));
   });
@@ -14580,7 +15909,7 @@ as WorktreeArchivePreviewDto,
 @override
 @pragma('vm:prefer-inline')
 $WorktreeArchivePreviewDtoCopyWith<$Res> get preview {
-  
+
   return $WorktreeArchivePreviewDtoCopyWith<$Res>(_self.preview, (value) {
     return _then(_self.copyWith(preview: value));
   });
@@ -14789,7 +16118,7 @@ as WorktreeArchivePreviewDto,
 @override
 @pragma('vm:prefer-inline')
 $WorktreeArchivePreviewDtoCopyWith<$Res> get preview {
-  
+
   return $WorktreeArchivePreviewDtoCopyWith<$Res>(_self.preview, (value) {
     return _then(_self.copyWith(preview: value));
   });
@@ -15130,7 +16459,7 @@ as SessionDto,
 @override
 @pragma('vm:prefer-inline')
 $SessionDtoCopyWith<$Res> get session {
-  
+
   return $SessionDtoCopyWith<$Res>(_self.session, (value) {
     return _then(_self.copyWith(session: value));
   });
@@ -15339,7 +16668,7 @@ as SessionDto,
 @override
 @pragma('vm:prefer-inline')
 $SessionDtoCopyWith<$Res> get session {
-  
+
   return $SessionDtoCopyWith<$Res>(_self.session, (value) {
     return _then(_self.copyWith(session: value));
   });
@@ -17003,7 +18332,7 @@ TerminalRestoreDto _$TerminalRestoreDtoFromJson(
           return TerminalSnapshotRestoreDto.fromJson(
             json
           );
-        
+
           default:
             throw CheckedFromJsonException(
   json,
@@ -17012,7 +18341,7 @@ TerminalRestoreDto _$TerminalRestoreDtoFromJson(
   'Invalid union type "${json['type']}"!'
 );
         }
-      
+
 }
 
 /// @nodoc
@@ -17399,7 +18728,7 @@ as TerminalRestoreDto,
 @override
 @pragma('vm:prefer-inline')
 $TerminalDtoCopyWith<$Res> get terminal {
-  
+
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
   });
@@ -17408,7 +18737,7 @@ $TerminalDtoCopyWith<$Res> get terminal {
 @override
 @pragma('vm:prefer-inline')
 $TerminalRestoreDtoCopyWith<$Res> get restore {
-  
+
   return $TerminalRestoreDtoCopyWith<$Res>(_self.restore, (value) {
     return _then(_self.copyWith(restore: value));
   });
@@ -17619,7 +18948,7 @@ as TerminalRestoreDto,
 @override
 @pragma('vm:prefer-inline')
 $TerminalDtoCopyWith<$Res> get terminal {
-  
+
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
   });
@@ -17628,7 +18957,7 @@ $TerminalDtoCopyWith<$Res> get terminal {
 @override
 @pragma('vm:prefer-inline')
 $TerminalRestoreDtoCopyWith<$Res> get restore {
-  
+
   return $TerminalRestoreDtoCopyWith<$Res>(_self.restore, (value) {
     return _then(_self.copyWith(restore: value));
   });
@@ -17700,7 +19029,7 @@ as TerminalDto,
 @override
 @pragma('vm:prefer-inline')
 $TerminalDtoCopyWith<$Res> get terminal {
-  
+
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
   });
@@ -17909,7 +19238,7 @@ as TerminalDto,
 @override
 @pragma('vm:prefer-inline')
 $TerminalDtoCopyWith<$Res> get terminal {
-  
+
   return $TerminalDtoCopyWith<$Res>(_self.terminal, (value) {
     return _then(_self.copyWith(terminal: value));
   });
@@ -19353,7 +20682,7 @@ as ModelSelectionDto,
 @override
 @pragma('vm:prefer-inline')
 $ModelSelectionDtoCopyWith<$Res> get model {
-  
+
   return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
@@ -19562,7 +20891,7 @@ as ModelSelectionDto,
 @override
 @pragma('vm:prefer-inline')
 $ModelSelectionDtoCopyWith<$Res> get model {
-  
+
   return $ModelSelectionDtoCopyWith<$Res>(_self.model, (value) {
     return _then(_self.copyWith(model: value));
   });
@@ -19903,7 +21232,7 @@ as AgentDefinitionDto,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
   });
@@ -20112,9 +21441,1671 @@ as AgentDefinitionDto,
 @override
 @pragma('vm:prefer-inline')
 $AgentDefinitionDtoCopyWith<$Res> get definition {
-  
+
   return $AgentDefinitionDtoCopyWith<$Res>(_self.definition, (value) {
     return _then(_self.copyWith(definition: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginListResultDto {
+
+ List<PluginDescriptorDto> get plugins;
+/// Create a copy of PluginListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginListResultDtoCopyWith<PluginListResultDto> get copyWith => _$PluginListResultDtoCopyWithImpl<PluginListResultDto>(this as PluginListResultDto, _$identity);
+
+  /// Serializes this PluginListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginListResultDto&&const DeepCollectionEquality().equals(other.plugins, plugins));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(plugins));
+
+@override
+String toString() {
+  return 'PluginListResultDto(plugins: $plugins)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginListResultDtoCopyWith<$Res>  {
+  factory $PluginListResultDtoCopyWith(PluginListResultDto value, $Res Function(PluginListResultDto) _then) = _$PluginListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<PluginDescriptorDto> plugins
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginListResultDtoCopyWithImpl<$Res>
+    implements $PluginListResultDtoCopyWith<$Res> {
+  _$PluginListResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginListResultDto _self;
+  final $Res Function(PluginListResultDto) _then;
+
+/// Create a copy of PluginListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? plugins = null,}) {
+  return _then(_self.copyWith(
+plugins: null == plugins ? _self.plugins : plugins // ignore: cast_nullable_to_non_nullable
+as List<PluginDescriptorDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginListResultDto].
+extension PluginListResultDtoPatterns on PluginListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<PluginDescriptorDto> plugins)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginListResultDto() when $default != null:
+return $default(_that.plugins);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<PluginDescriptorDto> plugins)  $default,) {final _that = this;
+switch (_that) {
+case _PluginListResultDto():
+return $default(_that.plugins);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<PluginDescriptorDto> plugins)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginListResultDto() when $default != null:
+return $default(_that.plugins);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginListResultDto implements PluginListResultDto {
+  const _PluginListResultDto({required final  List<PluginDescriptorDto> plugins}): _plugins = plugins;
+  factory _PluginListResultDto.fromJson(Map<String, dynamic> json) => _$PluginListResultDtoFromJson(json);
+
+ final  List<PluginDescriptorDto> _plugins;
+@override List<PluginDescriptorDto> get plugins {
+  if (_plugins is EqualUnmodifiableListView) return _plugins;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_plugins);
+}
+
+
+/// Create a copy of PluginListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginListResultDtoCopyWith<_PluginListResultDto> get copyWith => __$PluginListResultDtoCopyWithImpl<_PluginListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginListResultDto&&const DeepCollectionEquality().equals(other._plugins, _plugins));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_plugins));
+
+@override
+String toString() {
+  return 'PluginListResultDto(plugins: $plugins)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginListResultDtoCopyWith<$Res> implements $PluginListResultDtoCopyWith<$Res> {
+  factory _$PluginListResultDtoCopyWith(_PluginListResultDto value, $Res Function(_PluginListResultDto) _then) = __$PluginListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<PluginDescriptorDto> plugins
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginListResultDtoCopyWithImpl<$Res>
+    implements _$PluginListResultDtoCopyWith<$Res> {
+  __$PluginListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginListResultDto _self;
+  final $Res Function(_PluginListResultDto) _then;
+
+/// Create a copy of PluginListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? plugins = null,}) {
+  return _then(_PluginListResultDto(
+plugins: null == plugins ? _self._plugins : plugins // ignore: cast_nullable_to_non_nullable
+as List<PluginDescriptorDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginResultDto {
+
+ PluginDescriptorDto get plugin;
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginResultDtoCopyWith<PluginResultDto> get copyWith => _$PluginResultDtoCopyWithImpl<PluginResultDto>(this as PluginResultDto, _$identity);
+
+  /// Serializes this PluginResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginResultDto&&(identical(other.plugin, plugin) || other.plugin == plugin));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,plugin);
+
+@override
+String toString() {
+  return 'PluginResultDto(plugin: $plugin)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginResultDtoCopyWith<$Res>  {
+  factory $PluginResultDtoCopyWith(PluginResultDto value, $Res Function(PluginResultDto) _then) = _$PluginResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ PluginDescriptorDto plugin
+});
+
+
+$PluginDescriptorDtoCopyWith<$Res> get plugin;
+
+}
+/// @nodoc
+class _$PluginResultDtoCopyWithImpl<$Res>
+    implements $PluginResultDtoCopyWith<$Res> {
+  _$PluginResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginResultDto _self;
+  final $Res Function(PluginResultDto) _then;
+
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? plugin = null,}) {
+  return _then(_self.copyWith(
+plugin: null == plugin ? _self.plugin : plugin // ignore: cast_nullable_to_non_nullable
+as PluginDescriptorDto,
+  ));
+}
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginDescriptorDtoCopyWith<$Res> get plugin {
+
+  return $PluginDescriptorDtoCopyWith<$Res>(_self.plugin, (value) {
+    return _then(_self.copyWith(plugin: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginResultDto].
+extension PluginResultDtoPatterns on PluginResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PluginDescriptorDto plugin)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginResultDto() when $default != null:
+return $default(_that.plugin);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PluginDescriptorDto plugin)  $default,) {final _that = this;
+switch (_that) {
+case _PluginResultDto():
+return $default(_that.plugin);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PluginDescriptorDto plugin)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginResultDto() when $default != null:
+return $default(_that.plugin);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginResultDto implements PluginResultDto {
+  const _PluginResultDto({required this.plugin});
+  factory _PluginResultDto.fromJson(Map<String, dynamic> json) => _$PluginResultDtoFromJson(json);
+
+@override final  PluginDescriptorDto plugin;
+
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginResultDtoCopyWith<_PluginResultDto> get copyWith => __$PluginResultDtoCopyWithImpl<_PluginResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginResultDto&&(identical(other.plugin, plugin) || other.plugin == plugin));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,plugin);
+
+@override
+String toString() {
+  return 'PluginResultDto(plugin: $plugin)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginResultDtoCopyWith<$Res> implements $PluginResultDtoCopyWith<$Res> {
+  factory _$PluginResultDtoCopyWith(_PluginResultDto value, $Res Function(_PluginResultDto) _then) = __$PluginResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ PluginDescriptorDto plugin
+});
+
+
+@override $PluginDescriptorDtoCopyWith<$Res> get plugin;
+
+}
+/// @nodoc
+class __$PluginResultDtoCopyWithImpl<$Res>
+    implements _$PluginResultDtoCopyWith<$Res> {
+  __$PluginResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginResultDto _self;
+  final $Res Function(_PluginResultDto) _then;
+
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? plugin = null,}) {
+  return _then(_PluginResultDto(
+plugin: null == plugin ? _self.plugin : plugin // ignore: cast_nullable_to_non_nullable
+as PluginDescriptorDto,
+  ));
+}
+
+/// Create a copy of PluginResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginDescriptorDtoCopyWith<$Res> get plugin {
+
+  return $PluginDescriptorDtoCopyWith<$Res>(_self.plugin, (value) {
+    return _then(_self.copyWith(plugin: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginAuthoringEnvironmentResultDto {
+
+ PluginAuthoringEnvironmentDto get environment;
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginAuthoringEnvironmentResultDtoCopyWith<PluginAuthoringEnvironmentResultDto> get copyWith => _$PluginAuthoringEnvironmentResultDtoCopyWithImpl<PluginAuthoringEnvironmentResultDto>(this as PluginAuthoringEnvironmentResultDto, _$identity);
+
+  /// Serializes this PluginAuthoringEnvironmentResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginAuthoringEnvironmentResultDto&&(identical(other.environment, environment) || other.environment == environment));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,environment);
+
+@override
+String toString() {
+  return 'PluginAuthoringEnvironmentResultDto(environment: $environment)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginAuthoringEnvironmentResultDtoCopyWith<$Res>  {
+  factory $PluginAuthoringEnvironmentResultDtoCopyWith(PluginAuthoringEnvironmentResultDto value, $Res Function(PluginAuthoringEnvironmentResultDto) _then) = _$PluginAuthoringEnvironmentResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ PluginAuthoringEnvironmentDto environment
+});
+
+
+$PluginAuthoringEnvironmentDtoCopyWith<$Res> get environment;
+
+}
+/// @nodoc
+class _$PluginAuthoringEnvironmentResultDtoCopyWithImpl<$Res>
+    implements $PluginAuthoringEnvironmentResultDtoCopyWith<$Res> {
+  _$PluginAuthoringEnvironmentResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginAuthoringEnvironmentResultDto _self;
+  final $Res Function(PluginAuthoringEnvironmentResultDto) _then;
+
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? environment = null,}) {
+  return _then(_self.copyWith(
+environment: null == environment ? _self.environment : environment // ignore: cast_nullable_to_non_nullable
+as PluginAuthoringEnvironmentDto,
+  ));
+}
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginAuthoringEnvironmentDtoCopyWith<$Res> get environment {
+
+  return $PluginAuthoringEnvironmentDtoCopyWith<$Res>(_self.environment, (value) {
+    return _then(_self.copyWith(environment: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginAuthoringEnvironmentResultDto].
+extension PluginAuthoringEnvironmentResultDtoPatterns on PluginAuthoringEnvironmentResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginAuthoringEnvironmentResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginAuthoringEnvironmentResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginAuthoringEnvironmentResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PluginAuthoringEnvironmentDto environment)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto() when $default != null:
+return $default(_that.environment);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PluginAuthoringEnvironmentDto environment)  $default,) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto():
+return $default(_that.environment);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PluginAuthoringEnvironmentDto environment)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginAuthoringEnvironmentResultDto() when $default != null:
+return $default(_that.environment);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginAuthoringEnvironmentResultDto implements PluginAuthoringEnvironmentResultDto {
+  const _PluginAuthoringEnvironmentResultDto({required this.environment});
+  factory _PluginAuthoringEnvironmentResultDto.fromJson(Map<String, dynamic> json) => _$PluginAuthoringEnvironmentResultDtoFromJson(json);
+
+@override final  PluginAuthoringEnvironmentDto environment;
+
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginAuthoringEnvironmentResultDtoCopyWith<_PluginAuthoringEnvironmentResultDto> get copyWith => __$PluginAuthoringEnvironmentResultDtoCopyWithImpl<_PluginAuthoringEnvironmentResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginAuthoringEnvironmentResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginAuthoringEnvironmentResultDto&&(identical(other.environment, environment) || other.environment == environment));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,environment);
+
+@override
+String toString() {
+  return 'PluginAuthoringEnvironmentResultDto(environment: $environment)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginAuthoringEnvironmentResultDtoCopyWith<$Res> implements $PluginAuthoringEnvironmentResultDtoCopyWith<$Res> {
+  factory _$PluginAuthoringEnvironmentResultDtoCopyWith(_PluginAuthoringEnvironmentResultDto value, $Res Function(_PluginAuthoringEnvironmentResultDto) _then) = __$PluginAuthoringEnvironmentResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ PluginAuthoringEnvironmentDto environment
+});
+
+
+@override $PluginAuthoringEnvironmentDtoCopyWith<$Res> get environment;
+
+}
+/// @nodoc
+class __$PluginAuthoringEnvironmentResultDtoCopyWithImpl<$Res>
+    implements _$PluginAuthoringEnvironmentResultDtoCopyWith<$Res> {
+  __$PluginAuthoringEnvironmentResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginAuthoringEnvironmentResultDto _self;
+  final $Res Function(_PluginAuthoringEnvironmentResultDto) _then;
+
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? environment = null,}) {
+  return _then(_PluginAuthoringEnvironmentResultDto(
+environment: null == environment ? _self.environment : environment // ignore: cast_nullable_to_non_nullable
+as PluginAuthoringEnvironmentDto,
+  ));
+}
+
+/// Create a copy of PluginAuthoringEnvironmentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginAuthoringEnvironmentDtoCopyWith<$Res> get environment {
+
+  return $PluginAuthoringEnvironmentDtoCopyWith<$Res>(_self.environment, (value) {
+    return _then(_self.copyWith(environment: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginGrantListResultDto {
+
+ List<AgentPluginGrantDto> get grants;
+/// Create a copy of PluginGrantListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginGrantListResultDtoCopyWith<PluginGrantListResultDto> get copyWith => _$PluginGrantListResultDtoCopyWithImpl<PluginGrantListResultDto>(this as PluginGrantListResultDto, _$identity);
+
+  /// Serializes this PluginGrantListResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginGrantListResultDto&&const DeepCollectionEquality().equals(other.grants, grants));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(grants));
+
+@override
+String toString() {
+  return 'PluginGrantListResultDto(grants: $grants)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginGrantListResultDtoCopyWith<$Res>  {
+  factory $PluginGrantListResultDtoCopyWith(PluginGrantListResultDto value, $Res Function(PluginGrantListResultDto) _then) = _$PluginGrantListResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ List<AgentPluginGrantDto> grants
+});
+
+
+
+
+}
+/// @nodoc
+class _$PluginGrantListResultDtoCopyWithImpl<$Res>
+    implements $PluginGrantListResultDtoCopyWith<$Res> {
+  _$PluginGrantListResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginGrantListResultDto _self;
+  final $Res Function(PluginGrantListResultDto) _then;
+
+/// Create a copy of PluginGrantListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? grants = null,}) {
+  return _then(_self.copyWith(
+grants: null == grants ? _self.grants : grants // ignore: cast_nullable_to_non_nullable
+as List<AgentPluginGrantDto>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PluginGrantListResultDto].
+extension PluginGrantListResultDtoPatterns on PluginGrantListResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginGrantListResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginGrantListResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginGrantListResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AgentPluginGrantDto> grants)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto() when $default != null:
+return $default(_that.grants);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AgentPluginGrantDto> grants)  $default,) {final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto():
+return $default(_that.grants);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AgentPluginGrantDto> grants)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginGrantListResultDto() when $default != null:
+return $default(_that.grants);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginGrantListResultDto implements PluginGrantListResultDto {
+  const _PluginGrantListResultDto({required final  List<AgentPluginGrantDto> grants}): _grants = grants;
+  factory _PluginGrantListResultDto.fromJson(Map<String, dynamic> json) => _$PluginGrantListResultDtoFromJson(json);
+
+ final  List<AgentPluginGrantDto> _grants;
+@override List<AgentPluginGrantDto> get grants {
+  if (_grants is EqualUnmodifiableListView) return _grants;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_grants);
+}
+
+
+/// Create a copy of PluginGrantListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginGrantListResultDtoCopyWith<_PluginGrantListResultDto> get copyWith => __$PluginGrantListResultDtoCopyWithImpl<_PluginGrantListResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginGrantListResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginGrantListResultDto&&const DeepCollectionEquality().equals(other._grants, _grants));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_grants));
+
+@override
+String toString() {
+  return 'PluginGrantListResultDto(grants: $grants)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginGrantListResultDtoCopyWith<$Res> implements $PluginGrantListResultDtoCopyWith<$Res> {
+  factory _$PluginGrantListResultDtoCopyWith(_PluginGrantListResultDto value, $Res Function(_PluginGrantListResultDto) _then) = __$PluginGrantListResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ List<AgentPluginGrantDto> grants
+});
+
+
+
+
+}
+/// @nodoc
+class __$PluginGrantListResultDtoCopyWithImpl<$Res>
+    implements _$PluginGrantListResultDtoCopyWith<$Res> {
+  __$PluginGrantListResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginGrantListResultDto _self;
+  final $Res Function(_PluginGrantListResultDto) _then;
+
+/// Create a copy of PluginGrantListResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? grants = null,}) {
+  return _then(_PluginGrantListResultDto(
+grants: null == grants ? _self._grants : grants // ignore: cast_nullable_to_non_nullable
+as List<AgentPluginGrantDto>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PluginSessionControlResultDto {
+
+ PluginSessionControlValueDto get control;
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginSessionControlResultDtoCopyWith<PluginSessionControlResultDto> get copyWith => _$PluginSessionControlResultDtoCopyWithImpl<PluginSessionControlResultDto>(this as PluginSessionControlResultDto, _$identity);
+
+  /// Serializes this PluginSessionControlResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginSessionControlResultDto&&(identical(other.control, control) || other.control == control));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,control);
+
+@override
+String toString() {
+  return 'PluginSessionControlResultDto(control: $control)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginSessionControlResultDtoCopyWith<$Res>  {
+  factory $PluginSessionControlResultDtoCopyWith(PluginSessionControlResultDto value, $Res Function(PluginSessionControlResultDto) _then) = _$PluginSessionControlResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ PluginSessionControlValueDto control
+});
+
+
+$PluginSessionControlValueDtoCopyWith<$Res> get control;
+
+}
+/// @nodoc
+class _$PluginSessionControlResultDtoCopyWithImpl<$Res>
+    implements $PluginSessionControlResultDtoCopyWith<$Res> {
+  _$PluginSessionControlResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginSessionControlResultDto _self;
+  final $Res Function(PluginSessionControlResultDto) _then;
+
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? control = null,}) {
+  return _then(_self.copyWith(
+control: null == control ? _self.control : control // ignore: cast_nullable_to_non_nullable
+as PluginSessionControlValueDto,
+  ));
+}
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginSessionControlValueDtoCopyWith<$Res> get control {
+
+  return $PluginSessionControlValueDtoCopyWith<$Res>(_self.control, (value) {
+    return _then(_self.copyWith(control: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginSessionControlResultDto].
+extension PluginSessionControlResultDtoPatterns on PluginSessionControlResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginSessionControlResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginSessionControlResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginSessionControlResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PluginSessionControlValueDto control)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto() when $default != null:
+return $default(_that.control);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PluginSessionControlValueDto control)  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto():
+return $default(_that.control);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PluginSessionControlValueDto control)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginSessionControlResultDto() when $default != null:
+return $default(_that.control);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginSessionControlResultDto implements PluginSessionControlResultDto {
+  const _PluginSessionControlResultDto({required this.control});
+  factory _PluginSessionControlResultDto.fromJson(Map<String, dynamic> json) => _$PluginSessionControlResultDtoFromJson(json);
+
+@override final  PluginSessionControlValueDto control;
+
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginSessionControlResultDtoCopyWith<_PluginSessionControlResultDto> get copyWith => __$PluginSessionControlResultDtoCopyWithImpl<_PluginSessionControlResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginSessionControlResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginSessionControlResultDto&&(identical(other.control, control) || other.control == control));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,control);
+
+@override
+String toString() {
+  return 'PluginSessionControlResultDto(control: $control)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginSessionControlResultDtoCopyWith<$Res> implements $PluginSessionControlResultDtoCopyWith<$Res> {
+  factory _$PluginSessionControlResultDtoCopyWith(_PluginSessionControlResultDto value, $Res Function(_PluginSessionControlResultDto) _then) = __$PluginSessionControlResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ PluginSessionControlValueDto control
+});
+
+
+@override $PluginSessionControlValueDtoCopyWith<$Res> get control;
+
+}
+/// @nodoc
+class __$PluginSessionControlResultDtoCopyWithImpl<$Res>
+    implements _$PluginSessionControlResultDtoCopyWith<$Res> {
+  __$PluginSessionControlResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginSessionControlResultDto _self;
+  final $Res Function(_PluginSessionControlResultDto) _then;
+
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? control = null,}) {
+  return _then(_PluginSessionControlResultDto(
+control: null == control ? _self.control : control // ignore: cast_nullable_to_non_nullable
+as PluginSessionControlValueDto,
+  ));
+}
+
+/// Create a copy of PluginSessionControlResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginSessionControlValueDtoCopyWith<$Res> get control {
+
+  return $PluginSessionControlValueDtoCopyWith<$Res>(_self.control, (value) {
+    return _then(_self.copyWith(control: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$PluginUiDocumentResultDto {
+
+ PluginUiDocumentDto get document;
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PluginUiDocumentResultDtoCopyWith<PluginUiDocumentResultDto> get copyWith => _$PluginUiDocumentResultDtoCopyWithImpl<PluginUiDocumentResultDto>(this as PluginUiDocumentResultDto, _$identity);
+
+  /// Serializes this PluginUiDocumentResultDto to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginUiDocumentResultDto&&(identical(other.document, document) || other.document == document));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,document);
+
+@override
+String toString() {
+  return 'PluginUiDocumentResultDto(document: $document)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PluginUiDocumentResultDtoCopyWith<$Res>  {
+  factory $PluginUiDocumentResultDtoCopyWith(PluginUiDocumentResultDto value, $Res Function(PluginUiDocumentResultDto) _then) = _$PluginUiDocumentResultDtoCopyWithImpl;
+@useResult
+$Res call({
+ PluginUiDocumentDto document
+});
+
+
+$PluginUiDocumentDtoCopyWith<$Res> get document;
+
+}
+/// @nodoc
+class _$PluginUiDocumentResultDtoCopyWithImpl<$Res>
+    implements $PluginUiDocumentResultDtoCopyWith<$Res> {
+  _$PluginUiDocumentResultDtoCopyWithImpl(this._self, this._then);
+
+  final PluginUiDocumentResultDto _self;
+  final $Res Function(PluginUiDocumentResultDto) _then;
+
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? document = null,}) {
+  return _then(_self.copyWith(
+document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
+as PluginUiDocumentDto,
+  ));
+}
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginUiDocumentDtoCopyWith<$Res> get document {
+
+  return $PluginUiDocumentDtoCopyWith<$Res>(_self.document, (value) {
+    return _then(_self.copyWith(document: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [PluginUiDocumentResultDto].
+extension PluginUiDocumentResultDtoPatterns on PluginUiDocumentResultDto {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PluginUiDocumentResultDto value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PluginUiDocumentResultDto value)  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PluginUiDocumentResultDto value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PluginUiDocumentDto document)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto() when $default != null:
+return $default(_that.document);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PluginUiDocumentDto document)  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto():
+return $default(_that.document);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PluginUiDocumentDto document)?  $default,) {final _that = this;
+switch (_that) {
+case _PluginUiDocumentResultDto() when $default != null:
+return $default(_that.document);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PluginUiDocumentResultDto implements PluginUiDocumentResultDto {
+  const _PluginUiDocumentResultDto({required this.document});
+  factory _PluginUiDocumentResultDto.fromJson(Map<String, dynamic> json) => _$PluginUiDocumentResultDtoFromJson(json);
+
+@override final  PluginUiDocumentDto document;
+
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PluginUiDocumentResultDtoCopyWith<_PluginUiDocumentResultDto> get copyWith => __$PluginUiDocumentResultDtoCopyWithImpl<_PluginUiDocumentResultDto>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PluginUiDocumentResultDtoToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginUiDocumentResultDto&&(identical(other.document, document) || other.document == document));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,document);
+
+@override
+String toString() {
+  return 'PluginUiDocumentResultDto(document: $document)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PluginUiDocumentResultDtoCopyWith<$Res> implements $PluginUiDocumentResultDtoCopyWith<$Res> {
+  factory _$PluginUiDocumentResultDtoCopyWith(_PluginUiDocumentResultDto value, $Res Function(_PluginUiDocumentResultDto) _then) = __$PluginUiDocumentResultDtoCopyWithImpl;
+@override @useResult
+$Res call({
+ PluginUiDocumentDto document
+});
+
+
+@override $PluginUiDocumentDtoCopyWith<$Res> get document;
+
+}
+/// @nodoc
+class __$PluginUiDocumentResultDtoCopyWithImpl<$Res>
+    implements _$PluginUiDocumentResultDtoCopyWith<$Res> {
+  __$PluginUiDocumentResultDtoCopyWithImpl(this._self, this._then);
+
+  final _PluginUiDocumentResultDto _self;
+  final $Res Function(_PluginUiDocumentResultDto) _then;
+
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? document = null,}) {
+  return _then(_PluginUiDocumentResultDto(
+document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
+as PluginUiDocumentDto,
+  ));
+}
+
+/// Create a copy of PluginUiDocumentResultDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PluginUiDocumentDtoCopyWith<$Res> get document {
+
+  return $PluginUiDocumentDtoCopyWith<$Res>(_self.document, (value) {
+    return _then(_self.copyWith(document: value));
   });
 }
 }
@@ -20979,7 +23970,7 @@ as McpServerConfigDto,
 @override
 @pragma('vm:prefer-inline')
 $McpServerConfigDtoCopyWith<$Res> get server {
-  
+
   return $McpServerConfigDtoCopyWith<$Res>(_self.server, (value) {
     return _then(_self.copyWith(server: value));
   });
@@ -21188,7 +24179,7 @@ as McpServerConfigDto,
 @override
 @pragma('vm:prefer-inline')
 $McpServerConfigDtoCopyWith<$Res> get server {
-  
+
   return $McpServerConfigDtoCopyWith<$Res>(_self.server, (value) {
     return _then(_self.copyWith(server: value));
   });
@@ -21523,7 +24514,7 @@ as McpServerStateDto,
 @override
 @pragma('vm:prefer-inline')
 $McpServerStateDtoCopyWith<$Res> get state {
-  
+
   return $McpServerStateDtoCopyWith<$Res>(_self.state, (value) {
     return _then(_self.copyWith(state: value));
   });
@@ -21732,7 +24723,7 @@ as McpServerStateDto,
 @override
 @pragma('vm:prefer-inline')
 $McpServerStateDtoCopyWith<$Res> get state {
-  
+
   return $McpServerStateDtoCopyWith<$Res>(_self.state, (value) {
     return _then(_self.copyWith(state: value));
   });
@@ -22877,7 +25868,7 @@ as ProviderCatalogDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderCatalogDtoCopyWith<$Res> get catalog {
-  
+
   return $ProviderCatalogDtoCopyWith<$Res>(_self.catalog, (value) {
     return _then(_self.copyWith(catalog: value));
   });
@@ -23086,7 +26077,7 @@ as ProviderCatalogDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderCatalogDtoCopyWith<$Res> get catalog {
-  
+
   return $ProviderCatalogDtoCopyWith<$Res>(_self.catalog, (value) {
     return _then(_self.copyWith(catalog: value));
   });
@@ -23696,7 +26687,7 @@ as ProviderConnectionDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderConnectionDtoCopyWith<$Res> get connection {
-  
+
   return $ProviderConnectionDtoCopyWith<$Res>(_self.connection, (value) {
     return _then(_self.copyWith(connection: value));
   });
@@ -23905,7 +26896,7 @@ as ProviderConnectionDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderConnectionDtoCopyWith<$Res> get connection {
-  
+
   return $ProviderConnectionDtoCopyWith<$Res>(_self.connection, (value) {
     return _then(_self.copyWith(connection: value));
   });
@@ -24246,7 +27237,7 @@ as ProviderAuthAttemptDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderAuthAttemptDtoCopyWith<$Res> get attempt {
-  
+
   return $ProviderAuthAttemptDtoCopyWith<$Res>(_self.attempt, (value) {
     return _then(_self.copyWith(attempt: value));
   });
@@ -24455,7 +27446,7 @@ as ProviderAuthAttemptDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderAuthAttemptDtoCopyWith<$Res> get attempt {
-  
+
   return $ProviderAuthAttemptDtoCopyWith<$Res>(_self.attempt, (value) {
     return _then(_self.copyWith(attempt: value));
   });
@@ -24527,7 +27518,7 @@ as ProviderDiagnosticDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderDiagnosticDtoCopyWith<$Res> get diagnostic {
-  
+
   return $ProviderDiagnosticDtoCopyWith<$Res>(_self.diagnostic, (value) {
     return _then(_self.copyWith(diagnostic: value));
   });
@@ -24736,7 +27727,7 @@ as ProviderDiagnosticDto,
 @override
 @pragma('vm:prefer-inline')
 $ProviderDiagnosticDtoCopyWith<$Res> get diagnostic {
-  
+
   return $ProviderDiagnosticDtoCopyWith<$Res>(_self.diagnostic, (value) {
     return _then(_self.copyWith(diagnostic: value));
   });
@@ -25071,7 +28062,7 @@ as ApprovalRequestDto,
 @override
 @pragma('vm:prefer-inline')
 $ApprovalRequestDtoCopyWith<$Res> get approval {
-  
+
   return $ApprovalRequestDtoCopyWith<$Res>(_self.approval, (value) {
     return _then(_self.copyWith(approval: value));
   });
@@ -25280,7 +28271,7 @@ as ApprovalRequestDto,
 @override
 @pragma('vm:prefer-inline')
 $ApprovalRequestDtoCopyWith<$Res> get approval {
-  
+
   return $ApprovalRequestDtoCopyWith<$Res>(_self.approval, (value) {
     return _then(_self.copyWith(approval: value));
   });
@@ -25352,7 +28343,7 @@ as UserQuestionRequestDto,
 @override
 @pragma('vm:prefer-inline')
 $UserQuestionRequestDtoCopyWith<$Res> get request {
-  
+
   return $UserQuestionRequestDtoCopyWith<$Res>(_self.request, (value) {
     return _then(_self.copyWith(request: value));
   });
@@ -25561,7 +28552,7 @@ as UserQuestionRequestDto,
 @override
 @pragma('vm:prefer-inline')
 $UserQuestionRequestDtoCopyWith<$Res> get request {
-  
+
   return $UserQuestionRequestDtoCopyWith<$Res>(_self.request, (value) {
     return _then(_self.copyWith(request: value));
   });

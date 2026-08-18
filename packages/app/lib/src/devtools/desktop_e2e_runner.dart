@@ -21,6 +21,7 @@ final class DesktopE2eScenario {
 const desktopE2eScenarios = <DesktopE2eScenario>[
   DesktopE2eScenario(id: 'daemon-workspace', estimatedSeconds: 17),
   DesktopE2eScenario(id: 'project-worktree', estimatedSeconds: 12),
+  DesktopE2eScenario(id: 'plugin-harness', estimatedSeconds: 18),
   DesktopE2eScenario(id: 'relay', estimatedSeconds: 1),
   DesktopE2eScenario(id: 'conversation-adversity', estimatedSeconds: 6),
   DesktopE2eScenario(id: 'conversation-history', estimatedSeconds: 14),
@@ -138,9 +139,14 @@ final class DesktopE2ePlan {
         );
         return byDuration != 0 ? byDuration : left.id.compareTo(right.id);
       });
+    if (laneCount == 2) {
+      final longest = ordered.removeAt(0);
+      assignments[0].add(longest);
+      totals[0] = longest.estimatedSeconds;
+    }
     for (final scenario in ordered) {
-      var target = 0;
-      for (var index = 1; index < laneCount; index += 1) {
+      var target = laneCount == 2 ? 1 : 0;
+      for (var index = target + 1; index < laneCount; index += 1) {
         if (totals[index] < totals[target]) target = index;
       }
       assignments[target].add(scenario);
@@ -206,6 +212,7 @@ final class DesktopE2eLaneResources {
   const DesktopE2eLaneResources({
     required this.home,
     required this.configHome,
+    required this.temporaryDirectory,
     required this.readinessMarker,
   });
 
@@ -215,8 +222,19 @@ final class DesktopE2eLaneResources {
   /// Isolated Flutter configuration home.
   final String configHome;
 
+  /// Isolated process temporary directory.
+  final String temporaryDirectory;
+
   /// Application readiness marker path.
   final String readinessMarker;
+}
+
+/// Returns the generated build subtree owned by one Windows E2E lane.
+String desktopE2eWindowsLaneBuildPath(int laneIndex) {
+  if (laneIndex < 0) {
+    throw ArgumentError.value(laneIndex, 'laneIndex', 'must be non-negative');
+  }
+  return 'build/e2e/lane-$laneIndex/windows';
 }
 
 /// A started Flutter process with an application-level readiness signal.
@@ -228,6 +246,12 @@ abstract interface class DesktopE2eProcess {
   Future<int> get exitCode;
 }
 
+/// Exclusive access to a host project while Flutter prepares a desktop build.
+abstract interface class DesktopE2eBuildLease {
+  /// Releases the host-project build lease.
+  Future<void> release();
+}
+
 /// Runtime boundary for filesystem and process operations used by E2E.
 abstract interface class DesktopE2eRuntime {
   /// Creates temporary resources for [laneIndex].
@@ -235,6 +259,28 @@ abstract interface class DesktopE2eRuntime {
 
   /// Starts [command] without waiting for its exit.
   Future<DesktopE2eProcess> start(DesktopE2eCommand command);
+
+  /// Acquires access to [projectDirectory]'s shared ephemeral build files.
+  Future<DesktopE2eBuildLease> acquireProjectBuildLease(
+    String projectDirectory,
+  );
+
+  /// Acquires access to one persistent lane output until its process exits.
+  Future<DesktopE2eBuildLease> acquireLaneBuildLease(
+    String projectDirectory,
+    int laneIndex,
+  );
+
+  /// Invalidates Flutter's shared incremental build cache before the first
+  /// Windows lane creates target-specific build state.
+  Future<void> resetWindowsProjectBuildCache(String projectDirectory);
+
+  /// Resets [laneIndex]'s Windows output before Flutter recreates ephemeral
+  /// files.
+  Future<void> resetWindowsLaneBuild(
+    String projectDirectory,
+    int laneIndex,
+  );
 
   /// Deletes resources after the lane process exits.
   Future<void> deleteLaneResources(DesktopE2eLaneResources resources);
@@ -281,7 +327,11 @@ final class DesktopE2eRunResult {
       .firstWhere((code) => code != 0, orElse: () => 0);
 }
 
-/// Runs up to two staggered, isolated desktop E2E lanes.
+/// Runs up to two isolated desktop E2E lanes.
+///
+/// Windows build phases share `windows/flutter/ephemeral`, so the runtime holds
+/// a cross-process lease until the native app is ready. Test execution may then
+/// overlap while the next lane builds in its isolated output directory.
 final class DesktopE2eRunner {
   /// Creates a runner backed by [runtime].
   const DesktopE2eRunner({
@@ -312,26 +362,59 @@ final class DesktopE2eRunner {
               ],
             ),
           ];
-    final running = <Future<DesktopE2eLaneResult>>[];
-    final first = await _startLane(plan, lanes.first, seed);
-    running.add(first.result);
-    if (lanes.length > 1) {
-      await Future.any<void>(<Future<void>>[
-        first.process.ready.then<void>((_) {}, onError: (_) {}),
-        first.process.exitCode.then<void>((_) {}),
-      ]);
-      running.add((await _startLane(plan, lanes[1], seed + 1)).result);
+    final windowsProjectDirectory = plan.host == DesktopHost.windows
+        ? plan.commandForLane(lanes.first, seed: seed).workingDirectory
+        : null;
+    try {
+      final running = <Future<DesktopE2eLaneResult>>[];
+      final first = await _startLane(
+        plan,
+        lanes.first,
+        seed,
+        resetWindowsProjectBuildCache: true,
+      );
+      running.add(first.result);
+      if (lanes.length > 1) {
+        await first.buildReady;
+        running.add(
+          (await _startLane(
+            plan,
+            lanes[1],
+            seed + 1,
+            resetWindowsProjectBuildCache: false,
+          )).result,
+        );
+      }
+      final results = await Future.wait(running);
+      results.sort(
+        (left, right) => left.lane.index.compareTo(right.lane.index),
+      );
+      return DesktopE2eRunResult(results);
+    } finally {
+      if (windowsProjectDirectory != null) {
+        final lease = await runtime.acquireProjectBuildLease(
+          windowsProjectDirectory,
+        );
+        try {
+          // Flutter test targets and the ordinary desktop target share
+          // generated wrapper sources but track ownership in
+          // `.dart_tool/flutter_build`. Leave that ownership invalidated so
+          // the next Flutter command must reconcile the shared sources instead
+          // of trusting an E2E target hash.
+          await runtime.resetWindowsProjectBuildCache(windowsProjectDirectory);
+        } finally {
+          await lease.release();
+        }
+      }
     }
-    final results = await Future.wait(running);
-    results.sort((left, right) => left.lane.index.compareTo(right.lane.index));
-    return DesktopE2eRunResult(results);
   }
 
   Future<_RunningLane> _startLane(
     DesktopE2ePlan plan,
     DesktopE2eLane lane,
-    int seed,
-  ) async {
+    int seed, {
+    required bool resetWindowsProjectBuildCache,
+  }) async {
     final resources = await runtime.createLaneResources(lane.index);
     final stopwatch = Stopwatch()..start();
     final command = plan.commandForLane(lane, seed: seed).withEnvironment(
@@ -340,24 +423,69 @@ final class DesktopE2eRunner {
         'TINYRACK_TINEST_HOME': resources.home,
         'TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES': '1',
         'TINYRACK_TINEST_E2E_READY_FILE': resources.readinessMarker,
-        if (plan.host == DesktopHost.windows) 'APPDATA': resources.configHome,
-        if (plan.host != DesktopHost.windows)
+        if (plan.host == DesktopHost.windows) ...<String, String>{
+          'APPDATA': resources.configHome,
+          // Concurrent Flutter tools otherwise share `%TEMP%`; a failed
+          // platform process can remove another lane's listener directory
+          // while that lane is still finalizing its test protocol.
+          'TEMP': resources.temporaryDirectory,
+          'TMP': resources.temporaryDirectory,
+        },
+        if (plan.host != DesktopHost.windows) ...<String, String>{
           'XDG_CONFIG_HOME': resources.configHome,
+          'TMPDIR': resources.temporaryDirectory,
+        },
       },
     );
+    DesktopE2eBuildLease? projectBuildLease;
+    DesktopE2eBuildLease? laneBuildLease;
     try {
+      if (plan.host == DesktopHost.windows) {
+        laneBuildLease = await runtime.acquireLaneBuildLease(
+          command.workingDirectory,
+          lane.index,
+        );
+        projectBuildLease = await runtime.acquireProjectBuildLease(
+          command.workingDirectory,
+        );
+        if (resetWindowsProjectBuildCache) {
+          await runtime.resetWindowsProjectBuildCache(
+            command.workingDirectory,
+          );
+        }
+        await runtime.resetWindowsLaneBuild(
+          command.workingDirectory,
+          lane.index,
+        );
+      }
       final process = await runtime.start(command);
       final readyAt = Completer<Duration?>();
+      final buildPhaseFinished = Completer<void>();
       unawaited(
         process.ready.then<void>(
           (_) {
             if (!readyAt.isCompleted) readyAt.complete(stopwatch.elapsed);
+            if (!buildPhaseFinished.isCompleted) buildPhaseFinished.complete();
           },
           onError: (_) {
             if (!readyAt.isCompleted) readyAt.complete(null);
           },
         ),
       );
+      unawaited(
+        process.exitCode.then<void>(
+          (_) {
+            if (!buildPhaseFinished.isCompleted) buildPhaseFinished.complete();
+          },
+          onError: (_) {
+            if (!buildPhaseFinished.isCompleted) buildPhaseFinished.complete();
+          },
+        ),
+      );
+      final buildReady = buildPhaseFinished.future.then<void>((_) async {
+        await projectBuildLease?.release();
+        projectBuildLease = null;
+      });
       final result = () async {
         try {
           final exitCode = await process.exitCode;
@@ -370,22 +498,39 @@ final class DesktopE2eRunner {
             readyAfter: await readyAt.future,
           );
         } finally {
+          try {
+            await buildReady;
+          } finally {
+            try {
+              await laneBuildLease?.release();
+              laneBuildLease = null;
+            } finally {
+              stopwatch.stop();
+              await runtime.deleteLaneResources(resources);
+            }
+          }
+        }
+      }();
+      return _RunningLane(buildReady: buildReady, result: result);
+    } catch (_) {
+      try {
+        await projectBuildLease?.release();
+      } finally {
+        try {
+          await laneBuildLease?.release();
+        } finally {
           stopwatch.stop();
           await runtime.deleteLaneResources(resources);
         }
-      }();
-      return _RunningLane(process: process, result: result);
-    } catch (_) {
-      stopwatch.stop();
-      await runtime.deleteLaneResources(resources);
+      }
       rethrow;
     }
   }
 }
 
 final class _RunningLane {
-  const _RunningLane({required this.process, required this.result});
+  const _RunningLane({required this.buildReady, required this.result});
 
-  final DesktopE2eProcess process;
+  final Future<void> buildReady;
   final Future<DesktopE2eLaneResult> result;
 }

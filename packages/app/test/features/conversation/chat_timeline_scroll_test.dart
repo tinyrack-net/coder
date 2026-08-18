@@ -11,7 +11,6 @@ import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import '../../support/fake_tinest_api.dart';
@@ -203,8 +202,6 @@ final class _StreamingConversationHarnessState
           selection: null,
           onAgentChanged: (_) {},
           onModelChanged: (_, _) {},
-          mode: SessionMode.normal,
-          onModeChanged: (_) {},
         ),
       ),
     ],
@@ -701,9 +698,6 @@ void main() {
       await tester.pumpAndSettle();
       final saved = _visibleAnchor(tester, firstSession);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-
       final secondSession = _messages(36, prefix: 'second');
       await _pumpTimeline(
         tester,
@@ -713,9 +707,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey<String>('second-35')), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
 
       await _pumpTimeline(
         tester,
@@ -730,6 +721,247 @@ void main() {
         closeTo(saved.top, _geometryTolerance),
       );
       expect(find.byKey(const ValueKey<String>('second-35')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a missing restored anchor falls back to trailing and follows new messages',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final fullHistory = _messages(72, prefix: 'paged');
+      const sessionId = 'missing-anchor-session';
+      await _pumpTimeline(
+        tester,
+        items: fullHistory,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+
+      final position = _scrollPosition(tester);
+      position.jumpTo(position.maxScrollExtent * 0.35);
+      await tester.pump();
+      expect(
+        positions,
+        contains('conversation:$_hostId:$sessionId'),
+        reason: 'the unloaded historical anchor must be retained',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      final initialPage = fullHistory.skip(60).toList();
+      await _pumpTimeline(
+        tester,
+        items: initialPage,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+      _expectTrailingPinned(tester, reason: 'missing anchor fallback');
+
+      final latest = ChatUserMessage(
+        key: 'paged-latest',
+        turnId: 'turn-paged-latest',
+        createdAt: _createdAt.add(const Duration(minutes: 2)),
+        text: 'latest after the initial page was restored',
+      );
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[...initialPage, latest],
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pump();
+
+      _expectTrailingPinned(tester, reason: 'new message after fallback');
+      expect(find.byKey(ValueKey<String>(latest.key)), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'leaving after scrolling within one tall row restores the final viewport '
+    'offset',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final history = <ChatItem>[
+        ChatAssistantMessage(
+          key: 'tall-history-row',
+          turnId: 'turn-tall-history',
+          createdAt: _createdAt,
+          markdown: List<String>.generate(
+            80,
+            (index) => 'Tall history paragraph $index.',
+          ).join('\n\n'),
+        ),
+        ChatUserMessage(
+          key: 'trailing-history-row',
+          turnId: 'turn-trailing-history',
+          createdAt: _createdAt.add(const Duration(seconds: 1)),
+          text: 'Trailing history row',
+        ),
+      ];
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: 'tall-row-session',
+      );
+      await tester.pumpAndSettle();
+
+      final position = _scrollPosition(tester);
+      expect(position.maxScrollExtent, greaterThan(1000));
+      final firstStop = position.maxScrollExtent * 0.35;
+      position.jumpTo(firstStop);
+      await tester.pump();
+      expect(find.byKey(const ValueKey<String>('tall-history-row')), findsOne);
+      expect(
+        find.byKey(const ValueKey<String>('trailing-history-row')),
+        findsNothing,
+        reason: 'both stops must keep the same single row visible',
+      );
+
+      position.jumpTo(firstStop + 64);
+      await tester.pump();
+      final finalStop = position.pixels;
+      expect(finalStop, greaterThan(firstStop));
+      expect(find.byKey(const ValueKey<String>('tall-history-row')), findsOne);
+      expect(
+        find.byKey(const ValueKey<String>('trailing-history-row')),
+        findsNothing,
+        reason: 'the second stop must not change the visible row range',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: 'tall-row-session',
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        _scrollPosition(tester).pixels,
+        closeTo(finalStop, _geometryTolerance),
+        reason: 'restoration must use the last stop within the same row',
+      );
+    },
+  );
+
+  testWidgets(
+    'a restored offset inside a tall final row survives leaving again without '
+    'another scroll',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final history = <ChatItem>[
+        ChatAssistantMessage(
+          key: 'tall-final-row',
+          turnId: 'turn-tall-final',
+          createdAt: _createdAt,
+          markdown: List<String>.generate(
+            80,
+            (index) => 'Tall final paragraph $index.',
+          ).join('\n\n'),
+        ),
+      ];
+      const sessionId = 'tall-final-row-session';
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+
+      final position = _scrollPosition(tester);
+      expect(position.maxScrollExtent, greaterThan(1000));
+      final savedOffset = position.maxScrollExtent * 0.35;
+      position.jumpTo(savedOffset);
+      await tester.pump();
+      expect(position.extentAfter, greaterThan(1));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        _scrollPosition(tester).pixels,
+        closeTo(savedOffset, _geometryTolerance),
+        reason: 'the first re-entry must restore the tall final row offset',
+      );
+
+      // Leave the restored viewport untouched. Its initial visible-range
+      // report must not reinterpret "the final row is visible" as "the reader
+      // is at the trailing edge" and discard the settled pixel position.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await _pumpTimeline(
+        tester,
+        items: history,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        _scrollPosition(tester).pixels,
+        closeTo(savedOffset, _geometryTolerance),
+        reason:
+            're-entry without another scroll must retain the restored offset '
+            'inside the tall final row',
+      );
+    },
+  );
+
+  testWidgets(
+    'a settled history scroll checkpoints before the timeline is removed',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      await _pumpTimeline(
+        tester,
+        items: _messages(60, prefix: 'checkpoint'),
+        positions: positions,
+        sessionId: 'checkpoint-session',
+      );
+      await tester.pumpAndSettle();
+
+      final position = _scrollPosition(tester);
+      position.jumpTo(position.maxScrollExtent * 0.45);
+      await tester.pump();
+
+      expect(
+        positions,
+        contains('conversation:$_hostId:checkpoint-session'),
+        reason:
+            'the reading position must be retained before a tab-switch '
+            'teardown schedules its final lifecycle report',
+      );
     },
   );
 

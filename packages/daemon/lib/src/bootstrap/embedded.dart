@@ -44,23 +44,47 @@ class EmbeddedDaemonHandle implements DaemonHandle {
     required this.bearerToken,
     required this._isolate,
     required this._commands,
+    required this._exited,
   });
 
   /// The start public API member.
   static Future<EmbeddedDaemonHandle> start(
     DaemonConfig config, {
-    ModelProvider? provider,
+    ModelGateway? provider,
   }) async {
     final receive = ReceivePort();
-    final isolate = await Isolate.spawn(_embeddedDaemonMain, <Object?>[
-      receive.sendPort,
-      config.toIsolateMessage(),
-      provider,
-    ], debugName: 'tinyrack-tinest-daemon');
-    final message = await receive.first.timeout(const Duration(seconds: 30));
-    receive.close();
+    final exited = Completer<void>();
+    late final RawReceivePort exitPort;
+    exitPort = RawReceivePort((Object? _) {
+      exitPort.close();
+      if (!exited.isCompleted) exited.complete();
+    });
+    late final Isolate isolate;
+    try {
+      isolate = await Isolate.spawn(
+        _embeddedDaemonMain,
+        <Object?>[receive.sendPort, config.toIsolateMessage(), provider],
+        debugName: 'tinyrack-tinest-daemon',
+        onExit: exitPort.sendPort,
+      );
+    } on Object {
+      receive.close();
+      exitPort.close();
+      rethrow;
+    }
+    late final Object? message;
+    try {
+      message = await receive.first.timeout(const Duration(seconds: 30));
+    } on Object {
+      isolate.kill(priority: Isolate.immediate);
+      await exited.future.timeout(const Duration(seconds: 10));
+      rethrow;
+    } finally {
+      receive.close();
+    }
     if (message is! Map) {
       isolate.kill(priority: Isolate.immediate);
+      await exited.future.timeout(const Duration(seconds: 10));
       throw const EmbeddedDaemonStartupException(
         'Embedded daemon returned an invalid ready message.',
       );
@@ -68,6 +92,7 @@ class EmbeddedDaemonHandle implements DaemonHandle {
     final values = Map<Object?, Object?>.from(message);
     if (values['error'] case final String error) {
       isolate.kill(priority: Isolate.immediate);
+      await exited.future.timeout(const Duration(seconds: 10));
       final reasonName = values['errorReason'];
       final reason = EmbeddedDaemonStartupFailureReason.values
           .where((value) => value.name == reasonName)
@@ -83,6 +108,7 @@ class EmbeddedDaemonHandle implements DaemonHandle {
       bearerToken: values['token']! as String,
       isolate: isolate,
       commands: values['commands']! as SendPort,
+      exited: exited.future,
     );
   }
 
@@ -94,20 +120,36 @@ class EmbeddedDaemonHandle implements DaemonHandle {
   final String bearerToken;
   final Isolate _isolate;
   final SendPort _commands;
-  bool _stopped = false;
+  final Future<void> _exited;
+  Future<void>? _stopFuture;
 
   @override
   Future<void> get ready => Future<void>.value();
 
   @override
-  Future<void> stop() async {
-    if (_stopped) return;
-    _stopped = true;
+  Future<void> stop() => _stopFuture ??= _stop();
+
+  Future<void> _stop() async {
     final response = ReceivePort();
-    _commands.send(<Object?>['stop', response.sendPort]);
-    await response.first.timeout(const Duration(seconds: 10));
-    response.close();
-    _isolate.kill();
+    var acknowledged = false;
+    try {
+      _commands.send(<Object?>['stop', response.sendPort]);
+      await response.first.timeout(const Duration(seconds: 10));
+      acknowledged = true;
+    } finally {
+      response.close();
+      if (acknowledged) {
+        try {
+          await _exited.timeout(const Duration(seconds: 10));
+        } on TimeoutException {
+          _isolate.kill(priority: Isolate.immediate);
+          await _exited.timeout(const Duration(seconds: 10));
+        }
+      } else {
+        _isolate.kill(priority: Isolate.immediate);
+        await _exited.timeout(const Duration(seconds: 10));
+      }
+    }
   }
 }
 
@@ -116,7 +158,7 @@ Future<void> _embeddedDaemonMain(List<Object?> message) async {
   final config = DaemonConfig.fromIsolateMessage(
     Map<Object?, Object?>.from(message[1]! as Map),
   );
-  final provider = message[2] as ModelProvider?;
+  final provider = message[2] as ModelGateway?;
   try {
     final handle = await DaemonApplication.start(
       config,

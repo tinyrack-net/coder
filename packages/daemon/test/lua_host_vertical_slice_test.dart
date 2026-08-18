@@ -41,11 +41,9 @@ void main() {
       );
       addTearDown(service.close);
       final invoker = _ParallelEchoInvoker();
-      final context = ToolExecutionContext(
-        workspaceRoot: root.path,
+      final context = LuaCodeModeContext(
         cancellation: CancellationToken(),
-        callId: 'exec-parent',
-        nestedTools: invoker,
+        tools: invoker,
       );
       const request = LuaExecuteRequest(
         source: '''
@@ -158,12 +156,12 @@ Directory _repositoryRoot() {
   return directory;
 }
 
-final class _ParallelEchoInvoker implements NestedToolInvoker {
+final class _ParallelEchoInvoker implements LuaNestedToolInvoker {
   int _active = 0;
   int maximumActive = 0;
 
   @override
-  Future<ToolResult> invoke(
+  Future<LuaNestedToolResult> invoke(
     String name,
     Map<String, dynamic> arguments,
   ) async {
@@ -171,7 +169,7 @@ final class _ParallelEchoInvoker implements NestedToolInvoker {
     if (_active > maximumActive) maximumActive = _active;
     await Future<void>.delayed(const Duration(milliseconds: 20));
     _active -= 1;
-    return ToolResult(value: arguments['value']! as String);
+    return LuaNestedToolResult(value: arguments['value']! as String);
   }
 }
 

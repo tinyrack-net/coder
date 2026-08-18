@@ -40,7 +40,6 @@ void main() {
       () => sessions.status,
       () => sessions.activeTurnId,
       () => sessions.lastError,
-      () => sessions.mode,
       () => sessions.modelId,
       () => sessions.currentContextEpoch,
       () => sessions.contextTokensUsed,
@@ -62,20 +61,6 @@ void main() {
       () => turns.createdAt,
       () => turns.updatedAt,
       () => turns.primaryKey,
-    ]);
-
-    final goals = Goals();
-    _expectGeneratedDsl(<Object? Function()>[
-      () => goals.sessionId,
-      () => goals.goalId,
-      () => goals.objective,
-      () => goals.status,
-      () => goals.tokenBudget,
-      () => goals.tokensUsed,
-      () => goals.timeUsedSeconds,
-      () => goals.createdAt,
-      () => goals.updatedAt,
-      () => goals.primaryKey,
     ]);
 
     final attachments = Attachments();
@@ -184,7 +169,7 @@ void main() {
   });
 
   test(
-    'database testing constructor installs schema and foreign keys',
+    'database testing constructor installs schema and nullable session model',
     () async {
       final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
@@ -203,7 +188,9 @@ void main() {
       final modelColumn = sessionColumns.singleWhere(
         (row) => row.read<String>('name') == 'model_id',
       );
-      expect(modelColumn.read<int>('notnull'), 1);
+      // A null value means this session follows its Agent selection and then
+      // the daemon default; only an explicit chat override stores a model ID.
+      expect(modelColumn.read<int>('notnull'), 0);
     },
   );
 }

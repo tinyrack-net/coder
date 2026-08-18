@@ -2,7 +2,7 @@ import 'package:protocol/src/common/rpc_values.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsListProcedure =
     RpcProcedure<EmptyParamsDto, AgentDefinitionListResultDto>(
       name: 'agents.list',
@@ -12,7 +12,7 @@ final agentsListProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsGetProcedure =
     RpcProcedure<AgentDefinitionIdParamsDto, AgentDefinitionResultDto>(
       name: 'agents.get',
@@ -22,7 +22,7 @@ final agentsGetProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsCreateProcedure =
     RpcProcedure<AgentDefinitionCreateParamsDto, AgentDefinitionResultDto>(
       name: 'agents.create',
@@ -32,7 +32,7 @@ final agentsCreateProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsUpdateProcedure =
     RpcProcedure<AgentDefinitionUpdateParamsDto, AgentDefinitionResultDto>(
       name: 'agents.update',
@@ -42,7 +42,7 @@ final agentsUpdateProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsArchiveProcedure =
     RpcProcedure<AgentDefinitionIdParamsDto, EmptyResultDto>(
       name: 'agents.archive',
@@ -52,7 +52,7 @@ final agentsArchiveProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsResetProcedure =
     RpcProcedure<AgentDefinitionIdParamsDto, AgentDefinitionResultDto>(
       name: 'agents.reset',
@@ -62,7 +62,7 @@ final agentsResetProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsValidateProcedure =
     RpcProcedure<AgentDefinitionValidateParamsDto, AgentDefinitionResultDto>(
       name: 'agents.validate',
@@ -72,7 +72,7 @@ final agentsValidateProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsListToolsProcedure =
     RpcProcedure<AgentToolCatalogParamsDto, AgentToolCatalogResultDto>(
       name: 'agents.listTools',
@@ -82,7 +82,7 @@ final agentsListToolsProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsGetDefaultPermissionModeProcedure =
     RpcProcedure<EmptyParamsDto, PermissionSettingsDto>(
       name: 'agents.getDefaultPermissionMode',
@@ -92,7 +92,7 @@ final agentsGetDefaultPermissionModeProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsSetDefaultPermissionModeProcedure =
     RpcProcedure<PermissionSettingsDto, PermissionSettingsDto>(
       name: 'agents.setDefaultPermissionMode',
@@ -102,7 +102,7 @@ final agentsSetDefaultPermissionModeProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final agentsChangedNotification = RpcNotification<EmptyResultDto>(
   name: 'agents.changed',
   decode: EmptyResultDto.fromJson,

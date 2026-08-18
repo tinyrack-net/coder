@@ -26,9 +26,9 @@ LocalDaemonDirectories resolveIoLocalDaemonDirectories({
   LocalDaemonEnvironment environment = const IoLocalDaemonEnvironment(),
 }) => resolveLocalDaemonDirectories(environment: environment);
 
-/// Reads a daemon bearer token from the v4 owner-restricted secret document.
+/// Reads a daemon bearer token from the v5 owner-restricted secret document.
 Future<String?> readLocalDaemonBearerToken(String configDirectory) async {
-  final file = File(p.join(configDirectory, 'v4', 'secrets.json'));
+  final file = File(p.join(configDirectory, 'v5', 'secrets.json'));
   if (!file.existsSync()) return null;
   final decoded = jsonDecode(await file.readAsString());
   if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 2) {

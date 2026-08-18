@@ -3,13 +3,12 @@ import 'dart:ui' show Tristate;
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
-import 'package:app/src/features/conversation/presentation/chat_diff_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:flutter/gestures.dart';
@@ -27,15 +26,22 @@ void main() {
   final now = DateTime.utc(2026, 8, 3);
   var sequence = 0;
 
-  TimelineEventDto event(String type, Map<String, dynamic> data) =>
-      TimelineEventDto(
-        sessionId: 'session',
-        sequence: sequence += 1,
-        turnId: 'turn-1',
-        type: type,
-        data: data,
-        createdAt: now,
+  TimelineEventDto event(String type, Map<String, dynamic> data) {
+    final normalized = <String, dynamic>{...data};
+    if (type.startsWith('tool.') && !normalized.containsKey('presentation')) {
+      normalized['presentation'] = _testToolPresentation(
+        normalized['name'] as String? ?? '',
       );
+    }
+    return TimelineEventDto(
+      sessionId: 'session',
+      sequence: sequence += 1,
+      turnId: 'turn-1',
+      type: type,
+      data: normalized,
+      createdAt: now,
+    );
+  }
 
   setUp(() => sequence = 0);
 
@@ -143,7 +149,7 @@ void main() {
   );
 
   testWidgets(
-    'expanding a command shows its output without the JSON wrapper',
+    'a missing command UI snapshot falls back to a raw disclosure',
     (tester) async {
       final clipboard = <String>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -185,14 +191,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('All tests passed!'), findsOneWidget);
       expect(find.textContaining('flutter test'), findsWidgets);
-      expect(find.textContaining('exitCode'), findsNothing);
+      expect(find.textContaining('exitCode'), findsOneWidget);
 
       final copyAction = findAccessibleAction('복사').last;
       await tester.ensureVisible(copyAction);
       await tester.pumpAndSettle();
       await tester.tap(copyAction);
       await tester.pumpAndSettle();
-      expect(clipboard, <String>['All tests passed!\ndone']);
+      expect(
+        clipboard.single,
+        contains(r'"output": "All tests passed!\ndone"'),
+      );
 
       await tester.tap(find.text('명령 실행'));
       await tester.pumpAndSettle();
@@ -202,7 +211,7 @@ void main() {
   );
 
   testWidgets(
-    'patches expand into a colored diff',
+    'a missing patch UI snapshot falls back to immutable raw data',
     (tester) async {
       await pump(tester, <TimelineEventDto>[
         event('tool.requested', <String, dynamic>{
@@ -234,11 +243,10 @@ void main() {
 
       await tester.tap(find.text('파일 편집'));
       await tester.pumpAndSettle();
-      expect(find.byType(ChatDiffView), findsOneWidget);
-      expect(find.text('+new line'), findsOneWidget);
-      expect(find.text('+extra line'), findsOneWidget);
-      expect(find.text('-old line'), findsOneWidget);
-      expect(find.textContaining('changedFiles'), findsNothing);
+      expect(find.textContaining('+new line'), findsWidgets);
+      expect(find.textContaining('+extra line'), findsWidgets);
+      expect(find.textContaining('-old line'), findsWidgets);
+      expect(find.textContaining('changedFiles'), findsOneWidget);
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
@@ -261,7 +269,7 @@ void main() {
       await tester.pump();
 
       final tool = find.byType(ChatToolCard);
-      expect(find.text('명령 실행 실행(sleep 5)'), findsOneWidget);
+      expect(find.text('명령 실행 Execute command(sleep 5)'), findsOneWidget);
       expect(
         find.descendant(of: tool, matching: find.byType(ShaderMask)),
         findsOneWidget,
@@ -314,7 +322,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('명령 실행 실행(sleep 5)'), findsOneWidget);
+      expect(find.text('명령 실행 Execute command(sleep 5)'), findsOneWidget);
       expect(find.text('실행 중'), findsOneWidget);
       expect(find.byType(ShaderMask), findsNothing);
       expect(find.byType(TRSpinner), findsNothing);
@@ -431,6 +439,7 @@ void main() {
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
           'name': 'request_user_input',
+          'presentation': <String, dynamic>{'timeline': 'question'},
           'arguments': <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{
@@ -445,6 +454,7 @@ void main() {
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
           'name': 'request_user_input',
+          'presentation': <String, dynamic>{'timeline': 'question'},
           'output':
               '[{"questionId":"store","answer":"SQLite","isFreeForm":false}]',
         }),
@@ -561,7 +571,7 @@ void main() {
         '이미지를 보냈어요! 🖼️',
         findRichText: true,
       );
-      final toolText = find.text('파일 읽기 읽기(lib/main.dart)');
+      final toolText = find.text('파일 읽기 Read file(lib/main.dart)');
 
       expect(
         tester.getTopLeft(assistantIcon).dx,
@@ -580,40 +590,104 @@ void main() {
   );
 
   testWidgets(
-    'plan markers align with the first line of every step',
+    'a persisted plugin timeline snapshot renders without plugin source',
     (tester) async {
       await pump(tester, <TimelineEventDto>[
-        event('tool.requested', <String, dynamic>{
-          'callId': 'call-plan',
-          'name': 'update_plan',
-          'arguments': <String, dynamic>{
-            'plan': <Map<String, dynamic>>[
-              <String, dynamic>{'step': '첫 줄에 맞춰요', 'status': 'completed'},
-            ],
-            'explanation': '',
+        event('plugin.ui', <String, dynamic>{
+          'document': <String, dynamic>{
+            'id': 'historical-plan',
+            'pluginId': 'tinest.plan',
+            'revisionHash': 'removed-revision',
+            'slot': 'timeline',
+            'root': <String, dynamic>{
+              'type': 'section',
+              'title': '계획',
+              'children': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'type': 'text',
+                  'text': '첫 줄에 맞춰요',
+                },
+              ],
+            },
           },
         }),
-        event('turn.completed', <String, dynamic>{'toolRounds': 1}),
       ]);
       await tester.pump();
 
-      final plan = find.byType(ChatPlanCard);
-      final marker = find.descendant(
-        of: plan,
-        matching: find.byIcon(TinestIcons.success),
-      );
-      final label = find.descendant(
-        of: plan,
-        matching: find.text('첫 줄에 맞춰요'),
-      );
-      expect(marker, findsOneWidget);
-      expect(label, findsOneWidget);
-      expect(
-        tester.getRect(marker).center.dy,
-        closeTo(tester.getRect(label).center.dy, 0.5),
-      );
+      expect(find.byType(PluginUiDocumentView), findsOneWidget);
+      expect(find.text('계획'), findsOneWidget);
+      expect(find.text('첫 줄에 맞춰요'), findsOneWidget);
     },
     tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'built-in execution search and image tools render pinned Lua snapshots',
+    (tester) async {
+      Map<String, dynamic> document({
+        required String id,
+        required String pluginId,
+        required String title,
+        required String text,
+      }) => <String, dynamic>{
+        'id': id,
+        'pluginId': pluginId,
+        'revisionHash': '$pluginId-revision',
+        'slot': 'timeline',
+        'root': <String, dynamic>{
+          'type': 'section',
+          'title': title,
+          'children': <Map<String, dynamic>>[
+            <String, dynamic>{'type': 'text', 'text': text},
+          ],
+        },
+      };
+
+      await pump(tester, <TimelineEventDto>[
+        event('tool.completed', <String, dynamic>{
+          'callId': 'exec-call',
+          'name': 'exec_command',
+          'uiDocument': document(
+            id: 'exec-snapshot',
+            pluginId: 'tinest.terminal',
+            title: 'Command completed',
+            text: 'exit 0',
+          ),
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'search-call',
+          'name': 'search_text',
+          'uiDocument': document(
+            id: 'search-snapshot',
+            pluginId: 'tinest.files',
+            title: 'Search completed',
+            text: 'lib/main.dart:1',
+          ),
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'image-call',
+          'name': 'view_image',
+          'uiDocument': document(
+            id: 'image-snapshot',
+            pluginId: 'tinest.files',
+            title: 'Image loaded',
+            text: 'shot.png',
+          ),
+        }),
+      ]);
+      await tester.pump();
+
+      expect(find.byType(PluginUiDocumentView), findsNWidgets(3));
+      expect(find.byType(ChatToolCard), findsNothing);
+      expect(find.text('Command completed'), findsOneWidget);
+      expect(find.text('Search completed'), findsOneWidget);
+      expect(find.text('Image loaded'), findsOneWidget);
+    },
+    tags: const <String>[
+      'feature_test__tool_exec_session__widget',
+      'feature_test__tool_search__widget',
+      'feature_test__tool_image_context__widget',
+    ],
   );
 
   testWidgets(
@@ -701,6 +775,7 @@ void main() {
         event('tool.requested', <String, dynamic>{
           'callId': 'call-ask',
           'name': 'request_user_input',
+          'presentation': <String, dynamic>{'timeline': 'question'},
           'arguments': <String, dynamic>{
             'questions': <Map<String, dynamic>>[
               <String, dynamic>{
@@ -721,6 +796,7 @@ void main() {
         event('tool.completed', <String, dynamic>{
           'callId': 'call-ask',
           'name': 'request_user_input',
+          'presentation': <String, dynamic>{'timeline': 'question'},
           'output':
               '[{"questionId":"store","answer":"SQLite","isFreeForm":false},'
               '{"questionId":"ttl","answer":"A week","isFreeForm":true}]',
@@ -746,6 +822,7 @@ void main() {
       final started = event('tool.requested', <String, dynamic>{
         'callId': 'call-sleep',
         'name': 'clock__sleep',
+        'presentation': <String, dynamic>{'timeline': 'sleep'},
         'arguments': <String, dynamic>{
           'duration_ms': 4000,
           'reason': 'waiting for CI',
@@ -775,6 +852,12 @@ void main() {
         event('tool.completed', <String, dynamic>{
           'callId': 'call-sleep',
           'name': 'clock__sleep',
+          'presentation': <String, dynamic>{
+            'glyph': 'clock',
+            'label': 'Sleep',
+            'summary_argument': 'duration_ms',
+            'timeline': 'sleep',
+          },
           'output': '{"sleptMs":4000,"outcome":"elapsed"}',
         }),
       ]);
@@ -799,6 +882,12 @@ void main() {
         event('tool.requested', <String, dynamic>{
           'callId': 'call-sleep',
           'name': 'clock__sleep',
+          'presentation': <String, dynamic>{
+            'glyph': 'clock',
+            'label': 'Sleep',
+            'summary_argument': 'duration_ms',
+            'timeline': 'sleep',
+          },
           'arguments': <String, dynamic>{'duration_ms': 'soon'},
         }),
       ]);
@@ -809,62 +898,13 @@ void main() {
         findsNothing,
       );
       // It falls back to the ordinary tool row so the mistake stays visible.
-      expect(find.text('대기 슬립()'), findsOneWidget);
+      final disclosure = tester.widget<TRChatToolDisclosure>(
+        find.byType(TRChatToolDisclosure),
+      );
+      expect(disclosure.label, '대기');
+      expect(disclosure.secondaryLabel, 'Sleep(soon)');
     },
     tags: const <String>['feature_test__tool_clock__widget'],
-  );
-
-  testWidgets(
-    'a context reset draws a divider instead of a tool row',
-    (tester) async {
-      await pump(tester, <TimelineEventDto>[
-        event('tool.requested', <String, dynamic>{
-          'callId': 'call-reset',
-          'name': 'new_context',
-          'arguments': <String, dynamic>{},
-        }),
-        event('tool.completed', <String, dynamic>{
-          'callId': 'call-reset',
-          'name': 'new_context',
-          'output': '{"started":true}',
-        }),
-        event('context.reset', <String, dynamic>{'retained': 2}),
-      ]);
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const ValueKey<String>('chat-context-reset')),
-        findsOne,
-      );
-      // The divider already says it, so no tool row repeats it.
-      expect(find.text('NewContext()'), findsNothing);
-    },
-    tags: const <String>['feature_test__tool_context_budget__widget'],
-  );
-
-  testWidgets(
-    'a compaction draws its own divider',
-    (tester) async {
-      // It reads differently from a reset: the work above was carried forward
-      // as a summary rather than dropped.
-      await pump(tester, <TimelineEventDto>[
-        event('context.compacted', <String, dynamic>{
-          'retained': 3,
-          'trigger': 'auto',
-        }),
-      ]);
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const ValueKey<String>('chat-context-compacted')),
-        findsOne,
-      );
-      expect(
-        find.byKey(const ValueKey<String>('chat-context-reset')),
-        findsNothing,
-      );
-    },
-    tags: const <String>['feature_test__context_compaction__widget'],
   );
 
   testWidgets(
@@ -884,12 +924,8 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      expect(find.text('컨텍스트 관리'), findsOneWidget);
+      expect(find.byType(TRChatToolDisclosure), findsOneWidget);
       expect(find.text('거부됨'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey<String>('chat-context-reset')),
-        findsNothing,
-      );
     },
     tags: const <String>['feature_test__tool_context_budget__widget'],
   );
@@ -1507,6 +1543,48 @@ Closing paragraph.
     },
     tags: const <String>['feature_test__turn_execution__widget'],
   );
+}
+
+Map<String, dynamic> _testToolPresentation(String name) {
+  final glyph = switch (name) {
+    'read_file' || 'read_attachment' || 'attach_file' => 'read',
+    'list_directory' => 'list',
+    'search_text' || 'glob' => 'search',
+    'apply_patch' => 'edit',
+    'exec_command' || 'write_stdin' => 'run',
+    'spawn_agent' ||
+    'send_message' ||
+    'followup_task' ||
+    'wait_agent' ||
+    'interrupt_agent' ||
+    'list_agents' => 'delegate',
+    'request_user_input' => 'ask',
+    'list_mcp_resources' ||
+    'list_mcp_resource_templates' ||
+    'read_mcp_resource' => 'resource',
+    'list_skills' || 'skill' || 'skills__list' || 'skills__read' => 'resource',
+    'tool_search' => 'tools',
+    'clock__curr_time' || 'clock__sleep' => 'clock',
+    'get_context_remaining' || 'new_context' || 'compact_context' => 'context',
+    'view_image' => 'image',
+    _ => 'generic',
+  };
+  final label = switch (name) {
+    'read_file' => 'Read file',
+    'apply_patch' => 'Apply patch',
+    'exec_command' => 'Execute command',
+    'clock__sleep' => 'Sleep',
+    _ => name,
+  };
+  return <String, dynamic>{
+    'glyph': glyph,
+    'label': label,
+    if (name == 'read_file') 'summary_argument': 'path',
+    if (name == 'exec_command') 'summary_argument': 'command',
+    if (name == 'request_user_input') 'timeline': 'question',
+    if (name == 'clock__sleep') 'timeline': 'sleep',
+    if (name == 'attach_file') 'timeline': 'suppressed',
+  };
 }
 
 final class _RecordingUrlOpener implements ExternalUrlOpener {

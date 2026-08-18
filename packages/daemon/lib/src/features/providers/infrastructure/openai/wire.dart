@@ -64,7 +64,7 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   ];
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) =>
+  ModelGateway createProvider(ModelGatewayRequest request) =>
       adapterFor(request);
 
   /// Builds the adapter, letting a vendor add its own non-secret headers.
@@ -73,8 +73,8 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   /// `safety_identifier`: they are documented for platform.openai.com, and a
   /// narrower compatible surface answers 400 for a request carrying either,
   /// so the model capability alone cannot decide whether to send them.
-  ModelProvider adapterFor(
-    ModelProviderRequest request, {
+  ModelGateway adapterFor(
+    ModelGatewayRequest request, {
     Map<String, String> additionalHeaders = const <String, String>{},
     bool supportsPlatformRequestFields = true,
     bool supportsReasoningSummary = false,
@@ -115,7 +115,7 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   }
 
   /// Builds the concrete adapter of this wire protocol.
-  ModelProvider buildAdapter(OpenAIProviderConfig config, Dio? dio);
+  ModelGateway buildAdapter(OpenAIProviderConfig config, Dio? dio);
 
   @override
   Future<List<String>> discoverModels(
@@ -178,7 +178,7 @@ final class OpenAIResponsesWire extends OpenAICompatibleWire {
   String get label => 'OpenAI Responses';
 
   @override
-  ModelProvider buildAdapter(OpenAIProviderConfig config, Dio? dio) =>
+  ModelGateway buildAdapter(OpenAIProviderConfig config, Dio? dio) =>
       OpenAIResponsesProvider(config, dio: dio);
 }
 
@@ -194,6 +194,6 @@ final class OpenAIChatCompletionsWire extends OpenAICompatibleWire {
   String get label => 'OpenAI Chat Completions';
 
   @override
-  ModelProvider buildAdapter(OpenAIProviderConfig config, Dio? dio) =>
+  ModelGateway buildAdapter(OpenAIProviderConfig config, Dio? dio) =>
       OpenAIChatCompletionsProvider(config, dio: dio);
 }

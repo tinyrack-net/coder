@@ -148,6 +148,45 @@ void main() {
     expect(violations, isEmpty);
   });
 
+  test('feature verifier discovers methods on the v5 plugin API', () {
+    const markerPrefix =
+        'feature_'
+        'test__';
+    final fixture = _fixture(
+      api: '''
+abstract interface class PluginsApi {
+  Future<void> reloadPlugin();
+}
+abstract interface class TinestApi {
+  PluginsApi get plugins;
+}
+''',
+      routes: '',
+      tests:
+          "test('reloads', () {}, tags: <String>[ "
+          "'${markerPrefix}plugin_management__contract']);",
+    );
+    addTearDown(() => fixture.delete(recursive: true));
+
+    final violations = FeatureVerifier(
+      fixture.path,
+      contracts: const <FeatureContract>[
+        FeatureContract(
+          id: 'plugin.management',
+          description: 'Reloads a plugin.',
+          apiMethods: <String>['plugins.reloadPlugin'],
+          requiredLayers: <FeatureVerificationLayer>{
+            FeatureVerificationLayer.contract,
+          },
+        ),
+      ],
+      apiPath: 'lib/api.dart',
+      routePath: 'lib/app.dart',
+    ).verify();
+
+    expect(violations, isEmpty);
+  });
+
   test('feature verifier accepts executable typed E2E scenarios', () {
     const markerPrefix =
         'feature_'

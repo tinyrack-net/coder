@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_config.dart';
-import 'package:daemon/src/features/mcp/infrastructure/mcp_tools.dart';
+import 'package:daemon/src/features/mcp/infrastructure/mcp_ids.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:daemon/src/shared/ports/request_cancellation.dart';
 import 'package:protocol/protocol.dart';
 
 /// Schedules a callback, so backoff is testable without real time passing.
@@ -27,6 +27,33 @@ final class McpServerUnavailable implements Exception {
 
   @override
   String toString() => 'MCP server "$server" is not connected.';
+}
+
+/// A server is ready, but it does not publish the requested tool.
+final class McpToolUnavailable implements Exception {
+  /// Creates an unavailable-tool diagnostic.
+  const McpToolUnavailable({required this.server, required this.tool});
+
+  /// Configured server id.
+  final String server;
+
+  /// External tool name.
+  final String tool;
+
+  @override
+  String toString() => 'MCP server "$server" does not publish tool "$tool".';
+}
+
+/// One raw external tool descriptor paired with its publishing server.
+final class McpServerTool {
+  /// Creates a raw catalog entry.
+  const McpServerTool({required this.server, required this.descriptor});
+
+  /// Configured id of the publishing server.
+  final String server;
+
+  /// Descriptor published by that server without Tinest model policy.
+  final McpToolDescriptor descriptor;
 }
 
 /// One resource paired with the server that publishes it.
@@ -56,12 +83,12 @@ final class McpServerResourceTemplate {
   final McpResourceTemplateDescriptor descriptor;
 }
 
-/// Connects to configured MCP servers and publishes their tools.
+/// Connects to configured MCP servers and exposes their raw protocol data.
 ///
 /// Connections are established in the background and never block a turn: only
 /// servers that are already ready contribute tools, and a server that cannot
 /// start degrades to a diagnostic rather than failing the daemon or the turn.
-final class McpRuntime implements AgentToolCatalog {
+final class McpRuntime {
   /// Creates a service reading its servers from the daemon configuration.
   McpRuntime({
     required this._store,
@@ -102,19 +129,19 @@ final class McpRuntime implements AgentToolCatalog {
 
   bool _closed = false;
 
-  @override
+  /// Emits whenever raw catalogs or connection states may have changed.
   Stream<void> get changes => _changes.stream;
 
-  @override
-  List<AgentToolDefinitionDto> tools({String? workspaceRoot}) =>
-      <AgentToolDefinitionDto>[
-        for (final connection in _user.values) ...connection.toolDefinitions,
-        if (workspaceRoot != null)
-          for (final connection
-              in _projects[workspaceRoot]?.connections.values ??
-                  const <String, _Connection>{}.values)
-            ...connection.toolDefinitions,
-      ];
+  /// Raw tool descriptors visible to [workspaceRoot], sorted by server id.
+  List<McpServerTool> availableTools({String? workspaceRoot}) {
+    final visible = _visibleConnections(workspaceRoot: workspaceRoot);
+    final serverIds = visible.keys.toList()..sort();
+    return <McpServerTool>[
+      for (final server in serverIds)
+        for (final descriptor in visible[server]!.readyTools)
+          McpServerTool(server: server, descriptor: descriptor),
+    ];
+  }
 
   /// Every server visible to [workspaceRoot], user scope first.
   ///
@@ -133,9 +160,8 @@ final class McpRuntime implements AgentToolCatalog {
 
   /// Ready servers visible to [workspaceRoot], user scope winning by id.
   ///
-  /// A project server cannot shadow a user server of the same id, matching
-  /// how [tool] resolves, so a repository cannot redirect a name the user
-  /// configured for themselves.
+  /// A project server cannot shadow a user server of the same id, so a
+  /// repository cannot redirect a name the user configured for themselves.
   Map<String, _Connection> _visibleConnections({String? workspaceRoot}) {
     final visible = <String, _Connection>{};
     if (workspaceRoot != null) {
@@ -250,24 +276,25 @@ final class McpRuntime implements AgentToolCatalog {
   /// Why the project configuration for [workspaceRoot] could not be read.
   String? projectError(String workspaceRoot) => _projects[workspaceRoot]?.error;
 
-  /// Returns the tool behind [id], or null when its server is not ready.
-  ///
-  /// A user server always wins over a project server of the same id, so a
-  /// repository cannot redirect a tool the user configured for themselves.
-  AgentTool? tool(
-    String id, {
+  /// Invokes one raw external MCP tool on a visible ready server.
+  Future<McpCallToolResult> invokeTool({
+    required String server,
+    required String tool,
+    required Map<String, dynamic> arguments,
     String? workspaceRoot,
-    ToolExposure exposure = ToolExposure.advertised,
-  }) {
-    final parsed = parseMcpToolId(id);
-    if (parsed == null) return null;
-    final user = _user[parsed.server]?.toolNamed(id, exposure);
-    if (user != null) return user;
-    if (workspaceRoot == null) return null;
-    return _projects[workspaceRoot]?.connections[parsed.server]?.toolNamed(
-      id,
-      exposure,
-    );
+    RequestCancellation? cancellation,
+  }) async {
+    final connection = _visibleConnections(
+      workspaceRoot: workspaceRoot,
+    )[server];
+    final client = connection?.status == McpServerStatus.ready
+        ? connection?.client
+        : null;
+    if (client == null) throw McpServerUnavailable(server);
+    if (!client.tools.any((descriptor) => descriptor.name == tool)) {
+      throw McpToolUnavailable(server: server, tool: tool);
+    }
+    return client.callTool(tool, arguments, cancellation: cancellation);
   }
 
   /// Connects the servers declared by [workspaceRoot], if any.
@@ -603,23 +630,6 @@ final class _Connection {
   int attempt = 0;
   bool disposed = false;
 
-  List<AgentToolDefinitionDto> get toolDefinitions {
-    final connected = client;
-    if (status != McpServerStatus.ready || connected == null) {
-      return const <AgentToolDefinitionDto>[];
-    }
-    return <AgentToolDefinitionDto>[
-      for (final descriptor in connected.tools)
-        AgentToolDefinitionDto(
-          id: mcpToolId(config.id, descriptor.name),
-          name: mcpToolId(config.id, descriptor.name),
-          description: descriptor.description ?? descriptor.name,
-          risk: ToolRisk.dangerous,
-          group: ToolGroup.mcp,
-        ),
-    ];
-  }
-
   McpServerStateDto get state => McpServerStateDto(
     config: config,
     status: status,
@@ -678,20 +688,10 @@ final class _Connection {
       ? client?.resourceTemplates ?? const <McpResourceTemplateDescriptor>[]
       : const <McpResourceTemplateDescriptor>[];
 
-  AgentTool? toolNamed(String id, ToolExposure exposure) {
-    final connected = client;
-    if (status != McpServerStatus.ready || connected == null) return null;
-    for (final descriptor in connected.tools) {
-      if (mcpToolId(config.id, descriptor.name) != id) continue;
-      return McpAgentTool(
-        serverId: config.id,
-        descriptor: descriptor,
-        lookup: (_) => client,
-        exposure: exposure,
-      );
-    }
-    return null;
-  }
+  /// Tools this server published, empty until it is ready.
+  List<McpToolDescriptor> get readyTools => status == McpServerStatus.ready
+      ? client?.tools ?? const <McpToolDescriptor>[]
+      : const <McpToolDescriptor>[];
 
   void start() {
     if (shadowed || !config.enabled) {

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
-import 'package:app/src/features/conversation/application/chat_tool_presentation.dart';
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/presentation/chat_code_block.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,12 +121,9 @@ class _ApprovalCardState extends ConsumerState<ApprovalCard> {
         maxLines: 12,
       );
     }
-    // A tool that has a richer preview than its own arguments supplies it;
-    // everything else reads as the text the daemon sent.
-    final body = presenterFor(approval.toolName).approvalBody;
-    return body == null
-        ? ChatCodeBlock(text: preview, maxLines: 12)
-        : body(context, preview);
+    // Permission chrome is host-owned. Plugins may supply inert preview text,
+    // but they cannot select executable widgets or bypass this confirmation.
+    return ChatCodeBlock(text: preview, maxLines: 12);
   }
 
   void _resolve({required bool approved}) => unawaited(() async {

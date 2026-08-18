@@ -1174,6 +1174,12 @@ abstract class AppLocalizations {
   /// **'The daemon hit an unexpected problem. Copy the details below when reporting it.'**
   String get errorInternalDaemon;
 
+  /// A plugin UI render or action request was safely rejected by the host.
+  ///
+  /// In en, this message translates to:
+  /// **'The plugin interface request was rejected.'**
+  String get errorPluginUiRejected;
+
   /// A session setting such as the mode or the model was changed while a turn was still streaming.
   ///
   /// In en, this message translates to:
@@ -1930,6 +1936,18 @@ abstract class AppLocalizations {
   /// **'Model'**
   String get agentSettingsModelHeading;
 
+  /// Agent model policy that lets each session select its concrete model.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the session model'**
+  String get agentSettingsSessionModel;
+
+  /// Agent model policy that pins one concrete model for every session.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin a model'**
+  String get agentSettingsPinnedModel;
+
   /// Text field label for a pinned provider connection.
   ///
   /// In en, this message translates to:
@@ -1941,6 +1959,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model ID'**
   String get agentSettingsModelId;
+
+  /// Section heading for the Agent-owned plugin harness.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent harness'**
+  String get agentSettingsHarnessHeading;
+
+  /// Explains the Agent-level harness configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'The Agent owns exactly one driver, ordered extensions, and its model-visible tools.'**
+  String get agentSettingsHarnessDescription;
+
+  /// Select label for the Agent's single model-loop driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get agentSettingsDriver;
+
+  /// Shown when no plugin contributes a driver.
+  ///
+  /// In en, this message translates to:
+  /// **'No plugin driver is installed.'**
+  String get agentSettingsNoDrivers;
+
+  /// Section heading for ordered Agent lifecycle extensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered extensions'**
+  String get agentSettingsExtensions;
+
+  /// Explains that extension order is significant.
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions run serially in this order.'**
+  String get agentSettingsExtensionsDescription;
+
+  /// Accessible label for moving an extension earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Move earlier'**
+  String get agentSettingsMoveUp;
+
+  /// Accessible label for moving an extension later.
+  ///
+  /// In en, this message translates to:
+  /// **'Move later'**
+  String get agentSettingsMoveDown;
+
+  /// Section heading for individually selectable plugin tools.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin tools'**
+  String get agentSettingsPluginTools;
+
+  /// Explains Agent-level tool selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Every model-visible tool can be switched independently for this Agent.'**
+  String get agentSettingsPluginToolsDescription;
+
+  /// Section heading for per-plugin JSON settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin settings'**
+  String get agentSettingsPluginSettings;
+
+  /// Explains where plugin settings are stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings are stored in this Agent definition as JSON objects.'**
+  String get agentSettingsPluginSettingsDescription;
+
+  /// Explains how to remove one pluginSettings map entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the field to remove an existing settings entry.'**
+  String get agentSettingsPluginSettingsRemove;
+
+  /// Label for one plugin's JSON settings field.
+  ///
+  /// In en, this message translates to:
+  /// **'{plugin} settings (JSON)'**
+  String agentSettingsPluginSettingsLabel(String plugin);
+
+  /// Section heading for Agent-scoped plugin grants.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin capabilities'**
+  String get agentSettingsCapabilities;
+
+  /// Explains capability grant storage and scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Grants are kept in daemon state for this Agent, not in the editable Agent file.'**
+  String get agentSettingsCapabilitiesDescription;
+
+  /// Empty state for Agent plugin grants.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected plugins request no capabilities.'**
+  String get agentSettingsNoCapabilities;
+
+  /// Title for computed Agent harness validation messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Harness diagnostics'**
+  String get agentSettingsHarnessDiagnostics;
+
+  /// Diagnostic for a missing driver, extension, tool, or plugin.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured {kind} is unavailable: {id}'**
+  String agentSettingsHarnessMissing(String kind, String id);
+
+  /// No description provided for @agentSettingsHarnessKindDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'driver'**
+  String get agentSettingsHarnessKindDriver;
+
+  /// No description provided for @agentSettingsHarnessKindExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'extension'**
+  String get agentSettingsHarnessKindExtension;
+
+  /// No description provided for @agentSettingsHarnessKindTool.
+  ///
+  /// In en, this message translates to:
+  /// **'tool'**
+  String get agentSettingsHarnessKindTool;
+
+  /// No description provided for @agentSettingsHarnessKindPlugin.
+  ///
+  /// In en, this message translates to:
+  /// **'plugin'**
+  String get agentSettingsHarnessKindPlugin;
+
+  /// No description provided for @agentSettingsHarnessKindDependency.
+  ///
+  /// In en, this message translates to:
+  /// **'dependency'**
+  String get agentSettingsHarnessKindDependency;
+
+  /// No description provided for @agentSettingsHarnessKindModel.
+  ///
+  /// In en, this message translates to:
+  /// **'model'**
+  String get agentSettingsHarnessKindModel;
+
+  /// Diagnostic for a driver and model capability mismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected model does not satisfy driver capability: {capability}'**
+  String agentSettingsHarnessModelMismatch(String capability);
+
+  /// Diagnostic for malformed plugin JSON settings.
+  ///
+  /// In en, this message translates to:
+  /// **'{plugin} settings must be a valid JSON object.'**
+  String agentSettingsHarnessInvalidSettings(String plugin);
+
+  /// Status while the Agent plugin catalog loads.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plugin contributions…'**
+  String get agentSettingsPluginsLoading;
 
   /// Section heading for reasoning and permission.
   ///
@@ -2013,12 +2199,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{enabled} of {total} on'**
   String agentSettingsToolGroupSummary(int enabled, int total);
-
-  /// Subtitle of a group whose tools every agent gets.
-  ///
-  /// In en, this message translates to:
-  /// **'Always available'**
-  String get agentSettingsToolGroupAlwaysOn;
 
   /// Heading of the subagent list.
   ///
@@ -2506,36 +2686,6 @@ abstract class AppLocalizations {
   /// **'No results.'**
   String get modelPickerNoResults;
 
-  /// Composer mode that only drafts a plan.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan'**
-  String get composerPlan;
-
-  /// Composer mode that carries the request out.
-  ///
-  /// In en, this message translates to:
-  /// **'Run'**
-  String get composerRun;
-
-  /// Label of the composer collaboration mode setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Mode'**
-  String get composerMode;
-
-  /// Tooltip of the plan composer mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Only drafts a plan. Shift+Tab to switch'**
-  String get composerPlanTooltip;
-
-  /// Tooltip of the run composer mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Carries the request out directly. Shift+Tab to switch'**
-  String get composerRunTooltip;
-
   /// Tooltip of the agent selector.
   ///
   /// In en, this message translates to:
@@ -2884,12 +3034,6 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get chatApprovalAllow;
 
-  /// Title of the plan card.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan'**
-  String get chatPlanTitle;
-
   /// Prompt token count in the usage summary line.
   ///
   /// In en, this message translates to:
@@ -2926,12 +3070,6 @@ abstract class AppLocalizations {
   /// **'{rate} tok/s'**
   String usageThroughput(double rate);
 
-  /// Result line while a pseudo-terminal session is still running.
-  ///
-  /// In en, this message translates to:
-  /// **'running · {lines} lines'**
-  String toolExecRunning(int lines);
-
   /// A free-form answer the user typed instead of choosing.
   ///
   /// In en, this message translates to:
@@ -2955,12 +3093,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waited {seconds}s'**
   String chatSleepDone(int seconds);
-
-  /// Result line of a tool_search call.
-  ///
-  /// In en, this message translates to:
-  /// **'{found} loaded · {remaining} still hidden'**
-  String toolSearchFound(int found, int remaining);
 
   /// Header of the collapsible subagent track.
   ///
@@ -3022,30 +3154,6 @@ abstract class AppLocalizations {
   /// **'{count} tools are available through search'**
   String chatDeferredTools(int count);
 
-  /// Result line of a list_mcp_resources tool call.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} resources'**
-  String toolMcpResources(int count);
-
-  /// Result line of a list_mcp_resource_templates tool call.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} templates'**
-  String toolMcpResourceTemplates(int count);
-
-  /// Result line of a read_mcp_resource tool call.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} blocks'**
-  String toolMcpResourceRead(int count);
-
-  /// Result line of a view_image tool call.
-  ///
-  /// In en, this message translates to:
-  /// **'{bytes} bytes viewed'**
-  String toolImageLoaded(int bytes);
-
   /// Button that submits answers to the agent's questions.
   ///
   /// In en, this message translates to:
@@ -3082,60 +3190,6 @@ abstract class AppLocalizations {
   /// **'Type your answer'**
   String get chatQuestionOtherPlaceholder;
 
-  /// Screen-reader status of a plan step that has not started.
-  ///
-  /// In en, this message translates to:
-  /// **'not started'**
-  String get chatPlanStepPending;
-
-  /// Screen-reader status of the plan step being worked on.
-  ///
-  /// In en, this message translates to:
-  /// **'in progress'**
-  String get chatPlanStepInProgress;
-
-  /// Screen-reader status of a finished plan step.
-  ///
-  /// In en, this message translates to:
-  /// **'completed'**
-  String get chatPlanStepCompleted;
-
-  /// Asks how to act on a proposed plan.
-  ///
-  /// In en, this message translates to:
-  /// **'Proceed with this plan?'**
-  String get chatPlanPrompt;
-
-  /// Stays in plan mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep planning'**
-  String get chatPlanKeepPlanning;
-
-  /// Implements the plan in a fresh session.
-  ///
-  /// In en, this message translates to:
-  /// **'Run in a new session'**
-  String get chatPlanRunInNewSession;
-
-  /// Implements the plan in the current session.
-  ///
-  /// In en, this message translates to:
-  /// **'Run the plan'**
-  String get chatPlanRun;
-
-  /// Prompt sent to the agent when the user accepts a plan in place. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language.
-  ///
-  /// In en, this message translates to:
-  /// **'Carry out this plan.'**
-  String get planImplementPrompt;
-
-  /// Preamble prepended to a plan handed to a brand-new session. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language.
-  ///
-  /// In en, this message translates to:
-  /// **'A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.'**
-  String get planFreshSessionPreamble;
-
   /// Result line of a denied tool call.
   ///
   /// In en, this message translates to:
@@ -3147,324 +3201,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed'**
   String get toolFailed;
-
-  /// Read result for a file with no content.
-  ///
-  /// In en, this message translates to:
-  /// **'Empty file'**
-  String get toolEmptyFile;
-
-  /// Read result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'Read {count} lines'**
-  String toolReadLines(int count);
-
-  /// Generic list result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} items'**
-  String toolListItems(int count);
-
-  /// Directory listing result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{directories} directories · {files} files'**
-  String toolListEntries(int directories, int files);
-
-  /// Search result with nothing found.
-  ///
-  /// In en, this message translates to:
-  /// **'No matches'**
-  String get toolNoMatches;
-
-  /// Search result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{matches} matches in {files} files'**
-  String toolMatches(int matches, int files);
-
-  /// Search result summary when the result cap was reached.
-  ///
-  /// In en, this message translates to:
-  /// **'{matches}+ matches in {files} files'**
-  String toolMatchesTruncated(int matches, int files);
-
-  /// File-name search result with nothing found.
-  ///
-  /// In en, this message translates to:
-  /// **'No files'**
-  String get toolNoPaths;
-
-  /// File-name search result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} files'**
-  String toolPaths(int count);
-
-  /// File-name search summary when the result cap was reached.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}+ files'**
-  String toolPathsTruncated(int count);
-
-  /// Result line after a workspace file is attached.
-  ///
-  /// In en, this message translates to:
-  /// **'Attached {name}'**
-  String toolAttached(String name);
-
-  /// Result line after a skill's instructions are loaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Loaded {name}'**
-  String toolSkillLoaded(String name);
-
-  /// Skill listing result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} skills'**
-  String toolSkills(int count);
-
-  /// Skill listing summary when a page boundary was reached.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}+ skills'**
-  String toolSkillsTruncated(int count);
-
-  /// Edit call summary across several files.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit({count} files)'**
-  String toolEditFiles(int count);
-
-  /// Patch result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'+{added} -{removed} · {files} files'**
-  String toolPatchSummary(int added, int removed, int files);
-
-  /// Shell command result summary.
-  ///
-  /// In en, this message translates to:
-  /// **'exit {exitCode} · {lines} lines'**
-  String toolCommandResult(int exitCode, int lines);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get toolTitleEdit;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit({path})'**
-  String toolTitleEditPath(String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Attach({path})'**
-  String toolTitleAttach(String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Attachment({id})'**
-  String toolTitleAttachment(String id);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Now()'**
-  String get toolTitleNow;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Sleep({milliseconds}ms)'**
-  String toolTitleSleep(int milliseconds);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Sleep()'**
-  String get toolTitleSleepUnknown;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Spawn({task})'**
-  String toolTitleSpawn(String task);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Send({target})'**
-  String toolTitleSend(String target);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Followup({target})'**
-  String toolTitleFollowup(String target);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Wait()'**
-  String get toolTitleWait;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Interrupt({target})'**
-  String toolTitleInterrupt(String target);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Agents()'**
-  String get toolTitleAgents;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Context()'**
-  String get toolTitleContext;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'NewContext()'**
-  String get toolTitleNewContext;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Bash({command})'**
-  String toolTitleBash(String command);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Stdin({session})'**
-  String toolTitleStdin(String session);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Stdin({session} ← {chars})'**
-  String toolTitleStdinChars(String session, String chars);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Glob({pattern})'**
-  String toolTitleGlob(String pattern);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Glob({pattern} in {path})'**
-  String toolTitleGlobIn(String pattern, String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'List({path})'**
-  String toolTitleList(String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Resources({server})'**
-  String toolTitleMcpResources(String server);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'ResourceTemplates({server})'**
-  String toolTitleMcpResourceTemplates(String server);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Resource({server}: {uri})'**
-  String toolTitleMcpResource(String server, String uri);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Read({path})'**
-  String toolTitleRead(String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Read({path} @{offset}+{limit})'**
-  String toolTitleReadRange(String path, String offset, String limit);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask({headers})'**
-  String toolTitleAsk(String headers);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Search({query})'**
-  String toolTitleSearch(String query);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Search({query} in {path})'**
-  String toolTitleSearchIn(String query, String path);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Skills()'**
-  String get toolTitleSkills;
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Skill({name})'**
-  String toolTitleSkill(String name);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Skill({name}:{resource})'**
-  String toolTitleSkillResource(String name, String resource);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Tools({query})'**
-  String toolTitleToolSearch(String query);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan({count})'**
-  String toolTitlePlan(int count);
-
-  /// Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.
-  ///
-  /// In en, this message translates to:
-  /// **'View({path})'**
-  String toolTitleView(String path);
-
-  /// Stands in for the server argument of an MCP call that lists every server at once.
-  ///
-  /// In en, this message translates to:
-  /// **'all'**
-  String get toolArgumentAllServers;
 
   /// Title of the remote directory browser.
   ///
@@ -3940,48 +3676,6 @@ abstract class AppLocalizations {
   /// **'Value'**
   String get mcpSettingsSecretValue;
 
-  /// Subtitle marking a tool every agent gets.
-  ///
-  /// In en, this message translates to:
-  /// **'Always available'**
-  String get agentSettingsToolAlwaysOn;
-
-  /// Result line of a get_context_remaining call.
-  ///
-  /// In en, this message translates to:
-  /// **'{remaining} of {window} tokens left'**
-  String toolContextRemaining(int remaining, int window);
-
-  /// Result line when the provider never advertised a window.
-  ///
-  /// In en, this message translates to:
-  /// **'{used} tokens used'**
-  String toolContextRemainingUnknown(int used);
-
-  /// Divider marking where the model's history was discarded.
-  ///
-  /// In en, this message translates to:
-  /// **'New context window'**
-  String get chatContextReset;
-
-  /// Divider marking where the model's history was replaced by a summary.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation summarized'**
-  String get chatContextCompacted;
-
-  /// Name of the composer command that summarizes the conversation.
-  ///
-  /// In en, this message translates to:
-  /// **'compact'**
-  String get composerCommandCompactLabel;
-
-  /// Description of the compact command.
-  ///
-  /// In en, this message translates to:
-  /// **'Summarize the conversation to free the context window.'**
-  String get composerCommandCompactDescription;
-
   /// Label of the composer context budget meter.
   ///
   /// In en, this message translates to:
@@ -4150,18 +3844,6 @@ abstract class AppLocalizations {
   /// **'Start a new session.'**
   String get composerCommandNewDescription;
 
-  /// Name of the composer command that switches mode.
-  ///
-  /// In en, this message translates to:
-  /// **'mode'**
-  String get composerCommandModeLabel;
-
-  /// Description of the mode command.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch between planning and working.'**
-  String get composerCommandModeDescription;
-
   /// Name of the composer command that opens agent settings.
   ///
   /// In en, this message translates to:
@@ -4197,150 +3879,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'List the available commands.'**
   String get composerCommandHelpDescription;
-
-  /// No description provided for @composerCommandGoalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'goal'**
-  String get composerCommandGoalLabel;
-
-  /// No description provided for @composerCommandGoalDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Create or manage persistent session work.'**
-  String get composerCommandGoalDescription;
-
-  /// No description provided for @goalStatusActive.
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get goalStatusActive;
-
-  /// No description provided for @goalStatusPaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get goalStatusPaused;
-
-  /// No description provided for @goalStatusBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked'**
-  String get goalStatusBlocked;
-
-  /// No description provided for @goalStatusUsageLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Usage limited'**
-  String get goalStatusUsageLimited;
-
-  /// No description provided for @goalStatusBudgetLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Budget reached'**
-  String get goalStatusBudgetLimited;
-
-  /// No description provided for @goalStatusComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete'**
-  String get goalStatusComplete;
-
-  /// No description provided for @goalPlanHold.
-  ///
-  /// In en, this message translates to:
-  /// **'Resumes in Run mode'**
-  String get goalPlanHold;
-
-  /// No description provided for @goalElapsed.
-  ///
-  /// In en, this message translates to:
-  /// **'{seconds}s elapsed'**
-  String goalElapsed(int seconds);
-
-  /// No description provided for @goalTokenUsage.
-  ///
-  /// In en, this message translates to:
-  /// **'{used} / {budget} tokens'**
-  String goalTokenUsage(int used, int budget);
-
-  /// No description provided for @goalPause.
-  ///
-  /// In en, this message translates to:
-  /// **'Pause goal'**
-  String get goalPause;
-
-  /// No description provided for @goalResume.
-  ///
-  /// In en, this message translates to:
-  /// **'Resume goal'**
-  String get goalResume;
-
-  /// No description provided for @goalEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit goal'**
-  String get goalEdit;
-
-  /// No description provided for @goalClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear goal'**
-  String get goalClear;
-
-  /// No description provided for @goalDialogTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Session goal'**
-  String get goalDialogTitle;
-
-  /// No description provided for @goalObjectiveLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Objective'**
-  String get goalObjectiveLabel;
-
-  /// No description provided for @goalObjectiveRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter 1–4,000 characters.'**
-  String get goalObjectiveRequired;
-
-  /// No description provided for @goalBudgetLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Token budget (optional)'**
-  String get goalBudgetLabel;
-
-  /// No description provided for @goalBudgetInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a positive token budget.'**
-  String get goalBudgetInvalid;
-
-  /// No description provided for @goalStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Start goal'**
-  String get goalStart;
-
-  /// No description provided for @goalReplaceTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace current goal?'**
-  String get goalReplaceTitle;
-
-  /// No description provided for @goalReplaceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'This starts a new goal and resets recorded usage.'**
-  String get goalReplaceDescription;
-
-  /// No description provided for @goalReplaceAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace goal'**
-  String get goalReplaceAction;
 
   /// Accessible name of the composer suggestion list.
   ///
@@ -4389,12 +3927,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Coordinate agents'**
   String get chatToolActionDelegate;
-
-  /// No description provided for @chatToolActionPlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Update plan'**
-  String get chatToolActionPlan;
 
   /// No description provided for @chatToolActionAsk.
   ///
@@ -4485,6 +4017,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Result'**
   String get chatToolDetailsResult;
+
+  /// No description provided for @settingsCategoryPlugin.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugins'**
+  String get settingsCategoryPlugin;
+
+  /// No description provided for @pluginSettingsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugins'**
+  String get pluginSettingsHeading;
+
+  /// No description provided for @pluginSettingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} plugins'**
+  String pluginSettingsCount(int count);
+
+  /// No description provided for @pluginSettingsSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a plugin.'**
+  String get pluginSettingsSelect;
+
+  /// No description provided for @pluginSettingsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Create plugin'**
+  String get pluginSettingsAdd;
+
+  /// No description provided for @pluginSettingsAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create plugin starter'**
+  String get pluginSettingsAddTitle;
+
+  /// No description provided for @pluginSettingsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No plugins are installed.'**
+  String get pluginSettingsEmpty;
+
+  /// No description provided for @pluginSettingsSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get pluginSettingsSource;
+
+  /// No description provided for @pluginSettingsSourceBuiltIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Built in'**
+  String get pluginSettingsSourceBuiltIn;
+
+  /// No description provided for @pluginSettingsSourceUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get pluginSettingsSourceUser;
+
+  /// No description provided for @pluginSettingsSourcePath.
+  ///
+  /// In en, this message translates to:
+  /// **'Source path'**
+  String get pluginSettingsSourcePath;
+
+  /// No description provided for @pluginSettingsApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin API'**
+  String get pluginSettingsApi;
+
+  /// No description provided for @pluginSettingsApiValue.
+  ///
+  /// In en, this message translates to:
+  /// **'API {api}'**
+  String pluginSettingsApiValue(int api);
+
+  /// No description provided for @pluginSettingsRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Active revision'**
+  String get pluginSettingsRevision;
+
+  /// No description provided for @pluginSettingsRevisionMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No active revision'**
+  String get pluginSettingsRevisionMissing;
+
+  /// No description provided for @pluginSettingsStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Using last known good revision'**
+  String get pluginSettingsStale;
+
+  /// No description provided for @pluginSettingsAuthoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Lua development environment'**
+  String get pluginSettingsAuthoring;
+
+  /// No description provided for @pluginSettingsAuthoringStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Authoring status'**
+  String get pluginSettingsAuthoringStatus;
+
+  /// No description provided for @pluginSettingsAuthoringSynchronized.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronized'**
+  String get pluginSettingsAuthoringSynchronized;
+
+  /// No description provided for @pluginSettingsAuthoringNeedsSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronization required'**
+  String get pluginSettingsAuthoringNeedsSync;
+
+  /// No description provided for @pluginSettingsSdkAbi.
+  ///
+  /// In en, this message translates to:
+  /// **'SDK ABI'**
+  String get pluginSettingsSdkAbi;
+
+  /// No description provided for @pluginSettingsLuaRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lua runtime'**
+  String get pluginSettingsLuaRuntime;
+
+  /// No description provided for @pluginSettingsLuaLs.
+  ///
+  /// In en, this message translates to:
+  /// **'Lua Language Server'**
+  String get pluginSettingsLuaLs;
+
+  /// No description provided for @pluginSettingsLuaConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'LuaLS configuration'**
+  String get pluginSettingsLuaConfig;
+
+  /// No description provided for @pluginSettingsSdkSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronize SDK'**
+  String get pluginSettingsSdkSync;
+
+  /// No description provided for @pluginSettingsCapabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested capabilities'**
+  String get pluginSettingsCapabilities;
+
+  /// No description provided for @pluginSettingsCapabilitiesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No host capabilities requested.'**
+  String get pluginSettingsCapabilitiesNone;
+
+  /// No description provided for @pluginSettingsAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Referencing agents'**
+  String get pluginSettingsAgents;
+
+  /// No description provided for @pluginSettingsAgentsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No Agent references this plugin.'**
+  String get pluginSettingsAgentsNone;
+
+  /// No description provided for @pluginSettingsContributions.
+  ///
+  /// In en, this message translates to:
+  /// **'Contributions'**
+  String get pluginSettingsContributions;
+
+  /// No description provided for @pluginSettingsDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get pluginSettingsDiagnostics;
+
+  /// No description provided for @pluginSettingsDiagnosticsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnostics.'**
+  String get pluginSettingsDiagnosticsNone;
+
+  /// No description provided for @pluginSettingsValidate.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate'**
+  String get pluginSettingsValidate;
+
+  /// No description provided for @pluginSettingsReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get pluginSettingsReload;
+
+  /// No description provided for @pluginSettingsOpenPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Open plugin folder'**
+  String get pluginSettingsOpenPath;
+
+  /// No description provided for @pluginSettingsFork.
+  ///
+  /// In en, this message translates to:
+  /// **'Fork'**
+  String get pluginSettingsFork;
+
+  /// No description provided for @pluginSettingsForkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fork {plugin}'**
+  String pluginSettingsForkTitle(String plugin);
+
+  /// No description provided for @pluginSettingsForkDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies the validated revision into a new app-data plugin without enabling it for any Agent.'**
+  String get pluginSettingsForkDescription;
+
+  /// No description provided for @pluginSettingsReloadAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent grants used for reload'**
+  String get pluginSettingsReloadAgent;
+
+  /// No description provided for @pluginSettingsReloadNeedsAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference this plugin from an Agent before reloading it.'**
+  String get pluginSettingsReloadNeedsAgent;
+
+  /// No description provided for @pluginSettingsId.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin ID'**
+  String get pluginSettingsId;
+
+  /// No description provided for @pluginSettingsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get pluginSettingsName;
+
+  /// No description provided for @pluginSettingsIdInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a lowercase dot-separated namespace, such as example.tools.'**
+  String get pluginSettingsIdInvalid;
+
+  /// No description provided for @pluginSettingsIdTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'That plugin ID already exists.'**
+  String get pluginSettingsIdTaken;
+
+  /// No description provided for @pluginSettingsUi.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin interface'**
+  String get pluginSettingsUi;
+
+  /// No description provided for @pluginUiLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plugin interface'**
+  String get pluginUiLoading;
+
+  /// No description provided for @pluginUiLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The plugin interface could not be loaded.'**
+  String get pluginUiLoadFailed;
+
+  /// No description provided for @pluginUiInvalidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported plugin interface'**
+  String get pluginUiInvalidTitle;
+
+  /// Explains the safe fallback for an invalid plugin UI document.
+  ///
+  /// In en, this message translates to:
+  /// **'This document is invalid, so {appName} rendered its source as a read-only disclosure.'**
+  String pluginUiInvalidDescription(String appName);
+
+  /// No description provided for @pluginUiSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{plugin} plugin interface'**
+  String pluginUiSemanticLabel(String plugin);
+
+  /// No description provided for @pluginSessionControlLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading session control'**
+  String get pluginSessionControlLoading;
+
+  /// No description provided for @pluginSessionControlLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The plugin session control could not be loaded.'**
+  String get pluginSessionControlLoadFailed;
+
+  /// No description provided for @pluginSessionControlUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported plugin session control'**
+  String get pluginSessionControlUnsupported;
+
+  /// No description provided for @pluginSessionControlSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The plugin session control could not be saved.'**
+  String get pluginSessionControlSaveFailed;
+
+  /// No description provided for @pluginContributionDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get pluginContributionDriver;
+
+  /// No description provided for @pluginContributionExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension'**
+  String get pluginContributionExtension;
+
+  /// No description provided for @pluginContributionTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool'**
+  String get pluginContributionTool;
+
+  /// No description provided for @pluginContributionSessionControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Session control'**
+  String get pluginContributionSessionControl;
+
+  /// No description provided for @pluginContributionUi.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface'**
+  String get pluginContributionUi;
+
+  /// No description provided for @pluginSettingsActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin action failed'**
+  String get pluginSettingsActionFailed;
 }
 
 class _AppLocalizationsDelegate

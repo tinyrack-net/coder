@@ -730,11 +730,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/lua_tool_runtime"
-      ref: ce0e88b6430dc7afd18ba767409543d3273af5f1
-      resolved-ref: ce0e88b6430dc7afd18ba767409543d3273af5f1
+      ref: "63435787c9720146f67812cb0f17e93abc794a5c"
+      resolved-ref: "63435787c9720146f67812cb0f17e93abc794a5c"
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
-    version: "0.2.0"
+    version: "0.3.0"
   lucide_flutter:
     dependency: transitive
     description:
@@ -1378,8 +1378,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/ui_flutter"
-      ref: "6c5a2107894a21183219751acd4efad00085e3df"
-      resolved-ref: "6c5a2107894a21183219751acd4efad00085e3df"
+      ref: b2358fca564d706c45df32c828ad3773dd0ca902
+      resolved-ref: b2358fca564d706c45df32c828ad3773dd0ca902
       url: "https://github.com/tinyrack-net/design.git"
     source: git
     version: "0.64.0"

@@ -53,7 +53,7 @@ final class GeminiInteractionsWire implements ProviderWireProtocol {
   ];
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) {
+  ModelGateway createProvider(ModelGatewayRequest request) {
     final credential = request.credential;
     return GeminiInteractionsProvider(
       GeminiProviderConfig(

@@ -28,17 +28,16 @@ ProviderCatalogMetadata _model(Map<String, dynamic> value) {
   if (id is! String || label is! String) {
     throw const FormatException('Bundled model entry is invalid.');
   }
+  final toolCalling = _support(value['toolCalling']);
   return ProviderCatalogMetadata(
     id: id,
     label: label,
     capabilities: ModelCapabilitiesDto(
       streaming: CapabilitySupport.supported,
-      toolCalling: _support(value['toolCalling']),
+      toolCalling: toolCalling,
+      functionTools: toolCalling,
       imageInput: _support(value['imageInput']),
       fileInput: _support(value['fileInput']),
-      toolSurface: id.startsWith('gpt-5.6')
-          ? ModelToolSurface.luaCode
-          : ModelToolSurface.direct,
       source: CapabilitySource.bundled,
     ),
     pricing: _pricing(value['cost']),

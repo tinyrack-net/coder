@@ -108,12 +108,10 @@ void _registerWorkspaceControllerTests() {
           .create(
             title: 'Created',
             agentDefinitionId: 'tinest',
-            mode: SessionMode.plan,
             model: override,
           );
       expect(created.id, 'generated-id');
       expect(created.model, override);
-      expect(created.mode, SessionMode.plan);
       expect(container.read(agentsProvider).value!.first, created);
       expect(
         (await container
@@ -127,18 +125,6 @@ void _registerWorkspaceControllerTests() {
         const ModelSelectionDto(modelId: 'openai/gpt-5.6-terra'),
       );
       expect(api.updatedSessionModels.single.sessionId, created.id);
-      expect(
-        (await container
-                .read(agentsProvider.notifier)
-                .setMode(created.id, SessionMode.plan))
-            .mode,
-        SessionMode.plan,
-      );
-      expect(api.updatedSessionModes.single.mode, SessionMode.plan);
-      // `/compact` reaches the daemon; the meter waits for the session event
-      // rather than being patched optimistically.
-      await container.read(agentsProvider.notifier).compact(created.id);
-      expect(api.compactedSessions, <String>[created.id]);
       expect(
         container
             .read(agentsProvider)
@@ -175,7 +161,6 @@ void _registerWorkspaceControllerTests() {
     },
     tags: const <String>[
       'feature_test__session_lifecycle__unit',
-      'feature_test__context_compaction__widget',
     ],
   );
 

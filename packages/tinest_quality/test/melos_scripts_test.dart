@@ -28,6 +28,15 @@ void main() {
     }
   });
 
+  test('Windows builds preserve Flutter project path casing', () {
+    for (final name in <String>['build:windows', 'build:windows:release']) {
+      final command = (scripts[name] as YamlMap)['run'] as String;
+      expect(command, contains('--scope=desktop_app'));
+      expect(command, contains('flutter build windows'));
+      expect(command, contains('-t lib/main.dart'));
+    }
+  });
+
   test('root contains configuration but no source or test package', () {
     for (final path in <String>['lib', 'tool', 'test', 'dart_test.yaml']) {
       expect(FileSystemEntity.typeSync(path), FileSystemEntityType.notFound);
@@ -57,12 +66,34 @@ void main() {
 
   test('full verification delegates shared policy upstream', () {
     final commands = <String>[
-      for (final phase in WorkspaceVerificationPlans.full(jobs: 4).phases)
+      for (final phase in WorkspaceVerificationPlans.full(
+        jobs: 4,
+        serializeCoverage: false,
+      ).phases)
         for (final task in phase.tasks) task.arguments.join(' '),
     ];
     expect(commands, contains(contains('tinyrack_workspace source-check')));
     expect(commands, contains(contains('tinyrack_workspace coverage-check')));
     expect(commands, contains(contains('tinyrack_ui:tinyrack_ui_check')));
+  });
+
+  test('generate command uses the ordered immutable-source plan', () {
+    final application = File(
+      'packages/tinest_quality/bin/src/application.dart',
+    ).readAsStringSync();
+    expect(
+      application,
+      contains('.run(WorkspaceGenerationPlans.generate(jobs: jobs))'),
+    );
+    final plan = WorkspaceGenerationPlans.generate(jobs: 4);
+    expect(
+      plan.phases.first.tasks.map((task) => task.arguments.join(' ')),
+      contains(
+        'run packages/daemon/tool/generate_builtin_plugins.dart',
+      ),
+    );
+    expect(plan.phases[1].tasks.single.name, 'build_runner');
+    expect(plan.phases.last.tasks.single.name, 'generated source whitespace');
   });
 
   test('coverage uses one kernel runner per package cache', () {
@@ -82,14 +113,31 @@ void main() {
 
     expect(application, contains("const <String>{'native-assets'}"));
     expect(application, contains('Platform.isWindows'));
+    expect(
+      application,
+      contains('serializeCoverage: Platform.isWindows'),
+    );
   });
 
-  test('generation normalizes Dart sources emitted by code generators', () {
+  test('generation normalizes generated sources after build_runner', () {
+    final plan = WorkspaceGenerationPlans.generate(jobs: 4);
+
+    expect(plan.phases.first.tasks.first.name, 'desktop app version');
+    expect(plan.phases.last.tasks.single.name, 'generated source whitespace');
+  });
+
+  test('coverage merges share one exclusive workspace resource', () {
     final application = File(
       'packages/tinest_quality/bin/src/application.dart',
     ).readAsStringSync();
 
-    expect(application, contains('_formatGeneratedDartSources'));
-    expect(application, contains("<String>['format', ...sources]"));
+    expect(
+      application,
+      contains("exclusiveResources: const <String>{'coverage-merge'}"),
+    );
+    expect(
+      application,
+      isNot(contains('final mergeResults = await Future.wait')),
+    );
   });
 }

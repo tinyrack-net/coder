@@ -3,10 +3,9 @@ import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
-/// Builds the agent-definition feature's complete v4 RPC surface.
+/// Builds the agent-definition feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> agentRpcBindings({
   required AgentDefinitionService definitions,
-  required WorktreeRepository worktrees,
   required SettingsRepository settings,
 }) => <RpcBindingDescriptor>[
   RpcBinding(agentsListProcedure, (_, _) async {
@@ -55,12 +54,9 @@ List<RpcBindingDescriptor> agentRpcBindings({
       definition: await definitions.validate(request.id, request.markdown),
     );
   }),
-  RpcBinding(agentsListToolsProcedure, (request, _) async {
-    final worktree = request.worktreeId == null
-        ? null
-        : await worktrees.getById(request.worktreeId!);
+  RpcBinding(agentsListToolsProcedure, (_, _) async {
     return AgentToolCatalogResultDto(
-      tools: definitions.toolCatalog(workspaceRoot: worktree?.path),
+      tools: await definitions.toolCatalog(),
     );
   }),
   RpcBinding(agentsGetDefaultPermissionModeProcedure, (_, _) async {

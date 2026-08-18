@@ -62,8 +62,17 @@ void main() {
     expect(out.text, contains('daemon'));
     expect(out.text, contains('provider'));
     expect(out.text, contains('agent'));
+    expect(out.text, contains('plugin'));
     expect(out.text, contains('completion'));
     expect(out.text, isNot(contains('__complete')));
+  });
+
+  test('plugin help lists the authoring lifecycle commands', () async {
+    expect(await run(<String>['plugin', '--help']), 0);
+
+    expect(out.text, contains('init'));
+    expect(out.text, contains('validate'));
+    expect(out.text, contains('reload'));
   });
 
   test('a route map without a command prints its own commands', () async {

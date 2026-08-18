@@ -49,6 +49,7 @@ class TinestClient
         WorkspacesApi,
         SessionsApi,
         AgentsApi,
+        PluginsApi,
         PromptsApi,
         ModelsApi,
         ProvidersApi,
@@ -104,10 +105,6 @@ class TinestClient
   final Duration Function(int attempt) _reconnectDelay;
   final StreamController<SessionDto> _sessionUpdates =
       StreamController<SessionDto>.broadcast();
-  final StreamController<GoalDto> _goalUpdates =
-      StreamController<GoalDto>.broadcast();
-  final StreamController<GoalClearedDto> _goalClears =
-      StreamController<GoalClearedDto>.broadcast();
   final StreamController<TimelineEventDto> _timelineEvents =
       StreamController<TimelineEventDto>.broadcast();
   final StreamController<ApprovalRequestDto> _approvalRequests =
@@ -115,6 +112,8 @@ class TinestClient
   final StreamController<UserQuestionRequestDto> _questionRequests =
       StreamController<UserQuestionRequestDto>.broadcast();
   final StreamController<void> _agentChanges =
+      StreamController<void>.broadcast();
+  final StreamController<void> _pluginChanges =
       StreamController<void>.broadcast();
   final StreamController<void> _skillChanges =
       StreamController<void>.broadcast();
@@ -154,6 +153,9 @@ class TinestClient
   AgentsApi get agents => this;
 
   @override
+  PluginsApi get plugins => this;
+
+  @override
   PromptsApi get prompts => this;
 
   @override
@@ -181,12 +183,6 @@ class TinestClient
   Stream<SessionDto> get sessionUpdates => _sessionUpdates.stream;
 
   @override
-  Stream<GoalDto> get goalUpdates => _goalUpdates.stream;
-
-  @override
-  Stream<GoalClearedDto> get goalClears => _goalClears.stream;
-
-  @override
   Stream<TimelineEventDto> get timelineEvents => _timelineEvents.stream;
 
   @override
@@ -198,6 +194,9 @@ class TinestClient
 
   @override
   Stream<void> get definitionChanges => _agentChanges.stream;
+
+  @override
+  Stream<void> get pluginChanges => _pluginChanges.stream;
 
   @override
   Stream<void> get skillChanges => _skillChanges.stream;
@@ -310,13 +309,12 @@ class TinestClient
           _timelineEvents.add(event);
         case final name when name == sessionsUpdatedNotification.name:
           _sessionUpdates.add(sessionsUpdatedNotification.decode(parameters));
-        case final name when name == sessionsGoalUpdatedNotification.name:
-          _goalUpdates.add(sessionsGoalUpdatedNotification.decode(parameters));
-        case final name when name == sessionsGoalClearedNotification.name:
-          _goalClears.add(sessionsGoalClearedNotification.decode(parameters));
         case final name when name == agentsChangedNotification.name:
           agentsChangedNotification.decode(parameters);
           _agentChanges.add(null);
+        case final name when name == pluginsChangedNotification.name:
+          pluginsChangedNotification.decode(parameters);
+          _pluginChanges.add(null);
         case final name when name == mcpChangedNotification.name:
           mcpChangedNotification.decode(parameters);
           _mcpChanges.add(null);
@@ -362,6 +360,7 @@ class TinestClient
         _approvalRequests,
         _questionRequests,
         _agentChanges,
+        _pluginChanges,
         _skillChanges,
         _commandChanges,
         _providerAuthUpdates,
@@ -616,7 +615,6 @@ class TinestClient
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
-    SessionMode mode = SessionMode.normal,
     ModelSelectionDto? model,
     Map<String, ModelControlValueDto> modelControls =
         const <String, ModelControlValueDto>{},
@@ -629,7 +627,6 @@ class TinestClient
         worktreeId: worktreeId,
         title: title,
         agentDefinitionId: agentDefinitionId,
-        mode: mode,
         model: _canonicalSelection(model),
         modelControls: modelControls,
         permissionMode: permissionMode,
@@ -647,56 +644,12 @@ class TinestClient
       sessionsUpdateSettingsProcedure,
       SessionSettingsUpdateParamsDto(
         sessionId: sessionId,
-        patch: patch.model == null
-            ? patch
-            : patch.copyWith(model: _canonicalSelection(patch.model)),
+        patch: patch.hasModel
+            ? patch.copyWith(model: _canonicalSelection(patch.model))
+            : patch,
       ),
     );
     return response.session;
-  }
-
-  @override
-  Future<GoalDto?> getGoal(String sessionId) async {
-    final response = await _call(
-      sessionsGetGoalProcedure,
-      SessionIdParamsDto(sessionId: sessionId),
-    );
-    return response.goal;
-  }
-
-  @override
-  Future<GoalDto> replaceGoal({
-    required String sessionId,
-    required String objective,
-    int? tokenBudget,
-  }) async {
-    final response = await _call(
-      sessionsReplaceGoalProcedure,
-      GoalReplaceParamsDto(
-        sessionId: sessionId,
-        objective: objective,
-        tokenBudget: tokenBudget,
-      ),
-    );
-    return response.goal;
-  }
-
-  @override
-  Future<GoalDto> updateGoal(String sessionId, GoalUpdateDto update) async {
-    final response = await _call(
-      sessionsUpdateGoalProcedure,
-      GoalUpdateParamsDto(sessionId: sessionId, update: update),
-    );
-    return response.goal;
-  }
-
-  @override
-  Future<bool> clearGoal(String sessionId) async {
-    final response = await _call(
-      sessionsClearGoalProcedure,
-      SessionIdParamsDto(sessionId: sessionId),
-    );
-    return response.cleared;
   }
 
   @override
@@ -921,6 +874,223 @@ class TinestClient
       AgentToolCatalogParamsDto(worktreeId: worktreeId),
     );
     return response.tools;
+  }
+
+  @override
+  Future<List<PluginDescriptorDto>> listPlugins() async {
+    final response = await _call(
+      pluginsListProcedure,
+      const EmptyParamsDto(),
+    );
+    return response.plugins;
+  }
+
+  @override
+  Future<PluginDescriptorDto> getPlugin(String id) async {
+    final response = await _call(
+      pluginsGetProcedure,
+      PluginIdParamsDto(id: id),
+    );
+    return response.plugin;
+  }
+
+  @override
+  Future<PluginDescriptorDto> validatePlugin(String id) async {
+    final response = await _call(
+      pluginsValidateProcedure,
+      PluginIdParamsDto(id: id),
+    );
+    return response.plugin;
+  }
+
+  @override
+  Future<PluginDescriptorDto> reloadPlugin(String id, String agentId) async {
+    final response = await _call(
+      pluginsReloadProcedure,
+      PluginReloadParamsDto(id: id, agentId: agentId),
+    );
+    return response.plugin;
+  }
+
+  @override
+  Future<PluginDescriptorDto> scaffoldPlugin(String id, String name) async {
+    final response = await _call(
+      pluginsScaffoldProcedure,
+      PluginScaffoldParamsDto(id: id, name: name),
+    );
+    return response.plugin;
+  }
+
+  @override
+  Future<PluginDescriptorDto> forkPlugin({
+    required String sourceId,
+    required String id,
+    required String name,
+  }) async {
+    final response = await _call(
+      pluginsForkProcedure,
+      PluginForkParamsDto(sourceId: sourceId, id: id, name: name),
+    );
+    return response.plugin;
+  }
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> getPluginAuthoringEnvironment(
+    String id,
+  ) async {
+    final response = await _call(
+      pluginsGetPluginAuthoringEnvironmentProcedure,
+      PluginIdParamsDto(id: id),
+    );
+    return response.environment;
+  }
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> syncPluginAuthoringEnvironment(
+    String id,
+  ) async {
+    final response = await _call(
+      pluginsSyncPluginAuthoringEnvironmentProcedure,
+      PluginIdParamsDto(id: id),
+    );
+    return response.environment;
+  }
+
+  @override
+  Future<List<AgentPluginGrantDto>> listPluginGrants(String agentId) async {
+    final response = await _call(
+      pluginsListGrantsProcedure,
+      AgentPluginGrantsParamsDto(agentId: agentId),
+    );
+    return response.grants;
+  }
+
+  @override
+  Future<List<AgentPluginGrantDto>> grantPluginCapability(
+    AgentPluginGrantDto grant,
+  ) async {
+    final response = await _call(
+      pluginsGrantProcedure,
+      PluginGrantParamsDto(grant: grant),
+    );
+    return response.grants;
+  }
+
+  @override
+  Future<List<AgentPluginGrantDto>> revokePluginCapability(
+    AgentPluginGrantDto grant,
+  ) async {
+    final response = await _call(
+      pluginsRevokeProcedure,
+      PluginGrantParamsDto(grant: grant),
+    );
+    return response.grants;
+  }
+
+  @override
+  Future<void> setPluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+    required String value,
+  }) => _call(
+    pluginsSetSecretProcedure,
+    PluginSecretSetParamsDto(
+      agentId: agentId,
+      pluginId: pluginId,
+      name: name,
+      value: value,
+    ),
+  );
+
+  @override
+  Future<void> removePluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+  }) => _call(
+    pluginsRemoveSecretProcedure,
+    PluginSecretRemoveParamsDto(
+      agentId: agentId,
+      pluginId: pluginId,
+      name: name,
+    ),
+  );
+
+  @override
+  Future<PluginSessionControlValueDto> getPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+  }) async {
+    final response = await _call(
+      pluginsGetSessionControlProcedure,
+      PluginSessionControlParamsDto(
+        sessionId: sessionId,
+        pluginId: pluginId,
+        contributionId: contributionId,
+      ),
+    );
+    return response.control;
+  }
+
+  @override
+  Future<PluginSessionControlValueDto> setPluginSessionControl({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+    required Object? value,
+  }) async {
+    final response = await _call(
+      pluginsSetSessionControlProcedure,
+      PluginSessionControlSetParamsDto(
+        sessionId: sessionId,
+        pluginId: pluginId,
+        contributionId: contributionId,
+        value: value,
+      ),
+    );
+    return response.control;
+  }
+
+  @override
+  Future<PluginUiDocumentDto> renderPluginUi({
+    required String agentId,
+    required String pluginId,
+    required String contributionId,
+    required PluginUiSlot slot,
+    Object? input,
+    Map<String, dynamic> context = const <String, dynamic>{},
+  }) async {
+    final response = await _call(
+      pluginsRenderUiProcedure,
+      PluginUiRenderParamsDto(
+        agentId: agentId,
+        pluginId: pluginId,
+        contributionId: contributionId,
+        slot: slot,
+        input: input,
+        context: context,
+      ),
+    );
+    return response.document;
+  }
+
+  @override
+  Future<PluginUiDocumentDto> dispatchPluginUiAction({
+    required String agentId,
+    required String pluginId,
+    required PluginUiActionDto action,
+  }) async {
+    final response = await _call(
+      pluginsDispatchUiActionProcedure,
+      PluginUiActionParamsDto(
+        agentId: agentId,
+        pluginId: pluginId,
+        action: action,
+      ),
+    );
+    return response.document;
   }
 
   @override
@@ -1236,7 +1406,7 @@ class TinestClient
       final request =
           http.StreamedRequest(
               'POST',
-              _endpoint.httpBaseUri.resolve('v4/attachments'),
+              _endpoint.httpBaseUri.resolve('v5/attachments'),
             )
             ..headers['authorization'] = 'Bearer ${_credentials.bearerToken}'
             ..headers['content-type'] = mimeType
@@ -1277,7 +1447,7 @@ class TinestClient
     final request = http.Request(
       'GET',
       _endpoint.httpBaseUri.resolve(
-        'v4/attachments/${Uri.encodeComponent(id)}',
+        'v5/attachments/${Uri.encodeComponent(id)}',
       ),
     )..headers['authorization'] = 'Bearer ${_credentials.bearerToken}';
     final response = await client.send(request);
@@ -1321,14 +1491,6 @@ class TinestClient
   Future<void> cancelTurn(String sessionId) async {
     await _call(
       sessionsCancelTurnProcedure,
-      SessionIdParamsDto(sessionId: sessionId),
-    );
-  }
-
-  @override
-  Future<void> compactSession(String sessionId) async {
-    await _call(
-      sessionsCompactProcedure,
       SessionIdParamsDto(sessionId: sessionId),
     );
   }
@@ -1446,12 +1608,11 @@ class TinestClient
     await _peer?.close();
     await Future.wait(<Future<void>>[
       _sessionUpdates.close(),
-      _goalUpdates.close(),
-      _goalClears.close(),
       _timelineEvents.close(),
       _approvalRequests.close(),
       _questionRequests.close(),
       _agentChanges.close(),
+      _pluginChanges.close(),
       _skillChanges.close(),
       _commandChanges.close(),
       _providerAuthUpdates.close(),

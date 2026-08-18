@@ -8,6 +8,53 @@ import 'package:test/test.dart';
 
 void main() {
   test(
+    'Interactions preserves ordered prompt blocks within native fields',
+    () async {
+      final adapter = _RecordingAdapter('''
+event: interaction.completed
+data: {"event_type":"interaction.completed","interaction":{"usage":{}}}
+
+event: done
+data: [DONE]
+
+''');
+      await GeminiInteractionsProvider(
+            const GeminiProviderConfig(apiKey: 'secret'),
+            dio: Dio()..httpClientAdapter = adapter,
+          )
+          .stream(
+            const ModelRequest(
+              model: 'gemini-3.6-flash',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'system', content: 'system-1'),
+                ModelRoleBlock(role: 'developer', content: 'developer-1'),
+                ModelRoleBlock(role: 'user', content: 'user-1'),
+                ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
+              ],
+              history: <ConversationItem>[],
+              tools: <ModelToolDefinition>[],
+              safetyIdentifier: 'safe',
+            ),
+            CancellationToken(),
+          )
+          .toList();
+
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(body['system_instruction'], 'system-1\n\ndeveloper-1');
+      expect(
+        (body['input']! as List).map((item) => (item as Map)['role']),
+        <String>['user', 'assistant'],
+      );
+      expect(
+        (body['input']! as List).map(
+          (item) => (((item as Map)['content'] as List).single as Map)['text'],
+        ),
+        <String>['user-1', 'assistant-1'],
+      );
+    },
+  );
+
+  test(
     'Interactions maps step events and preserves thought signatures',
     () async {
       final adapter = _RecordingAdapter(r'''
@@ -56,7 +103,9 @@ data: [DONE]
           .stream(
             const ModelRequest(
               model: 'gemini-3.6-flash',
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[
                 UserConversationItem('hello'),
               ],

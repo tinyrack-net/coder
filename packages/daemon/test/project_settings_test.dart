@@ -37,11 +37,27 @@ void main() {
   });
 
   test(
+    'v5 rejects a preserved v4 project document without importing it',
+    () async {
+      const store = FileProjectSettingsStore();
+      await settingsFile().writeAsString(
+        jsonEncode(<String, dynamic>{'schemaVersion': 4}),
+      );
+      await expectLater(store.load(root.path), throwsA(isA<FormatException>()));
+
+      await settingsFile().writeAsString(
+        jsonEncode(<String, dynamic>{'schemaVersion': 5}),
+      );
+      expect(await store.load(root.path), const ProjectSettingsDto());
+    },
+  );
+
+  test(
     'reads worktree hooks and typed shell settings',
     () async {
       await settingsFile().writeAsString(
         jsonEncode(<String, dynamic>{
-          'schemaVersion': 4,
+          'schemaVersion': 5,
           'worktree': <String, dynamic>{
             'setup': <String>['npm ci', '  ', ' npm run build '],
             'teardown': <String>['docker compose down'],
@@ -74,7 +90,7 @@ void main() {
   test('preserves unknown keys and drops empty hook lists on save', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 4,
+        'schemaVersion': 5,
         'scripts': <String, dynamic>{
           'typecheck': <String, dynamic>{'command': 'npm run typecheck'},
         },
@@ -116,7 +132,7 @@ void main() {
     expect(
       await settingsFile().readAsString(),
       '{\n'
-      '  "schemaVersion": 4,\n'
+      '  "schemaVersion": 5,\n'
       '  "worktree": {\n'
       '    "teardown": [\n'
       '      "docker compose down"\n'
@@ -129,7 +145,7 @@ void main() {
   test('removes the worktree section when every hook is cleared', () async {
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 4,
+        'schemaVersion': 5,
         'worktree': <String, dynamic>{
           'setup': <String>['npm ci'],
         },
@@ -143,7 +159,7 @@ void main() {
 
     expect(
       await settingsFile().readAsString(),
-      '{\n  "schemaVersion": 4\n}\n',
+      '{\n  "schemaVersion": 5\n}\n',
     );
   });
 
@@ -177,7 +193,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 4,
+        'schemaVersion': 5,
         'worktree': 'nope',
       }),
     );
@@ -185,7 +201,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 4,
+        'schemaVersion': 5,
         'worktree': <String, dynamic>{'setup': 'npm ci'},
       }),
     );
@@ -193,7 +209,7 @@ void main() {
 
     await settingsFile().writeAsString(
       jsonEncode(<String, dynamic>{
-        'schemaVersion': 4,
+        'schemaVersion': 5,
         'worktree': <String, dynamic>{
           'setup': <Object>[42],
         },
@@ -202,7 +218,7 @@ void main() {
     await expectLater(store.load(root.path), throwsA(isA<FormatException>()));
   });
 
-  test('schema 3 project settings stay untouched', () async {
+  test('legacy schema 3 project settings stay untouched', () async {
     const store = FileProjectSettingsStore();
     final legacy = jsonEncode(<String, dynamic>{
       'schemaVersion': 3,

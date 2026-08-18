@@ -22,20 +22,11 @@ enum ClientCommandAction {
   /// Starts a new session in the current worktree.
   newSession,
 
-  /// Switches between planning and working modes.
-  toggleMode,
-
   /// Opens the agent settings screen.
   openAgentSettings,
 
   /// Opens the skill settings screen.
   openSkillSettings,
-
-  /// Summarizes the conversation and starts a fresh context window.
-  compact,
-
-  /// Creates or manages the persistent session goal.
-  goal,
 
   /// Lists the available commands.
   help,
@@ -126,13 +117,6 @@ const List<ComposerCommand> clientComposerCommands = <ComposerCommand>[
     action: ClientCommandAction.newSession,
   ),
   ComposerCommand(
-    id: 'client:mode',
-    name: 'mode',
-    description: 'Switches between planning and working.',
-    kind: ComposerCommandKind.client,
-    action: ClientCommandAction.toggleMode,
-  ),
-  ComposerCommand(
     id: 'client:agents',
     name: 'agents',
     description: 'Opens agent settings.',
@@ -147,26 +131,11 @@ const List<ComposerCommand> clientComposerCommands = <ComposerCommand>[
     action: ClientCommandAction.openSkillSettings,
   ),
   ComposerCommand(
-    id: 'client:compact',
-    name: 'compact',
-    description: 'Summarizes the conversation.',
-    kind: ComposerCommandKind.client,
-    action: ClientCommandAction.compact,
-  ),
-  ComposerCommand(
     id: 'client:help',
     name: 'help',
     description: 'Lists the available commands.',
     kind: ComposerCommandKind.client,
     action: ClientCommandAction.help,
-  ),
-  ComposerCommand(
-    id: 'client:goal',
-    name: 'goal',
-    description: 'Creates or manages a persistent session goal.',
-    kind: ComposerCommandKind.client,
-    argumentHint: '<objective | edit | pause | resume | clear>',
-    action: ClientCommandAction.goal,
   ),
 ];
 

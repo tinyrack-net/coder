@@ -47,21 +47,62 @@ runs:
     - name: Install the packages
       shell: bash
       env:
+        DEBIAN_FRONTEND: noninteractive
         PACKAGE_LIST: ${{ steps.pkgs.outputs.list }}
       run: |
         set -euo pipefail
-        # apt needs `partial` to exist before it will use a custom archive dir.
-        sudo mkdir -p "$GITHUB_WORKSPACE/.apt-debs/partial"
-        # Fetching the index is the fast half (~11 MB, seconds); it is the
-        # package downloads that stall, and those come from the cache dir.
-        sudo apt-get update
-        # apt reuses any .deb already in the archive dir and downloads only the
-        # remainder, so a stale or partial cache degrades instead of failing.
-        # Letting apt drive also keeps unpack ordering and configuration
-        # correct, which a bare `dpkg -i` over the closure does not.
-        sudo apt-get install -y \
-          -o Dir::Cache::archives="$GITHUB_WORKSPACE/.apt-debs" \
+        archives="$GITHUB_WORKSPACE/.apt-debs"
+        fresh_lists="$RUNNER_TEMP/tinest-apt-lists"
+        # apt needs `partial` before it will use custom archive or list dirs.
+        sudo mkdir -p "$archives/partial" "$fresh_lists/partial"
+
+        network_options=(
+          -o Acquire::Retries=1
+          -o Acquire::http::Timeout=15
+          -o Acquire::https::Timeout=15
+        )
+        list_options=(-o Dir::State::lists=/var/lib/apt/lists)
+        using_fresh_lists=false
+
+        # Refresh into an isolated directory. A wedged mirror cannot consume
+        # the 30-minute desktop job or corrupt the runner image's usable lists.
+        if sudo timeout --kill-after=10s 120s apt-get update --error-on=any \
+          "${network_options[@]}" \
+          -o Dir::State::lists="$fresh_lists"; then
+          list_options=(-o Dir::State::lists="$fresh_lists")
+          using_fresh_lists=true
+        else
+          echo "::warning::apt index refresh failed; using runner image lists"
+        fi
+
+        download_packages() {
+          sudo timeout --kill-after=10s 300s apt-get install --download-only -y \
+            "${network_options[@]}" \
+            "${list_options[@]}" \
+            -o Dir::Cache::archives="$archives" \
+            -o APT::Keep-Downloaded-Packages=true \
+            $PACKAGE_LIST
+        }
+
+        # Keep every network operation bounded. If freshly downloaded indexes
+        # name a package version whose mirror stalls, retry with the known-good
+        # lists baked into the GitHub runner image.
+        if ! download_packages; then
+          if [[ "$using_fresh_lists" != true ]]; then
+            echo "::error::apt download failed with runner image lists"
+            exit 1
+          fi
+          echo "::warning::apt download failed; retrying with runner image lists"
+          list_options=(-o Dir::State::lists=/var/lib/apt/lists)
+          download_packages
+        fi
+
+        # All network work is complete. Never interrupt dpkg while it mutates
+        # the runner: install only the package files already in the cache.
+        sudo apt-get install --no-download -y \
+          "${list_options[@]}" \
+          -o Dir::Cache::archives="$archives" \
           -o APT::Keep-Downloaded-Packages=true \
           $PACKAGE_LIST
         # The runner user must own these for the post-job cache upload.
-        sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/.apt-debs"
+        sudo chown -R "$(id -u):$(id -g)" "$archives" "$fresh_lists"

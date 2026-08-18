@@ -25,10 +25,10 @@ final class LocalDaemonDirectories {
     required this.osHomeDirectory,
   });
 
-  /// Base directory whose v4 child holds daemon configuration.
+  /// Base directory whose v5 child holds daemon configuration.
   final String configDirectory;
 
-  /// Base directory whose v4 child holds daemon state.
+  /// Base directory whose v5 child holds daemon state.
   final String stateDirectory;
 
   /// Home used for the shared `~/.agents` tree.

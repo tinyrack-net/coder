@@ -58,7 +58,7 @@ void main() {
             scheme: 'ws',
             host: InternetAddress.loopbackIPv4.address,
             port: rejectionServer.port,
-            path: '/v4/ws',
+            path: '/v5/ws',
           ),
         ),
       );

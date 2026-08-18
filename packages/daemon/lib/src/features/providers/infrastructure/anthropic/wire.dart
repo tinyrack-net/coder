@@ -72,7 +72,7 @@ final class AnthropicMessagesWire implements ProviderWireProtocol {
   ];
 
   @override
-  ModelProvider createProvider(ModelProviderRequest request) {
+  ModelGateway createProvider(ModelGatewayRequest request) {
     final credential = request.credential;
     return AnthropicMessagesProvider(
       AnthropicProviderConfig(

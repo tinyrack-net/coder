@@ -8,8 +8,10 @@ void main() {
   final now = DateTime.utc(2026, 8, 2);
   const sessionModel = ModelSelectionDto(modelId: 'provider/model');
 
-  test('protocol v4 exposes permission defaults and typed contracts', () {
-    expect(tinestProtocolMajor, 4);
+  test('protocol v5 exposes plugin-first typed contracts', () {
+    expect(tinestProtocolMajor, 5);
+    expect(tinestProtocolRevision, 2);
+    expect(tinestWebSocketProtocol, 'tinyrack.tinest.v5');
     expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
     expect(workspacesRefreshProcedure.name, 'workspaces.refresh');
     expect(workspacesUnregisterProcedure.name, 'workspaces.unregister');
@@ -137,59 +139,36 @@ void main() {
     tags: const <String>['feature_test__permission_settings__contract'],
   );
 
-  test('session collaboration modes round-trip', () {
-    final planning = SessionDto(
+  test('session wire does not own a fixed harness mode', () {
+    final session = SessionDto(
       id: 'session',
       worktreeId: 'worktree',
-      title: 'Plan the migration',
+      title: 'Run the migration',
       agentDefinitionId: 'tinest',
       origin: SessionOrigin.manual,
       status: SessionStatus.idle,
       createdAt: now,
       updatedAt: now,
-      mode: SessionMode.plan,
       model: sessionModel,
     );
 
-    expect(
-      SessionDto(
-        id: 'session',
-        worktreeId: 'worktree',
-        title: 'Default',
-        agentDefinitionId: 'tinest',
-        origin: SessionOrigin.manual,
-        status: SessionStatus.idle,
-        createdAt: now,
-        updatedAt: now,
-        model: sessionModel,
-      ).mode,
-      SessionMode.normal,
-    );
-    _roundTrip(planning, (value) => value.toJson(), SessionDto.fromJson);
+    expect(session.toJson(), isNot(contains('mode')));
+    _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
     _roundTrip(
       const SessionCreateParamsDto(
         id: 'session',
         worktreeId: 'worktree',
-        title: 'Plan the migration',
+        title: 'Run the migration',
         agentDefinitionId: 'tinest',
-        mode: SessionMode.plan,
       ),
       (value) => value.toJson(),
       SessionCreateParamsDto.fromJson,
     );
-    _roundTrip(
-      const SessionSettingsUpdateParamsDto(
-        sessionId: 'session',
-        patch: SessionSettingsPatchDto(mode: SessionMode.normal),
-      ),
-      (value) => value.toJson(),
-      SessionSettingsUpdateParamsDto.fromJson,
-    );
     expect(
       SessionDto.fromJson(
-        json.decode(json.encode(planning.toJson())) as Map<String, dynamic>,
-      ).mode,
-      SessionMode.plan,
+        json.decode(json.encode(session.toJson())) as Map<String, dynamic>,
+      ),
+      session,
     );
   });
 
@@ -413,19 +392,21 @@ void main() {
 
   test('agent definition and session contracts round-trip', () {
     const definition = AgentDefinitionDto(
+      version: 5,
       id: 'reviewer',
       name: 'Reviewer',
       description: 'Reviews code without editing it.',
       mode: AgentMode.subagent,
-      promptEnabled: true,
-      systemPrompt: 'Review the requested code.',
-      model: sessionModel,
-      modelControls: <String, ModelControlValueDto>{
-        'reasoning_effort': ModelControlValueDto.stringValue(value: 'medium'),
-      },
-      permissionMode: PermissionMode.readOnly,
-      toolIds: <String>['read_file', 'search_text'],
+      model: AgentModelSelectionDto(source: AgentModelSource.session),
+      driverId: 'tinest.standard/driver',
+      extensionIds: <String>[],
+      toolIds: <String>[
+        'tinest.files/read_file',
+        'tinest.files/search_text',
+      ],
+      pluginSettings: <String, Map<String, dynamic>>{},
       callableAgentIds: <String>[],
+      prompt: 'Review the requested code.',
       contentHash: 'hash',
       sourcePath: '/config/agents/reviewer.md',
     );
@@ -643,6 +624,7 @@ void main() {
   const capabilities = ModelCapabilitiesDto(
     streaming: CapabilitySupport.supported,
     toolCalling: CapabilitySupport.supported,
+    deferredTools: CapabilitySupport.supported,
     controls: <ModelControlDescriptorDto>[
       ModelControlDescriptorDto(
         id: 'reasoning_effort',
@@ -834,7 +816,7 @@ void main() {
   });
 
   test('protocol version and direct JSON-RPC names are stable', () {
-    expect(tinestProtocolMajor, 4);
+    expect(tinestProtocolMajor, 5);
     expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
     expect(sessionsCreateProcedure.name, 'sessions.create');
     expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
@@ -1143,21 +1125,20 @@ void main() {
     _roundTrip(
       const AgentDefinitionUpdateParamsDto(
         definition: AgentDefinitionDto(
+          version: 5,
           id: 'reviewer',
           name: 'Reviewer',
           description: 'Reviews code.',
           mode: AgentMode.subagent,
-          promptEnabled: true,
-          systemPrompt: 'Review code.',
-          model: sessionModel,
-          modelControls: <String, ModelControlValueDto>{
-            'reasoning_effort': ModelControlValueDto.stringValue(
-              value: 'medium',
-            ),
-          },
-          permissionMode: PermissionMode.readOnly,
-          toolIds: <String>['read_file'],
+          model: AgentModelSelectionDto(
+            source: AgentModelSource.session,
+          ),
+          driverId: 'tinest.standard/driver',
+          extensionIds: <String>[],
+          toolIds: <String>['tinest.files/read_file'],
+          pluginSettings: <String, Map<String, dynamic>>{},
           callableAgentIds: <String>[],
+          prompt: 'Review code.',
           contentHash: 'hash',
           sourcePath: '/config/agents/reviewer.md',
         ),
@@ -1706,6 +1687,18 @@ void main() {
     );
   });
 
+  test('empty RPC values round-trip only canonical empty envelopes', () {
+    const params = EmptyParamsDto();
+    expect(EmptyParamsDto.fromJson(params.toJson()).toJson(), isEmpty);
+
+    const result = EmptyResultDto();
+    expect(EmptyResultDto.fromJson(result.toJson()).toJson(), isEmpty);
+    expect(
+      () => EmptyResultDto.fromJson(const <String, dynamic>{'extra': true}),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('protocol exceptions expose a stable diagnostic message', () {
     expect(
       const ProtocolException('bad envelope').toString(),
@@ -1727,7 +1720,6 @@ void main() {
   test('every enum value has a stable JSON name', () {
     final values = <Enum>[
       ...SessionStatus.values,
-      ...SessionMode.values,
       ...TurnStatus.values,
       ...PermissionMode.values,
       ...ApprovalStatus.values,
@@ -1761,34 +1753,58 @@ void main() {
     expect(ToolRisk.dangerous.name, 'dangerous');
   });
 
-  test('agent tool definitions carry an always-on flag', () {
-    const toggleable = AgentToolDefinitionDto(
-      id: 'run_command',
+  test('agent tool definitions are independently selectable', () {
+    const tool = AgentToolDefinitionDto(
+      id: 'acme.terminal/run_command',
+      originPluginId: 'acme.terminal',
+      contributionId: 'run_command',
       name: 'run_command',
       description: 'Starts a child process.',
       risk: ToolRisk.command,
-      group: ToolGroup.execution,
+      group: 'execution',
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{'type': 'object'},
+      effects: <String>['process.execute'],
+      presentation: <String, dynamic>{'group': 'execution'},
     );
-    expect(toggleable.alwaysOn, isFalse);
+    expect(tool.id, 'acme.terminal/run_command');
+    expect(tool.originPluginId, 'acme.terminal');
+    expect(tool.contributionId, 'run_command');
+    expect(tool.kind, AgentToolKind.function);
     _roundTrip(
       const AgentToolDefinitionDto(
-        id: 'read_file',
+        id: 'acme.files/read_file',
+        originPluginId: 'acme.files',
+        contributionId: 'read_file',
         name: 'read_file',
         description: 'Reads a workspace file.',
         risk: ToolRisk.read,
-        group: ToolGroup.filesystem,
-        alwaysOn: true,
+        group: 'filesystem',
+        kind: AgentToolKind.function,
+        inputSchema: <String, dynamic>{'type': 'object'},
+        effects: <String>['filesystem.read'],
+        presentation: <String, dynamic>{'group': 'filesystem'},
       ),
       (value) => value.toJson(),
       AgentToolDefinitionDto.fromJson,
     );
     _roundTrip(
       const AgentToolDefinitionDto(
-        id: 'mcp__github__create_issue',
+        id: 'tinest.mcp/mcp__github__create_issue',
+        originPluginId: 'tinest.mcp',
+        contributionId: 'mcp__github__create_issue',
         name: 'mcp__github__create_issue',
         description: 'Creates a GitHub issue.',
         risk: ToolRisk.dangerous,
-        group: ToolGroup.mcp,
+        group: 'mcp',
+        kind: AgentToolKind.deferred,
+        inputSchema: <String, dynamic>{'type': 'object'},
+        outputSchema: <String, dynamic>{'type': 'object'},
+        effects: <String>['mcp.invoke'],
+        presentation: <String, dynamic>{
+          'group': 'mcp',
+          'server': 'github',
+        },
         available: false,
       ),
       (value) => value.toJson(),
@@ -1798,25 +1814,20 @@ void main() {
 
   test('agent tool definitions carry the group they are toggled in', () {
     const tool = AgentToolDefinitionDto(
-      id: 'read_mcp_resource',
+      id: 'acme.tools/read_mcp_resource',
+      originPluginId: 'acme.tools',
+      contributionId: 'read_mcp_resource',
       name: 'read_mcp_resource',
       description: 'Reads one MCP resource.',
       risk: ToolRisk.read,
-      group: ToolGroup.mcp,
+      group: 'custom.tools',
+      kind: AgentToolKind.freeform,
+      inputSchema: <String, dynamic>{'type': 'string'},
+      effects: <String>['mcp.read'],
+      presentation: <String, dynamic>{'group': 'custom.tools'},
     );
-    expect(tool.toJson()['group'], 'mcp');
-    expect(
-      ToolGroup.values.map((value) => value.name),
-      <String>[
-        'filesystem',
-        'editing',
-        'execution',
-        'attachments',
-        'mcp',
-        'collaboration',
-        'session',
-      ],
-    );
+    expect(tool.toJson()['group'], 'custom.tools');
+    expect(tool.toJson()['kind'], 'freeform');
   });
 
   test(

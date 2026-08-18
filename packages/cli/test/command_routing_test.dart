@@ -39,6 +39,7 @@ void main() {
     List<String> inputs, {
     Future<String> Function(String path)? readFile,
     Future<String> Function()? readSecret,
+    PluginExternalProcessRunner? runPluginProcess,
   }) {
     return runCli(
       <String>[...inputs, '--token', 'token', '--listen', '127.0.0.1:7337'],
@@ -48,6 +49,7 @@ void main() {
       directories: directories,
       readFile: readFile ?? (_) async => 'markdown',
       readSecret: readSecret ?? () async => 'prompted-secret',
+      runPluginProcess: runPluginProcess,
       connectClient: ({
         required host,
         required port,
@@ -215,6 +217,229 @@ void main() {
 
       expect(code, 0);
       expect(client.validatedMarkdown, <String>['markdown from disk']);
+    });
+  });
+
+  group('plugin', () {
+    test('init scaffolds only through the daemon plugin API', () async {
+      expect(
+        await run(<String>[
+          'plugin',
+          'init',
+          'example.review',
+          '--name',
+          'Review tools',
+        ]),
+        0,
+      );
+
+      expect(client.scaffoldedPlugins, <(String, String)>[
+        ('example.review', 'Review tools'),
+      ]);
+      expect(out.text, contains('Initialized example.review'));
+      expect(out.text, contains('/config/v5/plugins/example.review'));
+    });
+
+    test('init requires a display name before calling the daemon', () async {
+      expect(
+        await run(<String>['plugin', 'init', 'example.review']),
+        usageExitCode,
+      );
+
+      expect(client.scaffoldedPlugins, isEmpty);
+    });
+
+    test('fork copies one validated plugin through the daemon API', () async {
+      expect(
+        await run(<String>[
+          'plugin',
+          'fork',
+          'tinest.files',
+          '--id',
+          'example.files',
+          '--name',
+          'Files fork',
+        ]),
+        0,
+      );
+
+      expect(client.forkedPlugins, <(String, String, String)>[
+        ('tinest.files', 'example.files', 'Files fork'),
+      ]);
+      expect(out.text, contains('Forked tinest.files as example.files'));
+    });
+
+    test('validate reports the validated revision', () async {
+      expect(
+        await run(<String>['plugin', 'validate', 'example.review']),
+        0,
+      );
+
+      expect(client.validatedPlugins, <String>['example.review']);
+      expect(out.text, contains('Valid example.review@1.0.0'));
+      expect(out.text, contains('revision-hash'));
+    });
+
+    test('sdk-sync repairs the exact SDK authoring sidecar', () async {
+      expect(
+        await run(<String>['plugin', 'sdk-sync', 'example.review']),
+        0,
+      );
+
+      expect(out.text, contains('sdk-abi-hash'));
+      expect(out.text, contains('.luarc.json'));
+    });
+
+    test(
+      'doctor checks the exact LuaLS release through the process port',
+      () async {
+        String? executable;
+        List<String>? arguments;
+
+        expect(
+          await run(
+            <String>['plugin', 'doctor', 'example.review'],
+            runPluginProcess: (command, args) async {
+              executable = command;
+              arguments = args;
+              return const PluginExternalProcessResult(
+                exitCode: 0,
+                stdout: 'Lua Language Server 3.18.2\n',
+                stderr: '',
+              );
+            },
+          ),
+          0,
+        );
+        expect(executable, 'lua-language-server');
+        expect(arguments, <String>['--version']);
+        expect(out.text, contains('LuaLS'));
+      },
+    );
+
+    test('typecheck scopes LuaLS to the app-data plugin workspace', () async {
+      List<String>? arguments;
+
+      expect(
+        await run(
+          <String>['plugin', 'typecheck', 'example.review', '--json'],
+          runPluginProcess: (_, args) async {
+            arguments = args;
+            return const PluginExternalProcessResult(
+              exitCode: 0,
+              stdout: '',
+              stderr: '',
+            );
+          },
+        ),
+        0,
+      );
+      expect(arguments, <String>[
+        '--check=/config/v5/plugins/example.review',
+        '--checklevel=Information',
+        '--check_format=pretty',
+      ]);
+      expect(out.text, contains('"pluginId":"example.review"'));
+    });
+
+    test(
+      'daemon validation failures retain the unavailable exit code',
+      () async {
+        client.failPluginValidation = true;
+
+        expect(
+          await run(<String>['plugin', 'validate', 'example.review']),
+          unavailableExitCode,
+        );
+        expect(err.text, contains('Plugin source is invalid.'));
+        expect(out.text, isEmpty);
+      },
+    );
+
+    test(
+      'reload requires an Agent and reports the activated revision',
+      () async {
+        expect(
+          await run(<String>[
+            'plugin',
+            'reload',
+            'example.review',
+            '--agent',
+            'tinest',
+          ]),
+          0,
+        );
+
+        expect(client.reloadedPlugins, <(String, String)>[
+          ('example.review', 'tinest'),
+        ]);
+        expect(out.text, contains('Reloaded example.review for tinest'));
+        expect(out.text, contains('revision-hash'));
+
+        final before = client.reloadedPlugins.length;
+        expect(
+          await run(<String>['plugin', 'reload', 'example.review']),
+          usageExitCode,
+        );
+        expect(client.reloadedPlugins, hasLength(before));
+      },
+    );
+
+    test(
+      'secret set uses the no-echo prompt and never prints its value',
+      () async {
+        var prompts = 0;
+        expect(
+          await run(
+            <String>[
+              'plugin',
+              'secret',
+              'set',
+              'example.review',
+              '--agent',
+              'tinest',
+              '--name',
+              'API_TOKEN',
+            ],
+            readSecret: () async {
+              prompts += 1;
+              return 'do-not-echo';
+            },
+          ),
+          0,
+        );
+
+        expect(prompts, 1);
+        expect(client.pluginSecrets, <String, String>{
+          'example.review/tinest/API_TOKEN': 'do-not-echo',
+        });
+        expect(out.text, contains('Stored API_TOKEN'));
+        expect(out.text, isNot(contains('do-not-echo')));
+      },
+    );
+
+    test('secret remove does not prompt or reveal existence', () async {
+      expect(
+        await run(
+          <String>[
+            'plugin',
+            'secret',
+            'remove',
+            'example.review',
+            '--agent',
+            'tinest',
+            '--name',
+            'API_TOKEN',
+          ],
+          readSecret: () async => fail('remove must not prompt'),
+        ),
+        0,
+      );
+
+      expect(client.removedPluginSecrets, <String>[
+        'example.review/tinest/API_TOKEN',
+      ]);
+      expect(out.text, contains('Removed API_TOKEN'));
     });
   });
 
@@ -438,7 +663,7 @@ final class _FakeHandle implements DaemonHandle {
 
 /// A [TinestClient] stand-in answering only the calls the CLI makes.
 final class _FakeClient
-    implements TinestClient, ProvidersApi, AgentsApi, RelayApi {
+    implements TinestClient, ProvidersApi, AgentsApi, PluginsApi, RelayApi {
   _FakeClient(this.now);
 
   final DateTime now;
@@ -449,9 +674,17 @@ final class _FakeClient
   final List<String> reset = <String>[];
   final List<String> created = <String>[];
   final List<String> validatedMarkdown = <String>[];
+  final List<(String, String)> scaffoldedPlugins = <(String, String)>[];
+  final List<(String, String, String)> forkedPlugins =
+      <(String, String, String)>[];
+  final List<String> validatedPlugins = <String>[];
+  final List<(String, String)> reloadedPlugins = <(String, String)>[];
+  final Map<String, String> pluginSecrets = <String, String>{};
+  final List<String> removedPluginSecrets = <String>[];
   int refreshes = 0;
   bool closed = false;
   bool relayEnabled = false;
+  bool failPluginValidation = false;
   final List<String> revokedDevices = <String>[];
 
   @override
@@ -459,6 +692,9 @@ final class _FakeClient
 
   @override
   AgentsApi get agents => this;
+
+  @override
+  PluginsApi get plugins => this;
 
   @override
   RelayApi get relay => this;
@@ -517,25 +753,117 @@ final class _FakeClient
       );
 
   AgentDefinitionDto _definition(String id) => AgentDefinitionDto(
+    version: 5,
     id: id,
     name: id,
     description: '',
     mode: AgentMode.primary,
-    promptEnabled: true,
-    systemPrompt: 'prompt',
-    model: const ModelSelectionDto(modelId: 'openai/gpt-5'),
-    modelControls: <String, ModelControlValueDto>{
-      'reasoning_effort': const ModelControlValueDto.stringValue(
-        value: 'medium',
-      ),
-    },
-    permissionMode: PermissionMode.ask,
+    model: const AgentModelSelectionDto(source: AgentModelSource.session),
+    driverId: 'tinest.standard/driver',
+    extensionIds: const <String>[],
     toolIds: const <String>[],
+    pluginSettings: const <String, Map<String, dynamic>>{},
     callableAgentIds: const <String>[],
+    prompt: 'prompt',
     contentHash: 'hash',
     sourcePath: '/config/agents/$id.md',
     isBuiltIn: id == 'tinest',
   );
+
+  PluginDescriptorDto _plugin(String id) => PluginDescriptorDto(
+    apiMajor: 5,
+    id: id,
+    version: '1.0.0',
+    name: 'Review tools',
+    entrypoint: 'main.lua',
+    source: PluginSource.user,
+    sourcePath: '/config/v5/plugins/$id',
+    requestedCapabilities: const <String>[],
+    revision: PluginRevisionDto(
+      pluginId: id,
+      contentHash: 'revision-hash',
+      manifestHash: 'manifest-hash',
+      sdkAbiHash: 'sdk-abi-hash',
+      executionRevisionHash: 'execution-revision-hash',
+      requestedCapabilities: const <String>[],
+    ),
+  );
+
+  @override
+  Future<PluginDescriptorDto> scaffoldPlugin(String id, String name) async {
+    scaffoldedPlugins.add((id, name));
+    return _plugin(id);
+  }
+
+  @override
+  Future<PluginDescriptorDto> forkPlugin({
+    required String sourceId,
+    required String id,
+    required String name,
+  }) async {
+    forkedPlugins.add((sourceId, id, name));
+    return _plugin(id);
+  }
+
+  @override
+  Future<PluginDescriptorDto> validatePlugin(String id) async {
+    validatedPlugins.add(id);
+    if (failPluginValidation) {
+      throw const TinestClientException(
+        'Plugin source is invalid.',
+        code: 'invalid_plugin',
+      );
+    }
+    return _plugin(id);
+  }
+
+  @override
+  Future<PluginDescriptorDto> reloadPlugin(String id, String agentId) async {
+    reloadedPlugins.add((id, agentId));
+    return _plugin(id);
+  }
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> getPluginAuthoringEnvironment(
+    String id,
+  ) async => _authoring(id);
+
+  @override
+  Future<PluginAuthoringEnvironmentDto> syncPluginAuthoringEnvironment(
+    String id,
+  ) async => _authoring(id);
+
+  PluginAuthoringEnvironmentDto _authoring(String id) =>
+      PluginAuthoringEnvironmentDto(
+        pluginId: id,
+        apiMajor: 5,
+        sdkAbiHash: 'sdk-abi-hash',
+        luaRuntimeVersion: '5.5.1',
+        luaLanguageServerVersion: '3.18.2',
+        pluginPath: '/config/v5/plugins/$id',
+        sdkLibraryPath: '/config/v5/plugin-sdk/api-5/sdk-abi-hash/library',
+        configurationPath: '/config/v5/plugins/$id/.luarc.json',
+        synchronized: true,
+      );
+
+  @override
+  Future<void> setPluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+    required String value,
+  }) async {
+    pluginSecrets['$pluginId/$agentId/$name'] = value;
+  }
+
+  @override
+  Future<void> removePluginSecret({
+    required String agentId,
+    required String pluginId,
+    required String name,
+  }) async {
+    removedPluginSecrets.add('$pluginId/$agentId/$name');
+  }
 
   @override
   Future<ProviderCatalogDto> listProviderCatalog() async => ProviderCatalogDto(

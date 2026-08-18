@@ -77,6 +77,7 @@ _SettingsRouteConfiguration _settingsRouteConfiguration(Uri uri) {
     'permissions' => SettingsCategory.permission,
     'projects' => SettingsCategory.project,
     'agents' => SettingsCategory.agent,
+    'plugins' => SettingsCategory.plugin,
     'mcp' => SettingsCategory.mcp,
     'skills' => SettingsCategory.skill,
     'daemons' => SettingsCategory.daemon,
@@ -194,6 +195,7 @@ void openSettingsTask(GoRouter router) {
     TypedGoRoute<PermissionSettingsRoute>(path: '/settings/permissions'),
     TypedGoRoute<ProjectSettingsRoute>(path: '/settings/projects'),
     TypedGoRoute<AgentSettingsRoute>(path: '/settings/agents'),
+    TypedGoRoute<PluginSettingsRoute>(path: '/settings/plugins'),
     TypedGoRoute<McpSettingsRoute>(path: '/settings/mcp'),
     TypedGoRoute<SkillSettingsRoute>(path: '/settings/skills'),
     TypedGoRoute<DaemonSettingsRoute>(path: '/settings/daemons'),
@@ -552,6 +554,25 @@ class AgentSettingsRoute extends GoRouteData with $AgentSettingsRoute {
         name: 'settings-category-agent',
         kind: SettingsRouteContentKind.category,
         category: SettingsCategory.agent,
+        hostId: hostId,
+      );
+}
+
+/// Unified settings route with Plugins selected.
+class PluginSettingsRoute extends GoRouteData with $PluginSettingsRoute {
+  /// Creates the plugin settings route.
+  const PluginSettingsRoute({this.hostId});
+
+  /// Preferred daemon in the plugin selector.
+  final String? hostId;
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _settingsContentPage(
+        state,
+        name: 'settings-category-plugin',
+        kind: SettingsRouteContentKind.category,
+        category: SettingsCategory.plugin,
         hostId: hostId,
       );
 }

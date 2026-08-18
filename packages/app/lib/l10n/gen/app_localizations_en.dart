@@ -607,6 +607,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The daemon hit an unexpected problem. Copy the details below when reporting it.';
 
   @override
+  String get errorPluginUiRejected =>
+      'The plugin interface request was rejected.';
+
+  @override
   String get errorSessionTurnActive =>
       'This session is running a turn. Wait for it to finish or stop it, then change the setting.';
 
@@ -1038,10 +1042,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsModelHeading => 'Model';
 
   @override
+  String get agentSettingsSessionModel => 'Use the session model';
+
+  @override
+  String get agentSettingsPinnedModel => 'Pin a model';
+
+  @override
   String get agentSettingsProviderConnectionId => 'Provider connection ID';
 
   @override
   String get agentSettingsModelId => 'Model ID';
+
+  @override
+  String get agentSettingsHarnessHeading => 'Agent harness';
+
+  @override
+  String get agentSettingsHarnessDescription =>
+      'The Agent owns exactly one driver, ordered extensions, and its model-visible tools.';
+
+  @override
+  String get agentSettingsDriver => 'Driver';
+
+  @override
+  String get agentSettingsNoDrivers => 'No plugin driver is installed.';
+
+  @override
+  String get agentSettingsExtensions => 'Ordered extensions';
+
+  @override
+  String get agentSettingsExtensionsDescription =>
+      'Extensions run serially in this order.';
+
+  @override
+  String get agentSettingsMoveUp => 'Move earlier';
+
+  @override
+  String get agentSettingsMoveDown => 'Move later';
+
+  @override
+  String get agentSettingsPluginTools => 'Plugin tools';
+
+  @override
+  String get agentSettingsPluginToolsDescription =>
+      'Every model-visible tool can be switched independently for this Agent.';
+
+  @override
+  String get agentSettingsPluginSettings => 'Plugin settings';
+
+  @override
+  String get agentSettingsPluginSettingsDescription =>
+      'Settings are stored in this Agent definition as JSON objects.';
+
+  @override
+  String get agentSettingsPluginSettingsRemove =>
+      'Clear the field to remove an existing settings entry.';
+
+  @override
+  String agentSettingsPluginSettingsLabel(String plugin) {
+    return '$plugin settings (JSON)';
+  }
+
+  @override
+  String get agentSettingsCapabilities => 'Plugin capabilities';
+
+  @override
+  String get agentSettingsCapabilitiesDescription =>
+      'Grants are kept in daemon state for this Agent, not in the editable Agent file.';
+
+  @override
+  String get agentSettingsNoCapabilities =>
+      'The selected plugins request no capabilities.';
+
+  @override
+  String get agentSettingsHarnessDiagnostics => 'Harness diagnostics';
+
+  @override
+  String agentSettingsHarnessMissing(String kind, String id) {
+    return 'Configured $kind is unavailable: $id';
+  }
+
+  @override
+  String get agentSettingsHarnessKindDriver => 'driver';
+
+  @override
+  String get agentSettingsHarnessKindExtension => 'extension';
+
+  @override
+  String get agentSettingsHarnessKindTool => 'tool';
+
+  @override
+  String get agentSettingsHarnessKindPlugin => 'plugin';
+
+  @override
+  String get agentSettingsHarnessKindDependency => 'dependency';
+
+  @override
+  String get agentSettingsHarnessKindModel => 'model';
+
+  @override
+  String agentSettingsHarnessModelMismatch(String capability) {
+    return 'The selected model does not satisfy driver capability: $capability';
+  }
+
+  @override
+  String agentSettingsHarnessInvalidSettings(String plugin) {
+    return '$plugin settings must be a valid JSON object.';
+  }
+
+  @override
+  String get agentSettingsPluginsLoading => 'Loading plugin contributions…';
 
   @override
   String get agentSettingsBehaviourHeading => 'Behaviour';
@@ -1080,9 +1189,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String agentSettingsToolGroupSummary(int enabled, int total) {
     return '$enabled of $total on';
   }
-
-  @override
-  String get agentSettingsToolGroupAlwaysOn => 'Always available';
 
   @override
   String get agentSettingsSubagents => 'Callable subagents';
@@ -1356,22 +1462,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelPickerNoResults => 'No results.';
 
   @override
-  String get composerPlan => 'Plan';
-
-  @override
-  String get composerRun => 'Run';
-
-  @override
-  String get composerMode => 'Mode';
-
-  @override
-  String get composerPlanTooltip => 'Only drafts a plan. Shift+Tab to switch';
-
-  @override
-  String get composerRunTooltip =>
-      'Carries the request out directly. Shift+Tab to switch';
-
-  @override
   String get composerSelectAgent => 'Select an agent';
 
   @override
@@ -1583,9 +1673,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatApprovalAllow => 'Allow';
 
   @override
-  String get chatPlanTitle => 'Plan';
-
-  @override
   String usageInput(int tokens) {
     return 'in $tokens';
   }
@@ -1621,11 +1708,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String toolExecRunning(int lines) {
-    return 'running · $lines lines';
-  }
-
-  @override
   String chatAnswerTyped(String answer) {
     return '$answer (typed)';
   }
@@ -1641,11 +1723,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String chatSleepDone(int seconds) {
     return 'Waited ${seconds}s';
-  }
-
-  @override
-  String toolSearchFound(int found, int remaining) {
-    return '$found loaded · $remaining still hidden';
   }
 
   @override
@@ -1693,26 +1770,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String toolMcpResources(int count) {
-    return '$count resources';
-  }
-
-  @override
-  String toolMcpResourceTemplates(int count) {
-    return '$count templates';
-  }
-
-  @override
-  String toolMcpResourceRead(int count) {
-    return '$count blocks';
-  }
-
-  @override
-  String toolImageLoaded(int bytes) {
-    return '$bytes bytes viewed';
-  }
-
-  @override
   String get chatQuestionSubmit => 'Answer';
 
   @override
@@ -1731,279 +1788,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatQuestionOtherPlaceholder => 'Type your answer';
 
   @override
-  String get chatPlanStepPending => 'not started';
-
-  @override
-  String get chatPlanStepInProgress => 'in progress';
-
-  @override
-  String get chatPlanStepCompleted => 'completed';
-
-  @override
-  String get chatPlanPrompt => 'Proceed with this plan?';
-
-  @override
-  String get chatPlanKeepPlanning => 'Keep planning';
-
-  @override
-  String get chatPlanRunInNewSession => 'Run in a new session';
-
-  @override
-  String get chatPlanRun => 'Run the plan';
-
-  @override
-  String get planImplementPrompt => 'Carry out this plan.';
-
-  @override
-  String get planFreshSessionPreamble =>
-      'A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.';
-
-  @override
   String get toolRejected => 'Rejected';
 
   @override
   String get toolFailed => 'Failed';
-
-  @override
-  String get toolEmptyFile => 'Empty file';
-
-  @override
-  String toolReadLines(int count) {
-    return 'Read $count lines';
-  }
-
-  @override
-  String toolListItems(int count) {
-    return '$count items';
-  }
-
-  @override
-  String toolListEntries(int directories, int files) {
-    return '$directories directories · $files files';
-  }
-
-  @override
-  String get toolNoMatches => 'No matches';
-
-  @override
-  String toolMatches(int matches, int files) {
-    return '$matches matches in $files files';
-  }
-
-  @override
-  String toolMatchesTruncated(int matches, int files) {
-    return '$matches+ matches in $files files';
-  }
-
-  @override
-  String get toolNoPaths => 'No files';
-
-  @override
-  String toolPaths(int count) {
-    return '$count files';
-  }
-
-  @override
-  String toolPathsTruncated(int count) {
-    return '$count+ files';
-  }
-
-  @override
-  String toolAttached(String name) {
-    return 'Attached $name';
-  }
-
-  @override
-  String toolSkillLoaded(String name) {
-    return 'Loaded $name';
-  }
-
-  @override
-  String toolSkills(int count) {
-    return '$count skills';
-  }
-
-  @override
-  String toolSkillsTruncated(int count) {
-    return '$count+ skills';
-  }
-
-  @override
-  String toolEditFiles(int count) {
-    return 'Edit($count files)';
-  }
-
-  @override
-  String toolPatchSummary(int added, int removed, int files) {
-    return '+$added -$removed · $files files';
-  }
-
-  @override
-  String toolCommandResult(int exitCode, int lines) {
-    return 'exit $exitCode · $lines lines';
-  }
-
-  @override
-  String get toolTitleEdit => 'Edit';
-
-  @override
-  String toolTitleEditPath(String path) {
-    return 'Edit($path)';
-  }
-
-  @override
-  String toolTitleAttach(String path) {
-    return 'Attach($path)';
-  }
-
-  @override
-  String toolTitleAttachment(String id) {
-    return 'Attachment($id)';
-  }
-
-  @override
-  String get toolTitleNow => 'Now()';
-
-  @override
-  String toolTitleSleep(int milliseconds) {
-    return 'Sleep(${milliseconds}ms)';
-  }
-
-  @override
-  String get toolTitleSleepUnknown => 'Sleep()';
-
-  @override
-  String toolTitleSpawn(String task) {
-    return 'Spawn($task)';
-  }
-
-  @override
-  String toolTitleSend(String target) {
-    return 'Send($target)';
-  }
-
-  @override
-  String toolTitleFollowup(String target) {
-    return 'Followup($target)';
-  }
-
-  @override
-  String get toolTitleWait => 'Wait()';
-
-  @override
-  String toolTitleInterrupt(String target) {
-    return 'Interrupt($target)';
-  }
-
-  @override
-  String get toolTitleAgents => 'Agents()';
-
-  @override
-  String get toolTitleContext => 'Context()';
-
-  @override
-  String get toolTitleNewContext => 'NewContext()';
-
-  @override
-  String toolTitleBash(String command) {
-    return 'Bash($command)';
-  }
-
-  @override
-  String toolTitleStdin(String session) {
-    return 'Stdin($session)';
-  }
-
-  @override
-  String toolTitleStdinChars(String session, String chars) {
-    return 'Stdin($session ← $chars)';
-  }
-
-  @override
-  String toolTitleGlob(String pattern) {
-    return 'Glob($pattern)';
-  }
-
-  @override
-  String toolTitleGlobIn(String pattern, String path) {
-    return 'Glob($pattern in $path)';
-  }
-
-  @override
-  String toolTitleList(String path) {
-    return 'List($path)';
-  }
-
-  @override
-  String toolTitleMcpResources(String server) {
-    return 'Resources($server)';
-  }
-
-  @override
-  String toolTitleMcpResourceTemplates(String server) {
-    return 'ResourceTemplates($server)';
-  }
-
-  @override
-  String toolTitleMcpResource(String server, String uri) {
-    return 'Resource($server: $uri)';
-  }
-
-  @override
-  String toolTitleRead(String path) {
-    return 'Read($path)';
-  }
-
-  @override
-  String toolTitleReadRange(String path, String offset, String limit) {
-    return 'Read($path @$offset+$limit)';
-  }
-
-  @override
-  String toolTitleAsk(String headers) {
-    return 'Ask($headers)';
-  }
-
-  @override
-  String toolTitleSearch(String query) {
-    return 'Search($query)';
-  }
-
-  @override
-  String toolTitleSearchIn(String query, String path) {
-    return 'Search($query in $path)';
-  }
-
-  @override
-  String get toolTitleSkills => 'Skills()';
-
-  @override
-  String toolTitleSkill(String name) {
-    return 'Skill($name)';
-  }
-
-  @override
-  String toolTitleSkillResource(String name, String resource) {
-    return 'Skill($name:$resource)';
-  }
-
-  @override
-  String toolTitleToolSearch(String query) {
-    return 'Tools($query)';
-  }
-
-  @override
-  String toolTitlePlan(int count) {
-    return 'Plan($count)';
-  }
-
-  @override
-  String toolTitleView(String path) {
-    return 'View($path)';
-  }
-
-  @override
-  String get toolArgumentAllServers => 'all';
 
   @override
   String get directoryBrowserTitle => 'Choose a folder on the daemon';
@@ -2269,32 +2057,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpSettingsSecretValue => 'Value';
 
   @override
-  String get agentSettingsToolAlwaysOn => 'Always available';
-
-  @override
-  String toolContextRemaining(int remaining, int window) {
-    return '$remaining of $window tokens left';
-  }
-
-  @override
-  String toolContextRemainingUnknown(int used) {
-    return '$used tokens used';
-  }
-
-  @override
-  String get chatContextReset => 'New context window';
-
-  @override
-  String get chatContextCompacted => 'Conversation summarized';
-
-  @override
-  String get composerCommandCompactLabel => 'compact';
-
-  @override
-  String get composerCommandCompactDescription =>
-      'Summarize the conversation to free the context window.';
-
-  @override
   String get sessionContextMeter => 'Context';
 
   @override
@@ -2396,13 +2158,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerCommandNewDescription => 'Start a new session.';
 
   @override
-  String get composerCommandModeLabel => 'mode';
-
-  @override
-  String get composerCommandModeDescription =>
-      'Switch between planning and working.';
-
-  @override
   String get composerCommandAgentsLabel => 'agents';
 
   @override
@@ -2419,84 +2174,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerCommandHelpDescription => 'List the available commands.';
-
-  @override
-  String get composerCommandGoalLabel => 'goal';
-
-  @override
-  String get composerCommandGoalDescription =>
-      'Create or manage persistent session work.';
-
-  @override
-  String get goalStatusActive => 'Active';
-
-  @override
-  String get goalStatusPaused => 'Paused';
-
-  @override
-  String get goalStatusBlocked => 'Blocked';
-
-  @override
-  String get goalStatusUsageLimited => 'Usage limited';
-
-  @override
-  String get goalStatusBudgetLimited => 'Budget reached';
-
-  @override
-  String get goalStatusComplete => 'Complete';
-
-  @override
-  String get goalPlanHold => 'Resumes in Run mode';
-
-  @override
-  String goalElapsed(int seconds) {
-    return '${seconds}s elapsed';
-  }
-
-  @override
-  String goalTokenUsage(int used, int budget) {
-    return '$used / $budget tokens';
-  }
-
-  @override
-  String get goalPause => 'Pause goal';
-
-  @override
-  String get goalResume => 'Resume goal';
-
-  @override
-  String get goalEdit => 'Edit goal';
-
-  @override
-  String get goalClear => 'Clear goal';
-
-  @override
-  String get goalDialogTitle => 'Session goal';
-
-  @override
-  String get goalObjectiveLabel => 'Objective';
-
-  @override
-  String get goalObjectiveRequired => 'Enter 1–4,000 characters.';
-
-  @override
-  String get goalBudgetLabel => 'Token budget (optional)';
-
-  @override
-  String get goalBudgetInvalid => 'Enter a positive token budget.';
-
-  @override
-  String get goalStart => 'Start goal';
-
-  @override
-  String get goalReplaceTitle => 'Replace current goal?';
-
-  @override
-  String get goalReplaceDescription =>
-      'This starts a new goal and resets recorded usage.';
-
-  @override
-  String get goalReplaceAction => 'Replace goal';
 
   @override
   String get composerSuggestionsLabel => 'Suggestions';
@@ -2521,9 +2198,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatToolActionDelegate => 'Coordinate agents';
-
-  @override
-  String get chatToolActionPlan => 'Update plan';
 
   @override
   String get chatToolActionAsk => 'Ask a question';
@@ -2569,4 +2243,201 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatToolDetailsResult => 'Result';
+
+  @override
+  String get settingsCategoryPlugin => 'Plugins';
+
+  @override
+  String get pluginSettingsHeading => 'Plugins';
+
+  @override
+  String pluginSettingsCount(int count) {
+    return '$count plugins';
+  }
+
+  @override
+  String get pluginSettingsSelect => 'Select a plugin.';
+
+  @override
+  String get pluginSettingsAdd => 'Create plugin';
+
+  @override
+  String get pluginSettingsAddTitle => 'Create plugin starter';
+
+  @override
+  String get pluginSettingsEmpty => 'No plugins are installed.';
+
+  @override
+  String get pluginSettingsSource => 'Source';
+
+  @override
+  String get pluginSettingsSourceBuiltIn => 'Built in';
+
+  @override
+  String get pluginSettingsSourceUser => 'User';
+
+  @override
+  String get pluginSettingsSourcePath => 'Source path';
+
+  @override
+  String get pluginSettingsApi => 'Plugin API';
+
+  @override
+  String pluginSettingsApiValue(int api) {
+    return 'API $api';
+  }
+
+  @override
+  String get pluginSettingsRevision => 'Active revision';
+
+  @override
+  String get pluginSettingsRevisionMissing => 'No active revision';
+
+  @override
+  String get pluginSettingsStale => 'Using last known good revision';
+
+  @override
+  String get pluginSettingsAuthoring => 'Lua development environment';
+
+  @override
+  String get pluginSettingsAuthoringStatus => 'Authoring status';
+
+  @override
+  String get pluginSettingsAuthoringSynchronized => 'Synchronized';
+
+  @override
+  String get pluginSettingsAuthoringNeedsSync => 'Synchronization required';
+
+  @override
+  String get pluginSettingsSdkAbi => 'SDK ABI';
+
+  @override
+  String get pluginSettingsLuaRuntime => 'Lua runtime';
+
+  @override
+  String get pluginSettingsLuaLs => 'Lua Language Server';
+
+  @override
+  String get pluginSettingsLuaConfig => 'LuaLS configuration';
+
+  @override
+  String get pluginSettingsSdkSync => 'Synchronize SDK';
+
+  @override
+  String get pluginSettingsCapabilities => 'Requested capabilities';
+
+  @override
+  String get pluginSettingsCapabilitiesNone =>
+      'No host capabilities requested.';
+
+  @override
+  String get pluginSettingsAgents => 'Referencing agents';
+
+  @override
+  String get pluginSettingsAgentsNone => 'No Agent references this plugin.';
+
+  @override
+  String get pluginSettingsContributions => 'Contributions';
+
+  @override
+  String get pluginSettingsDiagnostics => 'Diagnostics';
+
+  @override
+  String get pluginSettingsDiagnosticsNone => 'No diagnostics.';
+
+  @override
+  String get pluginSettingsValidate => 'Validate';
+
+  @override
+  String get pluginSettingsReload => 'Reload';
+
+  @override
+  String get pluginSettingsOpenPath => 'Open plugin folder';
+
+  @override
+  String get pluginSettingsFork => 'Fork';
+
+  @override
+  String pluginSettingsForkTitle(String plugin) {
+    return 'Fork $plugin';
+  }
+
+  @override
+  String get pluginSettingsForkDescription =>
+      'Copies the validated revision into a new app-data plugin without enabling it for any Agent.';
+
+  @override
+  String get pluginSettingsReloadAgent => 'Agent grants used for reload';
+
+  @override
+  String get pluginSettingsReloadNeedsAgent =>
+      'Reference this plugin from an Agent before reloading it.';
+
+  @override
+  String get pluginSettingsId => 'Plugin ID';
+
+  @override
+  String get pluginSettingsName => 'Name';
+
+  @override
+  String get pluginSettingsIdInvalid =>
+      'Use a lowercase dot-separated namespace, such as example.tools.';
+
+  @override
+  String get pluginSettingsIdTaken => 'That plugin ID already exists.';
+
+  @override
+  String get pluginSettingsUi => 'Plugin interface';
+
+  @override
+  String get pluginUiLoading => 'Loading plugin interface';
+
+  @override
+  String get pluginUiLoadFailed => 'The plugin interface could not be loaded.';
+
+  @override
+  String get pluginUiInvalidTitle => 'Unsupported plugin interface';
+
+  @override
+  String pluginUiInvalidDescription(String appName) {
+    return 'This document is invalid, so $appName rendered its source as a read-only disclosure.';
+  }
+
+  @override
+  String pluginUiSemanticLabel(String plugin) {
+    return '$plugin plugin interface';
+  }
+
+  @override
+  String get pluginSessionControlLoading => 'Loading session control';
+
+  @override
+  String get pluginSessionControlLoadFailed =>
+      'The plugin session control could not be loaded.';
+
+  @override
+  String get pluginSessionControlUnsupported =>
+      'Unsupported plugin session control';
+
+  @override
+  String get pluginSessionControlSaveFailed =>
+      'The plugin session control could not be saved.';
+
+  @override
+  String get pluginContributionDriver => 'Driver';
+
+  @override
+  String get pluginContributionExtension => 'Extension';
+
+  @override
+  String get pluginContributionTool => 'Tool';
+
+  @override
+  String get pluginContributionSessionControl => 'Session control';
+
+  @override
+  String get pluginContributionUi => 'Interface';
+
+  @override
+  String get pluginSettingsActionFailed => 'Plugin action failed';
 }

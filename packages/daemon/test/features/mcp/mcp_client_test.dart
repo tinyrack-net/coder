@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:daemon/src/features/mcp/infrastructure/mcp.dart';
 import 'package:daemon/src/features/mcp/infrastructure/testing.dart';
+import 'package:daemon/src/shared/ports/request_cancellation.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:test/test.dart';
 
@@ -267,6 +268,82 @@ void main() {
     expect(call['arguments'], <String, dynamic>{'v': 1});
   });
 
+  test('an already-cancelled tool call is never transmitted', () async {
+    final server = ScriptedMcpServer();
+    final client = McpClient(transport: server.transport);
+    addTearDown(client.close);
+    await client.connect();
+    final cancellation = _TestRequestCancellation()..cancel();
+
+    await expectLater(
+      client.callTool(
+        'echo',
+        const <String, dynamic>{},
+        cancellation: cancellation,
+      ),
+      throwsA(isA<McpRequestCancelled>()),
+    );
+
+    expect(
+      server.methods.where((method) => method == McpMethod.toolsCall),
+      isEmpty,
+    );
+    expect(client.isConnected, isTrue);
+  });
+
+  test(
+    'cancelling one pending tool call preserves unrelated requests',
+    () async {
+      final server = ScriptedMcpServer(answerToolCalls: false);
+      final client = McpClient(transport: server.transport);
+      addTearDown(client.close);
+      await client.connect();
+      final cancellation = _TestRequestCancellation();
+
+      final pending = client.callTool(
+        'echo',
+        const <String, dynamic>{},
+        cancellation: cancellation,
+      );
+      final unrelated = client.callTool(
+        'other',
+        const <String, dynamic>{'after': true},
+      );
+      await pumpEventQueue();
+      final calls = server.requests
+          .where((message) => message['method'] == McpMethod.toolsCall)
+          .toList(growable: false);
+      cancellation.cancel();
+      server.transport.deliver(<String, dynamic>{
+        'jsonrpc': '2.0',
+        'id': calls.last['id'],
+        'result': <String, dynamic>{
+          'content': <Map<String, dynamic>>[
+            <String, dynamic>{'type': 'text', 'text': 'unrelated'},
+          ],
+        },
+      });
+
+      await expectLater(pending, throwsA(isA<McpRequestCancelled>()));
+      final result = await unrelated;
+      await pumpEventQueue();
+      final notification = server.requests.lastWhere(
+        (message) => message['method'] == McpMethod.cancelled,
+      );
+      expect(notification['id'], isNull);
+      expect(
+        notification['params'],
+        <String, dynamic>{
+          'requestId': isA<int>(),
+          'reason': 'the request was cancelled by its caller',
+        },
+      );
+
+      expect((result.content.single as McpTextContent).text, 'unrelated');
+      expect(client.isConnected, isTrue);
+    },
+  );
+
   test('a JSON-RPC error response surfaces as a server exception', () async {
     final server = ScriptedMcpServer(
       callError: <String, dynamic>{'code': -32602, 'message': 'bad args'},
@@ -422,4 +499,30 @@ void main() {
 
     expect(client.isConnected, isTrue);
   });
+}
+
+final class _TestRequestCancellation implements RequestCancellation {
+  final List<void Function()> _callbacks = <void Function()>[];
+  bool _cancelled = false;
+
+  @override
+  bool get isCancelled => _cancelled;
+
+  @override
+  void onCancel(void Function() callback) {
+    if (_cancelled) {
+      callback();
+      return;
+    }
+    _callbacks.add(callback);
+  }
+
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    for (final callback in List<void Function()>.of(_callbacks)) {
+      callback();
+    }
+    _callbacks.clear();
+  }
 }

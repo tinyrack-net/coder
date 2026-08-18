@@ -8,6 +8,30 @@ import 'package:uuid/uuid.dart';
 
 export 'package:agent/agent.dart' show Clock, SystemClock;
 
+/// One host-owned skill document selected for implicit turn guidance.
+///
+/// This is raw catalog data. The active Lua extension decides whether and how
+/// to turn it into model prompt blocks.
+final class ImplicitSkillDocument {
+  /// Creates one immutable implicit skill document.
+  const ImplicitSkillDocument({
+    required this.name,
+    required this.instructions,
+  });
+
+  /// Stable catalog name.
+  final String name;
+
+  /// Markdown body loaded from the protected skill source.
+  final String instructions;
+}
+
+/// Optional metadata surface implemented by catalogs with implicit skills.
+abstract interface class ImplicitSkillDocumentSource {
+  /// Returns protected implicit documents in deterministic display order.
+  List<ImplicitSkillDocument> implicitSkillDocuments();
+}
+
 /// Severity of a daemon diagnostic record.
 enum DaemonLogLevel {
   /// Detail useful only while tracing a specific problem.

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/prompts/infrastructure/built_in_skills.dart';
+import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 import 'package:yaml/yaml.dart';
@@ -832,7 +833,8 @@ final class SkillCatalogService {
 }
 
 /// Immutable turn catalog and its trusted, always-injected instructions.
-final class SkillTurnCatalog implements SkillCatalog {
+final class SkillTurnCatalog
+    implements SkillCatalog, ImplicitSkillDocumentSource {
   SkillTurnCatalog._(List<_ResolvedSkill> skills)
     : _skills = List<_ResolvedSkill>.unmodifiable(skills),
       _byName = <String, _ResolvedSkill>{
@@ -842,18 +844,17 @@ final class SkillTurnCatalog implements SkillCatalog {
   final List<_ResolvedSkill> _skills;
   final Map<String, _ResolvedSkill> _byName;
 
-  /// Instructions from protected built-ins that every turn receives.
-  String? get implicitInstructions {
+  @override
+  List<ImplicitSkillDocument> implicitSkillDocuments() {
     final implicit = _skills.where((skill) => skill.isImplicit).toList()
       ..sort(_compareDisplayOrder);
-    if (implicit.isEmpty) return null;
-    return <String>[
-      '## Implicit skills',
-      for (final skill in implicit) ...<String>[
-        '### ${skill.name}',
-        skill.body,
-      ],
-    ].join('\n\n');
+    return <ImplicitSkillDocument>[
+      for (final skill in implicit)
+        ImplicitSkillDocument(
+          name: skill.name,
+          instructions: skill.body,
+        ),
+    ];
   }
 
   @override

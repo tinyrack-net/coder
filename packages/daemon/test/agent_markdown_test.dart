@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
@@ -12,12 +13,14 @@ version: 5
 name: Reviewer
 description: Reviews code
 mode: subagent
-promptEnabled: true
-model: deepseek/deepseek-chat
-permissionMode: readOnly
+model:
+  source: session
+driver: acme.driver/main
+extensions: []
 tools:
-  - read_file
-  - future_tool
+  - acme.files/read
+  - acme.future/tool
+pluginSettings: {}
 callableAgents: []
 customField: preserved
 ---
@@ -48,9 +51,9 @@ Review the requested code without modifying it.
 
     expect(parsed.id, 'reviewer');
     expect(parsed.mode, AgentMode.subagent);
-    expect(parsed.model!.modelId, 'deepseek/deepseek-chat');
-    expect(parsed.toolIds, <String>['read_file', 'future_tool']);
-    expect(parsed.systemPrompt, contains('Review the requested code'));
+    expect(parsed.model.source, AgentModelSource.session);
+    expect(parsed.toolIds, <String>['acme.files/read', 'acme.future/tool']);
+    expect(parsed.prompt, contains('Review the requested code'));
     expect(parsed.contentHash, isNotEmpty);
     expect(
       const AgentMarkdownCodec()
@@ -68,18 +71,27 @@ Review the requested code without modifying it.
     );
   });
 
-  test('omitted permission mode inherits the daemon default', () {
+  test('a zero-tool Agent remains a valid zero-tool harness', () {
     const codec = AgentMarkdownCodec();
-    final inherited = codec.decode(
+    final zeroTools = codec.decode(
       id: 'reviewer',
       sourcePath: '/config/agents/reviewer.md',
-      source: source.replaceFirst('permissionMode: readOnly\n', ''),
+      source: source.replaceFirst(
+        'tools:\n  - acme.files/read\n  - acme.future/tool',
+        'tools: []',
+      ),
     );
 
-    expect(inherited.permissionMode, isNull);
+    expect(zeroTools.toolIds, isEmpty);
     expect(
-      codec.encodeNew(inherited),
-      isNot(contains('permissionMode:')),
+      codec
+          .decode(
+            id: 'reviewer',
+            sourcePath: '/config/agents/reviewer.md',
+            source: codec.encodeNew(zeroTools),
+          )
+          .toolIds,
+      isEmpty,
     );
   });
 
@@ -94,7 +106,7 @@ Review the requested code without modifying it.
       originalSource: source,
       definition: parsed.copyWith(
         name: 'Security Reviewer',
-        systemPrompt: 'Audit security boundaries.',
+        prompt: 'Audit security boundaries.',
       ),
     );
 
@@ -104,29 +116,12 @@ Review the requested code without modifying it.
     expect(updated, endsWith('Audit security boundaries.\n'));
   });
 
-  test('omits model and controls when the agent uses the daemon default', () {
-    const codec = AgentMarkdownCodec();
-    final withoutModel = codec.decode(
-      id: 'reviewer',
-      sourcePath: '/config/agents/reviewer.md',
-      source: source.replaceFirst('model: deepseek/deepseek-chat\n', ''),
-    );
-
-    expect(withoutModel.model, isNull);
-    expect(withoutModel.modelControls, isEmpty);
-    expect(codec.encodeNew(withoutModel), isNot(contains('\nmodel:')));
-    expect(codec.encodeNew(withoutModel), isNot(contains('modelControls:')));
-  });
-
-  test('rejects controls when no concrete model is configured', () {
+  test('rejects fixed model settings without provider and model IDs', () {
     expect(
       () => const AgentMarkdownCodec().decode(
         id: 'broken',
         sourcePath: '/config/agents/broken.md',
-        source: source.replaceFirst(
-          'model: deepseek/deepseek-chat',
-          'modelControls:\n  reasoning_effort: high',
-        ),
+        source: source.replaceFirst('session', 'fixed'),
       ),
       throwsA(isA<FormatException>()),
     );
@@ -163,19 +158,19 @@ Review the requested code without modifying it.
           .replaceFirst('mode: subagent', 'mode: subagent')
           .replaceFirst('callableAgents: []', 'callableAgents: [tinest]'),
       source.replaceFirst(
-        'model: deepseek/deepseek-chat',
-        'model: [invalid]',
+        'model:\n  source: session',
+        'model: invalid',
       ),
       source.replaceFirst('name: Reviewer', 'name: ""'),
       source.replaceFirst('name: Reviewer\n', ''),
-      source.replaceFirst('promptEnabled: true', 'promptEnabled: yes'),
-      source.replaceFirst('tools:\n  - read_file\n  - future_tool', 'tools: 4'),
-      source.replaceFirst('version: 5', 'version: one'),
       source.replaceFirst(
-        'permissionMode: readOnly',
-        'modelControls: []\npermissionMode: readOnly',
+        'tools:\n  - acme.files/read\n  - acme.future/tool',
+        'tools: 4',
       ),
-      source.replaceFirst('permissionMode: readOnly', 'permissionMode: root'),
+      source.replaceFirst('version: 5', 'version: one'),
+      source.replaceFirst('driver: acme.driver/main', 'driver: invalid'),
+      source.replaceFirst('extensions: []', 'extensions: [Acme.Plan]'),
+      source.replaceFirst('pluginSettings: {}', 'pluginSettings: []'),
       source.replaceFirst('name: Reviewer', '1: invalid-key'),
     ];
 
@@ -319,21 +314,26 @@ Review the requested code without modifying it.
   );
 
   test(
-    'domain service validates callable subagents and decorates unknown tools',
+    'domain service accepts plugin tools and validates callable subagents',
     () async {
       final directory = await Directory.systemTemp.createTemp('tinest-agents-');
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
-        alwaysOnToolIds: const <String>{},
         store: store,
-        tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
+        contributions: _toolCatalog(const <AgentToolDefinitionDto>[
           AgentToolDefinitionDto(
-            id: 'read_file',
+            id: 'acme.files/read',
+            originPluginId: 'acme.files',
+            contributionId: 'read',
             name: 'read_file',
             description: 'Read files.',
             risk: ToolRisk.read,
-            group: ToolGroup.filesystem,
+            group: 'filesystem',
+            kind: AgentToolKind.function,
+            inputSchema: <String, dynamic>{'type': 'object'},
+            effects: <String>['filesystem.read'],
+            presentation: <String, dynamic>{'group': 'filesystem'},
           ),
         ]),
       );
@@ -346,17 +346,14 @@ Review the requested code without modifying it.
           id: 'reviewer',
           name: 'Reviewer',
           mode: AgentMode.subagent,
-          toolIds: const <String>['read_file', 'future_tool'],
+          toolIds: const <String>['acme.files/read', 'acme.future/tool'],
           callableAgentIds: const <String>[],
           contentHash: '',
           sourcePath: '',
           isBuiltIn: false,
         ),
       );
-      expect(
-        reviewer.diagnostics.map((diagnostic) => diagnostic.code),
-        contains('unavailable_tool'),
-      );
+      expect(reviewer.diagnostics, isEmpty);
       final callable = await service.update(
         tinest.copyWith(callableAgentIds: const <String>['reviewer']),
         expectedContentHash: tinest.contentHash,
@@ -388,12 +385,18 @@ Review the requested code without modifying it.
       await store.initialize();
       final tinest = (await store.get('tinest'))!;
       expect(tinest.toolIds, <String>[
-        'apply_patch',
-        'list_mcp_resources',
-        'list_mcp_resource_templates',
-        'read_mcp_resource',
-        'exec_command',
-        'collaboration',
+        'tinest.edit/apply_patch',
+        'tinest.mcp/list_resources',
+        'tinest.mcp/list_resource_templates',
+        'tinest.mcp/read_resource',
+        'tinest.terminal/exec_command',
+        'tinest.terminal/write_stdin',
+        'tinest.collaboration/spawn_agent',
+        'tinest.collaboration/send_message',
+        'tinest.collaboration/followup_task',
+        'tinest.collaboration/wait_agent',
+        'tinest.collaboration/interrupt_agent',
+        'tinest.collaboration/list_agents',
       ]);
 
       await expectLater(
@@ -447,9 +450,7 @@ Review the requested code without modifying it.
       await store.reload();
       final reseeded = (await store.get('tinest'))!;
       expect(reseeded.name, 'Tinest');
-      // The built-in prompt is the shipped behaviour: a freshly seeded Tinest
-      // keeps the custom system prompt switched off.
-      expect(reseeded.promptEnabled, isFalse);
+      expect(reseeded.prompt, contains('Read relevant code'));
       expect(await store.list(), hasLength(3));
       await store.archive('reviewer');
       expect(await store.listArchived(), hasLength(1));
@@ -457,8 +458,7 @@ Review the requested code without modifying it.
       await store.reload();
       expect(await store.listArchived(), isEmpty);
       final reset = await store.resetTinest();
-      expect(reset.promptEnabled, isFalse);
-      expect(reset.systemPrompt, contains('Read relevant code'));
+      expect(reset.prompt, contains('Read relevant code'));
       expect(reset.toolIds, tinest.toolIds);
     },
     tags: const <String>['feature_test__agent_definition_management__unit'],
@@ -471,28 +471,39 @@ Review the requested code without modifying it.
       addTearDown(() => directory.delete(recursive: true));
       final store = FileAgentDefinitionStore(directory.path);
       final service = AgentDefinitionService(
-        alwaysOnToolIds: const <String>{},
         store: store,
-        tools: const StaticAgentToolCatalog(<AgentToolDefinitionDto>[
+        contributions: _toolCatalog(const <AgentToolDefinitionDto>[
           AgentToolDefinitionDto(
-            id: 'z_tool',
+            id: 'acme.tools/z',
+            originPluginId: 'acme.tools',
+            contributionId: 'z',
             name: 'Zulu',
             description: 'Last.',
             risk: ToolRisk.read,
-            group: ToolGroup.filesystem,
+            group: 'filesystem',
+            kind: AgentToolKind.function,
+            inputSchema: <String, dynamic>{'type': 'object'},
+            effects: <String>['filesystem.read'],
+            presentation: <String, dynamic>{'group': 'filesystem'},
           ),
           AgentToolDefinitionDto(
-            id: 'a_tool',
+            id: 'acme.tools/a',
+            originPluginId: 'acme.tools',
+            contributionId: 'a',
             name: 'Alpha',
             description: 'First.',
             risk: ToolRisk.read,
-            group: ToolGroup.filesystem,
+            group: 'filesystem',
+            kind: AgentToolKind.function,
+            inputSchema: <String, dynamic>{'type': 'object'},
+            effects: <String>['filesystem.read'],
+            presentation: <String, dynamic>{'group': 'filesystem'},
           ),
         ]),
       );
       addTearDown(service.close);
       await service.initialize();
-      expect(service.toolCatalog().map((tool) => tool.name), <String>[
+      expect((await service.toolCatalog()).map((tool) => tool.name), <String>[
         'Alpha',
         'Zulu',
       ]);
@@ -520,10 +531,11 @@ Review the requested code without modifying it.
           id: 'fixed',
           name: 'Fixed',
           mode: AgentMode.subagent,
-          model: const ModelSelectionDto(
+          model: const AgentModelSelectionDto(
+            source: AgentModelSource.fixed,
             modelId: 'connection/model',
           ),
-          toolIds: const <String>['a_tool'],
+          toolIds: const <String>['acme.tools/a'],
           contentHash: '',
           sourcePath: '',
           isBuiltIn: false,
@@ -539,7 +551,7 @@ Review the requested code without modifying it.
         'candidate',
         source
             .replaceFirst('mode: subagent', 'mode: primary')
-            .replaceFirst('future_tool', 'a_tool'),
+            .replaceFirst('acme.future/tool', 'acme.tools/a'),
       );
       expect(validated.id, 'candidate');
       await expectLater(
@@ -559,4 +571,50 @@ Review the requested code without modifying it.
       expect((await service.reset('tinest')).isBuiltIn, isTrue);
     },
   );
+}
+
+AgentContributionCatalog _toolCatalog(List<AgentToolDefinitionDto> tools) {
+  final pluginId = tools.first.originPluginId;
+  return _TestAgentContributionCatalog(<PluginDescriptorDto>[
+    PluginDescriptorDto(
+      apiMajor: 5,
+      id: pluginId,
+      version: '1.0.0',
+      name: pluginId,
+      entrypoint: 'main.lua',
+      source: PluginSource.user,
+      sourcePath: 'plugins/$pluginId',
+      requestedCapabilities: const <String>[],
+      revision: PluginRevisionDto(
+        pluginId: pluginId,
+        contentHash: 'content',
+        manifestHash: 'manifest',
+        sdkAbiHash: 'sdk-abi',
+        executionRevisionHash: 'execution',
+        requestedCapabilities: const <String>[],
+      ),
+      contributions: <PluginContributionDto>[
+        for (final tool in tools)
+          PluginContributionDto(
+            pluginId: pluginId,
+            id: tool.contributionId,
+            kind: PluginContributionKind.tool,
+            tool: tool,
+          ),
+      ],
+    ),
+  ]);
+}
+
+final class _TestAgentContributionCatalog implements AgentContributionCatalog {
+  const _TestAgentContributionCatalog(this._descriptors);
+
+  final List<PluginDescriptorDto> _descriptors;
+
+  @override
+  Stream<void> get changes => const Stream<void>.empty();
+
+  @override
+  Future<List<PluginDescriptorDto>> listPluginDescriptors() async =>
+      _descriptors;
 }

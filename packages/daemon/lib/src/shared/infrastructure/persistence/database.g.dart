@@ -1150,16 +1150,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
-  @override
-  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
-    'mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('normal'),
-  );
   static const VerificationMeta _modelIdMeta = const VerificationMeta(
     'modelId',
   );
@@ -1167,9 +1157,9 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
     'model_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _modelControlsJsonMeta = const VerificationMeta(
     'modelControlsJson',
@@ -1292,7 +1282,6 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     status,
     activeTurnId,
     lastError,
-    mode,
     modelId,
     modelControlsJson,
     permissionMode,
@@ -1415,19 +1404,11 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
       );
     }
-    if (data.containsKey('mode')) {
-      context.handle(
-        _modeMeta,
-        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
-      );
-    }
     if (data.containsKey('model_id')) {
       context.handle(
         _modelIdMeta,
         modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_modelIdMeta);
     }
     if (data.containsKey('model_controls_json')) {
       context.handle(
@@ -1569,14 +1550,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
-      mode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mode'],
-      )!,
       modelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}model_id'],
-      )!,
+      ),
       modelControlsJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}model_controls_json'],
@@ -1662,11 +1639,8 @@ class Session extends DataClass implements Insertable<Session> {
   /// The lastError public API member.
   final String? lastError;
 
-  /// Collaboration mode: `plan` proposes work, `normal` performs it.
-  final String mode;
-
-  /// Concrete qualified model snapshotted for this session.
-  final String modelId;
+  /// Qualified model pinned for this session; null inherits the agent.
+  final String? modelId;
 
   /// JSON-encoded typed model-control values for this session.
   final String modelControlsJson;
@@ -1711,8 +1685,7 @@ class Session extends DataClass implements Insertable<Session> {
     required this.status,
     this.activeTurnId,
     this.lastError,
-    required this.mode,
-    required this.modelId,
+    this.modelId,
     required this.modelControlsJson,
     this.permissionMode,
     required this.currentContextEpoch,
@@ -1753,8 +1726,9 @@ class Session extends DataClass implements Insertable<Session> {
     if (!nullToAbsent || lastError != null) {
       map['last_error'] = Variable<String>(lastError);
     }
-    map['mode'] = Variable<String>(mode);
-    map['model_id'] = Variable<String>(modelId);
+    if (!nullToAbsent || modelId != null) {
+      map['model_id'] = Variable<String>(modelId);
+    }
     map['model_controls_json'] = Variable<String>(modelControlsJson);
     if (!nullToAbsent || permissionMode != null) {
       map['permission_mode'] = Variable<String>(permissionMode);
@@ -1800,8 +1774,9 @@ class Session extends DataClass implements Insertable<Session> {
       lastError: lastError == null && nullToAbsent
           ? const Value.absent()
           : Value(lastError),
-      mode: Value(mode),
-      modelId: Value(modelId),
+      modelId: modelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelId),
       modelControlsJson: Value(modelControlsJson),
       permissionMode: permissionMode == null && nullToAbsent
           ? const Value.absent()
@@ -1837,8 +1812,7 @@ class Session extends DataClass implements Insertable<Session> {
       status: serializer.fromJson<String>(json['status']),
       activeTurnId: serializer.fromJson<String?>(json['activeTurnId']),
       lastError: serializer.fromJson<String?>(json['lastError']),
-      mode: serializer.fromJson<String>(json['mode']),
-      modelId: serializer.fromJson<String>(json['modelId']),
+      modelId: serializer.fromJson<String?>(json['modelId']),
       modelControlsJson: serializer.fromJson<String>(json['modelControlsJson']),
       permissionMode: serializer.fromJson<String?>(json['permissionMode']),
       currentContextEpoch: serializer.fromJson<int>(
@@ -1871,8 +1845,7 @@ class Session extends DataClass implements Insertable<Session> {
       'status': serializer.toJson<String>(status),
       'activeTurnId': serializer.toJson<String?>(activeTurnId),
       'lastError': serializer.toJson<String?>(lastError),
-      'mode': serializer.toJson<String>(mode),
-      'modelId': serializer.toJson<String>(modelId),
+      'modelId': serializer.toJson<String?>(modelId),
       'modelControlsJson': serializer.toJson<String>(modelControlsJson),
       'permissionMode': serializer.toJson<String?>(permissionMode),
       'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
@@ -1899,8 +1872,7 @@ class Session extends DataClass implements Insertable<Session> {
     String? status,
     Value<String?> activeTurnId = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
-    String? mode,
-    String? modelId,
+    Value<String?> modelId = const Value.absent(),
     String? modelControlsJson,
     Value<String?> permissionMode = const Value.absent(),
     int? currentContextEpoch,
@@ -1928,8 +1900,7 @@ class Session extends DataClass implements Insertable<Session> {
     status: status ?? this.status,
     activeTurnId: activeTurnId.present ? activeTurnId.value : this.activeTurnId,
     lastError: lastError.present ? lastError.value : this.lastError,
-    mode: mode ?? this.mode,
-    modelId: modelId ?? this.modelId,
+    modelId: modelId.present ? modelId.value : this.modelId,
     modelControlsJson: modelControlsJson ?? this.modelControlsJson,
     permissionMode: permissionMode.present
         ? permissionMode.value
@@ -1969,7 +1940,6 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.activeTurnId.value
           : this.activeTurnId,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
-      mode: data.mode.present ? data.mode.value : this.mode,
       modelId: data.modelId.present ? data.modelId.value : this.modelId,
       modelControlsJson: data.modelControlsJson.present
           ? data.modelControlsJson.value
@@ -2013,7 +1983,6 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
-          ..write('mode: $mode, ')
           ..write('modelId: $modelId, ')
           ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
@@ -2043,7 +2012,6 @@ class Session extends DataClass implements Insertable<Session> {
     status,
     activeTurnId,
     lastError,
-    mode,
     modelId,
     modelControlsJson,
     permissionMode,
@@ -2072,7 +2040,6 @@ class Session extends DataClass implements Insertable<Session> {
           other.status == this.status &&
           other.activeTurnId == this.activeTurnId &&
           other.lastError == this.lastError &&
-          other.mode == this.mode &&
           other.modelId == this.modelId &&
           other.modelControlsJson == this.modelControlsJson &&
           other.permissionMode == this.permissionMode &&
@@ -2099,8 +2066,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String> status;
   final Value<String?> activeTurnId;
   final Value<String?> lastError;
-  final Value<String> mode;
-  final Value<String> modelId;
+  final Value<String?> modelId;
   final Value<String> modelControlsJson;
   final Value<String?> permissionMode;
   final Value<int> currentContextEpoch;
@@ -2125,7 +2091,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.status = const Value.absent(),
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
-    this.mode = const Value.absent(),
     this.modelId = const Value.absent(),
     this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
@@ -2152,8 +2117,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     required String status,
     this.activeTurnId = const Value.absent(),
     this.lastError = const Value.absent(),
-    this.mode = const Value.absent(),
-    required String modelId,
+    this.modelId = const Value.absent(),
     this.modelControlsJson = const Value.absent(),
     this.permissionMode = const Value.absent(),
     this.currentContextEpoch = const Value.absent(),
@@ -2170,7 +2134,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
        agentDefinitionId = Value(agentDefinitionId),
        origin = Value(origin),
        status = Value(status),
-       modelId = Value(modelId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<Session> custom({
@@ -2187,7 +2150,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? status,
     Expression<String>? activeTurnId,
     Expression<String>? lastError,
-    Expression<String>? mode,
     Expression<String>? modelId,
     Expression<String>? modelControlsJson,
     Expression<String>? permissionMode,
@@ -2214,7 +2176,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (status != null) 'status': status,
       if (activeTurnId != null) 'active_turn_id': activeTurnId,
       if (lastError != null) 'last_error': lastError,
-      if (mode != null) 'mode': mode,
       if (modelId != null) 'model_id': modelId,
       if (modelControlsJson != null) 'model_controls_json': modelControlsJson,
       if (permissionMode != null) 'permission_mode': permissionMode,
@@ -2245,8 +2206,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String>? status,
     Value<String?>? activeTurnId,
     Value<String?>? lastError,
-    Value<String>? mode,
-    Value<String>? modelId,
+    Value<String?>? modelId,
     Value<String>? modelControlsJson,
     Value<String?>? permissionMode,
     Value<int>? currentContextEpoch,
@@ -2272,7 +2232,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       status: status ?? this.status,
       activeTurnId: activeTurnId ?? this.activeTurnId,
       lastError: lastError ?? this.lastError,
-      mode: mode ?? this.mode,
       modelId: modelId ?? this.modelId,
       modelControlsJson: modelControlsJson ?? this.modelControlsJson,
       permissionMode: permissionMode ?? this.permissionMode,
@@ -2329,9 +2288,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (lastError.present) {
       map['last_error'] = Variable<String>(lastError.value);
     }
-    if (mode.present) {
-      map['mode'] = Variable<String>(mode.value);
-    }
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
     }
@@ -2384,7 +2340,6 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('status: $status, ')
           ..write('activeTurnId: $activeTurnId, ')
           ..write('lastError: $lastError, ')
-          ..write('mode: $mode, ')
           ..write('modelId: $modelId, ')
           ..write('modelControlsJson: $modelControlsJson, ')
           ..write('permissionMode: $permissionMode, ')
@@ -2860,595 +2815,6 @@ class TurnsCompanion extends UpdateCompanion<Turn> {
           ..write('prompt: $prompt, ')
           ..write('status: $status, ')
           ..write('error: $error, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $GoalsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
-    'sessionId',
-  );
-  @override
-  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
-    'session_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sessions (id) ON DELETE CASCADE',
-    ),
-  );
-  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
-  @override
-  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
-    'goal_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _objectiveMeta = const VerificationMeta(
-    'objective',
-  );
-  @override
-  late final GeneratedColumn<String> objective = GeneratedColumn<String>(
-    'objective',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
-  @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _tokenBudgetMeta = const VerificationMeta(
-    'tokenBudget',
-  );
-  @override
-  late final GeneratedColumn<int> tokenBudget = GeneratedColumn<int>(
-    'token_budget',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _tokensUsedMeta = const VerificationMeta(
-    'tokensUsed',
-  );
-  @override
-  late final GeneratedColumn<int> tokensUsed = GeneratedColumn<int>(
-    'tokens_used',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _timeUsedSecondsMeta = const VerificationMeta(
-    'timeUsedSeconds',
-  );
-  @override
-  late final GeneratedColumn<int> timeUsedSeconds = GeneratedColumn<int>(
-    'time_used_seconds',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    sessionId,
-    goalId,
-    objective,
-    status,
-    tokenBudget,
-    tokensUsed,
-    timeUsedSeconds,
-    createdAt,
-    updatedAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'goals';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Goal> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('session_id')) {
-      context.handle(
-        _sessionIdMeta,
-        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sessionIdMeta);
-    }
-    if (data.containsKey('goal_id')) {
-      context.handle(
-        _goalIdMeta,
-        goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_goalIdMeta);
-    }
-    if (data.containsKey('objective')) {
-      context.handle(
-        _objectiveMeta,
-        objective.isAcceptableOrUnknown(data['objective']!, _objectiveMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_objectiveMeta);
-    }
-    if (data.containsKey('status')) {
-      context.handle(
-        _statusMeta,
-        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_statusMeta);
-    }
-    if (data.containsKey('token_budget')) {
-      context.handle(
-        _tokenBudgetMeta,
-        tokenBudget.isAcceptableOrUnknown(
-          data['token_budget']!,
-          _tokenBudgetMeta,
-        ),
-      );
-    }
-    if (data.containsKey('tokens_used')) {
-      context.handle(
-        _tokensUsedMeta,
-        tokensUsed.isAcceptableOrUnknown(data['tokens_used']!, _tokensUsedMeta),
-      );
-    }
-    if (data.containsKey('time_used_seconds')) {
-      context.handle(
-        _timeUsedSecondsMeta,
-        timeUsedSeconds.isAcceptableOrUnknown(
-          data['time_used_seconds']!,
-          _timeUsedSecondsMeta,
-        ),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sessionId};
-  @override
-  Goal map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Goal(
-      sessionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}session_id'],
-      )!,
-      goalId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}goal_id'],
-      )!,
-      objective: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}objective'],
-      )!,
-      status: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}status'],
-      )!,
-      tokenBudget: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}token_budget'],
-      ),
-      tokensUsed: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}tokens_used'],
-      )!,
-      timeUsedSeconds: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}time_used_seconds'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
-      )!,
-    );
-  }
-
-  @override
-  $GoalsTable createAlias(String alias) {
-    return $GoalsTable(attachedDatabase, alias);
-  }
-}
-
-class Goal extends DataClass implements Insertable<Goal> {
-  /// Session owning the goal; also enforces one goal per session.
-  final String sessionId;
-
-  /// Identity of the current goal generation.
-  final String goalId;
-
-  /// User-authored objective.
-  final String objective;
-
-  /// Current goal-status wire name.
-  final String status;
-
-  /// Optional maximum billable tokens.
-  final int? tokenBudget;
-
-  /// Billable tokens consumed by this goal.
-  final int tokensUsed;
-
-  /// Wall-clock seconds spent pursuing this goal.
-  final int timeUsedSeconds;
-
-  /// Creation instant of this goal generation.
-  final DateTime createdAt;
-
-  /// Last persisted mutation or accounting instant.
-  final DateTime updatedAt;
-  const Goal({
-    required this.sessionId,
-    required this.goalId,
-    required this.objective,
-    required this.status,
-    this.tokenBudget,
-    required this.tokensUsed,
-    required this.timeUsedSeconds,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['session_id'] = Variable<String>(sessionId);
-    map['goal_id'] = Variable<String>(goalId);
-    map['objective'] = Variable<String>(objective);
-    map['status'] = Variable<String>(status);
-    if (!nullToAbsent || tokenBudget != null) {
-      map['token_budget'] = Variable<int>(tokenBudget);
-    }
-    map['tokens_used'] = Variable<int>(tokensUsed);
-    map['time_used_seconds'] = Variable<int>(timeUsedSeconds);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
-    return map;
-  }
-
-  GoalsCompanion toCompanion(bool nullToAbsent) {
-    return GoalsCompanion(
-      sessionId: Value(sessionId),
-      goalId: Value(goalId),
-      objective: Value(objective),
-      status: Value(status),
-      tokenBudget: tokenBudget == null && nullToAbsent
-          ? const Value.absent()
-          : Value(tokenBudget),
-      tokensUsed: Value(tokensUsed),
-      timeUsedSeconds: Value(timeUsedSeconds),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-    );
-  }
-
-  factory Goal.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Goal(
-      sessionId: serializer.fromJson<String>(json['sessionId']),
-      goalId: serializer.fromJson<String>(json['goalId']),
-      objective: serializer.fromJson<String>(json['objective']),
-      status: serializer.fromJson<String>(json['status']),
-      tokenBudget: serializer.fromJson<int?>(json['tokenBudget']),
-      tokensUsed: serializer.fromJson<int>(json['tokensUsed']),
-      timeUsedSeconds: serializer.fromJson<int>(json['timeUsedSeconds']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sessionId': serializer.toJson<String>(sessionId),
-      'goalId': serializer.toJson<String>(goalId),
-      'objective': serializer.toJson<String>(objective),
-      'status': serializer.toJson<String>(status),
-      'tokenBudget': serializer.toJson<int?>(tokenBudget),
-      'tokensUsed': serializer.toJson<int>(tokensUsed),
-      'timeUsedSeconds': serializer.toJson<int>(timeUsedSeconds),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-    };
-  }
-
-  Goal copyWith({
-    String? sessionId,
-    String? goalId,
-    String? objective,
-    String? status,
-    Value<int?> tokenBudget = const Value.absent(),
-    int? tokensUsed,
-    int? timeUsedSeconds,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) => Goal(
-    sessionId: sessionId ?? this.sessionId,
-    goalId: goalId ?? this.goalId,
-    objective: objective ?? this.objective,
-    status: status ?? this.status,
-    tokenBudget: tokenBudget.present ? tokenBudget.value : this.tokenBudget,
-    tokensUsed: tokensUsed ?? this.tokensUsed,
-    timeUsedSeconds: timeUsedSeconds ?? this.timeUsedSeconds,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-  );
-  Goal copyWithCompanion(GoalsCompanion data) {
-    return Goal(
-      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
-      goalId: data.goalId.present ? data.goalId.value : this.goalId,
-      objective: data.objective.present ? data.objective.value : this.objective,
-      status: data.status.present ? data.status.value : this.status,
-      tokenBudget: data.tokenBudget.present
-          ? data.tokenBudget.value
-          : this.tokenBudget,
-      tokensUsed: data.tokensUsed.present
-          ? data.tokensUsed.value
-          : this.tokensUsed,
-      timeUsedSeconds: data.timeUsedSeconds.present
-          ? data.timeUsedSeconds.value
-          : this.timeUsedSeconds,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Goal(')
-          ..write('sessionId: $sessionId, ')
-          ..write('goalId: $goalId, ')
-          ..write('objective: $objective, ')
-          ..write('status: $status, ')
-          ..write('tokenBudget: $tokenBudget, ')
-          ..write('tokensUsed: $tokensUsed, ')
-          ..write('timeUsedSeconds: $timeUsedSeconds, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    sessionId,
-    goalId,
-    objective,
-    status,
-    tokenBudget,
-    tokensUsed,
-    timeUsedSeconds,
-    createdAt,
-    updatedAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Goal &&
-          other.sessionId == this.sessionId &&
-          other.goalId == this.goalId &&
-          other.objective == this.objective &&
-          other.status == this.status &&
-          other.tokenBudget == this.tokenBudget &&
-          other.tokensUsed == this.tokensUsed &&
-          other.timeUsedSeconds == this.timeUsedSeconds &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
-}
-
-class GoalsCompanion extends UpdateCompanion<Goal> {
-  final Value<String> sessionId;
-  final Value<String> goalId;
-  final Value<String> objective;
-  final Value<String> status;
-  final Value<int?> tokenBudget;
-  final Value<int> tokensUsed;
-  final Value<int> timeUsedSeconds;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
-  final Value<int> rowid;
-  const GoalsCompanion({
-    this.sessionId = const Value.absent(),
-    this.goalId = const Value.absent(),
-    this.objective = const Value.absent(),
-    this.status = const Value.absent(),
-    this.tokenBudget = const Value.absent(),
-    this.tokensUsed = const Value.absent(),
-    this.timeUsedSeconds = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  GoalsCompanion.insert({
-    required String sessionId,
-    required String goalId,
-    required String objective,
-    required String status,
-    this.tokenBudget = const Value.absent(),
-    this.tokensUsed = const Value.absent(),
-    this.timeUsedSeconds = const Value.absent(),
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    this.rowid = const Value.absent(),
-  }) : sessionId = Value(sessionId),
-       goalId = Value(goalId),
-       objective = Value(objective),
-       status = Value(status),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt);
-  static Insertable<Goal> custom({
-    Expression<String>? sessionId,
-    Expression<String>? goalId,
-    Expression<String>? objective,
-    Expression<String>? status,
-    Expression<int>? tokenBudget,
-    Expression<int>? tokensUsed,
-    Expression<int>? timeUsedSeconds,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sessionId != null) 'session_id': sessionId,
-      if (goalId != null) 'goal_id': goalId,
-      if (objective != null) 'objective': objective,
-      if (status != null) 'status': status,
-      if (tokenBudget != null) 'token_budget': tokenBudget,
-      if (tokensUsed != null) 'tokens_used': tokensUsed,
-      if (timeUsedSeconds != null) 'time_used_seconds': timeUsedSeconds,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  GoalsCompanion copyWith({
-    Value<String>? sessionId,
-    Value<String>? goalId,
-    Value<String>? objective,
-    Value<String>? status,
-    Value<int?>? tokenBudget,
-    Value<int>? tokensUsed,
-    Value<int>? timeUsedSeconds,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
-    Value<int>? rowid,
-  }) {
-    return GoalsCompanion(
-      sessionId: sessionId ?? this.sessionId,
-      goalId: goalId ?? this.goalId,
-      objective: objective ?? this.objective,
-      status: status ?? this.status,
-      tokenBudget: tokenBudget ?? this.tokenBudget,
-      tokensUsed: tokensUsed ?? this.tokensUsed,
-      timeUsedSeconds: timeUsedSeconds ?? this.timeUsedSeconds,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sessionId.present) {
-      map['session_id'] = Variable<String>(sessionId.value);
-    }
-    if (goalId.present) {
-      map['goal_id'] = Variable<String>(goalId.value);
-    }
-    if (objective.present) {
-      map['objective'] = Variable<String>(objective.value);
-    }
-    if (status.present) {
-      map['status'] = Variable<String>(status.value);
-    }
-    if (tokenBudget.present) {
-      map['token_budget'] = Variable<int>(tokenBudget.value);
-    }
-    if (tokensUsed.present) {
-      map['tokens_used'] = Variable<int>(tokensUsed.value);
-    }
-    if (timeUsedSeconds.present) {
-      map['time_used_seconds'] = Variable<int>(timeUsedSeconds.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('GoalsCompanion(')
-          ..write('sessionId: $sessionId, ')
-          ..write('goalId: $goalId, ')
-          ..write('objective: $objective, ')
-          ..write('status: $status, ')
-          ..write('tokenBudget: $tokenBudget, ')
-          ..write('tokensUsed: $tokensUsed, ')
-          ..write('timeUsedSeconds: $timeUsedSeconds, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -8554,7 +7920,6 @@ abstract class _$TinestDatabase extends GeneratedDatabase {
   late final $WorktreesTable worktrees = $WorktreesTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   late final $TurnsTable turns = $TurnsTable(this);
-  late final $GoalsTable goals = $GoalsTable(this);
   late final $AgentMailboxMessagesTable agentMailboxMessages =
       $AgentMailboxMessagesTable(this);
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
@@ -8575,7 +7940,6 @@ abstract class _$TinestDatabase extends GeneratedDatabase {
   late final WorkspaceDao workspaceDao = WorkspaceDao(this as TinestDatabase);
   late final WorktreeDao worktreeDao = WorktreeDao(this as TinestDatabase);
   late final SessionDao sessionDao = SessionDao(this as TinestDatabase);
-  late final GoalDao goalDao = GoalDao(this as TinestDatabase);
   late final AgentMailboxDao agentMailboxDao = AgentMailboxDao(
     this as TinestDatabase,
   );
@@ -8594,7 +7958,6 @@ abstract class _$TinestDatabase extends GeneratedDatabase {
     worktrees,
     sessions,
     turns,
-    goals,
     agentMailboxMessages,
     attachments,
     turnAttachments,
@@ -8606,16 +7969,6 @@ abstract class _$TinestDatabase extends GeneratedDatabase {
     providerConnections,
     providerModels,
   ];
-  @override
-  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'sessions',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('goals', kind: UpdateKind.delete)],
-    ),
-  ]);
 }
 
 typedef $$WorkspacesTableCreateCompanionBuilder = WorkspacesCompanion Function({
@@ -9434,8 +8787,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   required String status,
   Value<String?> activeTurnId,
   Value<String?> lastError,
-  Value<String> mode,
-  required String modelId,
+  Value<String?> modelId,
   Value<String> modelControlsJson,
   Value<String?> permissionMode,
   Value<int> currentContextEpoch,
@@ -9461,8 +8813,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<String> status,
   Value<String?> activeTurnId,
   Value<String?> lastError,
-  Value<String> mode,
-  Value<String> modelId,
+  Value<String?> modelId,
   Value<String> modelControlsJson,
   Value<String?> permissionMode,
   Value<int> currentContextEpoch,
@@ -9544,25 +8895,6 @@ final class $$SessionsTableReferences
     ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_turnsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$GoalsTable, List<Goal>> _goalsRefsTable(
-    _$TinestDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.goals,
-    aliasName: 'sessions__id__goals__session_id',
-  );
-
-  $$GoalsTableProcessedTableManager get goalsRefs {
-    final manager = $$GoalsTableTableManager(
-      $_db,
-      $_db.goals,
-    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_goalsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -9730,11 +9062,6 @@ class $$SessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get modelId => $composableBuilder(
     column: $table.modelId,
     builder: (column) => ColumnFilters(column),
@@ -9870,31 +9197,6 @@ class $$SessionsTableFilterComposer
           }) => $$TurnsTableFilterComposer(
             $db: $db,
             $table: $db.turns,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> goalsRefs(
-    Expression<bool> Function($$GoalsTableFilterComposer f) f,
-  ) {
-    final $$GoalsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.goals,
-      getReferencedColumn: (t) => t.sessionId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GoalsTableFilterComposer(
-            $db: $db,
-            $table: $db.goals,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10089,11 +9391,6 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get modelId => $composableBuilder(
     column: $table.modelId,
     builder: (column) => ColumnOrderings(column),
@@ -10257,9 +9554,6 @@ class $$SessionsTableAnnotationComposer
   GeneratedColumn<String> get lastError =>
       $composableBuilder(column: $table.lastError, builder: (column) => column);
 
-  GeneratedColumn<String> get mode =>
-      $composableBuilder(column: $table.mode, builder: (column) => column);
-
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
 
@@ -10389,31 +9683,6 @@ class $$SessionsTableAnnotationComposer
           }) => $$TurnsTableAnnotationComposer(
             $db: $db,
             $table: $db.turns,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> goalsRefs<T extends Object>(
-    Expression<T> Function($$GoalsTableAnnotationComposer a) f,
-  ) {
-    final $$GoalsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.goals,
-      getReferencedColumn: (t) => t.sessionId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GoalsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.goals,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10568,7 +9837,6 @@ class $$SessionsTableTableManager
             bool parentSessionId,
             bool rootSessionId,
             bool turnsRefs,
-            bool goalsRefs,
             bool agentMailboxMessagesRefs,
             bool timelineEventsRefs,
             bool approvalRequestsRefs,
@@ -10602,8 +9870,7 @@ class $$SessionsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
-                Value<String> mode = const Value.absent(),
-                Value<String> modelId = const Value.absent(),
+                Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
@@ -10628,7 +9895,6 @@ class $$SessionsTableTableManager
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
-                mode: mode,
                 modelId: modelId,
                 modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
@@ -10656,8 +9922,7 @@ class $$SessionsTableTableManager
                 required String status,
                 Value<String?> activeTurnId = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
-                Value<String> mode = const Value.absent(),
-                required String modelId,
+                Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
                 Value<String?> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
@@ -10682,7 +9947,6 @@ class $$SessionsTableTableManager
                 status: status,
                 activeTurnId: activeTurnId,
                 lastError: lastError,
-                mode: mode,
                 modelId: modelId,
                 modelControlsJson: modelControlsJson,
                 permissionMode: permissionMode,
@@ -10709,7 +9973,6 @@ class $$SessionsTableTableManager
                 parentSessionId = false,
                 rootSessionId = false,
                 turnsRefs = false,
-                goalsRefs = false,
                 agentMailboxMessagesRefs = false,
                 timelineEventsRefs = false,
                 approvalRequestsRefs = false,
@@ -10720,7 +9983,6 @@ class $$SessionsTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (turnsRefs) db.turns,
-                    if (goalsRefs) db.goals,
                     if (agentMailboxMessagesRefs) db.agentMailboxMessages,
                     if (timelineEventsRefs) db.timelineEvents,
                     if (approvalRequestsRefs) db.approvalRequests,
@@ -10796,27 +10058,6 @@ class $$SessionsTableTableManager
                                 table,
                                 p0,
                               ).turnsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sessionId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (goalsRefs)
-                        await $_getPrefetchedData<
-                          Session,
-                          $SessionsTable,
-                          Goal
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SessionsTableReferences
-                              ._goalsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SessionsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).goalsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sessionId == item.id,
@@ -10953,7 +10194,6 @@ typedef $$SessionsTableProcessedTableManager =
         bool parentSessionId,
         bool rootSessionId,
         bool turnsRefs,
-        bool goalsRefs,
         bool agentMailboxMessagesRefs,
         bool timelineEventsRefs,
         bool approvalRequestsRefs,
@@ -11603,400 +10843,6 @@ typedef $$TurnsTableProcessedTableManager =
         bool approvalRequestsRefs,
         bool userQuestionsRefs,
       })
-    >;
-typedef $$GoalsTableCreateCompanionBuilder = GoalsCompanion Function({
-  required String sessionId,
-  required String goalId,
-  required String objective,
-  required String status,
-  Value<int?> tokenBudget,
-  Value<int> tokensUsed,
-  Value<int> timeUsedSeconds,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<int> rowid,
-});
-typedef $$GoalsTableUpdateCompanionBuilder = GoalsCompanion Function({
-  Value<String> sessionId,
-  Value<String> goalId,
-  Value<String> objective,
-  Value<String> status,
-  Value<int?> tokenBudget,
-  Value<int> tokensUsed,
-  Value<int> timeUsedSeconds,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<int> rowid,
-});
-
-final class $$GoalsTableReferences
-    extends BaseReferences<_$TinestDatabase, $GoalsTable, Goal> {
-  $$GoalsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $SessionsTable _sessionIdTable(_$TinestDatabase db) =>
-      db.sessions.createAlias('goals__session_id__sessions__id');
-
-  $$SessionsTableProcessedTableManager get sessionId {
-    final $_column = $_itemColumn<String>('session_id')!;
-
-    final manager = $$SessionsTableTableManager(
-      $_db,
-      $_db.sessions,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$GoalsTableFilterComposer
-    extends Composer<_$TinestDatabase, $GoalsTable> {
-  $$GoalsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get goalId => $composableBuilder(
-    column: $table.goalId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get objective => $composableBuilder(
-    column: $table.objective,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get tokenBudget => $composableBuilder(
-    column: $table.tokenBudget,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get tokensUsed => $composableBuilder(
-    column: $table.tokensUsed,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get timeUsedSeconds => $composableBuilder(
-    column: $table.timeUsedSeconds,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SessionsTableFilterComposer get sessionId {
-    final $$SessionsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sessionId,
-      referencedTable: $db.sessions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SessionsTableFilterComposer(
-            $db: $db,
-            $table: $db.sessions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GoalsTableOrderingComposer
-    extends Composer<_$TinestDatabase, $GoalsTable> {
-  $$GoalsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get goalId => $composableBuilder(
-    column: $table.goalId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get objective => $composableBuilder(
-    column: $table.objective,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get tokenBudget => $composableBuilder(
-    column: $table.tokenBudget,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get tokensUsed => $composableBuilder(
-    column: $table.tokensUsed,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get timeUsedSeconds => $composableBuilder(
-    column: $table.timeUsedSeconds,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SessionsTableOrderingComposer get sessionId {
-    final $$SessionsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sessionId,
-      referencedTable: $db.sessions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SessionsTableOrderingComposer(
-            $db: $db,
-            $table: $db.sessions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GoalsTableAnnotationComposer
-    extends Composer<_$TinestDatabase, $GoalsTable> {
-  $$GoalsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get goalId =>
-      $composableBuilder(column: $table.goalId, builder: (column) => column);
-
-  GeneratedColumn<String> get objective =>
-      $composableBuilder(column: $table.objective, builder: (column) => column);
-
-  GeneratedColumn<String> get status =>
-      $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<int> get tokenBudget => $composableBuilder(
-    column: $table.tokenBudget,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get tokensUsed => $composableBuilder(
-    column: $table.tokensUsed,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get timeUsedSeconds => $composableBuilder(
-    column: $table.timeUsedSeconds,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  $$SessionsTableAnnotationComposer get sessionId {
-    final $$SessionsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sessionId,
-      referencedTable: $db.sessions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SessionsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sessions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GoalsTableTableManager
-    extends
-        RootTableManager<
-          _$TinestDatabase,
-          $GoalsTable,
-          Goal,
-          $$GoalsTableFilterComposer,
-          $$GoalsTableOrderingComposer,
-          $$GoalsTableAnnotationComposer,
-          $$GoalsTableCreateCompanionBuilder,
-          $$GoalsTableUpdateCompanionBuilder,
-          (Goal, $$GoalsTableReferences),
-          Goal,
-          PrefetchHooks Function({bool sessionId})
-        > {
-  $$GoalsTableTableManager(_$TinestDatabase db, $GoalsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$GoalsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$GoalsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$GoalsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> sessionId = const Value.absent(),
-                Value<String> goalId = const Value.absent(),
-                Value<String> objective = const Value.absent(),
-                Value<String> status = const Value.absent(),
-                Value<int?> tokenBudget = const Value.absent(),
-                Value<int> tokensUsed = const Value.absent(),
-                Value<int> timeUsedSeconds = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => GoalsCompanion(
-                sessionId: sessionId,
-                goalId: goalId,
-                objective: objective,
-                status: status,
-                tokenBudget: tokenBudget,
-                tokensUsed: tokensUsed,
-                timeUsedSeconds: timeUsedSeconds,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String sessionId,
-                required String goalId,
-                required String objective,
-                required String status,
-                Value<int?> tokenBudget = const Value.absent(),
-                Value<int> tokensUsed = const Value.absent(),
-                Value<int> timeUsedSeconds = const Value.absent(),
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                Value<int> rowid = const Value.absent(),
-              }) => GoalsCompanion.insert(
-                sessionId: sessionId,
-                goalId: goalId,
-                objective: objective,
-                status: status,
-                tokenBudget: tokenBudget,
-                tokensUsed: tokensUsed,
-                timeUsedSeconds: timeUsedSeconds,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$GoalsTableReferences(db, table, e)),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sessionId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sessionId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.sessionId,
-                        referencedTable: $$GoalsTableReferences._sessionIdTable(
-                          db,
-                        ),
-                        referencedColumn: $$GoalsTableReferences
-                            ._sessionIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$GoalsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$TinestDatabase,
-      $GoalsTable,
-      Goal,
-      $$GoalsTableFilterComposer,
-      $$GoalsTableOrderingComposer,
-      $$GoalsTableAnnotationComposer,
-      $$GoalsTableCreateCompanionBuilder,
-      $$GoalsTableUpdateCompanionBuilder,
-      (Goal, $$GoalsTableReferences),
-      Goal,
-      PrefetchHooks Function({bool sessionId})
     >;
 typedef $$AgentMailboxMessagesTableCreateCompanionBuilder =
     AgentMailboxMessagesCompanion Function({
@@ -15860,8 +14706,6 @@ class $TinestDatabaseManager {
       $$SessionsTableTableManager(_db, _db.sessions);
   $$TurnsTableTableManager get turns =>
       $$TurnsTableTableManager(_db, _db.turns);
-  $$GoalsTableTableManager get goals =>
-      $$GoalsTableTableManager(_db, _db.goals);
   $$AgentMailboxMessagesTableTableManager get agentMailboxMessages =>
       $$AgentMailboxMessagesTableTableManager(_db, _db.agentMailboxMessages);
   $$AttachmentsTableTableManager get attachments =>

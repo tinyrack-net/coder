@@ -2,6 +2,28 @@ import 'package:agent/agent.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('cancellation is idempotent and late listeners run immediately', () {
+    final cancellation = CancellationToken();
+    var notifications = 0;
+    cancellation
+      ..onCancel(() => notifications += 1)
+      ..onCancel(() => notifications += 1)
+      ..cancel()
+      ..cancel()
+      ..onCancel(() => notifications += 1);
+
+    expect(cancellation.isCancelled, isTrue);
+    expect(notifications, 3);
+    expect(
+      cancellation.throwIfCancelled,
+      throwsA(isA<AgentCancelledException>()),
+    );
+    expect(
+      const ModelContextOverflowException('too large').toString(),
+      'ModelContextOverflowException: too large',
+    );
+  });
+
   test('modern tool specs distinguish function and freeform tools', () {
     const function = ModelFunctionToolDefinition(
       name: 'read_file',
@@ -32,12 +54,14 @@ void main() {
       tools: <ModelFunctionToolDefinition>[function],
     );
     const deferred = ModelDeferredSearchToolDefinition(
+      name: 'discover_tools',
       description: 'Search deferred tools.',
       parameters: <String, dynamic>{'type': 'object'},
     );
     expect(namespace.kind, ModelToolKind.namespace);
     expect(namespace.tools.single.name, 'read_file');
     expect(deferred.kind, ModelToolKind.deferredSearch);
+    expect(deferred.name, 'discover_tools');
     expect(deferred.execution, 'client');
   });
 
@@ -64,6 +88,7 @@ void main() {
     );
     const search = ModelDeferredSearchCall(
       callId: 'search',
+      name: 'discover_tools',
       arguments: <String, dynamic>{'query': 'clock'},
     );
     expect((raw.input as FreeformToolCallInput).value, 'text("ok")');
@@ -87,6 +112,133 @@ void main() {
         'value': '*** Begin Patch\n*** End Patch',
       },
     });
+  });
+
+  test('all model call kinds round-trip their typed inputs', () {
+    final marker = DateTime.now().microsecondsSinceEpoch.toString();
+    final calls = <ConversationToolCall>[
+      ConversationToolCall.function(
+        callId: 'function-$marker',
+        name: 'clock',
+        namespace: 'time',
+        arguments: <String, dynamic>{'zone': marker},
+      ),
+      ConversationToolCall.deferredSearch(
+        callId: 'search-$marker',
+        name: 'discover_tools',
+        arguments: <String, dynamic>{'query': marker},
+      ),
+      ConversationToolCall.freeform(
+        callId: 'freeform-$marker',
+        name: 'exec',
+        input: marker,
+      ),
+    ];
+
+    final restored = calls
+        .map((call) => ConversationToolCall.fromJson(call.toJson()))
+        .toList(growable: false);
+    expect(restored[0].namespace, 'time');
+    expect((restored[0].input as JsonToolCallInput).value['zone'], marker);
+    expect(restored[1].kind, ModelToolKind.deferredSearch);
+    expect((restored[2].input as FreeformToolCallInput).value, marker);
+  });
+
+  test(
+    'conversation variants round-trip defaults and reject unknown input',
+    () {
+      final marker = DateTime.now().microsecondsSinceEpoch.toString();
+      final user = ConversationItem.fromJson(<String, dynamic>{
+        'type': 'user',
+        'text': 'inspect',
+        'attachments': <Object?>[
+          <String, dynamic>{
+            'id': 'attachment',
+            'fileName': 'image.png',
+            'mimeType': 'image/png',
+            'byteSize': 2,
+            'path': '/attachments/image.png',
+          },
+          'ignored',
+        ],
+      }) as UserConversationItem;
+      final assistant = ConversationItem.fromJson(<String, dynamic>{
+        'type': 'assistant',
+        'toolCalls': <Object?>[
+          ConversationToolCall.function(
+            callId: marker,
+            name: 'read',
+            arguments: <String, dynamic>{},
+          ).toJson(),
+          'ignored',
+        ],
+        'opaqueItems': <Object?>[
+          <String, dynamic>{'type': 'provider_state'},
+          'ignored',
+        ],
+      }) as AssistantConversationItem;
+      final result = ConversationItem.fromJson(<String, dynamic>{
+        'type': 'toolResult',
+        'callId': 'call',
+        'output': 'done',
+        'toolKind': 'function',
+        'meta': 'invalid',
+      }) as ToolResultConversationItem;
+
+      expect(user.attachments.single.fileName, 'image.png');
+      expect(assistant.text, isEmpty);
+      expect(assistant.toolCalls.single.name, 'read');
+      expect(assistant.opaqueItems.single['type'], 'provider_state');
+      expect(assistant.toJson()['text'], isEmpty);
+      expect(result.meta, isEmpty);
+      expect(
+        () => ConversationItem.fromJson(<String, dynamic>{'type': 'legacy'}),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test('model requests and stream events retain driver-owned data', () async {
+    final marker = DateTime.now().microsecondsSinceEpoch.toString();
+    final block = ModelRoleBlock(role: 'developer', content: marker);
+    final request = ModelRequest(
+      model: 'test-model',
+      blocks: <ModelRoleBlock>[block],
+      history: <ConversationItem>[
+        AssistantConversationItem(text: marker),
+      ],
+      tools: const <ModelToolDefinition>[],
+      safetyIdentifier: 'session',
+      forceToolName: 'clock',
+    );
+    final events = <ModelEvent>[
+      ModelTextDelta(marker),
+      ModelReasoningDelta(marker),
+      ModelFunctionCall(
+        callId: marker,
+        name: 'clock',
+        arguments: <String, dynamic>{'zone': marker},
+      ),
+      ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: marker),
+        usage: ModelUsage.fromJson(<String, dynamic>{'totalTokens': 3}),
+      ),
+    ];
+
+    expect(block.toJson(), <String, dynamic>{
+      'role': 'developer',
+      'content': marker,
+    });
+    expect(request.blocks.single, same(block));
+    expect(request.forceToolName, 'clock');
+    expect((events[0] as ModelTextDelta).delta, marker);
+    expect((events[1] as ModelReasoningDelta).delta, marker);
+    expect(
+      ((events[2] as ModelFunctionCall).input as JsonToolCallInput)
+          .value['zone'],
+      marker,
+    );
+    expect((events[3] as ModelResponseCompleted).usage.totalTokens, 3);
   });
 
   test('tool results retain structured values and media content', () {
@@ -183,47 +335,4 @@ void main() {
       throwsFormatException,
     );
   });
-
-  test(
-    'base tools reject unsupported freeform and absent nested invocation',
-    () async {
-      final context = ToolExecutionContext(
-        workspaceRoot: '/workspace',
-        cancellation: CancellationToken(),
-      );
-      final tool = _JsonOnlyTool();
-      expect(await tool.preview(const <String, dynamic>{}, context), isNull);
-      expect(await tool.previewFreeform('source', context), isNull);
-      expect(
-        () => tool.executeFreeform('source', context),
-        throwsA(isA<StateError>()),
-      );
-      expect(
-        () => context.invokeNestedTool('read_file', const <String, dynamic>{}),
-        throwsA(isA<StateError>()),
-      );
-    },
-  );
-}
-
-final class _JsonOnlyTool extends AgentTool {
-  @override
-  String get name => 'json_only';
-
-  @override
-  String get description => 'JSON only.';
-
-  @override
-  AgentToolRisk get risk => AgentToolRisk.read;
-
-  @override
-  Map<String, dynamic> get strictJsonSchema => const <String, dynamic>{
-    'type': 'object',
-  };
-
-  @override
-  Future<ToolResult> execute(
-    Map<String, dynamic> arguments,
-    ToolExecutionContext context,
-  ) async => const ToolResult(value: <String, dynamic>{});
 }

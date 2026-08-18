@@ -8,6 +8,7 @@ import 'package:tinest_quality/src/architecture_verifier.dart';
 import 'package:tinest_quality/src/ci_change_scope.dart';
 import 'package:tinest_quality/src/feature_manifest.dart';
 import 'package:tinest_quality/src/feature_verifier.dart';
+import 'package:tinest_quality/src/generated_sources.dart';
 import 'package:tinest_quality/src/resource_budget.dart';
 import 'package:tinest_quality/src/verification_runner.dart';
 import 'package:tinest_quality/src/workload_planner.dart';
@@ -328,7 +329,10 @@ Future<int> _executeTinestQuality(
       );
     case _TinestQualityCommand.verify:
       return _runPlan(
-        WorkspaceVerificationPlans.full(jobs: options.jobs),
+        WorkspaceVerificationPlans.full(
+          jobs: options.jobs,
+          serializeCoverage: Platform.isWindows,
+        ),
         jobs: options.jobs,
         reportPath: options.reportPath,
         out: out,
@@ -410,7 +414,7 @@ Future<int> _executeTinestQuality(
       final packageName =
           Platform.environment['MELOS_PACKAGE_NAME'] ?? _currentPackageName();
       final coveragePath = File('coverage/lcov.info').absolute.path;
-      return _runProcess(
+      final exitCode = await _runProcess(
         'dart',
         <String>[
           'test',
@@ -423,6 +427,8 @@ Future<int> _executeTinestQuality(
         out: out,
         error: writeError,
       );
+      if (exitCode == 0) _excludeGeneratedCoverage(File(coveragePath));
+      return exitCode;
     case _TinestQualityCommand.coverageFlutter:
       final seed = _newTestSeed();
       return _runMeasured(
@@ -463,6 +469,11 @@ Future<int> _runFlutterPackageTests({
       error: error,
     );
     if (result != 0) return result;
+    if (coverage) {
+      _excludeGeneratedCoverage(
+        File('packages/$package/coverage/lcov.info'),
+      );
+    }
   }
   return 0;
 }
@@ -474,105 +485,23 @@ Future<int> _generate({
   required QualityOutput error,
 }) async {
   final before = check ? await _generatedSources() : const <String, String>{};
-  final generatorReport =
-      await VerificationRunner(
-        executor: _ProcessTaskExecutor(out, error),
-        maxJobs: jobs,
-      ).run(
-        const VerificationPlan(
-          phases: <VerificationPhase>[
-            VerificationPhase(
-              tasks: <VerificationTask>[
-                VerificationTask(
-                  name: 'desktop app version',
-                  executable: 'dart',
-                  arguments: <String>[
-                    'run',
-                    'packages/tinest_quality/bin/sync_desktop_version.dart',
-                  ],
-                ),
-                VerificationTask(
-                  name: 'Flutter localizations',
-                  executable: 'flutter',
-                  arguments: <String>['gen-l10n'],
-                  workingDirectory: 'packages/app',
-                  exclusiveResources: <String>{'flutter-build'},
-                ),
-                VerificationTask(
-                  name: 'provider catalog',
-                  executable: 'dart',
-                  arguments: <String>[
-                    'run',
-                    'packages/daemon/tool/generate_provider_catalog.dart',
-                  ],
-                ),
-                VerificationTask(
-                  name: 'agent prompts',
-                  executable: 'dart',
-                  arguments: <String>[
-                    'run',
-                    'packages/agent/tool/generate_prompts.dart',
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-  if (!generatorReport.succeeded) return 1;
-  final buildRunnerResult = await _runProcess(
-    'dart',
-    <String>[
-      'run',
-      'melos',
-      'exec',
-      '--depends-on=build_runner',
-      '-c',
-      '$jobs',
-      '-o',
-      '--',
-      'dart run build_runner build',
-    ],
-    out: out,
-    error: error,
-  );
-  if (buildRunnerResult != 0) return buildRunnerResult;
-  final generatedFormatResult = await _formatGeneratedDartSources(
-    out: out,
-    error: error,
-  );
-  if (generatedFormatResult != 0) return generatedFormatResult;
+  final generatorReport = await VerificationRunner(
+    executor: _ProcessTaskExecutor(out, error),
+    maxJobs: jobs,
+  ).run(WorkspaceGenerationPlans.generate(jobs: jobs));
+  if (!generatorReport.succeeded) {
+    return generatorReport.failures.first.exitCode;
+  }
   if (!check) return 0;
   final after = await _generatedSources();
-  final changed = <String>{
-    ...before.keys,
-    ...after.keys,
-  }.where((path) => before[path] != after[path]).toList()..sort();
-  if (changed.isEmpty) {
+  final sourceCheck = GeneratedSources.compare(before: before, after: after);
+  if (sourceCheck.succeeded) {
     out('Generated sources are current.');
     return 0;
   }
   error('Generated sources were stale:');
-  changed.forEach(error);
+  sourceCheck.changedPaths.forEach(error);
   return 1;
-}
-
-Future<int> _formatGeneratedDartSources({
-  required QualityOutput out,
-  required QualityOutput error,
-}) async {
-  final sources =
-      (await _generatedSources()).keys
-          .where((path) => path.endsWith('.dart'))
-          .toList()
-        ..sort();
-  if (sources.isEmpty) return 0;
-  return _runProcess(
-    'dart',
-    <String>['format', ...sources],
-    out: out,
-    error: error,
-  );
 }
 
 Future<Map<String, String>> _generatedSources() async {
@@ -588,7 +517,7 @@ Future<Map<String, String>> _generatedSources() async {
       recursive: true,
       followLinks: false,
     )) {
-      if (entity is File && _isGeneratedSource(entity.path)) {
+      if (entity is File && GeneratedSources.includesPath(entity.path)) {
         sources[entity.path] = entity.readAsStringSync();
       }
     }
@@ -598,14 +527,6 @@ Future<Map<String, String>> _generatedSources() async {
     sources[desktopPubspec.path] = desktopPubspec.readAsStringSync();
   }
   return sources;
-}
-
-bool _isGeneratedSource(String value) {
-  final path = value.replaceAll(r'\', '/');
-  return path.endsWith('.g.dart') ||
-      path.endsWith('.freezed.dart') ||
-      path.endsWith('/packages/desktop_app/pubspec.yaml') ||
-      path.contains('/packages/app/lib/l10n/gen/app_localizations');
 }
 
 int _architectureCheck(QualityOutput out, QualityOutput error) {
@@ -747,29 +668,49 @@ Future<int> _runDartPackages({
     );
     return 0;
   }
-  final mergeResults = await Future.wait(<Future<int>>[
-    for (final target in targets)
-      _runProcess(
-        'dart',
-        <String>[
-          'run',
-          'tinyrack_workspace',
-          'coverage-merge',
-          '--input=${_coverageShardPath(target, 0)}',
-          '--output=${_coveragePath(target)}',
-        ],
-        out: out,
-        error: error,
-      ),
-  ]);
+  final mergeReport =
+      await VerificationRunner(
+        executor: _ProcessTaskExecutor(out, error),
+        maxJobs: jobs,
+      ).run(
+        VerificationPlan(
+          phases: <VerificationPhase>[
+            VerificationPhase(
+              tasks: <VerificationTask>[
+                for (final target in targets)
+                  VerificationTask(
+                    name: '${target.name} coverage merge',
+                    executable: 'dart',
+                    arguments: <String>[
+                      'run',
+                      'tinyrack_workspace',
+                      'coverage-merge',
+                      '--input=${_coverageShardPath(target, 0)}',
+                      '--output=${_coveragePath(target)}',
+                    ],
+                    exclusiveResources: const <String>{'coverage-merge'},
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+  if (mergeReport.succeeded) {
+    for (final target in targets) {
+      _excludeGeneratedCoverage(File(_coveragePath(target)));
+    }
+  }
   stopwatch.stop();
   _writeReport(
     reportPath,
     jobs: jobs,
     duration: stopwatch.elapsed,
-    results: report.results,
+    results: <VerificationTaskResult>[
+      ...report.results,
+      ...mergeReport.results,
+    ],
   );
-  return mergeResults.every((result) => result == 0) ? 0 : 1;
+  return mergeReport.succeeded ? 0 : 1;
 }
 
 List<_PackageTestTarget> _dartPackageTargets(Set<String> scopes) {
@@ -819,6 +760,13 @@ String _coveragePath(_PackageTestTarget target) =>
 
 String _coverageShardPath(_PackageTestTarget target, int shard) =>
     File('${target.path}/coverage/shards/$shard.info').absolute.path;
+
+void _excludeGeneratedCoverage(File coverageFile) {
+  if (!coverageFile.existsSync()) return;
+  coverageFile.writeAsStringSync(
+    GeneratedSources.excludeFromLcov(coverageFile.readAsStringSync()),
+  );
+}
 
 Future<int> _runPlan(
   VerificationPlan plan, {

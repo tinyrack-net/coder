@@ -1,4 +1,16 @@
 tags:
+  feature_test__agent_harness__unit:
+  feature_test__agent_harness__verticalSlice:
+  feature_test__plugin_runtime__unit:
+  feature_test__plugin_runtime__contract:
+  feature_test__plugin_runtime__verticalSlice:
+  feature_test__plugin_management__unit:
+  feature_test__plugin_management__verticalSlice:
+  feature_test__plugin_authoring__unit:
+  feature_test__plugin_authoring__verticalSlice:
+  feature_test__plugin_permissions__unit:
+  feature_test__plugin_permissions__contract:
+  feature_test__plugin_permissions__verticalSlice:
   feature_test__daemon_relay__unit:
   feature_test__daemon_relay__verticalSlice:
   feature_test__daemon_relay__e2e:
@@ -6,9 +18,15 @@ tags:
   feature_scenario__daemon_relay__revocation__e2e:
   feature_scenario__daemon_relay__relay_attachment__e2e:
   feature_test__session_goal__unit:
+  feature_test__session_goal__contract:
   feature_test__session_goal__verticalSlice:
+  feature_test__session_plan__unit:
+  feature_test__session_plan__contract:
+  feature_test__session_plan__verticalSlice:
   feature_test__permission_settings__verticalSlice:
   feature_test__context_compaction__verticalSlice:
+  feature_test__context_compaction__contract:
+  feature_test__context_compaction__unit:
   feature_test__conversation_turn_queue__verticalSlice:
   feature_test__conversation_attachments__unit:
   feature_test__conversation_attachments__verticalSlice:
@@ -48,6 +66,8 @@ tags:
   feature_test__skill_catalog__unit:
   feature_test__skill_catalog__contract:
   feature_test__skill_catalog__verticalSlice:
+  feature_test__plugin_ui__unit:
+  feature_test__plugin_ui__contract:
   feature_test__skill_invocation__unit:
   feature_test__skill_invocation__verticalSlice:
   feature_test__agent_collaboration__unit:
@@ -66,15 +86,18 @@ tags:
   feature_test__provider_custom__verticalSlice:
   feature_test__settings_reset__unit:
   feature_test__settings_reset__verticalSlice:
+  feature_test__tool_image_context__unit:
   feature_test__tool_image_context__verticalSlice:
   feature_test__tool_exec_session__unit:
   feature_test__tool_exec_session__verticalSlice:
   feature_test__mcp_resource_access__verticalSlice:
   feature_test__mcp_resource_access__unit:
   feature_test__tool_search_deferred__unit:
+  feature_test__tool_clock__unit:
   feature_test__tool_clock__verticalSlice:
   feature_test__tool_context_budget__verticalSlice:
   feature_test__tool_context_budget__unit:
+  feature_test__tool_search__unit:
   feature_test__tool_search__verticalSlice:
   feature_test__lua_tool_orchestration__unit:
   feature_test__lua_tool_orchestration__contract:

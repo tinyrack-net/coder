@@ -7,18 +7,31 @@ import 'package:agent/agent.dart';
 import 'package:crypto/crypto.dart';
 import 'package:daemon/src/bootstrap/config.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
-import 'package:daemon/src/features/agents/infrastructure/built_in_tools.dart';
 import 'package:daemon/src/features/agents/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/attachments/infrastructure/attachment_service.dart';
 import 'package:daemon/src/features/attachments/transport/http_transport.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_config.dart';
-import 'package:daemon/src/features/mcp/infrastructure/mcp_resource_tools.dart';
+import 'package:daemon/src/features/mcp/infrastructure/mcp_host_primitives.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_server_service.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_service.dart';
 import 'package:daemon/src/features/mcp/infrastructure/mcp_transports.dart';
 import 'package:daemon/src/features/mcp/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
 import 'package:daemon/src/features/models/transport/rpc_bindings.dart';
+import 'package:daemon/src/features/plugins/infrastructure/native_plugin_secret_vault.dart';
+import 'package:daemon/src/features/plugins/infrastructure/native_plugin_state_repository.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_authoring.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_bundles.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_network_gateway.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_service.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_session_control_service.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_ui_service.dart';
+import 'package:daemon/src/features/plugins/runtime/built_in_host_primitives.dart';
+import 'package:daemon/src/features/plugins/runtime/host_primitives.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_runtime.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_scheduled_handler.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_scheduler.dart';
+import 'package:daemon/src/features/plugins/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/prompts/infrastructure/commands.dart';
 import 'package:daemon/src/features/prompts/infrastructure/skills.dart';
 import 'package:daemon/src/features/prompts/transport/rpc_bindings.dart';
@@ -42,7 +55,6 @@ import 'package:daemon/src/features/relay/infrastructure/settings_relay_device_r
 import 'package:daemon/src/features/relay/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/sessions/infrastructure/agent_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/exec_session_service.dart';
-import 'package:daemon/src/features/sessions/infrastructure/goal_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/lua_code_mode_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_interactions.dart';
@@ -61,9 +73,10 @@ import 'package:daemon/src/features/workspaces/infrastructure/workspace_service.
 import 'package:daemon/src/features/workspaces/transport/rpc_bindings.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
-import 'package:daemon/src/shared/ports/agent_protocol_mapping.dart';
+import 'package:daemon/src/shared/infrastructure/serialized_lua_host_process.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
+import 'package:daemon/src/transport/rpc/diagnostics.dart';
 import 'package:daemon/src/transport/rpc/rpc_dispatch.dart';
 import 'package:daemon/src/transport/rpc/server.dart';
 import 'package:dio/dio.dart';
@@ -72,6 +85,19 @@ import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
+
+// The deferred launcher replaces this identity before it reaches a process
+// adapter. The runtime uses the value only to attach invocation limits.
+const _deferredLuaHostCommand = lua.LuaHostCommand(
+  executable: 'tinest-deferred-lua-host',
+);
+
+String _pluginIdOf(String contributionId) {
+  final separator = contributionId.indexOf('/');
+  return separator < 0
+      ? contributionId
+      : contributionId.substring(0, separator);
+}
 
 /// Raised when another daemon already holds the lock on a daemon home.
 ///
@@ -131,11 +157,11 @@ final class DaemonHostOptions {
     this.git,
     this.projectSettings,
     this.worktreeHooks,
-    this.gitignoreEnvironment,
+    this.rpcDiagnostics,
   });
 
   /// Fixed provider used by deterministic embedded/test hosts.
-  final ModelProvider? provider;
+  final ModelGateway? provider;
 
   /// Host clock.
   final Clock? clock;
@@ -167,8 +193,8 @@ final class DaemonHostOptions {
   /// Worktree hook execution port.
   final WorktreeHookRunner? worktreeHooks;
 
-  /// Gitignore environment supplied to search tools.
-  final GitignoreEnvironment? gitignoreEnvironment;
+  /// Sink for transport failures that are intentionally opaque to clients.
+  final RpcDiagnostics? rpcDiagnostics;
 }
 
 /// Public API exposed by this library.
@@ -177,7 +203,7 @@ abstract final class DaemonApplication {
   static Future<DaemonHandle> start(
     DaemonConfig config, {
     DaemonHostOptions options = const DaemonHostOptions(),
-    ModelProvider? provider,
+    ModelGateway? provider,
     Clock clock = const SystemClock(),
     IdGenerator ids = const UuidIdGenerator(),
     ProviderModelDiscovery? modelDiscovery,
@@ -187,7 +213,6 @@ abstract final class DaemonApplication {
     GitWorkspaceGateway? git,
     ProjectSettingsStore projectSettings = const FileProjectSettingsStore(),
     WorktreeHookRunner worktreeHooks = const ShellWorktreeHookRunner(),
-    GitignoreEnvironment? gitignoreEnvironment,
   }) async {
     final effectiveProvider = options.provider ?? provider;
     final effectiveClock = options.clock ?? clock;
@@ -202,10 +227,10 @@ abstract final class DaemonApplication {
     final effectiveGit = options.git ?? git;
     final effectiveProjectSettings = options.projectSettings ?? projectSettings;
     final effectiveWorktreeHooks = options.worktreeHooks ?? worktreeHooks;
-    final effectiveGitignoreEnvironment =
-        options.gitignoreEnvironment ?? gitignoreEnvironment;
-    final home = Directory(p.join(config.homeDirectory, 'v4'));
-    final configDirectory = p.join(config.configDirectory, 'v4');
+    final effectiveRpcDiagnostics =
+        options.rpcDiagnostics ?? const StderrRpcDiagnostics();
+    final home = Directory(p.join(config.homeDirectory, 'v5'));
+    final configDirectory = p.join(config.configDirectory, 'v5');
     await home.create(recursive: true);
     final lockFile = File(p.join(home.path, 'daemon.lock'));
     final lock = await lockFile.open(mode: FileMode.append);
@@ -229,6 +254,7 @@ abstract final class DaemonApplication {
       p.join(home.path, 'tinest.sqlite'),
       clock: effectiveClock,
     );
+    NativePluginSourceCatalog? pluginSources;
     try {
       await database.runtimeDao.recoverInterruptedRuns();
       var serverId = await database.settingsDao.getValue('server.id');
@@ -317,15 +343,15 @@ abstract final class DaemonApplication {
         sync: true,
       );
       // The whole vendor surface of this daemon: adding a vendor package
-      // means adding its plugins and wire protocols to these two lists.
+      // means adding its adapters and wire protocols to these two lists.
       final providerRegistry = ProviderRegistry(
-        plugins: <ProviderPlugin>[
-          ...openAIFamilyPlugins(
+        adapters: <ProviderAdapter>[
+          ...openAIFamilyAdapters(
             clock: effectiveClock,
             openAIOAuth: effectiveOAuthGateway,
           ),
-          const AnthropicPlugin(),
-          const GoogleGeminiPlugin(),
+          const AnthropicAdapter(),
+          const GoogleGeminiAdapter(),
         ],
         wireProtocols: <ProviderWireProtocol>[
           ...openAIWireProtocols(),
@@ -364,7 +390,10 @@ abstract final class DaemonApplication {
         oauthRefresher: oauthRefresher,
         clock: effectiveClock,
       );
-      final models = ProviderModelResolver(providers);
+      final models = ProviderModelResolver(
+        providers,
+        defaultModel: modelSettings.requireDefaultModel,
+      );
       final providerAuth = ProviderAuthCoordinator(
         registry: providerRegistry,
         connector: providers,
@@ -377,13 +406,6 @@ abstract final class DaemonApplication {
         ids: effectiveIds,
       );
       await attachments.cleanupOrphans();
-      // The composition root is the one place allowed to read the ambient
-      // environment, which is how the search tools learn where the user's
-      // global git excludes live without any of them reaching for it. A test
-      // passes its own so it never inherits the running user's.
-      final gitignore =
-          effectiveGitignoreEnvironment ??
-          GitignoreEnvironment.fromEnvironment(Platform.environment);
       final mcp = McpRuntime(
         store: FileMcpConfigStore(configDirectory),
         credentials: credentials,
@@ -398,29 +420,85 @@ abstract final class DaemonApplication {
       // unstartable server cannot hold up daemon boot.
       await mcp.initialize();
       final mcpServers = McpServerService(mcp);
-      // Assigned once the session service it drives exists; the registry reads
-      // it per turn rather than capturing null here.
       MultiAgentService? multiAgent;
-      SessionGoalService? goalService;
-      final toolRegistry = builtInAgentToolRegistry(
-        gitignoreEnvironment: gitignore,
-        mcpResourceHostFor: (workspaceRoot) =>
-            SessionMcpResourceHost(mcp, workspaceRoot),
-        multiAgent: () => multiAgent,
-        goals: () => goalService,
+      final agentDefinitionStore = FileAgentDefinitionStore(configDirectory);
+      final pluginAuthoring = PluginAuthoringEnvironmentService(
+        configDirectory: config.configDirectory,
+        sdk: const _TinestPluginSdkAuthoringProvider(),
+        ids: effectiveIds,
       );
-      final builtInCatalog = StaticAgentToolCatalog(
-        toolRegistry.catalog.map(protocolToolDefinition).toList(),
+      pluginSources = NativePluginSourceCatalog(
+        config.configDirectory,
+        authoring: pluginAuthoring,
+      );
+      await pluginSources.initialize();
+      final pluginLoader = NativePluginBundleLoader(config.configDirectory);
+      final pluginState = NativePluginStateRepository(config.homeDirectory);
+      final pluginSecrets = NativePluginSecretVault(config.configDirectory);
+      final pluginNetwork = DioPluginNetworkGateway(Dio());
+      final pluginRevisions = PluginRevisionCatalog(
+        loader: pluginLoader,
+        cache: NativePluginRevisionCache(config.homeDirectory),
+      );
+      final luaSourceRoot = Directory.current.path;
+      final luaProcessLauncher = DeferredLuaHostProcessLauncher(
+        () => resolveLuaHostCommand(
+          sourceRoot: luaSourceRoot,
+        ),
+        const SerializedLuaHostProcessLauncher(
+          lua.IoLuaHostProcessLauncher(),
+        ),
+      );
+      final pluginRuntime = PluginRuntime<ConversationAttachment>(
+        luaRuntime: lua.LuaToolRuntime<ConversationAttachment>(
+          host: _deferredLuaHostCommand,
+          processLauncher: luaProcessLauncher,
+          clock: _TinestLuaClock(effectiveClock),
+          ids: _TinestLuaIds(effectiveIds),
+        ),
+        revisions: pluginRevisions,
+      );
+      final pluginManagement = PluginManagementService(
+        sources: pluginSources,
+        revisions: pluginRevisions,
+        grants: pluginState,
+        inspector: pluginRuntime,
       );
       final agentDefinitions = AgentDefinitionService(
-        store: FileAgentDefinitionStore(configDirectory),
-        tools: CompositeAgentToolCatalog(<AgentToolCatalog>[
-          builtInCatalog,
-          mcp,
-        ]),
-        alwaysOnToolIds: toolRegistry.alwaysOnIds,
+        store: agentDefinitionStore,
+        contributions: _PluginAgentContributionCatalog(
+          pluginManagement,
+          pluginSources.changes,
+        ),
       );
       await agentDefinitions.initialize();
+      final pluginSessionControls =
+          PluginSessionControlService<ConversationAttachment>(
+            plugins: pluginManagement,
+            runtime: pluginRuntime,
+            state: pluginState,
+            sessions: database.sessionDao.getById,
+            definitions: agentDefinitions.resolve,
+            worktrees: database.worktreeDao.getById,
+          );
+      final pluginUi = PluginUiService(
+        descriptors: pluginManagement,
+        runtime: LuaPluginUiRuntime<ConversationAttachment>(
+          runtime: pluginRuntime,
+          grants: pluginState,
+          state: pluginState,
+          definitions: agentDefinitions.resolve,
+          hostPrimitives: HostPrimitiveRegistry(
+            <HostPrimitive<Object?, Object?>>[
+              collaborationListAgentsHostPrimitive(
+                session: (context) =>
+                    database.sessionDao.getById(context.sessionId),
+                service: () => multiAgent,
+              ),
+            ],
+          ),
+        ),
+      );
       providers.referenceUpdater = _StoredProviderModelReferenceUpdater(
         database.sessionDao,
         agentDefinitions,
@@ -477,15 +555,18 @@ abstract final class DaemonApplication {
       );
       final luaCodeMode = LuaCodeModeService(
         lua.LuaToolRuntime<ConversationAttachment>(
-          host: discoverLuaHostCommand(sourceRoot: Directory.current.path),
-          processLauncher: const lua.IoLuaHostProcessLauncher(),
+          host: _deferredLuaHostCommand,
+          processLauncher: luaProcessLauncher,
           clock: _TinestLuaClock(effectiveClock),
           ids: _TinestLuaIds(effectiveIds),
         ),
       );
       final luaSweep = Timer.periodic(
         const Duration(minutes: 5),
-        (_) => luaCodeMode.sweep(),
+        (_) {
+          luaCodeMode.sweep();
+          pluginRuntime.sweep();
+        },
       );
       final sessionInteractions = SessionInteractionCoordinator(
         timeline: database.timelineDao,
@@ -493,15 +574,72 @@ abstract final class DaemonApplication {
         ids: effectiveIds,
         clock: effectiveClock,
       );
-      goalService = SessionGoalService(
-        goals: database.goalDao,
-        sessions: database.sessionDao,
-        ids: effectiveIds,
+      late final SessionTurnCoordinator service;
+      late final DurablePluginScheduler pluginScheduler;
+      final scheduledJobs = LuaPluginScheduledJobExecutor(
+        runtime: pluginRuntime,
+        state: pluginState,
+        grants: pluginState,
+        jobs: () => pluginScheduler,
         clock: effectiveClock,
-        events: events.add,
-        hasPendingInput: sessionInteractions.hasPendingInput,
+        ids: effectiveIds,
+        resolveContext: (job) async {
+          final agentId = job.agentId;
+          final sessionId = job.sessionId;
+          if (agentId == null || sessionId == null) {
+            throw StateError(
+              'Scheduled Agent jobs require agent and session owners.',
+            );
+          }
+          final session = await database.sessionDao.getById(sessionId);
+          if (session == null || session.agentDefinitionId != agentId) {
+            throw StateError('Scheduled plugin session ownership changed.');
+          }
+          final definition = await agentDefinitions.resolve(agentId);
+          final referencedPlugins = <String>{
+            _pluginIdOf(definition.driverId),
+            ...definition.extensionIds.map(_pluginIdOf),
+            ...definition.toolIds.map(_pluginIdOf),
+          };
+          if (!referencedPlugins.contains(job.pluginId)) {
+            throw StateError(
+              'Agent no longer references scheduled plugin ${job.pluginId}.',
+            );
+          }
+          final worktree = await database.worktreeDao.getById(
+            session.worktreeId,
+          );
+          if (worktree == null || worktree.archivedAt != null) {
+            throw StateError('Scheduled plugin worktree is unavailable.');
+          }
+          return PluginScheduledExecutionContext(
+            agentId: agentId,
+            sessionId: sessionId,
+            workspaceId: worktree.workspaceId,
+            workingDirectory: worktree.path,
+          );
+        },
       );
-      final service = SessionTurnCoordinator(
+      pluginScheduler = DurablePluginScheduler(
+        store: pluginState,
+        clock: effectiveClock,
+        ids: effectiveIds,
+        execute: scheduledJobs.execute,
+        hasActiveTurn: (sessionId) => service.hasActiveTurn(sessionId),
+        hasPendingInput: sessionInteractions.hasPendingInput,
+        startContinuation:
+            ({
+              required sessionId,
+              required turnId,
+              required prompt,
+            }) => service.startTurn(
+              sessionId: sessionId,
+              turnId: turnId,
+              prompt: prompt,
+              internal: true,
+            ),
+      );
+      service = SessionTurnCoordinator(
         sessions: database.sessionDao,
         definitions: agentDefinitions,
         worktrees: database.worktreeDao,
@@ -510,15 +648,24 @@ abstract final class DaemonApplication {
         events: events.add,
         safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: effectiveClock,
+        ids: effectiveIds,
+        hostPrimitiveRegistryFactory: const IoHostPrimitiveRegistryFactory(),
         attachments: attachments,
-        toolRegistry: toolRegistry,
-        externalTools: _McpToolSource(mcp),
         execHostFor: (id) => SessionExecHost(execSessions, id),
-        luaHostFor: (id, workingDirectory) =>
-            SessionLuaCodeModeHost(luaCodeMode, id, workingDirectory),
         skills: skills,
         settings: database.settingsDao,
         interactions: sessionInteractions,
+        mcpFor: (workspaceRoot) =>
+            SessionMcpHostPrimitiveGateway(mcp, workspaceRoot),
+        plugins: pluginManagement,
+        pluginSessionControls: pluginSessionControls,
+        pluginUi: pluginUi,
+        pluginRuntime: pluginRuntime,
+        pluginState: pluginState,
+        pluginJobs: pluginScheduler,
+        luaCodeMode: luaCodeMode,
+        pluginNetwork: pluginNetwork,
+        pluginSecrets: pluginSecrets,
       );
       multiAgent = MultiAgentService(
         sessions: database.sessionDao,
@@ -537,11 +684,7 @@ abstract final class DaemonApplication {
         clock: effectiveClock,
         ids: effectiveIds,
       )..runtime = service;
-      service
-        ..multiAgent = multiAgent
-        ..goals = goalService;
-      goalService.runtime = service;
-      unawaited(goalService.resumeEligibleGoals());
+      service.multiAgent = multiAgent;
       final sessionSettings = SessionSettingsService(
         sessions: database.sessionDao,
         models: models,
@@ -658,6 +801,14 @@ abstract final class DaemonApplication {
             ),
           );
         }),
+        pluginSources.changes.listen((_) {
+          events.add(
+            OutboundNotification(
+              pluginsChangedNotification,
+              const EmptyResultDto(),
+            ),
+          );
+        }),
         mcp.changes.listen((_) {
           events.add(
             OutboundNotification(
@@ -717,8 +868,14 @@ abstract final class DaemonApplication {
           ),
           ...agentRpcBindings(
             definitions: agentDefinitions,
-            worktrees: database.worktreeDao,
             settings: database.settingsDao,
+          ),
+          ...pluginRpcBindings(
+            plugins: pluginManagement,
+            sessionControls: pluginSessionControls,
+            ui: pluginUi,
+            secrets: pluginSecrets,
+            authoring: pluginAuthoring,
           ),
           ...promptRpcBindings(
             skills: skills,
@@ -746,9 +903,7 @@ abstract final class DaemonApplication {
             interactions: sessionInteractions,
             agentDefinitions: agentDefinitions,
             models: models,
-            modelSettings: modelSettings,
             clock: effectiveClock,
-            goals: goalService,
           ),
           ...terminalRpcBindings(
             terminals: terminals,
@@ -765,6 +920,7 @@ abstract final class DaemonApplication {
         events: events.stream,
         ids: effectiveIds,
         allowedOrigins: config.allowedOrigins,
+        diagnostics: effectiveRpcDiagnostics,
       );
       relayRpcSessions = rpc;
       relayTransport = DaemonRelayTransport(
@@ -788,12 +944,13 @@ abstract final class DaemonApplication {
         const Duration(hours: 1),
         (_) => unawaited(attachments.cleanupOrphans()),
       );
+      pluginScheduler.start();
       return _LocalDaemonHandle(
         endpoint: Uri(
           scheme: 'ws',
           host: presentationHost,
           port: http.port,
-          path: '/v4/ws',
+          path: '/v5/ws',
         ),
         serverIdValue: serverId,
         token: token,
@@ -811,6 +968,9 @@ abstract final class DaemonApplication {
         execSessions: execSessions,
         luaSweep: luaSweep,
         luaCodeMode: luaCodeMode,
+        pluginRuntime: pluginRuntime,
+        pluginSources: pluginSources,
+        pluginScheduler: pluginScheduler,
         providerAuth: providerAuth,
         providers: providers,
         modelSettings: modelSettings,
@@ -820,6 +980,7 @@ abstract final class DaemonApplication {
         notificationSubscriptions: notificationSubscriptions,
       );
     } catch (_) {
+      await pluginSources?.close();
       await database.close();
       await lock.unlock();
       await lock.close();
@@ -847,6 +1008,9 @@ class _LocalDaemonHandle implements DaemonHandle {
     required this._execSessions,
     required this._luaSweep,
     required this._luaCodeMode,
+    required this._pluginRuntime,
+    required this._pluginSources,
+    required this._pluginScheduler,
     required this._providerAuth,
     required this._providers,
     required this._modelSettings,
@@ -873,6 +1037,9 @@ class _LocalDaemonHandle implements DaemonHandle {
   final ExecSessionService _execSessions;
   final Timer _luaSweep;
   final LuaCodeModeService _luaCodeMode;
+  final PluginRuntime<ConversationAttachment> _pluginRuntime;
+  final NativePluginSourceCatalog _pluginSources;
+  final DurablePluginScheduler _pluginScheduler;
   final ProviderAuthCoordinator _providerAuth;
   final ProviderConnectionService _providers;
   final DaemonModelSettingsService _modelSettings;
@@ -903,9 +1070,12 @@ class _LocalDaemonHandle implements DaemonHandle {
     }
     await _http.close(force: true);
     await _rpc.close();
+    await _pluginScheduler.close();
     await _turns.close();
     await _execSessions.close();
     await _luaCodeMode.close();
+    await _pluginRuntime.close();
+    await _pluginSources.close();
     await _terminals.close();
     await _relayTransport.close();
     await _relay.close();
@@ -953,29 +1123,18 @@ final class _StoredProviderModelReferenceUpdater
   }
 }
 
-/// Resolves MCP tools for one turn, and marks the worktree as in use.
-///
-/// Starting a turn is what marks a worktree as in use: its project servers
-/// connect in the background and join from the next turn, and worktrees nothing
-/// has touched lately are released.
-final class _McpToolSource implements ExternalToolSource {
-  const _McpToolSource(this._mcp);
+final class _PluginAgentContributionCatalog
+    implements AgentContributionCatalog {
+  const _PluginAgentContributionCatalog(this._plugins, this._changes);
 
-  final McpRuntime _mcp;
+  final PluginManagementService _plugins;
+  final Stream<void> _changes;
 
   @override
-  AgentTool? Function(String id) lookupFor(String workspaceRoot) {
-    unawaited(_mcp.ensureProject(workspaceRoot));
-    _mcp.releaseIdleProjects();
-    // Withhold MCP tools only once there are enough of them to crowd the
-    // context; below the threshold nothing changes for the user.
-    final exposure =
-        _mcp.tools(workspaceRoot: workspaceRoot).length > mcpDeferralThreshold
-        ? ToolExposure.deferred
-        : ToolExposure.advertised;
-    return (id) =>
-        _mcp.tool(id, workspaceRoot: workspaceRoot, exposure: exposure);
-  }
+  Stream<void> get changes => _changes;
+
+  @override
+  Future<List<PluginDescriptorDto>> listPluginDescriptors() => _plugins.list();
 }
 
 final class _TinestLuaClock implements lua.LuaClock {
@@ -994,4 +1153,26 @@ final class _TinestLuaIds implements lua.LuaIdGenerator {
 
   @override
   String generate() => _ids.generate();
+}
+
+final class _TinestPluginSdkAuthoringProvider
+    implements PluginSdkAuthoringProvider {
+  const _TinestPluginSdkAuthoringProvider();
+
+  @override
+  int get apiMajor => TinestLuaPluginSdk.apiMajor;
+
+  @override
+  Map<String, String> get authoringLibraryAssets =>
+      TinestLuaPluginSdk.authoringLibraryAssets;
+
+  @override
+  String get luaLanguageServerVersion =>
+      TinestLuaPluginSdk.luaLanguageServerVersion;
+
+  @override
+  String get luaRuntimeVersion => TinestLuaPluginSdk.luaRuntimeVersion;
+
+  @override
+  String get sdkAbiHash => TinestLuaPluginSdk.sdkAbiHash;
 }

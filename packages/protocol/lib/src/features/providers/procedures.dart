@@ -3,7 +3,7 @@ import 'package:protocol/src/models.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersCatalogProcedure =
     RpcProcedure<EmptyParamsDto, ProviderCatalogResultDto>(
       name: 'providers.catalog',
@@ -13,7 +13,7 @@ final providersCatalogProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersListConnectionsProcedure =
     RpcProcedure<EmptyParamsDto, ProviderConnectionsResultDto>(
       name: 'providers.listConnections',
@@ -33,7 +33,7 @@ final providersListUsageProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersConnectApiKeyProcedure =
     RpcProcedure<ProviderConnectApiKeyParamsDto, ProviderConnectionResultDto>(
       name: 'providers.connectApiKey',
@@ -43,7 +43,7 @@ final providersConnectApiKeyProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersConnectNoneProcedure =
     RpcProcedure<ProviderConnectNoneParamsDto, ProviderConnectionResultDto>(
       name: 'providers.connectNone',
@@ -53,7 +53,7 @@ final providersConnectNoneProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersStartAuthProcedure =
     RpcProcedure<ProviderAuthStartParamsDto, ProviderAuthAttemptResultDto>(
       name: 'providers.startAuth',
@@ -63,7 +63,7 @@ final providersStartAuthProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersGetAuthProcedure =
     RpcProcedure<ProviderAuthAttemptParamsDto, ProviderAuthAttemptResultDto>(
       name: 'providers.getAuth',
@@ -73,7 +73,7 @@ final providersGetAuthProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersCancelAuthProcedure =
     RpcProcedure<ProviderAuthAttemptParamsDto, EmptyResultDto>(
       name: 'providers.cancelAuth',
@@ -83,7 +83,7 @@ final providersCancelAuthProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersDisconnectProcedure =
     RpcProcedure<ProviderConnectionIdParamsDto, EmptyResultDto>(
       name: 'providers.disconnect',
@@ -103,7 +103,7 @@ final providersUpdateModelPrefixProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersRefreshCatalogProcedure =
     RpcProcedure<EmptyParamsDto, ProviderCatalogResultDto>(
       name: 'providers.refreshCatalog',
@@ -113,7 +113,7 @@ final providersRefreshCatalogProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersListModelsProcedure =
     RpcProcedure<ProviderConnectionIdParamsDto, ProviderModelsResultDto>(
       name: 'providers.listModels',
@@ -123,7 +123,7 @@ final providersListModelsProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersCreateCustomProcedure =
     RpcProcedure<ProviderCustomCreateParamsDto, ProviderConnectionResultDto>(
       name: 'providers.createCustom',
@@ -133,7 +133,7 @@ final providersCreateCustomProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersUpdateCustomProcedure =
     RpcProcedure<ProviderCustomUpdateParamsDto, ProviderConnectionResultDto>(
       name: 'providers.updateCustom',
@@ -143,7 +143,7 @@ final providersUpdateCustomProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersDeleteCustomProcedure =
     RpcProcedure<ProviderConnectionIdParamsDto, EmptyResultDto>(
       name: 'providers.deleteCustom',
@@ -153,7 +153,7 @@ final providersDeleteCustomProcedure =
       encodeResult: (value) => value.toJson(),
     );
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final providersAuthUpdatedNotification =
     RpcNotification<ProviderAuthAttemptDto>(
       name: 'providers.authUpdated',

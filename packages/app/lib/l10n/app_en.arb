@@ -736,6 +736,10 @@
   "@errorInternalDaemon": {
     "description": "Unexpected daemon-side failure with a trace id in the details."
   },
+  "errorPluginUiRejected": "The plugin interface request was rejected.",
+  "@errorPluginUiRejected": {
+    "description": "A plugin UI render or action request was safely rejected by the host."
+  },
   "errorSessionTurnActive": "This session is running a turn. Wait for it to finish or stop it, then change the setting.",
   "@errorSessionTurnActive": {
     "description": "A session setting such as the mode or the model was changed while a turn was still streaming."
@@ -1154,6 +1158,14 @@
   "@agentSettingsModelHeading": {
     "description": "Section heading for an agent's model choice."
   },
+  "agentSettingsSessionModel": "Use the session model",
+  "@agentSettingsSessionModel": {
+    "description": "Agent model policy that lets each session select its concrete model."
+  },
+  "agentSettingsPinnedModel": "Pin a model",
+  "@agentSettingsPinnedModel": {
+    "description": "Agent model policy that pins one concrete model for every session."
+  },
   "agentSettingsProviderConnectionId": "Provider connection ID",
   "@agentSettingsProviderConnectionId": {
     "description": "Text field label for a pinned provider connection."
@@ -1161,6 +1173,113 @@
   "agentSettingsModelId": "Model ID",
   "@agentSettingsModelId": {
     "description": "Text field label for a pinned model."
+  },
+  "agentSettingsHarnessHeading": "Agent harness",
+  "@agentSettingsHarnessHeading": {
+    "description": "Section heading for the Agent-owned plugin harness."
+  },
+  "agentSettingsHarnessDescription": "The Agent owns exactly one driver, ordered extensions, and its model-visible tools.",
+  "@agentSettingsHarnessDescription": {
+    "description": "Explains the Agent-level harness configuration."
+  },
+  "agentSettingsDriver": "Driver",
+  "@agentSettingsDriver": {
+    "description": "Select label for the Agent's single model-loop driver."
+  },
+  "agentSettingsNoDrivers": "No plugin driver is installed.",
+  "@agentSettingsNoDrivers": {
+    "description": "Shown when no plugin contributes a driver."
+  },
+  "agentSettingsExtensions": "Ordered extensions",
+  "@agentSettingsExtensions": {
+    "description": "Section heading for ordered Agent lifecycle extensions."
+  },
+  "agentSettingsExtensionsDescription": "Extensions run serially in this order.",
+  "@agentSettingsExtensionsDescription": {
+    "description": "Explains that extension order is significant."
+  },
+  "agentSettingsMoveUp": "Move earlier",
+  "@agentSettingsMoveUp": {
+    "description": "Accessible label for moving an extension earlier."
+  },
+  "agentSettingsMoveDown": "Move later",
+  "@agentSettingsMoveDown": {
+    "description": "Accessible label for moving an extension later."
+  },
+  "agentSettingsPluginTools": "Plugin tools",
+  "@agentSettingsPluginTools": {
+    "description": "Section heading for individually selectable plugin tools."
+  },
+  "agentSettingsPluginToolsDescription": "Every model-visible tool can be switched independently for this Agent.",
+  "@agentSettingsPluginToolsDescription": {
+    "description": "Explains Agent-level tool selection."
+  },
+  "agentSettingsPluginSettings": "Plugin settings",
+  "@agentSettingsPluginSettings": {
+    "description": "Section heading for per-plugin JSON settings."
+  },
+  "agentSettingsPluginSettingsDescription": "Settings are stored in this Agent definition as JSON objects.",
+  "@agentSettingsPluginSettingsDescription": {
+    "description": "Explains where plugin settings are stored."
+  },
+  "agentSettingsPluginSettingsRemove": "Clear the field to remove an existing settings entry.",
+  "@agentSettingsPluginSettingsRemove": {
+    "description": "Explains how to remove one pluginSettings map entry."
+  },
+  "agentSettingsPluginSettingsLabel": "{plugin} settings (JSON)",
+  "@agentSettingsPluginSettingsLabel": {
+    "description": "Label for one plugin's JSON settings field.",
+    "placeholders": {
+      "plugin": {"type": "String"}
+    }
+  },
+  "agentSettingsCapabilities": "Plugin capabilities",
+  "@agentSettingsCapabilities": {
+    "description": "Section heading for Agent-scoped plugin grants."
+  },
+  "agentSettingsCapabilitiesDescription": "Grants are kept in daemon state for this Agent, not in the editable Agent file.",
+  "@agentSettingsCapabilitiesDescription": {
+    "description": "Explains capability grant storage and scope."
+  },
+  "agentSettingsNoCapabilities": "The selected plugins request no capabilities.",
+  "@agentSettingsNoCapabilities": {
+    "description": "Empty state for Agent plugin grants."
+  },
+  "agentSettingsHarnessDiagnostics": "Harness diagnostics",
+  "@agentSettingsHarnessDiagnostics": {
+    "description": "Title for computed Agent harness validation messages."
+  },
+  "agentSettingsHarnessMissing": "Configured {kind} is unavailable: {id}",
+  "@agentSettingsHarnessMissing": {
+    "description": "Diagnostic for a missing driver, extension, tool, or plugin.",
+    "placeholders": {
+      "kind": {"type": "String"},
+      "id": {"type": "String"}
+    }
+  },
+  "agentSettingsHarnessKindDriver": "driver",
+  "agentSettingsHarnessKindExtension": "extension",
+  "agentSettingsHarnessKindTool": "tool",
+  "agentSettingsHarnessKindPlugin": "plugin",
+  "agentSettingsHarnessKindDependency": "dependency",
+  "agentSettingsHarnessKindModel": "model",
+  "agentSettingsHarnessModelMismatch": "The selected model does not satisfy driver capability: {capability}",
+  "@agentSettingsHarnessModelMismatch": {
+    "description": "Diagnostic for a driver and model capability mismatch.",
+    "placeholders": {
+      "capability": {"type": "String"}
+    }
+  },
+  "agentSettingsHarnessInvalidSettings": "{plugin} settings must be a valid JSON object.",
+  "@agentSettingsHarnessInvalidSettings": {
+    "description": "Diagnostic for malformed plugin JSON settings.",
+    "placeholders": {
+      "plugin": {"type": "String"}
+    }
+  },
+  "agentSettingsPluginsLoading": "Loading plugin contributions…",
+  "@agentSettingsPluginsLoading": {
+    "description": "Status while the Agent plugin catalog loads."
   },
   "agentSettingsBehaviourHeading": "Behaviour",
   "@agentSettingsBehaviourHeading": {
@@ -1217,10 +1336,6 @@
         "type": "int"
       }
     }
-  },
-  "agentSettingsToolGroupAlwaysOn": "Always available",
-  "@agentSettingsToolGroupAlwaysOn": {
-    "description": "Subtitle of a group whose tools every agent gets."
   },
   "agentSettingsSubagents": "Callable subagents",
   "@agentSettingsSubagents": {
@@ -1557,26 +1672,6 @@
   "@modelPickerNoResults": {
     "description": "Empty state of the model picker search."
   },
-  "composerPlan": "Plan",
-  "@composerPlan": {
-    "description": "Composer mode that only drafts a plan."
-  },
-  "composerRun": "Run",
-  "@composerRun": {
-    "description": "Composer mode that carries the request out."
-  },
-  "composerMode": "Mode",
-  "@composerMode": {
-    "description": "Label of the composer collaboration mode setting."
-  },
-  "composerPlanTooltip": "Only drafts a plan. Shift+Tab to switch",
-  "@composerPlanTooltip": {
-    "description": "Tooltip of the plan composer mode."
-  },
-  "composerRunTooltip": "Carries the request out directly. Shift+Tab to switch",
-  "@composerRunTooltip": {
-    "description": "Tooltip of the run composer mode."
-  },
   "composerSelectAgent": "Select an agent",
   "@composerSelectAgent": {
     "description": "Tooltip of the agent selector."
@@ -1811,10 +1906,6 @@
   "@chatApprovalAllow": {
     "description": "Approves a tool call."
   },
-  "chatPlanTitle": "Plan",
-  "@chatPlanTitle": {
-    "description": "Title of the plan card."
-  },
   "usageInput": "in {tokens}",
   "@usageInput": {
     "description": "Prompt token count in the usage summary line.",
@@ -1876,15 +1967,6 @@
       }
     }
   },
-  "toolExecRunning": "running · {lines} lines",
-  "@toolExecRunning": {
-    "description": "Result line while a pseudo-terminal session is still running.",
-    "placeholders": {
-      "lines": {
-        "type": "int"
-      }
-    }
-  },
   "chatAnswerTyped": "{answer} (typed)",
   "@chatAnswerTyped": {
     "description": "A free-form answer the user typed instead of choosing.",
@@ -1912,18 +1994,6 @@
     "description": "Shown once a sleep has finished.",
     "placeholders": {
       "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "toolSearchFound": "{found} loaded · {remaining} still hidden",
-  "@toolSearchFound": {
-    "description": "Result line of a tool_search call.",
-    "placeholders": {
-      "found": {
-        "type": "int"
-      },
-      "remaining": {
         "type": "int"
       }
     }
@@ -1988,42 +2058,6 @@
       }
     }
   },
-  "toolMcpResources": "{count} resources",
-  "@toolMcpResources": {
-    "description": "Result line of a list_mcp_resources tool call.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolMcpResourceTemplates": "{count} templates",
-  "@toolMcpResourceTemplates": {
-    "description": "Result line of a list_mcp_resource_templates tool call.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolMcpResourceRead": "{count} blocks",
-  "@toolMcpResourceRead": {
-    "description": "Result line of a read_mcp_resource tool call.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolImageLoaded": "{bytes} bytes viewed",
-  "@toolImageLoaded": {
-    "description": "Result line of a view_image tool call.",
-    "placeholders": {
-      "bytes": {
-        "type": "int"
-      }
-    }
-  },
   "chatQuestionSubmit": "Answer",
   "@chatQuestionSubmit": {
     "description": "Button that submits answers to the agent's questions."
@@ -2048,42 +2082,6 @@
   "@chatQuestionOtherPlaceholder": {
     "description": "Placeholder of the free-form answer field."
   },
-  "chatPlanStepPending": "not started",
-  "@chatPlanStepPending": {
-    "description": "Screen-reader status of a plan step that has not started."
-  },
-  "chatPlanStepInProgress": "in progress",
-  "@chatPlanStepInProgress": {
-    "description": "Screen-reader status of the plan step being worked on."
-  },
-  "chatPlanStepCompleted": "completed",
-  "@chatPlanStepCompleted": {
-    "description": "Screen-reader status of a finished plan step."
-  },
-  "chatPlanPrompt": "Proceed with this plan?",
-  "@chatPlanPrompt": {
-    "description": "Asks how to act on a proposed plan."
-  },
-  "chatPlanKeepPlanning": "Keep planning",
-  "@chatPlanKeepPlanning": {
-    "description": "Stays in plan mode."
-  },
-  "chatPlanRunInNewSession": "Run in a new session",
-  "@chatPlanRunInNewSession": {
-    "description": "Implements the plan in a fresh session."
-  },
-  "chatPlanRun": "Run the plan",
-  "planImplementPrompt": "Carry out this plan.",
-  "planFreshSessionPreamble": "A previous agent drafted the plan below for the user. Implement it in this fresh context. Treat the plan as the record of what the user wants, but read the files you need again, and carry the work through to implementation and verification.",
-  "@planFreshSessionPreamble": {
-    "description": "Preamble prepended to a plan handed to a brand-new session. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language."
-  },
-  "@planImplementPrompt": {
-    "description": "Prompt sent to the agent when the user accepts a plan in place. Reaches the model rather than the screen, but is localized so the agent answers in the reader's language."
-  },
-  "@chatPlanRun": {
-    "description": "Implements the plan in the current session."
-  },
   "toolRejected": "Rejected",
   "@toolRejected": {
     "description": "Result line of a denied tool call."
@@ -2091,462 +2089,6 @@
   "toolFailed": "Failed",
   "@toolFailed": {
     "description": "Result line of a tool call with no error text."
-  },
-  "toolEmptyFile": "Empty file",
-  "@toolEmptyFile": {
-    "description": "Read result for a file with no content."
-  },
-  "toolReadLines": "Read {count} lines",
-  "@toolReadLines": {
-    "description": "Read result summary.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolListItems": "{count} items",
-  "@toolListItems": {
-    "description": "Generic list result summary.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolListEntries": "{directories} directories · {files} files",
-  "@toolListEntries": {
-    "description": "Directory listing result summary.",
-    "placeholders": {
-      "directories": {
-        "type": "int"
-      },
-      "files": {
-        "type": "int"
-      }
-    }
-  },
-  "toolNoMatches": "No matches",
-  "@toolNoMatches": {
-    "description": "Search result with nothing found."
-  },
-  "toolMatches": "{matches} matches in {files} files",
-  "@toolMatches": {
-    "description": "Search result summary.",
-    "placeholders": {
-      "matches": {
-        "type": "int"
-      },
-      "files": {
-        "type": "int"
-      }
-    }
-  },
-  "toolMatchesTruncated": "{matches}+ matches in {files} files",
-  "@toolMatchesTruncated": {
-    "description": "Search result summary when the result cap was reached.",
-    "placeholders": {
-      "matches": {
-        "type": "int"
-      },
-      "files": {
-        "type": "int"
-      }
-    }
-  },
-  "toolNoPaths": "No files",
-  "@toolNoPaths": {
-    "description": "File-name search result with nothing found."
-  },
-  "toolPaths": "{count} files",
-  "@toolPaths": {
-    "description": "File-name search result summary.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolPathsTruncated": "{count}+ files",
-  "@toolPathsTruncated": {
-    "description": "File-name search summary when the result cap was reached.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolAttached": "Attached {name}",
-  "@toolAttached": {
-    "description": "Result line after a workspace file is attached.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "toolSkillLoaded": "Loaded {name}",
-  "@toolSkillLoaded": {
-    "description": "Result line after a skill's instructions are loaded.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "toolSkills": "{count} skills",
-  "@toolSkills": {
-    "description": "Skill listing result summary.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolSkillsTruncated": "{count}+ skills",
-  "@toolSkillsTruncated": {
-    "description": "Skill listing summary when a page boundary was reached.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolEditFiles": "Edit({count} files)",
-  "@toolEditFiles": {
-    "description": "Edit call summary across several files.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolPatchSummary": "+{added} -{removed} · {files} files",
-  "@toolPatchSummary": {
-    "description": "Patch result summary.",
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      },
-      "files": {
-        "type": "int"
-      }
-    }
-  },
-  "toolCommandResult": "exit {exitCode} · {lines} lines",
-  "toolTitleEdit": "Edit",
-  "@toolTitleEdit": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleEditPath": "Edit({path})",
-  "@toolTitleEditPath": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleAttach": "Attach({path})",
-  "@toolTitleAttach": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleAttachment": "Attachment({id})",
-  "@toolTitleAttachment": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleNow": "Now()",
-  "@toolTitleNow": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleSleep": "Sleep({milliseconds}ms)",
-  "@toolTitleSleep": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "milliseconds": {
-        "type": "int"
-      }
-    }
-  },
-  "toolTitleSleepUnknown": "Sleep()",
-  "@toolTitleSleepUnknown": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleSpawn": "Spawn({task})",
-  "@toolTitleSpawn": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "task": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleSend": "Send({target})",
-  "@toolTitleSend": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "target": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleFollowup": "Followup({target})",
-  "@toolTitleFollowup": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "target": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleWait": "Wait()",
-  "@toolTitleWait": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleInterrupt": "Interrupt({target})",
-  "@toolTitleInterrupt": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "target": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleAgents": "Agents()",
-  "@toolTitleAgents": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleContext": "Context()",
-  "@toolTitleContext": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleNewContext": "NewContext()",
-  "@toolTitleNewContext": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleBash": "Bash({command})",
-  "@toolTitleBash": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "command": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleStdin": "Stdin({session})",
-  "@toolTitleStdin": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "session": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleStdinChars": "Stdin({session} ← {chars})",
-  "@toolTitleStdinChars": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "session": {
-        "type": "String"
-      },
-      "chars": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleGlob": "Glob({pattern})",
-  "@toolTitleGlob": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "pattern": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleGlobIn": "Glob({pattern} in {path})",
-  "@toolTitleGlobIn": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "pattern": {
-        "type": "String"
-      },
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleList": "List({path})",
-  "@toolTitleList": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleMcpResources": "Resources({server})",
-  "@toolTitleMcpResources": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "server": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleMcpResourceTemplates": "ResourceTemplates({server})",
-  "@toolTitleMcpResourceTemplates": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "server": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleMcpResource": "Resource({server}: {uri})",
-  "@toolTitleMcpResource": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "server": {
-        "type": "String"
-      },
-      "uri": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleRead": "Read({path})",
-  "@toolTitleRead": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleReadRange": "Read({path} @{offset}+{limit})",
-  "@toolTitleReadRange": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      },
-      "offset": {
-        "type": "String"
-      },
-      "limit": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleAsk": "Ask({headers})",
-  "@toolTitleAsk": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "headers": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleSearch": "Search({query})",
-  "@toolTitleSearch": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleSearchIn": "Search({query} in {path})",
-  "@toolTitleSearchIn": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "query": {
-        "type": "String"
-      },
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleSkills": "Skills()",
-  "@toolTitleSkills": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim."
-  },
-  "toolTitleSkill": "Skill({name})",
-  "@toolTitleSkill": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleSkillResource": "Skill({name}:{resource})",
-  "@toolTitleSkillResource": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "resource": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitleToolSearch": "Tools({query})",
-  "@toolTitleToolSearch": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "toolTitlePlan": "Plan({count})",
-  "@toolTitlePlan": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "toolTitleView": "View({path})",
-  "@toolTitleView": {
-    "description": "Chat timeline title of a tool call. The verb is translated; the argument is the model's own text and stays verbatim.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "toolArgumentAllServers": "all",
-  "@toolArgumentAllServers": {
-    "description": "Stands in for the server argument of an MCP call that lists every server at once."
-  },
-  "@toolCommandResult": {
-    "description": "Shell command result summary.",
-    "placeholders": {
-      "exitCode": {
-        "type": "int"
-      },
-      "lines": {
-        "type": "int"
-      }
-    }
   },
   "directoryBrowserTitle": "Choose a folder on the daemon",
   "@directoryBrowserTitle": {
@@ -2915,47 +2457,6 @@
   "@mcpSettingsSecretValue": {
     "description": "Label of the secret value field."
   },
-  "agentSettingsToolAlwaysOn": "Always available",
-  "@agentSettingsToolAlwaysOn": {
-    "description": "Subtitle marking a tool every agent gets."
-  },
-  "toolContextRemaining": "{remaining} of {window} tokens left",
-  "@toolContextRemaining": {
-    "description": "Result line of a get_context_remaining call.",
-    "placeholders": {
-      "remaining": {
-        "type": "int"
-      },
-      "window": {
-        "type": "int"
-      }
-    }
-  },
-  "toolContextRemainingUnknown": "{used} tokens used",
-  "@toolContextRemainingUnknown": {
-    "description": "Result line when the provider never advertised a window.",
-    "placeholders": {
-      "used": {
-        "type": "int"
-      }
-    }
-  },
-  "chatContextReset": "New context window",
-  "@chatContextReset": {
-    "description": "Divider marking where the model's history was discarded."
-  },
-  "chatContextCompacted": "Conversation summarized",
-  "@chatContextCompacted": {
-    "description": "Divider marking where the model's history was replaced by a summary."
-  },
-  "composerCommandCompactLabel": "compact",
-  "@composerCommandCompactLabel": {
-    "description": "Name of the composer command that summarizes the conversation."
-  },
-  "composerCommandCompactDescription": "Summarize the conversation to free the context window.",
-  "@composerCommandCompactDescription": {
-    "description": "Description of the compact command."
-  },
   "sessionContextMeter": "Context",
   "@sessionContextMeter": {
     "description": "Label of the composer context budget meter."
@@ -3089,14 +2590,6 @@
   "@composerCommandNewDescription": {
     "description": "Description of the new session command."
   },
-  "composerCommandModeLabel": "mode",
-  "@composerCommandModeLabel": {
-    "description": "Name of the composer command that switches mode."
-  },
-  "composerCommandModeDescription": "Switch between planning and working.",
-  "@composerCommandModeDescription": {
-    "description": "Description of the mode command."
-  },
   "composerCommandAgentsLabel": "agents",
   "@composerCommandAgentsLabel": {
     "description": "Name of the composer command that opens agent settings."
@@ -3121,47 +2614,6 @@
   "@composerCommandHelpDescription": {
     "description": "Description of the help command."
   },
-  "composerCommandGoalLabel": "goal",
-  "composerCommandGoalDescription": "Create or manage persistent session work.",
-  "goalStatusActive": "Active",
-  "goalStatusPaused": "Paused",
-  "goalStatusBlocked": "Blocked",
-  "goalStatusUsageLimited": "Usage limited",
-  "goalStatusBudgetLimited": "Budget reached",
-  "goalStatusComplete": "Complete",
-  "goalPlanHold": "Resumes in Run mode",
-  "goalElapsed": "{seconds}s elapsed",
-  "@goalElapsed": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
-  "goalTokenUsage": "{used} / {budget} tokens",
-  "@goalTokenUsage": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "budget": {
-        "type": "int"
-      }
-    }
-  },
-  "goalPause": "Pause goal",
-  "goalResume": "Resume goal",
-  "goalEdit": "Edit goal",
-  "goalClear": "Clear goal",
-  "goalDialogTitle": "Session goal",
-  "goalObjectiveLabel": "Objective",
-  "goalObjectiveRequired": "Enter 1–4,000 characters.",
-  "goalBudgetLabel": "Token budget (optional)",
-  "goalBudgetInvalid": "Enter a positive token budget.",
-  "goalStart": "Start goal",
-  "goalReplaceTitle": "Replace current goal?",
-  "goalReplaceDescription": "This starts a new goal and resets recorded usage.",
-  "goalReplaceAction": "Replace goal",
   "composerSuggestionsLabel": "Suggestions",
   "@composerSuggestionsLabel": {
     "description": "Accessible name of the composer suggestion list."
@@ -3176,7 +2628,6 @@
   "chatToolActionEdit": "Edit files",
   "chatToolActionRun": "Run command",
   "chatToolActionDelegate": "Coordinate agents",
-  "chatToolActionPlan": "Update plan",
   "chatToolActionAsk": "Ask a question",
   "chatToolActionResource": "Use resource",
   "chatToolActionTools": "Find tools",
@@ -3200,5 +2651,91 @@
   "chatToolStatusDenied": "Denied",
   "chatToolDetailsTool": "Tool",
   "chatToolDetailsRequest": "Request",
-  "chatToolDetailsResult": "Result"
+  "chatToolDetailsResult": "Result",
+  "settingsCategoryPlugin": "Plugins",
+  "pluginSettingsHeading": "Plugins",
+  "pluginSettingsCount": "{count} plugins",
+  "@pluginSettingsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pluginSettingsSelect": "Select a plugin.",
+  "pluginSettingsAdd": "Create plugin",
+  "pluginSettingsAddTitle": "Create plugin starter",
+  "pluginSettingsEmpty": "No plugins are installed.",
+  "pluginSettingsSource": "Source",
+  "pluginSettingsSourceBuiltIn": "Built in",
+  "pluginSettingsSourceUser": "User",
+  "pluginSettingsSourcePath": "Source path",
+  "pluginSettingsApi": "Plugin API",
+  "pluginSettingsApiValue": "API {api}",
+  "@pluginSettingsApiValue": {
+    "placeholders": {
+      "api": {"type": "int"}
+    }
+  },
+  "pluginSettingsRevision": "Active revision",
+  "pluginSettingsRevisionMissing": "No active revision",
+  "pluginSettingsStale": "Using last known good revision",
+  "pluginSettingsAuthoring": "Lua development environment",
+  "pluginSettingsAuthoringStatus": "Authoring status",
+  "pluginSettingsAuthoringSynchronized": "Synchronized",
+  "pluginSettingsAuthoringNeedsSync": "Synchronization required",
+  "pluginSettingsSdkAbi": "SDK ABI",
+  "pluginSettingsLuaRuntime": "Lua runtime",
+  "pluginSettingsLuaLs": "Lua Language Server",
+  "pluginSettingsLuaConfig": "LuaLS configuration",
+  "pluginSettingsSdkSync": "Synchronize SDK",
+  "pluginSettingsCapabilities": "Requested capabilities",
+  "pluginSettingsCapabilitiesNone": "No host capabilities requested.",
+  "pluginSettingsAgents": "Referencing agents",
+  "pluginSettingsAgentsNone": "No Agent references this plugin.",
+  "pluginSettingsContributions": "Contributions",
+  "pluginSettingsDiagnostics": "Diagnostics",
+  "pluginSettingsDiagnosticsNone": "No diagnostics.",
+  "pluginSettingsValidate": "Validate",
+  "pluginSettingsReload": "Reload",
+  "pluginSettingsOpenPath": "Open plugin folder",
+  "pluginSettingsFork": "Fork",
+  "pluginSettingsForkTitle": "Fork {plugin}",
+  "@pluginSettingsForkTitle": {
+    "placeholders": {"plugin": {"type": "String"}}
+  },
+  "pluginSettingsForkDescription": "Copies the validated revision into a new app-data plugin without enabling it for any Agent.",
+  "pluginSettingsReloadAgent": "Agent grants used for reload",
+  "pluginSettingsReloadNeedsAgent": "Reference this plugin from an Agent before reloading it.",
+  "pluginSettingsId": "Plugin ID",
+  "pluginSettingsName": "Name",
+  "pluginSettingsIdInvalid": "Use a lowercase dot-separated namespace, such as example.tools.",
+  "pluginSettingsIdTaken": "That plugin ID already exists.",
+  "pluginSettingsUi": "Plugin interface",
+  "pluginUiLoading": "Loading plugin interface",
+  "pluginUiLoadFailed": "The plugin interface could not be loaded.",
+  "pluginUiInvalidTitle": "Unsupported plugin interface",
+  "pluginUiInvalidDescription": "This document is invalid, so {appName} rendered its source as a read-only disclosure.",
+  "@pluginUiInvalidDescription": {
+    "description": "Explains the safe fallback for an invalid plugin UI document.",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginUiSemanticLabel": "{plugin} plugin interface",
+  "@pluginUiSemanticLabel": {
+    "placeholders": {
+      "plugin": {"type": "String"}
+    }
+  },
+  "pluginSessionControlLoading": "Loading session control",
+  "pluginSessionControlLoadFailed": "The plugin session control could not be loaded.",
+  "pluginSessionControlUnsupported": "Unsupported plugin session control",
+  "pluginSessionControlSaveFailed": "The plugin session control could not be saved.",
+  "pluginContributionDriver": "Driver",
+  "pluginContributionExtension": "Extension",
+  "pluginContributionTool": "Tool",
+  "pluginContributionSessionControl": "Session control",
+  "pluginContributionUi": "Interface",
+  "pluginSettingsActionFailed": "Plugin action failed"
 }

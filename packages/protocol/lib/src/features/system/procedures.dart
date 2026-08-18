@@ -2,7 +2,7 @@ import 'package:protocol/src/models.dart';
 import 'package:protocol/src/rpc_catalog.dart';
 import 'package:protocol/src/rpc_models.dart';
 
-/// Typed v4 transport descriptor.
+/// Typed v5 transport descriptor.
 final systemHelloProcedure = RpcProcedure<HelloParamsDto, ServerInfoDto>(
   name: 'system.hello',
   decodeParams: HelloParamsDto.fromJson,

@@ -9,7 +9,6 @@ import 'package:app/src/features/conversation/application/composer_suggestions.d
 import 'package:app/src/features/conversation/application/conversation_controller.dart';
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_first_line_alignment.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_actions.dart';
 import 'package:app/src/features/conversation/presentation/composer_client_commands.dart';
 import 'package:app/src/features/conversation/presentation/composer_trigger.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
@@ -17,9 +16,12 @@ import 'package:app/src/features/conversation/presentation/widgets/composer_sugg
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/models/application/model_settings_controller.dart';
 import 'package:app/src/features/permissions/application/permission_settings_controller.dart';
+import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
 import 'package:app/src/features/providers/application/model_picker_options.dart';
 import 'package:app/src/features/providers/application/provider_settings_controller.dart';
 import 'package:app/src/features/providers/application/session_model_options.dart';
+import 'package:app/src/features/sessions/application/session_prompt_starter.dart';
+import 'package:app/src/features/sessions/application/session_starter.dart';
 import 'package:app/src/features/sessions/domain/session_title.dart';
 import 'package:app/src/shared/presentation/blocked_control.dart';
 import 'package:app/src/shared/presentation/model_picker.dart';
@@ -48,8 +50,6 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     required this.selection,
     required this.onAgentChanged,
     required this.onModelChanged,
-    required this.mode,
-    required this.onModeChanged,
     this.modelControls = const <String, ModelControlValueDto>{},
     this.onModelControlsChanged,
     this.permissionMode,
@@ -68,8 +68,6 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     selection: selection,
     onAgentChanged: onAgentChanged,
     onModelChanged: onModelChanged,
-    mode: mode,
-    onModeChanged: onModeChanged,
     modelControls: modelControls,
     onModelControlsChanged: onModelControlsChanged,
     permissionMode: permissionMode,
@@ -101,12 +99,6 @@ class SessionComposerBar extends ConsumerStatefulWidget {
     Map<String, ModelControlValueDto> controls,
   )
   onModelChanged;
-
-  /// Collaboration mode currently in effect.
-  final SessionMode mode;
-
-  /// Called with the mode to switch to.
-  final ValueChanged<SessionMode> onModeChanged;
 
   /// Explicit values for the selected provider model.
   final Map<String, ModelControlValueDto> modelControls;
@@ -160,11 +152,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   @override
   Widget build(BuildContext context) {
     final hostId = widget.hostId;
-    final definitions = widget.definitions;
     final selection = widget.selection;
     final agentEnabled = widget.agentEnabled;
     final enabled = widget.enabled;
-    final planning = widget.mode == SessionMode.plan;
     // Keep the loaded connections while the provider refreshes. A provider
     // state that has not produced its first value is different from a loaded
     // empty connection list: only the latter can explain why model selection
@@ -178,15 +168,11 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final connections = usableConnections(
       providers?.connections ?? const <ProviderConnectionDto>[],
     );
-    final agent = definitions
-        .where((definition) => definition.id == widget.agentDefinitionId)
-        .firstOrNull;
     final daemonDefault = ref
         .watch(permissionSettingsControllerProvider(hostId))
         .value
         ?.defaultMode;
-    final inheritedPermission =
-        agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask;
+    final inheritedPermission = daemonDefault ?? PermissionMode.ask;
     final connection = connections
         .where(
           (item) =>
@@ -265,21 +251,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           inheritedPermission: inheritedPermission,
           appearance: TRFieldAppearance.ghost,
           uiSize: TRUiSize.sm,
-        ),
-        ComposerChip(
-          valueKey: const ValueKey('session-composer-mode'),
-          icon: TinestIcons.checklist,
-          label: planning ? l10n.composerPlan : l10n.composerRun,
-          tooltip: planning
-              ? l10n.composerPlanTooltip
-              : l10n.composerRunTooltip,
-          selected: planning,
-          uiSize: TRUiSize.sm,
-          onPressed: enabled
-              ? (_) => widget.onModeChanged(
-                  planning ? SessionMode.normal : SessionMode.plan,
-                )
-              : null,
         ),
       ],
     );
@@ -559,25 +530,6 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     ),
                   ),
                 ),
-                _settingsRow(
-                  key: const ValueKey<String>(
-                    'session-composer-settings-mode',
-                  ),
-                  icon: TinestIcons.checklist,
-                  title: l10n.composerMode,
-                  value: widget.mode == SessionMode.plan
-                      ? l10n.composerPlan
-                      : l10n.composerRun,
-                  enabled: widget.enabled,
-                  onTap: () {
-                    widget.onModeChanged(
-                      widget.mode == SessionMode.plan
-                          ? SessionMode.normal
-                          : SessionMode.plan,
-                    );
-                    unawaited(_refreshSettings(refresh));
-                  },
-                ),
               ],
             ),
           );
@@ -666,8 +618,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           null,
       model: model,
       capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
-      inheritedPermission:
-          agent?.permissionMode ?? daemonDefault ?? PermissionMode.ask,
+      inheritedPermission: daemonDefault ?? PermissionMode.ask,
     );
   }
 
@@ -1378,6 +1329,18 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
             excludedClientActions: sessionlessClientActions,
             builder: (context, completion) => SessionComposer(
               controller: _dropController,
+              header: agent == null
+                  ? null
+                  : AgentPluginUiSlot(
+                      hostId: selection.hostId,
+                      agent: agent,
+                      slot: PluginUiSlot.composerControl,
+                      context: <String, dynamic>{
+                        'workspaceId': selection.workspaceId,
+                        'worktreeId': selection.worktreeId,
+                        'draft': true,
+                      },
+                    ),
               commands: completion.commands,
               suggestions: completion.suggestions,
               onCompletionQueryChanged: completion.onQueryChanged,
@@ -1385,11 +1348,6 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
                 context,
                 invocation,
                 hostId: selection.hostId,
-                onToggleMode: () => notifier.selectMode(
-                  draft.mode == SessionMode.plan
-                      ? SessionMode.normal
-                      : SessionMode.plan,
-                ),
               ),
               enabled: agent != null && effectiveRunnable,
               hint: (agentsLoading || providersLoading || modelSettingsLoading)
@@ -1414,8 +1372,6 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
                     ..selectModel(selection)
                     ..selectModelControls(controls);
                 },
-                mode: draft.mode,
-                onModeChanged: notifier.selectMode,
                 modelControls: draft.modelControls,
                 onModelControlsChanged: (controls) {
                   if (effective == null) return;
@@ -1425,11 +1381,6 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
                 },
                 permissionMode: draft.permissionMode,
                 onPermissionModeChanged: notifier.selectPermissionMode,
-              ),
-              onModeToggled: () => notifier.selectMode(
-                draft.mode == SessionMode.plan
-                    ? SessionMode.normal
-                    : SessionMode.plan,
               ),
               attachmentInput: ref.read(attachmentInputProvider),
               onSubmit: (submission) => _start(ref, submission, agent!, draft),
@@ -1449,7 +1400,7 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
     final l10n = AppLocalizations.of(context);
     widget.onCreated(
       await startSessionWithPrompt(
-        ref,
+        ref.read(sessionStarterProvider),
         selection: widget.selection,
         agentDefinitionId: agent.id,
         title: deriveSessionTitle(
@@ -1461,7 +1412,6 @@ class _DraftSessionPaneState extends ConsumerState<DraftSessionPane> {
         prompt: submission.text,
         draftTabId: widget.draftId,
         attachments: submission.attachments,
-        mode: draft.mode,
         model: draft.model,
         modelControls: draft.modelControls,
         permissionMode: draft.permissionMode,
@@ -1601,7 +1551,6 @@ class SessionComposer extends StatefulWidget {
     this.onQueuedSendNow,
     this.onSubmitAndInterrupt,
     this.onStop,
-    this.onModeToggled,
     this.header,
     this.hint,
     this.failure,
@@ -1677,9 +1626,6 @@ class SessionComposer extends StatefulWidget {
   /// Null on a composer that owns no session, which is what the draft and
   /// new-workspace composers are.
   final FutureOr<void> Function()? onStop;
-
-  /// Cycles the collaboration mode, mirroring the Shift+Tab shortcut.
-  final VoidCallback? onModeToggled;
 
   /// Extra selectors rendered above [bar].
   final Widget? header;
@@ -2169,14 +2115,7 @@ class _SessionComposerState extends State<SessionComposer> {
       return KeyEventResult.handled;
     }
 
-    final toggle = widget.onModeToggled;
-    if (toggle == null ||
-        event.logicalKey != LogicalKeyboardKey.tab ||
-        !shift) {
-      return KeyEventResult.ignored;
-    }
-    toggle();
-    return KeyEventResult.handled;
+    return KeyEventResult.ignored;
   }
 
   KeyEventResult _handleEarlyKey(KeyEvent event) => _inputFocus.hasFocus

@@ -119,30 +119,36 @@ final class DaemonDataReset {
 
   /// Entries erased from [homeDirectory].
   static const List<String> homeEntries = <String>[
-    'v4/tinest.sqlite',
-    'v4/tinest.sqlite-wal',
-    'v4/tinest.sqlite-shm',
-    'v4/tinest.sqlite-journal',
-    'v4/attachments',
-    'v4/daemon.lock',
+    'v5/tinest.sqlite',
+    'v5/tinest.sqlite-wal',
+    'v5/tinest.sqlite-shm',
+    'v5/tinest.sqlite-journal',
+    'v5/attachments',
+    'v5/plugin-cache',
+    'v5/plugin-state.json',
+    'v5/plugin-state.json.tmp',
+    'v5/daemon.lock',
   ];
 
   /// Entries erased from [configDirectory].
   static const List<String> configEntries = <String>[
-    'v4/secrets.json',
-    'v4/secrets.json.tmp',
-    'v4/config.json',
-    'v4/config.json.tmp',
-    'v4/agents',
-    'v4/skills',
-    'v4/commands',
+    'v5/secrets.json',
+    'v5/secrets.json.tmp',
+    'v5/plugin-secrets.json',
+    'v5/plugin-secrets.json.tmp',
+    'v5/config.json',
+    'v5/config.json.tmp',
+    'v5/agents',
+    'v5/plugins',
+    'v5/skills',
+    'v5/commands',
   ];
 
   /// Entries under [homeDirectory] that a reset must never touch.
   ///
   /// Managed checkouts can hold unpushed work, so they outlive a reset even
   /// though their workspace registrations do not.
-  static const List<String> preservedHomeEntries = <String>['v4/worktrees'];
+  static const List<String> preservedHomeEntries = <String>['v5/worktrees'];
 
   /// Erases every entry in the allowlist, leaving both roots in place.
   ///
@@ -151,7 +157,7 @@ final class DaemonDataReset {
   /// deleted.
   Future<void> eraseAll() async {
     await files.assertLockAvailable(
-      p.join(homeDirectory, 'v4', 'daemon.lock'),
+      p.join(homeDirectory, 'v5', 'daemon.lock'),
     );
     for (final path in _targets()) {
       if (!await files.exists(path)) continue;

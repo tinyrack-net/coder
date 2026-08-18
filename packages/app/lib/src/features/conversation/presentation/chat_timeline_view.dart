@@ -1,21 +1,26 @@
 import 'dart:typed_data';
 
 import 'package:app/l10n/gen/app_localizations.dart';
+import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
-import 'package:app/src/features/conversation/presentation/chat_plan_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_sleep_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_tool_card.dart';
+import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/workspace_skeletons.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// Builds the controls belonging to one actionable plan row.
-typedef ChatPlanActionBuilder = Widget? Function(ChatPlanProposal proposal);
+/// Dispatches an action from a persisted plugin timeline snapshot.
+typedef ChatPluginUiActionDispatcher = Future<PluginUiDocumentDto> Function(
+  PluginUiDocumentDto document,
+  PluginUiActionDto action,
+);
 
 /// Scrolling conversation body rendered from projected chat items.
 class ChatTimelineView extends StatefulWidget {
@@ -32,7 +37,7 @@ class ChatTimelineView extends StatefulWidget {
     this.olderFailed = false,
     this.onLoadOlder,
     this.hostId,
-    this.planActionBuilder,
+    this.onPluginUiAction,
     this.loadAttachment,
     this.exportAttachment,
     super.key,
@@ -54,7 +59,8 @@ class ChatTimelineView extends StatefulWidget {
   /// Reading position to restore, or null to open at the newest message.
   final TRVirtualListSnapshot<String>? readingPosition;
 
-  /// Reports the position worth restoring for a conversation being left.
+  /// Reports the position worth restoring after scrolling settles and when a
+  /// conversation is being left.
   ///
   /// A null snapshot means the reader was at the newest message and should
   /// arrive there again rather than at whatever row they last stopped on.
@@ -90,8 +96,8 @@ class ChatTimelineView extends StatefulWidget {
   /// Host used to resolve approval and question interactions.
   final String? hostId;
 
-  /// Builds actions inside the latest plan card.
-  final ChatPlanActionBuilder? planActionBuilder;
+  /// Dispatches actions from revision-pinned plugin timeline snapshots.
+  final ChatPluginUiActionDispatcher? onPluginUiAction;
 
   /// Authenticated attachment byte loader.
   final ChatAttachmentLoader? loadAttachment;
@@ -109,7 +115,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   final Set<String> _expanded = <String>{};
   final Map<String, Future<Uint8List>> _attachmentCache =
       <String, Future<Uint8List>>{};
-  final TRVirtualListController<String> _virtualListController =
+  TRVirtualListController<String> _virtualListController =
       TRVirtualListController<String>();
   // The position to hand back when this conversation is left, kept current
   // while the list is laid out because `deactivate` is too late to ask it
@@ -126,11 +132,27 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   int _entryCount = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // A restored snapshot remains the current reading position until a
+    // settled scroll proves that the reader reached the trailing edge. The
+    // final row can be taller than the viewport, so merely seeing its index
+    // does not mean the reader is at its end.
+    _readingPosition = widget.readingPosition;
+  }
+
+  @override
   void didUpdateWidget(covariant ChatTimelineView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sessionKey == widget.sessionKey) return;
     _reportReadingPosition(oldWidget.sessionKey);
-    _readingPosition = null;
+    // The keyed list below remounts so the incoming session can resolve its
+    // own initial target. Give it a controller of its own as well: Flutter can
+    // mount the replacement before disposing the previous keyed child, and a
+    // TRVirtualListController intentionally rejects two simultaneous lists.
+    _virtualListController.dispose();
+    _virtualListController = TRVirtualListController<String>();
+    _readingPosition = widget.readingPosition;
     _expanded.clear();
     _attachmentCache.clear();
   }
@@ -201,9 +223,30 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
 
   void _onVisibleRangeChanged(TRVirtualListRange<String> range) {
     final hasUnreadBelow = range.lastIndex < _entryCount - 1;
-    _readingPosition = hasUnreadBelow
+    // Range changes keep anchors fresh while rows enter and leave the
+    // viewport. They must not clear an anchor: a single tall final row has the
+    // same range both halfway through and at the trailing edge. Scroll-end
+    // metrics below are the only authoritative trailing-edge signal.
+    if (hasUnreadBelow) {
+      _readingPosition = _virtualListController.takeSnapshot();
+    }
+  }
+
+  bool _onScrollEnd(ScrollEndNotification notification) {
+    if (notification.depth != 0 || _entryCount == 0) return false;
+    // A visible range changes only when its first or last row changes. A long
+    // Markdown row can therefore move by whole viewports without another
+    // range callback, so the settled scroll offset is the authoritative place
+    // to refresh the snapshot a tab switch will retain.
+    final nextPosition = notification.metrics.extentAfter > 1
         ? _virtualListController.takeSnapshot()
         : null;
+    _readingPosition = nextPosition;
+    // Checkpoint while the list is still attached. Relying on deactivate as
+    // the first report makes a rapid tab switch race the deferred parent-store
+    // write against construction of the returning timeline.
+    _reportReadingPosition(widget.sessionKey);
+    return false;
   }
 
   /// Folds or unfolds a row while holding it still on screen.
@@ -226,15 +269,13 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         _ChatTimelineItemEntry(:final item) => switch (item) {
           ChatAttachmentMessage() ||
           ChatNotice() ||
-          ChatContextReset() ||
-          ChatContextCompacted() ||
           ChatDeferredTools() ||
           ChatUsage() ||
           ChatUnknownEvent() => TRMeasurements.measureXs,
           ChatUserMessage() ||
           ChatAssistantMessage() ||
           ChatReasoningActivity() ||
-          ChatPlanProposal() ||
+          ChatPluginUiDocument() ||
           ChatApprovalInteraction() ||
           ChatQuestionInteraction() ||
           ChatToolActivity() ||
@@ -270,17 +311,27 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     ];
     _entryCount = entries.length;
     final olderStatus = _olderPageStatus(context);
-    final list = TRVirtualList<_ChatTimelineEntry, String>(
+    final virtualList = TRVirtualList<_ChatTimelineEntry, String>(
+      // A session owns its initial trailing/snapshot target. Reusing the
+      // virtual-list State across a tab switch preserves the previous
+      // session's already-resolved target, so a newly supplied snapshot is
+      // never applied even though its item keys are present.
+      key: ValueKey<String>(widget.sessionKey),
       items: entries,
       itemKey: (entry) => entry.key,
       estimatedItemExtent: _estimatedItemExtent,
       controller: _virtualListController,
       // No `pageStorageId`: the component's own restore outranks
       // `initialPosition`, so a conversation that was ever shorter than its
-      // viewport reopens pinned to its oldest message forever. Restoration is
-      // owned here instead, and only offered when it is what the reader wants.
+      // viewport reopens pinned to its oldest message forever. Restoration
+      // is owned here instead, and only offered when it is what the reader
+      // wants.
       initialPosition: const TRVirtualListInitialPosition<String>.trailing(),
       initialSnapshot: widget.readingPosition,
+      // The shared list resolves whether the effective initial target is a
+      // restorable item or the trailing fallback. Keeping follow enabled lets
+      // an unavailable history anchor fall back to newest and stay there as
+      // live messages arrive.
       follow: TRVirtualListFollow.trailing,
       scrollCacheExtent: const .viewport(4),
       onVisibleRangeChanged: _onVisibleRangeChanged,
@@ -295,14 +346,16 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             loadAttachment: widget.loadAttachment == null ? null : _load,
             exportAttachment: widget.exportAttachment,
             hostId: widget.hostId,
-            planActionBuilder: widget.planActionBuilder,
+            onPluginUiAction: widget.onPluginUiAction,
           ),
         };
         return _ChatTimelineContentColumn(
           child: Padding(
             // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
             padding:
-                const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
+                const EdgeInsets.symmetric(
+                  horizontal: TRSpacing.extraLarge,
+                ) +
                 (index == 0
                     ? const EdgeInsets.only(top: TRSpacing.large)
                     : EdgeInsets.zero) +
@@ -319,6 +372,10 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           ),
         );
       },
+    );
+    final list = NotificationListener<ScrollEndNotification>(
+      onNotification: _onScrollEnd,
+      child: virtualList,
     );
     // The stack is unconditional: making it appear only while a page is in
     // flight would re-inflate the list beneath it, and one controller drives
@@ -384,7 +441,7 @@ class ChatItemView extends StatelessWidget {
     this.loadAttachment,
     this.exportAttachment,
     this.hostId,
-    this.planActionBuilder,
+    this.onPluginUiAction,
     super.key,
   });
 
@@ -406,8 +463,8 @@ class ChatItemView extends StatelessWidget {
   /// Host used by actionable interaction rows.
   final String? hostId;
 
-  /// Builds actions inside a plan card.
-  final ChatPlanActionBuilder? planActionBuilder;
+  /// Dispatches actions from a persisted plugin timeline snapshot.
+  final ChatPluginUiActionDispatcher? onPluginUiAction;
 
   @override
   Widget build(BuildContext context) {
@@ -429,9 +486,20 @@ class ChatItemView extends StatelessWidget {
         expanded: expanded,
         onToggle: onToggle,
       ),
-      ChatPlanProposal() => ChatPlanCard(
-        proposal: value,
-        actions: planActionBuilder?.call(value),
+      ChatPluginUiDocument() => PluginUiDocumentView(
+        document: value.document,
+        semanticLabel: AppLocalizations.of(
+          context,
+        ).pluginUiSemanticLabel(value.document.pluginId),
+        invalidDocumentLabel: AppLocalizations.of(
+          context,
+        ).pluginUiInvalidTitle,
+        invalidDocumentDescription: AppLocalizations.of(
+          context,
+        ).pluginUiInvalidDescription(AppIdentity.displayName),
+        onAction: onPluginUiAction == null
+            ? null
+            : (action) => onPluginUiAction!(value.document, action),
       ),
       ChatApprovalInteraction() => ApprovalCard(
         hostId: hostId,
@@ -451,8 +519,6 @@ class ChatItemView extends StatelessWidget {
       ChatUserAnswer() => ChatUserAnswerLine(answer: value),
       ChatSleep() => ChatSleepCard(sleep: value),
       ChatDeferredTools() => ChatDeferredToolsLine(notice: value),
-      ChatContextReset() => ChatContextResetLine(reset: value),
-      ChatContextCompacted() => ChatContextCompactedLine(compacted: value),
       ChatUsage() => ChatUsageLine(usage: value),
       ChatUnknownEvent() => ChatUnknownEventLine(event: value),
     };

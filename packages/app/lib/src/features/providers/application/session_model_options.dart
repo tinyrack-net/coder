@@ -43,7 +43,13 @@ List<ProviderConnectionDto> usableConnections(
 /// ID and block execution instead of silently falling through.
 ModelSelectionDto? agentSelectionFor(
   AgentDefinitionDto definition,
-) => definition.model;
+) {
+  final model = definition.model;
+  final modelId = model.modelId;
+  return model.source == AgentModelSource.fixed && modelId != null
+      ? ModelSelectionDto(modelId: modelId)
+      : null;
+}
 
 /// Whether one selection names a connection and model that can run a turn.
 ///

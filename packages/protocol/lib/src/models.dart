@@ -29,27 +29,6 @@ enum SessionStatus {
   closed,
 }
 
-/// Persistent lifecycle of a session goal.
-enum GoalStatus {
-  /// The daemon continues the goal whenever the session is eligible.
-  active,
-
-  /// The user explicitly suspended the goal.
-  paused,
-
-  /// The agent or daemon reached a non-usage blocker.
-  blocked,
-
-  /// The model provider reported an exhausted usage allowance.
-  usageLimited,
-
-  /// The configured token budget has been consumed.
-  budgetLimited,
-
-  /// The agent verified that the objective is complete.
-  complete,
-}
-
 /// Runtime lifecycle of a daemon-owned interactive terminal.
 enum TerminalStatus {
   /// The shell process is accepting input.
@@ -120,6 +99,15 @@ enum AgentMode {
 
   /// May only be invoked by an allowlisted primary agent.
   subagent,
+}
+
+/// Determines how an agent definition resolves its provider and model.
+enum AgentModelSource {
+  /// Uses a session override or the daemon-owned default model.
+  session,
+
+  /// Uses one explicit provider-qualified model.
+  fixed,
 }
 
 /// Describes whether a session was created by a user or an agent.
@@ -232,34 +220,6 @@ enum ToolRisk {
 
   /// Runs an external MCP tool whose effects the daemon cannot classify.
   dangerous,
-}
-
-/// The related set of tools a client presents and toggles together.
-///
-/// Declaration order is presentation order. It is deliberately not the order
-/// the daemon advertises tools in: that order is what a model is shown, and
-/// rearranging it to suit a settings screen would change what the model sees.
-enum ToolGroup {
-  /// Finds and reads workspace files.
-  filesystem,
-
-  /// Changes workspace files.
-  editing,
-
-  /// Starts processes.
-  execution,
-
-  /// Moves files in and out of the conversation as attachments.
-  attachments,
-
-  /// Reaches MCP servers and the resources they publish.
-  mcp,
-
-  /// Drives collaborating subagents.
-  collaboration,
-
-  /// Steers the turn itself: plans, questions, and time.
-  session,
 }
 
 /// Storage kind of a registered workspace repository.
@@ -724,6 +684,25 @@ abstract class ModelSelectionDto with _$ModelSelectionDto {
 }
 
 @freezed
+/// Provider and model selection stored in an agent Markdown file.
+abstract class AgentModelSelectionDto with _$AgentModelSelectionDto {
+  /// Creates an agent model selection.
+  const factory AgentModelSelectionDto({
+    required AgentModelSource source,
+    String? modelId,
+  }) = _AgentModelSelectionDto;
+
+  const AgentModelSelectionDto._();
+
+  /// Decodes an agent model selection.
+  factory AgentModelSelectionDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentModelSelectionDtoFromJson(json);
+
+  /// Canonical provider-qualified model identifier for fixed selections.
+  String? get qualifiedModelId => modelId;
+}
+
+@freezed
 /// A source diagnostic produced while loading an agent Markdown file.
 abstract class AgentDefinitionDiagnosticDto
     with _$AgentDefinitionDiagnosticDto {
@@ -741,24 +720,28 @@ abstract class AgentDefinitionDiagnosticDto
 }
 
 @freezed
-/// Markdown-backed configuration for a primary agent or subagent.
+/// Markdown-backed version 5 Agent definition.
+///
+/// The definition is the complete model harness. A session may choose a model,
+/// but it cannot replace the driver, extensions, tools, settings, or prompt
+/// data declared here.
 abstract class AgentDefinitionDto with _$AgentDefinitionDto {
   /// Creates an agent definition.
   const factory AgentDefinitionDto({
+    required int version,
     required String id,
     required String name,
     required String description,
     required AgentMode mode,
-    required bool promptEnabled,
-    required String systemPrompt,
+    required AgentModelSelectionDto model,
+    required String driverId,
+    required List<String> extensionIds,
     required List<String> toolIds,
+    required Map<String, Map<String, dynamic>> pluginSettings,
     required List<String> callableAgentIds,
+    required String prompt,
     required String contentHash,
     required String sourcePath,
-    ModelSelectionDto? model,
-    @Default(<String, ModelControlValueDto>{})
-    Map<String, ModelControlValueDto> modelControls,
-    PermissionMode? permissionMode,
     @Default(false) bool isBuiltIn,
     @Default(false) bool isArchived,
     @Default(false) bool isStale,
@@ -771,18 +754,268 @@ abstract class AgentDefinitionDto with _$AgentDefinitionDto {
       _$AgentDefinitionDtoFromJson(json);
 }
 
+/// Where a plugin bundle is owned and loaded from.
+enum PluginSource {
+  /// Shipped read-only with Tinest.
+  builtIn,
+
+  /// Authored by the user under the daemon app-data directory.
+  user,
+}
+
+/// Severity of a plugin loading or runtime diagnostic.
+enum PluginDiagnosticSeverity {
+  /// Informational state that does not prevent activation.
+  info,
+
+  /// The active revision remains usable but needs attention.
+  warning,
+
+  /// The candidate revision could not be activated.
+  error,
+}
+
+/// Public kinds a plugin may register during its effect-free define phase.
+enum PluginContributionKind {
+  /// Owns prompt construction, model requests, and the tool loop.
+  driver,
+
+  /// Adds ordered lifecycle and data contributions to a driver.
+  extension,
+
+  /// Adds one independently selectable model-visible tool.
+  tool,
+
+  /// Adds an Agent-owned composer or session control.
+  sessionControl,
+
+  /// Adds a declarative native UI surface.
+  ui,
+}
+
+/// Native UI locations available to declarative plugin documents.
+enum PluginUiSlot {
+  /// Settings for one Agent definition.
+  agentSettings,
+
+  /// Controls next to the session composer.
+  composerControl,
+
+  /// Status above or below the conversation timeline.
+  conversationStatus,
+
+  /// A persisted tool or lifecycle timeline card.
+  timeline,
+
+  /// A host-owned modal dialog body.
+  dialog,
+
+  /// A transient host-owned notification body.
+  toast,
+}
+
 @freezed
-/// One tool that can be enabled by an agent definition.
+/// One precise diagnostic associated with a plugin candidate or revision.
+abstract class PluginDiagnosticDto with _$PluginDiagnosticDto {
+  /// Creates a plugin diagnostic.
+  const factory PluginDiagnosticDto({
+    required String code,
+    required String message,
+    required PluginDiagnosticSeverity severity,
+    String? path,
+    int? line,
+    int? column,
+  }) = _PluginDiagnosticDto;
+
+  /// Decodes a plugin diagnostic.
+  factory PluginDiagnosticDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginDiagnosticDtoFromJson(json);
+}
+
+@freezed
+/// One immutable, content-addressed plugin revision.
+abstract class PluginRevisionDto with _$PluginRevisionDto {
+  /// Creates plugin revision metadata.
+  const factory PluginRevisionDto({
+    required String pluginId,
+    required String contentHash,
+    required String manifestHash,
+    required String sdkAbiHash,
+    required String executionRevisionHash,
+    required List<String> requestedCapabilities,
+  }) = _PluginRevisionDto;
+
+  /// Decodes plugin revision metadata.
+  factory PluginRevisionDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginRevisionDtoFromJson(json);
+}
+
+@freezed
+/// One driver, extension, tool, control, or UI item registered by a plugin.
+abstract class PluginContributionDto with _$PluginContributionDto {
+  /// Creates contribution metadata.
+  const factory PluginContributionDto({
+    required String pluginId,
+    required String id,
+    required PluginContributionKind kind,
+    @Default(<String>[]) List<String> requiredCapabilities,
+    AgentToolDefinitionDto? tool,
+    @Default(<String, dynamic>{}) Map<String, dynamic> metadata,
+  }) = _PluginContributionDto;
+
+  /// Decodes contribution metadata.
+  factory PluginContributionDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginContributionDtoFromJson(json);
+}
+
+@freezed
+/// Validated plugin metadata presented to clients and Agent editors.
+abstract class PluginDescriptorDto with _$PluginDescriptorDto {
+  /// Creates a plugin descriptor.
+  const factory PluginDescriptorDto({
+    required int apiMajor,
+    required String id,
+    required String version,
+    required String name,
+    required String entrypoint,
+    required PluginSource source,
+    required String sourcePath,
+    required List<String> requestedCapabilities,
+    PluginRevisionDto? revision,
+    @Default(<PluginContributionDto>[])
+    List<PluginContributionDto> contributions,
+    @Default(<PluginDiagnosticDto>[]) List<PluginDiagnosticDto> diagnostics,
+    @Default(false) bool isStale,
+  }) = _PluginDescriptorDto;
+
+  /// Decodes a plugin descriptor.
+  factory PluginDescriptorDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginDescriptorDtoFromJson(json);
+}
+
+@freezed
+/// Editor-neutral Lua authoring environment for one app-data plugin.
+abstract class PluginAuthoringEnvironmentDto
+    with _$PluginAuthoringEnvironmentDto {
+  /// Creates a plugin authoring environment snapshot.
+  const factory PluginAuthoringEnvironmentDto({
+    required String pluginId,
+    required int apiMajor,
+    required String sdkAbiHash,
+    required String luaRuntimeVersion,
+    required String luaLanguageServerVersion,
+    required String pluginPath,
+    required String sdkLibraryPath,
+    required String configurationPath,
+    required bool synchronized,
+    @Default(<PluginDiagnosticDto>[]) List<PluginDiagnosticDto> diagnostics,
+  }) = _PluginAuthoringEnvironmentDto;
+
+  /// Decodes a plugin authoring environment snapshot.
+  factory PluginAuthoringEnvironmentDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginAuthoringEnvironmentDtoFromJson(json);
+}
+
+@freezed
+/// One daemon-side capability grant for one Agent and plugin.
+abstract class AgentPluginGrantDto with _$AgentPluginGrantDto {
+  /// Creates a capability grant key.
+  const factory AgentPluginGrantDto({
+    required String agentId,
+    required String pluginId,
+    required String capability,
+  }) = _AgentPluginGrantDto;
+
+  /// Decodes a capability grant.
+  factory AgentPluginGrantDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentPluginGrantDtoFromJson(json);
+}
+
+@freezed
+/// One session-scoped value owned by an Agent-active plugin contribution.
+abstract class PluginSessionControlValueDto
+    with _$PluginSessionControlValueDto {
+  /// Creates a normalized session-control value snapshot.
+  const factory PluginSessionControlValueDto({
+    required String sessionId,
+    required String agentId,
+    required String pluginId,
+    required String contributionId,
+    required String revisionHash,
+    required Map<String, dynamic> schema,
+    required Object? defaultValue,
+    required Object? value,
+    @Default(false) bool isDefault,
+    @Default(<String, dynamic>{}) Map<String, dynamic> metadata,
+  }) = _PluginSessionControlValueDto;
+
+  /// Decodes a normalized session-control value snapshot.
+  factory PluginSessionControlValueDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginSessionControlValueDtoFromJson(json);
+}
+
+@freezed
+/// Declarative native UI snapshot emitted by a pinned plugin revision.
+abstract class PluginUiDocumentDto with _$PluginUiDocumentDto {
+  /// Creates a plugin UI document.
+  const factory PluginUiDocumentDto({
+    required String id,
+    required String pluginId,
+    required String revisionHash,
+    required PluginUiSlot slot,
+    required Map<String, dynamic> root,
+  }) = _PluginUiDocumentDto;
+
+  /// Decodes a plugin UI document.
+  factory PluginUiDocumentDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginUiDocumentDtoFromJson(json);
+}
+
+@freezed
+/// Action dispatched from a host-rendered plugin UI document.
+abstract class PluginUiActionDto with _$PluginUiActionDto {
+  /// Creates a plugin UI action.
+  const factory PluginUiActionDto({
+    required String documentId,
+    required String actionId,
+    @Default(<String, dynamic>{}) Object? data,
+  }) = _PluginUiActionDto;
+
+  /// Decodes a plugin UI action.
+  factory PluginUiActionDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginUiActionDtoFromJson(json);
+}
+
+/// Provider-neutral shape used to advertise and invoke a tool contribution.
+enum AgentToolKind {
+  /// A JSON object input described by [AgentToolDefinitionDto.inputSchema].
+  function,
+
+  /// Raw text input described by [AgentToolDefinitionDto.inputSchema].
+  freeform,
+
+  /// A tool withheld until a driver explicitly surfaces it.
+  deferred,
+}
+
+@freezed
+/// One complete tool contribution that can be enabled by an Agent definition.
 abstract class AgentToolDefinitionDto with _$AgentToolDefinitionDto {
   /// Creates an agent tool definition.
   const factory AgentToolDefinitionDto({
     required String id,
+    required String originPluginId,
+    required String contributionId,
     required String name,
     required String description,
     required ToolRisk risk,
-    required ToolGroup group,
+    required String group,
+    required AgentToolKind kind,
+    required Map<String, dynamic> inputSchema,
+    required List<String> effects,
+    required Map<String, dynamic> presentation,
+    Map<String, dynamic>? outputSchema,
     @Default(true) bool available,
-    @Default(false) bool alwaysOn,
   }) = _AgentToolDefinitionDto;
 
   /// Decodes an agent tool definition.
@@ -987,15 +1220,6 @@ abstract class SkillSummaryDto with _$SkillSummaryDto {
       _$SkillSummaryDtoFromJson(json);
 }
 
-/// How a session collaborates: planning first, or working directly.
-enum SessionMode {
-  /// Explores and proposes a plan instead of doing the work.
-  plan,
-
-  /// Carries out the request directly.
-  normal,
-}
-
 @freezed
 /// Persistent conversation session using a Markdown agent definition.
 abstract class SessionDto with _$SessionDto {
@@ -1009,8 +1233,7 @@ abstract class SessionDto with _$SessionDto {
     required SessionStatus status,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required ModelSelectionDto model,
-    @Default(SessionMode.normal) SessionMode mode,
+    ModelSelectionDto? model,
 
     /// Values explicitly selected for the resolved provider model.
     @Default(<String, ModelControlValueDto>{})
@@ -1049,27 +1272,6 @@ abstract class SessionDto with _$SessionDto {
   /// Decodes a session descriptor.
   factory SessionDto.fromJson(Map<String, dynamic> json) =>
       _$SessionDtoFromJson(json);
-}
-
-@freezed
-/// One persistent objective owned by a manually-created root session.
-abstract class GoalDto with _$GoalDto {
-  /// Creates a goal snapshot.
-  const factory GoalDto({
-    required String sessionId,
-    required String goalId,
-    required String objective,
-    required GoalStatus status,
-    required int tokensUsed,
-    required int timeUsedSeconds,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    int? tokenBudget,
-  }) = _GoalDto;
-
-  /// Decodes a goal snapshot.
-  factory GoalDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalDtoFromJson(json);
 }
 
 @freezed
@@ -1163,26 +1365,21 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
   const factory ModelCapabilitiesDto({
     @Default(CapabilitySupport.unknown) CapabilitySupport streaming,
     @Default(CapabilitySupport.unknown) CapabilitySupport toolCalling,
+    @Default(CapabilitySupport.unknown) CapabilitySupport functionTools,
+    @Default(CapabilitySupport.unknown) CapabilitySupport freeformTools,
+    @Default(CapabilitySupport.unknown) CapabilitySupport deferredTools,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
+    @Default(<String>['system', 'developer', 'user', 'assistant'])
+    List<String> roles,
     @Default(<ModelControlDescriptorDto>[])
     List<ModelControlDescriptorDto> controls,
-    @Default(ModelToolSurface.direct) ModelToolSurface toolSurface,
     @Default(CapabilitySource.unknown) CapabilitySource source,
   }) = _ModelCapabilitiesDto;
 
   /// Creates a [ModelCapabilitiesDto].
   factory ModelCapabilitiesDto.fromJson(Map<String, dynamic> json) =>
       _$ModelCapabilitiesDtoFromJson(json);
-}
-
-/// Model-selected orchestration surface.
-enum ModelToolSurface {
-  /// Advertise tools directly.
-  direct,
-
-  /// Advertise only Lua `exec` and `wait`; expose other tools as nested calls.
-  luaCode,
 }
 
 @freezed

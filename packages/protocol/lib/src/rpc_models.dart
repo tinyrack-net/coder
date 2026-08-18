@@ -190,7 +190,6 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     required String worktreeId,
     required String title,
     required String agentDefinitionId,
-    @Default(SessionMode.normal) SessionMode mode,
     ModelSelectionDto? model,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
@@ -207,7 +206,7 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
 abstract class SessionSettingsPatchDto with _$SessionSettingsPatchDto {
   /// Creates an atomic session settings patch.
   const factory SessionSettingsPatchDto({
-    SessionMode? mode,
+    @Default(false) bool hasModel,
     ModelSelectionDto? model,
     @Default(false) bool hasModelControls,
     @Default(<String, ModelControlValueDto>{})
@@ -234,103 +233,6 @@ abstract class SessionSettingsUpdateParamsDto
   /// Decodes session settings update parameters.
   factory SessionSettingsUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
       _$SessionSettingsUpdateParamsDtoFromJson(json);
-}
-
-@freezed
-/// Replaces any session goal with a fresh active objective.
-abstract class GoalReplaceParamsDto with _$GoalReplaceParamsDto {
-  /// Creates goal replacement parameters.
-  const factory GoalReplaceParamsDto({
-    required String sessionId,
-    required String objective,
-    int? tokenBudget,
-  }) = _GoalReplaceParamsDto;
-
-  /// Decodes goal replacement parameters.
-  factory GoalReplaceParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalReplaceParamsDtoFromJson(json);
-}
-
-@freezed
-/// Atomic changes to an existing goal.
-///
-/// [hasTokenBudget] distinguishes preserving the current budget from clearing
-/// it with an explicit null.
-abstract class GoalUpdateDto with _$GoalUpdateDto {
-  /// Creates a goal update.
-  const factory GoalUpdateDto({
-    required String expectedGoalId,
-    String? objective,
-    GoalStatus? status,
-    @Default(false) bool hasTokenBudget,
-    int? tokenBudget,
-  }) = _GoalUpdateDto;
-
-  /// Decodes a goal update.
-  factory GoalUpdateDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalUpdateDtoFromJson(json);
-}
-
-@freezed
-/// Applies one optimistic goal update to a session.
-abstract class GoalUpdateParamsDto with _$GoalUpdateParamsDto {
-  /// Creates goal update parameters.
-  const factory GoalUpdateParamsDto({
-    required String sessionId,
-    required GoalUpdateDto update,
-  }) = _GoalUpdateParamsDto;
-
-  /// Decodes goal update parameters.
-  factory GoalUpdateParamsDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalUpdateParamsDtoFromJson(json);
-}
-
-@freezed
-/// Nullable result of reading one session goal.
-abstract class GoalGetResultDto with _$GoalGetResultDto {
-  /// Creates a goal read result.
-  const factory GoalGetResultDto({GoalDto? goal}) = _GoalGetResultDto;
-
-  /// Decodes a goal read result.
-  factory GoalGetResultDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalGetResultDtoFromJson(json);
-}
-
-@freezed
-/// Result of a goal mutation.
-abstract class GoalResultDto with _$GoalResultDto {
-  /// Creates a goal mutation result.
-  const factory GoalResultDto({required GoalDto goal}) = _GoalResultDto;
-
-  /// Decodes a goal mutation result.
-  factory GoalResultDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalResultDtoFromJson(json);
-}
-
-@freezed
-/// Result of clearing a session goal.
-abstract class GoalClearResultDto with _$GoalClearResultDto {
-  /// Creates a goal-clear result.
-  const factory GoalClearResultDto({required bool cleared}) =
-      _GoalClearResultDto;
-
-  /// Decodes a goal-clear result.
-  factory GoalClearResultDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalClearResultDtoFromJson(json);
-}
-
-@freezed
-/// Identifies the goal removed from a session.
-abstract class GoalClearedDto with _$GoalClearedDto {
-  /// Creates a goal-cleared notification payload.
-  const factory GoalClearedDto({
-    required String sessionId,
-    required String goalId,
-  }) = _GoalClearedDto;
-
-  /// Decodes a goal-cleared notification payload.
-  factory GoalClearedDto.fromJson(Map<String, dynamic> json) =>
-      _$GoalClearedDtoFromJson(json);
 }
 
 @freezed
@@ -390,6 +292,182 @@ abstract class AgentDefinitionValidateParamsDto
   factory AgentDefinitionValidateParamsDto.fromJson(
     Map<String, dynamic> json,
   ) => _$AgentDefinitionValidateParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies one app-data or bundled plugin.
+abstract class PluginIdParamsDto with _$PluginIdParamsDto {
+  /// Creates plugin identifier parameters.
+  const factory PluginIdParamsDto({required String id}) = _PluginIdParamsDto;
+
+  /// Decodes plugin identifier parameters.
+  factory PluginIdParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginIdParamsDtoFromJson(json);
+}
+
+@freezed
+/// Reloads one plugin in the context of an Agent's stored grants.
+abstract class PluginReloadParamsDto with _$PluginReloadParamsDto {
+  /// Creates plugin reload parameters.
+  const factory PluginReloadParamsDto({
+    required String id,
+    required String agentId,
+  }) = _PluginReloadParamsDto;
+
+  /// Decodes plugin reload parameters.
+  factory PluginReloadParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginReloadParamsDtoFromJson(json);
+}
+
+@freezed
+/// Creates a user plugin package without enabling it globally.
+abstract class PluginScaffoldParamsDto with _$PluginScaffoldParamsDto {
+  /// Creates plugin scaffold parameters.
+  const factory PluginScaffoldParamsDto({
+    required String id,
+    required String name,
+  }) = _PluginScaffoldParamsDto;
+
+  /// Decodes plugin scaffold parameters.
+  factory PluginScaffoldParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginScaffoldParamsDtoFromJson(json);
+}
+
+@freezed
+/// Creates an app-data plugin from one installed validated revision.
+abstract class PluginForkParamsDto with _$PluginForkParamsDto {
+  /// Creates plugin fork parameters.
+  const factory PluginForkParamsDto({
+    required String sourceId,
+    required String id,
+    required String name,
+  }) = _PluginForkParamsDto;
+
+  /// Decodes plugin fork parameters.
+  factory PluginForkParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginForkParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies the grants owned by one Agent.
+abstract class AgentPluginGrantsParamsDto with _$AgentPluginGrantsParamsDto {
+  /// Creates Agent grant-list parameters.
+  const factory AgentPluginGrantsParamsDto({required String agentId}) =
+      _AgentPluginGrantsParamsDto;
+
+  /// Decodes Agent grant-list parameters.
+  factory AgentPluginGrantsParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$AgentPluginGrantsParamsDtoFromJson(json);
+}
+
+@freezed
+/// Adds or removes one exact Agent plugin capability grant.
+abstract class PluginGrantParamsDto with _$PluginGrantParamsDto {
+  /// Creates grant mutation parameters.
+  const factory PluginGrantParamsDto({required AgentPluginGrantDto grant}) =
+      _PluginGrantParamsDto;
+
+  /// Decodes grant mutation parameters.
+  factory PluginGrantParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginGrantParamsDtoFromJson(json);
+}
+
+@freezed
+/// Stores one secret in an exact Agent/plugin namespace.
+abstract class PluginSecretSetParamsDto with _$PluginSecretSetParamsDto {
+  /// Creates a secret mutation. Responses never contain [value].
+  const factory PluginSecretSetParamsDto({
+    required String agentId,
+    required String pluginId,
+    required String name,
+    required String value,
+  }) = _PluginSecretSetParamsDto;
+
+  /// Decodes secret mutation parameters.
+  factory PluginSecretSetParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginSecretSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Removes one secret in an exact Agent/plugin namespace.
+abstract class PluginSecretRemoveParamsDto with _$PluginSecretRemoveParamsDto {
+  /// Creates a secret removal without accepting or returning a value.
+  const factory PluginSecretRemoveParamsDto({
+    required String agentId,
+    required String pluginId,
+    required String name,
+  }) = _PluginSecretRemoveParamsDto;
+
+  /// Decodes secret removal parameters.
+  factory PluginSecretRemoveParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginSecretRemoveParamsDtoFromJson(json);
+}
+
+@freezed
+/// Identifies one Agent-active plugin session-control contribution.
+abstract class PluginSessionControlParamsDto
+    with _$PluginSessionControlParamsDto {
+  /// Creates session-control read parameters.
+  const factory PluginSessionControlParamsDto({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+  }) = _PluginSessionControlParamsDto;
+
+  /// Decodes session-control read parameters.
+  factory PluginSessionControlParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginSessionControlParamsDtoFromJson(json);
+}
+
+@freezed
+/// Replaces one Agent-active plugin session-control value.
+abstract class PluginSessionControlSetParamsDto
+    with _$PluginSessionControlSetParamsDto {
+  /// Creates session-control mutation parameters.
+  const factory PluginSessionControlSetParamsDto({
+    required String sessionId,
+    required String pluginId,
+    required String contributionId,
+    required Object? value,
+  }) = _PluginSessionControlSetParamsDto;
+
+  /// Decodes session-control mutation parameters.
+  factory PluginSessionControlSetParamsDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$PluginSessionControlSetParamsDtoFromJson(json);
+}
+
+@freezed
+/// Requests a declarative UI contribution in a host-owned slot.
+abstract class PluginUiRenderParamsDto with _$PluginUiRenderParamsDto {
+  /// Creates UI render parameters.
+  const factory PluginUiRenderParamsDto({
+    required String agentId,
+    required String pluginId,
+    required String contributionId,
+    required PluginUiSlot slot,
+    Object? input,
+    @Default(<String, dynamic>{}) Map<String, dynamic> context,
+  }) = _PluginUiRenderParamsDto;
+
+  /// Decodes UI render parameters.
+  factory PluginUiRenderParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginUiRenderParamsDtoFromJson(json);
+}
+
+@freezed
+/// Dispatches an action from a host-rendered plugin UI document.
+abstract class PluginUiActionParamsDto with _$PluginUiActionParamsDto {
+  /// Creates UI action parameters.
+  const factory PluginUiActionParamsDto({
+    required String agentId,
+    required String pluginId,
+    required PluginUiActionDto action,
+  }) = _PluginUiActionParamsDto;
+
+  /// Decodes UI action parameters.
+  factory PluginUiActionParamsDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginUiActionParamsDtoFromJson(json);
 }
 
 @freezed
@@ -1088,6 +1166,86 @@ abstract class AgentDefinitionResultDto with _$AgentDefinitionResultDto {
   /// Decodes an agent definition result.
   factory AgentDefinitionResultDto.fromJson(Map<String, dynamic> json) =>
       _$AgentDefinitionResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns the installed built-in and user plugin catalog.
+abstract class PluginListResultDto with _$PluginListResultDto {
+  /// Creates a plugin catalog result.
+  const factory PluginListResultDto({
+    required List<PluginDescriptorDto> plugins,
+  }) = _PluginListResultDto;
+
+  /// Decodes a plugin catalog result.
+  factory PluginListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginListResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one validated plugin descriptor.
+abstract class PluginResultDto with _$PluginResultDto {
+  /// Creates a plugin result.
+  const factory PluginResultDto({required PluginDescriptorDto plugin}) =
+      _PluginResultDto;
+
+  /// Decodes a plugin result.
+  factory PluginResultDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one plugin's editor-neutral Lua authoring environment.
+abstract class PluginAuthoringEnvironmentResultDto
+    with _$PluginAuthoringEnvironmentResultDto {
+  /// Creates an authoring environment result.
+  const factory PluginAuthoringEnvironmentResultDto({
+    required PluginAuthoringEnvironmentDto environment,
+  }) = _PluginAuthoringEnvironmentResultDto;
+
+  /// Decodes an authoring environment result.
+  factory PluginAuthoringEnvironmentResultDto.fromJson(
+    Map<String, dynamic> json,
+  ) => _$PluginAuthoringEnvironmentResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns every capability grant owned by one Agent.
+abstract class PluginGrantListResultDto with _$PluginGrantListResultDto {
+  /// Creates an Agent grant list result.
+  const factory PluginGrantListResultDto({
+    required List<AgentPluginGrantDto> grants,
+  }) = _PluginGrantListResultDto;
+
+  /// Decodes an Agent grant list result.
+  factory PluginGrantListResultDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginGrantListResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one normalized plugin session-control value.
+abstract class PluginSessionControlResultDto
+    with _$PluginSessionControlResultDto {
+  /// Creates a session-control result.
+  const factory PluginSessionControlResultDto({
+    required PluginSessionControlValueDto control,
+  }) = _PluginSessionControlResultDto;
+
+  /// Decodes a session-control result.
+  factory PluginSessionControlResultDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginSessionControlResultDtoFromJson(json);
+}
+
+@freezed
+/// Returns one declarative UI document snapshot.
+abstract class PluginUiDocumentResultDto with _$PluginUiDocumentResultDto {
+  /// Creates a UI document result.
+  const factory PluginUiDocumentResultDto({
+    required PluginUiDocumentDto document,
+  }) = _PluginUiDocumentResultDto;
+
+  /// Decodes a UI document result.
+  factory PluginUiDocumentResultDto.fromJson(Map<String, dynamic> json) =>
+      _$PluginUiDocumentResultDtoFromJson(json);
 }
 
 @freezed

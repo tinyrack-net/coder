@@ -19,26 +19,26 @@ void main() {
   final clock = _FixedClock(DateTime.utc(2026, 8, 2));
 
   // Every vendor this package registers inherits the full plugin contract.
-  for (final plugin in openAIFamilyPlugins(
+  for (final plugin in openAIFamilyAdapters(
     clock: clock,
     openAIOAuth: const _UnusedGateway(),
   )) {
-    providerPluginConformanceTests(plugin.id, () => plugin);
+    providerAdapterConformanceTests(plugin.id, () => plugin);
   }
   for (final wire in openAIWireProtocols()) {
     providerWireProtocolConformanceTests(wire.id, () => wire);
   }
-  providerPluginConformanceTests(
+  providerAdapterConformanceTests(
     'anthropic',
-    () => const AnthropicPlugin(),
+    () => const AnthropicAdapter(),
   );
   providerWireProtocolConformanceTests(
     anthropicMessagesWireId,
     () => const AnthropicMessagesWire(),
   );
-  providerPluginConformanceTests(
+  providerAdapterConformanceTests(
     'google',
-    () => const GoogleGeminiPlugin(),
+    () => const GoogleGeminiAdapter(),
   );
   providerWireProtocolConformanceTests(
     geminiInteractionsWireId,
@@ -47,14 +47,14 @@ void main() {
 
   test('the family registers each vendor and both wire protocols once', () {
     final registry = ProviderRegistry(
-      plugins: openAIFamilyPlugins(
+      adapters: openAIFamilyAdapters(
         clock: clock,
         openAIOAuth: const _UnusedGateway(),
       ),
       wireProtocols: openAIWireProtocols(),
     );
 
-    expect(registry.plugins.map((plugin) => plugin.id), <String>[
+    expect(registry.adapters.map((adapter) => adapter.id), <String>[
       'openai',
       'deepseek',
       'openrouter',
@@ -74,7 +74,7 @@ void main() {
       openAIResponsesWireId,
     ]);
     // Local servers advertise unauthenticated connect; hosted ones never do.
-    for (final plugin in registry.plugins) {
+    for (final plugin in registry.adapters) {
       final flows = plugin.definition.authMethods.map((method) => method.flow);
       expect(
         flows.contains(AgentProviderAuthFlow.none),
@@ -85,14 +85,16 @@ void main() {
   });
 
   test('the two MiniMax regions differ only by host', () {
-    final plugins = openAIFamilyPlugins(
+    final adapters = openAIFamilyAdapters(
       clock: clock,
       openAIOAuth: const _UnusedGateway(),
     );
-    final international = plugins.firstWhere(
-      (plugin) => plugin.id == 'minimax',
+    final international = adapters.firstWhere(
+      (adapter) => adapter.id == 'minimax',
     );
-    final china = plugins.firstWhere((plugin) => plugin.id == 'minimax-cn');
+    final china = adapters.firstWhere(
+      (adapter) => adapter.id == 'minimax-cn',
+    );
 
     expect(
       international.endpoint(AgentProviderAuthKind.apiKey).baseUrl,
@@ -106,27 +108,27 @@ void main() {
       china.models.map((model) => model.id),
       international.models.map((model) => model.id),
     );
-    for (final plugin in <ProviderPlugin>[international, china]) {
+    for (final adapter in <ProviderAdapter>[international, china]) {
       // MiniMax documents no `/models` listing, and Models.dev namespaces its
       // models under identifiers the MiniMax API rejects, so the bundled
       // catalog is the whole model set for both regions.
       expect(
-        plugin.endpoint(AgentProviderAuthKind.apiKey).supportsModelDiscovery,
+        adapter.endpoint(AgentProviderAuthKind.apiKey).supportsModelDiscovery,
         isFalse,
-        reason: plugin.id,
+        reason: adapter.id,
       );
-      expect(plugin.usesRemoteCatalog, isFalse, reason: plugin.id);
+      expect(adapter.usesRemoteCatalog, isFalse, reason: adapter.id);
       // MiniMax thinks adaptively, so an effort control would be inert.
       expect(
-        plugin.models.expand((model) => model.capabilities.controls),
+        adapter.models.expand((model) => model.capabilities.controls),
         isEmpty,
-        reason: plugin.id,
+        reason: adapter.id,
       );
     }
   });
 
   test('the OpenAI subscription endpoint withholds model discovery', () {
-    final openai = openAIFamilyPlugins(
+    final openai = openAIFamilyAdapters(
       clock: clock,
       openAIOAuth: const _UnusedGateway(),
     ).first;
@@ -143,6 +145,30 @@ void main() {
     expect(subscription.strictToolSchema, isTrue);
   });
 
+  test('provider catalogs describe each supported Lua tool surface', () {
+    final openai = openAIBundledModels.first.capabilities;
+    expect(openai.functionTools, AgentCapabilitySupport.supported);
+    expect(openai.freeformTools, AgentCapabilitySupport.supported);
+    expect(openai.deferredTools, AgentCapabilitySupport.supported);
+
+    expect(
+      deepseekBundledModels.first.capabilities.functionTools,
+      AgentCapabilitySupport.supported,
+    );
+    expect(
+      deepseekBundledModels.first.capabilities.deferredTools,
+      AgentCapabilitySupport.unsupported,
+    );
+    expect(
+      anthropicBundledModels.first.capabilities.functionTools,
+      AgentCapabilitySupport.supported,
+    );
+    expect(
+      googleBundledModels.first.capabilities.functionTools,
+      AgentCapabilitySupport.supported,
+    );
+  });
+
   test(
     'the subscription adapter carries identity headers, never the secret',
     () async {
@@ -150,7 +176,7 @@ void main() {
         'data: {"type":"response.completed","response":{"output":[]}}\n\n'
         'data: [DONE]\n\n',
       );
-      final openai = openAIFamilyPlugins(
+      final openai = openAIFamilyAdapters(
         clock: clock,
         openAIOAuth: const _UnusedGateway(),
         dioFactory: (_) => Dio()..httpClientAdapter = adapter,
@@ -162,7 +188,7 @@ void main() {
         accountId: 'account-id',
       );
       final provider = openai.createProvider(
-        ModelProviderRequest(
+        ModelGatewayRequest(
           connectionId: 'openai',
           endpoint: openai.endpoint(AgentProviderAuthKind.oauth),
           credential: credential,
@@ -181,7 +207,9 @@ void main() {
                   value: true,
                 ),
               },
-              instructions: 'test',
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: 'developer', content: 'test'),
+              ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
               safetyIdentifier: 'safe',
@@ -211,13 +239,13 @@ void main() {
   );
 
   test('an API key request carries no subscription identity headers', () {
-    final openai = openAIFamilyPlugins(
+    final openai = openAIFamilyAdapters(
       clock: clock,
       openAIOAuth: const _UnusedGateway(),
     ).first;
 
     final provider = openai.createProvider(
-      const ModelProviderRequest(
+      const ModelGatewayRequest(
         connectionId: 'openai',
         endpoint: ProviderEndpoint(baseUrl: 'https://api.openai.com/v1'),
         credential: ApiKeyCredential('sk-test'),
@@ -315,7 +343,7 @@ void main() {
     const endpoint = ProviderEndpoint(baseUrl: 'http://127.0.0.1:11434/v1');
     final provider = OpenAIChatCompletionsWire(dioFactory: (_) => dio)
         .createProvider(
-          const ModelProviderRequest(
+          const ModelGatewayRequest(
             connectionId: 'local',
             endpoint: endpoint,
             credential: null,

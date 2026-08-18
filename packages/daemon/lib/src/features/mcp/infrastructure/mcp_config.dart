@@ -12,7 +12,7 @@ const String userMcpConfigFileName = 'config.json';
 const String projectMcpConfigFileName = '.tinest/config.json';
 
 /// The only document version this daemon reads.
-const int mcpConfigVersion = 4;
+const int mcpConfigVersion = 5;
 
 /// Longest accepted MCP server id.
 const int maxMcpServerIdLength = 40;
@@ -55,7 +55,7 @@ abstract interface class McpConfigStore {
   Stream<void> watch(McpConfigScope scope, {String? rootPath});
 }
 
-/// Reads v4 config documents from the daemon and project config roots.
+/// Reads v5 config documents from the daemon and project config roots.
 ///
 /// Both files share one schema, so parsing, validation, and the read-only
 /// project rules are a single code path.

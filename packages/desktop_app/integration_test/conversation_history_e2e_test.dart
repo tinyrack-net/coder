@@ -22,6 +22,8 @@ import 'support/real_daemon_fixture.dart';
 const int _deltasPerAnswer = 60;
 const int _turns = 5;
 const double _geometryTolerance = 0.01;
+const String _historyModelId = 'openai/gpt-5.6-sol';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,7 +39,7 @@ void main() {
       final fixture = await RealDaemonFixture.start(
         id: 'conversation-history',
         provider: _HistoryProvider(),
-        modelDiscovery: const _HistoryModelDiscovery(),
+        providerCatalogMetadataSource: const _HistoryCatalogMetadataSource(),
       );
       addTearDown(fixture.dispose);
       final client = await fixture.connect(clientId: 'history-setup');
@@ -52,21 +54,14 @@ void main() {
       );
       final registeredWorktree =
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
-      final connection = await client.providers.createCustomProvider(
-        'history',
-        const CustomProviderConfigDto(
-          name: 'History provider',
-          baseUrl: 'http://127.0.0.1:1/v1',
-          wireFormatId: 'openai-chat-completions',
-          authenticationRequired: false,
-          models: <ManualProviderModelDto>[
-            ManualProviderModelDto(id: 'test-model', label: 'Test model'),
-          ],
-        ),
-      );
-      final model = (await client.providers.listProviderModels(
-        connection.id,
-      )).singleWhere((candidate) => candidate.providerModelId == 'test-model');
+      // The default Agent includes function, freeform, and deferred tools.
+      // Manual custom-provider models advertise function tools only, so use a
+      // deterministic full-surface bundled model with the injected gateway.
+      final model = (await client.providers.listProviderModels('openai'))
+          .singleWhere((candidate) => candidate.id == _historyModelId);
+      expect(model.capabilities.streaming, CapabilitySupport.supported);
+      expect(model.capabilities.functionTools, CapabilitySupport.supported);
+      expect(model.capabilities.freeformTools, CapabilitySupport.supported);
 
       // A conversation the reader is coming back to, not one they are starting:
       // the history exists before the app is ever mounted.
@@ -106,7 +101,13 @@ void main() {
         reason: 'the scripted history must exceed one page to be a test',
       );
 
-      await _openSession(tester, fixture, registeredWorktree.id, '긴 대화');
+      await _openSession(
+        tester,
+        fixture,
+        registeredWorktree.id,
+        '긴 대화',
+        'history-session',
+      );
 
       // 1. Entering shows the newest message, not the oldest.
       await pumpUntil(tester, _newest());
@@ -116,38 +117,99 @@ void main() {
         findsNothing,
         reason: 'the oldest turn is beyond the page loaded on entry',
       );
+      final initialPageKeys = tester
+          .widget<ChatTimelineView>(find.byType(ChatTimelineView))
+          .items
+          .map((item) => item.key)
+          .toSet();
 
       // 2. A reader who leaves with messages below them returns to their spot.
       //    The anchor is inside the page loaded on entry on purpose: a switch
       //    disposes the conversation and reloads that page, so an anchor from
       //    deeper history is deliberately not restorable (see 4).
-      for (var drag = 0; drag < 3; drag += 1) {
+      ({String key, double viewportOffset})? leftAt;
+      for (var drag = 0; drag < 3 && leftAt == null; drag += 1) {
         await tester.drag(_timeline, const Offset(0, 600));
         await tester.pump(const Duration(milliseconds: 100));
+        if (_position(tester).extentAfter > 1) {
+          leftAt = _firstFullyVisibleAnchor(tester, initialPageKeys);
+        }
       }
-      final leftAt = _position(tester).pixels;
+      final savedPosition = leftAt;
+      if (savedPosition == null) {
+        throw TestFailure(
+          'The initial history page had no fully visible row away from its '
+          'trailing edge.',
+        );
+      }
       expect(
         _position(tester).extentAfter,
         greaterThan(1),
         reason: 'the reader must actually be away from the end to restore one',
       );
-      await _activateSession(tester, '다른 대화');
-      await _activateSession(tester, '긴 대화');
-      // A restored reader is mid-history, so the end of the transcript is
-      // below the viewport and never built; there is no newest row to wait on.
-      await _settleTimeline(tester);
+      await _activateSession(tester, '다른 대화', 'other-session');
+      await _activateSession(tester, '긴 대화', 'history-session');
+      final restoredItem = _chatItem(savedPosition.key);
+      var restorationState = 'the restored timeline was not evaluated';
+      try {
+        await pumpUntilCondition(
+          tester,
+          () {
+            final matchingItems = restoredItem.evaluate().length;
+            final timeline = tester.widget<ChatTimelineView>(
+              find.byType(ChatTimelineView),
+            );
+            if (matchingItems != 1) {
+              final scrollables = _timeline.evaluate().length;
+              final extentAfter = scrollables == 1
+                  ? _position(tester).extentAfter.toString()
+                  : 'unavailable';
+              final modelContains = timeline.items.any(
+                (item) => item.key == savedPosition.key,
+              );
+              restorationState =
+                  'matchingItems=$matchingItems, '
+                  'modelContains=$modelContains, '
+                  'modelItems=${timeline.items.length}, '
+                  'snapshot=${timeline.readingPosition != null}, '
+                  'extentAfter=$extentAfter';
+              return false;
+            }
+            final viewport = tester.getRect(_timeline);
+            final item = tester.getRect(restoredItem);
+            final restoredOffset = item.top - viewport.top;
+            final hasSnapshot = timeline.readingPosition != null;
+            restorationState =
+                'matchingItems=1, snapshot=$hasSnapshot, '
+                'expectedOffset=${savedPosition.viewportOffset}, '
+                'actualOffset=$restoredOffset, '
+                'extentAfter=${_position(tester).extentAfter}';
+            return (restoredOffset - savedPosition.viewportOffset).abs() <=
+                    _geometryTolerance &&
+                _position(tester).extentAfter > 1;
+          },
+          'the saved history row to return to its viewport position',
+        );
+      } on TestFailure catch (error) {
+        throw TestFailure('$error Last restoration state: $restorationState');
+      }
       expect(
-        _position(tester).pixels,
-        closeTo(leftAt, 2),
+        tester.getTopLeft(restoredItem).dy - tester.getTopLeft(_timeline).dy,
+        closeTo(savedPosition.viewportOffset, _geometryTolerance),
         reason: 'a reader who left with messages below them returns to them',
+      );
+      expect(
+        _position(tester).extentAfter,
+        greaterThan(1),
+        reason: 'restoration must not fall back to the newest message',
       );
 
       // 3. Leaving from the newest message returns to the newest message,
       //    which is what makes the restore in 2 conditional rather than sticky.
       await _dragToNewest(tester);
       _expectAtNewest(tester, phase: 'after returning to the end');
-      await _activateSession(tester, '다른 대화');
-      await _activateSession(tester, '긴 대화');
+      await _activateSession(tester, '다른 대화', 'other-session');
+      await _activateSession(tester, '긴 대화', 'history-session');
       await pumpUntil(tester, _newest());
       _expectAtNewest(tester, phase: 'reopened from the end');
 
@@ -163,7 +225,13 @@ void main() {
       //    history is a reading aid, not state the app carries around.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
-      await _openSession(tester, fixture, registeredWorktree.id, '긴 대화');
+      await _openSession(
+        tester,
+        fixture,
+        registeredWorktree.id,
+        '긴 대화',
+        'history-session',
+      );
       await pumpUntil(tester, _newest());
       _expectAtNewest(tester, phase: 'cold start');
       expect(_oldest(), findsNothing);
@@ -185,9 +253,18 @@ Finder _newest() => find.textContaining('질문 5 응답 59', findRichText: true
 Finder _oldest() => find.textContaining('질문 1 응답 0', findRichText: true);
 
 Future<void> _awaitIdle(TinestApi client, String sessionId) => awaitCondition(
-  () async => (await client.sessions.listSessions())
-      .where((session) => session.id == sessionId)
-      .any((session) => session.status == SessionStatus.idle),
+  () async {
+    final session = (await client.sessions.listSessions()).singleWhere(
+      (candidate) => candidate.id == sessionId,
+    );
+    if (session.status == SessionStatus.failed) {
+      throw TestFailure(
+        'Session $sessionId failed before becoming idle: '
+        '${session.lastError ?? 'unknown error'}.',
+      );
+    }
+    return session.status == SessionStatus.idle;
+  },
   'session $sessionId to finish its turn',
   budget: e2eTurnBudget,
 );
@@ -202,15 +279,35 @@ Finder get _timeline => find
 ScrollPosition _position(WidgetTester tester) =>
     tester.state<ScrollableState>(_timeline).position;
 
-/// Waits for a freshly mounted transcript to finish measuring its history.
-Future<void> _settleTimeline(WidgetTester tester) async {
-  await pumpUntil(tester, _timeline);
-  await pumpUntilCondition(
-    tester,
-    () => _position(tester).maxScrollExtent > 0,
-    'the transcript to measure more than one screen of history',
+Finder _chatItem(String key) => find.byWidgetPredicate(
+  (widget) => widget is ChatItemView && widget.item.key == key,
+  description: 'chat item $key',
+);
+
+({String key, double viewportOffset})? _firstFullyVisibleAnchor(
+  WidgetTester tester,
+  Set<String> allowedKeys,
+) {
+  final viewport = tester.getRect(_timeline);
+  final visible = <({String key, double viewportOffset})>[];
+  final items = find.descendant(
+    of: _timeline,
+    matching: find.byType(ChatItemView),
   );
-  await tester.pump(const Duration(milliseconds: 300));
+  for (final widget in tester.widgetList<ChatItemView>(items)) {
+    if (!allowedKeys.contains(widget.item.key)) continue;
+    final item = tester.getRect(find.byWidget(widget));
+    if (item.top < viewport.top || item.bottom > viewport.bottom) continue;
+    visible.add((
+      key: widget.item.key,
+      viewportOffset: item.top - viewport.top,
+    ));
+  }
+  if (visible.isEmpty) return null;
+  visible.sort(
+    (left, right) => left.viewportOffset.compareTo(right.viewportOffset),
+  );
+  return visible.first;
 }
 
 /// Asserts the reader is resting on the newest message.
@@ -264,20 +361,22 @@ Future<void> _dragToNewest(WidgetTester tester) async {
 /// Used in both directions on purpose: the menu opens a conversation that has
 /// no tab yet and re-activates one that does, so a single path covers leaving
 /// a conversation and coming back to it.
-Future<void> _activateSession(WidgetTester tester, String title) async {
-  final menu = find.byKey(
-    const ValueKey<String>('workspace-all-sessions-menu'),
-  );
-  await pumpUntil(tester, menu);
-  await tester.tap(menu);
+Future<void> _activateSession(
+  WidgetTester tester,
+  String title,
+  String sessionId,
+) async {
+  await _openAllSessionsMenu(tester);
   final conversation = find.text(title).hitTestable();
   await pumpUntil(tester, conversation);
   await tester.tap(conversation.last);
-  await pumpUntil(
+  await pumpUntilCondition(
     tester,
-    find.byKey(const ValueKey<String>('session-composer-input')),
+    () =>
+        _sessionTimeline(sessionId).evaluate().length == 1 &&
+        find.byType(ChatTimelineView).evaluate().length == 1,
+    'session $sessionId to own the active conversation timeline',
   );
-  await tester.pump(const Duration(milliseconds: 200));
 }
 
 Future<void> _openSession(
@@ -285,6 +384,7 @@ Future<void> _openSession(
   RealDaemonFixture fixture,
   String worktreeId,
   String title,
+  String sessionId,
 ) async {
   await tester.pumpWidget(TinestApp(services: fixture.services));
   await pumpUntil(tester, find.text('History Workspace'));
@@ -293,34 +393,93 @@ Future<void> _openSession(
       .hitTestable();
   await pumpUntil(tester, worktree);
   await tester.tap(worktree.last);
-  await pumpUntil(
-    tester,
-    find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
-  );
-  await tester.tap(
-    find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
-  );
+  await _openAllSessionsMenu(tester);
   final conversation = find.text(title).hitTestable();
   await pumpUntil(tester, conversation);
   await tester.tap(conversation.last);
-  await pumpUntil(
+  await pumpUntilCondition(
     tester,
-    find.byKey(const ValueKey<String>('session-composer-input')),
+    () =>
+        _sessionTimeline(sessionId).evaluate().length == 1 &&
+        find.byType(ChatTimelineView).evaluate().length == 1,
+    'session $sessionId to own the active conversation timeline',
   );
 }
 
-final class _HistoryModelDiscovery implements ProviderModelDiscovery {
-  const _HistoryModelDiscovery();
+/// Opens the sessions menu through the part of its trigger the view can hit.
+///
+/// Desktop window and text metrics can position a trailing control so its
+/// center is just outside the root render view. Its visible portion remains
+/// interactive, so tapping the finder center is not a valid reader action on
+/// every platform.
+Future<void> _openAllSessionsMenu(WidgetTester tester) async {
+  final menu = find.byKey(
+    const ValueKey<String>('workspace-all-sessions-menu'),
+  );
+  Offset? tapPoint;
+  await pumpUntilCondition(
+    tester,
+    () {
+      if (menu.evaluate().length != 1) return false;
+      final menuRect = tester.getRect(menu);
+      if (menuRect.isEmpty) return false;
+      final viewRect = tester.binding.renderViews.single.paintBounds;
+      final visibleRect = menuRect.intersect(viewRect);
+      if (visibleRect.isEmpty) return false;
+
+      final candidate = visibleRect.center;
+      final alignment = Alignment(
+        ((candidate.dx - menuRect.left) / menuRect.width) * 2 - 1,
+        ((candidate.dy - menuRect.top) / menuRect.height) * 2 - 1,
+      );
+      if (menu.hitTestable(at: alignment).evaluate().length != 1) return false;
+      tapPoint = candidate;
+      return true;
+    },
+    'the visible part of the all-sessions menu to be hit-testable',
+  );
+  await tester.tapAt(tapPoint!);
+}
+
+Finder _sessionTimeline(String sessionId) => find.byWidgetPredicate(
+  (widget) =>
+      widget is ChatTimelineView &&
+      widget.sessionKey ==
+          'conversation:conversation-history-daemon:$sessionId',
+  description: 'timeline for session $sessionId',
+);
+
+final class _HistoryCatalogMetadataSource
+    implements ProviderCatalogMetadataSource {
+  const _HistoryCatalogMetadataSource();
 
   @override
-  Future<List<String>> fetchModelIds(
-    ProviderEndpoint endpoint,
-    ProviderCredential? credential,
-  ) async => const <String>['test-model'];
+  Future<Map<String, List<ProviderCatalogMetadata>>> fetch(
+    Set<String> providerIds,
+  ) async => <String, List<ProviderCatalogMetadata>>{
+    if (providerIds.contains('openai'))
+      'openai': const <ProviderCatalogMetadata>[
+        ProviderCatalogMetadata(
+          id: 'gpt-5.6-sol',
+          label: 'History model',
+          capabilities: ModelCapabilitiesDto(
+            streaming: CapabilitySupport.supported,
+            toolCalling: CapabilitySupport.supported,
+            functionTools: CapabilitySupport.supported,
+            freeformTools: CapabilitySupport.supported,
+            deferredTools: CapabilitySupport.supported,
+            source: CapabilitySource.refreshed,
+          ),
+        ),
+      ],
+  };
+
+  @override
+  Future<void> close() async {}
 }
 
 /// Answers every prompt with enough deltas to outgrow a single page.
-final class _HistoryProvider implements ModelProvider {
+final class _HistoryProvider implements ModelGateway {
   @override
   String get id => 'conversation-history';
 
