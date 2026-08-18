@@ -71,9 +71,9 @@ import 'package:daemon/src/features/workspaces/infrastructure/git_workspace.dart
 import 'package:daemon/src/features/workspaces/infrastructure/project_settings.dart';
 import 'package:daemon/src/features/workspaces/infrastructure/workspace_service.dart';
 import 'package:daemon/src/features/workspaces/transport/rpc_bindings.dart';
+import 'package:daemon/src/shared/infrastructure/deferred_lua_host_process.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/database.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
-import 'package:daemon/src/shared/infrastructure/serialized_lua_host_process.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:daemon/src/transport/rpc/diagnostics.dart';
@@ -441,13 +441,13 @@ abstract final class DaemonApplication {
         cache: NativePluginRevisionCache(config.homeDirectory),
       );
       final luaSourceRoot = Directory.current.path;
+      // The IO launcher serializes protocol writes with termination itself,
+      // so no decorator is needed for turn cancellation racing a flush.
       final luaProcessLauncher = DeferredLuaHostProcessLauncher(
         () => resolveLuaHostCommand(
           sourceRoot: luaSourceRoot,
         ),
-        const SerializedLuaHostProcessLauncher(
-          lua.IoLuaHostProcessLauncher(),
-        ),
+        const lua.IoLuaHostProcessLauncher(),
       );
       final pluginRuntime = PluginRuntime<ConversationAttachment>(
         luaRuntime: lua.LuaToolRuntime<ConversationAttachment>(
