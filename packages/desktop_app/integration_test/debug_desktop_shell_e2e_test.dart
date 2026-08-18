@@ -51,10 +51,8 @@ void main() {
 
       await window.hide();
       await _waitForWindowVisibility(window, visible: false);
-      expect(window.visible.value, isFalse);
       await window.show();
       await _waitForWindowVisibility(window, visible: true);
-      expect(window.visible.value, isTrue);
       expect(closes, 0);
 
       // Exercise maximize transitions after the hide/restore contract. Linux
@@ -81,12 +79,18 @@ Future<void> _waitForWindowVisibility(
   required bool visible,
 }) => awaitCondition(
   () async {
-    if (await window.isVisible() == visible) return true;
-    // Bare Xvfb runs without a window manager and can drop a map-state
-    // request outright, so a lost edge never arrives on its own. Show and
-    // hide are idempotent; reissue the command instead of waiting on it.
+    // Both the native window and the app-level notifier must agree: bare
+    // Xvfb runs without a window manager, which can drop a map-state
+    // request outright, and a stale native event can flip the notifier
+    // after the command settled. Show and hide are idempotent and republish
+    // the app-level state, so reissue instead of waiting on a lost edge.
+    if (await window.isVisible() == visible &&
+        window.visible.value == visible) {
+      return true;
+    }
     await (visible ? window.show() : window.hide());
-    return await window.isVisible() == visible;
+    return await window.isVisible() == visible &&
+        window.visible.value == visible;
   },
   'the window to become ${visible ? 'visible' : 'hidden'}',
 );
