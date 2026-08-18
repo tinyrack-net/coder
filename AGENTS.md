@@ -58,20 +58,20 @@ design value, pub-cache edit, path dependency, moving Git ref, or
    widget evidence; primary screen happy paths require Linux E2E evidence. Every
    typed route also requires executable `route_test__<route>__widget` evidence at
    desktop and mobile sizes.
-6. Before reporting completion, run `dart run melos verify` and
-   `dart run melos verify:debug`. The latter must exercise the real Debug Flutter
-   runner and embedded daemon for the current desktop host, not only a mocked
-   widget tree. Use its platform-aware Melos entrypoint rather than invoking the
-   integration tests directly. On Linux it runs under Xvfb; on Windows the test
-   application windows can be visible while the shards execute.
-7. Run a platform Debug build for every platform-specific change. If the current
-   machine cannot run that platform, explicitly report it as unverified and name
-   the CI job responsible for it.
-8. Never emulate another host. Do not use Docker, Podman, any container, WSL, a
-   virtual machine, or a remote Linux machine to run a gate the local host
-   cannot run. Every gate in `verify` runs natively on Linux, macOS, and
-   Windows; the one gate no host runs locally is the native IBus terminal E2E,
-   which is owned by `linux-ibus-terminal-e2e` and is reported, not reproduced.
+6. Keep the local loop focused. Before opening a pull request, prove the new or
+   changed behavior with the directly affected tests, run code generation when
+   its inputs changed, run `dart run tinyrack_workspace source-check` for
+   dependency changes, and run `git diff --check`. Workflow changes also require
+   a focused run of `packages/tinest_quality/test/pipeline_test.dart`.
+7. After those focused checks pass, open a Draft pull request and use the PR's
+   exact-head `Quality Gate` as the authoritative full verification. Mark it
+   ready only after that gate passes. A task that includes merging is complete
+   only after the matching merge-group `Quality Gate` passes.
+8. When CI fails, reproduce the failing job with the smallest relevant local
+   command before widening the run. Do not emulate another host with Docker,
+   Podman, a container, WSL, a virtual machine, or a remote machine. Platform
+   builds, full coverage, the Debug E2E catalog, and native IBus terminal E2E
+   may be owned by their PR or merge-group CI jobs.
 
 ## Non-negotiable gates
 
@@ -92,10 +92,17 @@ Do not use broad lint ignores, coverage ignores, skipped tests, or broad excepti
 catches to make a gate pass. A necessary line-level ignore must include a comment
 explaining the reason and safety argument.
 
-`dart run melos verify` and `dart run melos verify:debug` are the two required
-gates, and every gate inside them runs natively on Linux, macOS, and Windows.
-`verify` uses the coverage runs as the canonical test execution rather than
-running the suites once plain and again instrumented.
+`dart run melos verify` and `dart run melos verify:debug` remain available for
+explicitly requested local verification, for work that cannot use PR CI, or
+when a CI failure cannot be isolated with a focused command. They are not a
+prerequisite for opening a Draft pull request. `verify` uses the coverage runs
+as the canonical test execution rather than running the suites once plain and
+again instrumented.
+
+Do not report full verification while the exact-head PR `Quality Gate` is still
+running or failing. Report locally omitted full gates as owned by PR CI, not as
+locally passed. When merging, match the merge-group result to the pull request;
+an unrelated successful queue run is not evidence for the change.
 
 There is no pixel gate. Goldens were removed after measurement: readable images
 differ between Linux and Windows by 0.9-1.1% of pixels, and blocking the text
