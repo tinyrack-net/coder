@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import '../test/support/localization.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -31,7 +33,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
+      // Resolve every label through the harness locale rather than literals:
+      // a translation pass must not silently detach this smoke test from the
+      // strings the pinned locale actually renders.
+      expect(find.text(testL10n.workspaceNoDaemons), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey<String>('workspace-settings-button')),
       );
@@ -44,12 +49,16 @@ void main() {
         find.byKey(const ValueKey<String>('settings-daemon-select')),
         findsNothing,
       );
-      await tester.tap(find.text('Daemons'));
+      // The category label and the daemon section header share one localized
+      // string, so the row's stable key is the only unambiguous target.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-category-row-daemon')),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('내장 daemon'), findsNothing);
-      expect(find.text('기기 연결'), findsOneWidget);
+      expect(find.text(testL10n.embeddedDaemonName), findsNothing);
+      expect(find.text(testL10n.relayPairTitle), findsOneWidget);
 
-      await tester.tap(find.text('기기 연결'));
+      await tester.tap(find.text(testL10n.relayPairTitle));
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('connect-daemon-paste')),
