@@ -71,8 +71,25 @@ void main() {
       await tester.showKeyboard(field);
       await tester.pumpAndSettle();
 
+      // The IME is another process, and a cold emulator keyboard can deliver
+      // its window insets seconds after TextInput.show. No Flutter frame is
+      // scheduled while nothing changes, so pumpAndSettle returns before the
+      // insets exist; pump on a real-time deadline until they arrive.
+      final insetsDeadline = DateTime.now().add(const Duration(seconds: 15));
+      while (MediaQuery.of(tester.element(field)).viewInsets.bottom <= 0 &&
+          DateTime.now().isBefore(insetsDeadline)) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // Let the inset-driven relayout and its reveal scroll settle before
+      // measuring the field against the keyboard edge.
+      await tester.pumpAndSettle();
+
       final mediaQuery = MediaQuery.of(tester.element(field));
-      expect(mediaQuery.viewInsets.bottom, greaterThan(0));
+      expect(
+        mediaQuery.viewInsets.bottom,
+        greaterThan(0),
+        reason: 'The soft keyboard never reported window insets.',
+      );
       final keyboardTop = mediaQuery.size.height - mediaQuery.viewInsets.bottom;
       expect(tester.getRect(field).bottom, lessThanOrEqualTo(keyboardTop));
       expect(tester.getRect(action).bottom, lessThanOrEqualTo(keyboardTop));
