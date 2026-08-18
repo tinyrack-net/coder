@@ -193,10 +193,26 @@ final class NativeSkillFiles implements SkillFiles {
       target = parent;
     }
 
+    final skillRoot = p.normalize(p.absolute(_directory.path));
+    final hadSubscriptions = _watchSubscriptions.isNotEmpty;
+    final rootWasWatched = _watchSubscriptions.containsKey(skillRoot);
+
     final desiredPaths = await _desiredWatchPaths(target);
     for (final path in desiredPaths) {
       if (_watchSubscriptions.containsKey(path)) continue;
       _startWatching(path);
+    }
+
+    // A skills root that materialized while only an ancestor was watched has
+    // already missed the native events for its own creation: the ancestor
+    // delivered them while the root did not exist yet, so the path filter
+    // dropped them, and native watchers never replay. Anchoring onto the root
+    // is itself the missed change, so report it — except on the very first
+    // anchor, where the initial catalog read has not happened yet.
+    if (hadSubscriptions &&
+        !rootWasWatched &&
+        _watchSubscriptions.containsKey(skillRoot)) {
+      _changes.add(null);
     }
 
     // Install replacement watchers before dropping ancestors so a root that

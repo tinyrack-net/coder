@@ -402,6 +402,33 @@ void main() {
   );
 
   test(
+    'a root created behind an ancestor watch is reported on the next anchor',
+    () async {
+      final skillsRoot = Directory(p.join(project.path, '.agents', 'skills'));
+      final files = NativeSkillFiles(
+        skillsRoot.path,
+        origin: SkillOrigin.project,
+      );
+      await files.initialize();
+      addTearDown(files.close);
+
+      final changed = files.changes.first;
+      await writeSkill(skillsRoot, 'watched');
+      // The ancestor watcher can deliver the `.agents` creation while the
+      // skills root does not exist yet; the path filter then drops it and
+      // native watchers never replay. Do not depend on that event ordering:
+      // the next read re-anchors the watch set, and anchoring onto the
+      // materialized root must itself report the potentially dropped change.
+      expect(
+        (await files.read()).map((document) => document.id),
+        contains('watched'),
+      );
+      await changed.timeout(const Duration(seconds: 10));
+    },
+    tags: const <String>['feature_test__skill_catalog__unit'],
+  );
+
+  test(
     'watch path filter accepts only related absolute and relative paths',
     () {
       final skillRoot = p.join(root.path, 'tracked', '.agents', 'skills');
