@@ -16,13 +16,22 @@ struct _MyApplication {
   // The window created by the first instance, raised when a second launch is
   // handed to us instead of starting another embedded daemon.
   GtkWindow* window;
+  // Set when the window was hidden before Flutter rendered its first frame.
+  // Dart runs well before that frame, so an app that hides to the tray early
+  // would otherwise have the hide undone by first_frame_cb.
+  gboolean hidden_before_first_frame;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+// Records a hide the app asked for before the first frame arrived.
+static void window_hidden_cb(MyApplication* self) {
+  self->hidden_before_first_frame = TRUE;
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
-  if (self->start_hidden) {
+  if (self->start_hidden || self->hidden_before_first_frame) {
     return;
   }
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
@@ -43,6 +52,7 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
   self->window = window;
+  g_signal_connect_swapped(window, "hide", G_CALLBACK(window_hidden_cb), self);
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
