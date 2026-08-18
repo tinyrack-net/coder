@@ -10,6 +10,7 @@ import 'package:protocol/protocol.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -179,8 +180,10 @@ Future<void> _pumpProviderSettings(
   await tester.pumpWidget(TinestApp(services: fixture.services));
   addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
   await tester.pumpAndSettle();
-  await tester.tap(
+  await tapVisible(
+    tester,
     find.byKey(const ValueKey<String>('workspace-settings-button')),
+    'the workspace settings button',
   );
   await tester.pumpAndSettle();
   final providerCategory = find.byKey(

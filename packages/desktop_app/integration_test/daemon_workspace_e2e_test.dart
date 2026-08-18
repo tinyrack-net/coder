@@ -17,6 +17,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 import 'support/temporary_directory.dart';
 
 void main() {
@@ -41,8 +42,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('설정된 daemon이 없습니다.'), findsOneWidget);
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('workspace-settings-button')),
+        'the workspace settings button',
       );
       await tester.pumpAndSettle();
       await _openSettingsCategory(tester, 'daemon');
@@ -187,8 +190,10 @@ void main() {
         isEmpty,
       );
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('workspace-settings-button')),
+        'the workspace settings button',
       );
       await tester.pumpAndSettle();
       await _openSettingsCategory(tester, 'daemon');
@@ -252,8 +257,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('workspace-settings-button')),
+        'the workspace settings button',
       );
       await tester.pumpAndSettle();
       await _openSettingsCategory(tester, 'daemon');

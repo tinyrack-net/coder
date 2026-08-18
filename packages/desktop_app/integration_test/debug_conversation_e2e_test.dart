@@ -372,8 +372,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(addProject, findsNothing);
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('workspace-settings-button')),
+        'the workspace settings button',
       );
       await tester.pumpAndSettle();
       await _openSettingsCategory(tester, 'daemon');
@@ -1959,8 +1961,10 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('workspace-settings-button')),
+        'the workspace settings button',
       );
       await pumpUntil(
         tester,
@@ -2220,11 +2224,22 @@ void main() {
       );
 
       // A plain directory reuses its sole checkout without exposing or
-      // validating Git-only worktree and base-branch targets.
-      await tester.tap(find.text('파일'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('New workspace').last);
-      await tester.pumpAndSettle();
+      // validating Git-only worktree and base-branch targets. macOS composes
+      // native chrome without the in-window File menu; the sidebar action
+      // reaches the same typed new-workspace route.
+      if (desktopWindow.chrome.showsApplicationMenuBar) {
+        await tester.tap(find.text('파일'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('New workspace').last);
+        await tester.pumpAndSettle();
+      } else {
+        await tapVisible(
+          tester,
+          find.byKey(const ValueKey('workspace-new-button')),
+          'the new workspace button',
+        );
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.byKey(const ValueKey('new-workspace-project')));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('E2E Directory ·').last);
