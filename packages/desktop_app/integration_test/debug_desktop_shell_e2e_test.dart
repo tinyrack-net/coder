@@ -80,6 +80,13 @@ Future<void> _waitForWindowVisibility(
   DesktopWindow window, {
   required bool visible,
 }) => awaitCondition(
-  () async => await window.isVisible() == visible,
+  () async {
+    if (await window.isVisible() == visible) return true;
+    // Bare Xvfb runs without a window manager and can drop a map-state
+    // request outright, so a lost edge never arrives on its own. Show and
+    // hide are idempotent; reissue the command instead of waiting on it.
+    await (visible ? window.show() : window.hide());
+    return await window.isVisible() == visible;
+  },
   'the window to become ${visible ? 'visible' : 'hidden'}',
 );

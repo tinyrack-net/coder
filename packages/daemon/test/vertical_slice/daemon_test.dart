@@ -3471,18 +3471,15 @@ blocked/
         rootPath: workspace.path,
         name: 'Pre-launch failure',
       );
-      final runnableModel = (await client.listProviderModels('openai'))
-          .firstWhere(
-            (model) =>
-                model.capabilities.streaming == CapabilitySupport.supported &&
-                model.capabilities.toolCalling == CapabilitySupport.supported,
-          );
       final session = await client.createSession(
         id: 'prelaunch-failure-session',
         worktreeId: catalog.worktrees.single.id,
         title: 'Pre-launch failure',
         agentDefinitionId: 'tinest',
-        model: ModelSelectionDto(modelId: runnableModel.id),
+        // The default v5 Agent exposes function, freeform, and deferred
+        // tools; picking the first streaming model from the catalog chose a
+        // surface-incomplete model whenever the catalog ordered one first.
+        model: const ModelSelectionDto(modelId: _testModelId),
       );
 
       await expectLater(
