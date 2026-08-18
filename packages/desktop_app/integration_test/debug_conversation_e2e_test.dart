@@ -32,6 +32,7 @@ import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
+import 'support/tap_visible.dart';
 import 'support/temporary_directory.dart';
 
 void main() {
@@ -319,27 +320,41 @@ void main() {
       await pumpUntil(tester, find.text(remoteWorkspaceName));
       await pumpUntil(tester, find.textContaining('내장 daemon · '));
 
-      // The View menu must keep following the persisted sidebar state after
-      // each selection, rather than reusing the first title-bar snapshot.
-      expect(find.text('보기'), findsOneWidget);
-      await tester.tap(find.text('보기'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('사이드바 접기'));
-      await tester.pumpAndSettle();
-      expect(appStore.settings.sidebarCollapsed, isTrue);
+      // macOS composes native window chrome, which carries no in-window menu
+      // row; only the custom-chrome platforms own the Flutter menu bar.
+      final chrome = desktopWindow.chrome;
+      if (chrome.showsApplicationMenuBar) {
+        // The View menu must keep following the persisted sidebar state after
+        // each selection, rather than reusing the first title-bar snapshot.
+        expect(find.text('보기'), findsOneWidget);
+        await tester.tap(find.text('보기'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('사이드바 접기'));
+        await tester.pumpAndSettle();
+        expect(appStore.settings.sidebarCollapsed, isTrue);
 
-      await tester.tap(find.text('보기'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('사이드바 열기'));
-      await tester.pumpAndSettle();
-      expect(appStore.settings.sidebarCollapsed, isFalse);
+        await tester.tap(find.text('보기'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('사이드바 열기'));
+        await tester.pumpAndSettle();
+        expect(appStore.settings.sidebarCollapsed, isFalse);
 
-      // The global desktop menu reaches the same typed new-workspace route.
-      expect(find.text('파일'), findsOneWidget);
-      await tester.tap(find.text('파일'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('New workspace').last);
-      await tester.pumpAndSettle();
+        // The global desktop menu reaches the same typed new-workspace route.
+        expect(find.text('파일'), findsOneWidget);
+        await tester.tap(find.text('파일'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('New workspace').last);
+        await tester.pumpAndSettle();
+      } else {
+        expect(find.text('보기'), findsNothing);
+        // The sidebar action reaches the same typed new-workspace route.
+        await tapVisible(
+          tester,
+          find.byKey(const ValueKey('workspace-new-button')),
+          'the new workspace button',
+        );
+        await tester.pumpAndSettle();
+      }
       final projectChip = find.byKey(
         const ValueKey('new-workspace-project'),
       );
@@ -555,7 +570,7 @@ void main() {
           const ValueKey<String>('agent-settings-editor-temporary'),
         ),
       );
-      await tester.tap(archiveAgent);
+      await tapVisible(tester, archiveAgent, 'the agent archive action');
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-archive-confirm')),
@@ -577,7 +592,7 @@ void main() {
           const ValueKey<String>('agent-settings-editor-tinest'),
         ),
       );
-      await tester.tap(resetAgent);
+      await tapVisible(tester, resetAgent, 'the agent reset action');
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-reset-confirm')),
@@ -598,7 +613,7 @@ void main() {
       );
       // Opening it proves the group really does carry the tool the reset
       // default turned on, which the assertion below reads back off disk.
-      await tester.tap(collaborationGroup);
+      await tapVisible(tester, collaborationGroup, 'the collaboration group');
       await tester.pumpAndSettle();
       expect(
         tester
@@ -893,7 +908,7 @@ void main() {
       // before reaching underneath it, and it doubles as proof that a toast
       // gives the surface back on its own.
       await pumpUntilGone(tester, find.text('저장했습니다.'));
-      await tester.tap(deleteServer);
+      await tapVisible(tester, deleteServer, 'the MCP server delete action');
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
       await pumpUntilGone(
@@ -2052,7 +2067,11 @@ void main() {
             tester.widget<TRButton>(find.byKey(customDelete)).onPressed != null,
         'the custom provider delete action to become enabled',
       );
-      await tester.tap(find.byKey(customDelete));
+      await tapVisible(
+        tester,
+        find.byKey(customDelete),
+        'the custom provider delete action',
+      );
       await pumpUntil(tester, find.byType(TRAlertDialog));
       await tester.tap(
         find.descendant(
@@ -2068,7 +2087,11 @@ void main() {
         hasLength(1),
       );
       await _centerSettingsAction(tester, find.byKey(customDelete));
-      await tester.tap(find.byKey(customDelete));
+      await tapVisible(
+        tester,
+        find.byKey(customDelete),
+        'the custom provider delete action',
+      );
       await pumpUntil(tester, find.byType(TRAlertDialog));
       await tester.tap(
         find.descendant(
@@ -2495,7 +2518,7 @@ Future<void> _disconnectProviderConnection(
       .byKey(const ValueKey<String>('provider-connection-disconnect'))
       .hitTestable();
   await _centerSettingsAction(tester, disconnect);
-  await tester.tap(disconnect);
+  await tapVisible(tester, disconnect, 'the provider disconnect action');
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(

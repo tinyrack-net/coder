@@ -1,6 +1,7 @@
 import 'package:app/testing/features/conversation/infrastructure/attachment_io.dart';
 import 'package:app/testing/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/testing/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -20,7 +21,13 @@ void main() {
       await window.prepare(startHidden: false);
       await window.show();
       await _waitForWindowVisibility(window, visible: true);
-      expect(window.chrome, DesktopWindowChrome.custom);
+      // Windows and Linux own their frame; macOS keeps the native title bar.
+      expect(
+        window.chrome,
+        defaultTargetPlatform == TargetPlatform.macOS
+            ? DesktopWindowChrome.native
+            : DesktopWindowChrome.custom,
+      );
       expect(await window.isVisible(), isTrue);
 
       var closes = 0;

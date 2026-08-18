@@ -240,8 +240,11 @@ final class PluginDesktopWindow implements DesktopWindow {
     // A production window starts hidden, while an integration runner already
     // owns a visible window. Enforce the requested state after readiness so
     // both compositions have the same observable behavior.
-    if (startHidden) await hideWindow();
-    _setVisible(!startHidden);
+    if (startHidden) {
+      await hide();
+    } else {
+      _setVisible(true);
+    }
   }
 
   @override
@@ -253,16 +256,15 @@ final class PluginDesktopWindow implements DesktopWindow {
   @override
   Future<void> hide() async {
     await hideWindow();
-    // Some Linux window managers acknowledge the method call before applying
-    // it, and can drop that first request while the compositor is busy. Hide
-    // is idempotent, so confirm the native state and retry briefly before
+    // Window managers can acknowledge the method call before applying it, and
+    // can drop that first request while the compositor is busy; macOS applies
+    // an early hide as lazily as a busy Linux compositor does. Hide is
+    // idempotent, so confirm the native state and retry briefly before
     // publishing the app-level state.
-    if (platform == TargetPlatform.linux) {
-      for (var attempt = 0; attempt < 10; attempt += 1) {
-        if (!await windowIsVisible()) break;
-        await waitForWindowState(const Duration(milliseconds: 50));
-        await hideWindow();
-      }
+    for (var attempt = 0; attempt < 10; attempt += 1) {
+      if (!await windowIsVisible()) break;
+      await waitForWindowState(const Duration(milliseconds: 50));
+      await hideWindow();
     }
     _setVisible(false);
   }
