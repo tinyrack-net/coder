@@ -447,17 +447,17 @@ Future<void> _openSettingsCategory(
   required ValueKey<String> categoryKey,
   required ValueKey<String> contentKey,
 }) async {
-  await tester.tap(
+  await tapVisible(
+    tester,
     find.byKey(const ValueKey<String>('workspace-settings-button')),
+    'the workspace settings button',
   );
   await tester.pumpAndSettle();
 
   final content = find.byKey(contentKey);
   if (content.evaluate().isNotEmpty) return;
 
-  final category = find.byKey(categoryKey);
-  expect(category, findsOneWidget);
-  await tester.tap(category);
+  await tapVisible(tester, find.byKey(categoryKey), 'the $categoryKey row');
   await tester.pumpAndSettle();
   expect(content, findsOneWidget);
 }

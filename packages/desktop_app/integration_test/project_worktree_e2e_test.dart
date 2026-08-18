@@ -10,6 +10,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -317,8 +318,10 @@ Future<void> _pumpProjectSettings(
   await tester.pumpWidget(TinestApp(services: fixture.services));
   await tester.pumpAndSettle();
   await pumpUntil(tester, find.text('Project E2E'));
-  await tester.tap(
+  await tapVisible(
+    tester,
     find.byKey(const ValueKey<String>('workspace-settings-button')),
+    'the workspace settings button',
   );
   await tester.pumpAndSettle();
   final projectsRow = find.byKey(
