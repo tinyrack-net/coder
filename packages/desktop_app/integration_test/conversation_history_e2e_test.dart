@@ -13,6 +13,7 @@ import 'package:protocol/protocol.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 
 /// Deltas streamed per scripted answer.
 ///
@@ -407,39 +408,11 @@ Future<void> _openSession(
 }
 
 /// Opens the sessions menu through the part of its trigger the view can hit.
-///
-/// Desktop window and text metrics can position a trailing control so its
-/// center is just outside the root render view. Its visible portion remains
-/// interactive, so tapping the finder center is not a valid reader action on
-/// every platform.
-Future<void> _openAllSessionsMenu(WidgetTester tester) async {
-  final menu = find.byKey(
-    const ValueKey<String>('workspace-all-sessions-menu'),
-  );
-  Offset? tapPoint;
-  await pumpUntilCondition(
-    tester,
-    () {
-      if (menu.evaluate().length != 1) return false;
-      final menuRect = tester.getRect(menu);
-      if (menuRect.isEmpty) return false;
-      final viewRect = tester.binding.renderViews.single.paintBounds;
-      final visibleRect = menuRect.intersect(viewRect);
-      if (visibleRect.isEmpty) return false;
-
-      final candidate = visibleRect.center;
-      final alignment = Alignment(
-        ((candidate.dx - menuRect.left) / menuRect.width) * 2 - 1,
-        ((candidate.dy - menuRect.top) / menuRect.height) * 2 - 1,
-      );
-      if (menu.hitTestable(at: alignment).evaluate().length != 1) return false;
-      tapPoint = candidate;
-      return true;
-    },
-    'the visible part of the all-sessions menu to be hit-testable',
-  );
-  await tester.tapAt(tapPoint!);
-}
+Future<void> _openAllSessionsMenu(WidgetTester tester) => tapVisible(
+  tester,
+  find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
+  'the all-sessions menu',
+);
 
 Finder _sessionTimeline(String sessionId) => find.byWidgetPredicate(
   (widget) =>

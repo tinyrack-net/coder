@@ -19,6 +19,7 @@ import 'package:material_ui/material_ui.dart';
 import 'support/ephemeral_port.dart';
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 import 'support/temporary_directory.dart';
 
 void main() {
@@ -72,15 +73,19 @@ void main() {
       await _pumpApp(tester, fixture, autostart: autostart);
       await _openGeneralSettings(tester);
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('general-settings-start-minimized')),
+        'the start-minimized toggle',
       );
       await tester.pumpAndSettle();
       expect(fixture.store.settings.startMinimizedAtBoot, isFalse);
       expect(autostart.applications.last, (enabled: true, minimized: false));
 
-      await tester.tap(
+      await tapVisible(
+        tester,
         find.byKey(const ValueKey<String>('general-settings-start-at-boot')),
+        'the start-at-boot toggle',
       );
       await tester.pumpAndSettle();
       expect(fixture.store.settings.startAtBoot, isFalse);
@@ -166,6 +171,7 @@ void main() {
       });
       await window.prepare(startHidden: true);
 
+      await _waitForVisibility(window, visible: false);
       expect(await window.isVisible(), isFalse);
       await window.show();
       await _waitForVisibility(window, visible: true);

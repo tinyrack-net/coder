@@ -20,6 +20,7 @@ import 'package:path/path.dart' as p;
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+import 'support/pump_until.dart';
 import 'support/temporary_directory.dart';
 
 void main() {
@@ -81,11 +82,12 @@ void main() {
                 item.capabilities.streaming == CapabilitySupport.supported,
           );
 
-      final firstChange = client.plugins.pluginChanges.first.timeout(
-        const Duration(seconds: 10),
+      await _awaitPluginChange(
+        client,
+        'the scaffolded plugin to be reported',
+        apply: () =>
+            client.plugins.scaffoldPlugin('acme.harness', 'Harness E2E'),
       );
-      await client.plugins.scaffoldPlugin('acme.harness', 'Harness E2E');
-      await firstChange;
       final authoring = await client.plugins.getPluginAuthoringEnvironment(
         'acme.harness',
       );
@@ -103,12 +105,15 @@ void main() {
       );
       final mainFile = File(p.join(pluginDirectory.path, 'main.lua'));
       final manifestFile = File(p.join(pluginDirectory.path, 'PLUGIN.md'));
-      final sourceChange = client.plugins.pluginChanges.first.timeout(
-        const Duration(seconds: 10),
+      await _awaitPluginChange(
+        client,
+        'the harness source edits to be reported',
+        apply: () async {
+          await manifestFile.writeAsString(_harnessManifest, flush: true);
+          await mainFile.writeAsString(_harnessSource, flush: true);
+        },
+        reapply: true,
       );
-      await manifestFile.writeAsString(_harnessManifest, flush: true);
-      await mainFile.writeAsString(_harnessSource, flush: true);
-      await sourceChange;
       final typedAuthoring = await client.plugins
           .syncPluginAuthoringEnvironment('acme.harness');
       expect(typedAuthoring.synchronized, isTrue);
@@ -360,11 +365,13 @@ void main() {
       );
       expect(historicalDocument.revisionHash, activeExecutionRevisionHash);
 
-      final invalidChange = client.plugins.pluginChanges.first.timeout(
-        const Duration(seconds: 10),
+      await _awaitPluginChange(
+        client,
+        'the invalid source edit to be reported',
+        apply: () =>
+            mainFile.writeAsString('this is not valid Lua', flush: true),
+        reapply: true,
       );
-      await mainFile.writeAsString('this is not valid Lua', flush: true);
-      await invalidChange;
       final held = await client.plugins.reloadPlugin('acme.harness', agentId);
       expect(held.isStale, isTrue);
       expect(held.revision!.contentHash, activeContentHash);
@@ -390,14 +397,15 @@ void main() {
         ),
       );
 
-      final repairedChange = client.plugins.pluginChanges.first.timeout(
-        const Duration(seconds: 10),
+      await _awaitPluginChange(
+        client,
+        'the repaired source edit to be reported',
+        apply: () => mainFile.writeAsString(
+          '$_harnessSource\n-- repaired revision\n',
+          flush: true,
+        ),
+        reapply: true,
       );
-      await mainFile.writeAsString(
-        '$_harnessSource\n-- repaired revision\n',
-        flush: true,
-      );
-      await repairedChange;
       final repaired = await client.plugins.reloadPlugin(
         'acme.harness',
         agentId,
@@ -817,6 +825,50 @@ void main() {
       'feature_scenario__session_goal__multi_turn_completion_reconnect__e2e',
     ],
   );
+}
+
+/// Applies a plugin mutation and waits until the daemon reports a change.
+///
+/// The subscription starts before [apply] so the change event cannot slip
+/// between the mutation and the wait. When [reapply] is set the mutation is
+/// repeated while no event arrives: the plugins watcher can gain its OS watch
+/// on a freshly scaffolded directory only after the first write already
+/// landed, and an idempotent rewrite converts that missed edge back into a
+/// level. Reapplied mutations must write identical content.
+Future<void> _awaitPluginChange(
+  TinestApi client,
+  String description, {
+  required Future<void> Function() apply,
+  bool reapply = false,
+}) async {
+  var observed = false;
+  final subscription = client.plugins.pluginChanges.listen(
+    (_) => observed = true,
+  );
+  try {
+    await apply();
+    const pollInterval = Duration(milliseconds: 100);
+    const reapplyInterval = Duration(seconds: 5);
+    var sinceApply = Duration.zero;
+    for (
+      var waited = Duration.zero;
+      waited < e2eWaitBudget;
+      waited += pollInterval
+    ) {
+      if (observed) return;
+      if (reapply && sinceApply >= reapplyInterval) {
+        await apply();
+        sinceApply = Duration.zero;
+      }
+      await Future<void>.delayed(pollInterval);
+      sinceApply += pollInterval;
+    }
+    throw TestFailure(
+      'Timed out after ${e2eWaitBudget.inSeconds}s waiting for $description.',
+    );
+  } finally {
+    await subscription.cancel();
+  }
 }
 
 Future<TinestApi> _connect(
