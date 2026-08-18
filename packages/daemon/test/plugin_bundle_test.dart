@@ -419,6 +419,49 @@ Reader documentation.
     },
     tags: const <String>['feature_test__plugin_management__unit'],
   );
+
+  test(
+    'concurrent stores of one revision never lose the cached bundle',
+    () async {
+      final cache = NativePluginRevisionCache(state.path);
+      await writePlugin();
+      final bundle = await NativePluginBundleLoader(
+        config.path,
+      ).load('acme.reader');
+      final contentHash = bundle.revision.contentHash;
+      final executionHash = bundle.revision.executionRevisionHash;
+
+      // A turn activating a plugin for several Agents while an install
+      // refresh stores the same revision must not race the staged rename:
+      // the temporary path used to depend only on the content hash and
+      // process ID, so same-process writers collided and one rename died
+      // with PathNotFoundException.
+      await Future.wait(<Future<void>>[
+        for (var writer = 0; writer < 4; writer += 1) ...<Future<void>>[
+          cache.storeInstalled(bundle),
+          cache.activateForAgent('agent-$writer', bundle),
+        ],
+      ]);
+
+      final installed = await cache.loadInstalled('acme.reader');
+      expect(installed, isNotNull);
+      expect(installed!.revision.contentHash, contentHash);
+      expect(
+        (await cache.loadExecutionRevision(
+          'acme.reader',
+          executionHash,
+        ))!.assets.keys,
+        containsAll(<String>['PLUGIN.md', 'main.lua']),
+      );
+      for (var writer = 0; writer < 4; writer += 1) {
+        expect(
+          await cache.loadForAgent('agent-$writer', 'acme.reader'),
+          isNotNull,
+        );
+      }
+    },
+    tags: const <String>['feature_test__plugin_management__unit'],
+  );
 }
 
 final class _UiContributionInspector implements PluginBundleInspector {

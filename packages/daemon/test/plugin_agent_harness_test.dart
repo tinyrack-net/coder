@@ -1478,6 +1478,81 @@ void main() {
   );
 
   test(
+    'cancelling mid model stream keeps after-model hooks graceful',
+    () async {
+      final bundle = _afterModelLifecycleBundle();
+      final revisions = PluginRevisionCatalog(
+        loader: _BundleLoader(bundle),
+        cache: _MemoryRevisionCache(),
+      );
+      await revisions.reload(
+        bundle.descriptor.id,
+        agentId: 'agent-1',
+        approvedCapabilities: bundle.descriptor.requestedCapabilities.toSet(),
+      );
+      final runtime = _pluginRuntime(stagedHost, revisions);
+      addTearDown(runtime.close);
+      final statuses = <AgentSessionStatus>[];
+      final lifecycleFailures = <Map<String, dynamic>>[];
+      final lifecycleCompletions = <Map<String, dynamic>>[];
+      final cancellingModel = _BlockingModelGateway();
+      final cancellation = CancellationToken();
+
+      final cancelledRun = LuaAgentHarness(runtime: runtime).startTurn(
+        request: LuaAgentHarnessRequest(
+          definition: _terminalLifecycleDefinition,
+          sessionId: 'session-1',
+          turnId: 'turn-cancel',
+          workspaceRoot: Directory.current.path,
+          prompt: 'cancel',
+          modelId: 'model',
+          model: cancellingModel,
+          modelCapabilities: const AgentModelCapabilities(
+            streaming: AgentCapabilitySupport.supported,
+          ),
+          history: const <ConversationItem>[],
+          safetyIdentifier: 'safety',
+          allowedCapabilitiesByPlugin: <String, Set<String>>{
+            bundle.descriptor.id: bundle.descriptor.requestedCapabilities
+                .toSet(),
+          },
+          state: MemoryPluginStateStore(),
+        ),
+        callbacks: LuaAgentHarnessCallbacks(
+          onEvent: (type, data) {
+            if (type == 'plugin.lifecycle.failed') lifecycleFailures.add(data);
+            if (type == 'plugin.lifecycle.completed') {
+              lifecycleCompletions.add(data);
+            }
+          },
+          onStatus: (status, {error}) => statuses.add(status),
+          onProviderItems: (_) {},
+        ),
+        cancellation: cancellation,
+      );
+      final cancelledExpectation = expectLater(
+        cancelledRun,
+        throwsA(isA<AgentCancelledException>()),
+      );
+      await cancellingModel.started.future;
+      cancellation.cancel();
+      // The cancelled model stream tears down through the runtime's own cell
+      // close; an after-model hook started against the cancelled token must
+      // fold into that cancellation instead of failing the turn or escaping
+      // as an unhandled error.
+      await cancelledExpectation;
+
+      expect(lifecycleFailures, isEmpty);
+      expect(
+        lifecycleCompletions.map((event) => event['lifecycle']),
+        contains('cancel'),
+      );
+      expect(statuses, contains(AgentSessionStatus.idle));
+      expect(statuses, isNot(contains(AgentSessionStatus.failed)));
+    },
+  );
+
+  test(
     'durable execution accepts only the registered scheduled hook',
     () async {
       final bundle = _terminalLifecycleBundle();
@@ -4381,6 +4456,47 @@ end)
 return tinest.plugin.define({
   driver = driver,
   hooks = {on_cancel, on_error, on_scheduled},
+})
+  ''',
+);
+
+PluginBundle _afterModelLifecycleBundle() => _bundle(
+  id: 'acme.lifecycle',
+  capabilities: const <String>['model.call', 'state.write'],
+  source: '''
+local tinest = require("tinest")
+local S = tinest.schema
+local cancel_state = tinest.state.cell({
+  scope = tinest.state.scope.session, key = "cancel",
+}, S.string())
+
+local on_cancel = tinest.hook.cancel({
+  id = "cancel",
+  required_capabilities = {tinest.capability.state.write},
+}, function(_arguments)
+  cancel_state:compare_and_set(0, "cancel")
+  return {marker = "cancel"}
+end)
+local after_model = tinest.hook.after_model({
+  id = "after-model",
+}, function(_context)
+  return {marker = "after-model"}
+end)
+local driver = tinest.driver.define({
+  id = "driver",
+  uses = {tinest.model.open, tinest.model.next},
+  required_model_capabilities = {tinest.model.capability.streaming},
+}, function(arguments)
+  local stream = tinest.model.open({blocks = {}, history = {}, tools = {}})
+  while true do
+    local item = tinest.model.next(stream)
+    if item.done then break end
+  end
+  return {tool_rounds = 0}
+end)
+return tinest.plugin.define({
+  driver = driver,
+  hooks = {on_cancel, after_model},
 })
   ''',
 );
