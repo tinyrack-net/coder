@@ -22,6 +22,10 @@ void main() {
       '${Platform.pathSeparator}e2e${Platform.pathSeparator}lane-1'
       '${Platform.pathSeparator}windows${Platform.pathSeparator}keep.txt',
     );
+    final ephemeral = Directory(
+      '${project.path}${Platform.pathSeparator}windows'
+      '${Platform.pathSeparator}flutter${Platform.pathSeparator}ephemeral',
+    );
     addTearDown(() => root.delete(recursive: true));
     await lane.create(recursive: true);
     await File(
@@ -29,32 +33,46 @@ void main() {
     ).writeAsString('stale');
     await sibling.create(recursive: true);
     await sibling.writeAsString('keep');
+    await ephemeral.create(recursive: true);
+    await File(
+      '${ephemeral.path}${Platform.pathSeparator}stale.cc',
+    ).writeAsString('stale');
     await resetWindowsE2eLaneBuild(
       projectDirectory: project.path,
       laneIndex: 0,
     );
 
     expect(lane.existsSync(), isFalse);
+    expect(ephemeral.existsSync(), isFalse);
     expect(sibling.readAsStringSync(), 'keep');
   });
 
-  test('lane reset is a no-op before its build path exists', () async {
-    final root = await Directory.systemTemp.createTemp(
-      'tinest-windows-e2e-missing-',
-    );
-    final project = Directory(
-      '${root.path}${Platform.pathSeparator}project',
-    );
-    addTearDown(() => root.delete(recursive: true));
-    await project.create();
+  test(
+    'lane reset still removes shared ephemeral without a lane path',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'tinest-windows-e2e-missing-',
+      );
+      final project = Directory(
+        '${root.path}${Platform.pathSeparator}project',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      await project.create();
+      final ephemeral = Directory(
+        '${project.path}${Platform.pathSeparator}windows'
+        '${Platform.pathSeparator}flutter${Platform.pathSeparator}ephemeral',
+      );
+      await ephemeral.create(recursive: true);
 
-    await resetWindowsE2eLaneBuild(
-      projectDirectory: project.path,
-      laneIndex: 0,
-    );
+      await resetWindowsE2eLaneBuild(
+        projectDirectory: project.path,
+        laneIndex: 0,
+      );
 
-    expect(project.existsSync(), isTrue);
-  });
+      expect(project.existsSync(), isTrue);
+      expect(ephemeral.existsSync(), isFalse);
+    },
+  );
 
   test('lane reset fails closed for a non-directory segment', () async {
     final root = await Directory.systemTemp.createTemp(
@@ -170,6 +188,48 @@ void main() {
     expect(sentinel.readAsStringSync(), 'must survive');
     expect(
       FileSystemEntity.typeSync(linkedBuild, followLinks: false),
+      FileSystemEntityType.link,
+    );
+  });
+
+  test('lane reset fails closed for a linked shared ephemeral', () async {
+    final root = await Directory.systemTemp.createTemp(
+      'tinest-windows-e2e-ephemeral-link-',
+    );
+    final project = Directory(
+      '${root.path}${Platform.pathSeparator}project',
+    );
+    final outside = Directory(
+      '${root.path}${Platform.pathSeparator}outside',
+    );
+    final sentinel = File(
+      '${outside.path}${Platform.pathSeparator}sentinel.txt',
+    );
+    final ephemeral =
+        '${project.path}${Platform.pathSeparator}windows'
+        '${Platform.pathSeparator}flutter${Platform.pathSeparator}ephemeral';
+    addTearDown(() async {
+      if (FileSystemEntity.typeSync(ephemeral, followLinks: false) ==
+          FileSystemEntityType.link) {
+        await Link(ephemeral).delete();
+      }
+      await root.delete(recursive: true);
+    });
+    await Directory(ephemeral).parent.create(recursive: true);
+    await outside.create();
+    await sentinel.writeAsString('must survive');
+    await _createDirectoryLink(link: ephemeral, target: outside.path);
+
+    await expectLater(
+      resetWindowsE2eLaneBuild(
+        projectDirectory: project.path,
+        laneIndex: 0,
+      ),
+      throwsStateError,
+    );
+    expect(sentinel.readAsStringSync(), 'must survive');
+    expect(
+      FileSystemEntity.typeSync(ephemeral, followLinks: false),
       FileSystemEntityType.link,
     );
   });

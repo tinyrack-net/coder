@@ -322,11 +322,7 @@ Future<void> _activateSession(
   String title,
   String sessionId,
 ) async {
-  final menu = find.byKey(
-    const ValueKey<String>('workspace-all-sessions-menu'),
-  );
-  await pumpUntil(tester, menu);
-  await tester.tap(menu);
+  await _openAllSessionsMenu(tester);
   final conversation = find.text(title).hitTestable();
   await pumpUntil(tester, conversation);
   await tester.tap(conversation.last);
@@ -353,13 +349,7 @@ Future<void> _openSession(
       .hitTestable();
   await pumpUntil(tester, worktree);
   await tester.tap(worktree.last);
-  await pumpUntil(
-    tester,
-    find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
-  );
-  await tester.tap(
-    find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
-  );
+  await _openAllSessionsMenu(tester);
   final conversation = find.text(title).hitTestable();
   await pumpUntil(tester, conversation);
   await tester.tap(conversation.last);
@@ -370,6 +360,41 @@ Future<void> _openSession(
         find.byType(ChatTimelineView).evaluate().length == 1,
     'session $sessionId to own the active conversation timeline',
   );
+}
+
+/// Opens the sessions menu through the part of its trigger the view can hit.
+///
+/// Desktop window and text metrics can position a trailing control so its
+/// center is just outside the root render view. Its visible portion remains
+/// interactive, so tapping the finder center is not a valid reader action on
+/// every platform.
+Future<void> _openAllSessionsMenu(WidgetTester tester) async {
+  final menu = find.byKey(
+    const ValueKey<String>('workspace-all-sessions-menu'),
+  );
+  Offset? tapPoint;
+  await pumpUntilCondition(
+    tester,
+    () {
+      if (menu.evaluate().length != 1) return false;
+      final menuRect = tester.getRect(menu);
+      if (menuRect.isEmpty) return false;
+      final viewRect = tester.binding.renderViews.single.paintBounds;
+      final visibleRect = menuRect.intersect(viewRect);
+      if (visibleRect.isEmpty) return false;
+
+      final candidate = visibleRect.center;
+      final alignment = Alignment(
+        ((candidate.dx - menuRect.left) / menuRect.width) * 2 - 1,
+        ((candidate.dy - menuRect.top) / menuRect.height) * 2 - 1,
+      );
+      if (menu.hitTestable(at: alignment).evaluate().length != 1) return false;
+      tapPoint = candidate;
+      return true;
+    },
+    'the visible part of the all-sessions menu to be hit-testable',
+  );
+  await tester.tapAt(tapPoint!);
 }
 
 Finder _sessionTimeline(String sessionId) => find.byWidgetPredicate(

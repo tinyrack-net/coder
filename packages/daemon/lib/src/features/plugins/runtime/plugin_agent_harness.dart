@@ -2354,6 +2354,7 @@ final class _TurnCallbackRouter
   }) async {
     final descriptor = _primitives.descriptor(operation)!;
     final approval = await _approveDirectHostPrimitive(
+      pluginId: pluginContext.pluginId,
       name: operation,
       arguments: <String, dynamic>{...arguments},
       risk: switch (descriptor.effect) {
@@ -2439,11 +2440,13 @@ final class _TurnCallbackRouter
 
   Future<PluginCallbackResult<ConversationAttachment>?>
   _approveDirectHostPrimitive({
+    required String pluginId,
     required String name,
     required Map<String, dynamic> arguments,
     required AgentToolRisk risk,
   }) async {
-    final active = _activeCalls.values.firstOrNull;
+    final active = _activeCalls[pluginId];
+    if (active?.approvedRisks.contains(risk) ?? false) return null;
     final activeTool = active == null
         ? null
         : _selectedTools[active.contributionId];
@@ -2479,6 +2482,7 @@ final class _TurnCallbackRouter
         isError: true,
       );
     }
+    active?.approvedRisks.add(risk);
     return null;
   }
 
@@ -2689,7 +2693,7 @@ final class _NetworkOperationCancellation
 }
 
 final class _ActiveToolCall {
-  const _ActiveToolCall({
+  _ActiveToolCall({
     required this.callId,
     required this.contributionId,
     required this.arguments,
@@ -2698,6 +2702,7 @@ final class _ActiveToolCall {
   final String callId;
   final String contributionId;
   final Map<String, Object?> arguments;
+  final Set<AgentToolRisk> approvedRisks = <AgentToolRisk>{};
 }
 
 final class _PendingDynamicToolCall {

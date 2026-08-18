@@ -2420,6 +2420,9 @@ void main() {
       );
       final primitives = _TerminalPrimitiveHost();
       final model = _TerminalModelGateway();
+      final approvals = _RecordingApprovalCoordinator(
+        ApprovalDecision.approved,
+      );
       final persisted = <ConversationItem>[];
       final turnErrors = <String>[];
 
@@ -2460,7 +2463,8 @@ void main() {
           allowedCapabilitiesByPlugin: capabilities,
           primitives: primitives.registry,
           state: MemoryPluginStateStore(),
-          policyFactory: (_) => const _AllowPolicy(),
+          approvals: approvals,
+          policyFactory: (_) => const _AskPolicy(),
         ),
         callbacks: LuaAgentHarnessCallbacks(
           onEvent: (_, _) {},
@@ -2481,6 +2485,14 @@ void main() {
       });
       expect(model.stdinResult['output'], contains('tinyrack-exec-probe'));
       expect(primitives.writes, <String>['tinyrack-exec-probe\n']);
+      expect(
+        approvals.invocations.map((invocation) => invocation.name),
+        <String>['exec_command', 'write_stdin'],
+      );
+      expect(
+        approvals.invocations.map((invocation) => invocation.risk),
+        everyElement(AgentToolRisk.command),
+      );
       expect(
         persisted.whereType<ToolResultConversationItem>(),
         hasLength(2),

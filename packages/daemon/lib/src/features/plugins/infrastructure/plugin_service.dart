@@ -40,8 +40,12 @@ final class NativePluginSourceCatalog implements PluginSourceCatalog {
   final StreamController<void> _changes = StreamController<void>.broadcast(
     sync: true,
   );
-  StreamSubscription<FileSystemEvent>? _watchSubscription;
+  final Map<String, StreamSubscription<FileSystemEvent>> _watchSubscriptions =
+      <String, StreamSubscription<FileSystemEvent>>{};
+  Future<void> _watchTail = Future<void>.value();
+  Future<void>? _initialization;
   Timer? _changeDebounce;
+  bool _closed = false;
 
   /// Read-only product plugin source.
   final BuiltInPluginCatalog builtIns;
@@ -53,30 +57,176 @@ final class NativePluginSourceCatalog implements PluginSourceCatalog {
   @override
   Stream<void> get changes => _changes.stream;
 
-  /// Creates the app-data root and starts its recursive native watcher.
-  Future<void> initialize() async {
-    if (_watchSubscription != null) return;
+  /// Creates the app-data root and starts its native directory watchers.
+  Future<void> initialize() {
+    if (_closed) {
+      return Future<void>.error(
+        StateError('A closed plugin source catalog cannot be initialized.'),
+      );
+    }
+    return _initialization ??= _initialize();
+  }
+
+  Future<void> _initialize() async {
     await _root.create(recursive: true);
-    _watchSubscription = _root.watch(recursive: true).listen((event) {
-      final extension = p.extension(event.path).toLowerCase();
-      if (!event.isDirectory &&
-          extension.isNotEmpty &&
-          extension != '.lua' &&
-          extension != '.md') {
-        return;
+    await _ensureWatchTargets();
+  }
+
+  Future<void> _ensureWatchTargets() {
+    final previous = _watchTail;
+    final next = () async {
+      await previous;
+      if (_closed) return;
+      await _replaceWatchTargets();
+    }();
+    // [next] still reports this refresh's error to its caller. The private
+    // tail absorbs it only so one transient filesystem failure cannot poison
+    // every later serialized refresh.
+    _watchTail = next.catchError((Object _) {});
+    return next;
+  }
+
+  Future<void> _replaceWatchTargets() async {
+    final desiredPaths = await _sourceDirectoryPaths();
+    for (final path in desiredPaths) {
+      if (_watchSubscriptions.containsKey(path)) continue;
+      _startWatching(path);
+    }
+
+    final stalePaths = _watchSubscriptions.keys
+        .where((path) => !desiredPaths.contains(path))
+        .toList(growable: false);
+    for (final path in stalePaths) {
+      final subscription = _watchSubscriptions.remove(path);
+      await subscription?.cancel();
+    }
+  }
+
+  Future<Set<String>> _sourceDirectoryPaths() async {
+    final sourceRoot = p.normalize(p.absolute(_root.path));
+    final paths = <String>{};
+    final pending = <Directory>[_root];
+    while (pending.isNotEmpty) {
+      final directory = pending.removeLast();
+      final directoryPath = p.normalize(p.absolute(directory.path));
+      if (!p.equals(directoryPath, sourceRoot) &&
+          !p.isWithin(sourceRoot, directoryPath)) {
+        continue;
       }
-      _changeDebounce?.cancel();
-      _changeDebounce = Timer(const Duration(milliseconds: 75), () {
-        if (!_changes.isClosed) _changes.add(null);
-      });
+      try {
+        if (FileSystemEntity.typeSync(
+              directoryPath,
+              followLinks: false,
+            ) !=
+            FileSystemEntityType.directory) {
+          continue;
+        }
+        paths.add(directoryPath);
+        await for (final entity in Directory(
+          directoryPath,
+        ).list(followLinks: false)) {
+          if (FileSystemEntity.typeSync(
+                entity.path,
+                followLinks: false,
+              ) ==
+              FileSystemEntityType.directory) {
+            pending.add(Directory(entity.path));
+          }
+        }
+      } on FileSystemException {
+        // Editors can replace a directory while it is being enumerated. Keep
+        // only still-existing non-link watchers until the next native event
+        // produces a complete scan.
+        paths.addAll(
+          _watchSubscriptions.keys.where(
+            (path) =>
+                FileSystemEntity.typeSync(path, followLinks: false) ==
+                FileSystemEntityType.directory,
+          ),
+        );
+      }
+    }
+    return paths;
+  }
+
+  void _startWatching(String watchedPath) {
+    try {
+      late final StreamSubscription<FileSystemEvent> subscription;
+      subscription = Directory(watchedPath)
+          // dart:io's default is deliberately non-recursive so Linux uses the
+          // same one-subscription-per-directory topology as other hosts.
+          .watch()
+          .listen(
+            _handleWatchEvent,
+            onError: (Object _) => _watchEnded(watchedPath, subscription),
+            onDone: () => _watchEnded(watchedPath, subscription),
+          );
+      _watchSubscriptions[watchedPath] = subscription;
+    } on FileSystemException {
+      // The directory can disappear after enumeration. Its watched parent
+      // will drive the next scan if it is recreated.
+    }
+  }
+
+  void _handleWatchEvent(FileSystemEvent event) {
+    if (_closed) return;
+    if (event.isDirectory) {
+      unawaited(_refreshAfterDirectoryEvent());
+      return;
+    }
+    if (_isPluginSourceEvent(event)) _scheduleChange();
+  }
+
+  Future<void> _refreshAfterDirectoryEvent() async {
+    await _ensureWatchTargets();
+    _scheduleChange();
+  }
+
+  bool _isPluginSourceEvent(FileSystemEvent event) {
+    if (_isPluginSourcePath(event.path)) return true;
+    return event is FileSystemMoveEvent &&
+        event.destination != null &&
+        _isPluginSourcePath(event.destination!);
+  }
+
+  bool _isPluginSourcePath(String path) {
+    final extension = p.extension(path).toLowerCase();
+    return extension == '.lua' || extension == '.md';
+  }
+
+  void _scheduleChange() {
+    if (_closed) return;
+    _changeDebounce?.cancel();
+    _changeDebounce = Timer(const Duration(milliseconds: 75), () {
+      if (!_changes.isClosed) _changes.add(null);
     });
+  }
+
+  void _watchEnded(
+    String watchedPath,
+    StreamSubscription<FileSystemEvent> subscription,
+  ) {
+    if (_closed || !identical(_watchSubscriptions[watchedPath], subscription)) {
+      return;
+    }
+    _watchSubscriptions.remove(watchedPath);
+    unawaited(subscription.cancel());
+    _scheduleChange();
+    unawaited(_ensureWatchTargets());
   }
 
   /// Stops native observation.
   Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
     _changeDebounce?.cancel();
-    await _watchSubscription?.cancel();
-    _watchSubscription = null;
+    await _initialization;
+    await _watchTail;
+    final subscriptions = _watchSubscriptions.values.toList(growable: false);
+    _watchSubscriptions.clear();
+    for (final subscription in subscriptions) {
+      await subscription.cancel();
+    }
     await _changes.close();
   }
 

@@ -2,25 +2,48 @@ import 'dart:io';
 
 import 'package:app/testing/devtools/desktop_e2e_runner.dart';
 
-/// Removes the persistent Windows build subtree owned by one E2E lane.
+/// Removes one E2E lane's Windows output and Flutter's shared generated files.
+///
+/// Every Windows build directory compiles sources from
+/// `windows/flutter/ephemeral`. Switching between the ordinary app build and
+/// isolated E2E build directories can therefore leave a valid CMake project
+/// pointing at wrapper sources another build removed. The project build lease
+/// protects both generated subtrees while Flutter recreates them.
 Future<void> resetWindowsE2eLaneBuild({
   required String projectDirectory,
   required int laneIndex,
 }) async {
   final project = Directory(projectDirectory).absolute;
-  final relativeLanePath = desktopE2eWindowsLaneBuildPath(
-    laneIndex,
-  ).replaceAll('/', Platform.pathSeparator);
-  final laneWindows = Directory(
-    '${project.path}${Platform.pathSeparator}$relativeLanePath',
+  final targets = <Directory?>[
+    _validatedGeneratedDirectory(
+      project,
+      desktopE2eWindowsLaneBuildPath(laneIndex),
+    ),
+    _validatedGeneratedDirectory(project, 'windows/flutter/ephemeral'),
+  ];
+  for (final target in targets.nonNulls) {
+    await target.delete(recursive: true);
+  }
+}
+
+Directory? _validatedGeneratedDirectory(
+  Directory project,
+  String relativePath,
+) {
+  final nativeRelativePath = relativePath.replaceAll(
+    '/',
+    Platform.pathSeparator,
+  );
+  final target = Directory(
+    '${project.path}${Platform.pathSeparator}$nativeRelativePath',
   ).absolute;
   final projectPrefix = '${project.path}${Platform.pathSeparator}';
-  if (!laneWindows.path.startsWith(projectPrefix)) {
-    throw StateError('Windows E2E build path escaped the desktop project.');
+  if (!target.path.startsWith(projectPrefix)) {
+    throw StateError('Windows generated path escaped the desktop project.');
   }
 
   final candidatePath = StringBuffer(project.path);
-  for (final segment in relativeLanePath.split(Platform.pathSeparator)) {
+  for (final segment in nativeRelativePath.split(Platform.pathSeparator)) {
     candidatePath
       ..write(Platform.pathSeparator)
       ..write(segment);
@@ -29,19 +52,19 @@ Future<void> resetWindowsE2eLaneBuild({
       path,
       followLinks: false,
     );
-    if (type == FileSystemEntityType.notFound) return;
+    if (type == FileSystemEntityType.notFound) return null;
     if (type == FileSystemEntityType.link) {
       throw StateError(
-        'Windows E2E build path contains a symbolic link or junction: '
+        'Windows generated path contains a symbolic link or junction: '
         '$path',
       );
     }
     if (type != FileSystemEntityType.directory) {
       throw StateError(
-        'Windows E2E build path contains a non-directory entry: '
+        'Windows generated path contains a non-directory entry: '
         '$path',
       );
     }
   }
-  await laneWindows.delete(recursive: true);
+  return target;
 }

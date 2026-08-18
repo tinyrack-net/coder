@@ -313,6 +313,64 @@ return tinest.plugin.define({tools = {}, hooks = {}, ui = {}})
   );
 
   test(
+    'app-data source watcher reports edits in existing nested source dirs',
+    () async {
+      final user = Directory(p.join(config.path, 'v5', 'plugins', 'acme.echo'));
+      final lua = File(p.join(user.path, 'lua', 'helpers', 'echo.lua'));
+      final markdown = File(p.join(user.path, 'prompts', 'system.md'));
+      await lua.parent.create(recursive: true);
+      await markdown.parent.create(recursive: true);
+      await lua.writeAsString('return {}');
+      await markdown.writeAsString('# System');
+      final sources = NativePluginSourceCatalog(config.path);
+      await sources.initialize();
+      addTearDown(sources.close);
+
+      final luaChanged = sources.changes.first.timeout(
+        const Duration(seconds: 5),
+      );
+      await lua.writeAsString('return {updated = true}', flush: true);
+      await expectLater(luaChanged, completes);
+
+      final markdownChanged = sources.changes.first.timeout(
+        const Duration(seconds: 5),
+      );
+      await markdown.writeAsString('# Updated system', flush: true);
+      await expectLater(markdownChanged, completes);
+    },
+  );
+
+  test(
+    'app-data source watcher follows nested directory replacement and edits',
+    () async {
+      final user = Directory(p.join(config.path, 'v5', 'plugins', 'acme.echo'));
+      await user.create(recursive: true);
+      final sources = NativePluginSourceCatalog(config.path);
+      await sources.initialize();
+      addTearDown(sources.close);
+
+      final nested = Directory(p.join(user.path, 'lua', 'generated'));
+      var changed = sources.changes.first.timeout(const Duration(seconds: 5));
+      await nested.create(recursive: true);
+      await expectLater(changed, completes);
+
+      changed = sources.changes.first.timeout(const Duration(seconds: 5));
+      await nested.delete(recursive: true);
+      await expectLater(changed, completes);
+
+      changed = sources.changes.first.timeout(const Duration(seconds: 5));
+      await nested.create(recursive: true);
+      await expectLater(changed, completes);
+
+      changed = sources.changes.first.timeout(const Duration(seconds: 5));
+      await File(
+        p.join(nested.path, 'tool.lua'),
+      ).writeAsString('return {}', flush: true);
+      await expectLater(changed, completes);
+    },
+  );
+
+  test(
     'app-data source watcher reports namespaced plugin directory creation',
     () async {
       final sources = NativePluginSourceCatalog(config.path);

@@ -1565,8 +1565,9 @@ void main() {
           ),
         );
         await client.subscribeTimeline(session.id);
-        // Running a command always asks; approving the first one is what makes
-        // every later write into that same session pass without another dialog.
+        // Each model tool call asks once at its effective primitive risk. A
+        // tool may compose start/read or write/read primitives internally,
+        // but those implementation details must not duplicate the dialog.
         final approvals = <String>[];
         final approvalFailure = Completer<Never>();
         // startTurn can deliver and resolve an approval before the provider
@@ -1612,7 +1613,7 @@ void main() {
               'providerRound=${provider.round}, approvals=$approvals',
         );
         expect(seen, contains('tinyrack-exec-probe'));
-        expect(approvals, <String>['exec_command']);
+        expect(approvals, <String>['exec_command', 'write_stdin']);
         await _waitForIdleSession(
           client,
           registered.worktrees.single.id,
