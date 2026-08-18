@@ -392,41 +392,58 @@ abstract final class WorkspaceVerificationPlans {
   );
 
   /// Runs the complete static and coverage gates on every supported host.
-  static VerificationPlan full({required int jobs}) {
-    final (dart: dartJobs, flutter: flutterJobs) = _splitCoverageJobs(jobs);
+  ///
+  /// When [serializeCoverage] is true, each coverage runner receives the full
+  /// [jobs] budget in its own phase. Windows uses this mode because Dart and
+  /// Flutter coverage share workspace-native assets that cannot be replaced
+  /// while another process has them open.
+  static VerificationPlan full({
+    required int jobs,
+    required bool serializeCoverage,
+  }) {
+    final splitJobs = _splitCoverageJobs(jobs);
+    final dartJobs = serializeCoverage ? jobs : splitJobs.dart;
+    final flutterJobs = serializeCoverage ? jobs : splitJobs.flutter;
+    final coverageTasks = <VerificationTask>[
+      VerificationTask(
+        name: 'Dart coverage',
+        executable: 'dart',
+        arguments: <String>[
+          'run',
+          'tinest_quality',
+          '_coverage-dart',
+          '--jobs=$dartJobs',
+          '--report=build/quality/internal/coverage-dart.json',
+        ],
+        cpuSlots: dartJobs,
+      ),
+      VerificationTask(
+        name: 'Flutter coverage',
+        executable: 'dart',
+        arguments: <String>[
+          'run',
+          'tinest_quality',
+          '_coverage-flutter',
+          '--jobs=$flutterJobs',
+          '--report=build/quality/internal/coverage-flutter.json',
+        ],
+        cpuSlots: flutterJobs,
+        exclusiveResources: const <String>{'flutter-build'},
+      ),
+    ];
+    final coveragePhases = serializeCoverage
+        ? <VerificationPhase>[
+            for (final task in coverageTasks)
+              VerificationPhase(tasks: <VerificationTask>[task]),
+          ]
+        : <VerificationPhase>[
+            VerificationPhase(tasks: coverageTasks),
+          ];
     return VerificationPlan(
       phases: <VerificationPhase>[
         _generated(jobs),
         ...staticChecks(jobs: jobs).phases,
-        VerificationPhase(
-          tasks: <VerificationTask>[
-            VerificationTask(
-              name: 'Dart coverage',
-              executable: 'dart',
-              arguments: <String>[
-                'run',
-                'tinest_quality',
-                '_coverage-dart',
-                '--jobs=$dartJobs',
-                '--report=build/quality/internal/coverage-dart.json',
-              ],
-              cpuSlots: dartJobs,
-            ),
-            VerificationTask(
-              name: 'Flutter coverage',
-              executable: 'dart',
-              arguments: <String>[
-                'run',
-                'tinest_quality',
-                '_coverage-flutter',
-                '--jobs=$flutterJobs',
-                '--report=build/quality/internal/coverage-flutter.json',
-              ],
-              cpuSlots: flutterJobs,
-              exclusiveResources: const <String>{'flutter-build'},
-            ),
-          ],
-        ),
+        ...coveragePhases,
         VerificationPhase(
           tasks: <VerificationTask>[
             _dart('coverage thresholds', const <String>[

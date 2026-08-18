@@ -211,7 +211,10 @@ void main() {
 
   test('canonical plans derive child concurrency from the job budget', () {
     final tests = WorkspaceVerificationPlans.tests(jobs: 8);
-    final full = WorkspaceVerificationPlans.full(jobs: 32);
+    final full = WorkspaceVerificationPlans.full(
+      jobs: 32,
+      serializeCoverage: false,
+    );
 
     expect(_commands(tests), contains(contains('_test-dart --jobs=4')));
     expect(_commands(tests), contains(contains('_test-flutter --jobs=4')));
@@ -228,7 +231,10 @@ void main() {
   });
 
   test('full verification finishes generation before the format gate', () {
-    final full = WorkspaceVerificationPlans.full(jobs: 8);
+    final full = WorkspaceVerificationPlans.full(
+      jobs: 8,
+      serializeCoverage: false,
+    );
     final generatedPhase = full.phases.indexWhere(
       (phase) => phase.tasks.any((task) => task.name == 'generated sources'),
     );
@@ -241,8 +247,11 @@ void main() {
     expect(full.phases[generatedPhase].tasks, hasLength(1));
   });
 
-  test('full verification overlaps Dart and Flutter coverage', () {
-    final full = WorkspaceVerificationPlans.full(jobs: 8);
+  test('non-Windows full verification overlaps coverage', () {
+    final full = WorkspaceVerificationPlans.full(
+      jobs: 8,
+      serializeCoverage: false,
+    );
     final coveragePhase = full.phases.singleWhere(
       (phase) => phase.tasks.any((task) => task.name == 'Dart coverage'),
     );
@@ -260,9 +269,40 @@ void main() {
     );
   });
 
+  test('Windows full verification serializes native-asset coverage', () {
+    final full = WorkspaceVerificationPlans.full(
+      jobs: 8,
+      serializeCoverage: true,
+    );
+    final dartCoveragePhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any((task) => task.name == 'Dart coverage'),
+    );
+    final flutterCoveragePhase = full.phases.indexWhere(
+      (phase) => phase.tasks.any((task) => task.name == 'Flutter coverage'),
+    );
+
+    expect(dartCoveragePhase, isNonNegative);
+    expect(flutterCoveragePhase, greaterThan(dartCoveragePhase));
+    expect(full.phases[dartCoveragePhase].tasks, hasLength(1));
+    expect(full.phases[flutterCoveragePhase].tasks, hasLength(1));
+    expect(full.phases[dartCoveragePhase].tasks.single.cpuSlots, 8);
+    expect(full.phases[flutterCoveragePhase].tasks.single.cpuSlots, 8);
+    expect(
+      full.phases[dartCoveragePhase].tasks.single.arguments,
+      contains('--jobs=8'),
+    );
+    expect(
+      full.phases[flutterCoveragePhase].tasks.single.arguments,
+      contains('--jobs=8'),
+    );
+  });
+
   test('canonical plans run each suite once on every host', () {
     final tests = WorkspaceVerificationPlans.tests(jobs: 4);
-    final full = WorkspaceVerificationPlans.full(jobs: 4);
+    final full = WorkspaceVerificationPlans.full(
+      jobs: 4,
+      serializeCoverage: false,
+    );
 
     expect(
       _commands(tests).where((value) => value.contains('_test-dart')),

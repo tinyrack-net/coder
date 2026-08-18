@@ -86,6 +86,12 @@ import 'package:protocol/protocol.dart';
 import 'package:relay_protocol/relay_protocol.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
+// The deferred launcher replaces this identity before it reaches a process
+// adapter. The runtime uses the value only to attach invocation limits.
+const _deferredLuaHostCommand = lua.LuaHostCommand(
+  executable: 'tinest-deferred-lua-host',
+);
+
 String _pluginIdOf(String contributionId) {
   final separator = contributionId.indexOf('/');
   return separator < 0
@@ -434,15 +440,19 @@ abstract final class DaemonApplication {
         loader: pluginLoader,
         cache: NativePluginRevisionCache(config.homeDirectory),
       );
-      final luaHost = await resolveLuaHostCommand(
-        sourceRoot: Directory.current.path,
+      final luaSourceRoot = Directory.current.path;
+      final luaProcessLauncher = DeferredLuaHostProcessLauncher(
+        () => resolveLuaHostCommand(
+          sourceRoot: luaSourceRoot,
+        ),
+        const SerializedLuaHostProcessLauncher(
+          lua.IoLuaHostProcessLauncher(),
+        ),
       );
       final pluginRuntime = PluginRuntime<ConversationAttachment>(
         luaRuntime: lua.LuaToolRuntime<ConversationAttachment>(
-          host: luaHost,
-          processLauncher: const SerializedLuaHostProcessLauncher(
-            lua.IoLuaHostProcessLauncher(),
-          ),
+          host: _deferredLuaHostCommand,
+          processLauncher: luaProcessLauncher,
           clock: _TinestLuaClock(effectiveClock),
           ids: _TinestLuaIds(effectiveIds),
         ),
@@ -545,10 +555,8 @@ abstract final class DaemonApplication {
       );
       final luaCodeMode = LuaCodeModeService(
         lua.LuaToolRuntime<ConversationAttachment>(
-          host: luaHost,
-          processLauncher: const SerializedLuaHostProcessLauncher(
-            lua.IoLuaHostProcessLauncher(),
-          ),
+          host: _deferredLuaHostCommand,
+          processLauncher: luaProcessLauncher,
           clock: _TinestLuaClock(effectiveClock),
           ids: _TinestLuaIds(effectiveIds),
         ),

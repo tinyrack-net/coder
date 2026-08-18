@@ -329,7 +329,10 @@ Future<int> _executeTinestQuality(
       );
     case _TinestQualityCommand.verify:
       return _runPlan(
-        WorkspaceVerificationPlans.full(jobs: options.jobs),
+        WorkspaceVerificationPlans.full(
+          jobs: options.jobs,
+          serializeCoverage: Platform.isWindows,
+        ),
         jobs: options.jobs,
         reportPath: options.reportPath,
         out: out,

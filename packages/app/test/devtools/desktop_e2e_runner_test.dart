@@ -94,6 +94,10 @@ void main() {
     expect(result.exitCode, 0);
     expect(result.lanes.map((lane) => lane.seed), <int>[100, 101]);
     expect(runtime.deleted, <int>[0, 1]);
+    expect(
+      runtime.commands.map((command) => command.environment['TMPDIR']),
+      <String>[r'C:\temp\lane-0', r'C:\temp\lane-1'],
+    );
   });
 
   test('Windows lane build phases do not overlap', () async {
@@ -123,6 +127,19 @@ void main() {
     expect(result.exitCode, 0);
     expect(result.lanes.map((lane) => lane.seed), <int>[200, 201]);
     expect(runtime.builds.maximumActiveBuilds, 1);
+    expect(
+      runtime.projectBuildCacheResets,
+      2,
+      reason:
+          'the runner must invalidate shared Flutter ownership both before '
+          'the E2E targets and after every lane has exited',
+    );
+    expect(runtime.windowsPreparationEvents, <String>[
+      'project-cache',
+      'lane-0',
+      'lane-1',
+      'project-cache',
+    ]);
   });
 
   test(
@@ -265,6 +282,34 @@ void main() {
   });
 
   test(
+    'Windows invalidates project cache after lane resource cleanup fails',
+    () async {
+      final cleanupFailure = StateError('lane cleanup failed');
+      final runtime = _FakeDesktopE2eRuntime(
+        laneResourceDeletionFailure: cleanupFailure,
+      );
+      final run = DesktopE2eRunner(runtime: runtime).run(
+        DesktopE2ePlan.forHost(DesktopHost.windows),
+        jobs: 1,
+        seed: 10,
+      );
+      await Future<void>.delayed(Duration.zero);
+      final failure = expectLater(run, throwsA(same(cleanupFailure)));
+
+      runtime.processes.single
+        ..markReady()
+        ..finish(0);
+
+      await failure;
+      expect(
+        runtime.projectBuildCacheResets,
+        2,
+        reason: 'the final invalidation must run even when lane cleanup fails',
+      );
+    },
+  );
+
+  test(
     'lanes use independent home config readiness and build directories',
     () async {
       final runtime = _FakeDesktopE2eRuntime();
@@ -296,6 +341,14 @@ void main() {
         ),
         <String>[r'C:\home\lane-0', r'C:\home\lane-1'],
       );
+      expect(
+        runtime.commands.map((command) => command.environment['TEMP']),
+        <String>[r'C:\temp\lane-0', r'C:\temp\lane-1'],
+      );
+      expect(
+        runtime.commands.map((command) => command.environment['TMP']),
+        <String>[r'C:\temp\lane-0', r'C:\temp\lane-1'],
+      );
     },
   );
 
@@ -316,6 +369,7 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
   _FakeDesktopE2eRuntime({
     _FakeSharedBuildCoordinator? builds,
     Set<String> missingWindowsGeneratedSources = const <String>{},
+    this.laneResourceDeletionFailure,
   }) : builds = builds ?? _FakeSharedBuildCoordinator(),
        missingWindowsGeneratedSources = <String>{
          ...missingWindowsGeneratedSources,
@@ -323,7 +377,10 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
 
   final _FakeSharedBuildCoordinator builds;
   final Set<String> missingWindowsGeneratedSources;
+  final Error? laneResourceDeletionFailure;
   bool startedWithIncompleteWindowsState = false;
+  int projectBuildCacheResets = 0;
+  final List<String> windowsPreparationEvents = <String>[];
   final List<int> invalidatedWindowsLanes = <int>[];
   final List<DesktopE2eCommand> commands = <DesktopE2eCommand>[];
   final List<_FakeProcess> processes = <_FakeProcess>[];
@@ -345,12 +402,15 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
       DesktopE2eLaneResources(
         home: 'C:\\home\\lane-$laneIndex',
         configHome: 'C:\\config\\lane-$laneIndex',
+        temporaryDirectory: 'C:\\temp\\lane-$laneIndex',
         readinessMarker: 'C:\\ready\\lane-$laneIndex',
       );
 
   @override
   Future<void> deleteLaneResources(DesktopE2eLaneResources resources) async {
     deleted.add(int.parse(resources.home.substring(resources.home.length - 1)));
+    final failure = laneResourceDeletionFailure;
+    if (failure != null) throw failure;
   }
 
   @override
@@ -359,7 +419,15 @@ final class _FakeDesktopE2eRuntime implements DesktopE2eRuntime {
     int laneIndex,
   ) async {
     invalidatedWindowsLanes.add(laneIndex);
+    windowsPreparationEvents.add('lane-$laneIndex');
     missingWindowsGeneratedSources.clear();
+  }
+
+  @override
+  Future<void> resetWindowsProjectBuildCache(String projectDirectory) async {
+    expect(builds.activeProjectBuilds, 1);
+    projectBuildCacheResets += 1;
+    windowsPreparationEvents.add('project-cache');
   }
 
   @override
@@ -379,6 +447,8 @@ final class _FakeSharedBuildCoordinator {
       <int, _FakeBuildLeaseCoordinator>{};
 
   int get maximumActiveBuilds => _project.maximumActiveBuilds;
+
+  int get activeProjectBuilds => _project.activeBuilds;
 
   Future<_FakeDesktopE2eBuildLease> acquireProject() => _project.acquire();
 

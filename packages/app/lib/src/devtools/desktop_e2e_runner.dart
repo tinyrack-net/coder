@@ -212,6 +212,7 @@ final class DesktopE2eLaneResources {
   const DesktopE2eLaneResources({
     required this.home,
     required this.configHome,
+    required this.temporaryDirectory,
     required this.readinessMarker,
   });
 
@@ -220,6 +221,9 @@ final class DesktopE2eLaneResources {
 
   /// Isolated Flutter configuration home.
   final String configHome;
+
+  /// Isolated process temporary directory.
+  final String temporaryDirectory;
 
   /// Application readiness marker path.
   final String readinessMarker;
@@ -266,6 +270,10 @@ abstract interface class DesktopE2eRuntime {
     String projectDirectory,
     int laneIndex,
   );
+
+  /// Invalidates Flutter's shared incremental build cache before the first
+  /// Windows lane creates target-specific build state.
+  Future<void> resetWindowsProjectBuildCache(String projectDirectory);
 
   /// Resets [laneIndex]'s Windows output before Flutter recreates ephemeral
   /// files.
@@ -354,23 +362,59 @@ final class DesktopE2eRunner {
               ],
             ),
           ];
-    final running = <Future<DesktopE2eLaneResult>>[];
-    final first = await _startLane(plan, lanes.first, seed);
-    running.add(first.result);
-    if (lanes.length > 1) {
-      await first.buildReady;
-      running.add((await _startLane(plan, lanes[1], seed + 1)).result);
+    final windowsProjectDirectory = plan.host == DesktopHost.windows
+        ? plan.commandForLane(lanes.first, seed: seed).workingDirectory
+        : null;
+    try {
+      final running = <Future<DesktopE2eLaneResult>>[];
+      final first = await _startLane(
+        plan,
+        lanes.first,
+        seed,
+        resetWindowsProjectBuildCache: true,
+      );
+      running.add(first.result);
+      if (lanes.length > 1) {
+        await first.buildReady;
+        running.add(
+          (await _startLane(
+            plan,
+            lanes[1],
+            seed + 1,
+            resetWindowsProjectBuildCache: false,
+          )).result,
+        );
+      }
+      final results = await Future.wait(running);
+      results.sort(
+        (left, right) => left.lane.index.compareTo(right.lane.index),
+      );
+      return DesktopE2eRunResult(results);
+    } finally {
+      if (windowsProjectDirectory != null) {
+        final lease = await runtime.acquireProjectBuildLease(
+          windowsProjectDirectory,
+        );
+        try {
+          // Flutter test targets and the ordinary desktop target share
+          // generated wrapper sources but track ownership in
+          // `.dart_tool/flutter_build`. Leave that ownership invalidated so
+          // the next Flutter command must reconcile the shared sources instead
+          // of trusting an E2E target hash.
+          await runtime.resetWindowsProjectBuildCache(windowsProjectDirectory);
+        } finally {
+          await lease.release();
+        }
+      }
     }
-    final results = await Future.wait(running);
-    results.sort((left, right) => left.lane.index.compareTo(right.lane.index));
-    return DesktopE2eRunResult(results);
   }
 
   Future<_RunningLane> _startLane(
     DesktopE2ePlan plan,
     DesktopE2eLane lane,
-    int seed,
-  ) async {
+    int seed, {
+    required bool resetWindowsProjectBuildCache,
+  }) async {
     final resources = await runtime.createLaneResources(lane.index);
     final stopwatch = Stopwatch()..start();
     final command = plan.commandForLane(lane, seed: seed).withEnvironment(
@@ -379,9 +423,18 @@ final class DesktopE2eRunner {
         'TINYRACK_TINEST_HOME': resources.home,
         'TINYRACK_TINEST_ALLOW_MULTIPLE_INSTANCES': '1',
         'TINYRACK_TINEST_E2E_READY_FILE': resources.readinessMarker,
-        if (plan.host == DesktopHost.windows) 'APPDATA': resources.configHome,
-        if (plan.host != DesktopHost.windows)
+        if (plan.host == DesktopHost.windows) ...<String, String>{
+          'APPDATA': resources.configHome,
+          // Concurrent Flutter tools otherwise share `%TEMP%`; a failed
+          // platform process can remove another lane's listener directory
+          // while that lane is still finalizing its test protocol.
+          'TEMP': resources.temporaryDirectory,
+          'TMP': resources.temporaryDirectory,
+        },
+        if (plan.host != DesktopHost.windows) ...<String, String>{
           'XDG_CONFIG_HOME': resources.configHome,
+          'TMPDIR': resources.temporaryDirectory,
+        },
       },
     );
     DesktopE2eBuildLease? projectBuildLease;
@@ -395,6 +448,11 @@ final class DesktopE2eRunner {
         projectBuildLease = await runtime.acquireProjectBuildLease(
           command.workingDirectory,
         );
+        if (resetWindowsProjectBuildCache) {
+          await runtime.resetWindowsProjectBuildCache(
+            command.workingDirectory,
+          );
+        }
         await runtime.resetWindowsLaneBuild(
           command.workingDirectory,
           lane.index,

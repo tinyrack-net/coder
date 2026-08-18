@@ -342,7 +342,19 @@ Future<void> _waitForProviderStart(
   try {
     await pumpUntilCondition(
       tester,
-      () => provider.firstTurnStarted.isCompleted,
+      () async {
+        if (provider.firstTurnStarted.isCompleted) return true;
+        final current = (await client.sessions.listSessions(
+          worktreeId: worktreeId,
+        )).singleWhere((candidate) => candidate.id == sessionId);
+        if (current.status == SessionStatus.failed) {
+          throw TestFailure(
+            'The first adversity turn failed before reaching the provider: '
+            '${current.lastError ?? 'unknown error'}.',
+          );
+        }
+        return false;
+      },
       'the adversity provider to receive the first turn',
     );
   } on TestFailure catch (error) {
@@ -351,10 +363,11 @@ Future<void> _waitForProviderStart(
     )).singleWhere((candidate) => candidate.id == sessionId);
     final timeline = await client.sessions.subscribeTimeline(sessionId);
     final events = timeline
-        .map((event) => '${event.sequence}:${event.type}')
+        .map((event) => '${event.sequence}:${event.type}:${event.data}')
         .join(', ');
     throw TestFailure(
       '$error Session status: ${session.status.name}; '
+      'lastError: ${session.lastError}; '
       'timeline: [$events].',
     );
   }

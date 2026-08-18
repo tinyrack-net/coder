@@ -2,28 +2,44 @@ import 'dart:io';
 
 import 'package:app/testing/devtools/desktop_e2e_runner.dart';
 
-/// Removes one E2E lane's Windows output and Flutter's shared generated files.
+/// Removes Flutter's shared incremental build cache before Windows E2E.
 ///
-/// Every Windows build directory compiles sources from
-/// `windows/flutter/ephemeral`. Switching between the ordinary app build and
-/// isolated E2E build directories can therefore leave a valid CMake project
-/// pointing at wrapper sources another build removed. The project build lease
-/// protects both generated subtrees while Flutter recreates them.
+/// Flutter desktop targets with different entrypoints share
+/// `windows/flutter/ephemeral`, but cache their output ownership under
+/// `.dart_tool/flutter_build`. Keeping an ordinary target's stale ownership
+/// record while E2E target hashes come and go can make the next ordinary build
+/// delete shared wrapper sources and then skip the target that restores them.
+/// The first E2E lane invalidates the cache under the project build lease;
+/// later lanes must retain the fresh cache created by that transition.
+Future<void> resetWindowsE2eProjectBuildCache(
+  String projectDirectory,
+) async {
+  final project = Directory(projectDirectory).absolute;
+  final target = _validatedGeneratedDirectory(
+    project,
+    '.dart_tool/flutter_build',
+  );
+  await target?.delete(recursive: true);
+}
+
+/// Removes the persistent Windows build subtree owned by one E2E lane.
+///
+/// Flutter owns `windows/flutter/ephemeral`, which is shared by every build
+/// directory. Deleting that directory outside Flutter can leave its first
+/// incremental invocation compiling CMake targets before the client wrapper
+/// sources have been restored. Invalidating the lane output is sufficient to
+/// make Flutter reconcile its own generated inputs without racing that shared
+/// state.
 Future<void> resetWindowsE2eLaneBuild({
   required String projectDirectory,
   required int laneIndex,
 }) async {
   final project = Directory(projectDirectory).absolute;
-  final targets = <Directory?>[
-    _validatedGeneratedDirectory(
-      project,
-      desktopE2eWindowsLaneBuildPath(laneIndex),
-    ),
-    _validatedGeneratedDirectory(project, 'windows/flutter/ephemeral'),
-  ];
-  for (final target in targets.nonNulls) {
-    await target.delete(recursive: true);
-  }
+  final target = _validatedGeneratedDirectory(
+    project,
+    desktopE2eWindowsLaneBuildPath(laneIndex),
+  );
+  await target?.delete(recursive: true);
 }
 
 Directory? _validatedGeneratedDirectory(

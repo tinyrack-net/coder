@@ -66,7 +66,10 @@ void main() {
 
   test('full verification delegates shared policy upstream', () {
     final commands = <String>[
-      for (final phase in WorkspaceVerificationPlans.full(jobs: 4).phases)
+      for (final phase in WorkspaceVerificationPlans.full(
+        jobs: 4,
+        serializeCoverage: false,
+      ).phases)
         for (final task in phase.tasks) task.arguments.join(' '),
     ];
     expect(commands, contains(contains('tinyrack_workspace source-check')));
@@ -110,6 +113,10 @@ void main() {
 
     expect(application, contains("const <String>{'native-assets'}"));
     expect(application, contains('Platform.isWindows'));
+    expect(
+      application,
+      contains('serializeCoverage: Platform.isWindows'),
+    );
   });
 
   test('generation normalizes generated sources after build_runner', () {

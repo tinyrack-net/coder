@@ -59,7 +59,8 @@ class ChatTimelineView extends StatefulWidget {
   /// Reading position to restore, or null to open at the newest message.
   final TRVirtualListSnapshot<String>? readingPosition;
 
-  /// Reports the position worth restoring for a conversation being left.
+  /// Reports the position worth restoring after scrolling settles and when a
+  /// conversation is being left.
   ///
   /// A null snapshot means the reader was at the newest message and should
   /// arrive there again rather than at whatever row they last stopped on.
@@ -114,7 +115,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   final Set<String> _expanded = <String>{};
   final Map<String, Future<Uint8List>> _attachmentCache =
       <String, Future<Uint8List>>{};
-  final TRVirtualListController<String> _virtualListController =
+  TRVirtualListController<String> _virtualListController =
       TRVirtualListController<String>();
   // The position to hand back when this conversation is left, kept current
   // while the list is laid out because `deactivate` is too late to ask it
@@ -131,11 +132,27 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   int _entryCount = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // A restored snapshot remains the current reading position until a
+    // settled scroll proves that the reader reached the trailing edge. The
+    // final row can be taller than the viewport, so merely seeing its index
+    // does not mean the reader is at its end.
+    _readingPosition = widget.readingPosition;
+  }
+
+  @override
   void didUpdateWidget(covariant ChatTimelineView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sessionKey == widget.sessionKey) return;
     _reportReadingPosition(oldWidget.sessionKey);
-    _readingPosition = null;
+    // The keyed list below remounts so the incoming session can resolve its
+    // own initial target. Give it a controller of its own as well: Flutter can
+    // mount the replacement before disposing the previous keyed child, and a
+    // TRVirtualListController intentionally rejects two simultaneous lists.
+    _virtualListController.dispose();
+    _virtualListController = TRVirtualListController<String>();
+    _readingPosition = widget.readingPosition;
     _expanded.clear();
     _attachmentCache.clear();
   }
@@ -206,9 +223,36 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
 
   void _onVisibleRangeChanged(TRVirtualListRange<String> range) {
     final hasUnreadBelow = range.lastIndex < _entryCount - 1;
-    _readingPosition = hasUnreadBelow
+    // Range changes keep anchors fresh while rows enter and leave the
+    // viewport. They must not clear an anchor: a single tall final row has the
+    // same range both halfway through and at the trailing edge. Scroll-end
+    // metrics below are the only authoritative trailing-edge signal.
+    if (hasUnreadBelow) {
+      _readingPosition = _virtualListController.takeSnapshot();
+    }
+  }
+
+  bool _onScrollEnd(ScrollEndNotification notification) {
+    if (notification.depth != 0 || _entryCount == 0) return false;
+    // A visible range changes only when its first or last row changes. A long
+    // Markdown row can therefore move by whole viewports without another
+    // range callback, so the settled scroll offset is the authoritative place
+    // to refresh the snapshot a tab switch will retain.
+    final nextPosition = notification.metrics.extentAfter > 1
         ? _virtualListController.takeSnapshot()
         : null;
+    final followModeChanged =
+        (_readingPosition == null) != (nextPosition == null);
+    if (followModeChanged) {
+      setState(() => _readingPosition = nextPosition);
+    } else {
+      _readingPosition = nextPosition;
+    }
+    // Checkpoint while the list is still attached. Relying on deactivate as
+    // the first report makes a rapid tab switch race the deferred parent-store
+    // write against construction of the returning timeline.
+    _reportReadingPosition(widget.sessionKey);
+    return false;
   }
 
   /// Folds or unfolds a row while holding it still on screen.
@@ -273,18 +317,31 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     ];
     _entryCount = entries.length;
     final olderStatus = _olderPageStatus(context);
-    final list = TRVirtualList<_ChatTimelineEntry, String>(
+    final virtualList = TRVirtualList<_ChatTimelineEntry, String>(
+      // A session owns its initial trailing/snapshot target. Reusing the
+      // virtual-list State across a tab switch preserves the previous
+      // session's already-resolved target, so a newly supplied snapshot is
+      // never applied even though its item keys are present.
+      key: ValueKey<String>(widget.sessionKey),
       items: entries,
       itemKey: (entry) => entry.key,
       estimatedItemExtent: _estimatedItemExtent,
       controller: _virtualListController,
       // No `pageStorageId`: the component's own restore outranks
       // `initialPosition`, so a conversation that was ever shorter than its
-      // viewport reopens pinned to its oldest message forever. Restoration is
-      // owned here instead, and only offered when it is what the reader wants.
+      // viewport reopens pinned to its oldest message forever. Restoration
+      // is owned here instead, and only offered when it is what the reader
+      // wants.
       initialPosition: const TRVirtualListInitialPosition<String>.trailing(),
       initialSnapshot: widget.readingPosition,
-      follow: TRVirtualListFollow.trailing,
+      // A restored reader is not trailing-pinned while the virtual list
+      // replaces estimated row extents with measurements. Enabling trailing
+      // follow during that initial correction can overwrite the snapshot and
+      // jump to the newest message. Re-enable it only after settled metrics
+      // prove that the reader reached the end.
+      follow: _readingPosition == null
+          ? TRVirtualListFollow.trailing
+          : TRVirtualListFollow.none,
       scrollCacheExtent: const .viewport(4),
       onVisibleRangeChanged: _onVisibleRangeChanged,
       leadingEdgeRequest: _olderPageRequest(),
@@ -305,7 +362,9 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           child: Padding(
             // tinyrack-check-ignore-next-line tokens/no-literal -- each conditional branch uses only public spacing tokens or EdgeInsets.zero
             padding:
-                const EdgeInsets.symmetric(horizontal: TRSpacing.extraLarge) +
+                const EdgeInsets.symmetric(
+                  horizontal: TRSpacing.extraLarge,
+                ) +
                 (index == 0
                     ? const EdgeInsets.only(top: TRSpacing.large)
                     : EdgeInsets.zero) +
@@ -322,6 +381,10 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
           ),
         );
       },
+    );
+    final list = NotificationListener<ScrollEndNotification>(
+      onNotification: _onScrollEnd,
+      child: virtualList,
     );
     // The stack is unconditional: making it appear only while a page is in
     // flight would re-inflate the list beneath it, and one controller drives

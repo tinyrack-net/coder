@@ -117,16 +117,31 @@ void main() {
         findsNothing,
         reason: 'the oldest turn is beyond the page loaded on entry',
       );
+      final initialPageKeys = tester
+          .widget<ChatTimelineView>(find.byType(ChatTimelineView))
+          .items
+          .map((item) => item.key)
+          .toSet();
 
       // 2. A reader who leaves with messages below them returns to their spot.
       //    The anchor is inside the page loaded on entry on purpose: a switch
       //    disposes the conversation and reloads that page, so an anchor from
       //    deeper history is deliberately not restorable (see 4).
-      for (var drag = 0; drag < 3; drag += 1) {
+      ({String key, double viewportOffset})? leftAt;
+      for (var drag = 0; drag < 3 && leftAt == null; drag += 1) {
         await tester.drag(_timeline, const Offset(0, 600));
         await tester.pump(const Duration(milliseconds: 100));
+        if (_position(tester).extentAfter > 1) {
+          leftAt = _firstFullyVisibleAnchor(tester, initialPageKeys);
+        }
       }
-      final leftAt = _fullyVisibleAnchor(tester);
+      final savedPosition = leftAt;
+      if (savedPosition == null) {
+        throw TestFailure(
+          'The initial history page had no fully visible row away from its '
+          'trailing edge.',
+        );
+      }
       expect(
         _position(tester).extentAfter,
         greaterThan(1),
@@ -134,22 +149,53 @@ void main() {
       );
       await _activateSession(tester, '다른 대화', 'other-session');
       await _activateSession(tester, '긴 대화', 'history-session');
-      final restoredItem = _chatItem(leftAt.key);
-      await pumpUntilCondition(
-        tester,
-        () {
-          if (restoredItem.evaluate().length != 1) return false;
-          final viewport = tester.getRect(_timeline);
-          final item = tester.getRect(restoredItem);
-          return ((item.top - viewport.top) - leftAt.viewportOffset).abs() <=
-                  _geometryTolerance &&
-              _position(tester).extentAfter > 1;
-        },
-        'the saved history row to return to its viewport position',
-      );
+      final restoredItem = _chatItem(savedPosition.key);
+      var restorationState = 'the restored timeline was not evaluated';
+      try {
+        await pumpUntilCondition(
+          tester,
+          () {
+            final matchingItems = restoredItem.evaluate().length;
+            final timeline = tester.widget<ChatTimelineView>(
+              find.byType(ChatTimelineView),
+            );
+            if (matchingItems != 1) {
+              final scrollables = _timeline.evaluate().length;
+              final extentAfter = scrollables == 1
+                  ? _position(tester).extentAfter.toString()
+                  : 'unavailable';
+              final modelContains = timeline.items.any(
+                (item) => item.key == savedPosition.key,
+              );
+              restorationState =
+                  'matchingItems=$matchingItems, '
+                  'modelContains=$modelContains, '
+                  'modelItems=${timeline.items.length}, '
+                  'snapshot=${timeline.readingPosition != null}, '
+                  'extentAfter=$extentAfter';
+              return false;
+            }
+            final viewport = tester.getRect(_timeline);
+            final item = tester.getRect(restoredItem);
+            final restoredOffset = item.top - viewport.top;
+            final hasSnapshot = timeline.readingPosition != null;
+            restorationState =
+                'matchingItems=1, snapshot=$hasSnapshot, '
+                'expectedOffset=${savedPosition.viewportOffset}, '
+                'actualOffset=$restoredOffset, '
+                'extentAfter=${_position(tester).extentAfter}';
+            return (restoredOffset - savedPosition.viewportOffset).abs() <=
+                    _geometryTolerance &&
+                _position(tester).extentAfter > 1;
+          },
+          'the saved history row to return to its viewport position',
+        );
+      } on TestFailure catch (error) {
+        throw TestFailure('$error Last restoration state: $restorationState');
+      }
       expect(
         tester.getTopLeft(restoredItem).dy - tester.getTopLeft(_timeline).dy,
-        closeTo(leftAt.viewportOffset, _geometryTolerance),
+        closeTo(savedPosition.viewportOffset, _geometryTolerance),
         reason: 'a reader who left with messages below them returns to them',
       );
       expect(
@@ -238,8 +284,9 @@ Finder _chatItem(String key) => find.byWidgetPredicate(
   description: 'chat item $key',
 );
 
-({String key, double viewportOffset}) _fullyVisibleAnchor(
+({String key, double viewportOffset})? _firstFullyVisibleAnchor(
   WidgetTester tester,
+  Set<String> allowedKeys,
 ) {
   final viewport = tester.getRect(_timeline);
   final visible = <({String key, double viewportOffset})>[];
@@ -248,6 +295,7 @@ Finder _chatItem(String key) => find.byWidgetPredicate(
     matching: find.byType(ChatItemView),
   );
   for (final widget in tester.widgetList<ChatItemView>(items)) {
+    if (!allowedKeys.contains(widget.item.key)) continue;
     final item = tester.getRect(find.byWidget(widget));
     if (item.top < viewport.top || item.bottom > viewport.bottom) continue;
     visible.add((
@@ -255,11 +303,7 @@ Finder _chatItem(String key) => find.byWidgetPredicate(
       viewportOffset: item.top - viewport.top,
     ));
   }
-  if (visible.isEmpty) {
-    throw TestFailure(
-      'The scrolled transcript had no fully visible item to restore.',
-    );
-  }
+  if (visible.isEmpty) return null;
   visible.sort(
     (left, right) => left.viewportOffset.compareTo(right.viewportOffset),
   );

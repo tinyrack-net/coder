@@ -4,12 +4,14 @@ import 'package:app/testing/app/composition/app_services.dart';
 import 'package:app/testing/app/tinest_app.dart';
 import 'package:app/testing/features/desktop/domain/tray_menu_model.dart';
 import 'package:app/testing/features/desktop/infrastructure/desktop_shell.dart';
+import 'package:app/testing/features/hosts/application/host_controller.dart';
 import 'package:app/testing/features/hosts/domain/host_models.dart';
 import 'package:app/testing/features/hosts/domain/host_ports.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
 import 'package:desktop_app/src/embedded_daemon.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -221,6 +223,20 @@ void main() {
           autostart: _RecordingAutostart(),
         ),
       );
+      final hostRegistry = ProviderScope.containerOf(
+        tester.element(find.byType(MaterialApp)),
+        listen: false,
+      ).read(hostRegistryControllerProvider.notifier);
+      // Await the restarted daemon before the earlier temp-directory teardown.
+      // Riverpod disposal is asynchronous and cannot itself be joined by the
+      // test binding, so an unmount alone races the Windows file deletion.
+      addTearDown(() async {
+        try {
+          await hostRegistry.shutdown();
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+        }
+      });
       await pumpUntilCondition(
         tester,
         () => launcher.serverIds.isNotEmpty,

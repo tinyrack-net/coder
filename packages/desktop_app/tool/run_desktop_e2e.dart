@@ -102,6 +102,10 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
     desktopE2eWindowsLaneBuildPath(laneIndex),
   );
 
+  @override
+  Future<void> resetWindowsProjectBuildCache(String projectDirectory) =>
+      resetWindowsE2eProjectBuildCache(projectDirectory);
+
   Future<DesktopE2eBuildLease> _acquireBuildLease(
     String projectDirectory,
     String resource,
@@ -138,8 +142,12 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
     );
     final home = Directory('${root.path}${Platform.pathSeparator}home');
     final config = Directory('${root.path}${Platform.pathSeparator}config');
+    final temporary = Directory(
+      '${root.path}${Platform.pathSeparator}temporary',
+    );
     await home.create();
     await config.create();
+    await temporary.create();
     final settings = Platform.isWindows
         ? File('${config.path}${Platform.pathSeparator}.flutter_settings')
         : File(
@@ -153,6 +161,7 @@ final class _IoDesktopE2eRuntime implements DesktopE2eRuntime {
     return DesktopE2eLaneResources(
       home: home.path,
       configHome: config.path,
+      temporaryDirectory: temporary.path,
       readinessMarker: '${root.path}${Platform.pathSeparator}application.ready',
     );
   }
