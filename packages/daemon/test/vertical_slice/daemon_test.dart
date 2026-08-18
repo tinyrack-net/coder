@@ -517,7 +517,10 @@ void main() {
         _eventTimeout,
       );
       final completedFuture = client.sessions.timelineEvents
-          .firstWhere((event) => event.type == 'turn.completed')
+          .firstWhere(
+            (event) =>
+                event.type == 'turn.completed' || event.type == 'turn.failed',
+          )
           .timeout(_eventTimeout);
       await client.startTurn(
         sessionId: agent.id,
@@ -528,7 +531,12 @@ void main() {
       expect(approval.toolName, 'apply_patch');
       expect(approval.preview, contains('result.txt'));
       await client.resolveApproval(approvalId: approval.id, approved: true);
-      await completedFuture;
+      final outcome = await completedFuture;
+      expect(
+        outcome.type,
+        'turn.completed',
+        reason: 'Turn failed: ${outcome.data}',
+      );
       await _waitForIdleSession(client, checkout.id, agent.id);
 
       expect(
@@ -1134,7 +1142,8 @@ void main() {
       final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
-                event.sessionId == parent.id && event.type == 'turn.completed',
+                event.sessionId == parent.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
           )
           .timeout(_eventTimeout);
       await client.subscribeTimeline(parent.id);
@@ -1143,7 +1152,12 @@ void main() {
         turnId: 'parent-turn',
         prompt: 'Review this workspace.',
       );
-      await completed;
+      final outcome = await completed;
+      expect(
+        outcome.type,
+        'turn.completed',
+        reason: 'Parent turn failed: ${outcome.data}',
+      );
 
       expect(await client.listSubagents(parent.id), hasLength(1));
       final timeline = await client.subscribeTimeline(parent.id);
@@ -2108,7 +2122,8 @@ blocked/
       final completedFuture = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
-                event.sessionId == session.id && event.type == 'turn.completed',
+                event.sessionId == session.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
           )
           .timeout(_eventTimeout);
 
@@ -2154,7 +2169,12 @@ blocked/
         throwsA(isA<TinestClientException>()),
       );
 
-      await completedFuture;
+      final askOutcome = await completedFuture;
+      expect(
+        askOutcome.type,
+        'turn.completed',
+        reason: 'Ask turn failed: ${askOutcome.data}',
+      );
       await _waitForIdleSession(
         client,
         registered.worktrees.single.id,
@@ -2252,7 +2272,8 @@ blocked/
       final completed = client.sessions.timelineEvents
           .firstWhere(
             (event) =>
-                event.sessionId == session.id && event.type == 'turn.completed',
+                event.sessionId == session.id &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
           )
           .timeout(_eventTimeout);
       await client.subscribeTimeline(session.id);
@@ -2261,7 +2282,12 @@ blocked/
         turnId: 'broken-turn',
         prompt: 'Write a file.',
       );
-      await completed;
+      final brokenOutcome = await completed;
+      expect(
+        brokenOutcome.type,
+        'turn.completed',
+        reason: 'Broken-server turn failed: ${brokenOutcome.data}',
+      );
       await _waitForIdleSession(
         client,
         registered.worktrees.single.id,
