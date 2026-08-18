@@ -725,6 +725,65 @@ void main() {
   );
 
   testWidgets(
+    'a missing restored anchor falls back to trailing and follows new messages',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final fullHistory = _messages(72, prefix: 'paged');
+      const sessionId = 'missing-anchor-session';
+      await _pumpTimeline(
+        tester,
+        items: fullHistory,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+
+      final position = _scrollPosition(tester);
+      position.jumpTo(position.maxScrollExtent * 0.35);
+      await tester.pump();
+      expect(
+        positions,
+        contains('conversation:$_hostId:$sessionId'),
+        reason: 'the unloaded historical anchor must be retained',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      final initialPage = fullHistory.skip(60).toList();
+      await _pumpTimeline(
+        tester,
+        items: initialPage,
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pumpAndSettle();
+      _expectTrailingPinned(tester, reason: 'missing anchor fallback');
+
+      final latest = ChatUserMessage(
+        key: 'paged-latest',
+        turnId: 'turn-paged-latest',
+        createdAt: _createdAt.add(const Duration(minutes: 2)),
+        text: 'latest after the initial page was restored',
+      );
+      await _pumpTimeline(
+        tester,
+        items: <ChatItem>[...initialPage, latest],
+        positions: positions,
+        sessionId: sessionId,
+      );
+      await tester.pump();
+
+      _expectTrailingPinned(tester, reason: 'new message after fallback');
+      expect(find.byKey(ValueKey<String>(latest.key)), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'leaving after scrolling within one tall row restores the final viewport '
     'offset',
     tags: const <String>[

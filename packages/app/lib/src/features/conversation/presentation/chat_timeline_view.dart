@@ -241,13 +241,7 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     final nextPosition = notification.metrics.extentAfter > 1
         ? _virtualListController.takeSnapshot()
         : null;
-    final followModeChanged =
-        (_readingPosition == null) != (nextPosition == null);
-    if (followModeChanged) {
-      setState(() => _readingPosition = nextPosition);
-    } else {
-      _readingPosition = nextPosition;
-    }
+    _readingPosition = nextPosition;
     // Checkpoint while the list is still attached. Relying on deactivate as
     // the first report makes a rapid tab switch race the deferred parent-store
     // write against construction of the returning timeline.
@@ -334,14 +328,11 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
       // wants.
       initialPosition: const TRVirtualListInitialPosition<String>.trailing(),
       initialSnapshot: widget.readingPosition,
-      // A restored reader is not trailing-pinned while the virtual list
-      // replaces estimated row extents with measurements. Enabling trailing
-      // follow during that initial correction can overwrite the snapshot and
-      // jump to the newest message. Re-enable it only after settled metrics
-      // prove that the reader reached the end.
-      follow: _readingPosition == null
-          ? TRVirtualListFollow.trailing
-          : TRVirtualListFollow.none,
+      // The shared list resolves whether the effective initial target is a
+      // restorable item or the trailing fallback. Keeping follow enabled lets
+      // an unavailable history anchor fall back to newest and stay there as
+      // live messages arrive.
+      follow: TRVirtualListFollow.trailing,
       scrollCacheExtent: const .viewport(4),
       onVisibleRangeChanged: _onVisibleRangeChanged,
       leadingEdgeRequest: _olderPageRequest(),
