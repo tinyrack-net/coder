@@ -25,3 +25,14 @@ runs:
         # setup step is not faster than the 4.5 minutes it took before, drop
         # the condition and cache unconditionally again.
         cache: ${{ runner.os != 'Windows' }}
+        # Restore the pub cache into the runner *instance's* own tool cache,
+        # never into the shared home. The self-hosted Mac mini runs two runner
+        # instances as one user; both restoring the same key into
+        # ~/.pub-cache made two tars race in one directory, tearing package
+        # files (EEXIST/ENOENT/EBADF storms) that `dart pub get
+        # --enforce-lockfile` accepts and the native build hooks then fail to
+        # compile with exit 254. runner.tool_cache is disjoint per instance
+        # (01/_work/_tool vs 02/_work/_tool), so the cache key can stay
+        # shared while the restore targets never overlap. flutter-action
+        # exports PUB_CACHE to this path, so every later step follows.
+        pub-cache-path: ${{ runner.tool_cache }}/pub-cache
