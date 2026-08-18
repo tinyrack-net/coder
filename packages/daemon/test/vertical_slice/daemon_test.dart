@@ -3510,10 +3510,28 @@ blocked/
       );
 
       await File(blobPath).writeAsBytes(imageBytes);
+      // The retry turn runs detached, so wait on its own terminal timeline
+      // event rather than on the provider call: a failure before the model
+      // opens would otherwise leave nothing to wait for and only the wall
+      // clock would fire, without the failure payload.
+      final retryTerminal = client.sessions.timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == session.id &&
+                event.turnId == 'retry-turn' &&
+                (event.type == 'turn.completed' || event.type == 'turn.failed'),
+          )
+          .timeout(_eventTimeout);
       await client.startTurn(
         sessionId: session.id,
         turnId: 'retry-turn',
         prompt: 'Retry after the failure.',
+      );
+      final retryOutcome = await retryTerminal;
+      expect(
+        retryOutcome.type,
+        'turn.completed',
+        reason: 'Retry turn failed: ${retryOutcome.data}',
       );
       await provider.firstRequest.future.timeout(_eventTimeout);
       await _waitForIdleSession(
