@@ -63,6 +63,9 @@ void main() {
   final cliSmoke = File(
     '.github/actions/smoke-cli-bundle/action.yml',
   ).readAsStringSync();
+  final linuxDesktopDependencies = File(
+    '.github/actions/install-linux-desktop-deps/action.yml',
+  ).readAsStringSync();
 
   test('normal quality jobs do not run in the nightly workflow', () {
     for (final job in <String>[
@@ -162,6 +165,55 @@ void main() {
       greaterThan(1),
     );
     expect(workflow, isNot(contains('subosito/flutter-action')));
+  });
+
+  test('Linux dependency downloads cannot consume the whole desktop job', () {
+    expect(loadYaml(linuxDesktopDependencies), isA<YamlMap>());
+    expect(
+      linuxDesktopDependencies,
+      contains(r'Dir::State::lists="$fresh_lists"'),
+    );
+    expect(
+      linuxDesktopDependencies,
+      contains(
+        'timeout --kill-after=10s 120s apt-get update --error-on=any',
+      ),
+    );
+    expect(linuxDesktopDependencies, contains('Acquire::Retries=1'));
+    expect(linuxDesktopDependencies, contains('Acquire::http::Timeout=15'));
+    expect(linuxDesktopDependencies, contains('Acquire::https::Timeout=15'));
+    expect(
+      linuxDesktopDependencies,
+      contains('Dir::State::lists=/var/lib/apt/lists'),
+    );
+    expect(
+      linuxDesktopDependencies,
+      contains('apt-get install --download-only'),
+    );
+    expect(
+      linuxDesktopDependencies,
+      contains('apt-get install --no-download'),
+    );
+
+    final download = linuxDesktopDependencies.indexOf(
+      'apt-get install --download-only',
+    );
+    final mutation = linuxDesktopDependencies.indexOf(
+      'apt-get install --no-download',
+    );
+    expect(download, isNonNegative);
+    expect(mutation, isNonNegative);
+    expect(download, lessThan(mutation));
+    final mutationLine = linuxDesktopDependencies
+        .split('\n')
+        .singleWhere(
+          (line) => line.contains('apt-get install --no-download'),
+        );
+    expect(
+      mutationLine,
+      isNot(contains('timeout')),
+      reason: 'a timeout must never interrupt dpkg while it mutates the host',
+    );
   });
 
   test('cross-platform duplicates run in the merge queue, not on every PR', () {
