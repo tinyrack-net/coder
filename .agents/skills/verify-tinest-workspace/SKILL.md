@@ -25,9 +25,10 @@ cd packages/<dart-package> && dart test [path-or-tag]
 cd packages/app && flutter test [path-or-tag]
 ```
 
-Use `dart run melos test` for a single-pass workspace check. Do not chain unit,
-contract, and vertical-slice commands as an aggregate; that reruns the same
-package tests.
+`dart run melos test` is available when a broader single-pass workspace check
+is useful, but it is not required before opening a Draft pull request. Do not
+chain unit, contract, and vertical-slice commands as an aggregate; that reruns
+the same package tests.
 
 The quality runner uses `Platform.numberOfProcessors` by default. Set
 `TINEST_JOBS` for Melos commands, or call `dart run tinest_quality <command>
@@ -44,23 +45,52 @@ concurrency in Melos or CI.
   changes.
 - Provide contract, real-daemon vertical-slice, and widget evidence for
   user-state mutations.
-- Provide Linux E2E evidence for primary-screen happy paths.
-- Run the affected platform Debug build for platform-specific changes. If the
-  platform is unavailable, name the CI job that owns the missing evidence.
+- Provide Linux E2E evidence for primary-screen happy paths through PR CI or a
+  focused local scenario.
+- Require the affected platform Debug build for platform-specific changes, but
+  let PR or merge-group CI own it unless it is the smallest useful local
+  reproduction.
 
-## Complete the change
+## Hand full verification to PR CI
 
-Run both required gates before reporting completion:
+After the directly affected tests pass, run any input-specific checks:
+
+```sh
+dart run tinyrack_workspace source-check # dependency changes
+dart test packages/tinest_quality/test/pipeline_test.dart # workflow changes
+git diff --check
+```
+
+Run code generation and commit its output whenever generation inputs changed.
+Then open a Draft pull request. The `Quality Gate` for the pull request's exact
+head commit is the authoritative full verification; mark the pull request ready
+only after it passes. If merging is in scope, require the matching merge-group
+`Quality Gate` before reporting completion.
+
+PR CI owns static checks, generated-source drift, package coverage thresholds,
+Linux Debug E2E, native IBus terminal E2E, Android, Web, and the host CLI build.
+The merge queue adds the cross-platform test and build evidence that gates
+`main`. Do not report full verification while either applicable gate is running
+or failing.
+
+When CI fails, start with the failing job's smallest relevant local command.
+Run a focused desktop scenario through the supported runner rather than the
+entire catalog when one scenario is implicated:
+
+```sh
+dart run packages/desktop_app/tool/run_desktop_e2e.dart --scenario=<id> --jobs=N
+```
+
+Use the full local gates only when the user explicitly requests them, PR CI is
+unavailable, or a CI failure cannot be isolated with a focused command:
 
 ```sh
 dart run melos verify
 dart run melos verify:debug
 ```
 
-`verify` runs generated-source drift first, then static checks and coverage,
-then the coverage threshold check. Every one of its gates
-runs natively on Linux, macOS, and Windows, so a passing run means the same
-thing on every host. Coverage is the canonical execution of package and app
+`verify` runs generated-source drift, static checks, coverage, and coverage
+threshold enforcement. Coverage is the canonical execution of package and app
 tests, so do not run an additional aggregate suite merely to duplicate it.
 
 Never emulate a host. Do not use Docker, Podman, a container, WSL, a virtual
@@ -75,14 +105,14 @@ at most two isolated lanes. Each lane has its own persistent Flutter build
 directory and temporary app/config home. The second build starts only after
 the first native app signals readiness, so the tests overlap without racing
 Flutter's desktop build cache. Use `dart run tinest_quality e2e --jobs=N
---report=build/quality/e2e.json` to measure or reproduce the runner, and
-`dart run packages/desktop_app/tool/run_desktop_e2e.dart --scenario=<id> --jobs=N` for
-a focused catalog scenario. Linux uses `xvfb-run -a`; Windows can show two app
-windows. Do not bypass the entrypoint with direct `flutter test` commands.
+--report=build/quality/e2e.json` to measure or reproduce the full runner.
+Linux uses `xvfb-run -a`; Windows can show two app windows. Do not bypass the
+entrypoint with direct `flutter test` commands.
 
-Run `actionlint` after changing `.github/workflows/`. Confirm PR/main, tag,
-manual, and schedule conditions with
-`packages/tinest_quality/test/pipeline_test.dart`.
+After changing `.github/workflows/`, run the focused
+`packages/tinest_quality/test/pipeline_test.dart` locally. Let the PR's Static
+checks job own `actionlint` and confirm its result before reporting full
+verification.
 
 ## Report evidence
 
@@ -90,12 +120,13 @@ Include:
 
 - tests added or changed;
 - exact commands run and their result;
-- line and branch coverage for every package;
-- the Debug target that ran;
-- platforms or checks not run locally and the CI jobs responsible for them;
+- line and branch coverage from the authoritative PR CI jobs;
+- the locally run Debug target or the PR CI job that supplied that evidence;
+- checks omitted locally and owned by PR or merge-group CI;
 - the native IBus terminal E2E as evidence owned by `linux-ibus-terminal-e2e`,
   which no host runs locally.
 
-Do not report success when analysis has diagnostics, generated sources drift,
-feature evidence is missing, any package is below 90% line or 80% branch
-coverage, or the required Debug runner did not execute.
+Do not report full verification when analysis has diagnostics, generated
+sources drift, feature evidence is missing, any package is below 90% line or
+80% branch coverage, required CI evidence did not execute, or the exact-head
+`Quality Gate` has not passed.
