@@ -17,6 +17,10 @@ this skill and the repository diverge.
 3. Never edit `.g.dart` or `.freezed.dart` files. Run the generator.
 4. Keep tests deterministic: use fake clocks, IDs, filesystems, processes,
    provider streams, and WebSockets. Preserve any random seed from a failure.
+5. Give each test its own state: a fresh temporary directory, an
+   ephemeral or injected port, its own container or provider instance, and no
+   mutable top-level variable shared across tests. Await the condition you care
+   about rather than a duration.
 
 Use focused commands while iterating:
 
@@ -35,7 +39,9 @@ The quality runner uses `Platform.numberOfProcessors` by default. Set
 --jobs=N` when reproducing a resource-sensitive failure. Add
 `--report=build/quality/<name>.json` for machine-readable task durations and
 resource-slot utilization. Do not hard-code a package fan-out or test
-concurrency in Melos or CI.
+concurrency in Melos or CI. `--jobs` is a diagnostic for reproducing a failure,
+not a remedy: a suite that only passes at a lower job count is still broken, and
+leaving it lowered slows every later run.
 
 ## Apply change-specific gates
 
@@ -114,6 +120,46 @@ After changing `.github/workflows/`, run the focused
 checks job own `actionlint` and confirm its result before reporting full
 verification.
 
+## Fix an intermittent failure instead of passing it by
+
+A test that fails once and passes on the next run is an open defect, whether it
+surfaced locally or in a PR or merge-group job. Never re-run, re-queue, or
+force-push to get a green result, and never report the change as verified while
+one of its runs failed.
+
+Reproduce it deliberately:
+
+```sh
+dart test --test-randomize-ordering-seed=<seed>   # the seed printed by the failing run
+dart test <file> --name '<test>' --total-shards=1 # confirm it passes alone
+dart test                                          # then the whole package, where leakage shows
+```
+
+A test that passes alone and fails in the package run is telling you the cause
+is shared state, not the assertion. Look for a leaked singleton or top-level
+variable, work started but not awaited, a real `Timer`, `Future.delayed`, or
+`DateTime.now`, a fixed port or fixed temporary path, an undisposed provider
+container or subscription, and an `addTearDown` that never ran.
+
+Fix the mechanism and keep the suite parallel-safe:
+
+- isolate the resource — unique temporary directory, ephemeral port, per-test
+  container, injected fake clock, ID generator, filesystem, or process;
+- await the real condition — a completer, stream event, or
+  `pumpAndSettle` — rather than sleeping for a duration that happens to work;
+- tear down everything the test created, in `addTearDown`, so ordering cannot
+  matter.
+
+Do not stabilize a test by serializing it, tagging it exclusive, lowering
+`--jobs` or `TINEST_JOBS`, inserting a sleep, adding a retry wrapper, or
+skipping it. Those hide the defect and make every future run slower. If the
+fix genuinely requires an exclusive resource, isolate that resource behind a
+port instead of the suite around it.
+
+State the mechanism you found and the fix when you report the run. If a failure
+resists reproduction, say so explicitly with the seed, the command, and what you
+ruled out; do not report it as passing.
+
 ## Report evidence
 
 Include:
@@ -123,10 +169,13 @@ Include:
 - line and branch coverage from the authoritative PR CI jobs;
 - the locally run Debug target or the PR CI job that supplied that evidence;
 - checks omitted locally and owned by PR or merge-group CI;
+- any run that failed and later passed, with the seed, the mechanism found, and
+  the fix;
 - the native IBus terminal E2E as evidence owned by `linux-ibus-terminal-e2e`,
   which no host runs locally.
 
 Do not report full verification when analysis has diagnostics, generated
 sources drift, feature evidence is missing, any package is below 90% line or
-80% branch coverage, required CI evidence did not execute, or the exact-head
-`Quality Gate` has not passed.
+80% branch coverage, required CI evidence did not execute, the exact-head
+`Quality Gate` has not passed, or any run of the change failed intermittently
+and is still unexplained.

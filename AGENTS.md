@@ -72,6 +72,10 @@ design value, pub-cache edit, path dependency, moving Git ref, or
    Podman, a container, WSL, a virtual machine, or a remote machine. Platform
    builds, full coverage, the Debug E2E catalog, and native IBus terminal E2E
    may be owned by their PR or merge-group CI jobs.
+9. Treat an intermittent failure as a failure of the change in front of you.
+   Reproduce it with the printed seed, find the mechanism, and fix it before
+   continuing. Do not re-run, re-queue, force-push, or move on because a second
+   attempt was green.
 
 ## Non-negotiable gates
 
@@ -87,10 +91,18 @@ design value, pub-cache edit, path dependency, moving Git ref, or
   key, paid provider request, user home, or internet-dependent provider call.
 - Test order is randomized. Preserve the printed seed whenever reproducing a
   failure.
+- A test that both passes and fails on the same commit is a defect that must be
+  diagnosed and fixed. The cause is real: shared or leaked state between tests,
+  unawaited work, a real timer or wall-clock read, a fixed port, a shared
+  temporary path, or an order-dependent global. Name the mechanism in the fix.
+- Tests must stay safely parallel. Fix flakiness by isolating what each test
+  owns, awaiting the condition instead of a duration, and injecting a fake for
+  the shared resource. Do not fix it by lowering concurrency, serializing a
+  suite, hard-coding a job count, adding a sleep, or retrying the test.
 
-Do not use broad lint ignores, coverage ignores, skipped tests, or broad exception
-catches to make a gate pass. A necessary line-level ignore must include a comment
-explaining the reason and safety argument.
+Do not use broad lint ignores, coverage ignores, skipped tests, test retries or
+reruns, or broad exception catches to make a gate pass. A necessary line-level
+ignore must include a comment explaining the reason and safety argument.
 
 `dart run melos verify` and `dart run melos verify:debug` remain available for
 explicitly requested local verification, for work that cannot use PR CI, or
