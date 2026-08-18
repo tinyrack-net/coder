@@ -286,6 +286,13 @@ final class LuaAgentHarness {
           final completed = await invocation.complete();
           if (completed.error != null) {
             router.discardUiPublications();
+            // A hook killed by the turn's own cancellation is not a plugin
+            // failure; fold it into the cancelled transition exactly like
+            // the driver path below does.
+            if (!afterCancellation &&
+                (completed.terminated || cancellation.isCancelled)) {
+              throw const AgentCancelledException();
+            }
             throw StateError(
               'Plugin hook ${hook.id} failed: ${completed.error}',
             );
@@ -1816,11 +1823,20 @@ final class _TurnCallbackRouter
                 .difference(modelStartedAt)
                 .inSeconds
                 .clamp(0, 1 << 31);
-      await runHooks(PluginLifecycle.afterModel, <String, Object?>{
-        ...arguments,
-        'usage': modelUsage.toJson(),
-        'elapsed_seconds': elapsedSeconds,
-      });
+      // A cancelled turn tears this stream down through the runtime's own
+      // unawaited cell close, where any throw becomes an unhandled isolate
+      // error, and a fresh hook invocation against the cancelled token dies
+      // instantly anyway. The terminal cancel hooks already deliver the
+      // plugin its lifecycle, so skip after-model on that path. Read the turn
+      // token directly: while terminal hooks run, the lifecycle getter swaps
+      // in their fresh token and would hide the cancellation.
+      if (!_turnCancellation.isCancelled) {
+        await runHooks(PluginLifecycle.afterModel, <String, Object?>{
+          ...arguments,
+          'usage': modelUsage.toJson(),
+          'elapsed_seconds': elapsedSeconds,
+        });
+      }
     }
   }
 
