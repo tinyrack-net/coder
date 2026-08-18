@@ -220,7 +220,6 @@ void main() {
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
       final home = await Directory.systemTemp.createTemp('embedded-e2e-');
-      addTearDown(() => deleteTemporaryDirectory(home));
       const token = 'embedded-e2e-token-0123456789abcdef0123456789';
       final launcher = _ControlledEmbeddedLauncher(
         EphemeralEmbeddedDaemonLauncher(
@@ -234,6 +233,13 @@ void main() {
           ),
         ),
       );
+      // The scenario ends with the embedded daemon deliberately running, so its
+      // isolate still owns the database under `home`. Stop it here rather than
+      // leaving the widget-tree teardown to race the directory removal.
+      addTearDown(() async {
+        await launcher.stopRunning();
+        await deleteTemporaryDirectory(home);
+      });
       final store = MemoryAppStore(
         settings: const AppSettings(
           embeddedDaemonPort: testEmbeddedDaemonPort,
@@ -389,6 +395,13 @@ final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {
   bool failNext = false;
   int starts = 0;
   int stops = 0;
+  _CountingSession? _latest;
+
+  /// Stops the session the app started last and waits for its daemon to exit.
+  ///
+  /// Stopping an already stopped session is a no-op, so a teardown can call
+  /// this without knowing whether the scenario left the daemon running.
+  Future<void> stopRunning() async => _latest?.stop();
 
   @override
   Future<EmbeddedDaemonSession> start({
@@ -400,7 +413,7 @@ final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {
       failNext = false;
       throw const HostConnectionFailure.network('planned restart failure');
     }
-    return _CountingSession(
+    return _latest = _CountingSession(
       await delegate.start(exposure: exposure, port: port),
       onStop: () => stops += 1,
     );
@@ -408,10 +421,11 @@ final class _ControlledEmbeddedLauncher implements EmbeddedDaemonLauncher {
 }
 
 final class _CountingSession implements EmbeddedDaemonSession {
-  const _CountingSession(this.delegate, {required this.onStop});
+  _CountingSession(this.delegate, {required this.onStop});
 
   final EmbeddedDaemonSession delegate;
   final void Function() onStop;
+  Future<void>? _stopped;
 
   @override
   DaemonCredentials get credentials => delegate.credentials;
@@ -423,7 +437,9 @@ final class _CountingSession implements EmbeddedDaemonSession {
   String get serverId => delegate.serverId;
 
   @override
-  Future<void> stop() async {
+  Future<void> stop() => _stopped ??= _stop();
+
+  Future<void> _stop() async {
     await delegate.stop();
     onStop();
   }
