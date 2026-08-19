@@ -229,59 +229,52 @@ class _ServerList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.mcpSettingsHeading),
-          actions: <Widget>[
-            TRIconButton(
-              appearance: TRAppearance.ghost,
-              key: const ValueKey<String>('mcp-server-add'),
-              label: l10n.mcpSettingsAdd,
-              onPressed: onAdd,
-              icon: const Icon(TinestIcons.add),
-            ),
-          ],
-        ),
-        Expanded(
-          child: state.servers.isEmpty
-              ? SettingsEmptyState(
-                  key: const ValueKey<String>('mcp-server-list-empty'),
-                  title: l10n.mcpSettingsEmpty,
-                  icon: const Icon(TinestIcons.extension),
-                )
-              : SettingsCollectionList(
-                  children: <Widget>[
-                    TRTreeNav<String>.controlled(
-                      value: selectedId,
-                      itemSpacing: TRSpacing.extraSmall,
-                      onValueChange: (serverId) {
-                        if (serverId != null) onSelected(serverId);
-                      },
-                      items: <TRTreeNavItem<String>>[
-                        for (final server in state.servers)
-                          TRTreeNavLeaf<String>(
-                            key: ValueKey<String>(
-                              'mcp-server-tile-${server.config.id}',
-                            ),
-                            value: server.config.id,
-                            showDisclosureIndicator: true,
-                            leading: _StatusDot(server: server),
-                            label: TRText.inherit(server.config.id),
-                            description: TRText.inherit(
-                              _serverListDescription(l10n, server),
-                            ),
-                            trailing: server.scope == McpConfigScope.project
-                                ? const Icon(TinestIcons.lock)
-                                : null,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.mcpSettingsHeading),
+      actions: <Widget>[
+        TRIconButton(
+          appearance: TRAppearance.ghost,
+          key: const ValueKey<String>('mcp-server-add'),
+          label: l10n.mcpSettingsAdd,
+          onPressed: onAdd,
+          icon: const Icon(TinestIcons.add),
         ),
       ],
+      child: state.servers.isEmpty
+          ? SettingsEmptyState(
+              key: const ValueKey<String>('mcp-server-list-empty'),
+              title: l10n.mcpSettingsEmpty,
+              icon: const Icon(TinestIcons.extension),
+            )
+          : SettingsCollectionList(
+              children: <Widget>[
+                TRTreeNav<String>.controlled(
+                  value: selectedId,
+                  itemSpacing: TRSpacing.extraSmall,
+                  onValueChange: (serverId) {
+                    if (serverId != null) onSelected(serverId);
+                  },
+                  items: <TRTreeNavItem<String>>[
+                    for (final server in state.servers)
+                      TRTreeNavLeaf<String>(
+                        key: ValueKey<String>(
+                          'mcp-server-tile-${server.config.id}',
+                        ),
+                        value: server.config.id,
+                        showDisclosureIndicator: true,
+                        leading: _StatusDot(server: server),
+                        label: TRText.inherit(server.config.id),
+                        description: TRText.inherit(
+                          _serverListDescription(l10n, server),
+                        ),
+                        trailing: server.scope == McpConfigScope.project
+                            ? const Icon(TinestIcons.lock)
+                            : null,
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }
@@ -410,358 +403,335 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final server = widget.server;
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(
-            _isNew ? l10n.mcpSettingsAdd : server!.config.id,
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(_isNew ? l10n.mcpSettingsAdd : server!.config.id),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        if (!_readOnly)
+          TRButton(
+            appearance: TRAppearance.ghost,
+            key: const ValueKey<String>('mcp-secret-set'),
+            onPressed: _busy ? null : _promptForSecret,
+            child: TRText.inherit(l10n.mcpSettingsSecretSet),
           ),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          description: server == null
-              ? null
-              : TRText.inherit(
-                  server.sourcePath.isEmpty
-                      ? mcpStatusLabel(l10n, server.status)
-                      : server.sourcePath,
-                ),
-          actions: <Widget>[
-            if (!_readOnly)
-              TRButton(
-                appearance: TRAppearance.ghost,
-                key: const ValueKey<String>('mcp-secret-set'),
-                onPressed: _busy ? null : _promptForSecret,
-                child: TRText.inherit(l10n.mcpSettingsSecretSet),
-              ),
-            if (!_readOnly)
-              TRButton(
-                appearance: TRAppearance.outline,
-                key: const ValueKey<String>('mcp-server-test'),
-                onPressed: _busy ? null : _test,
-                child: TRText.inherit(l10n.mcpSettingsTest),
-              ),
-            if (!_readOnly)
-              TRButton(
-                intent: TRIntent.primary,
-                key: const ValueKey<String>('mcp-server-save'),
-                onPressed: _busy ? null : _save,
-                child: TRText.inherit(
-                  MaterialLocalizations.of(context).saveButtonLabel,
-                ),
-              ),
-          ],
-        ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection.form(
-                title: l10n.mcpSettingsConnectionHeading,
-                // Read-only and shadowed are independent server facts, and a
-                // shadowed one still has to say where it came from, so both are
-                // shown rather than one winning.
-                banner: server == null
-                    ? null
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (_readOnly)
-                            TRAlert(
-                              key: const ValueKey<String>(
-                                'mcp-server-readonly',
-                              ),
-                              title: TRText.inherit(
-                                l10n.mcpSettingsProjectReadOnly(
-                                  AppIdentity.name,
-                                ),
-                              ),
-                              description: TRText.inherit(
-                                l10n.mcpSettingsSource(server.sourcePath),
-                                key: ValueKey<String>(
-                                  'mcp-server-source-${server.config.id}',
-                                ),
-                              ),
-                              icon: const Icon(TinestIcons.lock),
-                            ),
-                          if (_readOnly && server.shadowed)
-                            const SizedBox(height: TRSpacing.small),
-                          if (server.shadowed)
-                            TRAlert(
-                              key: ValueKey<String>(
-                                'mcp-server-shadowed-${server.config.id}',
-                              ),
-                              title: TRText.inherit(l10n.mcpSettingsShadowed),
-                              icon: const Icon(TinestIcons.warning),
-                              variant: TRStatusVariant.warning,
-                            ),
-                        ],
-                      ),
-                children: <Widget>[
-                  TRTextField(
-                    key: const ValueKey<String>('mcp-field-id'),
-                    controller: _id,
-                    enabled: _isNew,
-                    label: l10n.mcpSettingsServerId,
-                  ),
-                  TRToggleGroup(
-                    key: const ValueKey<String>('mcp-transport-selector'),
-                    value: <String>[_transport.name],
-                    disabled: _readOnly,
-                    children: <TRToggle>[
-                      TRToggle(
-                        value: McpTransportKind.stdio.name,
-                        child: TRText.inherit(l10n.mcpSettingsTransportStdio),
-                      ),
-                      TRToggle(
-                        value: McpTransportKind.http.name,
-                        child: TRText.inherit(l10n.mcpSettingsTransportHttp),
-                      ),
-                    ],
-                    onValueChange: (value) => setState(
-                      () => _transport = McpTransportKind.values.byName(
-                        value.first,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: TRSpacing.large),
-                  if (_transport == McpTransportKind.stdio) ...<Widget>[
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-command'),
-                      controller: _command,
-                      enabled: !_readOnly,
-                      label: l10n.mcpSettingsCommand,
-                    ),
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-args'),
-                      controller: _args,
-                      enabled: !_readOnly,
-                      minLines: 2,
-                      maxLines: 6,
-                      label: l10n.mcpSettingsArgs,
-                    ),
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-cwd'),
-                      controller: _cwd,
-                      enabled: !_readOnly,
-                      label: l10n.mcpSettingsWorkingDirectory,
-                    ),
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-env'),
-                      controller: _env,
-                      enabled: !_readOnly,
-                      minLines: 2,
-                      maxLines: 6,
-                      label: l10n.mcpSettingsEnvironment,
-                    ),
-                  ] else ...<Widget>[
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-url'),
-                      controller: _url,
-                      enabled: !_readOnly,
-                      label: l10n.mcpSettingsUrl,
-                    ),
-                    TRTextField(
-                      key: const ValueKey<String>('mcp-field-headers'),
-                      controller: _headers,
-                      enabled: !_readOnly,
-                      minLines: 2,
-                      maxLines: 6,
-                      label: l10n.mcpSettingsHeaders,
-                    ),
-                  ],
-                ],
-              ),
-              SettingsSection(
-                title: l10n.mcpSettingsStateHeading,
-                description: '${l10n.mcpSettingsSecretHint} $mcpSecretSyntax',
-                banner: switch ((_error, _notice)) {
-                  (final String error, _) => TRAlert(
-                    key: const ValueKey<String>('mcp-editor-error'),
-                    title: TRText.inherit(error),
-                    icon: const Icon(TinestIcons.error),
-                    variant: TRStatusVariant.danger,
-                  ),
-                  (_, final String notice) => TRAlert(
-                    key: const ValueKey<String>('mcp-editor-notice'),
-                    title: TRText.inherit(notice),
-                    icon: const Icon(TinestIcons.success),
-                    variant: TRStatusVariant.success,
-                  ),
-                  _ => null,
-                },
-                children: <Widget>[
-                  TinestSwitchRow(
-                    key: const ValueKey<String>('mcp-field-enabled'),
-                    value: _enabled,
-                    onChanged: _readOnly
-                        ? null
-                        : (value) => setState(() => _enabled = value),
-                    title: TRText.inherit(l10n.mcpSettingsEnabled),
-                  ),
-                ],
-              ),
-              if (server != null)
-                // Discovery results are one group. Keeping all four parts
-                // in a single scaffold child stops a section gap from opening
-                // between a heading and the rows it heads.
-                SettingsSection(
-                  title: l10n.mcpSettingsDiscoveredTools,
-                  banner: server.error == null
-                      ? null
-                      : TRAlert(
-                          key: ValueKey<String>(
-                            'mcp-server-error-${server.config.id}',
+        if (!_readOnly)
+          TRButton(
+            appearance: TRAppearance.outline,
+            key: const ValueKey<String>('mcp-server-test'),
+            onPressed: _busy ? null : _test,
+            child: TRText.inherit(l10n.mcpSettingsTest),
+          ),
+        if (!_readOnly)
+          TRButton(
+            intent: TRIntent.primary,
+            key: const ValueKey<String>('mcp-server-save'),
+            onPressed: _busy ? null : _save,
+            child: TRText.inherit(
+              MaterialLocalizations.of(context).saveButtonLabel,
+            ),
+          ),
+      ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            title: l10n.mcpSettingsConnectionHeading,
+            // Read-only and shadowed are independent server facts, and a
+            // shadowed one still has to say where it came from, so both are
+            // shown rather than one winning.
+            banner: server == null
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (_readOnly)
+                        TRAlert(
+                          key: const ValueKey<String>(
+                            'mcp-server-readonly',
                           ),
-                          title: TRText.inherit(server.error!),
-                          icon: const Icon(TinestIcons.error),
-                          variant: TRStatusVariant.danger,
+                          title: TRText.inherit(
+                            l10n.mcpSettingsProjectReadOnly(
+                              AppIdentity.name,
+                            ),
+                          ),
+                          description: TRText.inherit(
+                            l10n.mcpSettingsSource(server.sourcePath),
+                            key: ValueKey<String>(
+                              'mcp-server-source-${server.config.id}',
+                            ),
+                          ),
+                          icon: const Icon(TinestIcons.lock),
                         ),
-                  children: <Widget>[
-                    Padding(
-                      padding: SettingsRow.resolvedPadding(context),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          // Discovery output is a reference list, not a set
-                          // of settings, so the rows stay dense: a server may
-                          // publish dozens; the collapsibles below them must
-                          // stay reachable without scrolling past all of them.
-                          if (server.tools.isEmpty)
-                            TRText(l10n.mcpSettingsNoTools)
-                          else
-                            for (final tool in server.tools)
-                              TinestListRow(
-                                key: ValueKey<String>(
-                                  'mcp-tool-tile-${tool.toolId}',
-                                ),
-                                contentPadding: SettingsRow.resolvedPadding(
-                                  context,
-                                  flush: true,
-                                ),
-                                dense: true,
-                                title: TRText.inherit(tool.toolId),
-                                subtitle: TRText.inherit(tool.description),
-                              ),
-                          const SizedBox(height: TRSpacing.small),
-                          TRCollapsible(
-                            key: const ValueKey<String>('mcp-server-resources'),
-                            trigger: TRText(
-                              '${l10n.mcpSettingsResources} '
-                              '${server.resources.length}',
-                            ),
-                            content: Column(
-                              children: <Widget>[
-                                if (server.resources.isEmpty)
-                                  TRText(l10n.mcpSettingsNoResources)
-                                else
-                                  for (final resource in server.resources)
-                                    TinestListRow(
-                                      key: ValueKey<String>(
-                                        'mcp-resource-tile-${resource.uri}',
-                                      ),
-                                      contentPadding:
-                                          SettingsRow.resolvedPadding(
-                                            context,
-                                            flush: true,
-                                          ),
-                                      dense: true,
-                                      title: TRText.inherit(resource.uri),
-                                      subtitle: TRText.inherit(
-                                        resource.description ??
-                                            resource.name ??
-                                            '',
-                                      ),
-                                    ),
-                              ],
-                            ),
+                      if (_readOnly && server.shadowed)
+                        const SizedBox(height: TRSpacing.small),
+                      if (server.shadowed)
+                        TRAlert(
+                          key: ValueKey<String>(
+                            'mcp-server-shadowed-${server.config.id}',
                           ),
-                          const SizedBox(height: TRSpacing.small),
-                          TRCollapsible(
-                            key: const ValueKey<String>(
-                              'mcp-server-resource-templates',
-                            ),
-                            trigger: TRText(
-                              '${l10n.mcpSettingsResourceTemplates} '
-                              '${server.resourceTemplates.length}',
-                            ),
-                            content: Column(
-                              children: <Widget>[
-                                if (server.resourceTemplates.isEmpty)
-                                  TRText(l10n.mcpSettingsNoResourceTemplates)
-                                else
-                                  for (final template
-                                      in server.resourceTemplates)
-                                    TinestListRow(
-                                      key: ValueKey<String>(
-                                        'mcp-resource-template-tile-'
-                                        '${template.uriTemplate}',
-                                      ),
-                                      contentPadding:
-                                          SettingsRow.resolvedPadding(
-                                            context,
-                                            flush: true,
-                                          ),
-                                      dense: true,
-                                      title: TRText.inherit(
-                                        template.uriTemplate,
-                                      ),
-                                      subtitle: TRText.inherit(
-                                        template.description ??
-                                            template.name ??
-                                            '',
-                                      ),
-                                    ),
-                              ],
-                            ),
-                          ),
-                          if (server.diagnostics.isNotEmpty) ...<Widget>[
-                            const SizedBox(height: TRSpacing.small),
-                            TRCollapsible(
-                              key: const ValueKey<String>(
-                                'mcp-server-diagnostics',
-                              ),
-                              trigger: TRText(l10n.mcpSettingsDiagnostics),
-                              content: Column(
-                                children: <Widget>[
-                                  for (final line in server.diagnostics)
-                                    TinestListRow(
-                                      contentPadding:
-                                          SettingsRow.resolvedPadding(
-                                            context,
-                                            flush: true,
-                                          ),
-                                      dense: true,
-                                      title: TRText.inherit(line),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                          title: TRText.inherit(l10n.mcpSettingsShadowed),
+                          icon: const Icon(TinestIcons.warning),
+                          variant: TRStatusVariant.warning,
+                        ),
+                    ],
+                  ),
+            children: <Widget>[
+              TRTextField(
+                key: const ValueKey<String>('mcp-field-id'),
+                controller: _id,
+                enabled: _isNew,
+                label: l10n.mcpSettingsServerId,
+              ),
+              TRToggleGroup(
+                key: const ValueKey<String>('mcp-transport-selector'),
+                value: <String>[_transport.name],
+                disabled: _readOnly,
+                children: <TRToggle>[
+                  TRToggle(
+                    value: McpTransportKind.stdio.name,
+                    child: TRText.inherit(l10n.mcpSettingsTransportStdio),
+                  ),
+                  TRToggle(
+                    value: McpTransportKind.http.name,
+                    child: TRText.inherit(l10n.mcpSettingsTransportHttp),
+                  ),
+                ],
+                onValueChange: (value) => setState(
+                  () => _transport = McpTransportKind.values.byName(
+                    value.first,
+                  ),
                 ),
-              if (!_readOnly && !_isNew)
-                SettingsSection(
-                  title: l10n.mcpSettingsDelete,
-                  children: <Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(
-                        l10n.mcpSettingsDeleteConfirm(server!.config.id),
-                      ),
-                      control: TRButton(
-                        appearance: TRAppearance.ghost,
-                        intent: TRIntent.danger,
-                        key: const ValueKey<String>('mcp-server-delete'),
-                        onPressed: _busy ? null : _delete,
-                        child: TRText.inherit(l10n.mcpSettingsDelete),
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: TRSpacing.large),
+              if (_transport == McpTransportKind.stdio) ...<Widget>[
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-command'),
+                  controller: _command,
+                  enabled: !_readOnly,
+                  label: l10n.mcpSettingsCommand,
                 ),
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-args'),
+                  controller: _args,
+                  enabled: !_readOnly,
+                  minLines: 2,
+                  maxLines: 6,
+                  label: l10n.mcpSettingsArgs,
+                ),
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-cwd'),
+                  controller: _cwd,
+                  enabled: !_readOnly,
+                  label: l10n.mcpSettingsWorkingDirectory,
+                ),
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-env'),
+                  controller: _env,
+                  enabled: !_readOnly,
+                  minLines: 2,
+                  maxLines: 6,
+                  label: l10n.mcpSettingsEnvironment,
+                ),
+              ] else ...<Widget>[
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-url'),
+                  controller: _url,
+                  enabled: !_readOnly,
+                  label: l10n.mcpSettingsUrl,
+                ),
+                TRTextField(
+                  key: const ValueKey<String>('mcp-field-headers'),
+                  controller: _headers,
+                  enabled: !_readOnly,
+                  minLines: 2,
+                  maxLines: 6,
+                  label: l10n.mcpSettingsHeaders,
+                ),
+              ],
             ],
           ),
-        ),
-      ],
+          SettingsSection(
+            title: l10n.mcpSettingsStateHeading,
+            description: '${l10n.mcpSettingsSecretHint} $mcpSecretSyntax',
+            banner: switch ((_error, _notice)) {
+              (final String error, _) => TRAlert(
+                key: const ValueKey<String>('mcp-editor-error'),
+                title: TRText.inherit(error),
+                icon: const Icon(TinestIcons.error),
+                variant: TRStatusVariant.danger,
+              ),
+              (_, final String notice) => TRAlert(
+                key: const ValueKey<String>('mcp-editor-notice'),
+                title: TRText.inherit(notice),
+                icon: const Icon(TinestIcons.success),
+                variant: TRStatusVariant.success,
+              ),
+              _ => null,
+            },
+            children: <Widget>[
+              TinestSwitchRow(
+                key: const ValueKey<String>('mcp-field-enabled'),
+                value: _enabled,
+                onChanged: _readOnly
+                    ? null
+                    : (value) => setState(() => _enabled = value),
+                title: TRText.inherit(l10n.mcpSettingsEnabled),
+              ),
+            ],
+          ),
+          if (server != null)
+            // Discovery results are one group. Keeping all four parts
+            // in a single scaffold child stops a section gap from opening
+            // between a heading and the rows it heads.
+            SettingsSection(
+              title: l10n.mcpSettingsDiscoveredTools,
+              banner: server.error == null
+                  ? null
+                  : TRAlert(
+                      key: ValueKey<String>(
+                        'mcp-server-error-${server.config.id}',
+                      ),
+                      title: TRText.inherit(server.error!),
+                      icon: const Icon(TinestIcons.error),
+                      variant: TRStatusVariant.danger,
+                    ),
+              children: <Widget>[
+                Padding(
+                  padding: SettingsRow.resolvedPadding(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      // Discovery output is a reference list, not a set
+                      // of settings, so the rows stay dense: a server may
+                      // publish dozens; the collapsibles below them must
+                      // stay reachable without scrolling past all of them.
+                      if (server.tools.isEmpty)
+                        TRText(l10n.mcpSettingsNoTools)
+                      else
+                        for (final tool in server.tools)
+                          TinestListRow(
+                            key: ValueKey<String>(
+                              'mcp-tool-tile-${tool.toolId}',
+                            ),
+                            contentPadding: SettingsRow.resolvedPadding(
+                              context,
+                              flush: true,
+                            ),
+                            dense: true,
+                            title: TRText.inherit(tool.toolId),
+                            subtitle: TRText.inherit(tool.description),
+                          ),
+                      const SizedBox(height: TRSpacing.small),
+                      TRCollapsible(
+                        key: const ValueKey<String>('mcp-server-resources'),
+                        trigger: TRText(
+                          '${l10n.mcpSettingsResources} '
+                          '${server.resources.length}',
+                        ),
+                        content: Column(
+                          children: <Widget>[
+                            if (server.resources.isEmpty)
+                              TRText(l10n.mcpSettingsNoResources)
+                            else
+                              for (final resource in server.resources)
+                                TinestListRow(
+                                  key: ValueKey<String>(
+                                    'mcp-resource-tile-${resource.uri}',
+                                  ),
+                                  contentPadding: SettingsRow.resolvedPadding(
+                                    context,
+                                    flush: true,
+                                  ),
+                                  dense: true,
+                                  title: TRText.inherit(resource.uri),
+                                  subtitle: TRText.inherit(
+                                    resource.description ?? resource.name ?? '',
+                                  ),
+                                ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: TRSpacing.small),
+                      TRCollapsible(
+                        key: const ValueKey<String>(
+                          'mcp-server-resource-templates',
+                        ),
+                        trigger: TRText(
+                          '${l10n.mcpSettingsResourceTemplates} '
+                          '${server.resourceTemplates.length}',
+                        ),
+                        content: Column(
+                          children: <Widget>[
+                            if (server.resourceTemplates.isEmpty)
+                              TRText(l10n.mcpSettingsNoResourceTemplates)
+                            else
+                              for (final template in server.resourceTemplates)
+                                TinestListRow(
+                                  key: ValueKey<String>(
+                                    'mcp-resource-template-tile-'
+                                    '${template.uriTemplate}',
+                                  ),
+                                  contentPadding: SettingsRow.resolvedPadding(
+                                    context,
+                                    flush: true,
+                                  ),
+                                  dense: true,
+                                  title: TRText.inherit(
+                                    template.uriTemplate,
+                                  ),
+                                  subtitle: TRText.inherit(
+                                    template.description ?? template.name ?? '',
+                                  ),
+                                ),
+                          ],
+                        ),
+                      ),
+                      if (server.diagnostics.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: TRSpacing.small),
+                        TRCollapsible(
+                          key: const ValueKey<String>(
+                            'mcp-server-diagnostics',
+                          ),
+                          trigger: TRText(l10n.mcpSettingsDiagnostics),
+                          content: Column(
+                            children: <Widget>[
+                              for (final line in server.diagnostics)
+                                TinestListRow(
+                                  contentPadding: SettingsRow.resolvedPadding(
+                                    context,
+                                    flush: true,
+                                  ),
+                                  dense: true,
+                                  title: TRText.inherit(line),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          if (!_readOnly && !_isNew)
+            SettingsSection(
+              title: l10n.mcpSettingsDelete,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(
+                    l10n.mcpSettingsDeleteConfirm(server!.config.id),
+                  ),
+                  control: TRButton(
+                    appearance: TRAppearance.ghost,
+                    intent: TRIntent.danger,
+                    key: const ValueKey<String>('mcp-server-delete'),
+                    onPressed: _busy ? null : _delete,
+                    child: TRText.inherit(l10n.mcpSettingsDelete),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 

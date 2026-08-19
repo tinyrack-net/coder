@@ -361,57 +361,52 @@ class _ProviderCollection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.providerSettingsConnected),
-          description: TRText.inherit('${connections.length}'),
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey<String>('provider-add-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.providerSettingsAdd,
-              onPressed: onAdd,
-              icon: const Icon(TinestIcons.add),
-            ),
-          ],
-        ),
-        Expanded(
-          child: connections.isEmpty
-              ? SettingsEmptyState(
-                  key: const ValueKey<String>('provider-list-empty'),
-                  title: l10n.providerSettingsNoConnections,
-                  icon: const Icon(TinestIcons.network),
-                )
-              : SettingsCollectionList(
-                  children: <Widget>[
-                    TRTreeNav<String>.controlled(
-                      value: selectedId,
-                      itemSpacing: TRSpacing.extraSmall,
-                      onValueChange: (connectionId) {
-                        if (connectionId != null) onSelected(connectionId);
-                      },
-                      items: <TRTreeNavItem<String>>[
-                        for (final connection in connections)
-                          TRTreeNavLeaf<String>(
-                            key: ValueKey<String>(
-                              'provider-connection-${connection.id}',
-                            ),
-                            value: connection.id,
-                            showDisclosureIndicator: true,
-                            leading: Icon(_statusIcon(connection.status)),
-                            label: TRText.inherit(connection.displayName),
-                            description: TRText.inherit(
-                              '${connection.modelPrefix} · '
-                              '${_statusLabel(l10n, connection.status)}',
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+    return SettingsDestinationScaffold(
+      // The collection names its category, matching every other list-detail
+      // settings destination, so the compact header reads as one stack level.
+      title: TRText.inherit(l10n.settingsCategoryProvider),
+      actions: <Widget>[
+        TRIconButton(
+          key: const ValueKey<String>('provider-add-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.providerSettingsAdd,
+          onPressed: onAdd,
+          icon: const Icon(TinestIcons.add),
         ),
       ],
+      child: connections.isEmpty
+          ? SettingsEmptyState(
+              key: const ValueKey<String>('provider-list-empty'),
+              title: l10n.providerSettingsNoConnections,
+              icon: const Icon(TinestIcons.network),
+            )
+          : SettingsCollectionList(
+              children: <Widget>[
+                TRTreeNav<String>.controlled(
+                  value: selectedId,
+                  itemSpacing: TRSpacing.extraSmall,
+                  onValueChange: (connectionId) {
+                    if (connectionId != null) onSelected(connectionId);
+                  },
+                  items: <TRTreeNavItem<String>>[
+                    for (final connection in connections)
+                      TRTreeNavLeaf<String>(
+                        key: ValueKey<String>(
+                          'provider-connection-${connection.id}',
+                        ),
+                        value: connection.id,
+                        showDisclosureIndicator: true,
+                        leading: Icon(_statusIcon(connection.status)),
+                        label: TRText.inherit(connection.displayName),
+                        description: TRText.inherit(
+                          '${connection.modelPrefix} · '
+                          '${_statusLabel(l10n, connection.status)}',
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }
@@ -442,65 +437,59 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final catalog = widget.state.catalog;
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.providerSettingsAdd),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRButton(
-              key: const ValueKey<String>('provider-catalog-refresh'),
-              appearance: TRAppearance.outline,
-              onPressed: _refreshing ? null : _refresh,
-              child: TRText.inherit(l10n.providerSettingsRefreshCatalog),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.providerSettingsAdd),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRButton(
+          key: const ValueKey<String>('provider-catalog-refresh'),
+          appearance: TRAppearance.outline,
+          onPressed: _refreshing ? null : _refresh,
+          child: TRText.inherit(l10n.providerSettingsRefreshCatalog),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection(
-                title: l10n.providerSettingsCatalogStatus,
-                banner: _error == null && catalog.refreshError == null
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit(
-                          l10n.providerSettingsRefreshFailed,
-                        ),
-                        description: TRText.inherit(
-                          '${_error ?? catalog.refreshError}',
-                        ),
-                      ),
-                children: <Widget>[
-                  SettingsRow(
+      ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection(
+            title: l10n.providerSettingsCatalogStatus,
+            banner: _error == null && catalog.refreshError == null
+                ? null
+                : TRAlert(
+                    variant: TRStatusVariant.danger,
                     title: TRText.inherit(
-                      _catalogLabel(l10n, catalog.freshness),
+                      l10n.providerSettingsRefreshFailed,
                     ),
-                  ),
-                  for (final definition in catalog.definitions)
-                    TRNavigationRow(
-                      key: ValueKey<String>('provider-add-${definition.id}'),
-                      leading: const Icon(TinestIcons.network),
-                      label: TRText.inherit(definition.name),
-                      description: TRText.inherit(definition.description),
-                      onPressed: () => widget.onPreset(definition),
-                    ),
-                  TRNavigationRow(
-                    key: const ValueKey<String>('provider-add-custom'),
-                    leading: const Icon(TinestIcons.tune),
-                    label: TRText.inherit(l10n.providerSettingsCustomName),
                     description: TRText.inherit(
-                      l10n.providerSettingsCustomSubtitle,
+                      '${_error ?? catalog.refreshError}',
                     ),
-                    onPressed: widget.onCustom,
                   ),
-                ],
+            children: <Widget>[
+              SettingsRow(
+                title: TRText.inherit(
+                  _catalogLabel(l10n, catalog.freshness),
+                ),
+              ),
+              for (final definition in catalog.definitions)
+                TRNavigationRow(
+                  key: ValueKey<String>('provider-add-${definition.id}'),
+                  leading: const Icon(TinestIcons.network),
+                  label: TRText.inherit(definition.name),
+                  description: TRText.inherit(definition.description),
+                  onPressed: () => widget.onPreset(definition),
+                ),
+              TRNavigationRow(
+                key: const ValueKey<String>('provider-add-custom'),
+                leading: const Icon(TinestIcons.tune),
+                label: TRText.inherit(l10n.providerSettingsCustomName),
+                description: TRText.inherit(
+                  l10n.providerSettingsCustomSubtitle,
+                ),
+                onPressed: widget.onCustom,
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -586,100 +575,95 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
     }
     if (attempt != null) return _oauthPane(attempt);
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(
-            widget.existing == null
-                ? l10n.providerSettingsConnectTitle(widget.definition.name)
-                : widget.definition.name,
-          ),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: _busy ? null : widget.onCancel,
-              child: TRText.inherit(l10n.commonCancel),
-            ),
-            TRButton(
-              key: const ValueKey<String>('provider-connect-submit'),
-              intent: TRIntent.primary,
-              onPressed: _canSubmit ? _submit : null,
-              child: TRText.inherit(l10n.providerSettingsConnect),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(
+        widget.existing == null
+            ? l10n.providerSettingsConnectTitle(widget.definition.name)
+            : widget.definition.name,
+      ),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          onPressed: _busy ? null : widget.onCancel,
+          child: TRText.inherit(l10n.commonCancel),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection.form(
-                title: l10n.providerSettingsAuthTitle(widget.definition.name),
-                description: widget.definition.description,
-                children: <Widget>[
-                  TRTextField(
-                    key: const ValueKey<String>('provider-model-prefix'),
-                    controller: _prefix,
-                    enabled: !_busy,
-                    label: l10n.providerSettingsModelPrefix,
-                    helperText: l10n.providerSettingsModelPrefixHelp,
-                    errorText: _prefixError(l10n),
-                    onChanged: (_) => setState(() => _error = null),
-                  ),
-                  if (widget.definition.authMethods.length > 1)
-                    TRSelectFormField<String>(
-                      key: const ValueKey<String>('provider-auth-method'),
-                      initialValue: _method.id,
-                      searchable: true,
-                      searchPlaceholder: l10n.selectSearchPlaceholder,
-                      noResultsText: l10n.selectNoResults,
-                      presentation: TinestSelectPresentation.resolve(context),
-                      label: l10n.providerSettingsActions,
-                      width: TinestLayoutMetrics.settingsContentMaxWidth,
-                      items: <TRSelectItem<String>>[
-                        for (final method in widget.definition.authMethods)
-                          TRSelectItem<String>(
-                            key: ValueKey<String>(
-                              'provider-auth-method-${method.id}',
-                            ),
-                            value: method.id,
-                            label: method.label,
-                          ),
-                      ],
-                      onValueChange: _busy
-                          ? null
-                          : (id) => setState(() {
-                              _method = widget.definition.authMethods
-                                  .singleWhere((method) => method.id == id);
-                              _error = null;
-                            }),
-                    ),
-                  if (_method.flow == ProviderAuthFlow.apiKey)
-                    TRTextField(
-                      key: const ValueKey<String>('provider-api-key'),
-                      controller: _apiKey,
-                      enabled: !_busy,
-                      obscureText: true,
-                      label: l10n.providerSettingsApiKey,
-                      onChanged: (_) => setState(() => _error = null),
-                    ),
-                  if (_method.experimental)
-                    TRAlert(
-                      variant: TRStatusVariant.warning,
-                      title: TRText.inherit(
-                        l10n.providerSettingsExperimental,
-                      ),
-                    ),
-                  if (_unexpectedError case final error?)
-                    TRAlert(
-                      variant: TRStatusVariant.danger,
-                      title: TRText.inherit('$error'),
-                    ),
-                ],
-              ),
-            ],
-          ),
+        TRButton(
+          key: const ValueKey<String>('provider-connect-submit'),
+          intent: TRIntent.primary,
+          onPressed: _canSubmit ? _submit : null,
+          child: TRText.inherit(l10n.providerSettingsConnect),
         ),
       ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            title: l10n.providerSettingsAuthTitle(widget.definition.name),
+            description: widget.definition.description,
+            children: <Widget>[
+              TRTextField(
+                key: const ValueKey<String>('provider-model-prefix'),
+                controller: _prefix,
+                enabled: !_busy,
+                label: l10n.providerSettingsModelPrefix,
+                helperText: l10n.providerSettingsModelPrefixHelp,
+                errorText: _prefixError(l10n),
+                onChanged: (_) => setState(() => _error = null),
+              ),
+              if (widget.definition.authMethods.length > 1)
+                TRSelectFormField<String>(
+                  key: const ValueKey<String>('provider-auth-method'),
+                  initialValue: _method.id,
+                  searchable: true,
+                  searchPlaceholder: l10n.selectSearchPlaceholder,
+                  noResultsText: l10n.selectNoResults,
+                  presentation: TinestSelectPresentation.resolve(context),
+                  label: l10n.providerSettingsActions,
+                  width: TinestLayoutMetrics.settingsContentMaxWidth,
+                  items: <TRSelectItem<String>>[
+                    for (final method in widget.definition.authMethods)
+                      TRSelectItem<String>(
+                        key: ValueKey<String>(
+                          'provider-auth-method-${method.id}',
+                        ),
+                        value: method.id,
+                        label: method.label,
+                      ),
+                  ],
+                  onValueChange: _busy
+                      ? null
+                      : (id) => setState(() {
+                          _method = widget.definition.authMethods.singleWhere(
+                            (method) => method.id == id,
+                          );
+                          _error = null;
+                        }),
+                ),
+              if (_method.flow == ProviderAuthFlow.apiKey)
+                TRTextField(
+                  key: const ValueKey<String>('provider-api-key'),
+                  controller: _apiKey,
+                  enabled: !_busy,
+                  obscureText: true,
+                  label: l10n.providerSettingsApiKey,
+                  onChanged: (_) => setState(() => _error = null),
+                ),
+              if (_method.experimental)
+                TRAlert(
+                  variant: TRStatusVariant.warning,
+                  title: TRText.inherit(
+                    l10n.providerSettingsExperimental,
+                  ),
+                ),
+              if (_unexpectedError case final error?)
+                TRAlert(
+                  variant: TRStatusVariant.danger,
+                  title: TRText.inherit('$error'),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -689,93 +673,85 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
         attempt.status == ProviderAuthAttemptStatus.failed ||
         attempt.status == ProviderAuthAttemptStatus.expired ||
         attempt.status == ProviderAuthAttemptStatus.cancelled;
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.providerSettingsOAuthPending),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            if (!terminal)
-              TRButton(
-                key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
-                appearance: TRAppearance.ghost,
-                onPressed: () => ref
-                    .read(
-                      providerSettingsControllerProvider(
-                        widget.hostId,
-                      ).notifier,
-                    )
-                    .cancelAuth(attempt.id),
-                child: TRText.inherit(l10n.commonCancel),
-              )
-            else
-              TRButton(
-                key: const ValueKey<String>('provider-auth-retry'),
-                intent: TRIntent.primary,
-                onPressed: () => setState(() {
-                  _attemptId = null;
-                  _error = null;
-                }),
-                child: TRText.inherit(l10n.commonRetry),
-              ),
-          ],
-        ),
-        Expanded(
-          child: SettingsScaffold(
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.providerSettingsOAuthPending),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        if (!terminal)
+          TRButton(
+            key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
+            appearance: TRAppearance.ghost,
+            onPressed: () => ref
+                .read(
+                  providerSettingsControllerProvider(widget.hostId).notifier,
+                )
+                .cancelAuth(attempt.id),
+            child: TRText.inherit(l10n.commonCancel),
+          )
+        else
+          TRButton(
+            key: const ValueKey<String>('provider-auth-retry'),
+            intent: TRIntent.primary,
+            onPressed: () => setState(() {
+              _attemptId = null;
+              _error = null;
+            }),
+            child: TRText.inherit(l10n.commonRetry),
+          ),
+      ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection(
+            title: _authStatusLabel(l10n, attempt.status),
+            banner: _oauthErrorBanner(attempt),
             children: <Widget>[
-              SettingsSection(
-                title: _authStatusLabel(l10n, attempt.status),
-                banner: _oauthErrorBanner(attempt),
-                children: <Widget>[
-                  if (attempt.instructions != null)
-                    SettingsRow(
-                      title: TRText.inherit(attempt.instructions!),
-                    ),
-                  if (attempt.authorizationUrl case final url?)
-                    SettingsRow(
-                      title: SelectionArea(child: TRText.inherit(url)),
-                      controlLayout: SettingsControlLayout.responsive,
-                      control: Wrap(
-                        spacing: TRSpacing.small,
-                        children: <Widget>[
-                          TRIconButton(
-                            appearance: TRAppearance.ghost,
-                            label: l10n.commonCopy,
-                            onPressed: () => Clipboard.setData(
-                              ClipboardData(text: url),
-                            ),
-                            icon: const Icon(TinestIcons.copy),
-                          ),
-                          TRIconButton(
-                            key: const ValueKey<String>(
-                              'provider-oauth-open-browser',
-                            ),
-                            appearance: TRAppearance.ghost,
-                            label: l10n.providerSettingsOpenBrowser,
-                            onPressed: () => _openUrl(url),
-                            icon: const Icon(TinestIcons.network),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (attempt.userCode case final code?)
-                    SettingsRow(
-                      title: SelectionArea(child: TRText.inherit(code)),
-                      control: TRIconButton(
+              if (attempt.instructions != null)
+                SettingsRow(
+                  title: TRText.inherit(attempt.instructions!),
+                ),
+              if (attempt.authorizationUrl case final url?)
+                SettingsRow(
+                  title: SelectionArea(child: TRText.inherit(url)),
+                  controlLayout: SettingsControlLayout.responsive,
+                  control: Wrap(
+                    spacing: TRSpacing.small,
+                    children: <Widget>[
+                      TRIconButton(
                         appearance: TRAppearance.ghost,
                         label: l10n.commonCopy,
                         onPressed: () => Clipboard.setData(
-                          ClipboardData(text: code),
+                          ClipboardData(text: url),
                         ),
                         icon: const Icon(TinestIcons.copy),
                       ),
+                      TRIconButton(
+                        key: const ValueKey<String>(
+                          'provider-oauth-open-browser',
+                        ),
+                        appearance: TRAppearance.ghost,
+                        label: l10n.providerSettingsOpenBrowser,
+                        onPressed: () => _openUrl(url),
+                        icon: const Icon(TinestIcons.network),
+                      ),
+                    ],
+                  ),
+                ),
+              if (attempt.userCode case final code?)
+                SettingsRow(
+                  title: SelectionArea(child: TRText.inherit(code)),
+                  control: TRIconButton(
+                    appearance: TRAppearance.ghost,
+                    label: l10n.commonCopy,
+                    onPressed: () => Clipboard.setData(
+                      ClipboardData(text: code),
                     ),
-                ],
-              ),
+                    icon: const Icon(TinestIcons.copy),
+                  ),
+                ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -983,80 +959,71 @@ class _ProviderConnectionPaneState
     final definition = widget.state.catalog.definitions
         .where((item) => item.id == widget.connection.definitionId)
         .firstOrNull;
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(widget.connection.displayName),
-          description: TRText.inherit(
-            _statusLabel(l10n, widget.connection.status),
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(widget.connection.displayName),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        if (definition != null)
+          TRButton(
+            appearance: TRAppearance.outline,
+            onPressed: () => widget.onReauth(definition),
+            child: TRText.inherit(l10n.providerSettingsReconnect),
           ),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            if (definition != null)
-              TRButton(
-                appearance: TRAppearance.outline,
-                onPressed: () => widget.onReauth(definition),
-                child: TRText.inherit(l10n.providerSettingsReconnect),
-              ),
-            TRButton(
-              key: const ValueKey<String>('provider-prefix-save'),
-              intent: TRIntent.primary,
-              onPressed: _savePrefix,
-              child: TRText.inherit(l10n.commonSave),
-            ),
-          ],
+        TRButton(
+          key: const ValueKey<String>('provider-prefix-save'),
+          intent: TRIntent.primary,
+          onPressed: _savePrefix,
+          child: TRText.inherit(l10n.commonSave),
         ),
-        Expanded(
-          child: SettingsScaffold(
+      ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            title: l10n.providerSettingsModelPrefix,
+            banner: _error == null || _isPrefixConflict(_error)
+                ? null
+                : TRAlert(
+                    variant: TRStatusVariant.danger,
+                    title: TRText.inherit('$_error'),
+                  ),
             children: <Widget>[
-              SettingsSection.form(
-                title: l10n.providerSettingsModelPrefix,
-                banner: _error == null || _isPrefixConflict(_error)
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit('$_error'),
-                      ),
-                children: <Widget>[
-                  TRTextField(
-                    key: const ValueKey<String>('provider-model-prefix'),
-                    controller: _prefix,
-                    label: l10n.providerSettingsModelPrefix,
-                    helperText: l10n.providerSettingsModelPrefixHelp,
-                    errorText: _isPrefixConflict(_error)
-                        ? l10n.providerSettingsModelPrefixConflict
-                        : null,
-                    onChanged: (_) => setState(() => _error = null),
-                  ),
-                ],
-              ),
-              SettingsSection(
-                title: l10n.providerSettingsDisconnectTitle,
-                children: <Widget>[
-                  SettingsRow(
-                    title: TRText.inherit(
-                      l10n.providerSettingsDisconnectBody(
-                        widget.connection.displayName,
-                      ),
-                    ),
-                    control: TRButton(
-                      key: const ValueKey<String>(
-                        'provider-connection-disconnect',
-                      ),
-                      appearance: TRAppearance.ghost,
-                      intent: TRIntent.danger,
-                      onPressed: _disconnect,
-                      child: TRText.inherit(
-                        l10n.providerSettingsDisconnect,
-                      ),
-                    ),
-                  ),
-                ],
+              TRTextField(
+                key: const ValueKey<String>('provider-model-prefix'),
+                controller: _prefix,
+                label: l10n.providerSettingsModelPrefix,
+                helperText: l10n.providerSettingsModelPrefixHelp,
+                errorText: _isPrefixConflict(_error)
+                    ? l10n.providerSettingsModelPrefixConflict
+                    : null,
+                onChanged: (_) => setState(() => _error = null),
               ),
             ],
           ),
-        ),
-      ],
+          SettingsSection(
+            title: l10n.providerSettingsDisconnectTitle,
+            children: <Widget>[
+              SettingsRow(
+                title: TRText.inherit(
+                  l10n.providerSettingsDisconnectBody(
+                    widget.connection.displayName,
+                  ),
+                ),
+                control: TRButton(
+                  key: const ValueKey<String>(
+                    'provider-connection-disconnect',
+                  ),
+                  appearance: TRAppearance.ghost,
+                  intent: TRIntent.danger,
+                  onPressed: _disconnect,
+                  child: TRText.inherit(
+                    l10n.providerSettingsDisconnect,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1209,166 +1176,160 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(
-            widget.existing == null
-                ? l10n.providerSettingsCustomTitle
-                : widget.existing!.displayName,
-          ),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: _busy ? null : widget.onCancel,
-              child: TRText.inherit(l10n.commonCancel),
-            ),
-            TRButton(
-              key: const ValueKey<String>('provider-custom-save'),
-              intent: TRIntent.primary,
-              onPressed: _busy ? null : _save,
-              child: TRText.inherit(
-                widget.existing == null
-                    ? _busy
-                          ? l10n.commonCreating
-                          : l10n.commonCreate
-                    : _busy
-                    ? l10n.commonSaving
-                    : l10n.commonSave,
-              ),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(
+        widget.existing == null
+            ? l10n.providerSettingsCustomTitle
+            : widget.existing!.displayName,
+      ),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          onPressed: _busy ? null : widget.onCancel,
+          child: TRText.inherit(l10n.commonCancel),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection.form(
-                banner: _error == null
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit('$_error'),
-                      ),
-                children: <Widget>[
-                  TRTextField(controller: _name, label: l10n.commonName),
-                  TRTextField(
-                    controller: _baseUrl,
-                    label: l10n.providerSettingsBaseUrl,
-                  ),
-                  TRTextField(
-                    key: const ValueKey<String>('provider-model-prefix'),
-                    controller: _prefix,
-                    label: l10n.providerSettingsModelPrefix,
-                    helperText: l10n.providerSettingsModelPrefixHelp,
-                  ),
-                  TRSelectFormField<String>(
-                    initialValue: _wireFormatId,
-                    searchable: true,
-                    searchPlaceholder: l10n.selectSearchPlaceholder,
-                    noResultsText: l10n.selectNoResults,
-                    presentation: TinestSelectPresentation.resolve(context),
-                    label: l10n.providerSettingsApiFormat,
-                    width: TinestLayoutMetrics.settingsContentMaxWidth,
-                    items: <TRSelectItem<String>>[
-                      for (final format in widget.state.catalog.wireFormats)
-                        TRSelectItem<String>(
-                          value: format.id,
-                          label: format.label,
-                        ),
-                    ],
-                    onValueChange: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _wireFormatId = value;
-                        _controlIds.retainAll(
-                          _selectedWire.controls.map((control) => control.id),
-                        );
-                      });
-                    },
-                  ),
-                  TinestSwitchRow(
-                    flush: true,
-                    title: TRText.inherit(
-                      l10n.providerSettingsRequiresApiKey,
-                    ),
-                    value: _authenticationRequired,
-                    onChanged: (value) =>
-                        setState(() => _authenticationRequired = value),
-                  ),
-                  if (_authenticationRequired)
-                    TRTextField(
-                      key: const ValueKey<String>('provider-api-key'),
-                      controller: _apiKey,
-                      obscureText: true,
-                      label: l10n.providerSettingsApiKey,
-                    ),
-                  TRTextField(
-                    controller: _models,
-                    label: l10n.providerSettingsManualModels,
-                    // Demonstrates the comma-separated syntax with stand-in
-                    // model IDs, which providers never localize.
-                    placeholder: 'model-a, model-b',
-                  ),
-                  for (final control in _selectedWire.controls)
-                    TinestCheckboxRow(
-                      value: _controlIds.contains(control.id),
-                      onChanged: (selected) => setState(() {
-                        selected == true
-                            ? _controlIds.add(control.id)
-                            : _controlIds.remove(control.id);
-                      }),
-                      title: TRText.inherit(control.label),
-                      subtitle: control.description == null
-                          ? null
-                          : TRText.inherit(control.description!),
-                    ),
-                ],
-              ),
-              if (widget.existing case final existing?)
-                SettingsSection(
-                  title: l10n.providerSettingsActions,
-                  children: <Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(
-                        l10n.providerSettingsDisconnectBody(
-                          existing.displayName,
-                        ),
-                      ),
-                      control: TRButton(
-                        key: const ValueKey<String>(
-                          'provider-custom-disconnect',
-                        ),
-                        appearance: TRAppearance.ghost,
-                        intent: TRIntent.danger,
-                        onPressed: _busy ? null : _disconnect,
-                        child: TRText.inherit(
-                          l10n.providerSettingsDisconnect,
-                        ),
-                      ),
-                    ),
-                    SettingsRow(
-                      title: TRText.inherit(
-                        l10n.providerSettingsDeleteCustomBody(
-                          existing.displayName,
-                        ),
-                      ),
-                      control: TRButton(
-                        key: const ValueKey<String>(
-                          'provider-custom-delete',
-                        ),
-                        appearance: TRAppearance.ghost,
-                        intent: TRIntent.danger,
-                        onPressed: _busy ? null : _delete,
-                        child: TRText.inherit(l10n.commonDelete),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+        TRButton(
+          key: const ValueKey<String>('provider-custom-save'),
+          intent: TRIntent.primary,
+          onPressed: _busy ? null : _save,
+          child: TRText.inherit(
+            widget.existing == null
+                ? _busy
+                      ? l10n.commonCreating
+                      : l10n.commonCreate
+                : _busy
+                ? l10n.commonSaving
+                : l10n.commonSave,
           ),
         ),
       ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            banner: _error == null
+                ? null
+                : TRAlert(
+                    variant: TRStatusVariant.danger,
+                    title: TRText.inherit('$_error'),
+                  ),
+            children: <Widget>[
+              TRTextField(controller: _name, label: l10n.commonName),
+              TRTextField(
+                controller: _baseUrl,
+                label: l10n.providerSettingsBaseUrl,
+              ),
+              TRTextField(
+                key: const ValueKey<String>('provider-model-prefix'),
+                controller: _prefix,
+                label: l10n.providerSettingsModelPrefix,
+                helperText: l10n.providerSettingsModelPrefixHelp,
+              ),
+              TRSelectFormField<String>(
+                initialValue: _wireFormatId,
+                searchable: true,
+                searchPlaceholder: l10n.selectSearchPlaceholder,
+                noResultsText: l10n.selectNoResults,
+                presentation: TinestSelectPresentation.resolve(context),
+                label: l10n.providerSettingsApiFormat,
+                width: TinestLayoutMetrics.settingsContentMaxWidth,
+                items: <TRSelectItem<String>>[
+                  for (final format in widget.state.catalog.wireFormats)
+                    TRSelectItem<String>(
+                      value: format.id,
+                      label: format.label,
+                    ),
+                ],
+                onValueChange: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _wireFormatId = value;
+                    _controlIds.retainAll(
+                      _selectedWire.controls.map((control) => control.id),
+                    );
+                  });
+                },
+              ),
+              TinestSwitchRow(
+                flush: true,
+                title: TRText.inherit(
+                  l10n.providerSettingsRequiresApiKey,
+                ),
+                value: _authenticationRequired,
+                onChanged: (value) =>
+                    setState(() => _authenticationRequired = value),
+              ),
+              if (_authenticationRequired)
+                TRTextField(
+                  key: const ValueKey<String>('provider-api-key'),
+                  controller: _apiKey,
+                  obscureText: true,
+                  label: l10n.providerSettingsApiKey,
+                ),
+              TRTextField(
+                controller: _models,
+                label: l10n.providerSettingsManualModels,
+                // Demonstrates the comma-separated syntax with stand-in
+                // model IDs, which providers never localize.
+                placeholder: 'model-a, model-b',
+              ),
+              for (final control in _selectedWire.controls)
+                TinestCheckboxRow(
+                  value: _controlIds.contains(control.id),
+                  onChanged: (selected) => setState(() {
+                    selected == true
+                        ? _controlIds.add(control.id)
+                        : _controlIds.remove(control.id);
+                  }),
+                  title: TRText.inherit(control.label),
+                  subtitle: control.description == null
+                      ? null
+                      : TRText.inherit(control.description!),
+                ),
+            ],
+          ),
+          if (widget.existing case final existing?)
+            SettingsSection(
+              title: l10n.providerSettingsActions,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(
+                    l10n.providerSettingsDisconnectBody(
+                      existing.displayName,
+                    ),
+                  ),
+                  control: TRButton(
+                    key: const ValueKey<String>(
+                      'provider-custom-disconnect',
+                    ),
+                    appearance: TRAppearance.ghost,
+                    intent: TRIntent.danger,
+                    onPressed: _busy ? null : _disconnect,
+                    child: TRText.inherit(
+                      l10n.providerSettingsDisconnect,
+                    ),
+                  ),
+                ),
+                SettingsRow(
+                  title: TRText.inherit(
+                    l10n.providerSettingsDeleteCustomBody(
+                      existing.displayName,
+                    ),
+                  ),
+                  control: TRButton(
+                    key: const ValueKey<String>(
+                      'provider-custom-delete',
+                    ),
+                    appearance: TRAppearance.ghost,
+                    intent: TRIntent.danger,
+                    onPressed: _busy ? null : _delete,
+                    child: TRText.inherit(l10n.commonDelete),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 

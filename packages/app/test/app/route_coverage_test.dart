@@ -282,7 +282,7 @@ void main() {
       tester,
       api,
       const ProviderSettingsRoute(hostId: 'server').location,
-      find.text('연결됨'),
+      find.text('프로바이더'),
     ),
     tags: const <String>[
       'route_test__provider_settings_route__widget',

@@ -159,47 +159,38 @@ class _ProjectList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.projectSettingsHeading),
-          description: TRText.inherit(
-            l10n.projectSettingsCount(projects.length),
-          ),
-        ),
-        Expanded(
-          child: projects.isEmpty
-              ? SettingsEmptyState(
-                  title: l10n.projectSettingsNoProjects,
-                  icon: const Icon(TinestIcons.folder),
-                )
-              : SettingsCollectionList(
-                  children: <Widget>[
-                    TRTreeNav<String>.controlled(
-                      value: selectedId,
-                      itemSpacing: TRSpacing.extraSmall,
-                      onValueChange: (projectId) {
-                        if (projectId != null) onSelected(projectId);
-                      },
-                      items: <TRTreeNavItem<String>>[
-                        for (final project in projects)
-                          TRTreeNavLeaf<String>(
-                            value: project.id,
-                            showDisclosureIndicator: true,
-                            leading: Icon(
-                              project.kind == WorkspaceKind.git
-                                  ? TinestIcons.worktree
-                                  : TinestIcons.folder,
-                            ),
-                            label: TRText.inherit(project.name),
-                            description: TRText.inherit(project.rootPath),
-                          ),
-                      ],
-                    ),
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.projectSettingsHeading),
+      child: projects.isEmpty
+          ? SettingsEmptyState(
+              title: l10n.projectSettingsNoProjects,
+              icon: const Icon(TinestIcons.folder),
+            )
+          : SettingsCollectionList(
+              children: <Widget>[
+                TRTreeNav<String>.controlled(
+                  value: selectedId,
+                  itemSpacing: TRSpacing.extraSmall,
+                  onValueChange: (projectId) {
+                    if (projectId != null) onSelected(projectId);
+                  },
+                  items: <TRTreeNavItem<String>>[
+                    for (final project in projects)
+                      TRTreeNavLeaf<String>(
+                        value: project.id,
+                        showDisclosureIndicator: true,
+                        leading: Icon(
+                          project.kind == WorkspaceKind.git
+                              ? TinestIcons.worktree
+                              : TinestIcons.folder,
+                        ),
+                        label: TRText.inherit(project.name),
+                        description: TRText.inherit(project.rootPath),
+                      ),
                   ],
                 ),
-        ),
-      ],
+              ],
+            ),
     );
   }
 }
@@ -279,134 +270,127 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
             shell?.arguments ?? const <String>[],
           );
         }
-        return Column(
-          children: <Widget>[
-            TRPaneHeader(
-              title: TRText.inherit(widget.workspace.name),
-              description: TRText.inherit(value.sourcePath),
-              contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-              actions: <Widget>[
-                TRIconButton(
-                  appearance: TRAppearance.ghost,
-                  label: l10n.projectSettingsCopyPath,
-                  onPressed: () => unawaited(
-                    ref
-                        .read(toastMessengerProvider)
-                        .run(
-                          () => Clipboard.setData(
-                            ClipboardData(text: value.sourcePath),
-                          ),
-                          failure: l10n.commonActionFailed,
-                          success: l10n.commonCopied,
-                          id: 'project-settings-copy-path',
-                        ),
-                  ),
-                  icon: const Icon(TinestIcons.copy),
-                ),
-                TRButton(
-                  intent: TRIntent.primary,
-                  onPressed: _saving || !hostShellState.hasValue ? null : _save,
-                  child: TRText.inherit(
-                    _saving ? l10n.commonSaving : l10n.commonSave,
-                  ),
-                ),
-              ],
+        return SettingsDestinationScaffold(
+          title: TRText.inherit(widget.workspace.name),
+          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+          actions: <Widget>[
+            TRIconButton(
+              appearance: TRAppearance.ghost,
+              label: l10n.projectSettingsCopyPath,
+              onPressed: () => unawaited(
+                ref
+                    .read(toastMessengerProvider)
+                    .run(
+                      () => Clipboard.setData(
+                        ClipboardData(text: value.sourcePath),
+                      ),
+                      failure: l10n.commonActionFailed,
+                      success: l10n.commonCopied,
+                      id: 'project-settings-copy-path',
+                    ),
+              ),
+              icon: const Icon(TinestIcons.copy),
             ),
-            Expanded(
-              child: SettingsScaffold(
-                children: <Widget>[
-                  SettingsSection.form(
-                    title: l10n.projectSettingsHookHeading,
-                    description: l10n.projectSettingsHookHelp,
-                    children: <Widget>[
-                      TRTextField(
-                        controller: _setup,
-                        enabled: !_saving,
-                        minLines: 3,
-                        maxLines: 8,
-                        label: l10n.projectSettingsSetup,
-                        // Hook placeholders are shell commands, not prose: the
-                        // example has to stay something a shell would accept.
-                        placeholder: 'npm install',
-                      ),
-                      TRTextField(
-                        controller: _teardown,
-                        enabled: !_saving,
-                        minLines: 3,
-                        maxLines: 8,
-                        label: l10n.projectSettingsTeardown,
-                        placeholder: 'docker compose down',
-                      ),
-                    ],
-                  ),
-                  SettingsSection.form(
-                    title: l10n.projectSettingsShellHeading,
-                    description: l10n.projectSettingsShellHelp,
-                    children: <Widget>[
-                      TRTextField(
-                        key: const ValueKey<String>('project-shell-executable'),
-                        controller: _shellExecutable,
-                        enabled: !_saving,
-                        label: l10n.projectSettingsShellExecutable,
-                        placeholder: '/bin/zsh',
-                      ),
-                      TRTextField(
-                        key: const ValueKey<String>('project-shell-arguments'),
-                        controller: _shellArguments,
-                        enabled: !_saving,
-                        minLines: 2,
-                        maxLines: 4,
-                        label: l10n.projectSettingsShellArguments,
-                        placeholder: '-l',
-                      ),
-                    ],
-                  ),
-                  SettingsSection.form(
-                    title: l10n.projectSettingsHostShellHeading,
-                    description: l10n.projectSettingsHostShellHelp,
-                    banner: hostShellState.hasError
-                        ? TRAlert(
-                            title: TRText.inherit(
-                              l10n.settingsRefreshFailed(
-                                '${hostShellState.error}',
-                              ),
-                            ),
-                            variant: TRStatusVariant.danger,
-                          )
-                        : null,
-                    children: hostShellState.hasValue
-                        ? <Widget>[
-                            TRTextField(
-                              key: const ValueKey<String>(
-                                'host-shell-executable',
-                              ),
-                              controller: _hostShellExecutable,
-                              enabled: !_saving,
-                              label: l10n.projectSettingsShellExecutable,
-                              placeholder: '/bin/zsh',
-                            ),
-                            TRTextField(
-                              key: const ValueKey<String>(
-                                'host-shell-arguments',
-                              ),
-                              controller: _hostShellArguments,
-                              enabled: !_saving,
-                              minLines: 2,
-                              maxLines: 4,
-                              label: l10n.projectSettingsShellArguments,
-                              placeholder: '-l',
-                            ),
-                          ]
-                        : <Widget>[
-                            SettingsSkeletonLayout.overlay(
-                              semanticLabel: l10n.settingsLoading,
-                            ),
-                          ],
-                  ),
-                ],
+            TRButton(
+              intent: TRIntent.primary,
+              onPressed: _saving || !hostShellState.hasValue ? null : _save,
+              child: TRText.inherit(
+                _saving ? l10n.commonSaving : l10n.commonSave,
               ),
             ),
           ],
+          child: SettingsScaffold(
+            children: <Widget>[
+              SettingsSection.form(
+                title: l10n.projectSettingsHookHeading,
+                description: l10n.projectSettingsHookHelp,
+                children: <Widget>[
+                  TRTextField(
+                    controller: _setup,
+                    enabled: !_saving,
+                    minLines: 3,
+                    maxLines: 8,
+                    label: l10n.projectSettingsSetup,
+                    // Hook placeholders are shell commands, not prose: the
+                    // example has to stay something a shell would accept.
+                    placeholder: 'npm install',
+                  ),
+                  TRTextField(
+                    controller: _teardown,
+                    enabled: !_saving,
+                    minLines: 3,
+                    maxLines: 8,
+                    label: l10n.projectSettingsTeardown,
+                    placeholder: 'docker compose down',
+                  ),
+                ],
+              ),
+              SettingsSection.form(
+                title: l10n.projectSettingsShellHeading,
+                description: l10n.projectSettingsShellHelp,
+                children: <Widget>[
+                  TRTextField(
+                    key: const ValueKey<String>('project-shell-executable'),
+                    controller: _shellExecutable,
+                    enabled: !_saving,
+                    label: l10n.projectSettingsShellExecutable,
+                    placeholder: '/bin/zsh',
+                  ),
+                  TRTextField(
+                    key: const ValueKey<String>('project-shell-arguments'),
+                    controller: _shellArguments,
+                    enabled: !_saving,
+                    minLines: 2,
+                    maxLines: 4,
+                    label: l10n.projectSettingsShellArguments,
+                    placeholder: '-l',
+                  ),
+                ],
+              ),
+              SettingsSection.form(
+                title: l10n.projectSettingsHostShellHeading,
+                description: l10n.projectSettingsHostShellHelp,
+                banner: hostShellState.hasError
+                    ? TRAlert(
+                        title: TRText.inherit(
+                          l10n.settingsRefreshFailed(
+                            '${hostShellState.error}',
+                          ),
+                        ),
+                        variant: TRStatusVariant.danger,
+                      )
+                    : null,
+                children: hostShellState.hasValue
+                    ? <Widget>[
+                        TRTextField(
+                          key: const ValueKey<String>(
+                            'host-shell-executable',
+                          ),
+                          controller: _hostShellExecutable,
+                          enabled: !_saving,
+                          label: l10n.projectSettingsShellExecutable,
+                          placeholder: '/bin/zsh',
+                        ),
+                        TRTextField(
+                          key: const ValueKey<String>(
+                            'host-shell-arguments',
+                          ),
+                          controller: _hostShellArguments,
+                          enabled: !_saving,
+                          minLines: 2,
+                          maxLines: 4,
+                          label: l10n.projectSettingsShellArguments,
+                          placeholder: '-l',
+                        ),
+                      ]
+                    : <Widget>[
+                        SettingsSkeletonLayout.overlay(
+                          semanticLabel: l10n.settingsLoading,
+                        ),
+                      ],
+              ),
+            ],
+          ),
         );
       },
     );
