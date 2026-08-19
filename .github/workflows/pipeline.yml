@@ -15,6 +15,17 @@ on:
         required: true
         type: boolean
         default: true
+      # Exists to measure the homelab machines against GitHub's, not to switch
+      # to them. Only a dispatch reads it, so a pull request, the merge queue,
+      # and a push keep running exactly where they ran before.
+      runner_pool:
+        description: Which pool the quality jobs run on
+        required: false
+        type: choice
+        options:
+          - github
+          - self-hosted
+        default: github
   schedule:
     - cron: "17 18 * * *"
 
@@ -62,6 +73,11 @@ jobs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
       cli_matrix: ${{ steps.scope.outputs.cli_matrix }}
       mobile_matrix: ${{ steps.scope.outputs.mobile_matrix }}
+      runner_linux: ${{ steps.scope.outputs.runner_linux }}
+      runner_windows: ${{ steps.scope.outputs.runner_windows }}
+      runner_macos: ${{ steps.scope.outputs.runner_macos }}
+      runner_macos_intel: ${{ steps.scope.outputs.runner_macos_intel }}
+      dart_scopes_rest: ${{ steps.scope.outputs.dart_scopes_rest }}
     steps:
       - uses: actions/checkout@v5
       - uses: dart-lang/setup-dart@v1
@@ -77,6 +93,12 @@ jobs:
           # queue is an active ALLGREEN ruleset, so `main` is still only
           # reachable through a full-matrix run.
           CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
+          # The homelab machines carry `tinyrack-` prefixed labels, so a job
+          # can only land there when it asks for one by name. Anything that is
+          # not a dispatch therefore resolves to the hosted labels and runs
+          # where it always did.
+          RUNNER_POOL: ${{ (github.event_name != 'workflow_dispatch' &&
+            'github') || inputs.runner_pool }}
         run: |
           set -euo pipefail
 
@@ -104,12 +126,56 @@ jobs:
           if [ "${CROSS_PLATFORM}" = "true" ]; then
             matrix_scope='.host, .cross'
           fi
+          # Both pools are keyed by the hosted label a job would otherwise
+          # name, so the matrices below keep their `os` values and gain the
+          # labels to run on. There is no arm64 Mac mini equivalent of the
+          # Intel macOS runner, so that target stays hosted in both pools.
+          runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
+            "github": {
+              "ubuntu-24.04": ["ubuntu-24.04"],
+              "windows-2025": ["windows-2025"],
+              "macos-26": ["macos-26"],
+              "macos-15-intel": ["macos-15-intel"]
+            },
+            "self-hosted": {
+              "ubuntu-24.04": ["self-hosted", "tinyrack-ubuntu-ci"],
+              "windows-2025": ["self-hosted", "tinyrack-windows-ci"],
+              "macos-26": ["self-hosted", "tinyrack-macmini"],
+              "macos-15-intel": ["macos-15-intel"]
+            }
+          }[$pool]')"
+          if [ "$runners" = "null" ]; then
+            echo "::error::Unknown runner pool ${RUNNER_POOL}"
+            exit 1
+          fi
+
+          # Every Dart package except the one that gets a shard to itself.
+          # Read from the workspace list rather than repeated in the matrix, so
+          # a new package joins the `rest` shard instead of going untested.
+          packages=.github/dart-packages.json
+          shard_alone="$(jq -r '.shardAlone' "$packages")"
+          scopes_rest="$(jq -r --arg alone "$shard_alone" \
+            '[.packages[] | select(. != $alone) | "--scope=" + .] | join(" ")' \
+            "$packages")"
+          if [ -z "$scopes_rest" ]; then
+            echo "::error::Resolved no packages for the rest shard"
+            exit 1
+          fi
+
           matrices=.github/ci-matrices.json
+          scoped="map(. + {runs_on: (\$runners[.os] | tojson)})"
           {
             echo "scope=$verification_scope"
             echo "docs_only=$docs_only"
-            echo "cli_matrix=$(jq -c "[.cli | $matrix_scope] | add" "$matrices")"
-            echo "mobile_matrix=$(jq -c "[.mobile | $matrix_scope] | add" "$matrices")"
+            echo "cli_matrix=$(jq -c --argjson runners "$runners" \
+              "[.cli | $matrix_scope] | add | $scoped" "$matrices")"
+            echo "mobile_matrix=$(jq -c --argjson runners "$runners" \
+              "[.mobile | $matrix_scope] | add | $scoped" "$matrices")"
+            echo "runner_linux=$(jq -c '."ubuntu-24.04"' <<< "$runners")"
+            echo "runner_windows=$(jq -c '."windows-2025"' <<< "$runners")"
+            echo "runner_macos=$(jq -c '."macos-26"' <<< "$runners")"
+            echo "runner_macos_intel=$(jq -c '."macos-15-intel"' <<< "$runners")"
+            echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
   static-linux:
@@ -117,11 +183,12 @@ jobs:
     needs: changes
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _static-checks
@@ -141,11 +208,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality generate --check
@@ -167,8 +235,13 @@ jobs:
   # and reverted: on Windows the suites take 7.6 and 4.4 minutes, so one job
   # serialises them into 15.6 and the queue run went 7.7 -> 18.2 minutes,
   # against a setup that now costs under 2 minutes to repeat.
+  # `daemon` is 88 of the workspace's ~122 suites, and the slot allocator has to
+  # keep one slot per package for every package in the same command. On a
+  # four-core hosted Windows runner that left daemon running fully serial: it
+  # spent 454 of this job's 454 seconds while the other seven finished inside a
+  # minute. Splitting it into its own shard is what hands it the whole machine.
   dart-tests:
-    name: Dart tests (${{ matrix.os }})
+    name: Dart tests (${{ matrix.os }}, ${{ matrix.shard }})
     needs: changes
     if: github.event_name != 'schedule' &&
       github.event_name != 'pull_request' &&
@@ -176,30 +249,45 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os:
-          - macos-26
-          - windows-2025
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: macos-26
+            shard: daemon
+            scopes: --scope=daemon
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
+            shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: windows-2025
+            shard: daemon
+            scopes: --scope=daemon
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
+          - os: windows-2025
+            shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       # Dart 3.13 rewrites native-library install names before a suite starts.
       # Concurrent macOS suites can race while replacing the shared dylib, so
       # keep package execution serial there; Windows has no such rewrite.
       - if: matrix.os == 'macos-26'
         run: >-
-          dart run tinest_quality _test-dart --jobs=1
+          dart run tinest_quality _test-dart --jobs=1 ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
       - if: matrix.os != 'macos-26'
         run: >-
-          dart run tinest_quality _test-dart
+          dart run tinest_quality _test-dart ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-timing-dart-tests-${{ matrix.os }}
+          name: quality-timing-dart-tests-${{ matrix.os }}-${{ matrix.shard }}
           path: build/quality/dart-tests.json
           if-no-files-found: error
 
@@ -212,14 +300,17 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os:
-          - macos-26
-          - windows-2025
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: macos-26
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: windows-2025
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _test-flutter
@@ -232,35 +323,40 @@ jobs:
           if-no-files-found: error
 
   coverage-dart-linux:
-    name: Dart coverage
+    name: Dart coverage (${{ matrix.shard }})
     needs: changes
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: daemon
+            scopes: --scope=daemon
+          - shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
-          dart run tinest_quality _coverage-dart
+          dart run tinest_quality _coverage-dart ${{ matrix.scopes }}
           --report=build/quality/coverage-dart.json
+      # Only the packages this shard actually ran: coverage-check reads the
+      # thresholds per package, so naming one with no coverage data here would
+      # fail the shard rather than the package.
       - name: Enforce Dart package coverage
         run: >-
           dart run tinyrack_workspace coverage-check --line=90 --branch=80
-          --scope=agent
-          --scope=cli
-          --scope=client
-          --scope=daemon
-          --scope=protocol
-          --scope=relay
-          --scope=relay_protocol
-          --scope=tinest_quality
+          ${{ matrix.scopes }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-timing-coverage-dart-linux
+          name: quality-timing-coverage-dart-${{ matrix.shard }}
           path: build/quality/coverage-dart.json
           if-no-files-found: error
 
@@ -270,11 +366,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _coverage-flutter
@@ -295,11 +392,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _coverage-dart --scope=relay
@@ -320,11 +418,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: docker build --file packages/relay/Dockerfile --tag coder-relay:smoke .
       - name: Smoke the built relay and graceful shutdown
@@ -381,6 +480,8 @@ jobs:
             scenario: conversation-adversity
           - shard: conversation-history
             scenario: conversation-history
+          - shard: conversation-mcp
+            scenario: conversation-mcp
           - shard: conversation
             scenario: conversation
           - shard: provider
@@ -389,11 +490,12 @@ jobs:
             scenario: settings-desktop
           - shard: desktop-shell
             scenario: desktop-shell
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: xvfb
@@ -415,11 +517,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: >-
@@ -459,16 +562,20 @@ jobs:
       # in `.github/ci-matrices.json` so this job keeps one body.
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.mobile_matrix) }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - name: Set up Gradle cache
         if: matrix.gradle_cache
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: enhanced
+          # The Gradle home persists on a self-hosted machine, so the Actions
+          # cache would only add an internet round trip to GitHub.
+          cache-disabled: ${{ runner.environment != 'github-hosted' }}
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: packages/app
@@ -509,13 +616,16 @@ jobs:
         include:
           - os: macos-26
             command: flutter build macos --debug -t lib/main.dart
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
           - os: windows-2025
             command: flutter build windows --debug -t lib/main.dart
-    runs-on: ${{ matrix.os }}
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: packages/desktop_app
@@ -526,11 +636,12 @@ jobs:
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       # A dart:io import reaching the web entrypoint only fails here, so this
       # runs on every pull request rather than at release time.
@@ -559,11 +670,12 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.cli_matrix) }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - uses: ./.github/actions/build-cli-bundle
         with:
@@ -816,6 +928,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: enhanced
+          cache-disabled: ${{ runner.environment != 'github-hosted' }}
       - run: dart pub get --enforce-lockfile
       - name: Restore Android signing material
         env:

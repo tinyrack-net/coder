@@ -24,7 +24,18 @@ runs:
         # This is the one change here measured only by inference. If a Windows
         # setup step is not faster than the 4.5 minutes it took before, drop
         # the condition and cache unconditionally again.
-        cache: ${{ runner.os != 'Windows' }}
+        #
+        # A self-hosted runner opts out of both caches entirely. The Actions
+        # cache lives on GitHub, so every restore is an internet round trip
+        # from the homelab, while the machine already keeps the SDK across
+        # jobs: setup.sh downloads only when `$CACHE_PATH/flutter/bin/flutter`
+        # is not already executable, and CACHE_PATH defaults under
+        # RUNNER_TOOL_CACHE, which persists. The first job on a machine pays
+        # one CDN download and the rest pay nothing. `pub-cache` is
+        # deliberately left unset: it follows `cache`, so this one condition
+        # governs both cache steps.
+        cache: ${{ runner.environment == 'github-hosted' &&
+          runner.os != 'Windows' }}
         # Restore the pub cache into the runner *instance's* own tool cache,
         # never into the shared home. The self-hosted Mac mini runs two runner
         # instances as one user; both restoring the same key into

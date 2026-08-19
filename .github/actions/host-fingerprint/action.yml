@@ -1,0 +1,41 @@
+name: Record the host
+description: >-
+  Print the machine that actually ran the job. A runner name does not identify
+  hardware: macmini-01 and macmini-02 are two runner instances sharing one Mac
+  mini, so two concurrent macOS jobs contend for the same CPU. The
+  GitHub-hosted against self-hosted comparison cannot be read without knowing
+  the core count, memory, and OS version behind each measurement.
+
+runs:
+  using: composite
+  steps:
+    - if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          cores="$(sysctl -n hw.ncpu)"
+          memory_gb=$(( $(sysctl -n hw.memsize) / 1073741824 ))
+          release="$(sw_vers -productName) $(sw_vers -productVersion)"
+        else
+          cores="$(nproc)"
+          memory_gb=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / 1048576 ))
+          release="$(. /etc/os-release && printf '%s' "$PRETTY_NAME")"
+        fi
+        printf 'host-fingerprint: runner=%s hostname=%s os=%s arch=%s cores=%s memory_gb=%s\n' \
+          "${RUNNER_NAME:-unknown}" "$(hostname)" "$release" \
+          "${RUNNER_ARCH:-unknown}" "$cores" "$memory_gb" \
+          | tee -a "$GITHUB_STEP_SUMMARY"
+
+    - if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $os = Get-CimInstance Win32_OperatingSystem
+        $cores = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+        $memoryGb = [math]::Round($os.TotalVisibleMemorySize / 1MB)
+        $line = "host-fingerprint: runner=$($env:RUNNER_NAME) " +
+          "hostname=$($env:COMPUTERNAME) os=$($os.Caption) $($os.Version) " +
+          "arch=$($env:RUNNER_ARCH) cores=$cores memory_gb=$memoryGb"
+        Write-Output $line
+        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $line

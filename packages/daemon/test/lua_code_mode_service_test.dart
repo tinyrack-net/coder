@@ -35,6 +35,52 @@ void main() {
 
   tearDown(() => service.close());
 
+  test("losing the staging promotion race uses the winner's cache", () async {
+    // `dart test` runs VM suites as isolates of one process. Neither guard here
+    // survives that: `_developmentLuaHostStages` is top-level state, so each
+    // isolate has its own copy, and a POSIX fcntl lock is held per process, so
+    // isolates of the same process never exclude each other. Every suite
+    // therefore stages, and only the first `rename` onto the shared cache can
+    // win -- the rest hit ENOTEMPTY.
+    //
+    // This showed up the moment Dart coverage went from --concurrency=1 to 4:
+    // `FileSystemException: Rename failed ... Directory not empty, errno = 39`
+    // reached a client as a bare "Internal daemon error."
+    final workspace = Directory.systemTemp.createTempSync(
+      'tinest-lua-race-',
+    );
+    addTearDown(() => workspace.deleteSync(recursive: true));
+    File(p.join(workspace.path, '.dart_tool', 'package_config.json'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+        jsonEncode(<String, Object?>{
+          'configVersion': 2,
+          'packages': <Map<String, Object?>>[
+            <String, Object?>{
+              'name': 'lua_tool_runtime',
+              'rootUri': '../runtime/',
+              'packageUri': 'lib/',
+              'languageVersion': '3.12',
+            },
+          ],
+        }),
+      );
+    File(
+      p.join(workspace.path, 'runtime', 'native', 'bootstrap.lua'),
+    ).createSync(recursive: true);
+    final stager = _RaceLosingLuaHostStager();
+
+    final command = await resolveLuaHostCommand(
+      sourceRoot: workspace.path,
+      stager: stager,
+    );
+
+    expect(stager.calls, 1);
+    expect(File(command.executable).existsSync(), isTrue);
+    expect(File(command.arguments.single).existsSync(), isTrue);
+    expect(p.isWithin(stager.cacheRoot!, command.executable), isTrue);
+  });
+
   test('development discovery stages the pinned native Lua host', () async {
     final workspace = Directory.systemTemp.createTempSync(
       'tinest-lua-discovery-',
@@ -623,6 +669,31 @@ final class _LuaHostStager implements LuaHostDistributionStager {
     destinations.add(destination);
     buildDirectories.add(buildDirectory);
     expect(Directory(buildDirectory).existsSync(), isTrue);
+    return _writeDistribution(destination);
+  }
+}
+
+/// Completes the shared cache while this caller is still staging into its own
+/// temporary directory, which is what losing the promotion race looks like.
+final class _RaceLosingLuaHostStager implements LuaHostDistributionStager {
+  int calls = 0;
+  String? cacheRoot;
+
+  @override
+  Future<lua.LuaHostDistribution> stage({
+    required String destination,
+    required String packageRoot,
+    required String buildDirectory,
+  }) async {
+    calls += 1;
+    // `destination` is `<cache root>.staging-XXXXXX`, so the promotion target
+    // comes from it rather than from repeating how the caller builds the path.
+    final marker = destination.lastIndexOf('.staging-');
+    final root = destination.substring(0, marker);
+    cacheRoot = root;
+    // The winner promotes first, so by the time this caller renames, the
+    // destination already exists and holds a complete host.
+    _writeDistribution(root);
     return _writeDistribution(destination);
   }
 }

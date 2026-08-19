@@ -38,8 +38,22 @@ class TinestClientException implements Exception {
   final Map<String, dynamic> details;
 
   @override
-  String toString() =>
-      'TinestClientException${code == null ? '' : '($code)'}: $message';
+  String toString() {
+    final prefix = 'TinestClientException${code == null ? '' : '($code)'}';
+    if (details.isEmpty) return '$prefix: $message';
+    // An internal daemon failure carries no usable message by design: the
+    // daemon withholds the real one because it routinely holds paths, tokens,
+    // and prompt text, and sends the exception type and a trace id instead.
+    // Printing only the message turns every such failure into "Internal daemon
+    // error.", which says nothing and cannot be matched against the
+    // diagnostics record that does hold the stack.
+    final context =
+        (details.entries.toList()
+              ..sort((left, right) => left.key.compareTo(right.key)))
+            .map((entry) => '${entry.key}=${entry.value}')
+            .join(', ');
+    return '$prefix: $message ($context)';
+  }
 }
 
 /// TinestClient defines a public contract.

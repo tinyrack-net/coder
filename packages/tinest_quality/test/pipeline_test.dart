@@ -141,6 +141,59 @@ void main() {
     expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
   });
 
+  test('the dominant Dart package is tested in its own job', () {
+    // `daemon` holds 88 of the workspace's ~122 suites and decided the whole
+    // pipeline's wall clock: on a four-core hosted Windows runner the eight
+    // packages each take one slot, so daemon ran fully serial and spent 454 of
+    // `Dart tests`'s 454 seconds. Splitting it out is what lets the slot
+    // allocator hand it the entire machine, which no budget change can do while
+    // seven other packages each need a slot of their own.
+    for (final name in <String>['dart-tests', 'coverage-dart-linux']) {
+      final job = _job(workflow, name);
+      expect(job, contains('--scope=daemon'), reason: name);
+      expect(job, contains('matrix.scopes'), reason: name);
+    }
+    final dart = _job(workflow, 'dart-tests');
+    expect(dart, contains('shard: daemon'));
+    expect(dart, contains('shard: rest'));
+    // The gate reads results by job id, so both shards stay required.
+    expect(_job(workflow, 'quality-gate'), contains('- dart-tests'));
+    expect(_job(workflow, 'quality-gate'), contains('- coverage-dart-linux'));
+  });
+
+  test('every Dart package with tests belongs to a shard', () {
+    // A package missing from this list would be dropped by both shards and stop
+    // being tested while the gate still went green, so the list has to match
+    // the workspace rather than be maintained alongside it.
+    final declared = jsonDecode(
+      File('.github/dart-packages.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final packages = (declared['packages']! as List<dynamic>).cast<String>();
+    final onItsOwn = declared['shardAlone']! as String;
+    expect(packages, contains(onItsOwn));
+
+    final actual = Directory('packages')
+        .listSync()
+        .whereType<Directory>()
+        .map((entry) {
+          final segments = entry.uri.pathSegments;
+          return segments[segments.length - 2];
+        })
+        .where((name) => Directory('packages/$name/test').existsSync())
+        .where(
+          (name) =>
+              !File('packages/$name/pubspec.yaml')
+                  .readAsStringSync()
+                  .contains('flutter:\n    sdk: flutter'),
+        )
+        .toSet();
+    expect(
+      actual.difference(packages.toSet()),
+      isEmpty,
+      reason: 'a Dart package with tests is in no shard',
+    );
+  });
+
   test('macOS Dart suites serialize native-asset installation', () {
     final dart = _job(workflow, 'dart-tests');
     expect(dart, contains("matrix.os == 'macos-26'"));
@@ -157,7 +210,13 @@ void main() {
     final setup = File(
       '.github/actions/setup-flutter/action.yml',
     ).readAsStringSync();
-    expect(setup, contains(r"cache: ${{ runner.os != 'Windows' }}"));
+    expect(
+      setup,
+      contains(
+        "cache: \${{ runner.environment == 'github-hosted' &&\n"
+        "          runner.os != 'Windows' }}",
+      ),
+    );
     expect(setup, isNot(contains('cache: true')));
     // One definition, so no job can quietly opt back into the slow path.
     expect(
@@ -337,19 +396,28 @@ void main() {
   });
 
   test('Dart coverage enforces every non-Flutter package', () {
+    // The scopes now come from .github/dart-packages.json so the two shards and
+    // coverage-check cannot drift apart; `every Dart package with tests belongs
+    // to a shard` is what checks the list against the workspace.
     final coverage = _job(workflow, 'coverage-dart-linux');
-    for (final package in <String>[
-      'agent',
-      'cli',
-      'client',
-      'daemon',
-      'protocol',
-      'relay',
-      'relay_protocol',
-      'tinest_quality',
-    ]) {
-      expect(coverage, contains('--scope=$package'), reason: package);
-    }
+    final packages =
+        ((jsonDecode(
+                  File('.github/dart-packages.json').readAsStringSync(),
+                ) as Map<String, dynamic>)['packages']!
+                as List<dynamic>)
+            .cast<String>();
+    expect(packages, hasLength(8));
+    expect(coverage, contains('--scope=daemon'));
+    expect(coverage, contains(r'${{ matrix.scopes }}'));
+    // coverage-check runs with the same scopes the shard tested, never a
+    // wider list that would fail on packages this shard never ran.
+    expect(
+      coverage,
+      contains(
+        'coverage-check --line=90 --branch=80\n          '
+        r'${{ matrix.scopes }}',
+      ),
+    );
     expect(
       _job(workflow, 'relay-coverage-linux'),
       contains('tinest_quality _coverage-dart --scope=relay'),
@@ -726,7 +794,7 @@ void main() {
     expect(workflow, contains('merge_group:'));
     expect(workflow, contains('- main'));
     expect(job, contains("if: github.event_name != 'schedule'"));
-    expect(job, contains('runs-on: ubuntu-24.04'));
+    expect(job, contains(_resolvedRunsOn('runner_linux')));
     expect(job, contains('./.github/actions/setup-flutter'));
     for (final package in <String>[
       'ibus-gtk3',
@@ -969,7 +1037,137 @@ void main() {
       isNot(contains('dart pub global run shipworld:shipworld')),
     );
   });
+  test('a manual dispatch is the only thing that can reach the homelab', () {
+    // The self-hosted machines carry `tinyrack-` prefixed labels, so no job
+    // reaches them unless it asks for one by name. That is what makes the
+    // GitHub-hosted measurement a clean baseline, and it is why the pool
+    // selector can exist without touching what a pull request, the merge
+    // queue, or a push actually runs.
+    expect(workflow, contains('runner_pool:'));
+    expect(workflow, contains('default: github'));
+
+    final changes = _job(workflow, 'changes');
+    for (final output in <String>[
+      'runner_linux',
+      'runner_windows',
+      'runner_macos',
+      'runner_macos_intel',
+    ]) {
+      expect(
+        changes,
+        contains('$output: \${{ steps.scope.outputs.$output }}'),
+        reason: output,
+      );
+    }
+    for (final label in <String>[
+      'tinyrack-ubuntu-ci',
+      'tinyrack-windows-ci',
+      'tinyrack-macmini',
+    ]) {
+      expect(changes, contains(label), reason: label);
+    }
+    // Anything other than a dispatch has to resolve to the hosted labels, so
+    // everyday CI keeps running exactly where it ran before.
+    expect(changes, contains("github.event_name != 'workflow_dispatch'"));
+  });
+
+  test('every measured quality job resolves runs-on through the scope', () {
+    const singleHost = <String, String>{
+      'static-linux': 'runner_linux',
+      'generated-linux': 'runner_linux',
+      'coverage-dart-linux': 'runner_linux',
+      'coverage-flutter-linux': 'runner_linux',
+      'relay-coverage-linux': 'runner_linux',
+      'relay-smoke-linux': 'runner_linux',
+      'debug-e2e-linux': 'runner_linux',
+      'linux-ibus-terminal-e2e': 'runner_linux',
+      'web-build': 'runner_linux',
+    };
+    for (final entry in singleHost.entries) {
+      expect(
+        _job(workflow, entry.key),
+        contains(_resolvedRunsOn(entry.value)),
+        reason: entry.key,
+      );
+    }
+    // The matrix jobs carry the resolved labels per entry instead, so one job
+    // body can still span several hosts.
+    for (final name in <String>[
+      'dart-tests',
+      'flutter-tests',
+      'desktop-debug-build',
+      'mobile-debug-build',
+      'cli-verify',
+    ]) {
+      expect(
+        _job(workflow, name),
+        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
+        reason: name,
+      );
+    }
+    // No measured job may keep a bare hosted label: that would silently pin it
+    // to one pool and quietly bias the comparison.
+    for (final name in <String>[...singleHost.keys, 'dart-tests']) {
+      expect(
+        _job(workflow, name),
+        isNot(contains('runs-on: ubuntu-24.04')),
+        reason: name,
+      );
+    }
+  });
+
+  test('the scope and gate jobs stay pinned as the fixed reference', () {
+    // `changes` cannot read its own outputs, and `quality-gate` is a jq
+    // one-liner whose duration is the same on either pool, so both stay on the
+    // hosted label and act as the fixed point both arms are measured against.
+    expect(_job(workflow, 'changes'), contains('runs-on: ubuntu-24.04'));
+    expect(_job(workflow, 'quality-gate'), contains('runs-on: ubuntu-24.04'));
+  });
+
+  test('a self-hosted runner never round-trips to the Actions cache', () {
+    // Every `actions/cache` entry travels to GitHub's cache service over the
+    // internet. A homelab machine keeps its tool cache, pub cache, Gradle
+    // home, and installed packages on local disk between jobs, so the fetch
+    // buys nothing and costs the whole transfer. flutter-action's setup.sh
+    // skips the download outright when `$CACHE_PATH/flutter/bin/flutter` is
+    // already executable, which is what makes opting out cheaper rather than
+    // more expensive.
+    final setup = File(
+      '.github/actions/setup-flutter/action.yml',
+    ).readAsStringSync();
+    expect(setup, contains("runner.environment == 'github-hosted'"));
+    // pub caching follows `cache` unless it is set, so one condition governs
+    // both of flutter-action's cache steps.
+    expect(setup, isNot(contains('pub-cache:')));
+
+    expect(
+      linuxDesktopDependencies,
+      contains("if: runner.environment == 'github-hosted'"),
+    );
+    for (final gradle in <String>[
+      _job(workflow, 'mobile-debug-build'),
+      _job(workflow, 'build-android-release'),
+    ]) {
+      expect(gradle, contains('cache-disabled:'));
+    }
+  });
+
+  test('measured jobs record which machine actually ran them', () {
+    // macmini-01 and macmini-02 are two runner instances on one Mac mini, so a
+    // job name does not identify a machine. Without this the report cannot say
+    // what was compared against what.
+    expect(workflow, contains('./.github/actions/host-fingerprint'));
+    final fingerprint = File(
+      '.github/actions/host-fingerprint/action.yml',
+    ).readAsStringSync();
+    expect(loadYaml(fingerprint), isA<YamlMap>());
+    expect(fingerprint, contains('RUNNER_NAME'));
+  });
 }
+
+/// The `runs-on` a measured job uses once [output] resolves the pool.
+String _resolvedRunsOn(String output) =>
+    'runs-on: \${{ fromJSON(needs.changes.outputs.$output) }}';
 
 String _job(String workflow, String name) {
   final start = workflow.indexOf('  $name:\n');

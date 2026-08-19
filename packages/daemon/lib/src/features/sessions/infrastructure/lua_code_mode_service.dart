@@ -202,7 +202,22 @@ Future<lua.LuaHostCommand> _stageDevelopmentLuaHostWithFileLock({
         staging.path,
         distribution.bootstrapPath,
       );
-      await staging.rename(root);
+      // Promotion is a race that more than one caller can enter. Neither guard
+      // above closes it: `_developmentLuaHostStages` is top-level state, so
+      // every isolate holds its own, and a POSIX lock belongs to the process,
+      // so isolates of one process never exclude each other -- which is exactly
+      // what `dart test` runs suites as. Renaming onto a directory another
+      // caller already promoted fails with ENOTEMPTY.
+      //
+      // Losing that race is not an error: the cache the winner left is the same
+      // pinned distribution this caller just built, so adopt it.
+      try {
+        await staging.rename(root);
+      } on FileSystemException {
+        final winner = lua.LuaHostCommand.fromDirectory(root);
+        if (!_isCompleteHost(winner)) rethrow;
+        return winner;
+      }
       final cached = lua.LuaHostCommand(
         executable: p.join(root, hostPath),
         arguments: <String>[p.join(root, bootstrapPath)],

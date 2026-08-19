@@ -1,0 +1,21 @@
+{
+  "_comment": [
+    "Every Dart (non-Flutter) workspace package that `_test-dart` and",
+    "`_coverage-dart` run. `daemon` holds most of the suites and gets a shard",
+    "to itself so the slot allocator can hand it the whole machine; the rest",
+    "share one. The list lives here rather than inline so the test shard, the",
+    "coverage shard, and coverage-check cannot drift apart, and so a package",
+    "added here joins a shard instead of silently going untested."
+  ],
+  "packages": [
+    "agent",
+    "cli",
+    "client",
+    "daemon",
+    "protocol",
+    "relay",
+    "relay_protocol",
+    "tinest_quality"
+  ],
+  "shardAlone": "daemon"
+}
