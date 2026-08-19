@@ -2209,7 +2209,6 @@ void main() {
       'feature_test__turn_question__e2e',
       'feature_scenario__turn_question__ask_and_answer__e2e',
       'feature_test__agent_definition_management__e2e',
-      'feature_test__mcp_server_management__e2e',
       'feature_test__skill_catalog__e2e',
       'feature_test__agent_collaboration__e2e',
       'feature_test__provider_catalog__e2e',
@@ -2242,10 +2241,6 @@ void main() {
       // ignore: lines_longer_than_80_chars
       'feature_scenario__agent_definition_management__invalid_definition_rejected__e2e',
       'feature_scenario__agent_definition_management__archive_and_reset__e2e',
-      'feature_scenario__mcp_server_management__add_edit_test_remove__e2e',
-      // The scenario tag mirrors its typed manifest ID exactly.
-      // ignore: lines_longer_than_80_chars
-      'feature_scenario__mcp_server_management__offline_and_secret_recovery__e2e',
       'feature_scenario__mcp_tool_execution__approve_execute_result__e2e',
       'feature_scenario__mcp_tool_execution__reject_and_offline__e2e',
       'feature_scenario__skill_catalog__global_project_partition__e2e',

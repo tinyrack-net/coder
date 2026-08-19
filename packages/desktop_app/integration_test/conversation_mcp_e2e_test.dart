@@ -192,7 +192,11 @@ void main() {
       expect(await assertions.mcp.listMcpServers(), isEmpty);
     },
     tags: const <String>[
-      'feature_scenario__mcp_servers__repair_discover_remove__e2e',
+      'feature_test__mcp_server_management__e2e',
+      'feature_scenario__mcp_server_management__add_edit_test_remove__e2e',
+      // The scenario tag mirrors its typed manifest ID exactly.
+      // ignore: lines_longer_than_80_chars
+      'feature_scenario__mcp_server_management__offline_and_secret_recovery__e2e',
     ],
   );
 }
