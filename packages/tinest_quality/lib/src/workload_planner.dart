@@ -44,7 +44,8 @@ Map<String, int> allocatePackageJobs(
     var worst = chosen.suites / allocations[chosen.name]!;
     for (final workload in workloads.skip(1)) {
       final ratio = workload.suites / allocations[workload.name]!;
-      final better = ratio > worst ||
+      final better =
+          ratio > worst ||
           (ratio == worst && workload.name.compareTo(chosen.name) < 0);
       if (better) {
         chosen = workload;

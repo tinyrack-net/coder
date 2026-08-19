@@ -181,9 +181,10 @@ void main() {
         })
         .where((name) => Directory('packages/$name/test').existsSync())
         .where(
-          (name) => !File('packages/$name/pubspec.yaml')
-              .readAsStringSync()
-              .contains('flutter:\n    sdk: flutter'),
+          (name) =>
+              !File('packages/$name/pubspec.yaml')
+                  .readAsStringSync()
+                  .contains('flutter:\n    sdk: flutter'),
         )
         .toSet();
     expect(
@@ -399,9 +400,12 @@ void main() {
     // coverage-check cannot drift apart; `every Dart package with tests belongs
     // to a shard` is what checks the list against the workspace.
     final coverage = _job(workflow, 'coverage-dart-linux');
-    final packages = ((jsonDecode(
-      File('.github/dart-packages.json').readAsStringSync(),
-    ) as Map<String, dynamic>)['packages']! as List<dynamic>).cast<String>();
+    final packages =
+        ((jsonDecode(
+                  File('.github/dart-packages.json').readAsStringSync(),
+                ) as Map<String, dynamic>)['packages']!
+                as List<dynamic>)
+            .cast<String>();
     expect(packages, hasLength(8));
     expect(coverage, contains('--scope=daemon'));
     expect(coverage, contains(r'${{ matrix.scopes }}'));
@@ -409,8 +413,10 @@ void main() {
     // wider list that would fail on packages this shard never ran.
     expect(
       coverage,
-      contains('coverage-check --line=90 --branch=80\n          '
-          r'${{ matrix.scopes }}'),
+      contains(
+        'coverage-check --line=90 --branch=80\n          '
+        r'${{ matrix.scopes }}',
+      ),
     );
     expect(
       _job(workflow, 'relay-coverage-linux'),
