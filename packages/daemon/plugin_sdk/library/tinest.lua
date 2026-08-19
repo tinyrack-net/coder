@@ -697,7 +697,7 @@ end
 ---@field type 'toolResult'
 ---@field callId string
 ---@field output string
----@field toolKind 'function'|'freeform'
+---@field toolKind 'function'
 ---@field isError boolean
 ---@field content? table[]
 ---@field structuredContent? any
@@ -727,12 +727,8 @@ end
 ---@field type 'tool_call'
 ---@field call_id string
 ---@field name string
----@field input tinest.ModelToolCallInput
+---@field arguments table<string, any>
 ---@field tool_ref? tinest.ToolRef<any, any>
-
----@class tinest.ModelToolCallInput
----@field type 'json'|'freeform'
----@field value any
 
 ---@class tinest.ModelUsageEvent: tinest.ModelUsage
 ---@field type 'usage'
@@ -757,7 +753,7 @@ end
 ---@alias tinest.UiSlot 'agentSettings'|'composerControl'|'conversationStatus'|'timeline'|'dialog'|'toast'
 ---@alias tinest.Capability 'model.call'|'tools.list'|'tools.invoke'|'state.read'|'state.write'|'scheduler.manage'|'ui.publish'|'workspace.read'|'workspace.patch'|'process.execute'|'process.write'|'attachment.publish'|'attachment.read'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'network.access'|'secret.access'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'
 ---@alias tinest.Effect 'filesystem.read'|'filesystem.write'|'process.command'|'process.write'|'network.request'|'state.read'|'state.write'|'scheduler.enqueue'|'ui.publish'|'ui.timeline'|'ui.dialog'|'attachment.read'|'attachment.write'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'|'model.call'|'tools.list'|'tools.invoke'|'context.read'|'context.reset'|'context.compact'
----@alias tinest.ModelCapability 'streaming'|'function_tools'|'freeform_tools'|'media'|'image_input'|'file_input'|'role.system'|'role.developer'|'role.user'|'role.assistant'
+---@alias tinest.ModelCapability 'streaming'|'function_tools'|'deferred_tools'|'media'|'image_input'|'file_input'|'role.system'|'role.developer'|'role.user'|'role.assistant'
 
 ---@class (exact) tinest.CapabilityApi
 ---@field model {call: 'model.call'}
@@ -794,7 +790,7 @@ end
 ---@class (exact) tinest.ModelCapabilityApi
 ---@field streaming 'streaming'
 ---@field function_tools 'function_tools'
----@field freeform_tools 'freeform_tools'
+---@field deferred_tools 'deferred_tools'
 ---@field media 'media'
 ---@field image_input 'image_input'
 ---@field file_input 'file_input'
@@ -813,7 +809,7 @@ end
 ---@field id string
 ---@field name? string
 ---@field description? string
----@field kind? 'function'|'freeform'|'deferred'
+---@field kind? 'function'|'deferred'
 ---@field uses? tinest.HostPrimitiveRef[]
 ---@field effects? tinest.Effect[]
 ---@field required_capabilities? tinest.Capability[]
@@ -1549,7 +1545,7 @@ local ui_api = {slot = {
 local model_capability_api = {
   streaming = "streaming",
   function_tools = "function_tools",
-  freeform_tools = "freeform_tools",
+  deferred_tools = "deferred_tools",
   media = "media",
   image_input = "image_input",
   file_input = "file_input",
@@ -1625,9 +1621,7 @@ local tinest = {
   plugin = {},
   schema = schema,
   tool = {
-    kind = {
-      function_ = "function", freeform = "freeform", deferred = "deferred",
-    },
+    kind = {function_ = "function", deferred = "deferred"},
     exposure = {advertised = "advertised", deferred = "deferred"},
   },
   driver = {},
@@ -1709,20 +1703,9 @@ end
 local function tool_constructor(kind, spec, input, output, callback)
   local extras = {kind = kind, input_schema = schema_document(input, "input schema")}
   if output ~= nil then extras.output_schema = schema_document(output, "output schema") end
-  local run = callback
-  if kind == "freeform" then
-    run = function(arguments)
-      local public, context = invocation_arguments(arguments)
-      if type(public) == "table" and public.input ~= nil then
-        return callback(public.input, context)
-      end
-      return callback(public, context)
-    end
-  else
-    run = function(arguments)
-      local public, context = invocation_arguments(arguments)
-      return callback(public, context)
-    end
+  local run = function(arguments)
+    local public, context = invocation_arguments(arguments)
+    return callback(public, context)
   end
   return contribution("tool", spec, run, extras)
 end
@@ -1735,15 +1718,6 @@ end
 ---@return tinest.ToolRef<I, O>
 function tinest.tool.function_(spec, input, output, callback)
   return tool_constructor("function", spec, input, output, callback)
-end
----@generic O
----@param spec tinest.ToolSpec
----@param input tinest.Schema<string>
----@param output tinest.Schema<O>?
----@param callback fun(source: string, context: tinest.ToolContext): O|tinest.ToolValue<O>
----@return tinest.ToolRef<string, O>
-function tinest.tool.freeform(spec, input, output, callback)
-  return tool_constructor("freeform", spec, input, output, callback)
 end
 ---@generic I, O
 ---@param spec tinest.ToolSpec
@@ -1774,9 +1748,6 @@ function tinest.tool.template(spec, payload, input, output, callback)
   local run = function(arguments)
     local wire = expect_table(arguments, "template invocation", 2)
     local public, context = invocation_arguments(wire.arguments or {})
-    if wire.freeform == true and type(public) == "table" then
-      public = public.input
-    end
     return callback(public, copy_json(wire.payload or {}), context)
   end
   return contribution("tool_template", spec, run, extras)
@@ -2276,28 +2247,21 @@ local function canonical_model_json_value(value, schema)
   return value
 end
 
----Canonicalizes provider model input against the selected tool schema.
+---Canonicalizes provider model arguments against the selected tool schema.
 ---Optional object fields whose schemas reject JSON null are omitted, while
----required fields, nullable fields, freeform text, and array nulls are kept.
+---required fields, nullable fields, and array nulls are kept.
 ---@param call tinest.ModelToolCallEvent
 ---@param descriptor? tinest.ToolDescriptor<any, any>
 ---@return any
 function tinest.tools.model_input(call, descriptor)
   if type(call) ~= "table" or call == runtime_json_null or
-      type(call.input) ~= "table" or call.input == runtime_json_null then
+      type(call.arguments) ~= "table" or call.arguments == runtime_json_null then
     return {}
   end
-  if call.input.type == "json" then
-    local value = call.input.value
-    if value == nil then value = {} end
-    return canonical_model_json_value(
-      value,
-      descriptor and descriptor.input_schema or nil
-    )
-  end
-  local value = call.input.value
-  if value == nil then return "" end
-  return value
+  return canonical_model_json_value(
+    call.arguments,
+    descriptor and descriptor.input_schema or nil
+  )
 end
 
 ---@return tinest.ToolDescriptor<any, any>[]

@@ -1,8 +1,10 @@
 import 'package:daemon/src/features/plugins/infrastructure/plugin_authoring.dart';
+import 'package:daemon/src/features/plugins/infrastructure/plugin_bundles.dart';
 import 'package:daemon/src/features/plugins/infrastructure/plugin_ports.dart';
 import 'package:daemon/src/features/plugins/infrastructure/plugin_service.dart';
 import 'package:daemon/src/features/plugins/infrastructure/plugin_session_control_service.dart';
 import 'package:daemon/src/features/plugins/infrastructure/plugin_ui_service.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_runtime.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
@@ -73,16 +75,30 @@ List<RpcBindingDescriptor> pluginRpcBindings<T extends Object>({
 ];
 
 /// Builds the public plugin UI bindings with sanitized typed failures.
+///
+/// A slot renders against whatever revision the Agent has pinned right now, so
+/// a plugin the Agent has never activated and a runtime the daemon has already
+/// torn down are both ordinary outcomes rather than defects. Leaving them
+/// untyped collapses them into `internal_error`, which the protocol reserves
+/// for defects and which no client can translate.
+///
+/// The two get separate codes because a host answers them differently: an
+/// Agent that has not pinned a revision yet has nothing to show, while a
+/// rejection is a real failure the user should read.
 List<RpcBindingDescriptor> pluginUiRpcBindings({required PluginUiService ui}) =>
     <RpcBindingDescriptor>[
       RpcBinding(pluginsRenderUiProcedure, (request, _) async {
         try {
           return PluginUiDocumentResultDto(document: await ui.render(request));
         } on PluginUiException catch (error) {
+          throw _pluginUiRejection(error.message);
+        } on PluginRevisionUnavailable catch (error) {
           throw RpcFailureException(
-            code: RpcErrorCodes.pluginUiRejected,
+            code: RpcErrorCodes.pluginRevisionUnavailable,
             message: _safePluginUiFailureMessage(error.message),
           );
+        } on PluginRuntimeClosed catch (error) {
+          throw _pluginUiRejection(error.message);
         }
       }),
       RpcBinding(pluginsDispatchUiActionProcedure, (request, _) async {
@@ -91,13 +107,22 @@ List<RpcBindingDescriptor> pluginUiRpcBindings({required PluginUiService ui}) =>
             document: await ui.dispatch(request),
           );
         } on PluginUiException catch (error) {
+          throw _pluginUiRejection(error.message);
+        } on PluginRevisionUnavailable catch (error) {
           throw RpcFailureException(
-            code: RpcErrorCodes.pluginUiRejected,
+            code: RpcErrorCodes.pluginRevisionUnavailable,
             message: _safePluginUiFailureMessage(error.message),
           );
+        } on PluginRuntimeClosed catch (error) {
+          throw _pluginUiRejection(error.message);
         }
       }),
     ];
+
+RpcFailureException _pluginUiRejection(String message) => RpcFailureException(
+  code: RpcErrorCodes.pluginUiRejected,
+  message: _safePluginUiFailureMessage(message),
+);
 
 String _safePluginUiFailureMessage(String message) {
   final firstLine = message.split(RegExp(r'\r?\n')).first.trim();

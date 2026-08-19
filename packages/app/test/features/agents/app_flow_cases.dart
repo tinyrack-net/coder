@@ -1179,7 +1179,7 @@ void _registerAgentsAppFlows() {
                         metadata: const <String, dynamic>{
                           'name': 'XML driver',
                           'requiredModelCapabilities': <String>[
-                            'freeform_tools',
+                            'deferred_tools',
                           ],
                           'dependencies': <String>['tinest.context'],
                         },
@@ -1216,7 +1216,7 @@ void _registerAgentsAppFlows() {
       expect(find.textContaining('missing.plugin'), findsWidgets);
       expect(find.textContaining('missing.plugin/tool'), findsWidgets);
       expect(find.textContaining('tinest.context'), findsWidgets);
-      expect(find.textContaining('freeform_tools'), findsWidgets);
+      expect(find.textContaining('deferred_tools'), findsWidgets);
       expect(
         tester.widget<TRButton>(find.widgetWithText(TRButton, '저장')).onPressed,
         isNull,
@@ -1420,8 +1420,14 @@ const List<PluginDescriptorDto> _agentHarnessPlugins = <PluginDescriptorDto>[
           description: 'Apply a patch to the workspace.',
           risk: ToolRisk.write,
           group: 'editing',
-          kind: AgentToolKind.freeform,
-          inputSchema: <String, dynamic>{'type': 'string'},
+          kind: AgentToolKind.function,
+          inputSchema: <String, dynamic>{
+            'type': 'object',
+            'properties': <String, dynamic>{
+              'patch': <String, dynamic>{'type': 'string'},
+            },
+            'required': <String>['patch'],
+          },
           effects: <String>['filesystem.write'],
           presentation: <String, dynamic>{'group': 'editing'},
         ),

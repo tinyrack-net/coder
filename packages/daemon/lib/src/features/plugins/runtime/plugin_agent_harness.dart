@@ -1180,10 +1180,8 @@ final class _TurnCallbackRouter
       );
     }
     final kind = (spec['kind'] ?? 'function').toString();
-    if (kind != 'function' && kind != 'freeform') {
-      throw const FormatException(
-        'Dynamic tools must be function or freeform tools.',
-      );
+    if (kind != 'function') {
+      throw const FormatException('Dynamic tools must be function tools.');
     }
     final inputSchema = _requiredSchema(spec, 'input_schema');
     final outputSchema = spec['output_schema'] == null
@@ -1755,8 +1753,7 @@ final class _TurnCallbackRouter
             await callbacks.onEvent('tool.requested', <String, dynamic>{
               'callId': event.callId,
               'name': event.name,
-              'input': event.input.toJson(),
-              'arguments': _modelToolInput(event.input),
+              'arguments': event.arguments,
               if (selected != null) 'contributionId': selected.tool.id,
               if (selected != null) 'presentation': selected.tool.presentation,
             });
@@ -1765,7 +1762,7 @@ final class _TurnCallbackRouter
                 'type': 'tool_call',
                 'call_id': event.callId,
                 'name': event.name,
-                'input': event.input.toJson(),
+                'arguments': event.arguments,
               },
             );
           case ModelResponseCompleted(:final assistant, :final usage):
@@ -1989,19 +1986,16 @@ final class _TurnCallbackRouter
           );
         } else {
           final dynamicTool = _dynamicTools[id];
-          final handlerInput = selected.tool.kind == 'freeform'
-              ? <String, Object?>{'input': input, '_tinest': internal}
-              : <String, Object?>{
-                  ..._object(input),
-                  '_tinest': internal,
-                };
+          final handlerInput = <String, Object?>{
+            ..._object(input),
+            '_tinest': internal,
+          };
           final invocation = await session.invoke(
             pluginId: selected.pluginId,
             binding: selected.tool.binding,
             arguments: dynamicTool?.templateId != null
                 ? <String, Object?>{
                     'payload': dynamicTool!.payload,
-                    'freeform': selected.tool.kind == 'freeform',
                     'arguments': handlerInput,
                   }
                 : handlerInput,
@@ -2223,10 +2217,8 @@ final class _TurnCallbackRouter
       ? Map<String, Object?>.unmodifiable(_object(input))
       : Map<String, Object?>.unmodifiable(<String, Object?>{'input': input});
 
-  Object? _normalizeToolInput(PluginToolRegistration tool, Object? input) {
-    if (tool.kind == 'freeform') return input;
-    return _normalizeToolSchemaValue(tool.inputSchema, input);
-  }
+  Object? _normalizeToolInput(PluginToolRegistration tool, Object? input) =>
+      _normalizeToolSchemaValue(tool.inputSchema, input);
 
   Object? _normalizeToolSchemaValue(
     Map<String, Object?> schema,
@@ -2833,7 +2825,6 @@ void _validateDriverCapabilities(
       'streaming' => capabilities.streaming,
       'tool_calling' => capabilities.toolCalling,
       'function_tools' => capabilities.functionTools,
-      'freeform_tools' => capabilities.freeformTools,
       'deferred_tools' => capabilities.deferredTools,
       'image_input' => capabilities.imageInput,
       'file_input' => capabilities.fileInput,
@@ -2865,7 +2856,6 @@ String? _selectedToolCompatibilityError(
     final support = switch (tool) {
       ModelFunctionToolDefinition() ||
       ModelNamespaceToolDefinition() => capabilities.functionTools,
-      ModelFreeformToolDefinition() => capabilities.freeformTools,
       ModelDeferredSearchToolDefinition() => capabilities.deferredTools,
     };
     if (support != AgentCapabilitySupport.supported) {
@@ -2882,7 +2872,6 @@ Map<String, Object?> _modelCapabilitiesJson(
   'streaming': capabilities.streaming.name,
   'tool_calling': capabilities.toolCalling.name,
   'function_tools': capabilities.functionTools.name,
-  'freeform_tools': capabilities.freeformTools.name,
   'deferred_tools': capabilities.deferredTools.name,
   'image_input': capabilities.imageInput.name,
   'file_input': capabilities.fileInput.name,
@@ -2905,26 +2894,15 @@ Map<String, Object?> _toolDescriptor(
 
 Map<String, Object?> _surfaceToolDescriptor(
   ({String pluginId, PluginToolRegistration tool}) selected,
-) => switch (selected.tool.kind) {
-  'freeform' => <String, Object?>{
-    'type': 'custom',
-    'canonical_name': selected.tool.id,
-    'name': selected.tool.name,
-    'description': selected.tool.description,
-    if (selected.tool.presentation['format']
-        case final Map<Object?, Object?> format)
-      'format': _object(format),
-  },
-  _ => <String, Object?>{
-    'type': 'function',
-    'canonical_name': selected.tool.id,
-    'name': selected.tool.name,
-    'description': selected.tool.description,
-    'parameters': selected.tool.inputSchema,
-    'strict': true,
-    if (selected.tool.outputSchema != null)
-      'output_schema': selected.tool.outputSchema,
-  },
+) => <String, Object?>{
+  'type': 'function',
+  'canonical_name': selected.tool.id,
+  'name': selected.tool.name,
+  'description': selected.tool.description,
+  'parameters': selected.tool.inputSchema,
+  'strict': true,
+  if (selected.tool.outputSchema != null)
+    'output_schema': selected.tool.outputSchema,
 };
 
 bool _isDynamicTemplate(
@@ -2938,9 +2916,7 @@ bool _isDeferredTool(
 ) => selected?.tool.presentation['exposure'] == 'deferred';
 
 ModelToolKind _modelToolKind(PluginToolRegistration tool) =>
-    tool.kind == 'freeform'
-    ? ModelToolKind.freeform
-    : tool.kind == 'deferred' && tool.presentation['dynamic'] != true
+    tool.kind == 'deferred' && tool.presentation['dynamic'] != true
     ? ModelToolKind.deferredSearch
     : ModelToolKind.function;
 
@@ -2949,10 +2925,6 @@ ModelToolDefinition _modelTool(Object? raw) {
   final name = value['name']?.toString() ?? '';
   final description = value['description']?.toString() ?? name;
   return switch (value['kind']) {
-    'freeform' => ModelFreeformToolDefinition(
-      name: name,
-      description: description,
-    ),
     'deferred' => ModelDeferredSearchToolDefinition(
       name: name,
       description: description,
@@ -2968,11 +2940,6 @@ ModelToolDefinition _modelTool(Object? raw) {
     ),
   };
 }
-
-Map<String, Object?> _modelToolInput(ToolCallInput input) => switch (input) {
-  JsonToolCallInput(:final value) => value,
-  FreeformToolCallInput(:final value) => <String, Object?>{'input': value},
-};
 
 const _toolValueMarker = '__tinest_tool_value';
 
@@ -3089,16 +3056,12 @@ Map<String, dynamic> _normalizeDriverHistoryItem(Object? value) {
       if (rawCall is Map)
         (() {
           final call = _dynamicObject(rawCall);
-          final input = call['input'];
-          if (input is Map) {
-            final normalizedInput = _dynamicObject(input);
-            if (normalizedInput['type'] == 'json' &&
-                normalizedInput['value'] is List &&
-                (normalizedInput['value']! as List).isEmpty) {
-              normalizedInput['value'] = <String, dynamic>{};
-            }
-            call['input'] = normalizedInput;
-          }
+          // An argument-less call is an empty Lua table, which the bridge
+          // cannot tell apart from an empty array on the way back.
+          final arguments = call['arguments'];
+          call['arguments'] = arguments is List && arguments.isEmpty
+              ? <String, dynamic>{}
+              : arguments;
           return call;
         })(),
   ];

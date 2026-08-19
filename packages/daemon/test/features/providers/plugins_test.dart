@@ -148,7 +148,6 @@ void main() {
   test('provider catalogs describe each supported Lua tool surface', () {
     final openai = openAIBundledModels.first.capabilities;
     expect(openai.functionTools, AgentCapabilitySupport.supported);
-    expect(openai.freeformTools, AgentCapabilitySupport.supported);
     expect(openai.deferredTools, AgentCapabilitySupport.supported);
 
     expect(

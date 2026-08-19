@@ -991,9 +991,6 @@ enum AgentToolKind {
   /// A JSON object input described by [AgentToolDefinitionDto.inputSchema].
   function,
 
-  /// Raw text input described by [AgentToolDefinitionDto.inputSchema].
-  freeform,
-
   /// A tool withheld until a driver explicitly surfaces it.
   deferred,
 }
@@ -1366,7 +1363,6 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport streaming,
     @Default(CapabilitySupport.unknown) CapabilitySupport toolCalling,
     @Default(CapabilitySupport.unknown) CapabilitySupport functionTools,
-    @Default(CapabilitySupport.unknown) CapabilitySupport freeformTools,
     @Default(CapabilitySupport.unknown) CapabilitySupport deferredTools,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,

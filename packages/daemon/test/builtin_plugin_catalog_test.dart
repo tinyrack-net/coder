@@ -103,7 +103,7 @@ void main() {
     expect(source, contains('tinest.assets.read("prompts/subagent.md")'));
   });
 
-  test('edit tool owns its freeform protocol instructions', () async {
+  test('edit tool owns its patch protocol instructions', () async {
     final bundle = await const BuiltInPluginCatalog().load('tinest.edit');
 
     expect(bundle.assets.keys, contains('prompts/apply_patch.md'));

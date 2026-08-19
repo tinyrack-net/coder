@@ -174,7 +174,7 @@ void main() {
       final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 18);
+      expect(database.schemaVersion, 19);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

@@ -65,9 +65,6 @@ enum ModelToolKind {
   /// A JSON-schema function.
   function,
 
-  /// A raw-input custom tool.
-  freeform,
-
   /// A group of related functions.
   namespace,
 
@@ -121,42 +118,6 @@ final class ModelFunctionToolDefinition extends ModelToolDefinition {
   final bool strict;
 }
 
-/// A provider grammar declaration for freeform input.
-final class ModelFreeformToolFormat {
-  /// Creates a freeform grammar declaration.
-  const ModelFreeformToolFormat({
-    required this.type,
-    required this.syntax,
-    required this.definition,
-  });
-
-  /// Provider format kind, normally `grammar`.
-  final String type;
-
-  /// Grammar syntax, normally `lark`.
-  final String syntax;
-
-  /// Grammar source.
-  final String definition;
-}
-
-/// A tool whose model input is raw source rather than a JSON object.
-final class ModelFreeformToolDefinition extends ModelToolDefinition {
-  /// Creates a freeform definition.
-  const ModelFreeformToolDefinition({
-    required super.name,
-    required super.description,
-    this.format,
-    super.supportsParallelToolCalls,
-  });
-
-  @override
-  ModelToolKind get kind => ModelToolKind.freeform;
-
-  /// Optional provider grammar.
-  final ModelFreeformToolFormat? format;
-}
-
 /// One function nested in a provider namespace.
 final class ModelNamespaceToolDefinition extends ModelToolDefinition {
   /// Creates a namespace definition.
@@ -193,94 +154,31 @@ final class ModelDeferredSearchToolDefinition extends ModelToolDefinition {
   final Map<String, dynamic> parameters;
 }
 
-/// Typed input persisted for a tool call.
-sealed class ToolCallInput {
-  const ToolCallInput();
-
-  /// Decodes modern persisted input.
-  factory ToolCallInput.fromJson(Map<String, dynamic> json) =>
-      switch (json['type']) {
-        'json' => JsonToolCallInput(
-          Map<String, dynamic>.from(json['value']! as Map),
-        ),
-        'freeform' => FreeformToolCallInput(json['value']! as String),
-        _ => throw FormatException('Unknown tool input: ${json['type']}'),
-      };
-
-  /// Encodes this input without legacy argument aliases.
-  Map<String, dynamic> toJson();
-}
-
-/// JSON object input of a function tool.
-final class JsonToolCallInput extends ToolCallInput {
-  /// Creates JSON input.
-  const JsonToolCallInput(this.value);
-
-  /// Decoded JSON arguments.
-  final Map<String, dynamic> value;
-
-  @override
-  Map<String, dynamic> toJson() => <String, dynamic>{
-    'type': 'json',
-    'value': value,
-  };
-}
-
-/// Raw source input of a freeform tool.
-final class FreeformToolCallInput extends ToolCallInput {
-  /// Creates freeform input.
-  const FreeformToolCallInput(this.value);
-
-  /// Unmodified model source.
-  final String value;
-
-  @override
-  Map<String, dynamic> toJson() => <String, dynamic>{
-    'type': 'freeform',
-    'value': value,
-  };
-}
-
 /// ConversationToolCall defines a public contract.
 class ConversationToolCall {
   /// Creates a [ConversationToolCall].
   const ConversationToolCall.function({
     required this.callId,
     required this.name,
-    required Map<String, dynamic> arguments,
+    required this.arguments,
     this.namespace,
-  }) : _jsonInput = arguments,
-       _freeformInput = null,
-       kind = ModelToolKind.function;
+  }) : kind = ModelToolKind.function;
 
   /// Creates a provider-native deferred-search call.
   const ConversationToolCall.deferredSearch({
     required this.callId,
     required this.name,
-    required Map<String, dynamic> arguments,
+    required this.arguments,
   }) : namespace = null,
-       _jsonInput = arguments,
-       _freeformInput = null,
        kind = ModelToolKind.deferredSearch;
 
-  /// Creates a raw freeform call.
-  const ConversationToolCall.freeform({
+  const ConversationToolCall._({
     required this.callId,
     required this.name,
-    required String input,
-    this.namespace,
-  }) : _jsonInput = null,
-       _freeformInput = input,
-       kind = ModelToolKind.freeform;
-
-  ConversationToolCall._({
-    required this.callId,
-    required this.name,
-    required ToolCallInput input,
+    required this.arguments,
     required this.kind,
     this.namespace,
-  }) : _jsonInput = input is JsonToolCallInput ? input.value : null,
-       _freeformInput = input is FreeformToolCallInput ? input.value : null;
+  });
 
   /// Creates a [ConversationToolCall].
   factory ConversationToolCall.fromJson(Map<String, dynamic> json) =>
@@ -289,9 +187,7 @@ class ConversationToolCall {
         name: json['name']! as String,
         namespace: json['namespace'] as String?,
         kind: ModelToolKind.values.byName(json['kind']! as String),
-        input: ToolCallInput.fromJson(
-          Map<String, dynamic>.from(json['input']! as Map),
-        ),
+        arguments: Map<String, dynamic>.from(json['arguments']! as Map),
       );
 
   /// The callId public API member.
@@ -306,15 +202,8 @@ class ConversationToolCall {
   /// Wire kind that emitted this call.
   final ModelToolKind kind;
 
-  final Map<String, dynamic>? _jsonInput;
-  final String? _freeformInput;
-
-  /// Typed call input.
-  ToolCallInput get input => switch ((_jsonInput, _freeformInput)) {
-    (final value?, null) => JsonToolCallInput(value),
-    (null, final value?) => FreeformToolCallInput(value),
-    _ => throw StateError('Tool call has no input.'),
-  };
+  /// Decoded JSON arguments the model sent.
+  final Map<String, dynamic> arguments;
 
   /// The toJson public API member.
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -322,7 +211,7 @@ class ConversationToolCall {
     'name': name,
     if (namespace != null) 'namespace': namespace,
     'kind': kind.name,
-    'input': input.toJson(),
+    'arguments': arguments,
   };
 }
 
@@ -661,8 +550,8 @@ sealed class ModelToolCall extends ModelEvent {
   /// Provider namespace that qualified this call, when present.
   final String? namespace;
 
-  /// Typed call input.
-  ToolCallInput get input;
+  /// Decoded JSON arguments the model sent.
+  Map<String, dynamic> get arguments;
 }
 
 /// ModelFunctionCall defines a public contract.
@@ -675,27 +564,8 @@ class ModelFunctionCall extends ModelToolCall {
     super.namespace,
   });
 
-  /// The arguments public API member.
+  @override
   final Map<String, dynamic> arguments;
-
-  @override
-  ToolCallInput get input => JsonToolCallInput(arguments);
-}
-
-/// A raw custom-tool call emitted by a model provider.
-final class ModelFreeformCall extends ModelToolCall {
-  /// Creates a freeform call.
-  const ModelFreeformCall({
-    required super.callId,
-    required super.name,
-    required this.rawInput,
-  });
-
-  /// Unmodified provider source.
-  final String rawInput;
-
-  @override
-  ToolCallInput get input => FreeformToolCallInput(rawInput);
 }
 
 /// A provider-native deferred-search call.
@@ -708,10 +578,8 @@ final class ModelDeferredSearchCall extends ModelToolCall {
   });
 
   /// Search query and optional result limit.
-  final Map<String, dynamic> arguments;
-
   @override
-  ToolCallInput get input => JsonToolCallInput(arguments);
+  final Map<String, dynamic> arguments;
 }
 
 /// ModelResponseCompleted defines a public contract.

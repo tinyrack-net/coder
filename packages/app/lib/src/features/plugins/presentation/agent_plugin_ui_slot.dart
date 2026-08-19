@@ -4,6 +4,8 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/plugins/application/plugin_settings_controller.dart';
 import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
+import 'package:app/src/shared/presentation/client_error_alert.dart';
+import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,14 +90,37 @@ class AgentPluginUiSlot extends ConsumerWidget {
         );
       },
       loading: () => TRProgress(label: l10n.pluginUiLoading),
-      error: (error, _) => TRAlert(
-        variant: TRStatusVariant.danger,
-        title: TRText.inherit(l10n.pluginUiLoadFailed),
-        description: TRText.inherit('$error'),
-      ),
+      error: (error, _) => _isExpectedAbsence(error)
+          ? const SizedBox.shrink()
+          : ClientErrorAlert(
+              error: _clientError(error),
+              title: l10n.pluginUiLoadFailed,
+            ),
     );
   }
 }
+
+/// Presents any slot failure as the daemon failure the alert knows how to read.
+///
+/// A daemon failure already carries the code and trace id [ClientErrorAlert]
+/// translates. Anything else came from this app, so it is wrapped without a
+/// code, which makes the alert fall back to the original text rather than
+/// claiming a daemon fault the daemon never reported.
+TinestClientException _clientError(Object error) =>
+    error is TinestClientException
+    ? error
+    : TinestClientException(error is Error ? '$error' : error.toString());
+
+/// Whether [error] means the slot has nothing to show rather than that it
+/// failed.
+///
+/// An Agent pins its plugin revisions when a turn starts, so every slot on a
+/// session that has never run reports an unavailable revision. That is the
+/// ordinary state of a new session, not a fault: reporting it would put a red
+/// panel beside the composer of every conversation before its first message.
+bool _isExpectedAbsence(Object error) =>
+    error is TinestClientException &&
+    error.code == RpcErrorCodes.pluginRevisionUnavailable;
 
 /// Loads and renders one declared UI contribution through the public RPC.
 class PluginUiContributionSurface extends ConsumerStatefulWidget {
@@ -163,17 +188,11 @@ class _PluginUiContributionSurfaceState
     final l10n = AppLocalizations.of(context);
     final document = _document;
     if (_error case final error?) {
-      return TRAlert(
-        variant: TRStatusVariant.danger,
-        title: TRText.inherit(l10n.pluginUiLoadFailed),
-        description: TRText.inherit('$error'),
-        actions: <Widget>[
-          TRButton(
-            appearance: TRAppearance.outline,
-            onPressed: () => unawaited(_load()),
-            child: TRText.inherit(l10n.commonRetry),
-          ),
-        ],
+      if (_isExpectedAbsence(error)) return const SizedBox.shrink();
+      return ClientErrorAlert(
+        error: _clientError(error),
+        title: l10n.pluginUiLoadFailed,
+        onRetry: () => unawaited(_load()),
       );
     }
     if (document == null) return TRProgress(label: l10n.pluginUiLoading);

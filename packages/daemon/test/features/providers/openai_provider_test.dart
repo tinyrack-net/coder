@@ -656,11 +656,11 @@ data: [DONE]
     expect((chatTools.last as Map)['function'], isNot(contains('strict')));
   });
 
-  test('Responses preserves modern freeform calls and outputs', () async {
+  test('Responses sends patch tools over the function surface', () async {
     final adapter = _RecordingAdapter(r'''
-data: {"type":"response.output_item.done","item":{"type":"custom_tool_call","call_id":"call-patch","name":"apply_patch","input":"*** Begin Patch\n*** End Patch"}}
+data: {"type":"response.output_item.done","item":{"type":"function_call","call_id":"call-patch","name":"apply_patch","arguments":"{\"patch\":\"*** Begin Patch\\n*** End Patch\"}"}}
 
-data: {"type":"response.completed","response":{"output":[{"type":"custom_tool_call","call_id":"call-patch","name":"apply_patch","input":"*** Begin Patch\n*** End Patch"}],"usage":{}}}
+data: {"type":"response.completed","response":{"output":[{"type":"function_call","call_id":"call-patch","name":"apply_patch","arguments":"{\"patch\":\"*** Begin Patch\\n*** End Patch\"}"}],"usage":{}}}
 
 data: [DONE]
 
@@ -676,18 +676,20 @@ data: [DONE]
                   ToolResultConversationItem(
                     callId: 'earlier-patch',
                     output: 'Done!',
-                    toolKind: ModelToolKind.freeform,
+                    toolKind: ModelToolKind.function,
                   ),
                 ],
                 tools: const <ModelToolDefinition>[
-                  ModelFreeformToolDefinition(
+                  ModelFunctionToolDefinition(
                     name: 'apply_patch',
                     description: 'Patch files.',
-                    format: ModelFreeformToolFormat(
-                      type: 'grammar',
-                      syntax: 'lark',
-                      definition: 'start: patch',
-                    ),
+                    parameters: <String, dynamic>{
+                      'type': 'object',
+                      'properties': <String, dynamic>{
+                        'patch': <String, dynamic>{'type': 'string'},
+                      },
+                      'required': <String>['patch'],
+                    },
                     supportsParallelToolCalls: true,
                   ),
                 ],
@@ -699,27 +701,30 @@ data: [DONE]
     final body = Map<String, dynamic>.from(adapter.options!.data as Map);
     expect(body['parallel_tool_calls'], isTrue);
     expect((body['tools'] as List).single, <String, dynamic>{
-      'type': 'custom',
+      'type': 'function',
       'name': 'apply_patch',
       'description': 'Patch files.',
-      'format': <String, dynamic>{
-        'type': 'grammar',
-        'syntax': 'lark',
-        'definition': 'start: patch',
+      'parameters': <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{
+          'patch': <String, dynamic>{'type': 'string'},
+        },
+        'required': <String>['patch'],
       },
+      'strict': true,
     });
     expect((body['input'] as List).last, <String, dynamic>{
-      'type': 'custom_tool_call_output',
+      'type': 'function_call_output',
       'call_id': 'earlier-patch',
       'output': 'Done!',
     });
-    final call = events.whereType<ModelFreeformCall>().single;
+    final call = events.whereType<ModelFunctionCall>().single;
     expect(call.name, 'apply_patch');
-    expect(call.rawInput, '*** Begin Patch\n*** End Patch');
+    expect(call.arguments['patch'], '*** Begin Patch\n*** End Patch');
     final completed = events.whereType<ModelResponseCompleted>().single;
     expect(
-      completed.assistant.toolCalls.single.input,
-      isA<FreeformToolCallInput>(),
+      completed.assistant.toolCalls.single.arguments['patch'],
+      '*** Begin Patch\n*** End Patch',
     );
   });
 

@@ -79,6 +79,13 @@ abstract final class RpcErrorCodes {
   /// A plugin UI render or action request was safely rejected by the host.
   static const String pluginUiRejected = 'plugin_ui_rejected';
 
+  /// The plugin has no revision this Agent has activated yet.
+  ///
+  /// An expected absence rather than a failure: an Agent pins plugin revisions
+  /// when its first turn starts, so every slot on a session that has never run
+  /// reports this. A host surface answers it by rendering nothing.
+  static const String pluginRevisionUnavailable = 'plugin_revision_unavailable';
+
   /// Every code this protocol revision defines.
   ///
   /// Clients use this to assert their translation table stays exhaustive.
@@ -105,5 +112,6 @@ abstract final class RpcErrorCodes {
     invalidProjectSettings,
     sessionTurnActive,
     pluginUiRejected,
+    pluginRevisionUnavailable,
   };
 }

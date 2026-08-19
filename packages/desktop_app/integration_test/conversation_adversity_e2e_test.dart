@@ -63,9 +63,8 @@ void main() {
       );
       final registeredWorktree =
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
-      // Manual custom-provider models advertise function tools only. This
-      // scenario later exercises the freeform apply_patch contribution, so it
-      // must select an exact full-surface model before the injected gateway is
+      // This scenario later exercises the deferred tool surface, so it must
+      // select an exact full-surface model before the injected gateway is
       // allowed to receive a request.
       final model = (await client.providers.listProviderModels('openai'))
           .singleWhere(
@@ -73,7 +72,7 @@ void main() {
           );
       expect(model.capabilities.streaming, CapabilitySupport.supported);
       expect(model.capabilities.functionTools, CapabilitySupport.supported);
-      expect(model.capabilities.freeformTools, CapabilitySupport.supported);
+      expect(model.capabilities.deferredTools, CapabilitySupport.supported);
       final tinest = await client.agents.getAgentDefinition('tinest');
       await client.agents.updateAgentDefinition(
         tinest.copyWith(
@@ -401,7 +400,6 @@ final class _AdversityCatalogMetadataSource
             streaming: CapabilitySupport.supported,
             toolCalling: CapabilitySupport.supported,
             functionTools: CapabilitySupport.supported,
-            freeformTools: CapabilitySupport.supported,
             deferredTools: CapabilitySupport.supported,
             source: CapabilitySource.refreshed,
           ),
@@ -512,19 +510,19 @@ final class _AdversityProvider implements ModelGateway {
           '*** Add File: adversity.txt\n'
           '+restored\n'
           '*** End Patch';
-      yield const ModelFreeformCall(
+      yield const ModelFunctionCall(
         callId: 'adversity-patch',
         name: 'apply_patch',
-        rawInput: patch,
+        arguments: <String, dynamic>{'patch': patch},
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.freeform(
+            ConversationToolCall.function(
               callId: 'adversity-patch',
               name: 'apply_patch',
-              input: patch,
+              arguments: <String, dynamic>{'patch': patch},
             ),
           ],
         ),

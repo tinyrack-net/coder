@@ -25,7 +25,7 @@ import 'package:web_socket_channel/io.dart';
 const Duration _eventTimeout = Duration(minutes: 1);
 
 /// Bundled deterministic model whose declared surface supports every default
-/// v5 Agent contribution, including freeform and deferred tools.
+/// v5 Agent contribution, including deferred tools.
 const String _testModelId = 'openai/gpt-5.6-sol';
 
 void main() {
@@ -500,18 +500,6 @@ void main() {
       );
       await client.models.setDefaultModel(wireDefault);
       expect(await client.subscribeTimeline(agent.id), isEmpty);
-
-      // The default v5 Agent selects function, freeform, and deferred tools.
-      // Manual custom-provider models intentionally advertise function tools
-      // only, so use the deterministic full-surface fixture for this harness
-      // turn while retaining the custom-provider CRUD assertions above.
-      await client.sessions.updateSettings(
-        agent.id,
-        const SessionSettingsPatchDto(
-          hasModel: true,
-          model: ModelSelectionDto(modelId: _testModelId),
-        ),
-      );
 
       final approvalFuture = client.sessions.approvalRequests.first.timeout(
         _eventTimeout,
@@ -3334,8 +3322,8 @@ blocked/
         worktreeId: catalog.worktrees.single.id,
         title: 'Attachment session',
         agentDefinitionId: 'tinest',
-        // The default v5 Agent exposes function, freeform, and deferred tools;
-        // its queue fixture must select a model supporting the whole surface.
+        // The default v5 Agent exposes function and deferred tools; its queue
+        // fixture must select a model supporting the whole surface.
         model: const ModelSelectionDto(modelId: _testModelId),
       );
       await client.subscribeTimeline(session.id);
@@ -3502,8 +3490,8 @@ blocked/
         worktreeId: catalog.worktrees.single.id,
         title: 'Pre-launch failure',
         agentDefinitionId: 'tinest',
-        // The default v5 Agent exposes function, freeform, and deferred
-        // tools; picking the first streaming model from the catalog chose a
+        // The default v5 Agent exposes function and deferred tools; picking
+        // the first streaming model from the catalog chose a
         // surface-incomplete model whenever the catalog ordered one first.
         model: const ModelSelectionDto(modelId: _testModelId),
       );
@@ -4430,19 +4418,19 @@ class _PatchProvider implements ModelGateway {
           '+done\n'
           '*** End Patch';
       yield const ModelReasoningDelta('Planning the patch.');
-      yield const ModelFreeformCall(
+      yield const ModelFunctionCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        rawInput: patch,
+        arguments: <String, dynamic>{'patch': patch},
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.freeform(
+            ConversationToolCall.function(
               callId: 'patch-call',
               name: 'apply_patch',
-              input: patch,
+              arguments: <String, dynamic>{'patch': patch},
             ),
           ],
         ),
@@ -4976,19 +4964,19 @@ final class _CollaboratingProvider implements ModelGateway {
             '*** Add File: forbidden.txt\n'
             '+forbidden\n'
             '*** End Patch';
-        yield const ModelFreeformCall(
+        yield const ModelFunctionCall(
           callId: 'write-call',
           name: 'apply_patch',
-          rawInput: patch,
+          arguments: <String, dynamic>{'patch': patch},
         );
         yield const ModelResponseCompleted(
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall.freeform(
+              ConversationToolCall.function(
                 callId: 'write-call',
                 name: 'apply_patch',
-                input: patch,
+                arguments: <String, dynamic>{'patch': patch},
               ),
             ],
           ),

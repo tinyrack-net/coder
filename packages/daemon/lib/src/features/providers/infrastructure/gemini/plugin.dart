@@ -35,7 +35,6 @@ const AgentModelCapabilities _geminiCapabilities = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
   functionTools: AgentCapabilitySupport.supported,
-  freeformTools: AgentCapabilitySupport.unsupported,
   deferredTools: AgentCapabilitySupport.unsupported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,

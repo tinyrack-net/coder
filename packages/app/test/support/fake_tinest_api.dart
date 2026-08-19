@@ -566,6 +566,9 @@ final class FakeTinestApi
   /// Declarative documents keyed by `plugin/contribution/agent`.
   final Map<String, PluginUiDocumentDto> pluginUiDocuments;
 
+  /// Daemon failure every render answers with, when one is staged.
+  TinestClientException? pluginUiRenderFailure;
+
   /// Optional explicit authoring states keyed by plugin ID.
   final Map<String, PluginAuthoringEnvironmentDto> pluginAuthoringEnvironments;
 
@@ -1995,6 +1998,7 @@ final class FakeTinestApi
       slot: slot,
       context: Map<String, dynamic>.unmodifiable(context),
     ));
+    if (pluginUiRenderFailure case final failure?) throw failure;
     final key = '$pluginId/$contributionId/$agentId';
     final document = pluginUiDocuments[key];
     if (document == null) {

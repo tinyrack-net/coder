@@ -40,6 +40,8 @@ String clientErrorText(
   RpcErrorCodes.requestTimeout => l10n.errorRequestTimeout,
   RpcErrorCodes.internalError => l10n.errorInternalDaemon,
   RpcErrorCodes.pluginUiRejected => l10n.errorPluginUiRejected,
+  RpcErrorCodes.pluginRevisionUnavailable =>
+    l10n.errorPluginRevisionUnavailable,
   _ => error.message,
 };
 

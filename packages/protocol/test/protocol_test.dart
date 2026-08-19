@@ -1821,13 +1821,19 @@ void main() {
       description: 'Reads one MCP resource.',
       risk: ToolRisk.read,
       group: 'custom.tools',
-      kind: AgentToolKind.freeform,
-      inputSchema: <String, dynamic>{'type': 'string'},
+      kind: AgentToolKind.function,
+      inputSchema: <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{
+          'uri': <String, dynamic>{'type': 'string'},
+        },
+        'required': <String>['uri'],
+      },
       effects: <String>['mcp.read'],
       presentation: <String, dynamic>{'group': 'custom.tools'},
     );
     expect(tool.toJson()['group'], 'custom.tools');
-    expect(tool.toJson()['kind'], 'freeform');
+    expect(tool.toJson()['kind'], 'function');
   });
 
   test(

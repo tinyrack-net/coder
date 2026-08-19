@@ -1,5 +1,6 @@
 local tinest = require("tinest")
 local S = tinest.schema
+local T = require("tinest.types")
 
 local tool_card = tinest.ui.contribution({
   id = "tool",
@@ -223,7 +224,7 @@ local function plan_patch(source)
   return changes
 end
 
-local apply_patch = tinest.tool.freeform({
+local apply_patch = tinest.tool.function_({
   id = "apply_patch",
   name = "apply_patch",
   description = tinest.assets.read("prompts/apply_patch.md"),
@@ -239,13 +240,9 @@ local apply_patch = tinest.tool.freeform({
     group = "editing",
     glyph = "edit",
     label = "Apply patch",
-    format = {
-      type = "grammar",
-      syntax = "lark",
-      definition = "start: patch\npatch: /(.|\\n)+/",
-    },
   },
-}, S.string(), nil, function(source)
+}, S.object(T.ApplyPatchInput, {patch = S.string()}), nil, function(arguments)
+  local source = arguments.patch
   local operations = plan_patch(source)
   local result = tinest.result.unwrap(
     tinest.host.workspace.transaction({operations = operations})

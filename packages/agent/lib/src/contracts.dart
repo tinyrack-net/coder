@@ -262,7 +262,6 @@ final class AgentModelCapabilities {
     this.streaming = AgentCapabilitySupport.unknown,
     this.toolCalling = AgentCapabilitySupport.unknown,
     this.functionTools = AgentCapabilitySupport.unknown,
-    this.freeformTools = AgentCapabilitySupport.unknown,
     this.deferredTools = AgentCapabilitySupport.unknown,
     this.imageInput = AgentCapabilitySupport.unknown,
     this.fileInput = AgentCapabilitySupport.unknown,
@@ -284,9 +283,6 @@ final class AgentModelCapabilities {
 
   /// JSON-schema function-tool support.
   final AgentCapabilitySupport functionTools;
-
-  /// Raw freeform/custom-tool support.
-  final AgentCapabilitySupport freeformTools;
 
   /// Provider-native deferred tool-discovery support.
   final AgentCapabilitySupport deferredTools;
@@ -311,7 +307,6 @@ final class AgentModelCapabilities {
     AgentCapabilitySupport? streaming,
     AgentCapabilitySupport? toolCalling,
     AgentCapabilitySupport? functionTools,
-    AgentCapabilitySupport? freeformTools,
     AgentCapabilitySupport? deferredTools,
     AgentCapabilitySupport? imageInput,
     AgentCapabilitySupport? fileInput,
@@ -322,7 +317,6 @@ final class AgentModelCapabilities {
     streaming: streaming ?? this.streaming,
     toolCalling: toolCalling ?? this.toolCalling,
     functionTools: functionTools ?? this.functionTools,
-    freeformTools: freeformTools ?? this.freeformTools,
     deferredTools: deferredTools ?? this.deferredTools,
     imageInput: imageInput ?? this.imageInput,
     fileInput: fileInput ?? this.fileInput,

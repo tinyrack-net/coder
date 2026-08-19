@@ -124,15 +124,6 @@ local function rank(descriptors, query, limit)
 end
 
 local function public_descriptor(descriptor)
-  if descriptor.kind == tinest.tool.kind.freeform then
-    return {
-      type = "custom",
-      canonical_name = descriptor.id,
-      name = descriptor.name,
-      description = descriptor.description,
-      format = descriptor.presentation and descriptor.presentation.format,
-    }
-  end
   return {
     type = "function",
     canonical_name = descriptor.id,

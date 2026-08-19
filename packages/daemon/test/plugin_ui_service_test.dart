@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:daemon/src/features/plugins/infrastructure/plugin_bundles.dart';
 import 'package:daemon/src/features/plugins/infrastructure/plugin_ui_service.dart';
+import 'package:daemon/src/features/plugins/runtime/plugin_runtime.dart';
 import 'package:daemon/src/features/plugins/transport/rpc_bindings.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
@@ -136,6 +138,57 @@ void main() {
       },
       tags: const <String>['feature_test__plugin_ui__contract'],
     );
+
+    // A slot renders against whatever revision the Agent has pinned right now.
+    // Before the Agent's first turn nothing is pinned, and after shutdown the
+    // runtime is gone; both are ordinary, so neither may reach the client as
+    // internal_error, which the protocol reserves for defects. They carry
+    // different codes because a host shows nothing for the first and reports
+    // the second.
+    for (final failure in <({String name, Exception error, String code})>[
+      (
+        name: 'an Agent with no active revision',
+        error: const PluginRevisionUnavailable(
+          'Agent agent has no active revision for plugin example.ui.',
+        ),
+        code: RpcErrorCodes.pluginRevisionUnavailable,
+      ),
+      (
+        name: 'a torn-down runtime',
+        error: const PluginRuntimeClosed('Plugin runtime session is closed.'),
+        code: RpcErrorCodes.pluginUiRejected,
+      ),
+    ]) {
+      test(
+        'render answers ${failure.name} with a translatable code',
+        () async {
+          final service = PluginUiService(
+            descriptors: _ThrowingDescriptorReader(failure.error),
+            runtime: const _RejectingUiRuntime(),
+          );
+
+          await expectLater(
+            binding(service, pluginsRenderUiProcedure).invoke(
+              const PluginUiRenderParamsDto(
+                agentId: 'agent',
+                pluginId: 'example.ui',
+                contributionId: 'card',
+                slot: PluginUiSlot.timeline,
+              ).toJson(),
+              RpcConnectionContext(),
+            ),
+            throwsA(
+              isA<RpcFailureException>().having(
+                (error) => error.code,
+                'code',
+                failure.code,
+              ),
+            ),
+          );
+        },
+        tags: const <String>['feature_test__plugin_ui__contract'],
+      );
+    }
   });
 
   test(
@@ -809,6 +862,15 @@ final class _DescriptorReader implements PluginDescriptorReader {
     if (id != descriptor.id) throw StateError('Plugin not found: $id');
     return descriptor;
   }
+}
+
+final class _ThrowingDescriptorReader implements PluginDescriptorReader {
+  const _ThrowingDescriptorReader(this.error);
+
+  final Exception error;
+
+  @override
+  Future<PluginDescriptorDto> get(String id) async => throw error;
 }
 
 final class _RejectingUiRuntime implements PluginUiRuntime {
