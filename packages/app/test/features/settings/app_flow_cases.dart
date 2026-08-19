@@ -1214,6 +1214,31 @@ void _registerSettingsAppFlows() {
         reason: 'Flutter must expose predictive gesture progress',
       );
 
+      // The detail page carries its own background, so the shrinking route
+      // hides the list instead of compositing over it. Scoped to the inner
+      // Navigator: the shell paints a surface too, but it does not move.
+      final detailSurface = find
+          .descendant(
+            of: find.byType(SettingsListDetailHost),
+            matching: find.ancestor(
+              of: editor,
+              matching: find.byType(TRSurface),
+            ),
+          )
+          .first;
+      expect(detailSurface, findsOneWidget);
+      final detailRect = tester.getRect(detailSurface);
+      final editorRect = tester.getRect(editor);
+      expect(detailRect.left, lessThanOrEqualTo(editorRect.left));
+      expect(detailRect.top, lessThanOrEqualTo(editorRect.top));
+      expect(detailRect.right, greaterThanOrEqualTo(editorRect.right));
+      expect(detailRect.bottom, greaterThanOrEqualTo(editorRect.bottom));
+      expect(
+        detailRect,
+        isNot(tester.getRect(list)),
+        reason: 'the detail surface must move with the outgoing route',
+      );
+
       await send(const MethodCall('cancelBackGesture'));
       await tester.pumpAndSettle();
       expect(editor, findsOneWidget);

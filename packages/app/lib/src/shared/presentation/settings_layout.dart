@@ -286,17 +286,19 @@ class _SettingsListDetailHostState extends State<SettingsListDetailHost> {
             MaterialPage<void>(
               key: const ValueKey<String>('settings-collection-page'),
               name: 'settings-collection',
-              child: split
-                  ? hasDetail
-                        ? const SizedBox.expand()
-                        : widget.detail
-                  : widget.collection,
+              child: TRSurface(
+                child: split
+                    ? hasDetail
+                          ? const SizedBox.expand()
+                          : widget.detail
+                    : widget.collection,
+              ),
             ),
             if (hasDetail)
               MaterialPage<void>(
                 key: ValueKey<Object?>(widget.coordinator.detailSelection),
                 name: 'settings-detail',
-                child: widget.detail,
+                child: TRSurface(child: widget.detail),
               ),
           ],
           onDidRemovePage: (page) {

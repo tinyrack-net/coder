@@ -13,8 +13,7 @@ class TinestPageShell extends StatelessWidget {
   final TinestPageHeader? appBar;
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: context.tinyrackTheme.surface,
+  Widget build(BuildContext context) => TRSurface(
     child: SafeArea(
       child: TRAppShell(
         header: appBar == null ? null : TinestPageHeaderBar.bar(appBar!),
