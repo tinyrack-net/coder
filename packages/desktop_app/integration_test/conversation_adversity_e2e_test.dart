@@ -14,6 +14,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 import 'support/pump_until.dart';
 import 'support/real_daemon_fixture.dart';
+import 'support/tap_visible.dart';
 
 final String _firstStreamChunk = List<String>.generate(
   36,
@@ -264,12 +265,10 @@ Future<void> _pumpConversation(
       .hitTestable();
   await pumpUntil(tester, worktree);
   await tester.tap(worktree.last);
-  await pumpUntil(
+  await tapVisible(
     tester,
     find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
-  );
-  await tester.tap(
-    find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
+    'the all-sessions menu',
   );
   final conversation = find.text('Adversity conversation').hitTestable();
   await pumpUntil(tester, conversation);
