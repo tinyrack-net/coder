@@ -19,12 +19,10 @@ final class GeminiInteractionsWire implements ProviderWireProtocol {
   @override
   String get label => 'Gemini Interactions';
 
-  @override
-  Set<String> get supportedControlIds => const <String>{
-    AgentModelControlIds.reasoningEffort,
-    AgentModelControlIds.thinkingBudget,
-  };
-
+  /// This transport encodes a thinking level and nothing else.
+  ///
+  /// A thinking budget was advertised here without ever being sent, so the
+  /// dialog it opened could not affect a single request.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
     AgentModelControlDescriptor(
@@ -38,17 +36,6 @@ final class GeminiInteractionsWire implements ProviderWireProtocol {
         AgentModelControlChoice(id: 'medium', label: 'Medium'),
         AgentModelControlChoice(id: 'high', label: 'High'),
       ],
-      conflictsWith: <String>[AgentModelControlIds.thinkingBudget],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.thinkingBudget,
-      label: 'Thinking budget',
-      kind: AgentModelControlKind.integer,
-      presentation: AgentModelControlPresentation.numberDialog,
-      minimum: 0,
-      maximum: 32768,
-      step: 1024,
-      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
     ),
   ];
 

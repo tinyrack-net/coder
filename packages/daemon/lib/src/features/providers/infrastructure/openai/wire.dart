@@ -20,13 +20,11 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   /// Injectable HTTP client factory used by deterministic contract tests.
   final Dio Function(ProviderEndpoint endpoint)? dioFactory;
 
-  @override
-  Set<String> get supportedControlIds => const <String>{
-    AgentModelControlIds.reasoningEffort,
-    AgentModelControlIds.reasoningMode,
-    AgentModelControlIds.fastMode,
-  };
-
+  /// Reasoning effort is the one control both OpenAI-compatible APIs encode.
+  ///
+  /// Fast mode is deliberately absent: `service_tier` is a platform-only
+  /// field, so a connection to an arbitrary compatible endpoint would be
+  /// offered a toggle that never reaches the wire.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
     AgentModelControlDescriptor(
@@ -43,23 +41,6 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
         AgentModelControlChoice(id: 'max', label: 'Maximum'),
       ],
       conflictsWith: <String>[AgentModelControlIds.reasoningMode],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.reasoningMode,
-      label: 'Reasoning mode',
-      kind: AgentModelControlKind.choice,
-      presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'none', label: 'None'),
-        AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
-      ],
-      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.fastMode,
-      label: 'Fast mode',
-      kind: AgentModelControlKind.toggle,
-      presentation: AgentModelControlPresentation.selectableChip,
     ),
   ];
 
@@ -178,6 +159,24 @@ final class OpenAIResponsesWire extends OpenAICompatibleWire {
 
   @override
   String get label => 'OpenAI Responses';
+
+  /// Only this API encodes `reasoning.mode`, so only it offers the control.
+  @override
+  List<AgentModelControlDescriptor> get controlDescriptors =>
+      <AgentModelControlDescriptor>[
+        ...super.controlDescriptors,
+        const AgentModelControlDescriptor(
+          id: AgentModelControlIds.reasoningMode,
+          label: 'Reasoning mode',
+          kind: AgentModelControlKind.choice,
+          presentation: AgentModelControlPresentation.menuChip,
+          choices: <AgentModelControlChoice>[
+            AgentModelControlChoice(id: 'none', label: 'None'),
+            AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
+          ],
+          conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
+        ),
+      ];
 
   @override
   ModelGateway buildAdapter(OpenAIProviderConfig config, Dio? dio) =>

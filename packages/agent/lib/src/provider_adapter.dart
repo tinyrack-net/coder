@@ -161,10 +161,11 @@ abstract interface class ProviderWireProtocol {
   /// Human-readable name shown when choosing a protocol.
   String get label;
 
-  /// Stable model-control IDs this wire knows how to map safely.
-  Set<String> get supportedControlIds;
-
   /// Complete control templates custom models may opt into.
+  ///
+  /// A wire may only list a control it actually encodes: a connection is
+  /// offered exactly this set, so anything else is a setting that silently
+  /// does nothing.
   List<AgentModelControlDescriptor> get controlDescriptors;
 
   /// Builds the executable adapter for one resolved model.

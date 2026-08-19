@@ -192,6 +192,127 @@ void main() {
     }
   });
 
+  // A custom connection is offered exactly the controls its wire advertises,
+  // against an endpoint that has stated nothing beyond the baseline. A control
+  // the wire never encodes there is a chip that silently does nothing.
+  for (final entry
+      in <
+        ({
+          String label,
+          String fixture,
+          ProviderWireProtocol Function(Dio Function(ProviderEndpoint)) build,
+        })
+      >[
+        (
+          label: openAIChatCompletionsWireId,
+          fixture: '''
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+''',
+          build: (factory) => OpenAIChatCompletionsWire(dioFactory: factory),
+        ),
+        (
+          label: openAIResponsesWireId,
+          fixture: '''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''',
+          build: (factory) => OpenAIResponsesWire(dioFactory: factory),
+        ),
+        (
+          label: anthropicMessagesWireId,
+          fixture: '''
+event: message_start
+data: {"type":"message_start","message":{"usage":{}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+
+''',
+          build: (factory) => AnthropicMessagesWire(dioFactory: factory),
+        ),
+        (
+          label: geminiInteractionsWireId,
+          fixture: '''
+event: interaction.completed
+data: {"event_type":"interaction.completed","interaction":{"usage":{}}}
+
+event: done
+data: [DONE]
+
+''',
+          build: (factory) => GeminiInteractionsWire(dioFactory: factory),
+        ),
+      ]) {
+    test('${entry.label} sends every control it advertises', () async {
+      final wire = entry.build((_) => Dio());
+      Future<String> body(
+        Map<String, AgentModelControlValue> controls,
+      ) async {
+        final adapter = _Adapter(entry.fixture);
+        await entry
+            .build((_) => Dio()..httpClientAdapter = adapter)
+            .createProvider(
+              ModelGatewayRequest(
+                connectionId: 'custom',
+                endpoint: const ProviderEndpoint(
+                  baseUrl: 'https://compatible.test/v1',
+                ),
+                credential: const ApiKeyCredential('key'),
+                capabilities: AgentModelCapabilities(
+                  controls: wire.controlDescriptors,
+                ),
+              ),
+            )
+            .stream(
+              ModelRequest(
+                model: 'custom-model',
+                modelControls: controls,
+                blocks: const <ModelRoleBlock>[
+                  ModelRoleBlock(role: ModelRole.system, content: 'test'),
+                ],
+                history: const <ConversationItem>[],
+                tools: const <ModelToolDefinition>[],
+              ),
+              CancellationToken(),
+            )
+            .toList();
+        return jsonEncode(adapter.options!.data);
+      }
+
+      final baseline = await body(const <String, AgentModelControlValue>{});
+      for (final control in wire.controlDescriptors) {
+        // Every offered value, not just the first: a choice the wire drops is
+        // as inert as a control it never reads.
+        final values = switch (control.kind) {
+          AgentModelControlKind.choice => <AgentModelControlValue>[
+            for (final choice in control.choices)
+              AgentModelControlStringValue(value: choice.id),
+          ],
+          AgentModelControlKind.toggle => <AgentModelControlValue>[
+            const AgentModelControlBoolValue(value: true),
+          ],
+          AgentModelControlKind.integer => <AgentModelControlValue>[
+            AgentModelControlIntValue(value: control.minimum ?? 1),
+          ],
+        };
+        for (final value in values) {
+          expect(
+            await body(<String, AgentModelControlValue>{control.id: value}),
+            isNot(baseline),
+            reason:
+                '${entry.label} advertises ${control.id} = $value '
+                'but never sends it',
+          );
+        }
+      }
+    });
+  }
+
   test('provider catalogs describe each supported Lua tool surface', () {
     final openai = openAIBundledModels.first.capabilities;
     expect(openai.functionTools, AgentCapabilitySupport.supported);

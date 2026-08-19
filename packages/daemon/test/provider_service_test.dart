@@ -42,12 +42,26 @@ void main() {
             .flow,
         ProviderAuthFlow.apiKey,
       );
+      // A wire offers a custom connection only what it encodes against an
+      // arbitrary endpoint. `service_tier` is a platform-only field, so fast
+      // mode reaches a custom model through no wire.
       expect(
         catalog.wireFormats
             .singleWhere((wire) => wire.id == openAIResponsesWireId)
             .controls
             .map((control) => control.id),
-        containsAll(<String>['reasoning_effort', 'fast_mode']),
+        containsAll(<String>['reasoning_effort', 'reasoning_mode']),
+      );
+      expect(
+        catalog.wireFormats
+            .where(
+              (wire) => <String>{
+                openAIResponsesWireId,
+                openAIChatCompletionsWireId,
+              }.contains(wire.id),
+            )
+            .expand((wire) => wire.controls.map((control) => control.id)),
+        isNot(contains('fast_mode')),
       );
     },
     tags: const <String>['feature_test__provider_catalog__unit'],

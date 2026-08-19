@@ -18,46 +18,12 @@ const AgentProviderDefinition anthropicDefinition = AgentProviderDefinition(
   documentationUrl: 'https://platform.claude.com/docs',
 );
 
-const AgentModelControlDescriptor _effort = AgentModelControlDescriptor(
-  id: AgentModelControlIds.reasoningEffort,
-  label: 'Effort',
-  kind: AgentModelControlKind.choice,
-  presentation: AgentModelControlPresentation.menuChip,
-  choices: <AgentModelControlChoice>[
-    AgentModelControlChoice(id: 'low', label: 'Low'),
-    AgentModelControlChoice(id: 'medium', label: 'Medium'),
-    AgentModelControlChoice(id: 'high', label: 'High'),
-  ],
-);
-
-const AgentModelControlDescriptor _adaptive = AgentModelControlDescriptor(
-  id: AgentModelControlIds.reasoningMode,
-  label: 'Thinking',
-  kind: AgentModelControlKind.choice,
-  presentation: AgentModelControlPresentation.menuChip,
-  choices: <AgentModelControlChoice>[
-    AgentModelControlChoice(id: 'adaptive', label: 'Adaptive'),
-  ],
-  conflictsWith: <String>[AgentModelControlIds.thinkingBudget],
-);
-
-const AgentModelControlDescriptor _fast = AgentModelControlDescriptor(
-  id: AgentModelControlIds.fastMode,
-  label: 'Fast mode',
-  kind: AgentModelControlKind.toggle,
-  presentation: AgentModelControlPresentation.selectableChip,
-);
-
-const AgentModelControlDescriptor _budget = AgentModelControlDescriptor(
-  id: AgentModelControlIds.thinkingBudget,
-  label: 'Thinking budget',
-  kind: AgentModelControlKind.integer,
-  presentation: AgentModelControlPresentation.numberDialog,
-  minimum: 1024,
-  maximum: 32768,
-  step: 1024,
-  conflictsWith: <String>[AgentModelControlIds.reasoningMode],
-);
+// The wire owns each control template, so a bundled model and a custom model
+// on the same transport cannot describe the same control differently.
+const AgentModelControlDescriptor _effort = anthropicEffortControl;
+const AgentModelControlDescriptor _adaptive = anthropicThinkingModeControl;
+const AgentModelControlDescriptor _fast = anthropicFastModeControl;
+const AgentModelControlDescriptor _budget = anthropicThinkingBudgetControl;
 
 const AgentModelCapabilities _adaptiveCapabilities = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
