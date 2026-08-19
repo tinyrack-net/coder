@@ -18,11 +18,23 @@ TRAdaptiveWidthClass settingsAdaptiveWidthClassOf(BuildContext context) =>
     TRAdaptiveLayoutScope.maybeOf(context)?.widthClass ??
     TRAdaptiveWidthClass.fromWidth(MediaQuery.sizeOf(context).width);
 
+/// Whether a list-detail host shows its collection and detail side by side.
+///
+/// Below this the detail covers the collection, which makes it a destination
+/// of its own. Callers outside [SettingsListDetailHost] must ask here rather
+/// than repeat the comparison, or Up would offer to close a detail that is
+/// already sitting next to its collection.
+bool settingsListDetailIsSplit(TRAdaptiveWidthClass widthClass) =>
+    widthClass == TRAdaptiveWidthClass.large ||
+    widthClass == TRAdaptiveWidthClass.extraLarge;
+
 /// Navigation the Settings shell owns on behalf of the destination it renders.
 ///
 /// A compact destination draws the only page header, so it needs the shell's
-/// up action. The shell already climbs detail, daemon categories, home, and
-/// then out of the task, so destinations never reimplement that ladder.
+/// up action. The shell owns where up leads — the compact ladder of detail,
+/// daemon categories, home, and then out of the task, or simply out of the
+/// task once the sidebar makes every category reachable — so destinations
+/// never reimplement it.
 class SettingsShellScope extends InheritedWidget {
   /// Publishes the shell's up action to its destinations.
   const SettingsShellScope({
@@ -270,13 +282,15 @@ class _SettingsListDetailHostState extends State<SettingsListDetailHost> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.coordinator,
     builder: (context, _) {
-      final widthClass = settingsAdaptiveWidthClassOf(context);
-      final split =
-          widthClass == TRAdaptiveWidthClass.large ||
-          widthClass == TRAdaptiveWidthClass.extraLarge;
+      final split = settingsListDetailIsSplit(
+        settingsAdaptiveWidthClassOf(context),
+      );
       final hasDetail = widget.coordinator.hasDetail;
       final navigator = NavigatorPopHandler<Object?>(
-        enabled: hasDetail,
+        // Only intercept Back while the detail is what Back would leave. Split
+        // keeps the collection beside it, so closing the detail there would
+        // spend a press without changing what the user can see.
+        enabled: !split && hasDetail,
         onPopWithResult: (result) =>
             _navigatorKey.currentState?.pop<Object?>(result),
         child: Navigator(

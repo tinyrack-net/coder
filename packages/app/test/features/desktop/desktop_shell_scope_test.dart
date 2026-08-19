@@ -306,16 +306,8 @@ void main() {
       expect(find.byType(Navigator), findsNWidgets(2));
       expect(tester.takeException(), isNull);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-back-button')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text(testL10n.generalLanguageLabel), findsOneWidget);
-      expect(
-        SettingsShellRoute.$navigatorKey.currentState,
-        same(settingsNavigator),
-      );
-
+      // Every category was reached laterally, so leaving costs one press
+      // whichever one is open.
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
