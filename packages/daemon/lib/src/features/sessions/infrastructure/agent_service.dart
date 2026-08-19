@@ -51,7 +51,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required this._timeline,
     required this._models,
     required this._events,
-    required this._safetyIdentifier,
     required this._clock,
     required this._ids,
     required this._hostPrimitiveRegistryFactory,
@@ -88,7 +87,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
   final TimelineRepository _timeline;
   final ProviderModelResolver _models;
   final DaemonEventSink _events;
-  final String _safetyIdentifier;
   final Clock _clock;
   final IdGenerator _ids;
   final HostPrimitiveRegistryFactory _hostPrimitiveRegistryFactory;
@@ -381,7 +379,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
             history: history,
             attachments: turnAttachments,
             turnInputs: pendingInputs ?? const <ConversationItem>[],
-            safetyIdentifier: _safetyIdentifier,
             allowedCapabilitiesByPlugin: allowedCapabilities,
             primitives: _hostPrimitiveRegistryFactory.create(
               workspaceRoot: worktree.path,

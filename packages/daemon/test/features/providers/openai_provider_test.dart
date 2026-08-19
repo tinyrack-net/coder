@@ -6,20 +6,21 @@ import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('both OpenAI wires preserve exact role block order', () async {
+  test('both OpenAI wires serialize every neutral role in order', () async {
+    // The trailing repeat pins multi-system ordering: the standard driver
+    // emits several consecutive system blocks ahead of history.
     const blocks = <ModelRoleBlock>[
-      ModelRoleBlock(role: 'system', content: 'system-1'),
-      ModelRoleBlock(role: 'developer', content: 'developer-1'),
-      ModelRoleBlock(role: 'user', content: 'user-1'),
-      ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
-      ModelRoleBlock(role: 'developer', content: 'developer-2'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-1'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-2'),
+      ModelRoleBlock(role: ModelRole.user, content: 'user-1'),
+      ModelRoleBlock(role: ModelRole.assistant, content: 'assistant-1'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-3'),
     ];
     const request = ModelRequest(
       model: 'gpt-5.6-sol',
       blocks: blocks,
       history: <ConversationItem>[],
       tools: <ModelToolDefinition>[],
-      safetyIdentifier: 'safe-user',
     );
     final responsesAdapter = _RecordingAdapter('''
 data: {"type":"response.completed","response":{"output":[],"usage":{}}}
@@ -28,7 +29,7 @@ data: [DONE]
 
 ''');
     await OpenAIResponsesProvider(
-      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      _config(apiKey: 'secret-test-key'),
       dio: Dio()..httpClientAdapter = responsesAdapter,
     ).stream(request, CancellationToken()).toList();
     final responsesInput =
@@ -38,7 +39,7 @@ data: [DONE]
             as List;
     expect(
       responsesInput.map((item) => (item as Map)['role']),
-      blocks.map((block) => block.role),
+      blocks.map((block) => block.role.name),
     );
     expect(
       responsesInput.map(
@@ -54,7 +55,7 @@ data: [DONE]
 
 ''');
     await OpenAIChatCompletionsProvider(
-      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      _config(apiKey: 'secret-test-key'),
       dio: Dio()..httpClientAdapter = chatAdapter,
     ).stream(request, CancellationToken()).toList();
     final messages =
@@ -66,8 +67,14 @@ data: [DONE]
       messages,
       <Map<String, dynamic>>[
         for (final block in blocks)
-          <String, dynamic>{'role': block.role, 'content': block.content},
+          <String, dynamic>{'role': block.role.name, 'content': block.content},
       ],
+    );
+    // The regression lock on the reported 400: this wire serves every
+    // OpenAI-compatible vendor, and most accept only the classic roles.
+    expect(
+      messages.map((message) => (message as Map)['role']),
+      everyElement(isIn(<String>['system', 'user', 'assistant'])),
     );
   });
 
@@ -83,7 +90,7 @@ data: [DONE]
 ''');
       final dio = Dio()..httpClientAdapter = adapter;
       final provider = OpenAIResponsesProvider(
-        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        _config(apiKey: 'secret-test-key'),
         dio: dio,
       );
       await provider
@@ -95,7 +102,7 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: const <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[
                 UserConversationItem(
@@ -128,7 +135,6 @@ data: [DONE]
                 ),
               ],
               tools: const <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -200,7 +206,7 @@ data: [DONE]
 
 ''');
       await OpenAIResponsesProvider(
-            const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+            _config(apiKey: 'secret-test-key'),
             dio: Dio()..httpClientAdapter = responsesAdapter,
           )
           .stream(
@@ -211,11 +217,10 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: const <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: history,
               tools: const <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -243,7 +248,7 @@ data: [DONE]
 
 ''');
       await OpenAIChatCompletionsProvider(
-            const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+            _config(apiKey: 'secret-test-key'),
             dio: Dio()..httpClientAdapter = chatAdapter,
           )
           .stream(
@@ -254,14 +259,13 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                const ModelRoleBlock(role: 'developer', content: 'test'),
+                const ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[
                 ...history,
                 const UserConversationItem('plain text'),
               ],
               tools: const <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -305,7 +309,7 @@ data: [DONE]
 ''');
       final dio = Dio()..httpClientAdapter = adapter;
       final provider = OpenAIResponsesProvider(
-        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        _config(apiKey: 'secret-test-key'),
         dio: dio,
       );
       final events = await provider
@@ -317,7 +321,7 @@ data: [DONE]
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[
@@ -334,7 +338,6 @@ data: [DONE]
                   },
                 ),
               ],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -362,7 +365,8 @@ data: [DONE]
       );
       final completed = events.whereType<ModelResponseCompleted>().single;
       expect(
-        completed.assistant.opaqueItems.first['encrypted_content'],
+        (completed.assistant.opaqueItems.first['item']!
+            as Map)['encrypted_content'],
         'opaque',
       );
       expect(completed.usage.outputTokens, 1);
@@ -380,7 +384,7 @@ data: [DONE]
 
 ''');
       final responses = await OpenAIResponsesProvider(
-        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        _config(apiKey: 'secret-test-key'),
         dio: Dio()..httpClientAdapter = responsesAdapter,
       ).stream(_request(), CancellationToken()).toList();
       final responsesUsage = responses
@@ -403,7 +407,7 @@ data: [DONE]
 
 ''');
       final chat = await OpenAIChatCompletionsProvider(
-        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        _config(apiKey: 'secret-test-key'),
         dio: Dio()..httpClientAdapter = chatAdapter,
       ).stream(_request(), CancellationToken()).toList();
       final chatUsage = chat.whereType<ModelResponseCompleted>().single.usage;
@@ -423,7 +427,7 @@ data: [DONE]
 
 ''');
       final empty = await OpenAIResponsesProvider(
-        const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+        _config(apiKey: 'secret-test-key'),
         dio: Dio()..httpClientAdapter = emptyAdapter,
       ).stream(_request(), CancellationToken()).toList();
       final emptyUsage = empty.whereType<ModelResponseCompleted>().single.usage;
@@ -444,9 +448,13 @@ data: [DONE]
 
 ''');
       final provider = OpenAIResponsesProvider(
-        OpenAIProviderConfig(
+        _config(
           apiKey: 'secret-test-key',
-          supportsServiceTier: supportsServiceTier,
+          extensions: supportsServiceTier
+              ? const <ProviderEndpointExtension>{
+                  ProviderEndpointExtension.expeditedProcessing,
+                }
+              : const <ProviderEndpointExtension>{},
         ),
         dio: Dio()..httpClientAdapter = adapter,
       );
@@ -462,11 +470,10 @@ data: [DONE]
                       const AgentModelControlBoolValue(value: true),
               },
               blocks: <ModelRoleBlock>[
-                const ModelRoleBlock(role: 'developer', content: 'test'),
+                const ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: const <ConversationItem>[],
               tools: const <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -492,7 +499,7 @@ data: [DONE]
 
   test('an empty API key fails before opening a connection', () async {
     final provider = OpenAIResponsesProvider(
-      const OpenAIProviderConfig(),
+      _config(),
     );
     expect(
       provider
@@ -504,11 +511,10 @@ data: [DONE]
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -532,11 +538,11 @@ data: [DONE]
 ''');
     final dio = Dio()..httpClientAdapter = adapter;
     final provider = OpenAIChatCompletionsProvider(
-      const OpenAIProviderConfig(
+      _config(
         id: 'compatible',
         requiresApiKey: false,
         supportsReasoningEffort: false,
-        strictToolSchema: false,
+        extensions: const <ProviderEndpointExtension>{},
       ),
       dio: dio,
     );
@@ -549,7 +555,7 @@ data: [DONE]
                   AgentModelControlStringValue(value: 'medium'),
             },
             blocks: <ModelRoleBlock>[
-              ModelRoleBlock(role: 'developer', content: 'test'),
+              ModelRoleBlock(role: ModelRole.system, content: 'test'),
             ],
             history: <ConversationItem>[
               UserConversationItem('inspect'),
@@ -569,7 +575,6 @@ data: [DONE]
                 },
               ),
             ],
-            safetyIdentifier: 'safe-user',
           ),
           CancellationToken(),
         )
@@ -591,7 +596,68 @@ data: [DONE]
     expect(completed.usage.totalTokens, 7);
   });
 
-  test('a tool opting out of strict schemas is never sent as strict', () async {
+  test('Responses replays only its own opaque items', () async {
+    final adapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[{"type":"reasoning","id":"rs_1","encrypted_content":"blob"}],"usage":{}}}
+
+data: [DONE]
+
+''');
+    final events = await OpenAIResponsesProvider(
+      _config(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = adapter,
+    ).stream(_request(), CancellationToken()).toList();
+    final assistant = events
+        .whereType<ModelResponseCompleted>()
+        .single
+        .assistant;
+    // Written tagged, like every other transport, so a later turn can tell
+    // whose continuation state it is holding.
+    expect(assistant.opaqueItems.single['provider'], 'openai');
+
+    final replayAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+    await OpenAIResponsesProvider(
+          _config(apiKey: 'secret-test-key'),
+          dio: Dio()..httpClientAdapter = replayAdapter,
+        )
+        .stream(
+          _request(
+            history: <ConversationItem>[
+              AssistantConversationItem(
+                text: 'earlier',
+                opaqueItems: <Map<String, dynamic>>[
+                  ...assistant.opaqueItems,
+                  // A session that switched providers carries the other
+                  // transport's state, which this API cannot decode.
+                  const <String, dynamic>{
+                    'provider': 'anthropic',
+                    'block': <String, dynamic>{'type': 'thinking'},
+                  },
+                ],
+              ),
+            ],
+          ),
+          CancellationToken(),
+        )
+        .toList();
+
+    final input =
+        Map<String, dynamic>.from(replayAdapter.options!.data as Map)['input']!
+            as List;
+    expect(
+      input,
+      contains(containsPair('encrypted_content', 'blob')),
+    );
+    expect(input, everyElement(isNot(contains('provider'))));
+    expect(input, everyElement(isNot(contains('block'))));
+  });
+
+  test('strict schemas are sent only where the endpoint takes them', () async {
     const tools = <ModelToolDefinition>[
       ModelFunctionToolDefinition(
         name: 'read_file',
@@ -614,7 +680,6 @@ data: [DONE]
           },
           'required': <String>['title'],
         },
-        strict: false,
       ),
     ];
     const responsesFixture = '''
@@ -626,15 +691,33 @@ data: [DONE]
 
     final responsesAdapter = _RecordingAdapter(responsesFixture);
     await OpenAIResponsesProvider(
-      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      _config(apiKey: 'secret-test-key'),
       dio: Dio()..httpClientAdapter = responsesAdapter,
     ).stream(_request(tools: tools), CancellationToken()).toList();
     final responsesBody = Map<String, dynamic>.from(
       responsesAdapter.options!.data as Map,
     );
     final responsesTools = responsesBody['tools']! as List;
-    expect(responsesTools.first, containsPair('strict', true));
-    expect(responsesTools.last, containsPair('strict', false));
+    expect(responsesTools, everyElement(containsPair('strict', true)));
+
+    // A compatible endpoint has not stated that it validates strictly, so it
+    // is told the schemas are ordinary rather than being sent a promise it
+    // may reject.
+    final compatibleAdapter = _RecordingAdapter(responsesFixture);
+    await OpenAIResponsesProvider(
+      _config(
+        apiKey: 'secret-test-key',
+        extensions: const <ProviderEndpointExtension>{},
+      ),
+      dio: Dio()..httpClientAdapter = compatibleAdapter,
+    ).stream(_request(tools: tools), CancellationToken()).toList();
+    expect(
+      Map<String, dynamic>.from(
+            compatibleAdapter.options!.data as Map,
+          )['tools']!
+          as List,
+      everyElement(containsPair('strict', false)),
+    );
 
     final chatAdapter = _RecordingAdapter('''
 data: {"choices":[{"index":0,"delta":{"content":"hi"},"finish_reason":"stop"}]}
@@ -645,15 +728,37 @@ data: [DONE]
 
 ''');
     await OpenAIChatCompletionsProvider(
-      const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+      _config(apiKey: 'secret-test-key'),
       dio: Dio()..httpClientAdapter = chatAdapter,
     ).stream(_request(tools: tools), CancellationToken()).toList();
     final chatBody = Map<String, dynamic>.from(
       chatAdapter.options!.data as Map,
     );
     final chatTools = chatBody['tools']! as List;
-    expect((chatTools.first as Map)['function'], containsPair('strict', true));
-    expect((chatTools.last as Map)['function'], isNot(contains('strict')));
+    expect(
+      chatTools.map((tool) => (tool as Map)['function']),
+      everyElement(containsPair('strict', true)),
+    );
+
+    final compatibleChat = _RecordingAdapter('''
+data: {"choices":[{"index":0,"delta":{"content":"hi"},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+''');
+    await OpenAIChatCompletionsProvider(
+      _config(
+        apiKey: 'secret-test-key',
+        extensions: const <ProviderEndpointExtension>{},
+      ),
+      dio: Dio()..httpClientAdapter = compatibleChat,
+    ).stream(_request(tools: tools), CancellationToken()).toList();
+    expect(
+      (Map<String, dynamic>.from(compatibleChat.options!.data as Map)['tools']!
+              as List)
+          .map((tool) => (tool as Map)['function']),
+      everyElement(isNot(contains('strict'))),
+    );
   });
 
   test('Responses sends patch tools over the function surface', () async {
@@ -667,7 +772,7 @@ data: [DONE]
 ''');
     final events =
         await OpenAIResponsesProvider(
-              const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+              _config(apiKey: 'secret-test-key'),
               dio: Dio()..httpClientAdapter = adapter,
             )
             .stream(
@@ -690,7 +795,6 @@ data: [DONE]
                       },
                       'required': <String>['patch'],
                     },
-                    supportsParallelToolCalls: true,
                   ),
                 ],
               ),
@@ -699,7 +803,9 @@ data: [DONE]
             .toList();
 
     final body = Map<String, dynamic>.from(adapter.options!.data as Map);
-    expect(body['parallel_tool_calls'], isTrue);
+    // Concurrency is an endpoint fact. No endpoint states it yet, so every
+    // request declares sibling calls run one at a time, as before.
+    expect(body['parallel_tool_calls'], isFalse);
     expect((body['tools'] as List).single, <String, dynamic>{
       'type': 'function',
       'name': 'apply_patch',
@@ -741,7 +847,7 @@ data: [DONE]
 ''');
       final events =
           await OpenAIResponsesProvider(
-                const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+                _config(apiKey: 'secret-test-key'),
                 dio: Dio()..httpClientAdapter = adapter,
               )
               .stream(
@@ -812,7 +918,7 @@ data: [DONE]
 ''');
       final events =
           await OpenAIResponsesProvider(
-                const OpenAIProviderConfig(apiKey: 'secret-test-key'),
+                _config(apiKey: 'secret-test-key'),
                 dio: Dio()..httpClientAdapter = adapter,
               )
               .stream(
@@ -853,7 +959,6 @@ data: [DONE]
                           name: 'curr_time',
                           description: 'Current time.',
                           parameters: <String, dynamic>{'type': 'object'},
-                          strict: false,
                         ),
                       ],
                     ),
@@ -895,7 +1000,7 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
 ''');
     final dio = Dio()..httpClientAdapter = adapter;
     final provider = OpenAIChatCompletionsProvider(
-      const OpenAIProviderConfig(requiresApiKey: false),
+      _config(requiresApiKey: false),
       dio: dio,
     );
     expect(
@@ -908,11 +1013,10 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe-user',
             ),
             CancellationToken(),
           )
@@ -935,12 +1039,11 @@ data: [DONE]
 ''');
       final dio = Dio()..httpClientAdapter = adapter;
       final provider = OpenAIResponsesProvider(
-        const OpenAIProviderConfig(
+        _config(
           id: 'compatible-responses',
           requiresApiKey: false,
           supportsReasoningEffort: false,
-          supportsReasoningSummary: false,
-          strictToolSchema: false,
+          extensions: const <ProviderEndpointExtension>{},
         ),
         dio: dio,
       );
@@ -960,7 +1063,13 @@ data: [DONE]
                     ),
                   ],
                   opaqueItems: <Map<String, dynamic>>[
-                    <String, dynamic>{'type': 'reasoning', 'opaque': true},
+                    <String, dynamic>{
+                      'provider': 'openai',
+                      'item': <String, dynamic>{
+                        'type': 'reasoning',
+                        'opaque': true,
+                      },
+                    },
                   ],
                 ),
                 ToolResultConversationItem(
@@ -997,7 +1106,10 @@ data: [DONE]
       final completed = events.whereType<ModelResponseCompleted>().single;
       expect(completed.assistant.text, 'done');
       expect(completed.assistant.toolCalls.single.name, 'write_file');
-      expect(completed.assistant.opaqueItems.single['opaque'], 'value');
+      expect(
+        (completed.assistant.opaqueItems.single['item']! as Map)['opaque'],
+        'value',
+      );
       // A non-numeric counter the provider slipped in is ignored, not copied.
       expect(completed.usage.inputTokens, 3);
       expect(completed.usage.outputTokens, 0);
@@ -1018,7 +1130,7 @@ data: [DONE]
     ]) {
       final dio = Dio()..httpClientAdapter = _RecordingAdapter(fixture);
       final provider = OpenAIResponsesProvider(
-        const OpenAIProviderConfig(requiresApiKey: false),
+        _config(requiresApiKey: false),
         dio: dio,
       );
       await expectLater(
@@ -1038,7 +1150,7 @@ data: [DONE]
     );
     final retryDio = Dio()..httpClientAdapter = retrying;
     final provider = OpenAIResponsesProvider(
-      const OpenAIProviderConfig(requiresApiKey: false),
+      _config(requiresApiKey: false),
       dio: retryDio,
     );
     expect(
@@ -1056,7 +1168,7 @@ data: [DONE]
     final failingDio = Dio()..httpClientAdapter = failing;
     await expectLater(
       OpenAIResponsesProvider(
-        const OpenAIProviderConfig(
+        _config(
           requiresApiKey: false,
           maxConnectAttempts: 1,
         ),
@@ -1074,14 +1186,14 @@ data: [DONE]
         '"type":"invalid_request_error","param":"service_tier"}}';
     for (final build in <ModelGateway Function(Dio)>[
       (dio) => OpenAIResponsesProvider(
-        const OpenAIProviderConfig(
+        _config(
           requiresApiKey: false,
           maxConnectAttempts: 1,
         ),
         dio: dio,
       ),
       (dio) => OpenAIChatCompletionsProvider(
-        const OpenAIProviderConfig(requiresApiKey: false),
+        _config(requiresApiKey: false),
         dio: dio,
       ),
     ]) {
@@ -1109,7 +1221,7 @@ data: [DONE]
       );
     await expectLater(
       OpenAIResponsesProvider(
-        const OpenAIProviderConfig(
+        _config(
           requiresApiKey: false,
           maxConnectAttempts: 1,
         ),
@@ -1120,16 +1232,18 @@ data: [DONE]
   });
 
   test('the safety identifier is sent only where it is known', () async {
-    Future<Map<String, dynamic>> body({
-      required bool supportsSafetyIdentifier,
-    }) async {
+    Future<Map<String, dynamic>> body({required bool accepted}) async {
       final adapter = _RecordingAdapter(
         'data: {"type":"response.completed","response":{"output":[]}}\n\n',
       );
       await OpenAIResponsesProvider(
-        OpenAIProviderConfig(
+        _config(
           requiresApiKey: false,
-          supportsSafetyIdentifier: supportsSafetyIdentifier,
+          extensions: accepted
+              ? const <ProviderEndpointExtension>{
+                  ProviderEndpointExtension.requestAttribution,
+                }
+              : const <ProviderEndpointExtension>{},
         ),
         dio: Dio()..httpClientAdapter = adapter,
       ).stream(_request(), CancellationToken()).toList();
@@ -1137,21 +1251,18 @@ data: [DONE]
     }
 
     expect(
-      await body(supportsSafetyIdentifier: true),
+      await body(accepted: true),
       containsPair('safety_identifier', 'safe'),
     );
-    // The ChatGPT subscription backend rejects the whole request when it
-    // carries a field only the platform Responses API defines.
-    expect(
-      await body(supportsSafetyIdentifier: false),
-      isNot(contains('safety_identifier')),
-    );
+    // Every endpoint that has not stated it defines the field rejects the
+    // whole request when it carries one.
+    expect(await body(accepted: false), isNot(contains('safety_identifier')));
   });
 
   test('Responses retries without an unavailable reasoning summary', () async {
     final adapter = _ReasoningSummaryFallbackAdapter();
     final events = await OpenAIResponsesProvider(
-      const OpenAIProviderConfig(requiresApiKey: false),
+      _config(requiresApiKey: false),
       dio: Dio()..httpClientAdapter = adapter,
     ).stream(_request(), CancellationToken()).toList();
 
@@ -1170,11 +1281,11 @@ data: [DONE]
   test('both adapters translate transport cancellation', () async {
     for (final providerFactory in <ModelGateway Function(Dio)>[
       (dio) => OpenAIResponsesProvider(
-        const OpenAIProviderConfig(requiresApiKey: false),
+        _config(requiresApiKey: false),
         dio: dio,
       ),
       (dio) => OpenAIChatCompletionsProvider(
-        const OpenAIProviderConfig(requiresApiKey: false),
+        _config(requiresApiKey: false),
         dio: dio,
       ),
     ]) {
@@ -1203,7 +1314,7 @@ data: [DONE]
 
 ''');
       final events = await OpenAIChatCompletionsProvider(
-        const OpenAIProviderConfig(apiKey: 'key'),
+        _config(apiKey: 'key'),
         dio: Dio()..httpClientAdapter = adapter,
       ).stream(_request(), CancellationToken()).toList();
 
@@ -1228,7 +1339,7 @@ data: [DONE]
       );
       final dio = Dio()..httpClientAdapter = adapter;
       final provider = OpenAIChatCompletionsProvider(
-        const OpenAIProviderConfig(apiKey: 'key'),
+        _config(apiKey: 'key'),
         dio: dio,
       );
       final events = await provider
@@ -1272,7 +1383,7 @@ data: [DONE]
     () async {
       await expectLater(
         OpenAIChatCompletionsProvider(
-          const OpenAIProviderConfig(),
+          _config(),
         ).stream(_request(), CancellationToken()).toList(),
         throwsA(isA<OpenAIProviderException>()),
       );
@@ -1286,7 +1397,7 @@ data: [DONE]
 ''');
       await expectLater(
         OpenAIChatCompletionsProvider(
-          const OpenAIProviderConfig(requiresApiKey: false),
+          _config(requiresApiKey: false),
           dio: malformed,
         ).stream(_request(), CancellationToken()).toList(),
         throwsA(isA<OpenAIProviderException>()),
@@ -1301,7 +1412,7 @@ data: [DONE]
       final errorDio = Dio()..httpClientAdapter = errorAdapter;
       await expectLater(
         OpenAIChatCompletionsProvider(
-          const OpenAIProviderConfig(requiresApiKey: false),
+          _config(requiresApiKey: false),
           dio: errorDio,
         ).stream(_request(), CancellationToken()).toList(),
         throwsA(
@@ -1326,7 +1437,7 @@ data: {"type":"response.failed","response":{"error":{"code":"context_length_exce
 ''');
       await expectLater(
         OpenAIResponsesProvider(
-          const OpenAIProviderConfig(requiresApiKey: false),
+          _config(requiresApiKey: false),
           dio: streamed,
         ).stream(_request(), CancellationToken()).toList(),
         throwsA(isA<ModelContextOverflowException>()),
@@ -1341,7 +1452,7 @@ data: {"type":"response.failed","response":{"error":{"code":"context_length_exce
         });
       await expectLater(
         OpenAIChatCompletionsProvider(
-          const OpenAIProviderConfig(requiresApiKey: false),
+          _config(requiresApiKey: false),
           dio: rejected,
         ).stream(_request(), CancellationToken()).toList(),
         throwsA(isA<ModelContextOverflowException>()),
@@ -1355,7 +1466,7 @@ data: {"type":"response.failed","response":{"error":{"code":"context_length_exce
         });
       await expectLater(
         OpenAIResponsesProvider(
-          const OpenAIProviderConfig(
+          _config(
             requiresApiKey: false,
             maxConnectAttempts: 1,
           ),
@@ -1390,11 +1501,10 @@ ModelRequest _request({
     ),
   },
   blocks: const <ModelRoleBlock>[
-    ModelRoleBlock(role: 'developer', content: 'instructions'),
+    ModelRoleBlock(role: ModelRole.system, content: 'instructions'),
   ],
   history: history,
   tools: tools,
-  safetyIdentifier: 'safe',
   forceToolName: forceToolName,
 );
 
@@ -1571,3 +1681,45 @@ final class _CancelAdapter implements HttpClientAdapter {
   @override
   void close({bool force = false}) {}
 }
+
+/// Builds a provider config for one test.
+///
+/// Defaults mirror the platform endpoint, which is the surface most of these
+/// tests exercise. A test covering a narrower compatible endpoint states the
+/// smaller [extensions] set explicitly.
+OpenAIProviderConfig _config({
+  String id = 'openai',
+  String baseUrl = 'https://provider.test/v1',
+  String apiKey = '',
+  int maxConnectAttempts = 3,
+  bool requiresApiKey = true,
+  bool supportsReasoningEffort = true,
+  bool supportsImageInput = true,
+  bool supportsFileInput = true,
+  Set<ProviderEndpointExtension> extensions = _platformExtensions,
+  String? requestAttribution = 'safe',
+  Map<String, String> additionalHeaders = const <String, String>{},
+}) => OpenAIProviderConfig(
+  id: id,
+  baseUrl: baseUrl,
+  apiKey: apiKey,
+  maxConnectAttempts: maxConnectAttempts,
+  requiresApiKey: requiresApiKey,
+  supportsReasoningEffort: supportsReasoningEffort,
+  supportsImageInput: supportsImageInput,
+  supportsFileInput: supportsFileInput,
+  extensions: extensions,
+  requestAttribution: requestAttribution,
+  additionalHeaders: additionalHeaders,
+);
+
+const Set<ProviderEndpointExtension> _platformExtensions =
+    <ProviderEndpointExtension>{
+      ProviderEndpointExtension.modelDiscovery,
+      ProviderEndpointExtension.strictToolSchemas,
+      ProviderEndpointExtension.toolOutputSchemas,
+      ProviderEndpointExtension.reasoningContinuation,
+      ProviderEndpointExtension.reasoningSummaries,
+      ProviderEndpointExtension.requestAttribution,
+      ProviderEndpointExtension.expeditedProcessing,
+    };

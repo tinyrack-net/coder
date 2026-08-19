@@ -2,6 +2,62 @@ import 'package:agent/agent.dart';
 import 'package:daemon/src/features/providers/infrastructure/anthropic/anthropic_provider.dart';
 import 'package:dio/dio.dart';
 
+/// Effort chosen for one turn.
+///
+/// It travels in its own request field, so it constrains nothing else. The
+/// bundled catalog and a custom connection share these descriptors: a control
+/// a custom model configures is compared against the wire's own template.
+const AgentModelControlDescriptor anthropicEffortControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'low', label: 'Low'),
+        AgentModelControlChoice(id: 'medium', label: 'Medium'),
+        AgentModelControlChoice(id: 'high', label: 'High'),
+      ],
+    );
+
+/// How the model decides to think.
+///
+/// Adaptive is the only mode this transport encodes, and it writes the same
+/// request field as the budget, so the two exclude each other.
+const AgentModelControlDescriptor anthropicThinkingModeControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningMode,
+      label: 'Thinking mode',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'adaptive', label: 'Adaptive'),
+      ],
+      conflictsWith: <String>[AgentModelControlIds.thinkingBudget],
+    );
+
+/// Explicit thinking budget, exclusive with the thinking mode.
+const AgentModelControlDescriptor anthropicThinkingBudgetControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.thinkingBudget,
+      label: 'Thinking budget',
+      kind: AgentModelControlKind.integer,
+      presentation: AgentModelControlPresentation.numberDialog,
+      minimum: 1024,
+      maximum: 32768,
+      step: 1024,
+      conflictsWith: <String>[AgentModelControlIds.reasoningMode],
+    );
+
+/// Priority processing for one turn.
+const AgentModelControlDescriptor anthropicFastModeControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.fastMode,
+      label: 'Fast mode',
+      kind: AgentModelControlKind.toggle,
+      presentation: AgentModelControlPresentation.selectableChip,
+    );
+
 /// Custom-provider wire ID for Anthropic Messages.
 const String anthropicMessagesWireId = 'anthropic-messages';
 
@@ -20,55 +76,11 @@ final class AnthropicMessagesWire implements ProviderWireProtocol {
   String get label => 'Anthropic Messages';
 
   @override
-  Set<String> get supportedControlIds => const <String>{
-    AgentModelControlIds.reasoningEffort,
-    AgentModelControlIds.reasoningMode,
-    AgentModelControlIds.thinkingBudget,
-    AgentModelControlIds.fastMode,
-  };
-
-  @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.reasoningEffort,
-      label: 'Reasoning effort',
-      kind: AgentModelControlKind.choice,
-      presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'low', label: 'Low'),
-        AgentModelControlChoice(id: 'medium', label: 'Medium'),
-        AgentModelControlChoice(id: 'high', label: 'High'),
-        AgentModelControlChoice(id: 'max', label: 'Maximum'),
-      ],
-      conflictsWith: <String>[AgentModelControlIds.reasoningMode],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.reasoningMode,
-      label: 'Thinking mode',
-      kind: AgentModelControlKind.choice,
-      presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'adaptive', label: 'Adaptive'),
-        AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
-        AgentModelControlChoice(id: 'disabled', label: 'Disabled'),
-      ],
-      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.thinkingBudget,
-      label: 'Thinking budget',
-      kind: AgentModelControlKind.integer,
-      presentation: AgentModelControlPresentation.numberDialog,
-      minimum: 1024,
-      maximum: 32768,
-      step: 1024,
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.fastMode,
-      label: 'Fast mode',
-      kind: AgentModelControlKind.toggle,
-      presentation: AgentModelControlPresentation.selectableChip,
-    ),
+    anthropicEffortControl,
+    anthropicThinkingModeControl,
+    anthropicThinkingBudgetControl,
+    anthropicFastModeControl,
   ];
 
   @override

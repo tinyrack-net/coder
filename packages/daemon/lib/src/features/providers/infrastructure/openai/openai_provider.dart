@@ -11,19 +11,20 @@ import 'package:dio/dio.dart';
 /// OpenAIProviderConfig defines a public contract.
 class OpenAIProviderConfig {
   /// Creates a [OpenAIProviderConfig].
+  /// Every optional behaviour is stated by the caller. A default here would be
+  /// a second place for one vendor's answer to hide, which is what let the
+  /// platform-only fields reach every compatible endpoint.
   const OpenAIProviderConfig({
-    this.id = 'openai',
+    required this.id,
+    required this.baseUrl,
     this.apiKey = '',
-    this.baseUrl = 'https://api.openai.com/v1',
     this.maxConnectAttempts = 3,
     this.requiresApiKey = true,
-    this.supportsReasoningEffort = true,
-    this.supportsReasoningSummary = true,
-    this.supportsImageInput = true,
-    this.supportsFileInput = true,
-    this.supportsServiceTier = false,
-    this.supportsSafetyIdentifier = true,
-    this.strictToolSchema = true,
+    this.supportsReasoningEffort = false,
+    this.supportsImageInput = false,
+    this.supportsFileInput = false,
+    this.extensions = const <ProviderEndpointExtension>{},
+    this.requestAttribution,
     this.additionalHeaders = const <String, String>{},
   });
 
@@ -45,30 +46,27 @@ class OpenAIProviderConfig {
   /// The supportsReasoningEffort public API member.
   final bool supportsReasoningEffort;
 
-  /// Whether the endpoint accepts `reasoning.summary` and streams summaries.
-  final bool supportsReasoningSummary;
-
   /// Whether hydrated images may be sent as Responses content parts.
   final bool supportsImageInput;
 
   /// Whether hydrated documents may be sent as Responses content parts.
   final bool supportsFileInput;
 
-  /// Whether the endpoint accepts a `service_tier` request field.
-  final bool supportsServiceTier;
+  /// Optional behaviours the endpoint this config addresses documents.
+  final Set<ProviderEndpointExtension> extensions;
 
-  /// Whether the endpoint accepts a `safety_identifier` request field.
+  /// Opaque per-installation identifier, when the endpoint accepts one.
   ///
-  /// The field belongs to the platform Responses API. The ChatGPT subscription
-  /// backend serves a narrower surface and rejects the whole request when it
-  /// carries a parameter that surface does not define.
-  final bool supportsSafetyIdentifier;
-
-  /// The strictToolSchema public API member.
-  final bool strictToolSchema;
+  /// Supplied by the composition root rather than carried on every model
+  /// request: one vendor's platform defines the field and the others do not.
+  final String? requestAttribution;
 
   /// Additional non-secret headers required by a provider runtime.
   final Map<String, String> additionalHeaders;
+
+  /// Whether the endpoint this config addresses accepts [extension].
+  bool accepts(ProviderEndpointExtension extension) =>
+      extensions.contains(extension);
 }
 
 /// OpenAIProviderException defines a public contract.
@@ -151,6 +149,18 @@ bool? modelControlBool(ModelRequest request, String id) =>
       _ => null,
     };
 
+/// Marks continuation state as belonging to this transport.
+///
+/// A session may move between providers, so every stored opaque item names
+/// the transport that produced it and each replays only its own.
+const String _providerTag = 'openai';
+
+/// Where this wire performs deferred-tool matching and loading.
+///
+/// A Responses-only concept, so the value belongs to this transport rather
+/// than to the neutral tool declaration every wire shares.
+const String _clientExecution = 'client';
+
 String? _deferredSearchName(List<ModelToolDefinition> tools) {
   final deferred = tools.whereType<ModelDeferredSearchToolDefinition>();
   final iterator = deferred.iterator;
@@ -192,7 +202,9 @@ class OpenAIResponsesProvider implements ModelGateway {
     cancellation.onCancel(() => cancelToken.cancel('Agent turn cancelled.'));
     Response<ResponseBody>? response;
     Object? lastError;
-    var includeReasoningSummary = _config.supportsReasoningSummary;
+    var includeReasoningSummary = _config.accepts(
+      ProviderEndpointExtension.reasoningSummaries,
+    );
     var reasoningSummaryDowngraded = false;
     for (var attempt = 1; attempt <= _config.maxConnectAttempts; attempt += 1) {
       cancellation.throwIfCancelled();
@@ -279,10 +291,10 @@ class OpenAIResponsesProvider implements ModelGateway {
         ...request.blocks.map(
           (block) => <String, dynamic>{
             'type': 'message',
-            'role': block.role,
+            'role': block.role.name,
             'content': <Map<String, dynamic>>[
               <String, dynamic>{
-                'type': block.role == 'assistant'
+                'type': block.role == ModelRole.assistant
                     ? 'output_text'
                     : 'input_text',
                 'text': block.content,
@@ -300,12 +312,12 @@ class OpenAIResponsesProvider implements ModelGateway {
           if (_config.supportsReasoningEffort) 'mode': ?mode,
           if (includeReasoningSummary) 'summary': 'auto',
         },
-      if (_config.supportsServiceTier &&
+      if (_config.accepts(ProviderEndpointExtension.expeditedProcessing) &&
           modelControlBool(request, AgentModelControlIds.fastMode) == true)
         'service_tier': 'priority',
       'tools': request.tools.map(_responsesTool).toList(growable: false),
-      'parallel_tool_calls': request.tools.any(
-        (tool) => tool.supportsParallelToolCalls,
+      'parallel_tool_calls': _config.accepts(
+        ProviderEndpointExtension.concurrentToolCalls,
       ),
       if (request.forceToolName != null)
         'tool_choice': <String, dynamic>{
@@ -314,9 +326,10 @@ class OpenAIResponsesProvider implements ModelGateway {
         },
       'stream': true,
       'store': false,
-      'include': <String>['reasoning.encrypted_content'],
-      if (_config.supportsSafetyIdentifier)
-        'safety_identifier': request.safetyIdentifier,
+      if (_config.accepts(ProviderEndpointExtension.reasoningContinuation))
+        'include': <String>['reasoning.encrypted_content'],
+      if (_config.accepts(ProviderEndpointExtension.requestAttribution))
+        'safety_identifier': ?_config.requestAttribution,
     };
   }
 
@@ -368,7 +381,15 @@ class OpenAIResponsesProvider implements ModelGateway {
           :final toolCalls,
           :final opaqueItems,
         ):
-          result.addAll(opaqueItems.map(Map<String, dynamic>.from));
+          // A session may have been continued across transports, and the
+          // others' continuation state is not decodable here.
+          for (final item in opaqueItems) {
+            if (item['provider'] != _providerTag) continue;
+            final replayed = item['item'];
+            if (replayed is Map) {
+              result.add(Map<String, dynamic>.from(replayed));
+            }
+          }
           if (text.isNotEmpty) {
             result.add(<String, dynamic>{
               'type': 'message',
@@ -388,7 +409,7 @@ class OpenAIResponsesProvider implements ModelGateway {
                   ? <String, dynamic>{
                       'type': 'tool_search_call',
                       'call_id': call.callId,
-                      'execution': 'client',
+                      'execution': _clientExecution,
                       'arguments': call.arguments,
                     }
                   : <String, dynamic>{
@@ -417,7 +438,7 @@ class OpenAIResponsesProvider implements ModelGateway {
             'call_id': callId,
             if (toolKind == ModelToolKind.deferredSearch) ...<String, dynamic>{
               'status': 'completed',
-              'execution': 'client',
+              'execution': _clientExecution,
               'tools': (jsonDecode(output) as Map)['tools'],
             } else
               'output': _functionOutput(output, content),
@@ -461,8 +482,12 @@ class OpenAIResponsesProvider implements ModelGateway {
           'name': tool.name,
           'description': tool.description,
           'parameters': tool.parameters,
-          'strict': tool.strict && _config.strictToolSchema,
-          if (tool.outputSchema != null) 'output_schema': tool.outputSchema,
+          'strict': _config.accepts(
+            ProviderEndpointExtension.strictToolSchemas,
+          ),
+          if (_config.accepts(ProviderEndpointExtension.toolOutputSchemas) &&
+              tool.outputSchema != null)
+            'output_schema': tool.outputSchema,
         },
         ModelNamespaceToolDefinition() => <String, dynamic>{
           'type': 'namespace',
@@ -472,13 +497,13 @@ class OpenAIResponsesProvider implements ModelGateway {
         },
         ModelDeferredSearchToolDefinition() => <String, dynamic>{
           'type': 'tool_search',
-          'execution': tool.execution,
+          'execution': _clientExecution,
           'description': tool.description,
           'parameters': tool.parameters,
         },
       };
 
-  static const Set<String> _supportedImageTypes = openAiSupportedImageTypes;
+  static const Set<String> _supportedImageTypes = inlineImageMediaTypes;
 
   static const int _maxDirectFileBytes = 50 * 1024 * 1024;
 
@@ -607,7 +632,12 @@ class OpenAIResponsesProvider implements ModelGateway {
                         item['type'] != 'message' &&
                         item['type'] != 'function_call',
                   )
-                  .map(Map<String, dynamic>.from)
+                  .map(
+                    (item) => <String, dynamic>{
+                      'provider': _providerTag,
+                      'item': Map<String, dynamic>.from(item),
+                    },
+                  )
                   .toList(growable: false),
             ),
             usage: _usage(responseMap['usage']),

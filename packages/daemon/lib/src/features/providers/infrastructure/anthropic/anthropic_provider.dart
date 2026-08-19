@@ -124,16 +124,18 @@ final class AnthropicMessagesProvider implements ModelGateway {
       'model': request.model,
       'system': <Map<String, dynamic>>[
         for (final block in request.blocks.where(
-          (block) => block.role == 'system' || block.role == 'developer',
+          (block) => block.role == ModelRole.system,
         ))
           <String, dynamic>{'type': 'text', 'text': block.content},
       ],
+      // Complementary to the system filter, so a role added later reaches the
+      // transport rather than being dropped between two positive predicates.
       'messages': <Map<String, dynamic>>[
         for (final block in request.blocks.where(
-          (block) => block.role == 'user' || block.role == 'assistant',
+          (block) => block.role != ModelRole.system,
         ))
           <String, dynamic>{
-            'role': block.role,
+            'role': block.role.name,
             'content': <Map<String, dynamic>>[
               <String, dynamic>{'type': 'text', 'text': block.content},
             ],
@@ -158,7 +160,9 @@ final class AnthropicMessagesProvider implements ModelGateway {
             'name': tool.name,
             'description': tool.description,
             'input_schema': tool.parameters,
-            if (tool.strict) 'strict': true,
+            // Every schema the harness produces is strict, and this endpoint
+            // documents the field, so the decision belongs to this wire.
+            'strict': true,
           },
       ],
       if (request.forceToolName != null)

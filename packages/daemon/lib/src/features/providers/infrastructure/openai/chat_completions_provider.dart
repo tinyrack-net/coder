@@ -73,7 +73,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
     'model': request.model,
     'messages': <Map<String, dynamic>>[
       for (final block in request.blocks)
-        <String, dynamic>{'role': block.role, 'content': block.content},
+        <String, dynamic>{'role': block.role.name, 'content': block.content},
       ..._messages(request.history),
     ],
     if (_config.supportsReasoningEffort)
@@ -81,7 +81,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
         request,
         AgentModelControlIds.reasoningEffort,
       ),
-    if (_config.supportsServiceTier &&
+    if (_config.accepts(ProviderEndpointExtension.expeditedProcessing) &&
         modelControlBool(request, AgentModelControlIds.fastMode) == true)
       'service_tier': 'priority',
     'tools': request.tools
@@ -93,7 +93,8 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
               'name': tool.name,
               'description': tool.description,
               'parameters': tool.parameters,
-              if (tool.strict && _config.strictToolSchema) 'strict': true,
+              if (_config.accepts(ProviderEndpointExtension.strictToolSchemas))
+                'strict': true,
             },
           },
         )
@@ -118,7 +119,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
             final bytes = attachment.bytes;
             if (_config.supportsImageInput &&
                 bytes != null &&
-                openAiSupportedImageTypes.contains(attachment.mimeType)) {
+                inlineImageMediaTypes.contains(attachment.mimeType)) {
               images.add(<String, dynamic>{
                 'type': 'image_url',
                 'image_url': <String, dynamic>{

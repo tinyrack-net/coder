@@ -457,8 +457,8 @@ Future<void> _runConformance({
       await _expectCompletion(
         client,
         uri,
-        _after(fixtureSource, 'tinest.model.capability.role.'),
-        const <String>{'system', 'developer', 'user', 'assistant'},
+        _after(fixtureSource, 'tinest.model.role.'),
+        const <String>{'system', 'user', 'assistant'},
       );
       await _expectHoverContains(
         client,

@@ -132,7 +132,6 @@ void main() {
               attachments: <ConversationAttachment>[attachment],
             ),
           ],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: const <String, Set<String>>{
             'acme.driver': <String>{'model.call', 'tools.list'},
           },
@@ -151,14 +150,14 @@ void main() {
         model.requests.first.blocks.map((block) => block.toJson()),
         <Map<String, dynamic>>[
           <String, dynamic>{'role': 'system', 'content': 'AGENT BODY'},
-          <String, dynamic>{'role': 'developer', 'content': 'first'},
+          <String, dynamic>{'role': 'system', 'content': 'first'},
         ],
       );
       expect(
         model.requests.last.blocks.map((block) => block.toJson()),
         <Map<String, dynamic>>[
           <String, dynamic>{'role': 'system', 'content': 'AGENT BODY'},
-          <String, dynamic>{'role': 'developer', 'content': 'second'},
+          <String, dynamic>{'role': 'system', 'content': 'second'},
         ],
       );
       expect(model.requests.every((request) => request.tools.isEmpty), isTrue);
@@ -194,9 +193,94 @@ void main() {
   );
 
   test(
-    'model.open rejects a role the selected model does not support',
+    'the built-in standard driver builds every prompt block from the '
+    'universal role set',
     () async {
-      final bundle = _driverBundle();
+      const agentId = 'universal-role-agent';
+      final standard = await const BuiltInPluginCatalog().load(
+        'tinest.standard',
+      );
+      final revisions = PluginRevisionCatalog(
+        loader: _BundleLoader(standard),
+        cache: _MemoryRevisionCache(),
+      );
+      final capabilities = standard.descriptor.requestedCapabilities.toSet();
+      await revisions.reload(
+        standard.descriptor.id,
+        agentId: agentId,
+        approvedCapabilities: capabilities,
+      );
+      final runtime = _pluginRuntime(stagedHost, revisions);
+      addTearDown(runtime.close);
+      final model = _RecordingModelGateway();
+
+      await LuaAgentHarness(runtime: runtime).startTurn(
+        request: LuaAgentHarnessRequest(
+          definition: const AgentDefinitionDto(
+            version: 5,
+            id: agentId,
+            name: 'Universal Role Agent',
+            description: '',
+            mode: AgentMode.primary,
+            model: AgentModelSelectionDto(source: AgentModelSource.session),
+            driverId: 'tinest.standard/driver',
+            extensionIds: <String>[],
+            toolIds: <String>[],
+            pluginSettings: <String, Map<String, dynamic>>{},
+            callableAgentIds: <String>[],
+            prompt: 'AGENT BODY',
+            contentHash: 'universal-role-agent-hash',
+            sourcePath: 'universal-role-agent.md',
+          ),
+          sessionId: 'universal-role-session',
+          turnId: 'universal-role-turn',
+          workspaceRoot: Directory.current.path,
+          prompt: 'run',
+          modelId: 'universal-role-model',
+          model: model,
+          modelCapabilities: const AgentModelCapabilities(
+            streaming: AgentCapabilitySupport.supported,
+          ),
+          history: const <ConversationItem>[],
+          // Exercises the permission-policy, project-document and agent-prompt
+          // blocks in one turn, so every prompt-composition path is covered.
+          projectDocument: 'PROJECT DOCUMENT',
+          extensionData: const <String, Object?>{
+            'host_policy': <String, Object?>{
+              'permission_mode': 'readOnly',
+              'workspace_root': '/workspace',
+            },
+          },
+          allowedCapabilitiesByPlugin: <String, Set<String>>{
+            standard.descriptor.id: capabilities,
+          },
+          state: MemoryPluginStateStore(),
+        ),
+        callbacks: LuaAgentHarnessCallbacks(
+          onEvent: (_, _) {},
+          onStatus: (_, {error}) {},
+          onProviderItems: (_) {},
+        ),
+        cancellation: CancellationToken(),
+      );
+
+      // A driver may only name roles every transport accepts. One vendor's
+      // superset reaches the others as an unknown role and fails the request.
+      expect(model.requests, isNotEmpty);
+      expect(
+        model.requests
+            .expand((request) => request.blocks)
+            .map((block) => block.role.name)
+            .toSet(),
+        everyElement(isIn(<String>['system', 'user', 'assistant'])),
+      );
+    },
+  );
+
+  test(
+    'model.open rejects a role outside the neutral vocabulary',
+    () async {
+      final bundle = _rawRoleDriverBundle('developer');
       final revisions = PluginRevisionCatalog(
         loader: _BundleLoader(bundle),
         cache: _MemoryRevisionCache(),
@@ -220,7 +304,7 @@ void main() {
               description: '',
               mode: AgentMode.primary,
               model: AgentModelSelectionDto(source: AgentModelSource.session),
-              driverId: 'acme.driver/driver',
+              driverId: 'acme.raw-role/driver',
               extensionIds: <String>[],
               toolIds: <String>[],
               pluginSettings: <String, Map<String, dynamic>>{},
@@ -237,12 +321,10 @@ void main() {
             model: model,
             modelCapabilities: const AgentModelCapabilities(
               streaming: AgentCapabilitySupport.supported,
-              roles: <String>['system'],
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: const <String, Set<String>>{
-              'acme.driver': <String>{'model.call', 'tools.list'},
+              'acme.raw-role': <String>{'model.call', 'tools.list'},
             },
           ),
           callbacks: LuaAgentHarnessCallbacks(
@@ -256,10 +338,15 @@ void main() {
           isA<StateError>().having(
             (error) => error.message,
             'message',
-            contains('does not support driver role block(s): developer'),
+            allOf(
+              contains('"developer"'),
+              contains('system, user, assistant'),
+            ),
           ),
         ),
       );
+      // The role never reaches the transport, so no provider can answer 400
+      // for a vocabulary the runtime should have rejected itself.
       expect(model.requests, isEmpty);
     },
   );
@@ -315,7 +402,6 @@ void main() {
                 streaming: AgentCapabilitySupport.supported,
               ),
               history: const <ConversationItem>[],
-              safetyIdentifier: 'safety',
               allowedCapabilitiesByPlugin: const <String, Set<String>>{
                 'acme.driver': <String>{'model.call', 'tools.list'},
               },
@@ -482,7 +568,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -622,7 +707,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -699,7 +783,6 @@ void main() {
           model: _RecordingModelGateway(),
           modelCapabilities: const AgentModelCapabilities(),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -820,10 +903,8 @@ void main() {
             toolCalling: AgentCapabilitySupport.supported,
             functionTools: AgentCapabilitySupport.supported,
             deferredTools: AgentCapabilitySupport.unsupported,
-            roles: <String>['system', 'developer'],
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: allowedCapabilities,
           state: MemoryPluginStateStore(),
         ),
@@ -1014,10 +1095,8 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
             toolCalling: AgentCapabilitySupport.supported,
             functionTools: AgentCapabilitySupport.supported,
-            roles: <String>['system', 'developer'],
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: allowedCapabilities,
           state: MemoryPluginStateStore(),
         ),
@@ -1163,10 +1242,8 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
             toolCalling: AgentCapabilitySupport.supported,
             functionTools: AgentCapabilitySupport.supported,
-            roles: <String>['system', 'developer'],
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             luaCode.descriptor.id: capabilities,
           },
@@ -1240,7 +1317,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: const <String, Set<String>>{
             'acme.text': <String>{
               'model.call',
@@ -1269,7 +1345,7 @@ void main() {
         model.requests.first.blocks.map((block) => block.toJson()),
         <Map<String, dynamic>>[
           <String, dynamic>{
-            'role': 'developer',
+            'role': 'system',
             'content': 'Use XML tool syntax only.',
           },
         ],
@@ -1340,7 +1416,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -1359,7 +1434,7 @@ void main() {
       );
 
       expect(model.requests.single.blocks.single.toJson(), <String, dynamic>{
-        'role': 'developer',
+        'role': 'system',
         'content': 'true|selected|nil',
       });
     },
@@ -1432,7 +1507,6 @@ void main() {
               streaming: AgentCapabilitySupport.supported,
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: <String, Set<String>>{
               bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                   .toSet(),
@@ -1529,7 +1603,6 @@ void main() {
                 streaming: AgentCapabilitySupport.supported,
               ),
               history: const <ConversationItem>[],
-              safetyIdentifier: 'safety',
               allowedCapabilitiesByPlugin: <String, Set<String>>{
                 bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                     .toSet(),
@@ -1631,7 +1704,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -2249,7 +2321,6 @@ void main() {
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: const <String, Set<String>>{
           'acme.scheduler': <String>{'scheduler.manage'},
         },
@@ -2351,7 +2422,6 @@ void main() {
               streaming: AgentCapabilitySupport.supported,
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: grants,
             state: driverState,
             extensionData: <String, Object?>{
@@ -2465,8 +2535,8 @@ void main() {
         model.requests.single.blocks.map((block) => block.toJson()),
         <Map<String, dynamic>>[
           <String, dynamic>{'role': 'system', 'content': defaultPrompt},
-          <String, dynamic>{'role': 'developer', 'content': planPrompt},
-          <String, dynamic>{'role': 'developer', 'content': 'AGENT BODY'},
+          <String, dynamic>{'role': 'system', 'content': planPrompt},
+          <String, dynamic>{'role': 'system', 'content': 'AGENT BODY'},
         ],
       );
 
@@ -2554,7 +2624,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           state: state,
         ),
@@ -2654,7 +2723,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           primitives: primitives.registry,
           state: MemoryPluginStateStore(),
@@ -2774,7 +2842,6 @@ void main() {
           model: _RecordingModelGateway(),
           modelCapabilities: const AgentModelCapabilities(),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -2863,7 +2930,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           contextWindowTokens: 100,
           state: state,
@@ -3403,7 +3469,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           state: state,
           jobs: state,
@@ -3496,7 +3561,6 @@ void main() {
                     functionTools: AgentCapabilitySupport.supported,
                   ),
                   history: history,
-                  safetyIdentifier: 'safety',
                   allowedCapabilitiesByPlugin: capabilities,
                   state: restartedState,
                   jobs: scheduler,
@@ -3991,7 +4055,6 @@ Future<void> _runModelToolSurfaceTurn({
         model: model,
         modelCapabilities: capabilities,
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: <String, Set<String>>{
           bundle.descriptor.id: grants,
         },
@@ -4069,7 +4132,6 @@ Future<void> _runHostPrimitiveTurn({
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: <String, Set<String>>{
           bundle.descriptor.id: grantedCapabilities,
         },
@@ -4178,7 +4240,6 @@ Future<void> _runContextTurn({
           functionTools: AgentCapabilitySupport.supported,
         ),
         history: history,
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: capabilities,
         contextWindowTokens: 100,
         state: state,
@@ -4259,7 +4320,6 @@ Future<List<bool>> _runRestrictedTurn({
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: grants,
         sessionControlValues: sessionControlValues,
         primitives: primitives,
@@ -4336,7 +4396,6 @@ Future<_RecordingModelGateway> _runPlanPromptTurn({
           streaming: AgentCapabilitySupport.supported,
         ),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: capabilities,
         sessionControlValues: enabled
             ? const <String, Object?>{'tinest.plan/mode': true}
@@ -5137,6 +5196,35 @@ PluginBundle _bundle({
   );
 }
 
+/// A driver that writes [role] straight into the block, bypassing the SDK
+/// constant, so the host decode boundary is what has to reject it.
+PluginBundle _rawRoleDriverBundle(String role) => _bundle(
+  id: 'acme.raw-role',
+  capabilities: const <String>['model.call', 'tools.list'],
+  source:
+      '''
+local tinest = require("tinest")
+
+local driver = tinest.driver.define({
+  id = "driver",
+  uses = {tinest.model.open, tinest.model.next},
+  required_model_capabilities = {tinest.model.capability.streaming},
+}, function(_arguments)
+  local stream = tinest.model.open({
+    blocks = {{role = "$role", content = "block"}},
+    history = {},
+    tools = {},
+  })
+  while true do
+    local next_event = tinest.model.next(stream)
+    if next_event.done then break end
+  end
+  return {tool_rounds = 0}
+end)
+return tinest.plugin.define({driver = driver})
+''',
+);
+
 PluginBundle _driverBundle({
   List<String> requiredModelCapabilities = const <String>['streaming'],
 }) {
@@ -5176,7 +5264,7 @@ local function request(arguments, suffix, history)
   local stream = tinest.model.open({
     blocks = {
       {role = tinest.model.role.system, content = arguments.agent_prompt},
-      {role = tinest.model.role.developer, content = suffix},
+      {role = tinest.model.role.system, content = suffix},
     },
     history = history,
     tools = {},
@@ -5701,7 +5789,7 @@ end)
 local function model_response(history)
   local stream = tinest.model.open({
     blocks = {{
-      role = tinest.model.role.developer,
+      role = tinest.model.role.system,
       content = "Use XML tool syntax only.",
     }},
     history = history,
@@ -5806,7 +5894,7 @@ local driver = tinest.driver.define({
 }, function(arguments)
   local stream = tinest.model.open({
     blocks = {{
-      role = tinest.model.role.developer,
+      role = tinest.model.role.system,
       content = arguments.extensions[1].prompt,
     }},
     history = {},

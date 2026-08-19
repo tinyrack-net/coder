@@ -906,7 +906,7 @@ final class ProviderConnectionService
     };
     ProviderConnectionStatus status;
     String? error;
-    if (!endpoint.supportsModelDiscovery) {
+    if (!endpoint.accepts(ProviderEndpointExtension.modelDiscovery)) {
       // The bundled catalog is already the complete model set for endpoints
       // without a `/models` listing, so a discovery request would only fail.
       status = ProviderConnectionStatus.connected;
@@ -1021,9 +1021,15 @@ final class ProviderConnectionService
   ProviderEndpoint _endpointFor(ProviderConnectionDto connection) {
     final custom = connection.customConfig;
     if (custom != null) {
+      // A user-entered base URL may be anything, so it receives the neutral
+      // baseline: it cannot be told to accept a field nobody has verified it
+      // defines. Model discovery is the one exception, since a connection
+      // with no bundled catalog has no other way to name a model.
       return ProviderEndpoint(
         baseUrl: custom.baseUrl,
-        strictToolSchema: custom.strictToolSchema,
+        extensions: const <ProviderEndpointExtension>{
+          ProviderEndpointExtension.modelDiscovery,
+        },
       );
     }
     return _registry

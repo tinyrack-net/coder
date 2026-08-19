@@ -74,11 +74,7 @@ enum ModelToolKind {
 
 /// Provider-neutral model-facing tool declaration.
 sealed class ModelToolDefinition {
-  const ModelToolDefinition({
-    required this.name,
-    required this.description,
-    this.supportsParallelToolCalls = false,
-  });
+  const ModelToolDefinition({required this.name, required this.description});
 
   /// The name public API member.
   final String name;
@@ -88,9 +84,6 @@ sealed class ModelToolDefinition {
 
   /// Wire-level tool kind.
   ModelToolKind get kind;
-
-  /// Whether calls to this tool may run concurrently with sibling calls.
-  final bool supportsParallelToolCalls;
 }
 
 /// A strict or provider-owned JSON function tool.
@@ -101,8 +94,6 @@ final class ModelFunctionToolDefinition extends ModelToolDefinition {
     required super.description,
     required this.parameters,
     this.outputSchema,
-    this.strict = true,
-    super.supportsParallelToolCalls,
   });
 
   @override
@@ -113,9 +104,6 @@ final class ModelFunctionToolDefinition extends ModelToolDefinition {
 
   /// Optional JSON schema produced by the function.
   final Map<String, dynamic>? outputSchema;
-
-  /// Whether [parameters] satisfies provider strict-schema requirements.
-  final bool strict;
 }
 
 /// One function nested in a provider namespace.
@@ -141,14 +129,10 @@ final class ModelDeferredSearchToolDefinition extends ModelToolDefinition {
     required super.name,
     required super.description,
     required this.parameters,
-    this.execution = 'client',
   });
 
   @override
   ModelToolKind get kind => ModelToolKind.deferredSearch;
-
-  /// Where matching and loading are performed.
-  final String execution;
 
   /// Query and result-limit schema.
   final Map<String, dynamic> parameters;
@@ -453,20 +437,37 @@ class ToolResultConversationItem extends ConversationItem {
   };
 }
 
+/// Roles a driver may address, accepted by every transport the runtime speaks.
+///
+/// A vendor superset is not a neutral vocabulary: a role only one transport
+/// knows reaches the others as an unknown variant and fails the request. This
+/// set is therefore the intersection, and a transport that draws a finer
+/// distinction owns that mapping privately.
+enum ModelRole {
+  /// Instructions that frame the whole conversation.
+  system,
+
+  /// Input authored by the person driving the turn.
+  user,
+
+  /// Output previously authored by the model.
+  assistant,
+}
+
 /// A role-qualified prompt block supplied by an Agent driver.
 final class ModelRoleBlock {
   /// Creates one ordered prompt block.
   const ModelRoleBlock({required this.role, required this.content});
 
-  /// Provider-neutral role name advertised by model capabilities.
-  final String role;
+  /// Provider-neutral role of this block.
+  final ModelRole role;
 
   /// Text content of this block.
   final String content;
 
   /// JSON representation consumed by plugin and provider boundaries.
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'role': role,
+    'role': role.name,
     'content': content,
   };
 }
@@ -479,7 +480,6 @@ class ModelRequest {
     required this.blocks,
     required this.history,
     required this.tools,
-    required this.safetyIdentifier,
     this.modelControls = const <String, AgentModelControlValue>{},
     this.forceToolName,
   });
@@ -498,9 +498,6 @@ class ModelRequest {
 
   /// The tools public API member.
   final List<ModelToolDefinition> tools;
-
-  /// The safetyIdentifier public API member.
-  final String safetyIdentifier;
 
   /// The forceToolName public API member.
   final String? forceToolName;

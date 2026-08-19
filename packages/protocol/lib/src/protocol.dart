@@ -5,10 +5,13 @@ const int tinestProtocolMajor = 5;
 
 /// Exact revision supported by this implementation.
 ///
-/// Revision 2 replaces mutable skill management with the read-only catalog
-/// contract. An earlier peer cannot decode this catalog, so the handshake
-/// rejects the pairing rather than letting it fail later at an arbitrary RPC.
-const int tinestProtocolRevision = 2;
+/// Revision 4 drops the per-model role list and the custom-endpoint strict
+/// schema flag. Roles are now a closed neutral set every transport accepts,
+/// and what an endpoint accepts is stated by the endpoint rather than
+/// configured per connection. An earlier peer still expects both fields, so
+/// the handshake rejects the pairing rather than letting it fail later at an
+/// arbitrary RPC.
+const int tinestProtocolRevision = 4;
 
 /// WebSocket subprotocol offered by v5 clients and servers.
 const String tinestWebSocketProtocol = 'tinyrack.tinest.v5';

@@ -1366,8 +1366,6 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport deferredTools,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
-    @Default(<String>['system', 'developer', 'user', 'assistant'])
-    List<String> roles,
     @Default(<ModelControlDescriptorDto>[])
     List<ModelControlDescriptorDto> controls,
     @Default(CapabilitySource.unknown) CapabilitySource source,
@@ -1471,7 +1469,6 @@ abstract class CustomProviderConfigDto with _$CustomProviderConfigDto {
     required String baseUrl,
     required String wireFormatId,
     required bool authenticationRequired,
-    @Default(false) bool strictToolSchema,
     @Default(<ManualProviderModelDto>[]) List<ManualProviderModelDto> models,
   }) = _CustomProviderConfigDto;
 

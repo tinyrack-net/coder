@@ -20,13 +20,11 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
   /// Injectable HTTP client factory used by deterministic contract tests.
   final Dio Function(ProviderEndpoint endpoint)? dioFactory;
 
-  @override
-  Set<String> get supportedControlIds => const <String>{
-    AgentModelControlIds.reasoningEffort,
-    AgentModelControlIds.reasoningMode,
-    AgentModelControlIds.fastMode,
-  };
-
+  /// Reasoning effort is the one control both OpenAI-compatible APIs encode.
+  ///
+  /// Fast mode is deliberately absent: `service_tier` is a platform-only
+  /// field, so a connection to an arbitrary compatible endpoint would be
+  /// offered a toggle that never reaches the wire.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
     AgentModelControlDescriptor(
@@ -44,23 +42,6 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
       ],
       conflictsWith: <String>[AgentModelControlIds.reasoningMode],
     ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.reasoningMode,
-      label: 'Reasoning mode',
-      kind: AgentModelControlKind.choice,
-      presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'none', label: 'None'),
-        AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
-      ],
-      conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
-    ),
-    AgentModelControlDescriptor(
-      id: AgentModelControlIds.fastMode,
-      label: 'Fast mode',
-      kind: AgentModelControlKind.toggle,
-      presentation: AgentModelControlPresentation.selectableChip,
-    ),
   ];
 
   @override
@@ -69,18 +50,17 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
 
   /// Builds the adapter, letting a vendor add its own non-secret headers.
   ///
-  /// [supportsPlatformRequestFields] gates `service_tier` and
-  /// `safety_identifier`: they are documented for platform.openai.com, and a
-  /// narrower compatible surface answers 400 for a request carrying either,
-  /// so the model capability alone cannot decide whether to send them.
+  /// Every optional request field is decided by what the endpoint states it
+  /// accepts. One wire implementation serves many endpoints, so a default here
+  /// would be one vendor's answer applied to all of them.
   ModelGateway adapterFor(
     ModelGatewayRequest request, {
     Map<String, String> additionalHeaders = const <String, String>{},
-    bool supportsPlatformRequestFields = true,
-    bool supportsReasoningSummary = false,
+    String? requestAttribution,
   }) {
     final credential = request.credential;
     final capabilities = request.capabilities;
+    final endpoint = request.endpoint;
     final config = OpenAIProviderConfig(
       id: request.connectionId,
       apiKey: switch (credential) {
@@ -88,23 +68,26 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
         OAuthCredential(:final accessToken) => accessToken,
         null => '',
       },
-      baseUrl: request.endpoint.baseUrl,
+      baseUrl: endpoint.baseUrl,
       requiresApiKey: credential != null,
       supportsReasoningEffort: capabilities.controls.any(
         (control) => control.id == AgentModelControlIds.reasoningEffort,
       ),
-      supportsReasoningSummary: supportsReasoningSummary,
       supportsImageInput:
           capabilities.imageInput == AgentCapabilitySupport.supported,
       supportsFileInput:
           capabilities.fileInput == AgentCapabilitySupport.supported,
-      supportsServiceTier:
-          capabilities.controls.any(
-            (control) => control.id == AgentModelControlIds.fastMode,
-          ) &&
-          supportsPlatformRequestFields,
-      supportsSafetyIdentifier: supportsPlatformRequestFields,
-      strictToolSchema: request.endpoint.strictToolSchema,
+      // Expedited processing needs both halves: the endpoint has to define the
+      // field and the model has to offer the control that sets it.
+      extensions: <ProviderEndpointExtension>{
+        for (final extension in endpoint.extensions)
+          if (extension != ProviderEndpointExtension.expeditedProcessing ||
+              capabilities.controls.any(
+                (control) => control.id == AgentModelControlIds.fastMode,
+              ))
+            extension,
+      },
+      requestAttribution: requestAttribution,
       additionalHeaders: additionalHeaders,
     );
     final dio = dioFactory?.call(request.endpoint);
@@ -176,6 +159,24 @@ final class OpenAIResponsesWire extends OpenAICompatibleWire {
 
   @override
   String get label => 'OpenAI Responses';
+
+  /// Only this API encodes `reasoning.mode`, so only it offers the control.
+  @override
+  List<AgentModelControlDescriptor> get controlDescriptors =>
+      <AgentModelControlDescriptor>[
+        ...super.controlDescriptors,
+        const AgentModelControlDescriptor(
+          id: AgentModelControlIds.reasoningMode,
+          label: 'Reasoning mode',
+          kind: AgentModelControlKind.choice,
+          presentation: AgentModelControlPresentation.menuChip,
+          choices: <AgentModelControlChoice>[
+            AgentModelControlChoice(id: 'none', label: 'None'),
+            AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
+          ],
+          conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
+        ),
+      ];
 
   @override
   ModelGateway buildAdapter(OpenAIProviderConfig config, Dio? dio) =>

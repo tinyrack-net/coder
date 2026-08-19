@@ -27,7 +27,6 @@ final class LuaAgentHarnessRequest {
     required this.model,
     required this.modelCapabilities,
     required this.history,
-    required this.safetyIdentifier,
     required this.allowedCapabilitiesByPlugin,
     this.workspaceId,
     this.attachments = const <ConversationAttachment>[],
@@ -88,9 +87,6 @@ final class LuaAgentHarnessRequest {
   ///
   /// The driver decides where these ordered items enter its model context.
   final List<ConversationItem> turnInputs;
-
-  /// Core-owned identifier used by provider abuse controls.
-  final String safetyIdentifier;
 
   /// Already validated provider controls.
   final Map<String, AgentModelControlValue> modelControls;
@@ -1703,17 +1699,14 @@ final class _TurnCallbackRouter
         _fatalModelContractError ??= surfaceError;
         throw StateError(surfaceError);
       }
-      final blocks = _modelRoleBlocks(arguments['blocks']);
-      final unsupportedRoles = blocks
-          .map((block) => block.role)
-          .where((role) => !request.modelCapabilities.roles.contains(role))
-          .toSet();
-      if (unsupportedRoles.isNotEmpty) {
-        final message =
-            'Model does not support driver role block(s): '
-            '${unsupportedRoles.join(', ')}';
-        _fatalModelContractError ??= message;
-        throw StateError(message);
+      final List<ModelRoleBlock> blocks;
+      try {
+        blocks = _modelRoleBlocks(arguments['blocks']);
+      } on FormatException catch (error) {
+        // A role outside the neutral vocabulary is a core contract failure,
+        // not a model stream event a driver may accidentally ignore.
+        _fatalModelContractError ??= error.message;
+        throw StateError(error.message);
       }
       await for (final event in request.model.stream(
         ModelRequest(
@@ -1721,7 +1714,6 @@ final class _TurnCallbackRouter
           blocks: blocks,
           history: history,
           tools: tools,
-          safetyIdentifier: request.safetyIdentifier,
           modelControls: request.modelControls,
           forceToolName: arguments['force_tool_name'] as String?,
         ),
@@ -2828,12 +2820,6 @@ void _validateDriverCapabilities(
       'deferred_tools' => capabilities.deferredTools,
       'image_input' => capabilities.imageInput,
       'file_input' => capabilities.fileInput,
-      _ when requirement.startsWith('role.') =>
-        capabilities.roles.contains(
-              requirement.substring('role.'.length),
-            )
-            ? AgentCapabilitySupport.supported
-            : AgentCapabilitySupport.unknown,
       _ => AgentCapabilitySupport.unknown,
     };
     if (supported != AgentCapabilitySupport.supported) {
@@ -2875,7 +2861,6 @@ Map<String, Object?> _modelCapabilitiesJson(
   'deferred_tools': capabilities.deferredTools.name,
   'image_input': capabilities.imageInput.name,
   'file_input': capabilities.fileInput.name,
-  'roles': capabilities.roles,
 };
 
 Map<String, Object?> _toolDescriptor(
@@ -3079,14 +3064,21 @@ List<ModelRoleBlock> _modelRoleBlocks(Object? value) {
     for (final raw in value)
       (() {
         final block = _object(raw);
-        final role = _requiredString(block, 'role');
+        final name = _requiredString(block, 'role');
+        final role = ModelRole.values.where((value) => value.name == name);
+        if (role.isEmpty) {
+          throw FormatException(
+            'model.open block role "$name" is not one of '
+            '${ModelRole.values.map((value) => value.name).join(', ')}.',
+          );
+        }
         final content = block['content'];
         if (content is! String) {
           throw const FormatException(
             'model.open block content must be a string.',
           );
         }
-        return ModelRoleBlock(role: role, content: content);
+        return ModelRoleBlock(role: role.first, content: content);
       })(),
   ];
 }

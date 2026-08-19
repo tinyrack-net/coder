@@ -10,7 +10,7 @@ void main() {
 
   test('protocol v5 exposes plugin-first typed contracts', () {
     expect(tinestProtocolMajor, 5);
-    expect(tinestProtocolRevision, 2);
+    expect(tinestProtocolRevision, 4);
     expect(tinestWebSocketProtocol, 'tinyrack.tinest.v5');
     expect(workspacesCatalogProcedure.name, 'workspaces.catalog');
     expect(workspacesRefreshProcedure.name, 'workspaces.refresh');

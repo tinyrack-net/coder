@@ -46,7 +46,6 @@ AgentModelCapabilities agentCapabilities(ModelCapabilitiesDto value) =>
       ),
       imageInput: AgentCapabilitySupport.values.byName(value.imageInput.name),
       fileInput: AgentCapabilitySupport.values.byName(value.fileInput.name),
-      roles: value.roles,
       controls: value.controls.map(agentControlDescriptor).toList(),
       source: AgentCapabilitySource.values.byName(value.source.name),
     );
@@ -60,7 +59,6 @@ ModelCapabilitiesDto protocolCapabilities(AgentModelCapabilities value) =>
       deferredTools: CapabilitySupport.values.byName(value.deferredTools.name),
       imageInput: CapabilitySupport.values.byName(value.imageInput.name),
       fileInput: CapabilitySupport.values.byName(value.fileInput.name),
-      roles: value.roles,
       controls: value.controls.map(protocolControlDescriptor).toList(),
       source: CapabilitySource.values.byName(value.source.name),
     );

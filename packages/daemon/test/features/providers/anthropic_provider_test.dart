@@ -26,14 +26,16 @@ data: {"type":"message_stop"}
             const ModelRequest(
               model: 'claude-sonnet-5',
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'system', content: 'system-1'),
-                ModelRoleBlock(role: 'developer', content: 'developer-1'),
-                ModelRoleBlock(role: 'user', content: 'user-1'),
-                ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
+                ModelRoleBlock(role: ModelRole.system, content: 'system-1'),
+                ModelRoleBlock(role: ModelRole.system, content: 'system-2'),
+                ModelRoleBlock(role: ModelRole.user, content: 'user-1'),
+                ModelRoleBlock(
+                  role: ModelRole.assistant,
+                  content: 'assistant-1',
+                ),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
@@ -44,7 +46,7 @@ data: {"type":"message_stop"}
         body['system'],
         <Map<String, dynamic>>[
           <String, dynamic>{'type': 'text', 'text': 'system-1'},
-          <String, dynamic>{'type': 'text', 'text': 'developer-1'},
+          <String, dynamic>{'type': 'text', 'text': 'system-2'},
         ],
       );
       expect(
@@ -63,6 +65,12 @@ data: {"type":"message_stop"}
             ],
           },
         ],
+      );
+      // The two destinations partition the blocks. A role that matched
+      // neither would vanish with no error, so count the round trip.
+      expect(
+        (body['system']! as List).length + (body['messages']! as List).length,
+        ModelRole.values.length + 1,
       );
     },
   );
@@ -187,11 +195,10 @@ ModelRequest _request({
 }) => ModelRequest(
   model: 'claude-sonnet-5',
   blocks: const <ModelRoleBlock>[
-    ModelRoleBlock(role: 'developer', content: 'test'),
+    ModelRoleBlock(role: ModelRole.system, content: 'test'),
   ],
   history: history,
   tools: const <ModelToolDefinition>[],
-  safetyIdentifier: 'safe',
 );
 
 final class _RecordingAdapter implements HttpClientAdapter {

@@ -1179,9 +1179,6 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   fileInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
       CapabilitySupport.unknown,
-  roles:
-      (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const <String>['system', 'developer', 'user', 'assistant'],
   controls:
       (json['controls'] as List<dynamic>?)
           ?.map(
@@ -1204,7 +1201,6 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'deferredTools': _$CapabilitySupportEnumMap[instance.deferredTools]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
-  'roles': instance.roles,
   'controls': instance.controls,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };
@@ -1348,7 +1344,6 @@ _CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
   baseUrl: json['baseUrl'] as String,
   wireFormatId: json['wireFormatId'] as String,
   authenticationRequired: json['authenticationRequired'] as bool,
-  strictToolSchema: json['strictToolSchema'] as bool? ?? false,
   models:
       (json['models'] as List<dynamic>?)
           ?.map(
@@ -1365,7 +1360,6 @@ Map<String, dynamic> _$CustomProviderConfigDtoToJson(
   'baseUrl': instance.baseUrl,
   'wireFormatId': instance.wireFormatId,
   'authenticationRequired': instance.authenticationRequired,
-  'strictToolSchema': instance.strictToolSchema,
   'models': instance.models,
 };
 

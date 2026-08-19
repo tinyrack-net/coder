@@ -672,7 +672,7 @@ end
 ---@field presentation? table
 
 ---@class tinest.ModelRoleBlock
----@field role 'system'|'developer'|'user'|'assistant'
+---@field role 'system'|'user'|'assistant'
 ---@field content string
 
 ---@class tinest.ModelUsage
@@ -753,7 +753,7 @@ end
 ---@alias tinest.UiSlot 'agentSettings'|'composerControl'|'conversationStatus'|'timeline'|'dialog'|'toast'
 ---@alias tinest.Capability 'model.call'|'tools.list'|'tools.invoke'|'state.read'|'state.write'|'scheduler.manage'|'ui.publish'|'workspace.read'|'workspace.patch'|'process.execute'|'process.write'|'attachment.publish'|'attachment.read'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'network.access'|'secret.access'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'
 ---@alias tinest.Effect 'filesystem.read'|'filesystem.write'|'process.command'|'process.write'|'network.request'|'state.read'|'state.write'|'scheduler.enqueue'|'ui.publish'|'ui.timeline'|'ui.dialog'|'attachment.read'|'attachment.write'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'|'model.call'|'tools.list'|'tools.invoke'|'context.read'|'context.reset'|'context.compact'
----@alias tinest.ModelCapability 'streaming'|'function_tools'|'deferred_tools'|'media'|'image_input'|'file_input'|'role.system'|'role.developer'|'role.user'|'role.assistant'
+---@alias tinest.ModelCapability 'streaming'|'function_tools'|'deferred_tools'|'media'|'image_input'|'file_input'
 
 ---@class (exact) tinest.CapabilityApi
 ---@field model {call: 'model.call'}
@@ -794,7 +794,6 @@ end
 ---@field media 'media'
 ---@field image_input 'image_input'
 ---@field file_input 'file_input'
----@field role {system: 'role.system', developer: 'role.developer', user: 'role.user', assistant: 'role.assistant'}
 
 ---@class (exact) tinest.ToolSpec
 ---@field id string
@@ -1549,10 +1548,6 @@ local model_capability_api = {
   media = "media",
   image_input = "image_input",
   file_input = "file_input",
-  role = {
-    system = "role.system", developer = "role.developer",
-    user = "role.user", assistant = "role.assistant",
-  },
 }
 
 ---@type tinest.CapabilityApi
@@ -1628,10 +1623,7 @@ local tinest = {
   hook = hook_api,
   session = {},
   model = {
-    role = {
-      system = "system", developer = "developer", user = "user",
-      assistant = "assistant",
-    },
+    role = {system = "system", user = "user", assistant = "assistant"},
     capability = model_capability_api,
   },
   tools = tools_api,

@@ -113,7 +113,9 @@ void main() {
       // models under identifiers the MiniMax API rejects, so the bundled
       // catalog is the whole model set for both regions.
       expect(
-        adapter.endpoint(AgentProviderAuthKind.apiKey).supportsModelDiscovery,
+        adapter
+            .endpoint(AgentProviderAuthKind.apiKey)
+            .accepts(ProviderEndpointExtension.modelDiscovery),
         isFalse,
         reason: adapter.id,
       );
@@ -127,7 +129,7 @@ void main() {
     }
   });
 
-  test('the OpenAI subscription endpoint withholds model discovery', () {
+  test('the OpenAI subscription endpoint states a narrower surface', () {
     final openai = openAIFamilyAdapters(
       clock: clock,
       openAIOAuth: const _UnusedGateway(),
@@ -135,15 +137,181 @@ void main() {
 
     final platform = openai.endpoint(AgentProviderAuthKind.apiKey);
     expect(platform.baseUrl, 'https://api.openai.com/v1');
-    expect(platform.supportsModelDiscovery, isTrue);
+    expect(
+      platform.accepts(ProviderEndpointExtension.modelDiscovery),
+      isTrue,
+    );
 
-    // The subscription backend serves only the Responses API and answers 400
-    // for `/models`, so the bundled catalog is the whole model set there.
+    // The subscription backend serves only the Responses API, answers 400 for
+    // `/models`, and rejects the fields only the platform API documents.
     final subscription = openai.endpoint(AgentProviderAuthKind.oauth);
     expect(subscription.baseUrl, 'https://chatgpt.com/backend-api/codex');
-    expect(subscription.supportsModelDiscovery, isFalse);
-    expect(subscription.strictToolSchema, isTrue);
+    expect(
+      subscription.extensions,
+      isNot(
+        contains(
+          anyOf(
+            ProviderEndpointExtension.modelDiscovery,
+            ProviderEndpointExtension.requestAttribution,
+            ProviderEndpointExtension.expeditedProcessing,
+          ),
+        ),
+      ),
+    );
+    expect(
+      subscription.accepts(ProviderEndpointExtension.strictToolSchemas),
+      isTrue,
+    );
+    // The narrower endpoint is a strict subset, never a different surface.
+    expect(subscription.extensions, everyElement(isIn(platform.extensions)));
   });
+
+  test('a compatible vendor states only the baseline it documents', () {
+    for (final adapter in openAIFamilyAdapters(
+      clock: clock,
+      openAIOAuth: const _UnusedGateway(),
+    ).where((plugin) => plugin.id != openAIDefinition.id)) {
+      // Every vendor sharing this wire inherited the platform answer before
+      // extensions became data, which is how `safety_identifier` and
+      // `service_tier` reached endpoints that reject them.
+      expect(
+        adapter.endpoint(AgentProviderAuthKind.apiKey).extensions,
+        isNot(
+          contains(
+            anyOf(
+              ProviderEndpointExtension.requestAttribution,
+              ProviderEndpointExtension.expeditedProcessing,
+              ProviderEndpointExtension.strictToolSchemas,
+              ProviderEndpointExtension.reasoningSummaries,
+              ProviderEndpointExtension.reasoningContinuation,
+            ),
+          ),
+        ),
+        reason: adapter.id,
+      );
+    }
+  });
+
+  // A custom connection is offered exactly the controls its wire advertises,
+  // against an endpoint that has stated nothing beyond the baseline. A control
+  // the wire never encodes there is a chip that silently does nothing.
+  for (final entry
+      in <
+        ({
+          String label,
+          String fixture,
+          ProviderWireProtocol Function(Dio Function(ProviderEndpoint)) build,
+        })
+      >[
+        (
+          label: openAIChatCompletionsWireId,
+          fixture: '''
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+
+''',
+          build: (factory) => OpenAIChatCompletionsWire(dioFactory: factory),
+        ),
+        (
+          label: openAIResponsesWireId,
+          fixture: '''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''',
+          build: (factory) => OpenAIResponsesWire(dioFactory: factory),
+        ),
+        (
+          label: anthropicMessagesWireId,
+          fixture: '''
+event: message_start
+data: {"type":"message_start","message":{"usage":{}}}
+
+event: message_stop
+data: {"type":"message_stop"}
+
+''',
+          build: (factory) => AnthropicMessagesWire(dioFactory: factory),
+        ),
+        (
+          label: geminiInteractionsWireId,
+          fixture: '''
+event: interaction.completed
+data: {"event_type":"interaction.completed","interaction":{"usage":{}}}
+
+event: done
+data: [DONE]
+
+''',
+          build: (factory) => GeminiInteractionsWire(dioFactory: factory),
+        ),
+      ]) {
+    test('${entry.label} sends every control it advertises', () async {
+      final wire = entry.build((_) => Dio());
+      Future<String> body(
+        Map<String, AgentModelControlValue> controls,
+      ) async {
+        final adapter = _Adapter(entry.fixture);
+        await entry
+            .build((_) => Dio()..httpClientAdapter = adapter)
+            .createProvider(
+              ModelGatewayRequest(
+                connectionId: 'custom',
+                endpoint: const ProviderEndpoint(
+                  baseUrl: 'https://compatible.test/v1',
+                ),
+                credential: const ApiKeyCredential('key'),
+                capabilities: AgentModelCapabilities(
+                  controls: wire.controlDescriptors,
+                ),
+              ),
+            )
+            .stream(
+              ModelRequest(
+                model: 'custom-model',
+                modelControls: controls,
+                blocks: const <ModelRoleBlock>[
+                  ModelRoleBlock(role: ModelRole.system, content: 'test'),
+                ],
+                history: const <ConversationItem>[],
+                tools: const <ModelToolDefinition>[],
+              ),
+              CancellationToken(),
+            )
+            .toList();
+        return jsonEncode(adapter.options!.data);
+      }
+
+      final baseline = await body(const <String, AgentModelControlValue>{});
+      for (final control in wire.controlDescriptors) {
+        // Every offered value, not just the first: a choice the wire drops is
+        // as inert as a control it never reads.
+        final values = switch (control.kind) {
+          AgentModelControlKind.choice => <AgentModelControlValue>[
+            for (final choice in control.choices)
+              AgentModelControlStringValue(value: choice.id),
+          ],
+          AgentModelControlKind.toggle => <AgentModelControlValue>[
+            const AgentModelControlBoolValue(value: true),
+          ],
+          AgentModelControlKind.integer => <AgentModelControlValue>[
+            AgentModelControlIntValue(value: control.minimum ?? 1),
+          ],
+        };
+        for (final value in values) {
+          expect(
+            await body(<String, AgentModelControlValue>{control.id: value}),
+            isNot(baseline),
+            reason:
+                '${entry.label} advertises ${control.id} = $value '
+                'but never sends it',
+          );
+        }
+      }
+    });
+  }
 
   test('provider catalogs describe each supported Lua tool surface', () {
     final openai = openAIBundledModels.first.capabilities;
@@ -207,11 +375,10 @@ void main() {
                 ),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
@@ -236,6 +403,99 @@ void main() {
       expect(body, isNot(contains('safety_identifier')));
     },
   );
+
+  test(
+    'a compatible vendor receives no platform-only request field',
+    () async {
+      // A custom or compatible connection is offered every control the wire
+      // can encode, so the model advertising fast mode is the normal case.
+      final chatWire = openAIWireProtocols().firstWhere(
+        (wire) => wire.id == openAIChatCompletionsWireId,
+      );
+      final capabilities = AgentModelCapabilities(
+        streaming: AgentCapabilitySupport.supported,
+        controls: chatWire.controlDescriptors,
+      );
+      final adapter = _Adapter(
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'
+        'data: [DONE]\n\n',
+      );
+      final compatible = openAIFamilyAdapters(
+        clock: clock,
+        openAIOAuth: const _UnusedGateway(),
+        dioFactory: (_) => Dio()..httpClientAdapter = adapter,
+      ).firstWhere((plugin) => plugin.id == deepseekDefinition.id);
+
+      await compatible
+          .createProvider(
+            ModelGatewayRequest(
+              connectionId: compatible.id,
+              endpoint: compatible.endpoint(AgentProviderAuthKind.apiKey),
+              credential: const ApiKeyCredential('key'),
+              capabilities: capabilities,
+            ),
+          )
+          .stream(
+            const ModelRequest(
+              model: 'deepseek-v4-pro',
+              modelControls: <String, AgentModelControlValue>{
+                AgentModelControlIds.fastMode: AgentModelControlBoolValue(
+                  value: true,
+                ),
+              },
+              blocks: <ModelRoleBlock>[
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
+              ],
+              history: <ConversationItem>[],
+              tools: <ModelToolDefinition>[],
+            ),
+            CancellationToken(),
+          )
+          .toList();
+
+      // `service_tier` is documented by one vendor's platform API. Sending it
+      // to a narrower compatible surface fails the whole request.
+      final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+      expect(body, isNot(contains('service_tier')));
+    },
+  );
+
+  test('a compatible Responses endpoint receives no platform field', () async {
+    final adapter = _Adapter(
+      'data: {"type":"response.completed","response":{"output":[]}}\n\n'
+      'data: [DONE]\n\n',
+    );
+    final wire = OpenAIResponsesWire(
+      dioFactory: (_) => Dio()..httpClientAdapter = adapter,
+    );
+
+    await wire
+        .createProvider(
+          const ModelGatewayRequest(
+            connectionId: 'custom',
+            endpoint: ProviderEndpoint(baseUrl: 'https://compatible.test/v1'),
+            credential: ApiKeyCredential('key'),
+          ),
+        )
+        .stream(
+          const ModelRequest(
+            model: 'custom-model',
+            blocks: <ModelRoleBlock>[
+              ModelRoleBlock(role: ModelRole.system, content: 'test'),
+            ],
+            history: <ConversationItem>[],
+            tools: <ModelToolDefinition>[],
+          ),
+          CancellationToken(),
+        )
+        .toList();
+
+    // A user-entered base URL cannot be assumed to define any of the fields
+    // one vendor's platform documents.
+    final body = Map<String, dynamic>.from(adapter.options!.data as Map);
+    expect(body, isNot(contains('safety_identifier')));
+    expect(body, isNot(contains('include')));
+  });
 
   test('an API key request carries no subscription identity headers', () {
     final openai = openAIFamilyAdapters(

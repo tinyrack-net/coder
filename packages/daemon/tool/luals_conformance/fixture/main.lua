@@ -293,7 +293,7 @@ local tool_card = tinest.ui.contribution(
 local function inspect_model(tool_descriptor)
   local stream = tinest.model.open(
     {
-      blocks = {{role = tinest.model.role.developer, content = "Be concise."}},
+      blocks = {{role = tinest.model.role.system, content = "Be concise."}},
       history = {},
       tools = {tool_descriptor},
     }
@@ -519,7 +519,7 @@ local invalid_model_capability = tinest.driver.define({
 }, function()
   return {tool_rounds = 0}
 end)
-local model_role_capability = tinest.model.capability.role.system
+local model_role = tinest.model.role.assistant
 
 return tinest.plugin.define({
   driver = spec_driver,

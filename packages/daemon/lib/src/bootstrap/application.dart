@@ -349,6 +349,12 @@ abstract final class DaemonApplication {
           ...openAIFamilyAdapters(
             clock: effectiveClock,
             openAIOAuth: effectiveOAuthGateway,
+            // Only the platform Responses API defines an attribution field,
+            // so the value reaches the one vendor that documents it rather
+            // than riding on every model request.
+            requestAttribution: sha256
+                .convert(utf8.encode(serverId))
+                .toString(),
           ),
           const AnthropicAdapter(),
           const GoogleGeminiAdapter(),
@@ -646,7 +652,6 @@ abstract final class DaemonApplication {
         timeline: database.timelineDao,
         models: models,
         events: events.add,
-        safetyIdentifier: sha256.convert(utf8.encode(serverId)).toString(),
         clock: effectiveClock,
         ids: effectiveIds,
         hostPrimitiveRegistryFactory: const IoHostPrimitiveRegistryFactory(),

@@ -1210,10 +1210,6 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
       'deferred_tools' => capabilities.deferredTools,
       'image_input' => capabilities.imageInput,
       'file_input' => capabilities.fileInput,
-      _ when requirement.startsWith('role.') =>
-        capabilities.roles.contains(requirement.substring('role.'.length))
-            ? CapabilitySupport.supported
-            : CapabilitySupport.unsupported,
       _ => CapabilitySupport.unknown,
     };
     return support == CapabilitySupport.supported;

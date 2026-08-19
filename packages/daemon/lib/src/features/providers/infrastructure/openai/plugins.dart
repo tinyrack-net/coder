@@ -14,8 +14,9 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
     required this.baseUrl,
     required this._wire,
     this.models = const <ProviderCatalogModel>[],
-    this.strictToolSchema = false,
-    this.supportsModelDiscovery = true,
+    this.extensions = const <ProviderEndpointExtension>{
+      ProviderEndpointExtension.modelDiscovery,
+    },
     this.usesRemoteCatalog = true,
   });
 
@@ -25,11 +26,12 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
   /// Trusted endpoint compiled into the daemon.
   final String baseUrl;
 
-  /// Whether strict JSON schemas are accepted by this vendor.
-  final bool strictToolSchema;
-
-  /// Whether this vendor serves a `/models` listing.
-  final bool supportsModelDiscovery;
+  /// Optional behaviours this vendor's endpoint documents.
+  ///
+  /// Serving `/models` is the one thing nearly every compatible vendor does,
+  /// so it is the default; every other extension is stated by the vendor that
+  /// documents it.
+  final Set<ProviderEndpointExtension> extensions;
 
   @override
   final bool usesRemoteCatalog;
@@ -43,11 +45,8 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
   String get id => definition.id;
 
   @override
-  ProviderEndpoint endpoint(AgentProviderAuthKind authKind) => ProviderEndpoint(
-    baseUrl: baseUrl,
-    strictToolSchema: strictToolSchema,
-    supportsModelDiscovery: supportsModelDiscovery,
-  );
+  ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
+      ProviderEndpoint(baseUrl: baseUrl, extensions: extensions);
 
   @override
   ModelGateway createProvider(ModelGatewayRequest request) =>
@@ -60,6 +59,27 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
   ) => _wire.discoverModels(endpoint, credential);
 }
 
+/// What the platform API documents beyond the compatible baseline.
+const Set<ProviderEndpointExtension> _platformExtensions =
+    <ProviderEndpointExtension>{
+      ProviderEndpointExtension.modelDiscovery,
+      ProviderEndpointExtension.strictToolSchemas,
+      ProviderEndpointExtension.toolOutputSchemas,
+      ProviderEndpointExtension.reasoningContinuation,
+      ProviderEndpointExtension.reasoningSummaries,
+      ProviderEndpointExtension.requestAttribution,
+      ProviderEndpointExtension.expeditedProcessing,
+    };
+
+/// The narrower surface the subscription backend serves.
+const Set<ProviderEndpointExtension> _subscriptionExtensions =
+    <ProviderEndpointExtension>{
+      ProviderEndpointExtension.strictToolSchemas,
+      ProviderEndpointExtension.toolOutputSchemas,
+      ProviderEndpointExtension.reasoningContinuation,
+      ProviderEndpointExtension.reasoningSummaries,
+    };
+
 /// OpenAI itself: the platform API, plus the ChatGPT subscription backend.
 final class OpenAIAdapter extends OpenAICompatibleAdapter {
   /// Creates the OpenAI vendor.
@@ -68,15 +88,19 @@ final class OpenAIAdapter extends OpenAICompatibleAdapter {
   /// gateway while the plugin still owns which backend each credential uses.
   const OpenAIAdapter({
     required this._oauth,
+    this.requestAttribution,
     super.wire = const OpenAIResponsesWire(),
   }) : super(
          definition: openAIDefinition,
          baseUrl: 'https://api.openai.com/v1',
-         strictToolSchema: true,
          models: openAIBundledModels,
+         extensions: _platformExtensions,
        );
 
   final ProviderOAuthGateway _oauth;
+
+  /// Opaque per-installation identifier supplied by the composition root.
+  final String? requestAttribution;
 
   @override
   ProviderOAuthGateway get oauth => _oauth;
@@ -84,13 +108,12 @@ final class OpenAIAdapter extends OpenAICompatibleAdapter {
   @override
   ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
       authKind == AgentProviderAuthKind.oauth
-      // The subscription backend serves only the Responses API and answers
-      // 400 for `/models`, so model identifiers come from the bundled
-      // catalog instead of a discovery request.
+      // The subscription backend serves only the Responses API, answers 400
+      // for `/models`, and rejects the request fields only the platform API
+      // documents, so it states a narrower set than the platform endpoint.
       ? const ProviderEndpoint(
           baseUrl: 'https://chatgpt.com/backend-api/codex',
-          strictToolSchema: true,
-          supportsModelDiscovery: false,
+          extensions: _subscriptionExtensions,
         )
       : super.endpoint(authKind);
 
@@ -103,10 +126,7 @@ final class OpenAIAdapter extends OpenAICompatibleAdapter {
       if (request.credential case OAuthCredential(:final accountId?))
         'ChatGPT-Account-ID': accountId,
     },
-    // The subscription backend serves a narrower Responses surface and
-    // answers 400 for the platform-only request fields.
-    supportsPlatformRequestFields: request.credential is! OAuthCredential,
-    supportsReasoningSummary: true,
+    requestAttribution: requestAttribution,
   );
 
   /// The API documents image and file inputs for every current model, which
@@ -141,12 +161,14 @@ List<ProviderAdapter> openAIFamilyAdapters({
   required Clock clock,
   ProviderOAuthGateway? openAIOAuth,
   Dio Function(ProviderEndpoint endpoint)? dioFactory,
+  String? requestAttribution,
 }) {
   final responses = OpenAIResponsesWire(dioFactory: dioFactory);
   final chatCompletions = OpenAIChatCompletionsWire(dioFactory: dioFactory);
   return <ProviderAdapter>[
     OpenAIAdapter(
       oauth: openAIOAuth ?? OpenAIOAuthGateway(clock: clock),
+      requestAttribution: requestAttribution,
       wire: responses,
     ),
     OpenAICompatibleAdapter(
@@ -178,7 +200,7 @@ List<ProviderAdapter> openAIFamilyAdapters({
       baseUrl: 'https://api.minimax.io/v1',
       wire: chatCompletions,
       models: minimaxBundledModels,
-      supportsModelDiscovery: false,
+      extensions: const <ProviderEndpointExtension>{},
       usesRemoteCatalog: false,
     ),
     OpenAICompatibleAdapter(
@@ -186,7 +208,7 @@ List<ProviderAdapter> openAIFamilyAdapters({
       baseUrl: 'https://api.minimaxi.com/v1',
       wire: chatCompletions,
       models: minimaxBundledModels,
-      supportsModelDiscovery: false,
+      extensions: const <ProviderEndpointExtension>{},
       usesRemoteCatalog: false,
     ),
     OpenAICompatibleAdapter(

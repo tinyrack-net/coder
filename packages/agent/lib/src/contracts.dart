@@ -265,12 +265,6 @@ final class AgentModelCapabilities {
     this.deferredTools = AgentCapabilitySupport.unknown,
     this.imageInput = AgentCapabilitySupport.unknown,
     this.fileInput = AgentCapabilitySupport.unknown,
-    this.roles = const <String>[
-      'system',
-      'developer',
-      'user',
-      'assistant',
-    ],
     this.controls = const <AgentModelControlDescriptor>[],
     this.source = AgentCapabilitySource.unknown,
   });
@@ -293,9 +287,6 @@ final class AgentModelCapabilities {
   /// File-input support.
   final AgentCapabilitySupport fileInput;
 
-  /// Ordered role kinds accepted by the transport.
-  final List<String> roles;
-
   /// Provider-owned controls accepted by this model and endpoint.
   final List<AgentModelControlDescriptor> controls;
 
@@ -310,7 +301,6 @@ final class AgentModelCapabilities {
     AgentCapabilitySupport? deferredTools,
     AgentCapabilitySupport? imageInput,
     AgentCapabilitySupport? fileInput,
-    List<String>? roles,
     List<AgentModelControlDescriptor>? controls,
     AgentCapabilitySource? source,
   }) => AgentModelCapabilities(
@@ -320,7 +310,6 @@ final class AgentModelCapabilities {
     deferredTools: deferredTools ?? this.deferredTools,
     imageInput: imageInput ?? this.imageInput,
     fileInput: fileInput ?? this.fileInput,
-    roles: roles ?? this.roles,
     controls: controls ?? this.controls,
     source: source ?? this.source,
   );

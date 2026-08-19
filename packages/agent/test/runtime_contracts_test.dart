@@ -45,13 +45,11 @@ void main() {
       deferredTools: AgentCapabilitySupport.supported,
       imageInput: AgentCapabilitySupport.supported,
       fileInput: AgentCapabilitySupport.unsupported,
-      roles: <String>['developer', 'user'],
       controls: const <AgentModelControlDescriptor>[],
       source: AgentCapabilitySource.refreshed,
     );
     expect(replaced.streaming, AgentCapabilitySupport.supported);
     expect(replaced.deferredTools, AgentCapabilitySupport.supported);
-    expect(replaced.roles, <String>['developer', 'user']);
     expect(replaced.controls, isEmpty);
     expect(replaced.source, AgentCapabilitySource.refreshed);
 

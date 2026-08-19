@@ -26,21 +26,23 @@ data: [DONE]
             const ModelRequest(
               model: 'gemini-3.6-flash',
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'system', content: 'system-1'),
-                ModelRoleBlock(role: 'developer', content: 'developer-1'),
-                ModelRoleBlock(role: 'user', content: 'user-1'),
-                ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
+                ModelRoleBlock(role: ModelRole.system, content: 'system-1'),
+                ModelRoleBlock(role: ModelRole.system, content: 'system-2'),
+                ModelRoleBlock(role: ModelRole.user, content: 'user-1'),
+                ModelRoleBlock(
+                  role: ModelRole.assistant,
+                  content: 'assistant-1',
+                ),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
           .toList();
 
       final body = Map<String, dynamic>.from(adapter.options!.data as Map);
-      expect(body['system_instruction'], 'system-1\n\ndeveloper-1');
+      expect(body['system_instruction'], 'system-1\n\nsystem-2');
       expect(
         (body['input']! as List).map((item) => (item as Map)['role']),
         <String>['user', 'assistant'],
@@ -50,6 +52,13 @@ data: [DONE]
           (item) => (((item as Map)['content'] as List).single as Map)['text'],
         ),
         <String>['user-1', 'assistant-1'],
+      );
+      // The two destinations partition the blocks. A role that matched
+      // neither would vanish with no error, so count the round trip.
+      expect(
+        (body['system_instruction']! as String).split('\n\n').length +
+            (body['input']! as List).length,
+        ModelRole.values.length + 1,
       );
     },
   );
@@ -104,13 +113,12 @@ data: [DONE]
             const ModelRequest(
               model: 'gemini-3.6-flash',
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[
                 UserConversationItem('hello'),
               ],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
