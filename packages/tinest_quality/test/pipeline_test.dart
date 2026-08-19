@@ -726,7 +726,7 @@ void main() {
     expect(workflow, contains('merge_group:'));
     expect(workflow, contains('- main'));
     expect(job, contains("if: github.event_name != 'schedule'"));
-    expect(job, contains('runs-on: ubuntu-24.04'));
+    expect(job, contains(_resolvedRunsOn('runner_linux')));
     expect(job, contains('./.github/actions/setup-flutter'));
     for (final package in <String>[
       'ibus-gtk3',
@@ -969,7 +969,109 @@ void main() {
       isNot(contains('dart pub global run shipworld:shipworld')),
     );
   });
+  test('a manual dispatch is the only thing that can reach the homelab', () {
+    // The self-hosted machines carry `tinyrack-` prefixed labels, so no job
+    // reaches them unless it asks for one by name. That is what makes the
+    // GitHub-hosted measurement a clean baseline, and it is why the pool
+    // selector can exist without touching what a pull request, the merge
+    // queue, or a push actually runs.
+    expect(workflow, contains('runner_pool:'));
+    expect(workflow, contains('default: github'));
+
+    final changes = _job(workflow, 'changes');
+    for (final output in <String>[
+      'runner_linux',
+      'runner_windows',
+      'runner_macos',
+      'runner_macos_intel',
+    ]) {
+      expect(
+        changes,
+        contains('$output: \${{ steps.scope.outputs.$output }}'),
+        reason: output,
+      );
+    }
+    for (final label in <String>[
+      'tinyrack-ubuntu-ci',
+      'tinyrack-windows-ci',
+      'tinyrack-macmini',
+    ]) {
+      expect(changes, contains(label), reason: label);
+    }
+    // Anything other than a dispatch has to resolve to the hosted labels, so
+    // everyday CI keeps running exactly where it ran before.
+    expect(changes, contains("github.event_name != 'workflow_dispatch'"));
+  });
+
+  test('every measured quality job resolves runs-on through the scope', () {
+    const singleHost = <String, String>{
+      'static-linux': 'runner_linux',
+      'generated-linux': 'runner_linux',
+      'coverage-dart-linux': 'runner_linux',
+      'coverage-flutter-linux': 'runner_linux',
+      'relay-coverage-linux': 'runner_linux',
+      'relay-smoke-linux': 'runner_linux',
+      'debug-e2e-linux': 'runner_linux',
+      'linux-ibus-terminal-e2e': 'runner_linux',
+      'web-build': 'runner_linux',
+    };
+    for (final entry in singleHost.entries) {
+      expect(
+        _job(workflow, entry.key),
+        contains(_resolvedRunsOn(entry.value)),
+        reason: entry.key,
+      );
+    }
+    // The matrix jobs carry the resolved labels per entry instead, so one job
+    // body can still span several hosts.
+    for (final name in <String>[
+      'dart-tests',
+      'flutter-tests',
+      'desktop-debug-build',
+      'mobile-debug-build',
+      'cli-verify',
+    ]) {
+      expect(
+        _job(workflow, name),
+        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
+        reason: name,
+      );
+    }
+    // No measured job may keep a bare hosted label: that would silently pin it
+    // to one pool and quietly bias the comparison.
+    for (final name in <String>[...singleHost.keys, 'dart-tests']) {
+      expect(
+        _job(workflow, name),
+        isNot(contains('runs-on: ubuntu-24.04')),
+        reason: name,
+      );
+    }
+  });
+
+  test('the scope and gate jobs stay pinned as the fixed reference', () {
+    // `changes` cannot read its own outputs, and `quality-gate` is a jq
+    // one-liner whose duration is the same on either pool, so both stay on the
+    // hosted label and act as the fixed point both arms are measured against.
+    expect(_job(workflow, 'changes'), contains('runs-on: ubuntu-24.04'));
+    expect(_job(workflow, 'quality-gate'), contains('runs-on: ubuntu-24.04'));
+  });
+
+  test('measured jobs record which machine actually ran them', () {
+    // macmini-01 and macmini-02 are two runner instances on one Mac mini, so a
+    // job name does not identify a machine. Without this the report cannot say
+    // what was compared against what.
+    expect(workflow, contains('./.github/actions/host-fingerprint'));
+    final fingerprint = File(
+      '.github/actions/host-fingerprint/action.yml',
+    ).readAsStringSync();
+    expect(loadYaml(fingerprint), isA<YamlMap>());
+    expect(fingerprint, contains('RUNNER_NAME'));
+  });
 }
+
+/// The `runs-on` a measured job uses once [output] resolves the pool.
+String _resolvedRunsOn(String output) =>
+    'runs-on: \${{ fromJSON(needs.changes.outputs.$output) }}';
 
 String _job(String workflow, String name) {
   final start = workflow.indexOf('  $name:\n');

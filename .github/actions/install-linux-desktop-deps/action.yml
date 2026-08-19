@@ -32,7 +32,16 @@ runs:
         # ships, so the image identifies the cache. These are plain runner
         # environment variables rather than expression contexts: reading them
         # as ${{ env.ImageOS }} yields an empty string.
-        echo "image=${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+        #
+        # Only GitHub's images set them. A self-hosted runner would otherwise
+        # key every machine as `unknown-unknown` and share one entry across
+        # hosts that need not be running the same release, so fall back to the
+        # distribution the packages are actually resolved against.
+        image="${ImageOS:-}-${ImageVersion:-}"
+        if [ "$image" = "-" ]; then
+          image="$(. /etc/os-release && printf '%s-%s' "$ID" "$VERSION_ID")"
+        fi
+        echo "image=$image" >> "$GITHUB_OUTPUT"
 
     - name: Restore the cached packages
       uses: actions/cache@v4
