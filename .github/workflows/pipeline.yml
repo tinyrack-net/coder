@@ -77,6 +77,7 @@ jobs:
       runner_windows: ${{ steps.scope.outputs.runner_windows }}
       runner_macos: ${{ steps.scope.outputs.runner_macos }}
       runner_macos_intel: ${{ steps.scope.outputs.runner_macos_intel }}
+      dart_scopes_rest: ${{ steps.scope.outputs.dart_scopes_rest }}
     steps:
       - uses: actions/checkout@v5
       - uses: dart-lang/setup-dart@v1
@@ -161,6 +162,15 @@ jobs:
             echo "runner_windows=$(jq -c '."windows-2025"' <<< "$runners")"
             echo "runner_macos=$(jq -c '."macos-26"' <<< "$runners")"
             echo "runner_macos_intel=$(jq -c '."macos-15-intel"' <<< "$runners")"
+            # Every Dart package except the one that gets a shard to itself.
+            # Derived from the workspace rather than listed twice, so a new
+            # package joins the `rest` shard instead of silently going untested.
+            echo "dart_scopes_rest=$(
+              jq -r '. as $all
+                     | [$all.packages[] | select(. != $all.shardAlone)
+                        | "--scope=" + .] | join(" ")'
+                .github/dart-packages.json
+            )"
           } >> "$GITHUB_OUTPUT"
 
   static-linux:
@@ -220,8 +230,13 @@ jobs:
   # and reverted: on Windows the suites take 7.6 and 4.4 minutes, so one job
   # serialises them into 15.6 and the queue run went 7.7 -> 18.2 minutes,
   # against a setup that now costs under 2 minutes to repeat.
+  # `daemon` is 88 of the workspace's ~122 suites, and the slot allocator has to
+  # keep one slot per package for every package in the same command. On a
+  # four-core hosted Windows runner that left daemon running fully serial: it
+  # spent 454 of this job's 454 seconds while the other seven finished inside a
+  # minute. Splitting it into its own shard is what hands it the whole machine.
   dart-tests:
-    name: Dart tests (${{ matrix.os }})
+    name: Dart tests (${{ matrix.os }}, ${{ matrix.shard }})
     needs: changes
     if: github.event_name != 'schedule' &&
       github.event_name != 'pull_request' &&
@@ -231,8 +246,20 @@ jobs:
       matrix:
         include:
           - os: macos-26
+            shard: daemon
+            scopes: --scope=daemon
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
+            shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
             runs_on: ${{ needs.changes.outputs.runner_macos }}
           - os: windows-2025
+            shard: daemon
+            scopes: --scope=daemon
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
+          - os: windows-2025
+            shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
             runs_on: ${{ needs.changes.outputs.runner_windows }}
     runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
@@ -246,16 +273,16 @@ jobs:
       # keep package execution serial there; Windows has no such rewrite.
       - if: matrix.os == 'macos-26'
         run: >-
-          dart run tinest_quality _test-dart --jobs=1
+          dart run tinest_quality _test-dart --jobs=1 ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
       - if: matrix.os != 'macos-26'
         run: >-
-          dart run tinest_quality _test-dart
+          dart run tinest_quality _test-dart ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-timing-dart-tests-${{ matrix.os }}
+          name: quality-timing-dart-tests-${{ matrix.os }}-${{ matrix.shard }}
           path: build/quality/dart-tests.json
           if-no-files-found: error
 
@@ -291,11 +318,19 @@ jobs:
           if-no-files-found: error
 
   coverage-dart-linux:
-    name: Dart coverage
+    name: Dart coverage (${{ matrix.shard }})
     needs: changes
     if: github.event_name != 'schedule' &&
       needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: daemon
+            scopes: --scope=daemon
+          - shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
     runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
     timeout-minutes: 20
     steps:
@@ -304,23 +339,19 @@ jobs:
       - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
-          dart run tinest_quality _coverage-dart
+          dart run tinest_quality _coverage-dart ${{ matrix.scopes }}
           --report=build/quality/coverage-dart.json
+      # Only the packages this shard actually ran: coverage-check reads the
+      # thresholds per package, so naming one with no coverage data here would
+      # fail the shard rather than the package.
       - name: Enforce Dart package coverage
         run: >-
           dart run tinyrack_workspace coverage-check --line=90 --branch=80
-          --scope=agent
-          --scope=cli
-          --scope=client
-          --scope=daemon
-          --scope=protocol
-          --scope=relay
-          --scope=relay_protocol
-          --scope=tinest_quality
+          ${{ matrix.scopes }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-timing-coverage-dart-linux
+          name: quality-timing-coverage-dart-${{ matrix.shard }}
           path: build/quality/coverage-dart.json
           if-no-files-found: error
 

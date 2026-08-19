@@ -141,6 +141,58 @@ void main() {
     expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
   });
 
+  test('the dominant Dart package is tested in its own job', () {
+    // `daemon` holds 88 of the workspace's ~122 suites and decided the whole
+    // pipeline's wall clock: on a four-core hosted Windows runner the eight
+    // packages each take one slot, so daemon ran fully serial and spent 454 of
+    // `Dart tests`'s 454 seconds. Splitting it out is what lets the slot
+    // allocator hand it the entire machine, which no budget change can do while
+    // seven other packages each need a slot of their own.
+    for (final name in <String>['dart-tests', 'coverage-dart-linux']) {
+      final job = _job(workflow, name);
+      expect(job, contains('--scope=daemon'), reason: name);
+      expect(job, contains('matrix.scopes'), reason: name);
+    }
+    final dart = _job(workflow, 'dart-tests');
+    expect(dart, contains('shard: daemon'));
+    expect(dart, contains('shard: rest'));
+    // The gate reads results by job id, so both shards stay required.
+    expect(_job(workflow, 'quality-gate'), contains('- dart-tests'));
+    expect(_job(workflow, 'quality-gate'), contains('- coverage-dart-linux'));
+  });
+
+  test('every Dart package with tests belongs to a shard', () {
+    // A package missing from this list would be dropped by both shards and stop
+    // being tested while the gate still went green, so the list has to match
+    // the workspace rather than be maintained alongside it.
+    final declared = jsonDecode(
+      File('.github/dart-packages.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final packages = (declared['packages']! as List<dynamic>).cast<String>();
+    final onItsOwn = declared['shardAlone']! as String;
+    expect(packages, contains(onItsOwn));
+
+    final actual = Directory('packages')
+        .listSync()
+        .whereType<Directory>()
+        .map((entry) {
+          final segments = entry.uri.pathSegments;
+          return segments[segments.length - 2];
+        })
+        .where((name) => Directory('packages/$name/test').existsSync())
+        .where(
+          (name) => !File('packages/$name/pubspec.yaml')
+              .readAsStringSync()
+              .contains('flutter:\n    sdk: flutter'),
+        )
+        .toSet();
+    expect(
+      actual.difference(packages.toSet()),
+      isEmpty,
+      reason: 'a Dart package with tests is in no shard',
+    );
+  });
+
   test('macOS Dart suites serialize native-asset installation', () {
     final dart = _job(workflow, 'dart-tests');
     expect(dart, contains("matrix.os == 'macos-26'"));
@@ -343,19 +395,23 @@ void main() {
   });
 
   test('Dart coverage enforces every non-Flutter package', () {
+    // The scopes now come from .github/dart-packages.json so the two shards and
+    // coverage-check cannot drift apart; `every Dart package with tests belongs
+    // to a shard` is what checks the list against the workspace.
     final coverage = _job(workflow, 'coverage-dart-linux');
-    for (final package in <String>[
-      'agent',
-      'cli',
-      'client',
-      'daemon',
-      'protocol',
-      'relay',
-      'relay_protocol',
-      'tinest_quality',
-    ]) {
-      expect(coverage, contains('--scope=$package'), reason: package);
-    }
+    final packages = ((jsonDecode(
+      File('.github/dart-packages.json').readAsStringSync(),
+    ) as Map<String, dynamic>)['packages']! as List<dynamic>).cast<String>();
+    expect(packages, hasLength(8));
+    expect(coverage, contains('--scope=daemon'));
+    expect(coverage, contains(r'${{ matrix.scopes }}'));
+    // coverage-check runs with the same scopes the shard tested, never a
+    // wider list that would fail on packages this shard never ran.
+    expect(
+      coverage,
+      contains('coverage-check --line=90 --branch=80\n          '
+          r'${{ matrix.scopes }}'),
+    );
     expect(
       _job(workflow, 'relay-coverage-linux'),
       contains('tinest_quality _coverage-dart --scope=relay'),
