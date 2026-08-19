@@ -63,8 +63,6 @@ void main() {
       );
       final registeredWorktree =
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
-      final worktreeLabel =
-          registeredWorktree.branch ?? registeredWorktree.name;
       // Manual custom-provider models advertise function tools only. This
       // scenario later exercises the freeform apply_patch contribution, so it
       // must select an exact full-surface model before the injected gateway is
@@ -103,7 +101,7 @@ void main() {
         tester,
         fixture,
         registeredWorktree.id,
-        worktreeLabel,
+        session.id,
       );
       const composerKey = ValueKey<String>('session-composer-input');
       const sendKey = ValueKey<String>('session-composer-send');
@@ -169,7 +167,7 @@ void main() {
         tester,
         fixture,
         registeredWorktree.id,
-        worktreeLabel,
+        session.id,
       );
       expect(find.text('Which store should the cache use?'), findsOneWidget);
 
@@ -190,7 +188,7 @@ void main() {
         tester,
         fixture,
         registeredWorktree.id,
-        worktreeLabel,
+        session.id,
       );
       approval = _patchApproval();
       await pumpUntil(tester, approval);
@@ -253,7 +251,7 @@ Future<void> _pumpConversation(
   WidgetTester tester,
   RealDaemonFixture fixture,
   String worktreeId,
-  String worktreeLabel,
+  String sessionId,
 ) async {
   await tester.pumpWidget(TinestApp(services: fixture.services));
   await pumpUntil(tester, find.text('Adversity Workspace'));
@@ -273,9 +271,17 @@ Future<void> _pumpConversation(
   final conversation = find.text('Adversity conversation').hitTestable();
   await pumpUntil(tester, conversation);
   await tester.tap(conversation.last);
+  // A worktree opens on its draft tab, and that pane's composer carries the
+  // same keys as the session's. Waiting for the composer alone therefore
+  // returns while the draft is still the mounted pane, and the prompt typed
+  // into it is discarded when the session tab replaces it. Wait for the
+  // composer that belongs to this session's own pane instead.
   await pumpUntil(
     tester,
-    find.byKey(const ValueKey<String>('session-composer-input')),
+    find.descendant(
+      of: find.byKey(ValueKey<String>('conversation-pane-session:$sessionId')),
+      matching: find.byKey(const ValueKey<String>('session-composer-input')),
+    ),
   );
 }
 
@@ -283,11 +289,11 @@ Future<void> _remountConversation(
   WidgetTester tester,
   RealDaemonFixture fixture,
   String worktreeId,
-  String worktreeLabel,
+  String sessionId,
 ) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpAndSettle();
-  await _pumpConversation(tester, fixture, worktreeId, worktreeLabel);
+  await _pumpConversation(tester, fixture, worktreeId, sessionId);
 }
 
 Future<void> _submit(
@@ -304,12 +310,18 @@ Future<void> _submit(
   await tester.tap(input);
   await tester.enterText(composer, prompt);
   await tester.pump();
+  // `onPressed` only tracks whether the composer is enabled, so it says
+  // nothing about the prompt having landed in the field. Sending an empty
+  // composer is a silent no-op that surfaces a minute later as a turn which
+  // never reached the daemon, so require the text itself.
   await pumpUntilCondition(
     tester,
     () =>
-        find.byKey(sendKey).evaluate().isNotEmpty &&
+        input.evaluate().length == 1 &&
+        tester.widget<EditableText>(input).controller.text == prompt &&
+        find.byKey(sendKey).evaluate().length == 1 &&
         tester.widget<TRIconButton>(find.byKey(sendKey)).onPressed != null,
-    'the composer to accept $prompt',
+    'the composer to hold $prompt',
   );
   await tester.tap(find.byKey(sendKey));
   await tester.pump();
