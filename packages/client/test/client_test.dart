@@ -11,6 +11,35 @@ import 'package:test/test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
+  test('an internal daemon failure prints what the daemon told us', () {
+    // The daemon deliberately withholds the message and stack, which carry
+    // paths, tokens, and prompt text, and sends the exception type and a trace
+    // id instead. Both arrived in `details` and neither reached `toString`, so
+    // a CI failure read only "Internal daemon error." -- true, and useless.
+    // The trace id is what matches the run against the daemon's diagnostics
+    // record holding the stack.
+    const failure = TinestClientException(
+      'Internal daemon error.',
+      code: 'internal_error',
+      details: <String, dynamic>{
+        'method': 'sessions.startTurn',
+        'errorType': 'StateError',
+        'traceId': 'trace-7',
+      },
+    );
+
+    expect(failure.toString(), contains('internal_error'));
+    expect(failure.toString(), contains('sessions.startTurn'));
+    expect(failure.toString(), contains('StateError'));
+    expect(failure.toString(), contains('trace-7'));
+  });
+
+  test('an exception with no daemon context still reads cleanly', () {
+    const failure = TinestClientException('rejected upload', code: 'nope');
+
+    expect(failure.toString(), 'TinestClientException(nope): rejected upload');
+  });
+
   final now = DateTime.utc(2026, 8, 2);
   const selectedModel = ModelSelectionDto(modelId: 'openai/gpt-5.6-sol');
   final workspace = WorkspaceDto(
