@@ -8,6 +8,7 @@ import 'package:app/src/features/hosts/presentation/pages/relay_pairing_pages.da
 import 'package:app/src/features/settings/domain/settings_category.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tinyrack_ui/tinyrack_ui.dart';
 
 part 'app_router.g.dart';
 
@@ -35,15 +36,17 @@ MaterialPage<void> _settingsContentPage(
   key: state.pageKey,
   name: name,
   restorationId: name,
-  child: KeyedSubtree(
-    key: category == null
-        ? null
-        : ValueKey<String>('settings-category-pane-${category.name}'),
-    child: SettingsRouteContent(
-      kind: kind,
-      category: category,
-      hostId: hostId,
-      workspaceId: workspaceId,
+  child: TRSurface(
+    child: KeyedSubtree(
+      key: category == null
+          ? null
+          : ValueKey<String>('settings-category-pane-${category.name}'),
+      child: SettingsRouteContent(
+        kind: kind,
+        category: category,
+        hostId: hostId,
+        workspaceId: workspaceId,
+      ),
     ),
   ),
 );
@@ -151,7 +154,7 @@ MaterialPage<void> _workspaceContentPage(
   restorationId: sharedIdentity
       ? 'workspace-content'
       : name ?? 'workspace-home',
-  child: child,
+  child: TRSurface(child: child),
 );
 
 /// Closes a pushed task and returns to the screen it was opened from.
