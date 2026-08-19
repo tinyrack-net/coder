@@ -226,70 +226,59 @@ class _PluginList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.pluginSettingsHeading),
-          description: TRText.inherit(
-            l10n.pluginSettingsCount(plugins.length),
-          ),
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey<String>('plugin-add-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.pluginSettingsAdd,
-              onPressed: onCreate,
-              icon: const Icon(TinestIcons.add),
-            ),
-          ],
-        ),
-        Expanded(
-          child: plugins.isEmpty
-              ? SettingsEmptyState(
-                  title: l10n.pluginSettingsEmpty,
-                  icon: const Icon(TinestIcons.extension),
-                )
-              : SettingsCollectionList(
-                  children: <Widget>[
-                    TRTreeNav<String>.controlled(
-                      value: selectedId,
-                      itemSpacing: TRSpacing.extraSmall,
-                      onValueChange: (pluginId) {
-                        if (pluginId != null) onSelected(pluginId);
-                      },
-                      items: <TRTreeNavItem<String>>[
-                        for (final plugin in plugins)
-                          TRTreeNavLeaf<String>(
-                            key: ValueKey<String>('plugin-row-${plugin.id}'),
-                            value: plugin.id,
-                            showDisclosureIndicator: true,
-                            leading: const Icon(TinestIcons.extension),
-                            label: TRText.inherit(plugin.name),
-                            description: TRText.inherit(plugin.id),
-                            trailing:
-                                plugin.diagnostics.any(
-                                  (diagnostic) =>
-                                      diagnostic.severity ==
-                                      PluginDiagnosticSeverity.error,
-                                )
-                                ? const Icon(TinestIcons.warning)
-                                : TRBadge(
-                                    variant:
-                                        plugin.source == PluginSource.builtIn
-                                        ? TRStatusVariant.neutral
-                                        : TRStatusVariant.info,
-                                    child: TRText.inherit(
-                                      _pluginSourceLabel(l10n, plugin.source),
-                                    ),
-                                  ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.pluginSettingsHeading),
+      actions: <Widget>[
+        TRIconButton(
+          key: const ValueKey<String>('plugin-add-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.pluginSettingsAdd,
+          onPressed: onCreate,
+          icon: const Icon(TinestIcons.add),
         ),
       ],
+      child: plugins.isEmpty
+          ? SettingsEmptyState(
+              title: l10n.pluginSettingsEmpty,
+              icon: const Icon(TinestIcons.extension),
+            )
+          : SettingsCollectionList(
+              children: <Widget>[
+                TRTreeNav<String>.controlled(
+                  value: selectedId,
+                  itemSpacing: TRSpacing.extraSmall,
+                  onValueChange: (pluginId) {
+                    if (pluginId != null) onSelected(pluginId);
+                  },
+                  items: <TRTreeNavItem<String>>[
+                    for (final plugin in plugins)
+                      TRTreeNavLeaf<String>(
+                        key: ValueKey<String>('plugin-row-${plugin.id}'),
+                        value: plugin.id,
+                        showDisclosureIndicator: true,
+                        leading: const Icon(TinestIcons.extension),
+                        label: TRText.inherit(plugin.name),
+                        description: TRText.inherit(plugin.id),
+                        trailing:
+                            plugin.diagnostics.any(
+                              (diagnostic) =>
+                                  diagnostic.severity ==
+                                  PluginDiagnosticSeverity.error,
+                            )
+                            ? const Icon(TinestIcons.warning)
+                            : TRBadge(
+                                variant: plugin.source == PluginSource.builtIn
+                                    ? TRStatusVariant.neutral
+                                    : TRStatusVariant.info,
+                                child: TRText.inherit(
+                                  _pluginSourceLabel(l10n, plugin.source),
+                                ),
+                              ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }
@@ -341,281 +330,271 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
               ),
         )
         .toList(growable: false);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(plugin.name),
-          description: TRText.inherit(plugin.id),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey<String>('plugin-open-path-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.pluginSettingsOpenPath,
-              onPressed:
-                  plugin.source != PluginSource.user || _busyAction != null
-                  ? null
-                  : () => unawaited(_openPath()),
-              icon: const Icon(TinestIcons.folderOpen),
-            ),
-            TRIconButton(
-              key: const ValueKey<String>('plugin-fork-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.pluginSettingsFork,
-              onPressed: plugin.revision == null || _busyAction != null
-                  ? null
-                  : () => unawaited(_fork()),
-              icon: const Icon(TinestIcons.copy),
-            ),
-            TRButton(
-              key: const ValueKey<String>('plugin-validate-button'),
-              appearance: TRAppearance.outline,
-              loading: _busyAction == 'validate',
-              loadingLabel: l10n.pluginSettingsValidate,
-              onPressed: _busyAction == null
-                  ? () => unawaited(_validate())
-                  : null,
-              child: TRText.inherit(l10n.pluginSettingsValidate),
-            ),
-            TRButton(
-              key: const ValueKey<String>('plugin-reload-button'),
-              loading: _busyAction == 'reload',
-              loadingLabel: l10n.pluginSettingsReload,
-              onPressed: _busyAction == null && _agentId != null
-                  ? () => unawaited(_reload())
-                  : null,
-              child: TRText.inherit(l10n.pluginSettingsReload),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(plugin.name),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRIconButton(
+          key: const ValueKey<String>('plugin-open-path-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.pluginSettingsOpenPath,
+          onPressed: plugin.source != PluginSource.user || _busyAction != null
+              ? null
+              : () => unawaited(_openPath()),
+          icon: const Icon(TinestIcons.folderOpen),
         ),
-        Expanded(
-          child: SettingsScaffold(
+        TRIconButton(
+          key: const ValueKey<String>('plugin-fork-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.pluginSettingsFork,
+          onPressed: plugin.revision == null || _busyAction != null
+              ? null
+              : () => unawaited(_fork()),
+          icon: const Icon(TinestIcons.copy),
+        ),
+        TRButton(
+          key: const ValueKey<String>('plugin-validate-button'),
+          appearance: TRAppearance.outline,
+          loading: _busyAction == 'validate',
+          loadingLabel: l10n.pluginSettingsValidate,
+          onPressed: _busyAction == null ? () => unawaited(_validate()) : null,
+          child: TRText.inherit(l10n.pluginSettingsValidate),
+        ),
+        TRButton(
+          key: const ValueKey<String>('plugin-reload-button'),
+          loading: _busyAction == 'reload',
+          loadingLabel: l10n.pluginSettingsReload,
+          onPressed: _busyAction == null && _agentId != null
+              ? () => unawaited(_reload())
+              : null,
+          child: TRText.inherit(l10n.pluginSettingsReload),
+        ),
+      ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection(
+            title: l10n.pluginSettingsSource,
+            banner: _error == null
+                ? null
+                : TRAlert(
+                    variant: TRStatusVariant.danger,
+                    title: TRText.inherit(
+                      l10n.pluginSettingsActionFailed,
+                    ),
+                    description: TRText.inherit('$_error'),
+                  ),
             children: <Widget>[
-              SettingsSection(
-                title: l10n.pluginSettingsSource,
-                banner: _error == null
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit(
-                          l10n.pluginSettingsActionFailed,
-                        ),
-                        description: TRText.inherit('$_error'),
-                      ),
-                children: <Widget>[
-                  SettingsRow(
-                    title: TRText.inherit(l10n.pluginSettingsSource),
-                    control: TRBadge(
-                      variant: plugin.source == PluginSource.builtIn
-                          ? TRStatusVariant.neutral
-                          : TRStatusVariant.info,
-                      child: TRText.inherit(
-                        _pluginSourceLabel(l10n, plugin.source),
-                      ),
-                    ),
+              SettingsRow(
+                title: TRText.inherit(l10n.pluginSettingsSource),
+                control: TRBadge(
+                  variant: plugin.source == PluginSource.builtIn
+                      ? TRStatusVariant.neutral
+                      : TRStatusVariant.info,
+                  child: TRText.inherit(
+                    _pluginSourceLabel(l10n, plugin.source),
                   ),
-                  SettingsRow(
-                    title: TRText.inherit(l10n.pluginSettingsSourcePath),
-                    description: TRText.inherit(plugin.sourcePath),
-                  ),
-                  SettingsRow(
-                    title: TRText.inherit(l10n.pluginSettingsApi),
-                    control: TRText.inherit(
-                      l10n.pluginSettingsApiValue(plugin.apiMajor),
-                    ),
-                  ),
-                  SettingsRow(
-                    title: TRText.inherit(l10n.pluginSettingsRevision),
-                    description: plugin.isStale
-                        ? TRText.inherit(l10n.pluginSettingsStale)
-                        : null,
-                    control: TRCode(
-                      plugin.revision?.contentHash ??
-                          l10n.pluginSettingsRevisionMissing,
-                    ),
-                  ),
-                ],
-              ),
-              SettingsSection.form(
-                title: l10n.pluginSettingsCapabilities,
-                children: <Widget>[
-                  if (plugin.requestedCapabilities.isEmpty)
-                    TRText(
-                      l10n.pluginSettingsCapabilitiesNone,
-                      color: TRTextColor.muted,
-                    )
-                  else
-                    Wrap(
-                      spacing: TRSpacing.small,
-                      runSpacing: TRSpacing.small,
-                      children: plugin.requestedCapabilities
-                          .map(
-                            (capability) => TRBadge(
-                              child: TRText.inherit(capability),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                ],
-              ),
-              if (plugin.source == PluginSource.user && authoring != null)
-                SettingsSection(
-                  title: l10n.pluginSettingsAuthoring,
-                  children: <Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(l10n.pluginSettingsAuthoringStatus),
-                      control: TRBadge(
-                        variant: authoring.synchronized
-                            ? TRStatusVariant.success
-                            : TRStatusVariant.warning,
-                        child: TRText.inherit(
-                          authoring.synchronized
-                              ? l10n.pluginSettingsAuthoringSynchronized
-                              : l10n.pluginSettingsAuthoringNeedsSync,
-                        ),
-                      ),
-                    ),
-                    SettingsRow(
-                      title: TRText.inherit(l10n.pluginSettingsSdkAbi),
-                      control: TRCode(authoring.sdkAbiHash),
-                    ),
-                    SettingsRow(
-                      title: TRText.inherit(l10n.pluginSettingsLuaRuntime),
-                      control: TRText.inherit(authoring.luaRuntimeVersion),
-                    ),
-                    SettingsRow(
-                      title: TRText.inherit(l10n.pluginSettingsLuaLs),
-                      description: TRText.inherit(authoring.sdkLibraryPath),
-                      control: TRText.inherit(
-                        authoring.luaLanguageServerVersion,
-                      ),
-                    ),
-                    SettingsRow(
-                      title: TRText.inherit(l10n.pluginSettingsLuaConfig),
-                      description: TRText.inherit(
-                        authoring.configurationPath,
-                      ),
-                      control: TRButton(
-                        key: const ValueKey<String>('plugin-sdk-sync-button'),
-                        appearance: TRAppearance.outline,
-                        loading: _busyAction == 'sdkSync',
-                        loadingLabel: l10n.pluginSettingsSdkSync,
-                        onPressed: _busyAction == null
-                            ? () => unawaited(_syncAuthoring())
-                            : null,
-                        child: TRText.inherit(l10n.pluginSettingsSdkSync),
-                      ),
-                    ),
-                    for (final diagnostic in authoring.diagnostics)
-                      TRAlert(
-                        variant: _diagnosticVariant(diagnostic.severity),
-                        title: TRText.inherit(diagnostic.code),
-                        description: TRText.inherit(diagnostic.message),
-                      ),
-                  ],
                 ),
-              SettingsSection.form(
-                title: l10n.pluginSettingsAgents,
-                children: <Widget>[
-                  if (widget.agents.isEmpty)
-                    TRAlert(
-                      variant: TRStatusVariant.warning,
-                      title: TRText.inherit(
-                        l10n.pluginSettingsAgentsNone,
-                      ),
-                      description: TRText.inherit(
-                        l10n.pluginSettingsReloadNeedsAgent,
-                      ),
-                    )
-                  else ...<Widget>[
-                    Wrap(
-                      spacing: TRSpacing.small,
-                      runSpacing: TRSpacing.small,
-                      children: widget.agents
-                          .map(
-                            (agent) => TRBadge(
-                              variant: TRStatusVariant.info,
-                              child: TRText.inherit(agent.name),
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                    TRSelect<String>.controlled(
-                      searchable: true,
-                      presentation: TinestSelectPresentation.resolve(context),
-                      key: const ValueKey<String>('plugin-reload-agent'),
-                      label: l10n.pluginSettingsReloadAgent,
-                      value: _agentId,
-                      items: widget.agents
-                          .map(
-                            (agent) => TRSelectItem<String>(
-                              value: agent.id,
-                              label: agent.name,
-                            ),
-                          )
-                          .toList(growable: false),
-                      onValueChange: _busyAction == null
-                          ? (value) => setState(() => _agentId = value)
-                          : null,
-                    ),
-                  ],
-                ],
               ),
-              SettingsSection(
-                title: l10n.pluginSettingsContributions,
-                children: plugin.contributions
-                    .map(
-                      (contribution) => SettingsRow(
-                        title: TRText.inherit(contribution.id),
-                        description: contribution.requiredCapabilities.isEmpty
-                            ? null
-                            : TRText.inherit(
-                                contribution.requiredCapabilities.join(', '),
-                              ),
-                        control: TRBadge(
-                          child: TRText.inherit(
-                            _contributionKindLabel(l10n, contribution.kind),
-                          ),
+              SettingsRow(
+                title: TRText.inherit(l10n.pluginSettingsSourcePath),
+                description: TRText.inherit(plugin.sourcePath),
+              ),
+              SettingsRow(
+                title: TRText.inherit(l10n.pluginSettingsApi),
+                control: TRText.inherit(
+                  l10n.pluginSettingsApiValue(plugin.apiMajor),
+                ),
+              ),
+              SettingsRow(
+                title: TRText.inherit(l10n.pluginSettingsRevision),
+                description: plugin.isStale
+                    ? TRText.inherit(l10n.pluginSettingsStale)
+                    : null,
+                control: TRCode(
+                  plugin.revision?.contentHash ??
+                      l10n.pluginSettingsRevisionMissing,
+                ),
+              ),
+            ],
+          ),
+          SettingsSection.form(
+            title: l10n.pluginSettingsCapabilities,
+            children: <Widget>[
+              if (plugin.requestedCapabilities.isEmpty)
+                TRText(
+                  l10n.pluginSettingsCapabilitiesNone,
+                  color: TRTextColor.muted,
+                )
+              else
+                Wrap(
+                  spacing: TRSpacing.small,
+                  runSpacing: TRSpacing.small,
+                  children: plugin.requestedCapabilities
+                      .map(
+                        (capability) => TRBadge(
+                          child: TRText.inherit(capability),
                         ),
+                      )
+                      .toList(growable: false),
+                ),
+            ],
+          ),
+          if (plugin.source == PluginSource.user && authoring != null)
+            SettingsSection(
+              title: l10n.pluginSettingsAuthoring,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(l10n.pluginSettingsAuthoringStatus),
+                  control: TRBadge(
+                    variant: authoring.synchronized
+                        ? TRStatusVariant.success
+                        : TRStatusVariant.warning,
+                    child: TRText.inherit(
+                      authoring.synchronized
+                          ? l10n.pluginSettingsAuthoringSynchronized
+                          : l10n.pluginSettingsAuthoringNeedsSync,
+                    ),
+                  ),
+                ),
+                SettingsRow(
+                  title: TRText.inherit(l10n.pluginSettingsSdkAbi),
+                  control: TRCode(authoring.sdkAbiHash),
+                ),
+                SettingsRow(
+                  title: TRText.inherit(l10n.pluginSettingsLuaRuntime),
+                  control: TRText.inherit(authoring.luaRuntimeVersion),
+                ),
+                SettingsRow(
+                  title: TRText.inherit(l10n.pluginSettingsLuaLs),
+                  description: TRText.inherit(authoring.sdkLibraryPath),
+                  control: TRText.inherit(
+                    authoring.luaLanguageServerVersion,
+                  ),
+                ),
+                SettingsRow(
+                  title: TRText.inherit(l10n.pluginSettingsLuaConfig),
+                  description: TRText.inherit(
+                    authoring.configurationPath,
+                  ),
+                  control: TRButton(
+                    key: const ValueKey<String>('plugin-sdk-sync-button'),
+                    appearance: TRAppearance.outline,
+                    loading: _busyAction == 'sdkSync',
+                    loadingLabel: l10n.pluginSettingsSdkSync,
+                    onPressed: _busyAction == null
+                        ? () => unawaited(_syncAuthoring())
+                        : null,
+                    child: TRText.inherit(l10n.pluginSettingsSdkSync),
+                  ),
+                ),
+                for (final diagnostic in authoring.diagnostics)
+                  TRAlert(
+                    variant: _diagnosticVariant(diagnostic.severity),
+                    title: TRText.inherit(diagnostic.code),
+                    description: TRText.inherit(diagnostic.message),
+                  ),
+              ],
+            ),
+          SettingsSection.form(
+            title: l10n.pluginSettingsAgents,
+            children: <Widget>[
+              if (widget.agents.isEmpty)
+                TRAlert(
+                  variant: TRStatusVariant.warning,
+                  title: TRText.inherit(
+                    l10n.pluginSettingsAgentsNone,
+                  ),
+                  description: TRText.inherit(
+                    l10n.pluginSettingsReloadNeedsAgent,
+                  ),
+                )
+              else ...<Widget>[
+                Wrap(
+                  spacing: TRSpacing.small,
+                  runSpacing: TRSpacing.small,
+                  children: widget.agents
+                      .map(
+                        (agent) => TRBadge(
+                          variant: TRStatusVariant.info,
+                          child: TRText.inherit(agent.name),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+                TRSelect<String>.controlled(
+                  searchable: true,
+                  presentation: TinestSelectPresentation.resolve(context),
+                  key: const ValueKey<String>('plugin-reload-agent'),
+                  label: l10n.pluginSettingsReloadAgent,
+                  value: _agentId,
+                  items: widget.agents
+                      .map(
+                        (agent) => TRSelectItem<String>(
+                          value: agent.id,
+                          label: agent.name,
+                        ),
+                      )
+                      .toList(growable: false),
+                  onValueChange: _busyAction == null
+                      ? (value) => setState(() => _agentId = value)
+                      : null,
+                ),
+              ],
+            ],
+          ),
+          SettingsSection(
+            title: l10n.pluginSettingsContributions,
+            children: plugin.contributions
+                .map(
+                  (contribution) => SettingsRow(
+                    title: TRText.inherit(contribution.id),
+                    description: contribution.requiredCapabilities.isEmpty
+                        ? null
+                        : TRText.inherit(
+                            contribution.requiredCapabilities.join(', '),
+                          ),
+                    control: TRBadge(
+                      child: TRText.inherit(
+                        _contributionKindLabel(l10n, contribution.kind),
                       ),
-                    )
-                    .toList(growable: false),
-              ),
-              SettingsSection.form(
-                title: l10n.pluginSettingsDiagnostics,
-                children: <Widget>[
-                  if (plugin.diagnostics.isEmpty)
-                    TRText(
-                      l10n.pluginSettingsDiagnosticsNone,
-                      color: TRTextColor.muted,
-                    )
-                  else
-                    for (final diagnostic in plugin.diagnostics)
-                      TRAlert(
-                        variant: _diagnosticVariant(diagnostic.severity),
-                        title: TRText.inherit(diagnostic.code),
-                        description: TRText.inherit(diagnostic.message),
-                      ),
-                ],
-              ),
-              if (_agentId case final agentId?)
-                for (final contribution in uiContributions)
-                  SettingsSection.form(
-                    title: '${l10n.pluginSettingsUi} · ${contribution.id}',
-                    children: <Widget>[
-                      PluginUiContributionSurface(
-                        hostId: widget.hostId,
-                        agentId: agentId,
-                        plugin: plugin,
-                        contribution: contribution,
-                        slot: PluginUiSlot.agentSettings,
-                      ),
-                    ],
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          SettingsSection.form(
+            title: l10n.pluginSettingsDiagnostics,
+            children: <Widget>[
+              if (plugin.diagnostics.isEmpty)
+                TRText(
+                  l10n.pluginSettingsDiagnosticsNone,
+                  color: TRTextColor.muted,
+                )
+              else
+                for (final diagnostic in plugin.diagnostics)
+                  TRAlert(
+                    variant: _diagnosticVariant(diagnostic.severity),
+                    title: TRText.inherit(diagnostic.code),
+                    description: TRText.inherit(diagnostic.message),
                   ),
             ],
           ),
-        ),
-      ],
+          if (_agentId case final agentId?)
+            for (final contribution in uiContributions)
+              SettingsSection.form(
+                title: '${l10n.pluginSettingsUi} · ${contribution.id}',
+                children: <Widget>[
+                  PluginUiContributionSurface(
+                    hostId: widget.hostId,
+                    agentId: agentId,
+                    plugin: plugin,
+                    contribution: contribution,
+                    slot: PluginUiSlot.agentSettings,
+                  ),
+                ],
+              ),
+        ],
+      ),
     );
   }
 
@@ -844,66 +823,60 @@ class _CreatePluginPaneState extends State<_CreatePluginPane> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.pluginSettingsAddTitle),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: _saving ? null : widget.onCancel,
-              child: TRText.inherit(l10n.commonCancel),
-            ),
-            TRButton(
-              intent: TRIntent.primary,
-              onPressed: !_saving && _valid ? _submit : null,
-              child: TRText.inherit(
-                _saving ? l10n.commonCreating : l10n.commonCreate,
-              ),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.pluginSettingsAddTitle),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          onPressed: _saving ? null : widget.onCancel,
+          child: TRText.inherit(l10n.commonCancel),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection.form(
-                title: l10n.pluginSettingsAddTitle,
-                banner: _error == null
-                    ? null
-                    : TRAlert(
-                        variant: TRStatusVariant.danger,
-                        title: TRText.inherit(
-                          l10n.pluginSettingsActionFailed,
-                        ),
-                        description: TRText.inherit('$_error'),
-                      ),
-                children: <Widget>[
-                  TRTextField(
-                    controller: _id,
-                    autofocus: true,
-                    enabled: !_saving,
-                    label: l10n.pluginSettingsId,
-                    placeholder: 'example.tools',
-                    errorText: _id.text.isEmpty || _validId
-                        ? null
-                        : widget.existingIds.contains(_id.text.toLowerCase())
-                        ? l10n.pluginSettingsIdTaken
-                        : l10n.pluginSettingsIdInvalid,
-                    onChanged: (_) => setState(() => _error = null),
-                  ),
-                  TRTextField(
-                    controller: _name,
-                    enabled: !_saving,
-                    label: l10n.pluginSettingsName,
-                    onChanged: (_) => setState(() => _error = null),
-                  ),
-                ],
-              ),
-            ],
+        TRButton(
+          intent: TRIntent.primary,
+          onPressed: !_saving && _valid ? _submit : null,
+          child: TRText.inherit(
+            _saving ? l10n.commonCreating : l10n.commonCreate,
           ),
         ),
       ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            title: l10n.pluginSettingsAddTitle,
+            banner: _error == null
+                ? null
+                : TRAlert(
+                    variant: TRStatusVariant.danger,
+                    title: TRText.inherit(
+                      l10n.pluginSettingsActionFailed,
+                    ),
+                    description: TRText.inherit('$_error'),
+                  ),
+            children: <Widget>[
+              TRTextField(
+                controller: _id,
+                autofocus: true,
+                enabled: !_saving,
+                label: l10n.pluginSettingsId,
+                placeholder: 'example.tools',
+                errorText: _id.text.isEmpty || _validId
+                    ? null
+                    : widget.existingIds.contains(_id.text.toLowerCase())
+                    ? l10n.pluginSettingsIdTaken
+                    : l10n.pluginSettingsIdInvalid,
+                onChanged: (_) => setState(() => _error = null),
+              ),
+              TRTextField(
+                controller: _name,
+                enabled: !_saving,
+                label: l10n.pluginSettingsName,
+                onChanged: (_) => setState(() => _error = null),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

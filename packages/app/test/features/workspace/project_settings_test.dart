@@ -147,10 +147,7 @@ void main() {
 
       expect(find.text('프로젝트'), findsWidgets);
       expect(find.text('design'), findsOneWidget);
-      expect(
-        find.text('/projects/workspace/.tinest/config.json'),
-        findsOneWidget,
-      );
+      expect(_projectEditor, findsOneWidget);
 
       await tester.enterText(
         _textInput('Setup (worktree 생성 후)'),
@@ -241,7 +238,7 @@ void main() {
     await tester.tap(find.text('design'));
     await tester.pumpAndSettle();
 
-    expect(find.text('/projects/design/.tinest/config.json'), findsOneWidget);
+    expect(_projectEditor, findsOneWidget);
     expect(find.text('bundle install'), findsOneWidget);
   });
 
@@ -309,22 +306,25 @@ void main() {
     );
     addTearDown(router.dispose);
 
-    expect(find.text('/projects/workspace/.tinest/config.json'), findsNothing);
+    expect(_projectEditor, findsNothing);
     await tester.tap(find.text('tinest'));
     await tester.pumpAndSettle();
-    expect(
-      find.text('/projects/workspace/.tinest/config.json'),
-      findsOneWidget,
-    );
+    expect(_projectEditor, findsOneWidget);
 
     expect(findAccessibleAction('Project 목록'), findsNothing);
     await tester.tap(
       find.byKey(const ValueKey<String>('settings-back-button')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('/projects/workspace/.tinest/config.json'), findsNothing);
+    expect(_projectEditor, findsNothing);
   });
 }
+
+/// Marks the project editor: the source path that used to stand for it moved
+/// out of the pane header when destination headers dropped their second line.
+final Finder _projectEditor = find.byKey(
+  const ValueKey<String>('project-shell-executable'),
+);
 
 Finder _textInput(String label) => find.descendant(
   of: find.byWidgetPredicate(

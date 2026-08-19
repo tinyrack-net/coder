@@ -2,6 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
+import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -16,6 +17,110 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 TRAdaptiveWidthClass settingsAdaptiveWidthClassOf(BuildContext context) =>
     TRAdaptiveLayoutScope.maybeOf(context)?.widthClass ??
     TRAdaptiveWidthClass.fromWidth(MediaQuery.sizeOf(context).width);
+
+/// Navigation the Settings shell owns on behalf of the destination it renders.
+///
+/// A compact destination draws the only page header, so it needs the shell's
+/// up action. The shell already climbs detail, daemon categories, home, and
+/// then out of the task, so destinations never reimplement that ladder.
+class SettingsShellScope extends InheritedWidget {
+  /// Publishes the shell's up action to its destinations.
+  const SettingsShellScope({
+    required this.onBack,
+    required super.child,
+    super.key,
+  });
+
+  /// Moves one step up the Settings stack.
+  final VoidCallback onBack;
+
+  /// Returns the enclosing scope, or null outside the Settings shell.
+  static SettingsShellScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SettingsShellScope>();
+
+  @override
+  bool updateShouldNotify(SettingsShellScope oldWidget) =>
+      onBack != oldWidget.onBack;
+}
+
+/// One Settings destination together with the header that identifies it.
+///
+/// Below the compact breakpoint the Settings shell renders no chrome of its
+/// own, so this draws the page header bar carrying the destination's identity,
+/// actions, and up action. The header therefore moves with the navigation
+/// stack instead of stacking a static title above a pane title. From medium
+/// widths up the sidebar already reports the destination, so this keeps the
+/// established [TRPaneHeader] aligned to the pane's content rail.
+///
+/// A destination header carries a title and its actions and nothing else. The
+/// supporting line these headers used to show — a count, a source path, a
+/// connection status — read as clutter once the header became the page's own
+/// chrome, and every one of those values is still reported by the body below.
+class SettingsDestinationScaffold extends StatelessWidget {
+  /// Creates a destination whose header adapts to the shell's width class.
+  const SettingsDestinationScaffold({
+    required this.title,
+    required this.child,
+    this.actions = const <Widget>[],
+    this.contentMaxWidth,
+    super.key,
+  });
+
+  /// The destination's primary heading.
+  final Widget title;
+
+  /// Actions associated with the whole destination.
+  final List<Widget> actions;
+
+  /// Optional cap shared with a body that centres its readable content.
+  final double? contentMaxWidth;
+
+  /// The destination's body.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact =
+        settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact;
+    final onBack = SettingsShellScope.maybeOf(context)?.onBack;
+    // A destination that has been pushed over stays mounted so it can paint
+    // its own chrome through the transition. Only the destination on top is
+    // the app's up action, so only it carries that identity.
+    final active = ModalRoute.of(context)?.isCurrent ?? true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (compact)
+          TinestPageHeaderBar(
+            header: TinestPageHeader(
+              title: title,
+              leading: onBack == null
+                  ? null
+                  : TRIconButton(
+                      key: active
+                          ? const ValueKey<String>('settings-back-button')
+                          : null,
+                      appearance: TRAppearance.ghost,
+                      label: MaterialLocalizations.of(
+                        context,
+                      ).backButtonTooltip,
+                      onPressed: onBack,
+                      icon: Icon(TinestIcons.backFor(context)),
+                    ),
+              actions: actions,
+            ),
+          )
+        else
+          TRPaneHeader(
+            title: title,
+            actions: actions,
+            contentMaxWidth: contentMaxWidth,
+          ),
+        Expanded(child: child),
+      ],
+    );
+  }
+}
 
 /// The product-owned content slots supplied to the adaptive pane scaffold.
 enum SettingsPaneSlot {
@@ -352,23 +457,16 @@ class _SettingsSkeletonListPane extends StatelessWidget {
     : super(key: const ValueKey<String>('settings-skeleton-list-pane'));
 
   @override
-  Widget build(BuildContext context) => const Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      TRPaneHeader(
-        title: TRSkeleton(width: TRMeasurements.measureSm),
-      ),
-      Expanded(
-        child: SettingsCollectionList(
-          children: <Widget>[
-            _SettingsSkeletonListRow(),
-            _SettingsSkeletonListRow(),
-            _SettingsSkeletonListRow(),
-            _SettingsSkeletonListRow(),
-          ],
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => const SettingsDestinationScaffold(
+    title: TRSkeleton(width: TRMeasurements.measureSm),
+    child: SettingsCollectionList(
+      children: <Widget>[
+        _SettingsSkeletonListRow(),
+        _SettingsSkeletonListRow(),
+        _SettingsSkeletonListRow(),
+        _SettingsSkeletonListRow(),
+      ],
+    ),
   );
 }
 
@@ -420,15 +518,10 @@ class _SettingsSkeletonDetailPane extends StatelessWidget {
     : super(key: const ValueKey<String>('settings-skeleton-detail-pane'));
 
   @override
-  Widget build(BuildContext context) => const Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      TRPaneHeader(
-        title: TRSkeleton(width: TRMeasurements.measureSm),
-        contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      ),
-      Expanded(child: _SettingsFormSkeleton()),
-    ],
+  Widget build(BuildContext context) => const SettingsDestinationScaffold(
+    title: TRSkeleton(width: TRMeasurements.measureSm),
+    contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+    child: _SettingsFormSkeleton(),
   );
 }
 

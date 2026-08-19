@@ -3,7 +3,7 @@ part of '../../app/app_flows_test.dart';
 void _registerSettingsAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   testWidgets(
-    'simple mobile settings categories share pane header chrome',
+    'compact settings categories own the single page header',
     (tester) async {
       await _setTestViewport(tester, const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -14,13 +14,87 @@ void _registerSettingsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      final header = find.byType(TRPaneHeader);
+      // The destination owns the only header, so its title replaces the
+      // shell's '설정' instead of stacking below it.
+      final header = find.byType(TinestPageHeaderBar);
       expect(header, findsOneWidget);
-      final title = find.descendant(of: header, matching: find.text('일반'));
-      expect(title, findsOneWidget);
-      expect(tester.getRect(title).left, TRSpacing.extraLarge);
+      expect(find.byType(TRPaneHeader), findsNothing);
+      expect(find.text('설정'), findsNothing);
       expect(
-        find.descendant(of: header, matching: find.byType(TRSeparator)),
+        find.descendant(of: header, matching: find.text('일반')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: header,
+          matching: find.byKey(const ValueKey<String>('settings-back-button')),
+        ),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'compact list-detail moves its header from collection to detail',
+    (tester) async {
+      await _setTestViewport(tester, const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final router = await _pumpRoute(
+        tester,
+        FakeTinestApi(),
+        const McpSettingsRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      // The collection's own action rides in the single page header.
+      expect(find.byType(TinestPageHeaderBar), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(TinestPageHeaderBar),
+          matching: find.byKey(const ValueKey<String>('mcp-server-add')),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey<String>('mcp-server-add')));
+      await tester.pumpAndSettle();
+
+      // Entering the detail replaces the header rather than stacking one.
+      final detailHeader = find.byType(TinestPageHeaderBar).last;
+      expect(
+        find.descendant(
+          of: detailHeader,
+          matching: find.text(testL10n.mcpSettingsAdd),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+        findsOneWidget,
+      );
+      // Every action stays on screen at phone width instead of overflowing.
+      final headerRect = tester.getRect(detailHeader);
+      for (final action in const <String>[
+        'mcp-secret-set',
+        'mcp-server-test',
+        'mcp-server-save',
+      ]) {
+        final rect = tester.getRect(find.byKey(ValueKey<String>(action)));
+        expect(headerRect.contains(rect.topLeft), isTrue, reason: action);
+        expect(headerRect.contains(rect.bottomRight), isTrue, reason: action);
+      }
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(TinestPageHeaderBar),
+          matching: find.byKey(const ValueKey<String>('mcp-server-add')),
+        ),
         findsOneWidget,
       );
     },
@@ -440,7 +514,9 @@ void _registerSettingsAppFlows() {
     );
     expect(find.text('프로젝트'), findsOneWidget);
     expect(find.text('에이전트'), findsOneWidget);
-    expect(find.text('프로바이더'), findsOneWidget);
+    // The sidebar entry and the collection's own pane header both name the
+    // category, the same way every other list-detail category does.
+    expect(find.text('프로바이더'), findsNWidgets(2));
     expect(find.text(testL10n.settingsSectionDaemon), findsWidgets);
     expect(find.text('Test daemon'), findsWidgets);
     await tester.tap(find.text('프로젝트'));
@@ -541,6 +617,10 @@ void _registerSettingsAppFlows() {
       );
       addTearDown(router.dispose);
 
+      // The destination now owns the page header, so its up action is the
+      // first focus stop and the first navigation row is the second.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -761,7 +841,7 @@ void _registerSettingsAppFlows() {
   );
 
   testWidgets(
-    'mobile daemon header shares its navigation content line',
+    'mobile daemon categories carry their identity in the page header',
     (tester) async {
       await _setTestViewport(tester, const Size(390, 844));
       final router = await _pumpRoute(
@@ -771,20 +851,26 @@ void _registerSettingsAppFlows() {
       );
       addTearDown(router.dispose);
 
-      final daemonSurface = tester.getRect(
-        find
-            .ancestor(
-              of: find.text('MCP'),
-              matching: find.byType(AnimatedContainer),
-            )
-            .first,
+      // The daemon name replaces the shell title, and the header carries that
+      // name alone: no second line stacked under it.
+      final header = find.byType(TinestPageHeaderBar);
+      expect(header, findsOneWidget);
+      expect(find.byType(TRPaneHeader), findsNothing);
+      expect(
+        find.descendant(of: header, matching: find.text('Test daemon')),
+        findsOneWidget,
       );
       expect(
-        tester.getRect(find.text('Test daemon')).left,
-        moreOrLessEquals(
-          daemonSurface.left + TRSpacing.medium,
-          epsilon: 0.5,
+        find.descendant(
+          of: header,
+          matching: find.text(testL10n.hostStatusOnline),
         ),
+        findsNothing,
+      );
+      final headerRect = tester.getRect(header);
+      expect(
+        tester.getRect(find.text('MCP')).top,
+        greaterThan(headerRect.bottom),
       );
     },
     tags: const <String>['feature_test__app_navigation__widget'],

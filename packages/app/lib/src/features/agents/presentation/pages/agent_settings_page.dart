@@ -247,65 +247,56 @@ class _AgentDefinitionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.agentSettingsHeading),
-          description: TRText.inherit(
-            l10n.agentSettingsCount(state.definitions.length),
-          ),
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey('agent-add-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.agentSettingsAdd,
-              onPressed: onCreate,
-              icon: const Icon(TinestIcons.add),
-            ),
-          ],
-        ),
-        Expanded(
-          child: state.definitions.isEmpty
-              ? SettingsEmptyState(
-                  title: l10n.agentSettingsEmpty,
-                  icon: const Icon(TinestIcons.agent),
-                )
-              : SettingsCollectionList(
-                  children: <Widget>[
-                    TRTreeNav<String>.controlled(
-                      value: selectedId,
-                      itemSpacing: TRSpacing.extraSmall,
-                      onValueChange: (definitionId) {
-                        if (definitionId != null) onSelected(definitionId);
-                      },
-                      items: <TRTreeNavItem<String>>[
-                        for (final definition in state.definitions)
-                          TRTreeNavLeaf<String>(
-                            value: definition.id,
-                            showDisclosureIndicator: true,
-                            leading: Icon(
-                              definition.mode == AgentMode.primary
-                                  ? TinestIcons.agent
-                                  : TinestIcons.branch,
-                            ),
-                            label: TRText.inherit(definition.name),
-                            description: TRText.inherit(
-                              definition.isStale
-                                  ? l10n.agentSettingsModeStale(
-                                      definition.mode.name,
-                                    )
-                                  : definition.mode.name,
-                            ),
-                            trailing: definition.diagnostics.isEmpty
-                                ? null
-                                : const Icon(TinestIcons.warning),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.agentSettingsHeading),
+      actions: <Widget>[
+        TRIconButton(
+          key: const ValueKey('agent-add-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.agentSettingsAdd,
+          onPressed: onCreate,
+          icon: const Icon(TinestIcons.add),
         ),
       ],
+      child: state.definitions.isEmpty
+          ? SettingsEmptyState(
+              title: l10n.agentSettingsEmpty,
+              icon: const Icon(TinestIcons.agent),
+            )
+          : SettingsCollectionList(
+              children: <Widget>[
+                TRTreeNav<String>.controlled(
+                  value: selectedId,
+                  itemSpacing: TRSpacing.extraSmall,
+                  onValueChange: (definitionId) {
+                    if (definitionId != null) onSelected(definitionId);
+                  },
+                  items: <TRTreeNavItem<String>>[
+                    for (final definition in state.definitions)
+                      TRTreeNavLeaf<String>(
+                        value: definition.id,
+                        showDisclosureIndicator: true,
+                        leading: Icon(
+                          definition.mode == AgentMode.primary
+                              ? TinestIcons.agent
+                              : TinestIcons.branch,
+                        ),
+                        label: TRText.inherit(definition.name),
+                        description: TRText.inherit(
+                          definition.isStale
+                              ? l10n.agentSettingsModeStale(
+                                  definition.mode.name,
+                                )
+                              : definition.mode.name,
+                        ),
+                        trailing: definition.diagnostics.isEmpty
+                            ? null
+                            : const Icon(TinestIcons.warning),
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }
@@ -466,426 +457,417 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
           !candidate.isArchived &&
           !candidate.isStale,
     );
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(definition.name),
-          description: TRText.inherit(definition.sourcePath),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRIconButton(
-              key: const ValueKey('agent-copy-path-button'),
-              appearance: TRAppearance.ghost,
-              label: l10n.agentSettingsCopyPath,
-              onPressed: () =>
-                  Clipboard.setData(ClipboardData(text: definition.sourcePath)),
-              icon: const Icon(TinestIcons.copy),
-            ),
-            TRButton(
-              intent: TRIntent.primary,
-              onPressed: canSave && !harnessBlocked
-                  ? () => _save(force: false)
-                  : null,
-              child: TRText.inherit(
-                _saving ? l10n.commonSaving : l10n.commonSave,
-              ),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(definition.name),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRIconButton(
+          key: const ValueKey('agent-copy-path-button'),
+          appearance: TRAppearance.ghost,
+          label: l10n.agentSettingsCopyPath,
+          onPressed: () =>
+              Clipboard.setData(ClipboardData(text: definition.sourcePath)),
+          icon: const Icon(TinestIcons.copy),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            key: ValueKey<String>('agent-settings-editor-${definition.id}'),
-            children: <Widget>[
-              SettingsSection.form(
-                title: l10n.agentSettingsDefinitionHeading,
-                banner: definition.diagnostics.isEmpty
-                    ? null
-                    : TRAlert(
-                        title: TRText.inherit(
-                          definition.diagnostics.first.code,
-                        ),
-                        description: TRText.inherit(
-                          definition.diagnostics
-                              .map((diagnostic) => diagnostic.message)
-                              .join('\n'),
-                        ),
-                        icon: const Icon(TinestIcons.warning),
-                        variant: TRStatusVariant.warning,
-                      ),
-                children: <Widget>[
-                  TRTextField(
-                    controller: _name,
-                    enabled: editable,
-                    label: l10n.commonName,
-                  ),
-                  TRTextField(
-                    controller: _description,
-                    enabled: editable,
-                    label: l10n.commonDescription,
-                  ),
-                  TRTextField(
-                    initialValue: definition.mode.name,
-                    enabled: false,
-                    label: l10n.commonKind,
-                  ),
-                ],
-              ),
-              SettingsSection.form(
-                title: l10n.agentSettingsPromptHeading,
-                children: <Widget>[
-                  TRTextField(
-                    controller: _prompt,
-                    enabled: editable,
-                    minLines: 8,
-                    maxLines: 18,
-                    label: l10n.agentSettingsSystemPrompt,
-                  ),
-                ],
-              ),
-              SettingsSection.form(
-                title: l10n.agentSettingsModelHeading,
-                banner: modelUnavailable
-                    ? TRAlert(
-                        key: const ValueKey<String>(
-                          'agent-settings-model-unavailable',
-                        ),
-                        title: TRText.inherit(
-                          l10n.modelSettingsUnavailableTitle,
-                        ),
-                        description: TRText.inherit(
-                          l10n.modelSettingsUnavailableDescription(
-                            _modelId.text,
-                          ),
-                        ),
-                        icon: const Icon(TinestIcons.warning),
-                        variant: TRStatusVariant.warning,
-                      )
-                    : null,
-                children: <Widget>[
-                  TRRadioGroup(
-                    value: _modelSource.name,
-                    disabled: !editable,
-                    onValueChange: (value) => setState(() {
-                      _modelSource = AgentModelSource.values.byName(value);
-                      if (_modelSource == AgentModelSource.fixed &&
-                          _modelId.text.isEmpty) {
-                        _modelId.text = firstModel?.modelId ?? '';
-                      }
-                    }),
-                    children: <TRRadio>[
-                      TRRadio(
-                        key: const ValueKey<String>(
-                          'agent-settings-model-source-session',
-                        ),
-                        value: AgentModelSource.session.name,
-                        label: TRText.inherit(l10n.agentSettingsSessionModel),
-                      ),
-                      TRRadio(
-                        key: const ValueKey<String>(
-                          'agent-settings-model-source-fixed',
-                        ),
-                        value: AgentModelSource.fixed.name,
-                        label: TRText.inherit(l10n.agentSettingsPinnedModel),
-                      ),
-                    ],
-                  ),
-                  if (_modelSource == AgentModelSource.fixed) ...<Widget>[
-                    Semantics(
-                      key: const ValueKey<String>(
-                        'agent-settings-model-selector',
-                      ),
-                      hint: modelBlocked
-                          ? l10n.composerConnectProviderFirst
-                          : null,
-                      child: SettingsRow(
-                        flush: true,
-                        // A providerless selector remains actionable so the
-                        // product wrapper can explain how to unlock it.
-                        enabled: modelSelectionEnabled || modelBlocked,
-                        title: TRText.inherit(
-                          l10n.agentSettingsModelId,
-                          color: modelBlocked ? TRTextColor.muted : null,
-                        ),
-                        controlLayout: SettingsControlLayout.responsive,
-                        controlOwnsFocus: true,
-                        control: _agentModelSelect(
-                          l10n,
-                          enabled: modelSelectionEnabled,
-                          blocked: modelBlocked,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (plugins == null)
-                SettingsSection(
-                  title: l10n.agentSettingsHarnessHeading,
-                  children: <Widget>[
-                    TRAlert(
-                      key: const ValueKey<String>('agent-plugins-loading'),
-                      title: TRText.inherit(
-                        l10n.agentSettingsPluginsLoading,
-                      ),
-                      description: pluginsState.hasError
-                          ? TRText.inherit('${pluginsState.error}')
-                          : null,
-                      icon: const Icon(TinestIcons.agent),
-                      variant: pluginsState.hasError
-                          ? TRStatusVariant.danger
-                          : TRStatusVariant.info,
-                    ),
-                  ],
-                )
-              else ...<Widget>[
-                SettingsSection.form(
-                  title: l10n.agentSettingsHarnessHeading,
-                  banner: harnessDiagnostics.isEmpty
-                      ? null
-                      : TRAlert(
-                          key: const ValueKey<String>(
-                            'agent-harness-diagnostics',
-                          ),
-                          title: TRText.inherit(
-                            l10n.agentSettingsHarnessDiagnostics,
-                          ),
-                          description: TRText.inherit(
-                            harnessDiagnostics
-                                .map((diagnostic) => diagnostic.message)
-                                .join('\n'),
-                          ),
-                          icon: const Icon(TinestIcons.warning),
-                          variant:
-                              harnessDiagnostics.any(
-                                (diagnostic) => diagnostic.blocking,
-                              )
-                              ? TRStatusVariant.danger
-                              : TRStatusVariant.warning,
-                        ),
-                  children: <Widget>[
-                    TRText(
-                      l10n.agentSettingsHarnessDescription,
-                      variant: TRTextVariant.bodySm,
-                      color: TRTextColor.muted,
-                    ),
-                    if (drivers.isEmpty)
-                      TRAlert(
-                        title: TRText.inherit(l10n.agentSettingsNoDrivers),
-                        variant: TRStatusVariant.danger,
-                      )
-                    else
-                      TRSelect<String>.controlled(
-                        searchable: true,
-                        presentation: TinestSelectPresentation.resolve(
-                          context,
-                        ),
-                        key: const ValueKey<String>('agent-plugin-driver'),
-                        label: l10n.agentSettingsDriver,
-                        value: _driverId.isEmpty ? null : _driverId,
-                        enabled: editable,
-                        items: _driverItems(drivers),
-                        onValueChange: editable
-                            ? (value) {
-                                if (value == null) return;
-                                setState(() => _driverId = value);
-                              }
-                            : null,
-                      ),
-                  ],
-                ),
-                SettingsSection(
-                  title: l10n.agentSettingsExtensions,
-                  children: <Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(
-                        l10n.agentSettingsExtensionsDescription,
-                      ),
-                    ),
-                    for (final entry in _orderedExtensionRows(extensions))
-                      TinestCheckboxRow(
-                        key: ValueKey<String>(
-                          'agent-extension-${_keyId(entry.id)}',
-                        ),
-                        value: entry.selected,
-                        onChanged: editable
-                            ? (enabled) => setState(() {
-                                if (enabled ?? false) {
-                                  _extensions.add(entry.id);
-                                } else {
-                                  _extensions.remove(entry.id);
-                                }
-                              })
-                            : null,
-                        title: TRText.inherit(entry.label),
-                        subtitle: TRText.inherit(entry.description),
-                        secondary: entry.selected
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  TRIconButton(
-                                    key: ValueKey<String>(
-                                      'agent-extension-up-${_keyId(entry.id)}',
-                                    ),
-                                    appearance: TRAppearance.ghost,
-                                    uiSize: TRUiSize.sm,
-                                    label: l10n.agentSettingsMoveUp,
-                                    onPressed: editable && entry.index > 0
-                                        ? () => _moveExtension(
-                                            entry.index,
-                                            entry.index - 1,
-                                          )
-                                        : null,
-                                    icon: const Icon(TinestIcons.collapse),
-                                  ),
-                                  TRIconButton(
-                                    key: ValueKey<String>(
-                                      'agent-extension-down-'
-                                      '${_keyId(entry.id)}',
-                                    ),
-                                    appearance: TRAppearance.ghost,
-                                    uiSize: TRUiSize.sm,
-                                    label: l10n.agentSettingsMoveDown,
-                                    onPressed:
-                                        editable &&
-                                            entry.index < _extensions.length - 1
-                                        ? () => _moveExtension(
-                                            entry.index,
-                                            entry.index + 1,
-                                          )
-                                        : null,
-                                    icon: const Icon(TinestIcons.expand),
-                                  ),
-                                ],
-                              )
-                            : null,
-                      ),
-                  ],
-                ),
-                SettingsSection(
-                  title: l10n.agentSettingsPluginTools,
-                  children: <Widget>[
-                    SettingsRow(
-                      title: TRText.inherit(
-                        l10n.agentSettingsPluginToolsDescription,
-                      ),
-                    ),
-                    for (final view in groupAgentTools(pluginTools)) ...[
-                      _toolGroupHeader(l10n, view, editable: editable),
-                      if (_expandedGroups.contains(view.group))
-                        for (final tool in view.tools)
-                          TinestCheckboxRow(
-                            key: ValueKey<String>(
-                              'agent-tool-tile-${_keyId(tool.id)}',
-                            ),
-                            value: _tools.contains(tool.id),
-                            onChanged: editable
-                                ? (enabled) => setState(() {
-                                    enabled!
-                                        ? _tools.add(tool.id)
-                                        : _tools.remove(tool.id);
-                                  })
-                                : null,
-                            title: TRText.inherit(tool.name),
-                            subtitle: TRText.inherit(tool.description),
-                          ),
-                    ],
-                  ],
-                ),
-                SettingsSection.form(
-                  title: l10n.agentSettingsPluginSettings,
-                  children: <Widget>[
-                    TRText(
-                      l10n.agentSettingsPluginSettingsDescription,
-                      variant: TRTextVariant.bodySm,
-                      color: TRTextColor.muted,
-                    ),
-                    for (final pluginId in settingsPluginIds)
-                      TRTextField(
-                        key: ValueKey<String>(
-                          'agent-plugin-settings-$pluginId',
-                        ),
-                        controller: _settingsController(pluginId),
-                        enabled: editable,
-                        minLines: 3,
-                        maxLines: 8,
-                        onChanged: (_) => setState(() {}),
-                        helperText: l10n.agentSettingsPluginSettingsRemove,
-                        label: l10n.agentSettingsPluginSettingsLabel(
-                          _pluginLabel(plugins, pluginId),
-                        ),
-                      ),
-                  ],
-                ),
-                _capabilitiesSection(
-                  l10n,
-                  plugins,
-                  referencedPluginIds,
-                  editable: editable,
-                ),
-              ],
-              if (definition.mode == AgentMode.primary)
-                SettingsSection(
-                  title: l10n.agentSettingsSubagents,
-                  children: <Widget>[
-                    if (subagents.isEmpty)
-                      SettingsRow(
-                        title: TRText.inherit(l10n.agentSettingsNoSubagents),
-                      ),
-                    for (final subagent in subagents)
-                      TinestCheckboxRow(
-                        key: ValueKey<String>(
-                          'agent-callable-${subagent.id}',
-                        ),
-                        value: _callableAgents.contains(subagent.id),
-                        onChanged: editable
-                            ? (enabled) => setState(() {
-                                enabled!
-                                    ? _callableAgents.add(subagent.id)
-                                    : _callableAgents.remove(subagent.id);
-                              })
-                            : null,
-                        title: TRText.inherit(subagent.name),
-                        subtitle: TRText.inherit(subagent.description),
-                      ),
-                  ],
-                ),
-              SettingsSection(
-                title: definition.isBuiltIn
-                    ? l10n.agentSettingsReset
-                    : l10n.workspaceArchive,
-                children: <Widget>[
-                  SettingsRow(
-                    title: TRText.inherit(
-                      definition.isBuiltIn
-                          ? l10n.agentSettingsResetBody
-                          : l10n.agentSettingsArchiveBody,
-                    ),
-                    control: TRButton(
-                      key: ValueKey<String>(
-                        definition.isBuiltIn
-                            ? 'agent-reset-button'
-                            : 'agent-archive-button',
-                      ),
-                      appearance: TRAppearance.ghost,
-                      intent: TRIntent.danger,
-                      onPressed: editable
-                          ? definition.isBuiltIn
-                                ? _reset
-                                : _archive
-                          : null,
-                      child: TRText.inherit(
-                        definition.isBuiltIn
-                            ? l10n.agentSettingsReset
-                            : l10n.workspaceArchive,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        TRButton(
+          intent: TRIntent.primary,
+          onPressed: canSave && !harnessBlocked
+              ? () => _save(force: false)
+              : null,
+          child: TRText.inherit(
+            _saving ? l10n.commonSaving : l10n.commonSave,
           ),
         ),
       ],
+      child: SettingsScaffold(
+        key: ValueKey<String>('agent-settings-editor-${definition.id}'),
+        children: <Widget>[
+          SettingsSection.form(
+            title: l10n.agentSettingsDefinitionHeading,
+            banner: definition.diagnostics.isEmpty
+                ? null
+                : TRAlert(
+                    title: TRText.inherit(
+                      definition.diagnostics.first.code,
+                    ),
+                    description: TRText.inherit(
+                      definition.diagnostics
+                          .map((diagnostic) => diagnostic.message)
+                          .join('\n'),
+                    ),
+                    icon: const Icon(TinestIcons.warning),
+                    variant: TRStatusVariant.warning,
+                  ),
+            children: <Widget>[
+              TRTextField(
+                controller: _name,
+                enabled: editable,
+                label: l10n.commonName,
+              ),
+              TRTextField(
+                controller: _description,
+                enabled: editable,
+                label: l10n.commonDescription,
+              ),
+              TRTextField(
+                initialValue: definition.mode.name,
+                enabled: false,
+                label: l10n.commonKind,
+              ),
+            ],
+          ),
+          SettingsSection.form(
+            title: l10n.agentSettingsPromptHeading,
+            children: <Widget>[
+              TRTextField(
+                controller: _prompt,
+                enabled: editable,
+                minLines: 8,
+                maxLines: 18,
+                label: l10n.agentSettingsSystemPrompt,
+              ),
+            ],
+          ),
+          SettingsSection.form(
+            title: l10n.agentSettingsModelHeading,
+            banner: modelUnavailable
+                ? TRAlert(
+                    key: const ValueKey<String>(
+                      'agent-settings-model-unavailable',
+                    ),
+                    title: TRText.inherit(
+                      l10n.modelSettingsUnavailableTitle,
+                    ),
+                    description: TRText.inherit(
+                      l10n.modelSettingsUnavailableDescription(
+                        _modelId.text,
+                      ),
+                    ),
+                    icon: const Icon(TinestIcons.warning),
+                    variant: TRStatusVariant.warning,
+                  )
+                : null,
+            children: <Widget>[
+              TRRadioGroup(
+                value: _modelSource.name,
+                disabled: !editable,
+                onValueChange: (value) => setState(() {
+                  _modelSource = AgentModelSource.values.byName(value);
+                  if (_modelSource == AgentModelSource.fixed &&
+                      _modelId.text.isEmpty) {
+                    _modelId.text = firstModel?.modelId ?? '';
+                  }
+                }),
+                children: <TRRadio>[
+                  TRRadio(
+                    key: const ValueKey<String>(
+                      'agent-settings-model-source-session',
+                    ),
+                    value: AgentModelSource.session.name,
+                    label: TRText.inherit(l10n.agentSettingsSessionModel),
+                  ),
+                  TRRadio(
+                    key: const ValueKey<String>(
+                      'agent-settings-model-source-fixed',
+                    ),
+                    value: AgentModelSource.fixed.name,
+                    label: TRText.inherit(l10n.agentSettingsPinnedModel),
+                  ),
+                ],
+              ),
+              if (_modelSource == AgentModelSource.fixed) ...<Widget>[
+                Semantics(
+                  key: const ValueKey<String>(
+                    'agent-settings-model-selector',
+                  ),
+                  hint: modelBlocked ? l10n.composerConnectProviderFirst : null,
+                  child: SettingsRow(
+                    flush: true,
+                    // A providerless selector remains actionable so the
+                    // product wrapper can explain how to unlock it.
+                    enabled: modelSelectionEnabled || modelBlocked,
+                    title: TRText.inherit(
+                      l10n.agentSettingsModelId,
+                      color: modelBlocked ? TRTextColor.muted : null,
+                    ),
+                    controlLayout: SettingsControlLayout.responsive,
+                    controlOwnsFocus: true,
+                    control: _agentModelSelect(
+                      l10n,
+                      enabled: modelSelectionEnabled,
+                      blocked: modelBlocked,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (plugins == null)
+            SettingsSection(
+              title: l10n.agentSettingsHarnessHeading,
+              children: <Widget>[
+                TRAlert(
+                  key: const ValueKey<String>('agent-plugins-loading'),
+                  title: TRText.inherit(
+                    l10n.agentSettingsPluginsLoading,
+                  ),
+                  description: pluginsState.hasError
+                      ? TRText.inherit('${pluginsState.error}')
+                      : null,
+                  icon: const Icon(TinestIcons.agent),
+                  variant: pluginsState.hasError
+                      ? TRStatusVariant.danger
+                      : TRStatusVariant.info,
+                ),
+              ],
+            )
+          else ...<Widget>[
+            SettingsSection.form(
+              title: l10n.agentSettingsHarnessHeading,
+              banner: harnessDiagnostics.isEmpty
+                  ? null
+                  : TRAlert(
+                      key: const ValueKey<String>(
+                        'agent-harness-diagnostics',
+                      ),
+                      title: TRText.inherit(
+                        l10n.agentSettingsHarnessDiagnostics,
+                      ),
+                      description: TRText.inherit(
+                        harnessDiagnostics
+                            .map((diagnostic) => diagnostic.message)
+                            .join('\n'),
+                      ),
+                      icon: const Icon(TinestIcons.warning),
+                      variant:
+                          harnessDiagnostics.any(
+                            (diagnostic) => diagnostic.blocking,
+                          )
+                          ? TRStatusVariant.danger
+                          : TRStatusVariant.warning,
+                    ),
+              children: <Widget>[
+                TRText(
+                  l10n.agentSettingsHarnessDescription,
+                  variant: TRTextVariant.bodySm,
+                  color: TRTextColor.muted,
+                ),
+                if (drivers.isEmpty)
+                  TRAlert(
+                    title: TRText.inherit(l10n.agentSettingsNoDrivers),
+                    variant: TRStatusVariant.danger,
+                  )
+                else
+                  TRSelect<String>.controlled(
+                    searchable: true,
+                    presentation: TinestSelectPresentation.resolve(
+                      context,
+                    ),
+                    key: const ValueKey<String>('agent-plugin-driver'),
+                    label: l10n.agentSettingsDriver,
+                    value: _driverId.isEmpty ? null : _driverId,
+                    enabled: editable,
+                    items: _driverItems(drivers),
+                    onValueChange: editable
+                        ? (value) {
+                            if (value == null) return;
+                            setState(() => _driverId = value);
+                          }
+                        : null,
+                  ),
+              ],
+            ),
+            SettingsSection(
+              title: l10n.agentSettingsExtensions,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(
+                    l10n.agentSettingsExtensionsDescription,
+                  ),
+                ),
+                for (final entry in _orderedExtensionRows(extensions))
+                  TinestCheckboxRow(
+                    key: ValueKey<String>(
+                      'agent-extension-${_keyId(entry.id)}',
+                    ),
+                    value: entry.selected,
+                    onChanged: editable
+                        ? (enabled) => setState(() {
+                            if (enabled ?? false) {
+                              _extensions.add(entry.id);
+                            } else {
+                              _extensions.remove(entry.id);
+                            }
+                          })
+                        : null,
+                    title: TRText.inherit(entry.label),
+                    subtitle: TRText.inherit(entry.description),
+                    secondary: entry.selected
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              TRIconButton(
+                                key: ValueKey<String>(
+                                  'agent-extension-up-${_keyId(entry.id)}',
+                                ),
+                                appearance: TRAppearance.ghost,
+                                uiSize: TRUiSize.sm,
+                                label: l10n.agentSettingsMoveUp,
+                                onPressed: editable && entry.index > 0
+                                    ? () => _moveExtension(
+                                        entry.index,
+                                        entry.index - 1,
+                                      )
+                                    : null,
+                                icon: const Icon(TinestIcons.collapse),
+                              ),
+                              TRIconButton(
+                                key: ValueKey<String>(
+                                  'agent-extension-down-'
+                                  '${_keyId(entry.id)}',
+                                ),
+                                appearance: TRAppearance.ghost,
+                                uiSize: TRUiSize.sm,
+                                label: l10n.agentSettingsMoveDown,
+                                onPressed:
+                                    editable &&
+                                        entry.index < _extensions.length - 1
+                                    ? () => _moveExtension(
+                                        entry.index,
+                                        entry.index + 1,
+                                      )
+                                    : null,
+                                icon: const Icon(TinestIcons.expand),
+                              ),
+                            ],
+                          )
+                        : null,
+                  ),
+              ],
+            ),
+            SettingsSection(
+              title: l10n.agentSettingsPluginTools,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(
+                    l10n.agentSettingsPluginToolsDescription,
+                  ),
+                ),
+                for (final view in groupAgentTools(pluginTools)) ...[
+                  _toolGroupHeader(l10n, view, editable: editable),
+                  if (_expandedGroups.contains(view.group))
+                    for (final tool in view.tools)
+                      TinestCheckboxRow(
+                        key: ValueKey<String>(
+                          'agent-tool-tile-${_keyId(tool.id)}',
+                        ),
+                        value: _tools.contains(tool.id),
+                        onChanged: editable
+                            ? (enabled) => setState(() {
+                                enabled!
+                                    ? _tools.add(tool.id)
+                                    : _tools.remove(tool.id);
+                              })
+                            : null,
+                        title: TRText.inherit(tool.name),
+                        subtitle: TRText.inherit(tool.description),
+                      ),
+                ],
+              ],
+            ),
+            SettingsSection.form(
+              title: l10n.agentSettingsPluginSettings,
+              children: <Widget>[
+                TRText(
+                  l10n.agentSettingsPluginSettingsDescription,
+                  variant: TRTextVariant.bodySm,
+                  color: TRTextColor.muted,
+                ),
+                for (final pluginId in settingsPluginIds)
+                  TRTextField(
+                    key: ValueKey<String>(
+                      'agent-plugin-settings-$pluginId',
+                    ),
+                    controller: _settingsController(pluginId),
+                    enabled: editable,
+                    minLines: 3,
+                    maxLines: 8,
+                    onChanged: (_) => setState(() {}),
+                    helperText: l10n.agentSettingsPluginSettingsRemove,
+                    label: l10n.agentSettingsPluginSettingsLabel(
+                      _pluginLabel(plugins, pluginId),
+                    ),
+                  ),
+              ],
+            ),
+            _capabilitiesSection(
+              l10n,
+              plugins,
+              referencedPluginIds,
+              editable: editable,
+            ),
+          ],
+          if (definition.mode == AgentMode.primary)
+            SettingsSection(
+              title: l10n.agentSettingsSubagents,
+              children: <Widget>[
+                if (subagents.isEmpty)
+                  SettingsRow(
+                    title: TRText.inherit(l10n.agentSettingsNoSubagents),
+                  ),
+                for (final subagent in subagents)
+                  TinestCheckboxRow(
+                    key: ValueKey<String>(
+                      'agent-callable-${subagent.id}',
+                    ),
+                    value: _callableAgents.contains(subagent.id),
+                    onChanged: editable
+                        ? (enabled) => setState(() {
+                            enabled!
+                                ? _callableAgents.add(subagent.id)
+                                : _callableAgents.remove(subagent.id);
+                          })
+                        : null,
+                    title: TRText.inherit(subagent.name),
+                    subtitle: TRText.inherit(subagent.description),
+                  ),
+              ],
+            ),
+          SettingsSection(
+            title: definition.isBuiltIn
+                ? l10n.agentSettingsReset
+                : l10n.workspaceArchive,
+            children: <Widget>[
+              SettingsRow(
+                title: TRText.inherit(
+                  definition.isBuiltIn
+                      ? l10n.agentSettingsResetBody
+                      : l10n.agentSettingsArchiveBody,
+                ),
+                control: TRButton(
+                  key: ValueKey<String>(
+                    definition.isBuiltIn
+                        ? 'agent-reset-button'
+                        : 'agent-archive-button',
+                  ),
+                  appearance: TRAppearance.ghost,
+                  intent: TRIntent.danger,
+                  onPressed: editable
+                      ? definition.isBuiltIn
+                            ? _reset
+                            : _archive
+                      : null,
+                  child: TRText.inherit(
+                    definition.isBuiltIn
+                        ? l10n.agentSettingsReset
+                        : l10n.workspaceArchive,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1687,83 +1669,76 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: <Widget>[
-        TRPaneHeader(
-          title: TRText.inherit(l10n.agentSettingsAddTitle),
-          contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
-            TRButton(
-              appearance: TRAppearance.ghost,
-              onPressed: _saving ? null : widget.onCancel,
-              child: TRText.inherit(l10n.commonCancel),
-            ),
-            TRButton(
-              intent: TRIntent.primary,
-              onPressed: _valid && !_saving ? _submit : null,
-              child: TRText.inherit(
-                _saving ? l10n.commonCreating : l10n.commonCreate,
-              ),
-            ),
-          ],
+    return SettingsDestinationScaffold(
+      title: TRText.inherit(l10n.agentSettingsAddTitle),
+      contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+      actions: <Widget>[
+        TRButton(
+          appearance: TRAppearance.ghost,
+          onPressed: _saving ? null : widget.onCancel,
+          child: TRText.inherit(l10n.commonCancel),
         ),
-        Expanded(
-          child: SettingsScaffold(
-            children: <Widget>[
-              SettingsSection.form(
-                children: <Widget>[
-                  TRTextField(
-                    controller: _id,
-                    autofocus: true,
-                    enabled: !_saving,
-                    onChanged: (_) => setState(() => _error = null),
-                    label: l10n.agentSettingsIdLabel,
-                    // An ID becomes a file name, so the example stays a
-                    // literal identifier in every language.
-                    placeholder: 'reviewer',
-                    errorText: _idError(l10n),
-                  ),
-                  TRTextField(
-                    controller: _name,
-                    enabled: !_saving,
-                    onChanged: (_) => setState(() => _error = null),
-                    label: l10n.commonName,
-                    errorText:
-                        _name.text.isEmpty || _name.text.trim().isNotEmpty
-                        ? null
-                        : l10n.agentSettingsNameRequired,
-                  ),
-                  TRSelectFormField<AgentMode>(
-                    initialValue: _mode,
-                    searchable: true,
-                    searchPlaceholder: l10n.selectSearchPlaceholder,
-                    noResultsText: l10n.selectNoResults,
-                    presentation: TinestSelectPresentation.resolve(context),
-                    label: l10n.commonKind,
-                    width: TinestLayoutMetrics.settingsContentMaxWidth,
-                    items: AgentMode.values
-                        .map(
-                          (value) => TRSelectItem<AgentMode>(
-                            value: value,
-                            label: value.name,
-                          ),
-                        )
-                        .toList(growable: false),
-                    onValueChange: _saving
-                        ? null
-                        : (value) => setState(() => _mode = value!),
-                  ),
-                  if (_error case final error?)
-                    TRAlert(
-                      variant: TRStatusVariant.danger,
-                      title: TRText.inherit('$error'),
-                    ),
-                ],
-              ),
-            ],
+        TRButton(
+          intent: TRIntent.primary,
+          onPressed: _valid && !_saving ? _submit : null,
+          child: TRText.inherit(
+            _saving ? l10n.commonCreating : l10n.commonCreate,
           ),
         ),
       ],
+      child: SettingsScaffold(
+        children: <Widget>[
+          SettingsSection.form(
+            children: <Widget>[
+              TRTextField(
+                controller: _id,
+                autofocus: true,
+                enabled: !_saving,
+                onChanged: (_) => setState(() => _error = null),
+                label: l10n.agentSettingsIdLabel,
+                // An ID becomes a file name, so the example stays a
+                // literal identifier in every language.
+                placeholder: 'reviewer',
+                errorText: _idError(l10n),
+              ),
+              TRTextField(
+                controller: _name,
+                enabled: !_saving,
+                onChanged: (_) => setState(() => _error = null),
+                label: l10n.commonName,
+                errorText: _name.text.isEmpty || _name.text.trim().isNotEmpty
+                    ? null
+                    : l10n.agentSettingsNameRequired,
+              ),
+              TRSelectFormField<AgentMode>(
+                initialValue: _mode,
+                searchable: true,
+                searchPlaceholder: l10n.selectSearchPlaceholder,
+                noResultsText: l10n.selectNoResults,
+                presentation: TinestSelectPresentation.resolve(context),
+                label: l10n.commonKind,
+                width: TinestLayoutMetrics.settingsContentMaxWidth,
+                items: AgentMode.values
+                    .map(
+                      (value) => TRSelectItem<AgentMode>(
+                        value: value,
+                        label: value.name,
+                      ),
+                    )
+                    .toList(growable: false),
+                onValueChange: _saving
+                    ? null
+                    : (value) => setState(() => _mode = value!),
+              ),
+              if (_error case final error?)
+                TRAlert(
+                  variant: TRStatusVariant.danger,
+                  title: TRText.inherit('$error'),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
