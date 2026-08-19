@@ -104,8 +104,8 @@ class AgentPluginUiSlot extends ConsumerWidget {
 /// translates. Anything else came from this app, so it is wrapped without a
 /// code, which makes the alert fall back to the original text rather than
 /// claiming a daemon fault the daemon never reported.
-TinestClientException _clientError(Object error) => error
-        is TinestClientException
+TinestClientException _clientError(Object error) =>
+    error is TinestClientException
     ? error
     : TinestClientException(error is Error ? '$error' : error.toString());
 

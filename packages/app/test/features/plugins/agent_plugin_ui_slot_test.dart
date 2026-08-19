@@ -229,27 +229,29 @@ void main() {
         contentHash: 'agent-hash',
         sourcePath: '/config/v5/agents/custom-agent.md',
       );
-      final api = FakeTinestApi(
-        agentDefinitions: const <AgentDefinitionDto>[agent],
-        plugins: const <PluginDescriptorDto>[
-          PluginDescriptorDto(
-            apiMajor: 5,
-            id: 'example.controls',
-            version: '1.0.0',
-            name: 'Controls',
-            entrypoint: 'main.lua',
-            source: PluginSource.user,
-            sourcePath: '/config/v5/plugins/example.controls',
-            requestedCapabilities: <String>[],
-            contributions: <PluginContributionDto>[contribution],
-          ),
-        ],
-      )..pluginUiRenderFailure = const TinestClientException(
-        'Agent custom-agent has no active revision for plugin '
-        'example.controls.',
-        code: RpcErrorCodes.pluginUiRejected,
-        details: <String, dynamic>{'traceId': 'trace-42'},
-      );
+      final api =
+          FakeTinestApi(
+              agentDefinitions: const <AgentDefinitionDto>[agent],
+              plugins: const <PluginDescriptorDto>[
+                PluginDescriptorDto(
+                  apiMajor: 5,
+                  id: 'example.controls',
+                  version: '1.0.0',
+                  name: 'Controls',
+                  entrypoint: 'main.lua',
+                  source: PluginSource.user,
+                  sourcePath: '/config/v5/plugins/example.controls',
+                  requestedCapabilities: <String>[],
+                  contributions: <PluginContributionDto>[contribution],
+                ),
+              ],
+            )
+            ..pluginUiRenderFailure = const TinestClientException(
+              'Agent custom-agent has no active revision for plugin '
+              'example.controls.',
+              code: RpcErrorCodes.pluginUiRejected,
+              details: <String, dynamic>{'traceId': 'trace-42'},
+            );
 
       await tester.pumpWidget(
         ProviderScope(
