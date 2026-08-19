@@ -1201,10 +1201,10 @@ void main() {
       );
       expect(find.byKey(composer), findsNothing);
       // Subagents never surface in the all-sessions menu.
-      await tester.tap(
-        find
-            .byKey(const ValueKey<String>('workspace-all-sessions-menu'))
-            .hitTestable(),
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey<String>('workspace-all-sessions-menu')),
+        'the all-sessions menu',
       );
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TRMenuItem, 'review_task'), findsNothing);
@@ -1861,8 +1861,7 @@ void main() {
       final allSessionsMenu = find.byKey(
         const ValueKey<String>('workspace-all-sessions-menu'),
       );
-      await pumpUntil(tester, allSessionsMenu);
-      await tester.tap(allSessionsMenu);
+      await tapVisible(tester, allSessionsMenu, 'the all-sessions menu');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delegate review').last);
       await pumpUntil(
