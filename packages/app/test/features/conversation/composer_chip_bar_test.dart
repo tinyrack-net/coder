@@ -44,6 +44,70 @@ void main() {
   );
 
   testWidgets(
+    'a wide bar gives each control its own label width up to the cap',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      const longModel = 'Claude Opus 4.6 (extended thinking, 1M context)';
+      await _pump(
+        tester,
+        width: 1024,
+        children: _controls(model: longModel),
+      );
+
+      final agent = tester.getSize(find.byKey(_agentKey)).width;
+      final model = tester.getSize(find.byKey(_modelKey)).width;
+      expect(
+        agent,
+        lessThan(TRMeasurements.measureMd),
+        reason: 'a short label never claims a share of the leftover row',
+      );
+      expect(
+        model,
+        TRMeasurements.measureMd,
+        reason: 'a label past the cap stops at the cap instead of growing',
+      );
+      expect(
+        model,
+        lessThan(_naturalWidth(tester, longModel)),
+        reason: 'the capped label is still truncated',
+      );
+      expect(
+        agent,
+        lessThan(model),
+        reason: 'controls are sized by their own label, not by an equal share',
+      );
+    },
+  );
+
+  testWidgets(
+    'short controls leave the rest of the wide bar empty',
+    tags: const <String>['feature_test__session_lifecycle__widget'],
+    (tester) async {
+      await _pump(
+        tester,
+        width: 1024,
+        children: _controls(model: 'Sonnet 4.6'),
+      );
+
+      final used =
+          tester.getSize(find.byKey(_agentKey)).width +
+          tester.getSize(find.byKey(_modelKey)).width +
+          tester.getSize(find.byKey(_modeKey)).width +
+          TRSpacing.extraSmall * 2;
+      expect(
+        used,
+        lessThan(TRMeasurements.measureMd * 3),
+        reason: 'three short labels never fill a 1024 wide row',
+      );
+      expect(
+        tester.getTopRight(find.byKey(_modeKey)).dx,
+        lessThan(1024),
+        reason: 'the row stops where its content stops',
+      );
+    },
+  );
+
+  testWidgets(
     'the row is built at the size it is given',
     tags: const <String>['feature_test__session_lifecycle__widget'],
     (tester) async {
@@ -104,7 +168,6 @@ List<Widget> _controls({required String model}) => <Widget>[
     value: 'agent',
     appearance: TRFieldAppearance.ghost,
     uiSize: TRUiSize.sm,
-    width: TRMeasurements.measureXl,
     leading: const Icon(TinestIcons.agent),
     searchable: true,
     items: const <TRSelectItem<String>>[
@@ -117,7 +180,6 @@ List<Widget> _controls({required String model}) => <Widget>[
     value: model,
     appearance: TRFieldAppearance.ghost,
     uiSize: TRUiSize.sm,
-    width: TRMeasurements.measureXl,
     leading: const Icon(TinestIcons.memory),
     searchable: true,
     items: <TRSelectItem<String>>[
