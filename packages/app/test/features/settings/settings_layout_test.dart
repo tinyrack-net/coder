@@ -214,8 +214,10 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(
         _host(
+          // Below the split, where the detail covers the collection and Back
+          // therefore returns to it.
           TRAdaptiveLayoutScope(
-            widthClass: TRAdaptiveWidthClass.large,
+            widthClass: TRAdaptiveWidthClass.expanded,
             child: SettingsListDetailHost(
               coordinator: controller,
               collection: const TRText.inherit('Collection'),
@@ -237,6 +239,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.selection, isNull);
       expect(controller.hasDetail, isFalse);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'a split detail does not consume Back, since it hides nothing',
+    (tester) async {
+      final controller = SettingsPaneController<String>();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _host(
+          TRAdaptiveLayoutScope(
+            widthClass: TRAdaptiveWidthClass.large,
+            child: SettingsListDetailHost(
+              coordinator: controller,
+              collection: const TRText.inherit('Collection'),
+              detail: const TRText.inherit('Detail'),
+            ),
+          ),
+        ),
+      );
+
+      controller.showDetail('A');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      // Back belongs to whatever encloses Settings: the collection is already
+      // on screen next to the detail, so there is nothing here to return to.
+      expect(controller.selection, 'A');
+      expect(controller.hasDetail, isTrue);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );

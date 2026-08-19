@@ -961,12 +961,10 @@ void main() {
         expectedContentHash: tinestDefinition.contentHash,
       );
 
-      final settingsBack = find.byKey(
-        const ValueKey<String>('settings-back-button'),
+      // Settings has no parent on a desktop window: one press leaves it.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
       );
-      await tester.tap(settingsBack);
-      await tester.pumpAndSettle();
-      await tester.tap(settingsBack);
       await pumpUntil(tester, find.text('E2E Workspace'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('E2E Workspace').last);

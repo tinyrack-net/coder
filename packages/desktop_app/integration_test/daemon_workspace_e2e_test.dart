@@ -92,16 +92,10 @@ void main() {
         fixture.token,
       );
 
-      final settingsBack = find.byKey(
-        const ValueKey<String>('settings-back-button'),
+      // Settings has no parent on a desktop window: one press leaves it.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
       );
-      await tester.tap(settingsBack);
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('workspace-new-button')),
-        findsNothing,
-      );
-      await tester.tap(settingsBack);
       await _pumpUntil(
         tester,
         find.byKey(const ValueKey('workspace-new-button')),

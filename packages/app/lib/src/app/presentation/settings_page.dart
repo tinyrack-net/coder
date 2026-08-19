@@ -76,6 +76,25 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
           ? SettingsCategory.general
           : SettingsCategory.provider);
 
+  /// The category a route configuration puts on screen, or null when it is a
+  /// navigation screen rather than a category.
+  ///
+  /// Compact keeps `settings-home` and `settings-daemon-categories` as their
+  /// own screens. Wider layouts already show every category in the sidebar, so
+  /// those two routes render General and Provider instead. Local pane state
+  /// must follow what is rendered, not what the URL says.
+  static SettingsCategory? _renderedCategory(
+    SettingsCategory? category,
+    String? hostId, {
+    required bool compact,
+  }) {
+    if (category != null) return category;
+    if (compact) return null;
+    return hostId == null
+        ? SettingsCategory.general
+        : SettingsCategory.provider;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -106,8 +125,26 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
   @override
   void didUpdateWidget(UnifiedSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.category != widget.category ||
-        oldWidget.hostId != widget.hostId ||
+    // Two URLs can render the same category with the same daemon: the sidebar
+    // drops `host-id` in favour of the persisted daemon, and a wide layout
+    // renders `settings-daemon-categories` as Provider. Resetting on the raw
+    // route identity would throw away the user's selection on those moves, and
+    // re-arm the one-shot initial selection so the collection reopens its first
+    // item instead.
+    final compact =
+        settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact;
+    final activeHostId = ref.read(activeHostIdProvider);
+    if (_renderedCategory(
+              oldWidget.category,
+              oldWidget.hostId,
+              compact: compact,
+            ) !=
+            _renderedCategory(
+              widget.category,
+              widget.hostId,
+              compact: compact,
+            ) ||
+        (oldWidget.hostId ?? activeHostId) != (widget.hostId ?? activeHostId) ||
         oldWidget.workspaceId != widget.workspaceId) {
       for (final controller in _paneControllers.values) {
         controller.reset();
@@ -379,10 +416,24 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     ),
   );
 
+  /// Up: the enclosing destination of what is on screen.
+  ///
+  /// A detail is only a destination of its own while it covers its collection.
+  /// Above that width both panes are already visible, and the sidebar keeps
+  /// every category one click away, so Settings has nothing above it but the
+  /// screen it was opened from. Only compact hides that structure behind the
+  /// `settings-home` and `settings-daemon-categories` screens, so only compact
+  /// walks up through them.
   void _goBack() {
+    final widthClass = settingsAdaptiveWidthClassOf(context);
     final controller = _paneControllers[_effectiveCategory];
-    if (controller?.hasDetail ?? false) {
+    if (!settingsListDetailIsSplit(widthClass) &&
+        (controller?.hasDetail ?? false)) {
       controller!.showCollection();
+      return;
+    }
+    if (widthClass != TRAdaptiveWidthClass.compact) {
+      _closeSettings();
       return;
     }
     final category = widget.category;
@@ -408,8 +459,16 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
       );
       return;
     }
-    closeTask(context, () => const WorkspaceHomeRoute().go(context));
+    _closeSettings();
   }
+
+  /// Leaves the settings task, or goes home when it was deep-linked into.
+  ///
+  /// One press per page: compact pushes categories, so a window widened
+  /// mid-task can still hold pages the user pushed while it was narrow, and
+  /// each of those is popped on its own press.
+  void _closeSettings() =>
+      closeTask(context, () => const WorkspaceHomeRoute().go(context));
 
   void _scheduleRouteHostAdoption(HostRegistryState? registry) {
     final requested = widget.hostId;

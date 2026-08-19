@@ -69,6 +69,42 @@ void main() {
     agents: sessions,
   );
 
+  /// Two connections, so a chosen detail is distinguishable from the one the
+  /// wide layout selects on entry.
+  FakeTinestApi apiWithProviders() => FakeTinestApi(
+    workspaces: <WorkspaceDto>[workspace],
+    worktrees: <WorktreeDto>[worktree],
+    connections: <ProviderConnectionDto>[
+      ProviderConnectionDto(
+        id: 'openai',
+        definitionId: 'openai',
+        displayName: 'OpenAI',
+        status: ProviderConnectionStatus.connected,
+        authKind: ProviderAuthKind.apiKey,
+        credentialOrigin: ProviderCredentialOrigin.stored,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ProviderConnectionDto(
+        id: 'deepseek',
+        definitionId: 'deepseek',
+        displayName: 'DeepSeek',
+        status: ProviderConnectionStatus.connected,
+        authKind: ProviderAuthKind.apiKey,
+        credentialOrigin: ProviderCredentialOrigin.stored,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ],
+  );
+
+  Future<void> useWidth(WidgetTester tester, double width) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = Size(width, 900);
+    addTearDown(tester.view.reset);
+  }
+
   Future<void> useDesktop(WidgetTester tester) async {
     tester.view
       ..devicePixelRatio = 1
@@ -332,7 +368,7 @@ void main() {
   );
 
   testWidgets(
-    'settings system Back returns to worktree while Up follows hierarchy',
+    'wide settings Back and Up both return to the worktree in one press',
     (tester) async {
       await useDesktop(tester);
       final router = await pumpRoutedApp(
@@ -352,13 +388,8 @@ void main() {
       );
       expect(router.canPop(), isTrue);
 
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(
-        currentLocation(router),
-        const ProviderSettingsRoute(hostId: 'server').location,
-      );
-
+      // The split detail sits beside its collection, so neither verb spends a
+      // press closing it.
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(currentLocation(router), worktreeLocation);
@@ -371,19 +402,7 @@ void main() {
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(
-        currentLocation(router),
-        const ProviderSettingsRoute(hostId: 'server').location,
-      );
-
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-back-button')),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        currentLocation(router),
-        const DaemonCategoriesRoute(hostId: 'server').location,
-      );
+      expect(currentLocation(router), worktreeLocation);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
@@ -408,7 +427,7 @@ void main() {
   );
 
   testWidgets(
-    'settings Up on a deep link replaces it with its logical parent',
+    'settings Up on a wide deep link closes to the workspace home',
     (tester) async {
       await useDesktop(tester);
       final router = await pumpRoutedApp(
@@ -422,13 +441,13 @@ void main() {
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(currentLocation(router), const SettingsHomeRoute().location);
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
 
   testWidgets(
-    'daemon categories Up closes its wide provider detail before settings home',
+    'wide daemon categories Up leaves without stepping through its detail',
     (tester) async {
       await useDesktop(tester);
       const route = DaemonCategoriesRoute(hostId: 'server');
@@ -439,29 +458,18 @@ void main() {
       );
       addTearDown(router.dispose);
 
+      // Wide daemon categories render the Provider category, which selects its
+      // first connection on entry.
       expect(
         find.byKey(const ValueKey<String>('provider-detail-openai')),
         findsOneWidget,
       );
-      final up = find.byKey(
-        const ValueKey<String>('settings-back-button'),
-      );
-      await tester.tap(up);
-      await tester.pumpAndSettle();
 
-      expect(currentLocation(router), route.location);
-      expect(
-        find.byKey(const ValueKey<String>('provider-detail-openai')),
-        findsNothing,
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
       );
-      expect(
-        find.byKey(const ValueKey<String>('provider-connection-openai')),
-        findsOneWidget,
-      );
-
-      await tester.tap(up);
       await tester.pumpAndSettle();
-      expect(currentLocation(router), const SettingsHomeRoute().location);
+      expect(currentLocation(router), const WorkspaceHomeRoute().location);
     },
     tags: const <String>['feature_test__app_navigation__widget'],
   );
@@ -488,19 +496,185 @@ void main() {
       expect(currentLocation(router), const ProjectSettingsRoute().location);
       expect(router.canPop(), isTrue);
 
+      // Lateral moves replaced the settings page rather than stacking, so the
+      // worktree is still directly beneath however many categories were open.
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(currentLocation(router), const ProjectSettingsRoute().location);
+      expect(currentLocation(router), worktreeLocation);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
 
+  testWidgets(
+    'desktop settings Up closes the task in one press',
+    (tester) async {
+      await useDesktop(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: worktreeLocation,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        currentLocation(router),
+        const ProviderSettingsRoute(hostId: 'server').location,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), worktreeLocation);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'settings Up below the split width closes the detail before the task',
+    (tester) async {
+      // One pixel below the large break, so this also pins the shell and the
+      // list-detail host to the same split predicate.
+      await useWidth(tester, 1199);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: worktreeLocation,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      final settingsLocation = const ProviderSettingsRoute(
+        hostId: 'server',
+      ).location;
+      expect(currentLocation(router), settingsLocation);
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsNothing,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connection-openai')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), settingsLocation);
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-openai')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), worktreeLocation);
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'reaching the same wide category by another route keeps the selection',
+    (tester) async {
+      await useDesktop(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWithProviders(),
+        initialLocation: const DaemonCategoriesRoute(hostId: 'server').location,
+      );
+      addTearDown(router.dispose);
+
+      // Wide daemon categories render the Provider category, which selects its
+      // first connection once.
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-openai')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connection-deepseek')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-deepseek')),
+        findsOneWidget,
+      );
+
+      // The sidebar navigates without `host-id`, leaning on the persisted
+      // daemon, so the URL changes while the rendered category does not.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-category-row-provider')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(currentLocation(router), const ProviderSettingsRoute().location);
+      expect(
+        find.byKey(const ValueKey<String>('provider-detail-deepseek')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__app_navigation__widget'],
+  );
+
+  testWidgets(
+    'a settings stack pushed while compact survives the window widening',
+    (tester) async {
+      await useMobile(tester);
+      final router = await pumpRoutedApp(
+        tester,
+        apiWith(<SessionDto>[session('session', 'Route session')]),
+        initialLocation: worktreeLocation,
+      );
+      addTearDown(router.dispose);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('workspace-settings-button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-category-row-general')),
+      );
+      await tester.pumpAndSettle();
+      expect(currentLocation(router), const GeneralSettingsRoute().location);
+
+      await useDesktop(tester);
+      await tester.pumpAndSettle();
+
+      // Widening does not discard what compact pushed, so the page it was
+      // pushed from is still a destination and costs its own press.
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
       expect(currentLocation(router), const SettingsHomeRoute().location);
 
-      await tester.binding.handlePopRoute();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('settings-back-button')),
+      );
       await tester.pumpAndSettle();
       expect(currentLocation(router), worktreeLocation);
     },
@@ -774,12 +948,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(currentLocation(router), const GeneralSettingsRoute().location);
       expect(find.byType(Navigator), findsNWidgets(2));
-
-      await tester.tap(
-        find.byKey(const ValueKey<String>('settings-back-button')),
-      );
-      await tester.pumpAndSettle();
-      expect(currentLocation(router), const SettingsHomeRoute().location);
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
