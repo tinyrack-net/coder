@@ -2,6 +2,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/plugins/presentation/agent_plugin_session_controls.dart';
 import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
 import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
+import 'package:client/client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -197,6 +198,91 @@ void main() {
 
       expect(api.pluginUiRenders, isEmpty);
       expect(find.byType(PluginUiDocumentView), findsNothing);
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a rejected render is translated and keeps its trace id',
+    (tester) async {
+      const contribution = PluginContributionDto(
+        pluginId: 'example.controls',
+        id: 'status',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['conversationStatus'],
+        },
+      );
+      const agent = AgentDefinitionDto(
+        version: 5,
+        id: 'custom-agent',
+        name: 'Custom Agent',
+        description: 'Plugin controlled',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.controls'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'agent-hash',
+        sourcePath: '/config/v5/agents/custom-agent.md',
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[agent],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.controls',
+            version: '1.0.0',
+            name: 'Controls',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.controls',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[contribution],
+          ),
+        ],
+      )..pluginUiRenderFailure = const TinestClientException(
+        'Agent custom-agent has no active revision for plugin '
+        'example.controls.',
+        code: RpcErrorCodes.pluginUiRejected,
+        details: <String, dynamic>{'traceId': 'trace-42'},
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: const Scaffold(
+              body: AgentPluginUiSlot(
+                hostId: 'server',
+                agent: agent,
+                slot: PluginUiSlot.conversationStatus,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The user reads the translated reason, never the raw exception; the
+      // trace id stays so a bug report still points at the daemon log record.
+      expect(find.text(testL10n.pluginUiLoadFailed), findsOneWidget);
+      expect(find.text(testL10n.errorPluginUiRejected), findsOneWidget);
+      expect(find.textContaining('traceId: trace-42'), findsOneWidget);
+      expect(find.textContaining('TinestClientException'), findsNothing);
+      expect(
+        find.widgetWithText(TRButton, testL10n.commonRetry),
+        findsOneWidget,
+      );
     },
     tags: const <String>['feature_test__plugin_ui__widget'],
   );

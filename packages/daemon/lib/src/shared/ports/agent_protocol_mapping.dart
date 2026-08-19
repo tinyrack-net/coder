@@ -41,9 +41,6 @@ AgentModelCapabilities agentCapabilities(ModelCapabilitiesDto value) =>
       functionTools: AgentCapabilitySupport.values.byName(
         value.functionTools.name,
       ),
-      freeformTools: AgentCapabilitySupport.values.byName(
-        value.freeformTools.name,
-      ),
       deferredTools: AgentCapabilitySupport.values.byName(
         value.deferredTools.name,
       ),
@@ -60,7 +57,6 @@ ModelCapabilitiesDto protocolCapabilities(AgentModelCapabilities value) =>
       streaming: CapabilitySupport.values.byName(value.streaming.name),
       toolCalling: CapabilitySupport.values.byName(value.toolCalling.name),
       functionTools: CapabilitySupport.values.byName(value.functionTools.name),
-      freeformTools: CapabilitySupport.values.byName(value.freeformTools.name),
       deferredTools: CapabilitySupport.values.byName(value.deferredTools.name),
       imageInput: CapabilitySupport.values.byName(value.imageInput.name),
       fileInput: CapabilitySupport.values.byName(value.fileInput.name),

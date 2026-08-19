@@ -998,7 +998,6 @@ final class ProviderConnectionService
           streaming: CapabilitySupport.supported,
           toolCalling: CapabilitySupport.supported,
           functionTools: CapabilitySupport.supported,
-          freeformTools: CapabilitySupport.unsupported,
           deferredTools: CapabilitySupport.unsupported,
           controls: model.controls,
           source: CapabilitySource.manual,

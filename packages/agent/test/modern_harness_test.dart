@@ -24,7 +24,7 @@ void main() {
     );
   });
 
-  test('modern tool specs distinguish function and freeform tools', () {
+  test('modern tool specs distinguish function, namespace, and deferred', () {
     const function = ModelFunctionToolDefinition(
       name: 'read_file',
       description: 'Read a file.',
@@ -32,21 +32,10 @@ void main() {
       outputSchema: <String, dynamic>{'type': 'object'},
       supportsParallelToolCalls: true,
     );
-    const freeform = ModelFreeformToolDefinition(
-      name: 'apply_patch',
-      description: 'Apply a patch.',
-      format: ModelFreeformToolFormat(
-        type: 'grammar',
-        syntax: 'lark',
-        definition: 'start: patch',
-      ),
-    );
 
     expect(function.kind, ModelToolKind.function);
     expect(function.outputSchema, <String, dynamic>{'type': 'object'});
     expect(function.supportsParallelToolCalls, isTrue);
-    expect(freeform.kind, ModelToolKind.freeform);
-    expect(freeform.format?.syntax, 'lark');
 
     const namespace = ModelNamespaceToolDefinition(
       name: 'clock',
@@ -65,51 +54,34 @@ void main() {
     expect(deferred.execution, 'client');
   });
 
-  test('modern typed call inputs reject legacy and unknown shapes', () {
-    final json = ToolCallInput.fromJson(<String, dynamic>{
-      'type': 'json',
-      'value': <String, dynamic>{'path': 'README.md'},
-    });
-    final freeform = ToolCallInput.fromJson(<String, dynamic>{
-      'type': 'freeform',
-      'value': 'return tools.read_file({path="README.md"})',
-    });
-    expect(json.toJson()['type'], 'json');
-    expect(freeform.toJson()['type'], 'freeform');
-    expect(
-      () => ToolCallInput.fromJson(<String, dynamic>{'type': 'legacy'}),
-      throwsFormatException,
-    );
-
-    const raw = ModelFreeformCall(
+  test('every model call kind exposes plain JSON arguments', () {
+    const call = ModelFunctionCall(
       callId: 'raw',
       name: 'exec',
-      rawInput: 'text("ok")',
+      arguments: <String, dynamic>{'source': 'text("ok")'},
     );
     const search = ModelDeferredSearchCall(
       callId: 'search',
       name: 'discover_tools',
       arguments: <String, dynamic>{'query': 'clock'},
     );
-    expect((raw.input as FreeformToolCallInput).value, 'text("ok")');
-    expect((search.input as JsonToolCallInput).value['query'], 'clock');
+    expect(call.arguments['source'], 'text("ok")');
+    expect(search.arguments['query'], 'clock');
   });
 
-  test('tool calls preserve raw freeform input without a JSON adapter', () {
-    const call = ConversationToolCall.freeform(
+  test('tool calls persist their arguments without an input envelope', () {
+    const call = ConversationToolCall.function(
       callId: 'call-1',
       name: 'apply_patch',
-      input: '*** Begin Patch\n*** End Patch',
+      arguments: <String, dynamic>{'patch': '*** Begin Patch\n*** End Patch'},
     );
 
-    expect(call.input, isA<FreeformToolCallInput>());
     expect(call.toJson(), <String, dynamic>{
       'callId': 'call-1',
       'name': 'apply_patch',
-      'kind': 'freeform',
-      'input': <String, dynamic>{
-        'type': 'freeform',
-        'value': '*** Begin Patch\n*** End Patch',
+      'kind': 'function',
+      'arguments': <String, dynamic>{
+        'patch': '*** Begin Patch\n*** End Patch',
       },
     });
   });
@@ -128,20 +100,15 @@ void main() {
         name: 'discover_tools',
         arguments: <String, dynamic>{'query': marker},
       ),
-      ConversationToolCall.freeform(
-        callId: 'freeform-$marker',
-        name: 'exec',
-        input: marker,
-      ),
     ];
 
     final restored = calls
         .map((call) => ConversationToolCall.fromJson(call.toJson()))
         .toList(growable: false);
     expect(restored[0].namespace, 'time');
-    expect((restored[0].input as JsonToolCallInput).value['zone'], marker);
+    expect(restored[0].arguments['zone'], marker);
     expect(restored[1].kind, ModelToolKind.deferredSearch);
-    expect((restored[2].input as FreeformToolCallInput).value, marker);
+    expect(restored[1].arguments['query'], marker);
   });
 
   test(
@@ -233,11 +200,7 @@ void main() {
     expect(request.forceToolName, 'clock');
     expect((events[0] as ModelTextDelta).delta, marker);
     expect((events[1] as ModelReasoningDelta).delta, marker);
-    expect(
-      ((events[2] as ModelFunctionCall).input as JsonToolCallInput)
-          .value['zone'],
-      marker,
-    );
+    expect((events[2] as ModelFunctionCall).arguments['zone'], marker);
     expect((events[3] as ModelResponseCompleted).usage.totalTokens, 3);
   });
 

@@ -3109,19 +3109,19 @@ final class _PatchProvider implements ModelGateway {
           '*** Add File: result.txt\n'
           '+done\n'
           '*** End Patch';
-      yield const ModelFreeformCall(
+      yield const ModelFunctionCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        rawInput: patch,
+        arguments: <String, dynamic>{'patch': patch},
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.freeform(
+            ConversationToolCall.function(
               callId: 'patch-call',
               name: 'apply_patch',
-              input: patch,
+              arguments: <String, dynamic>{'patch': patch},
             ),
           ],
         ),
@@ -3283,19 +3283,19 @@ final class _AgentE2eProvider implements ModelGateway {
             '*** Add File: review.txt\n'
             '+reviewed\n'
             '*** End Patch';
-        yield const ModelFreeformCall(
+        yield const ModelFunctionCall(
           callId: 'review-patch-call',
           name: 'apply_patch',
-          rawInput: patch,
+          arguments: <String, dynamic>{'patch': patch},
         );
         yield const ModelResponseCompleted(
           assistant: AssistantConversationItem(
             text: '',
             toolCalls: <ConversationToolCall>[
-              ConversationToolCall.freeform(
+              ConversationToolCall.function(
                 callId: 'review-patch-call',
                 name: 'apply_patch',
-                input: patch,
+                arguments: <String, dynamic>{'patch': patch},
               ),
             ],
           ),
@@ -3776,19 +3776,19 @@ final class _AgentE2eProvider implements ModelGateway {
           '+done\n'
           '*** End Patch';
       yield const ModelReasoningDelta('패치를 적용할 방법을 정리합니다.');
-      yield const ModelFreeformCall(
+      yield const ModelFunctionCall(
         callId: 'patch-call',
         name: 'apply_patch',
-        rawInput: patch,
+        arguments: <String, dynamic>{'patch': patch},
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.freeform(
+            ConversationToolCall.function(
               callId: 'patch-call',
               name: 'apply_patch',
-              input: patch,
+              arguments: <String, dynamic>{'patch': patch},
             ),
           ],
         ),
@@ -3801,19 +3801,19 @@ final class _AgentE2eProvider implements ModelGateway {
           '*** Add File: rejected.txt\n'
           '+nope\n'
           '*** End Patch';
-      yield const ModelFreeformCall(
+      yield const ModelFunctionCall(
         callId: 'reject-patch-call',
         name: 'apply_patch',
-        rawInput: patch,
+        arguments: <String, dynamic>{'patch': patch},
       );
       yield const ModelResponseCompleted(
         assistant: AssistantConversationItem(
           text: '',
           toolCalls: <ConversationToolCall>[
-            ConversationToolCall.freeform(
+            ConversationToolCall.function(
               callId: 'reject-patch-call',
               name: 'apply_patch',
-              input: patch,
+              arguments: <String, dynamic>{'patch': patch},
             ),
           ],
         ),

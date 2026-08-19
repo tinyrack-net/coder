@@ -42,7 +42,6 @@ void main() {
       streaming: AgentCapabilitySupport.supported,
       toolCalling: AgentCapabilitySupport.unsupported,
       functionTools: AgentCapabilitySupport.supported,
-      freeformTools: AgentCapabilitySupport.unsupported,
       deferredTools: AgentCapabilitySupport.supported,
       imageInput: AgentCapabilitySupport.supported,
       fileInput: AgentCapabilitySupport.unsupported,

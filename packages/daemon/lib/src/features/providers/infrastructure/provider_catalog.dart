@@ -368,11 +368,6 @@ final class BuiltInProviderCatalog {
                         CapabilitySupport.unknown
                     ? model.capabilities.functionTools
                     : bundled.capabilities.functionTools,
-                freeformTools:
-                    bundled.capabilities.freeformTools ==
-                        CapabilitySupport.unknown
-                    ? model.capabilities.freeformTools
-                    : bundled.capabilities.freeformTools,
                 deferredTools:
                     bundled.capabilities.deferredTools ==
                         CapabilitySupport.unknown

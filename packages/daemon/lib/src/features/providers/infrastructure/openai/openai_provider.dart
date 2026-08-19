@@ -389,24 +389,16 @@ class OpenAIResponsesProvider implements ModelGateway {
                       'type': 'tool_search_call',
                       'call_id': call.callId,
                       'execution': 'client',
-                      'arguments': (call.input as JsonToolCallInput).value,
+                      'arguments': call.arguments,
                     }
-                  : switch (call.input) {
-                      JsonToolCallInput(:final value) => <String, dynamic>{
-                        'type': 'function_call',
-                        'call_id': call.callId,
-                        if (call.namespace != null) 'namespace': call.namespace,
-                        'name': call.namespace == null
-                            ? call.name
-                            : call.name.substring(call.namespace!.length + 2),
-                        'arguments': jsonEncode(value),
-                      },
-                      FreeformToolCallInput(:final value) => <String, dynamic>{
-                        'type': 'custom_tool_call',
-                        'call_id': call.callId,
-                        'name': call.name,
-                        'input': value,
-                      },
+                  : <String, dynamic>{
+                      'type': 'function_call',
+                      'call_id': call.callId,
+                      if (call.namespace != null) 'namespace': call.namespace,
+                      'name': call.namespace == null
+                          ? call.name
+                          : call.name.substring(call.namespace!.length + 2),
+                      'arguments': jsonEncode(call.arguments),
                     },
             );
           }
@@ -418,7 +410,6 @@ class OpenAIResponsesProvider implements ModelGateway {
         ):
           result.add(<String, dynamic>{
             'type': switch (toolKind) {
-              ModelToolKind.freeform => 'custom_tool_call_output',
               ModelToolKind.deferredSearch => 'tool_search_output',
               ModelToolKind.function ||
               ModelToolKind.namespace => 'function_call_output',
@@ -472,17 +463,6 @@ class OpenAIResponsesProvider implements ModelGateway {
           'parameters': tool.parameters,
           'strict': tool.strict && _config.strictToolSchema,
           if (tool.outputSchema != null) 'output_schema': tool.outputSchema,
-        },
-        ModelFreeformToolDefinition() => <String, dynamic>{
-          'type': 'custom',
-          'name': tool.name,
-          'description': tool.description,
-          if (tool.format case final format?)
-            'format': <String, dynamic>{
-              'type': format.type,
-              'syntax': format.syntax,
-              'definition': format.definition,
-            },
         },
         ModelNamespaceToolDefinition() => <String, dynamic>{
           'type': 'namespace',
@@ -609,21 +589,12 @@ class OpenAIResponsesProvider implements ModelGateway {
                         name: call.name,
                         arguments: call.arguments,
                       )
-                    : switch (call.input) {
-                        JsonToolCallInput(:final value) =>
-                          ConversationToolCall.function(
-                            callId: call.callId,
-                            name: call.name,
-                            namespace: call.namespace,
-                            arguments: value,
-                          ),
-                        FreeformToolCallInput(:final value) =>
-                          ConversationToolCall.freeform(
-                            callId: call.callId,
-                            name: call.name,
-                            input: value,
-                          ),
-                      },
+                    : ConversationToolCall.function(
+                        callId: call.callId,
+                        name: call.name,
+                        namespace: call.namespace,
+                        arguments: call.arguments,
+                      ),
               )
               .toList(growable: false);
           yield ModelResponseCompleted(
@@ -634,8 +605,7 @@ class OpenAIResponsesProvider implements ModelGateway {
                   .where(
                     (item) =>
                         item['type'] != 'message' &&
-                        item['type'] != 'function_call' &&
-                        item['type'] != 'custom_tool_call',
+                        item['type'] != 'function_call',
                   )
                   .map(Map<String, dynamic>.from)
                   .toList(growable: false),
@@ -690,30 +660,21 @@ class OpenAIResponsesProvider implements ModelGateway {
         ? item['namespace']! as String
         : null;
     final canonicalName = namespace == null ? name : '${namespace}__$name';
-    switch (item['type']) {
-      case 'function_call':
-        final arguments = item['arguments'];
-        if (arguments is! String) return null;
-        final decoded = jsonDecode(arguments);
-        if (decoded is! Map) {
-          throw OpenAIProviderException(
-            'Function $name returned non-object arguments.',
-          );
-        }
-        return ModelFunctionCall(
-          callId: callId,
-          name: canonicalName,
-          namespace: namespace,
-          arguments: Map<String, dynamic>.from(decoded),
+    if (item['type'] == 'function_call') {
+      final arguments = item['arguments'];
+      if (arguments is! String) return null;
+      final decoded = jsonDecode(arguments);
+      if (decoded is! Map) {
+        throw OpenAIProviderException(
+          'Function $name returned non-object arguments.',
         );
-      case 'custom_tool_call':
-        final input = item['input'];
-        if (input is! String) return null;
-        return ModelFreeformCall(
-          callId: callId,
-          name: name,
-          rawInput: input,
-        );
+      }
+      return ModelFunctionCall(
+        callId: callId,
+        name: canonicalName,
+        namespace: namespace,
+        arguments: Map<String, dynamic>.from(decoded),
+      );
     }
     return null;
   }

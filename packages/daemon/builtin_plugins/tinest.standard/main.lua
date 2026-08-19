@@ -268,9 +268,7 @@ local function run(arguments)
           type = "toolResult",
           callId = call.call_id,
           output = tostring(result.output or ""),
-          toolKind = call.input and
-            call.input.type == tinest.tool.kind.freeform and
-            tinest.tool.kind.freeform or tinest.tool.kind.function_,
+          toolKind = tinest.tool.kind.function_,
           isError = result.is_error == true,
           structuredContent = result.structured_content,
           content = result.content,

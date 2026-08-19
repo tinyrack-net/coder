@@ -164,12 +164,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
                       'type': 'function',
                       'function': <String, dynamic>{
                         'name': call.name,
-                        'arguments': jsonEncode(switch (call.input) {
-                          JsonToolCallInput(:final value) => value,
-                          FreeformToolCallInput() => throw StateError(
-                            'Chat Completions does not support freeform tools.',
-                          ),
-                        }),
+                        'arguments': jsonEncode(call.arguments),
                       },
                     },
                   )
@@ -250,12 +245,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
       yield ModelFunctionCall(
         callId: call.callId,
         name: call.name,
-        arguments: switch (call.input) {
-          JsonToolCallInput(:final value) => value,
-          FreeformToolCallInput() => throw StateError(
-            'Chat Completions emitted a freeform call.',
-          ),
-        },
+        arguments: call.arguments,
       );
     }
     yield ModelResponseCompleted(

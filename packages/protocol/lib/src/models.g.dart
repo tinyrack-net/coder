@@ -702,7 +702,6 @@ const _$ToolRiskEnumMap = {
 
 const _$AgentToolKindEnumMap = {
   AgentToolKind.function: 'function',
-  AgentToolKind.freeform: 'freeform',
   AgentToolKind.deferred: 'deferred',
 };
 
@@ -1171,9 +1170,6 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   functionTools:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['functionTools']) ??
       CapabilitySupport.unknown,
-  freeformTools:
-      $enumDecodeNullable(_$CapabilitySupportEnumMap, json['freeformTools']) ??
-      CapabilitySupport.unknown,
   deferredTools:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['deferredTools']) ??
       CapabilitySupport.unknown,
@@ -1205,7 +1201,6 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'streaming': _$CapabilitySupportEnumMap[instance.streaming]!,
   'toolCalling': _$CapabilitySupportEnumMap[instance.toolCalling]!,
   'functionTools': _$CapabilitySupportEnumMap[instance.functionTools]!,
-  'freeformTools': _$CapabilitySupportEnumMap[instance.freeformTools]!,
   'deferredTools': _$CapabilitySupportEnumMap[instance.deferredTools]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,

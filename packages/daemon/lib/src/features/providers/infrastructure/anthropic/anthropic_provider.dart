@@ -217,12 +217,7 @@ final class AnthropicMessagesProvider implements ModelGateway {
                       'type': 'tool_use',
                       'id': call.callId,
                       'name': call.name,
-                      'input': switch (call.input) {
-                        JsonToolCallInput(:final value) => value,
-                        FreeformToolCallInput() => throw StateError(
-                          'Anthropic Messages does not support freeform tools.',
-                        ),
-                      },
+                      'input': call.arguments,
                     },
                 ],
               },
@@ -308,12 +303,7 @@ final class AnthropicMessagesProvider implements ModelGateway {
             yield ModelFunctionCall(
               callId: call.callId,
               name: call.name,
-              arguments: switch (call.input) {
-                JsonToolCallInput(:final value) => value,
-                FreeformToolCallInput() => throw StateError(
-                  'Anthropic Messages emitted a freeform call.',
-                ),
-              },
+              arguments: call.arguments,
             );
           } else if (block.raw['type'] == 'thinking' ||
               block.raw['type'] == 'redacted_thinking') {

@@ -30,8 +30,14 @@ void main() {
     description: 'Also registered by Lua.',
     risk: ToolRisk.write,
     group: 'custom',
-    kind: AgentToolKind.freeform,
-    inputSchema: <String, dynamic>{'type': 'string'},
+    kind: AgentToolKind.function,
+    inputSchema: <String, dynamic>{
+      'type': 'object',
+      'properties': <String, dynamic>{
+        'path': <String, dynamic>{'type': 'string'},
+      },
+      'required': <String>['path'],
+    },
     effects: <String>['workspace.write'],
     presentation: <String, dynamic>{'label': 'Zulu'},
   );

@@ -1,4 +1,4 @@
-Apply one patch document atomically inside the workspace. The input is freeform text, not JSON.
+Apply one patch document atomically inside the workspace. Send the whole document as the `patch` string; it is plain text, not nested JSON.
 
 Use this envelope:
 

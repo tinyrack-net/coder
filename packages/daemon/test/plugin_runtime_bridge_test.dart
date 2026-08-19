@@ -933,12 +933,14 @@ return tinest.plugin.define({tools = {tool}, ui = {card}})
     await closedSession.close();
     await closedSession.close();
 
+    // Typed, not a bare StateError: a transport has to answer a torn-down
+    // runtime with a code the client can translate rather than internal_error.
     await expectLater(
       closedSession.register(
         pluginId: 'acme.reader',
         callbackRouter: _RecordingRouter(),
       ),
-      throwsStateError,
+      throwsA(isA<PluginRuntimeClosed>()),
     );
 
     runtime.sweep();
@@ -950,7 +952,7 @@ return tinest.plugin.define({tools = {tool}, ui = {card}})
         sessionId: 'after-close',
         allowedCapabilitiesByPlugin: const <String, Set<String>>{},
       ),
-      throwsStateError,
+      throwsA(isA<PluginRuntimeClosed>()),
     );
   });
 

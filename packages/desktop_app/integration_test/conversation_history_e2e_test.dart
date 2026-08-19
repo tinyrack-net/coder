@@ -55,14 +55,14 @@ void main() {
       );
       final registeredWorktree =
           (await client.workspaces.getWorkspaceCatalog()).worktrees.single;
-      // The default Agent includes function, freeform, and deferred tools.
-      // Manual custom-provider models advertise function tools only, so use a
+      // The default Agent includes function and deferred tools. Manual
+      // custom-provider models advertise function tools only, so use a
       // deterministic full-surface bundled model with the injected gateway.
       final model = (await client.providers.listProviderModels('openai'))
           .singleWhere((candidate) => candidate.id == _historyModelId);
       expect(model.capabilities.streaming, CapabilitySupport.supported);
       expect(model.capabilities.functionTools, CapabilitySupport.supported);
-      expect(model.capabilities.freeformTools, CapabilitySupport.supported);
+      expect(model.capabilities.deferredTools, CapabilitySupport.supported);
 
       // A conversation the reader is coming back to, not one they are starting:
       // the history exists before the app is ever mounted.
@@ -439,7 +439,6 @@ final class _HistoryCatalogMetadataSource
             streaming: CapabilitySupport.supported,
             toolCalling: CapabilitySupport.supported,
             functionTools: CapabilitySupport.supported,
-            freeformTools: CapabilitySupport.supported,
             deferredTools: CapabilitySupport.supported,
             source: CapabilitySource.refreshed,
           ),

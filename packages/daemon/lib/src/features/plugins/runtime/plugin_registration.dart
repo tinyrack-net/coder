@@ -188,7 +188,7 @@ final class PluginToolRegistration {
   /// SDK-owned closure binding.
   final PluginHandlerBinding binding;
 
-  /// `function`, `freeform`, `deferred`, or non-visible `template`.
+  /// `function`, `deferred`, or non-visible `template`.
   final String kind;
 
   /// Provider-neutral JSON input schema.
@@ -474,7 +474,6 @@ abstract final class PluginRegistrationParser {
           : _string(raw['kind'] ?? 'function', '$path.kind');
       if (!const <String>{
         'function',
-        'freeform',
         'deferred',
         'template',
       }.contains(kind)) {
@@ -484,10 +483,9 @@ abstract final class PluginRegistrationParser {
         );
       }
       final inputSchema = _schema(raw['input_schema'], '$path.input_schema');
-      if ((kind == 'function' || kind == 'template') &&
-          inputSchema['type'] != 'object') {
+      if (inputSchema['type'] != 'object') {
         throw PluginRegistrationException(
-          'Function tool input schemas must have type object.',
+          'Tool input schemas must have type object.',
           path: '$path.input_schema.type',
         );
       }

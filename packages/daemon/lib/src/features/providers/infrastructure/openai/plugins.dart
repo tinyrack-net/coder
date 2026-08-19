@@ -116,7 +116,6 @@ final class OpenAIAdapter extends OpenAICompatibleAdapter {
     AgentModelCapabilities capabilities,
   ) => capabilities.copyWith(
     functionTools: AgentCapabilitySupport.supported,
-    freeformTools: AgentCapabilitySupport.supported,
     deferredTools: AgentCapabilitySupport.supported,
     imageInput: AgentCapabilitySupport.supported,
     fileInput: AgentCapabilitySupport.supported,
@@ -238,7 +237,6 @@ const AgentModelCapabilities _reasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
   functionTools: AgentCapabilitySupport.supported,
-  freeformTools: AgentCapabilitySupport.unsupported,
   deferredTools: AgentCapabilitySupport.unsupported,
   controls: <AgentModelControlDescriptor>[_reasoningEffortControl],
   source: AgentCapabilitySource.bundled,
@@ -250,7 +248,6 @@ const AgentModelCapabilities _openAiReasoning = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
   functionTools: AgentCapabilitySupport.supported,
-  freeformTools: AgentCapabilitySupport.supported,
   deferredTools: AgentCapabilitySupport.supported,
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
@@ -265,7 +262,6 @@ const AgentModelCapabilities _tools = AgentModelCapabilities(
   streaming: AgentCapabilitySupport.supported,
   toolCalling: AgentCapabilitySupport.supported,
   functionTools: AgentCapabilitySupport.supported,
-  freeformTools: AgentCapabilitySupport.unsupported,
   deferredTools: AgentCapabilitySupport.unsupported,
   source: AgentCapabilitySource.bundled,
 );

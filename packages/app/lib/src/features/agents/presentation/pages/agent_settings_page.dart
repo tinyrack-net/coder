@@ -1225,7 +1225,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
       'streaming' => capabilities.streaming,
       'tool_calling' => capabilities.toolCalling,
       'function_tools' => capabilities.functionTools,
-      'freeform_tools' => capabilities.freeformTools,
+      'deferred_tools' => capabilities.deferredTools,
       'image_input' => capabilities.imageInput,
       'file_input' => capabilities.fileInput,
       _ when requirement.startsWith('role.') =>

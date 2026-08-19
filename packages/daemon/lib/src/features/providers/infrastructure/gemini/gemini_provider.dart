@@ -175,12 +175,7 @@ final class GeminiInteractionsProvider implements ModelGateway {
                       'type': 'function_call',
                       'id': call.callId,
                       'name': call.name,
-                      'arguments': switch (call.input) {
-                        JsonToolCallInput(:final value) => value,
-                        FreeformToolCallInput() => throw StateError(
-                          'Gemini does not support freeform tools.',
-                        ),
-                      },
+                      'arguments': call.arguments,
                     },
                 ],
               },
@@ -267,12 +262,7 @@ final class GeminiInteractionsProvider implements ModelGateway {
             yield ModelFunctionCall(
               callId: call.callId,
               name: call.name,
-              arguments: switch (call.input) {
-                JsonToolCallInput(:final value) => value,
-                FreeformToolCallInput() => throw StateError(
-                  'Gemini emitted a freeform call.',
-                ),
-              },
+              arguments: call.arguments,
             );
           } else if (step.raw['type'] == 'thought') {
             final raw = <String, dynamic>{...step.raw};

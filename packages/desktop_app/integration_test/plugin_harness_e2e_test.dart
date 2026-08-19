@@ -469,7 +469,7 @@ void main() {
       );
       expect(
         (await incompatibleFailure).data.toString(),
-        contains('freeform_tools'),
+        contains('role.tool'),
       );
       expect(provider.requests, hasLength(requestsBeforeFailure));
 
@@ -961,9 +961,9 @@ local tinest = require("tinest")
 local driver = tinest.driver.define({
     id = "driver",
     required_capabilities = {tinest.capability.model.call},
-    required_model_capabilities = {
-      tinest.model.capability.freeform_tools,
-    },
+    -- No provider offers a `tool` role, so this driver can never run. The
+    -- harness must refuse before the model is ever contacted.
+    required_model_capabilities = {"role.tool"},
 }, function(_arguments) return {tool_rounds = 0} end)
 return tinest.plugin.define({driver = driver})
 ''', flush: true);

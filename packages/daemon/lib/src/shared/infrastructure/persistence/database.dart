@@ -511,7 +511,7 @@ class TinestDatabase extends _$TinestDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

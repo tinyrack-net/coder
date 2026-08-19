@@ -40,6 +40,23 @@ final class PluginUiCallbackDocumentException extends FormatException {
   PluginUiCallbackDocumentException(super.message);
 }
 
+/// Expected refusal to run Lua after its runtime or session was torn down.
+///
+/// Typed rather than a bare `StateError` so a transport can answer with a code
+/// the client can translate. A shutting-down daemon, a cancelled turn, and a
+/// detached Agent all reach this legitimately; an escaping `StateError` would
+/// arrive as `internal_error`, which the protocol reserves for defects.
+final class PluginRuntimeClosed implements Exception {
+  /// Creates a closed-runtime refusal.
+  const PluginRuntimeClosed(this.message);
+
+  /// User-safe reason.
+  final String message;
+
+  @override
+  String toString() => 'PluginRuntimeClosed: $message';
+}
+
 /// Decodes the private SDK UI envelope and proves every action belongs to the
 /// same plugin revision that produced the document.
 PluginUiCallbackDocument decodePluginUiCallbackDocument(
@@ -509,7 +526,7 @@ final class PluginRuntime<T extends Object> implements PluginBundleInspector {
   /// or updating an Agent-active revision.
   @override
   Future<PluginDescriptorDto> inspect(PluginBundle bundle) async {
-    if (_closed) throw StateError('Plugin runtime is closed.');
+    if (_closed) throw const PluginRuntimeClosed('Plugin runtime is closed.');
     final runtimeSession = _luaRuntime.createSession();
     try {
       final executionContext = lua.LuaExecutionContext<T>(
@@ -632,7 +649,7 @@ final class PluginRuntime<T extends Object> implements PluginBundleInspector {
     String workingDirectory = '.',
     lua.LuaRuntimeLimits limits = const lua.LuaRuntimeLimits(),
   }) {
-    if (_closed) throw StateError('Plugin runtime is closed.');
+    if (_closed) throw const PluginRuntimeClosed('Plugin runtime is closed.');
     final session = PluginRuntimeSession<T>._(
       owner: this,
       runtimeSession: _luaRuntime.createSession(limits: limits),
@@ -993,7 +1010,9 @@ final class PluginRuntimeSession<T extends Object> {
   }
 
   void _requireOpen() {
-    if (_closed) throw StateError('Plugin runtime session is closed.');
+    if (_closed) {
+      throw const PluginRuntimeClosed('Plugin runtime session is closed.');
+    }
   }
 
   /// Terminates all in-flight handlers and releases revision workers.

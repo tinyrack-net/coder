@@ -342,7 +342,7 @@ void main() {
     },
   );
 
-  for (final kind in const <String>['function', 'freeform', 'deferred']) {
+  for (final kind in const <String>['function', 'deferred']) {
     for (final support in const <AgentCapabilitySupport>[
       AgentCapabilitySupport.unknown,
       AgentCapabilitySupport.unsupported,
@@ -356,11 +356,9 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
             toolCalling: AgentCapabilitySupport.supported,
           );
-          final capabilities = switch (kind) {
-            'function' => base.copyWith(functionTools: support),
-            'freeform' => base.copyWith(freeformTools: support),
-            _ => base.copyWith(deferredTools: support),
-          };
+          final capabilities = kind == 'function'
+              ? base.copyWith(functionTools: support)
+              : base.copyWith(deferredTools: support);
           await expectLater(
             _runModelToolSurfaceTurn(
               stagedHost: stagedHost,
@@ -395,7 +393,6 @@ void main() {
           streaming: AgentCapabilitySupport.supported,
           toolCalling: AgentCapabilitySupport.unsupported,
           functionTools: AgentCapabilitySupport.unsupported,
-          freeformTools: AgentCapabilitySupport.unsupported,
           deferredTools: AgentCapabilitySupport.unsupported,
         ),
         model: model,
@@ -686,7 +683,7 @@ void main() {
             toolIds: <String>[
               'acme.inputs/function',
               'acme.inputs/deferred',
-              'acme.inputs/freeform',
+              'acme.inputs/text',
             ],
             pluginSettings: <String, Map<String, dynamic>>{},
             callableAgentIds: <String>[],
@@ -733,6 +730,131 @@ void main() {
         completions.map((event) => event['isError']),
         <Object?>[false, false, false, true, false],
       );
+    },
+  );
+
+  test(
+    'apply_patch surfaces to a model that advertises function tools only',
+    () async {
+      // The vendors behind Chat Completions — MiniMax, DeepSeek, Anthropic,
+      // Gemini — advertise function tools and nothing else. apply_patch is
+      // the product's only write tool, so it has to reach them unchanged.
+      const agentId = 'patch-surface-agent';
+      final bundles = <String, PluginBundle>{};
+      for (final id in const <String>['tinest.standard', 'tinest.edit']) {
+        final bundle = await const BuiltInPluginCatalog().load(id);
+        bundles[bundle.descriptor.id] = bundle;
+      }
+      final revisions = PluginRevisionCatalog(
+        loader: _BundleMapLoader(bundles),
+        cache: _MemoryRevisionCache(),
+      );
+      final allowedCapabilities = <String, Set<String>>{};
+      for (final bundle in bundles.values) {
+        final capabilities = bundle.descriptor.requestedCapabilities.toSet();
+        await revisions.reload(
+          bundle.descriptor.id,
+          agentId: agentId,
+          approvedCapabilities: capabilities,
+        );
+        allowedCapabilities[bundle.descriptor.id] = capabilities;
+      }
+      final runtime = _pluginRuntime(stagedHost, revisions);
+      addTearDown(runtime.close);
+      const patch =
+          '*** Begin Patch\n'
+          '*** Add File: surfaced.txt\n'
+          '+written\n'
+          '*** End Patch';
+      final model = _ScriptedModelGateway(<_ModelStep>[
+        _ModelStep.events(<ModelEvent>[
+          const ModelFunctionCall(
+            callId: 'patch-call',
+            name: 'apply_patch',
+            arguments: <String, dynamic>{'patch': patch},
+          ),
+          const ModelResponseCompleted(
+            assistant: AssistantConversationItem(
+              text: '',
+              toolCalls: <ConversationToolCall>[
+                ConversationToolCall.function(
+                  callId: 'patch-call',
+                  name: 'apply_patch',
+                  arguments: <String, dynamic>{'patch': patch},
+                ),
+              ],
+            ),
+          ),
+        ]),
+        _ModelStep.completion('done'),
+      ]);
+      final persisted = <ConversationItem>[];
+      final requested = <Map<String, dynamic>>[];
+
+      final result = await LuaAgentHarness(runtime: runtime).startTurn(
+        request: LuaAgentHarnessRequest(
+          definition: const AgentDefinitionDto(
+            version: 5,
+            id: agentId,
+            name: 'Patch Surface Agent',
+            description: '',
+            mode: AgentMode.primary,
+            model: AgentModelSelectionDto(source: AgentModelSource.session),
+            driverId: 'tinest.standard/driver',
+            extensionIds: <String>[],
+            toolIds: <String>['tinest.edit/apply_patch'],
+            pluginSettings: <String, Map<String, dynamic>>{},
+            callableAgentIds: <String>[],
+            prompt: '',
+            contentHash: 'patch-surface-agent-hash',
+            sourcePath: 'patch-surface-agent.md',
+          ),
+          sessionId: 'patch-surface-session',
+          turnId: 'patch-surface-turn',
+          workspaceRoot: Directory.current.path,
+          prompt: 'create surfaced.txt',
+          modelId: 'patch-surface-model',
+          model: model,
+          modelCapabilities: const AgentModelCapabilities(
+            streaming: AgentCapabilitySupport.supported,
+            toolCalling: AgentCapabilitySupport.supported,
+            functionTools: AgentCapabilitySupport.supported,
+            deferredTools: AgentCapabilitySupport.unsupported,
+            roles: <String>['system', 'developer'],
+          ),
+          history: const <ConversationItem>[],
+          safetyIdentifier: 'safety',
+          allowedCapabilitiesByPlugin: allowedCapabilities,
+          state: MemoryPluginStateStore(),
+        ),
+        callbacks: LuaAgentHarnessCallbacks(
+          onEvent: (type, data) {
+            if (type == 'tool.requested') requested.add(data);
+          },
+          onStatus: (_, {error}) {},
+          onProviderItems: persisted.addAll,
+        ),
+        cancellation: CancellationToken(),
+      );
+
+      expect(result.toolRounds, 1);
+      final surfaced = model.requests.first.tools.single;
+      expect(surfaced, isA<ModelFunctionToolDefinition>());
+      surfaced as ModelFunctionToolDefinition;
+      expect(surfaced.name, 'apply_patch');
+      expect(surfaced.parameters['type'], 'object');
+      expect(
+        Map<String, Object?>.from(surfaced.parameters['properties']! as Map),
+        contains('patch'),
+      );
+      // The whole patch document reaches the tool as one JSON string, so a
+      // provider that only speaks function calls loses nothing.
+      expect(
+        Map<String, Object?>.from(requested.single['arguments']! as Map),
+        containsPair('patch', patch),
+      );
+      final stored = persisted.whereType<ToolResultConversationItem>().single;
+      expect(stored.toolKind, ModelToolKind.function);
     },
   );
 
@@ -1041,7 +1163,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
             toolCalling: AgentCapabilitySupport.supported,
             functionTools: AgentCapabilitySupport.supported,
-            freeformTools: AgentCapabilitySupport.supported,
             roles: <String>['system', 'developer'],
           ),
           history: const <ConversationItem>[],
@@ -1245,8 +1366,7 @@ void main() {
   );
 
   test(
-    'plugin tools receive per-Agent settings pinned for function, freeform, '
-    'and deferred calls',
+    'plugin tools receive per-Agent settings pinned for every tool call',
     () async {
       final bundle = _settingsToolBundle();
       final revisions = PluginRevisionCatalog(
@@ -1283,7 +1403,7 @@ void main() {
         extensionIds: const <String>[],
         toolIds: const <String>[
           'acme.settings/function',
-          'acme.settings/freeform',
+          'acme.settings/text',
           'acme.settings/deferred',
         ],
         pluginSettings: settings,
@@ -1358,12 +1478,12 @@ void main() {
 
       expect(alphaOutputs, <String>[
         'alpha:function',
-        'alpha:freeform',
+        'alpha:text',
         'alpha:deferred',
       ]);
       expect(bravoOutputs, <String>[
         'bravo:function',
-        'bravo:freeform',
+        'bravo:text',
         'bravo:deferred',
       ]);
     },
@@ -5107,11 +5227,10 @@ return tinest.plugin.define({driver = driver})
 PluginBundle _modelToolSurfaceBundle({required String? kind}) {
   final constructor = switch (kind) {
     'function' => 'tinest.tool.function_',
-    'freeform' => 'tinest.tool.freeform',
     'deferred' => 'tinest.tool.deferred',
     _ => null,
   };
-  final schema = kind == 'freeform' ? 'S.string()' : 'S.object({})';
+  const schema = 'S.object({})';
   final tool = constructor == null
       ? ''
       : '''
@@ -5252,7 +5371,7 @@ local driver = tinest.driver.define({
     for _, call in ipairs(calls) do
       local result = tinest.tools.invoke(
         call.tool_ref,
-        call.input.value,
+        call.arguments,
         {call_id = call.call_id}
       )
       history[#history + 1] = {
@@ -5298,10 +5417,10 @@ local deferred_tool = tinest.tool.deferred({
   return {output = "deferred:" .. deferred_calls}
 end)
 
-local freeform_tool = tinest.tool.freeform({
-  id = "freeform", name = "input_freeform", description = "freeform input",
-}, S.string(), S.any(), function(source)
-  return {output = source}
+local text_tool = tinest.tool.function_({
+  id = "text", name = "input_text", description = "text input",
+}, S.object({source = S.string()}), S.any(), function(arguments)
+  return {output = arguments.source}
 end)
 
 local driver = tinest.driver.define({
@@ -5311,10 +5430,10 @@ local driver = tinest.driver.define({
   local descriptors = tinest.tools.list()
   local function_ref = tinest.tools.resolve(function_tool, descriptors).ref
   local deferred_ref = tinest.tools.resolve(deferred_tool, descriptors).ref
-  local freeform_ref = tinest.tools.resolve(freeform_tool, descriptors).ref
+  local text_ref = tinest.tools.resolve(text_tool, descriptors).ref
   tinest.tools.invoke(function_ref, {})
   tinest.tools.invoke(deferred_ref, {})
-  tinest.tools.invoke(freeform_ref, "raw source")
+  tinest.tools.invoke(text_ref, {source = "raw source"})
   local invalid_ok = pcall(tinest.tools.invoke, function_ref, {"not-an-object"})
   if invalid_ok then error("non-empty array was accepted") end
   tinest.tools.invoke(function_ref, {})
@@ -5323,7 +5442,7 @@ end)
 
 return tinest.plugin.define({
   driver = driver,
-  tools = {function_tool, deferred_tool, freeform_tool},
+  tools = {function_tool, deferred_tool, text_tool},
 })
   ''',
 );
@@ -5347,10 +5466,10 @@ local structural_null_ok = pcall(function()
   S.object(tinest.json.null)
 end)
 if structural_null_ok then error("JSON null was accepted as a structural table") end
-local false_freeform = tinest.tools.model_input({
-  input = {type = "freeform", value = false},
-})
-if false_freeform ~= false then error("false freeform input was rewritten") end
+local missing_arguments = tinest.tools.model_input({name = "absent"})
+if next(missing_arguments) ~= nil then
+  error("an argument-less call was rewritten")
+end
 
 local normalize = tinest.tool.function_({
   id = "normalize", name = "normalize_nulls",
@@ -5722,10 +5841,10 @@ local function_tool = tinest.tool.function_({
 }, S.object({kind = S.string()}), S.any(), function(arguments, context)
   return output(arguments.kind, context)
 end)
-local freeform_tool = tinest.tool.freeform({
-  id = "freeform", name = "settings_freeform", description = "freeform",
-}, S.string(), S.any(), function(source, context)
-  return output(source, context)
+local text_tool = tinest.tool.function_({
+  id = "text", name = "settings_text", description = "text",
+}, S.object({kind = S.string()}), S.any(), function(arguments, context)
+  return output(arguments.kind, context)
 end)
 local deferred_tool = tinest.tool.deferred({
   id = "deferred", name = "settings_deferred", description = "deferred",
@@ -5751,7 +5870,7 @@ local driver = tinest.driver.define({
   local descriptors = tinest.tools.list()
   local calls = {
     {definition = function_tool, arguments = {kind = "function"}},
-    {definition = freeform_tool, arguments = "freeform"},
+    {definition = text_tool, arguments = {kind = "text"}},
     {definition = deferred_tool, arguments = {kind = "deferred"}},
   }
   for _, call in ipairs(calls) do
@@ -5763,7 +5882,7 @@ local driver = tinest.driver.define({
 end)
 return tinest.plugin.define({
   driver = driver,
-  tools = {function_tool, freeform_tool, deferred_tool},
+  tools = {function_tool, text_tool, deferred_tool},
 })
 ''',
 );

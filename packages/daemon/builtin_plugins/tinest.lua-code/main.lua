@@ -113,8 +113,7 @@ local function run(arguments, exec_definition, wait_definition)
         type = "toolResult",
         callId = call.call_id,
         output = tostring(result.output or ""),
-        toolKind = call.input and call.input.type == tinest.tool.kind.freeform and
-          tinest.tool.kind.freeform or tinest.tool.kind.function_,
+        toolKind = tinest.tool.kind.function_,
         isError = result.is_error == true,
         content = result.content or {},
         structuredContent = result.structured_content,
@@ -133,7 +132,7 @@ local function exec(arguments, exec_definition, wait_definition)
     end
   end
   return tinest.result.unwrap(tinest.host.lua.start({
-    source = arguments.input or arguments.source or "",
+    source = arguments.source or "",
     tools = nested,
   }))
 end
@@ -153,7 +152,7 @@ end
 local exec_tool
 local wait_tool
 
-exec_tool = tinest.tool.freeform({
+exec_tool = tinest.tool.function_({
   id = "exec",
   name = "exec",
   description = "Run sandboxed Lua to orchestrate the selected nested tools.",
@@ -170,13 +169,8 @@ exec_tool = tinest.tool.freeform({
     glyph = "run",
     label = "Run Lua",
     nested = false,
-    format = {
-      type = "grammar",
-      syntax = "lark",
-      definition = "start: source\nsource: /(.|\\n)+/",
-    },
   },
-}, S.string(), nil, function(arguments)
+}, S.object(T.ExecInput, {source = S.string()}), nil, function(arguments)
   return exec(arguments, exec_tool, wait_tool)
 end)
 
@@ -210,7 +204,6 @@ local driver = tinest.driver.define({
   },
   required_model_capabilities = {
     tinest.model.capability.streaming,
-    tinest.model.capability.freeform_tools,
     tinest.model.capability.role.system,
     tinest.model.capability.role.developer,
   },
