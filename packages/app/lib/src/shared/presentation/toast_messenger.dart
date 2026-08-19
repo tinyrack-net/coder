@@ -144,6 +144,12 @@ class ToastMessenger {
 ///
 /// Sits above the router so a report outlives the route that produced it, and
 /// below [Localizations] so its accessible name follows the chosen language.
+///
+/// Reports land at the top of the window rather than the default bottom-end
+/// corner. The bottom-end corner is where this application puts the control a
+/// report most often follows: a settings form's Save, the composer's send. A
+/// toast there covers the button that raised it, so the press that comes after
+/// a report lands on the report instead.
 class TinestToastScope extends ConsumerWidget {
   /// Creates the scope around [child].
   const TinestToastScope({required this.child, super.key});
@@ -154,6 +160,7 @@ class TinestToastScope extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => TRToastRegion(
     controller: ref.watch(appToastControllerProvider),
+    placement: TRToastPlacement.topEnd,
     semanticLabel: AppLocalizations.of(context).toastRegionLabel,
     child: child,
   );

@@ -135,4 +135,29 @@ void main() {
     },
     tags: const <String>['feature_test__app_toast__widget'],
   );
+
+  testWidgets(
+    'a report keeps clear of the controls that raise it',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final messenger = await _pumpScope(tester);
+
+      messenger.success(testL10n.commonSaved);
+      await tester.pumpAndSettle();
+
+      // The bottom-end corner is where this app puts the control a report
+      // follows: a settings form's Save, the composer's send. A toast placed
+      // there covers the button that raised it, and the next press lands on
+      // the report. Reports therefore sit at the top of the window.
+      final report = tester.getRect(find.text(testL10n.commonSaved));
+      final page = tester.getRect(find.byType(TRToastRegion));
+      expect(report.bottom, lessThan(page.center.dy));
+      expect(
+        tester.widget<TRToastRegion>(find.byType(TRToastRegion)).placement,
+        TRToastPlacement.topEnd,
+      );
+    },
+    tags: const <String>['feature_test__app_toast__widget'],
+  );
 }
