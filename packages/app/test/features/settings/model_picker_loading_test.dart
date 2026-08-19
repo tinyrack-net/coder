@@ -117,7 +117,22 @@ void main() {
           expect(sheet.showDragHandle, isTrue);
         } else {
           final layer = select.presentation as TRSelectLayerPresentation;
-          expect(layer.layerSize, const TRLayerSize());
+          expect(
+            layer.layerSize,
+            const TRLayerSize(
+              width: TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
+            ),
+          );
+          // The popup width is the policy's, not the trigger's: a narrow and a
+          // wide anchor resolve to the same fixed bounds.
+          for (final anchor in <double>[64, 512]) {
+            final resolved = layer.layerSize.constraintsFor(
+              anchorSize: Size(anchor, TRControlMetrics.heightOf(TRUiSize.sm)),
+              viewportSize: Size(width, 760),
+            );
+            expect(resolved.minWidth, TRMeasurements.overlayWidthSm);
+            expect(resolved.maxWidth, TRMeasurements.overlayWidthSm);
+          }
           expect(layer.placement, TRLayerPlacement.bottomStart);
           expect(layer.useRootOverlay, isTrue);
         }

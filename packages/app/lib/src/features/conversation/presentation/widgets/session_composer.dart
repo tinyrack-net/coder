@@ -226,6 +226,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             blockedHint: l10n.composerAgentLocked,
             appearance: TRFieldAppearance.ghost,
             uiSize: TRUiSize.sm,
+            stretch: false,
             onBlocked: () => ref
                 .read(toastMessengerProvider)
                 .info(
@@ -242,6 +243,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           placeholder: modelLabel ?? selection?.modelId ?? l10n.composerModel,
           appearance: TRFieldAppearance.ghost,
           uiSize: TRUiSize.sm,
+          stretch: false,
         ),
         for (final control in capabilities.controls)
           _controlChip(control, enabled),
@@ -251,6 +253,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           inheritedPermission: inheritedPermission,
           appearance: TRFieldAppearance.ghost,
           uiSize: TRUiSize.sm,
+          stretch: false,
         ),
       ],
     );
@@ -279,16 +282,17 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     String? blockedHint,
     TRFieldAppearance appearance = TRFieldAppearance.solid,
     TRUiSize? uiSize,
+    bool stretch = true,
     VoidCallback? onBlocked,
     VoidCallback? onValueChanged,
   }) {
     final l10n = AppLocalizations.of(context);
-    final select = LayoutBuilder(
-      builder: (context, constraints) => TRSelect<String>.controlled(
+    final select = _sized(stretch, (width) {
+      return TRSelect<String>.controlled(
         key: key,
         value: widget.agentDefinitionId,
         enabled: enabled,
-        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        width: width,
         leading: Icon(blocked ? TinestIcons.lock : TinestIcons.agent),
         appearance: appearance,
         uiSize: uiSize,
@@ -312,8 +316,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
             onValueChanged?.call();
           }
         },
-      ),
-    );
+      );
+    });
     if (!blocked || onBlocked == null) return select;
     return BlockedControl(
       label: l10n.composerAgent,
@@ -331,16 +335,17 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required String placeholder,
     TRFieldAppearance appearance = TRFieldAppearance.solid,
     TRUiSize? uiSize,
+    bool stretch = true,
     VoidCallback? onValueChanged,
   }) {
-    final select = LayoutBuilder(
-      builder: (context, constraints) => AsyncModelSelect(
+    final select = _sized(stretch, (width) {
+      return AsyncModelSelect(
         loadKey: widget.hostId,
         loadOptions: ref.read(modelPickerOptionsLoaderProvider(widget.hostId)),
         currentSelection: widget.selection,
         placeholder: placeholder,
         enabled: enabled,
-        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        width: width,
         leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
         appearance: appearance,
         uiSize: uiSize,
@@ -348,8 +353,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           await _setModelOption(option);
           onValueChanged?.call();
         },
-      ),
-    );
+      );
+    });
     if (!blocked) return KeyedSubtree(key: key, child: select);
     return BlockedControl(
       key: key,
@@ -366,26 +371,40 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required PermissionMode inheritedPermission,
     required TRFieldAppearance appearance,
     required TRUiSize uiSize,
+    bool stretch = true,
     VoidCallback? onValueChanged,
   }) {
     final l10n = AppLocalizations.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) => PermissionSelect(
+    return _sized(stretch, (width) {
+      return PermissionSelect(
         key: key,
         currentMode: widget.permissionMode,
         inheritLabel: l10n.composerInheritPermissionMode,
         inheritedMode: inheritedPermission,
         enabled: enabled,
-        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        width: width,
         leading: const Icon(TinestIcons.permission),
         appearance: appearance,
         uiSize: uiSize,
         onValueChange: (mode) => unawaited(
           _setPermission(mode).then((_) => onValueChanged?.call()),
         ),
-      ),
-    );
+      );
+    });
   }
+
+  /// Builds a control that either fills its slot or keeps its own label width.
+  ///
+  /// A Select's `width` is exact rather than a maximum, so a bounded parent is
+  /// not on its own a reason to fill it: the settings sheet wants one control
+  /// width per row, while the composer toolbar wants each control to stay as
+  /// wide as what it says.
+  Widget _sized(bool stretch, Widget Function(double? width) build) => stretch
+      ? LayoutBuilder(
+          builder: (context, constraints) =>
+              build(constraints.hasBoundedWidth ? constraints.maxWidth : null),
+        )
+      : build(null);
 
   Future<void> _setModelOption(ModelPickerOption option) async {
     final allowed = option.model.capabilities.controls
@@ -664,6 +683,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     required TRFieldAppearance appearance,
     TRUiSize? uiSize,
     Key? key,
+    bool stretch = true,
     VoidCallback? onValueChanged,
   }) {
     final l10n = AppLocalizations.of(context);
@@ -671,12 +691,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final selectedId = current is ModelControlStringValueDto
         ? current.value
         : null;
-    return LayoutBuilder(
-      builder: (context, constraints) => TRSelect<String?>.controlled(
+    return _sized(stretch, (width) {
+      return TRSelect<String?>.controlled(
         key: key,
         value: selectedId,
         enabled: enabled,
-        width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
+        width: width,
         leading: Icon(_controlIcon(descriptor.id)),
         appearance: appearance,
         uiSize: uiSize,
@@ -710,8 +730,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           );
           onValueChanged?.call();
         },
-      ),
-    );
+      );
+    });
   }
 
   Widget _compactControl(
@@ -792,6 +812,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         enabled: canChange,
         appearance: TRFieldAppearance.ghost,
         uiSize: TRUiSize.sm,
+        stretch: false,
       ),
       ModelControlKind.toggle => ComposerChip(
         valueKey: ValueKey('session-composer-control-${descriptor.id}'),
@@ -1087,41 +1108,24 @@ class ComposerChipBar extends StatelessWidget {
   /// Typed controls shown in the composer settings row.
   final List<Widget> children;
 
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      const spacing = TRSpacing.extraSmall;
-      const uiSize = TRUiSize.sm;
-      final iconWidth = TRControlMetrics.iconSizeOf(uiSize);
-      final inset =
-          TRControlMetrics.inlinePaddingOf(uiSize) +
-          TRControlMetrics.borderWidth;
-      final minimumWidth = inset * 2 + iconWidth * 2 + spacing * 2;
-      final availablePerChild = children.isEmpty
-          ? constraints.maxWidth
-          : (constraints.maxWidth - spacing * (children.length - 1)) /
-                children.length;
-      final childWidth = availablePerChild < minimumWidth
-          ? minimumWidth
-          : availablePerChild;
+  /// Widest a single setting may grow before its label truncates.
+  ///
+  /// Splitting the row evenly would give a one-word setting the same slot as a
+  /// long model name, so each control keeps its own label width and only the
+  /// labels past this cap are truncated.
+  static const double controlMaxWidth = TRMeasurements.measureMd;
 
-      return Wrap(
-        spacing: spacing,
-        runSpacing: spacing,
-        children: <Widget>[
-          for (final child in children)
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                // tinyrack-check-ignore-next-line tokens/no-literal -- computed solely from public control metrics and spacing
-                minWidth: minimumWidth,
-                // tinyrack-check-ignore-next-line tokens/no-literal -- clamped from that token-derived minimum and parent width
-                maxWidth: childWidth,
-              ),
-              child: child,
-            ),
-        ],
-      );
-    },
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: TRSpacing.extraSmall,
+    runSpacing: TRSpacing.extraSmall,
+    children: <Widget>[
+      for (final child in children)
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: controlMaxWidth),
+          child: child,
+        ),
+    ],
   );
 }
 

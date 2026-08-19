@@ -568,6 +568,39 @@ void main() {
         find.byKey(const ValueKey<String>('session-composer-mode')),
         findsNothing,
       );
+      // Each turn setting is as wide as its own label, never a share of the
+      // leftover row.
+      final chipWidths = <String, double>{
+        for (final chip in chips)
+          chip: tester.getSize(find.byKey(ValueKey<String>(chip))).width,
+      };
+      for (final entry in chipWidths.entries) {
+        expect(
+          entry.value,
+          lessThanOrEqualTo(TRMeasurements.measureMd),
+          reason: '${entry.key} stops at the control cap',
+        );
+      }
+      expect(
+        chipWidths.values.toSet(),
+        hasLength(chipWidths.length),
+        reason: 'controls with different labels do not share one width',
+      );
+      expect(
+        tester
+            .getTopRight(
+              find.byKey(const ValueKey<String>('session-composer-permission')),
+            )
+            .dx,
+        lessThan(
+          tester
+              .getTopLeft(
+                find.byKey(const ValueKey('session-composer-send')),
+              )
+              .dx,
+        ),
+        reason: 'the settings row leaves the leftover space empty',
+      );
 
       // Local composer width does not override the application density.
       await pumpAt(600, composerWidth: 500);
@@ -689,6 +722,11 @@ void main() {
       for (final width in selectWidths.skip(1)) {
         expect(width, selectWidths.first);
       }
+      expect(
+        selectWidths.first,
+        greaterThan(TRMeasurements.measureMd),
+        reason: 'sheet controls still stretch to their settings row',
+      );
 
       final handle = find.byKey(
         const ValueKey<String>('tr-drawer-drag-handle'),

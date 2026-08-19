@@ -23,7 +23,12 @@ abstract final class TinestSelectPresentation {
         )
       : const TRSelectPresentation.layer(
           // Explicit so the architecture policy owns the complete recipe.
-          layerSize: TRLayerSize(),
+          // A content width would size every popup to its shortest option, so
+          // the same control opens at a different width per host. One fixed
+          // width keeps the option list readable wherever a Select is used.
+          layerSize: TRLayerSize(
+            width: TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
+          ),
           // Bottom-start follows the trigger in either text direction.
           // ignore: avoid_redundant_argument_values
           placement: TRLayerPlacement.bottomStart,
