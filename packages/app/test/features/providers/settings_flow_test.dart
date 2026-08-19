@@ -69,7 +69,7 @@ void main() {
         const ValueKey<String>('provider-connect-submit'),
       );
       expect(
-        find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+        find.ancestor(of: save, matching: find.byType(SettingsFormActions)),
         findsOneWidget,
       );
 
@@ -202,17 +202,30 @@ void main() {
         findsNothing,
       );
       expect(find.text('데몬 기본 모델'), findsNothing);
+      // Save commits the whole record, so it lives in the pinned action bar
+      // under the form rather than in the page header.
       final save = find.byKey(
         const ValueKey<String>('provider-prefix-save'),
       );
       expect(
         find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(of: save, matching: find.byType(SettingsFormActions)),
         findsOneWidget,
       );
       expect(tester.widget<TRButton>(save).intent, TRIntent.primary);
-      final reconnect = find.widgetWithText(TRButton, '다시 연결');
+      // Reconnect acts on the connection status, so it sits with it.
+      final reconnect = find.byKey(
+        const ValueKey<String>('provider-reconnect'),
+      );
       expect(
         find.ancestor(of: reconnect, matching: find.byType(TRPaneHeader)),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(of: reconnect, matching: find.byType(SettingsSection)),
         findsOneWidget,
       );
       expect(find.widgetWithText(TRButton, testL10n.commonRetry), findsNothing);
@@ -441,7 +454,7 @@ void main() {
       const ValueKey<String>('provider-custom-save'),
     );
     expect(
-      find.ancestor(of: create, matching: find.byType(TRPaneHeader)),
+      find.ancestor(of: create, matching: find.byType(SettingsFormActions)),
       findsOneWidget,
     );
     expect(
@@ -483,7 +496,7 @@ void main() {
       const ValueKey<String>('provider-custom-save'),
     );
     expect(
-      find.ancestor(of: save, matching: find.byType(TRPaneHeader)),
+      find.ancestor(of: save, matching: find.byType(SettingsFormActions)),
       findsOneWidget,
     );
     expect(

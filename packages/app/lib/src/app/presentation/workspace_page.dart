@@ -233,7 +233,7 @@ class _WorkspacePageState extends ConsumerState<WorkspacePage> {
         title: TRText.inherit(
           AppLocalizations.of(context).workspacesTitle,
         ),
-        actions: <Widget>[
+        actions: <TRIconButton>[
           TRIconButton(
             key: const ValueKey('workspace-settings-button'),
             appearance: TRAppearance.ghost,

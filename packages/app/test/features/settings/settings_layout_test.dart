@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
@@ -1394,6 +1395,52 @@ void main() {
   });
 
   group('TRPaneHeader in Settings', () {
+    testWidgets('two side-by-side pane headers share one height and baseline', (
+      tester,
+    ) async {
+      // A list-detail route draws a collection header carrying an icon action
+      // beside a detail header carrying none. Sized to their own contents they
+      // differ by a control height, and the seam between the panes shows it.
+      await tester.pumpWidget(
+        _host(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TRPaneHeader(
+                  title: const TRText.inherit('Provider'),
+                  actions: <Widget>[
+                    TRIconButton(
+                      label: 'Add provider',
+                      onPressed: () {},
+                      icon: const Icon(TinestIcons.add),
+                    ),
+                  ],
+                ),
+              ),
+              const Expanded(
+                child: TRPaneHeader(title: TRText.inherit('OpenAI')),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final headers = find.byType(TRPaneHeader);
+      expect(headers, findsNWidgets(2));
+      expect(
+        tester.getSize(headers.at(1)).height,
+        tester.getSize(headers.first).height,
+      );
+      expect(
+        tester.getRect(find.text('OpenAI')).center.dy,
+        moreOrLessEquals(
+          tester.getRect(find.text('Provider')).center.dy,
+          epsilon: 0.5,
+        ),
+      );
+    });
+
     testWidgets('aligns a list header with the rows beneath it', (
       tester,
     ) async {

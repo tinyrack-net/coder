@@ -40,35 +40,35 @@ class TinestPageHeaderBar extends StatelessWidget {
   ///
   /// [TRAppShell.header] is typed to [TRAppShellHeader], so the shell slot
   /// cannot take this wrapper widget. Both paths share this one definition.
+  ///
+  /// Identity and actions share one row that never wraps. An earlier version
+  /// wrapped them, because a destination carrying several text buttons
+  /// overflowed a phone-width bar; the wrap traded that overflow for a bar
+  /// that silently doubled in height. [TinestPageHeader.actions] is typed to
+  /// square icon controls instead, so the action rail has a bounded width and
+  /// the bar has room for both at every window size. Only the title may take
+  /// a second line, which is what an enlarged text scale needs.
+  ///
+  /// The bar rests at [TRMeasurements.headerHeight], the height [TRPaneHeader]
+  /// stands at on a wider window. Sized by its contents it was a line of text
+  /// tall with no actions and a control tall with them, so a page that carried
+  /// none — standalone General or Advanced settings — drew a visibly shorter
+  /// bar than every destination beside it in the same stack. The strut sets
+  /// the resting height without capping it, so a wrapped title still grows the
+  /// bar rather than being clipped.
   static TRAppShellHeader bar(TinestPageHeader header) => TRAppShellHeader(
     borderBottom: true,
-    padding: const EdgeInsets.symmetric(
-      horizontal: TRSpacing.small,
-      vertical: TRSpacing.extraSmall,
-    ),
+    padding: const EdgeInsets.symmetric(horizontal: TRSpacing.small),
     children: [
+      const SizedBox(height: TRMeasurements.headerHeight),
       ?header.leading,
-      // Identity and actions share one wrapped rail rather than a single
-      // row. A destination that carries several actions would otherwise
-      // overflow the bar on a phone-width window.
-      Expanded(
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: TRSpacing.medium,
-          runSpacing: TRSpacing.extraSmall,
-          children: <Widget>[
-            _TinestPageHeaderTitle(title: header.title),
-            if (header.actions.isNotEmpty)
-              Wrap(
-                spacing: TRSpacing.small,
-                runSpacing: TRSpacing.extraSmall,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: header.actions,
-              ),
-          ],
+      Expanded(child: _TinestPageHeaderTitle(title: header.title)),
+      if (header.actions.isNotEmpty)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: TRSpacing.small,
+          children: header.actions,
         ),
-      ),
     ],
   );
 
@@ -82,10 +82,13 @@ class _TinestPageHeaderTitle extends StatelessWidget {
   final Widget title;
 
   @override
-  Widget build(BuildContext context) => DefaultTextStyle.merge(
-    style: TRTypography.resolve(context, TRTextVariant.headingSm),
-    softWrap: true,
-    child: title,
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: DefaultTextStyle.merge(
+      style: TRTypography.resolve(context, TRTextVariant.headingSm),
+      softWrap: true,
+      child: title,
+    ),
   );
 }
 
@@ -94,7 +97,7 @@ class TinestPageHeader {
   /// Creates a page header.
   const TinestPageHeader({
     required this.title,
-    this.actions = const [],
+    this.actions = const <TRIconButton>[],
     this.leading,
   });
 
@@ -105,5 +108,15 @@ class TinestPageHeader {
   final Widget? leading;
 
   /// Trailing page actions.
-  final List<Widget> actions;
+  ///
+  /// Typed to [TRIconButton] rather than [Widget] so the bar can lay its
+  /// contents out in one row. A square icon control is as wide as it is tall,
+  /// and it does not grow with the text scale, so any number of them a page
+  /// reasonably carries still fits beside the title. A text button does not,
+  /// and a header that accepted one would grow a second line to hold it.
+  ///
+  /// An action whose meaning needs words belongs in the body beside what it
+  /// acts on — see `SettingsSection.action` — or in the destination's form
+  /// action bar when it commits or abandons the page.
+  final List<TRIconButton> actions;
 }

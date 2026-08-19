@@ -365,7 +365,7 @@ class _ProviderCollection extends StatelessWidget {
       // The collection names its category, matching every other list-detail
       // settings destination, so the compact header reads as one stack level.
       title: TRText.inherit(l10n.settingsCategoryProvider),
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           key: const ValueKey<String>('provider-add-button'),
           appearance: TRAppearance.ghost,
@@ -440,12 +440,17 @@ class _ProviderCatalogPaneState extends ConsumerState<_ProviderCatalogPane> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.providerSettingsAdd),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
-        TRButton(
+      // Refreshing the catalog is destination-scoped, idempotent, and has an
+      // unambiguous glyph, so it is one of the few commands that belongs in
+      // the header rather than in the body.
+      actions: <TRIconButton>[
+        TRIconButton(
           key: const ValueKey<String>('provider-catalog-refresh'),
-          appearance: TRAppearance.outline,
+          appearance: TRAppearance.ghost,
+          label: l10n.providerSettingsRefreshCatalog,
+          loading: _refreshing,
           onPressed: _refreshing ? null : _refresh,
-          child: TRText.inherit(l10n.providerSettingsRefreshCatalog),
+          icon: const Icon(TinestIcons.refresh),
         ),
       ],
       child: SettingsScaffold(
@@ -582,7 +587,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
             : widget.definition.name,
       ),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      formActions: <Widget>[
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _busy ? null : widget.onCancel,
@@ -676,7 +681,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.providerSettingsOAuthPending),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      formActions: <Widget>[
         if (!terminal)
           TRButton(
             key: ValueKey<String>('provider-auth-cancel-${attempt.id}'),
@@ -962,13 +967,7 @@ class _ProviderConnectionPaneState
     return SettingsDestinationScaffold(
       title: TRText.inherit(widget.connection.displayName),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
-        if (definition != null)
-          TRButton(
-            appearance: TRAppearance.outline,
-            onPressed: () => widget.onReauth(definition),
-            child: TRText.inherit(l10n.providerSettingsReconnect),
-          ),
+      formActions: <Widget>[
         TRButton(
           key: const ValueKey<String>('provider-prefix-save'),
           intent: TRIntent.primary,
@@ -978,6 +977,29 @@ class _ProviderConnectionPaneState
       ],
       child: SettingsScaffold(
         children: <Widget>[
+          // Reconnect belongs beside the status it changes, not in the page
+          // header: it is a word rather than a glyph, and a header that
+          // carried it grew a second line to hold it. The shape matches the
+          // disconnect section below — one row, its state leading, its action
+          // trailing.
+          if (definition case final definition?)
+            SettingsSection(
+              title: l10n.providerSettingsConnectionHeading,
+              children: <Widget>[
+                SettingsRow(
+                  title: TRText.inherit(
+                    _statusLabel(l10n, widget.connection.status),
+                  ),
+                  leading: Icon(_statusIcon(widget.connection.status)),
+                  control: TRButton(
+                    key: const ValueKey<String>('provider-reconnect'),
+                    appearance: TRAppearance.outline,
+                    onPressed: () => widget.onReauth(definition),
+                    child: TRText.inherit(l10n.providerSettingsReconnect),
+                  ),
+                ),
+              ],
+            ),
           SettingsSection.form(
             title: l10n.providerSettingsModelPrefix,
             banner: _error == null || _isPrefixConflict(_error)
@@ -1008,6 +1030,12 @@ class _ProviderConnectionPaneState
                     widget.connection.displayName,
                   ),
                 ),
+                // Prose, so it needs the whole rail: squeezed into a trailing
+                // layout on a phone it broke into four lines beside a button
+                // half its height. The copy stays, because it is the only
+                // place the kept agent history is explained before the
+                // confirmation opens.
+                controlLayout: SettingsControlLayout.responsive,
                 control: TRButton(
                   key: const ValueKey<String>(
                     'provider-connection-disconnect',
@@ -1183,7 +1211,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
             : widget.existing!.displayName,
       ),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      formActions: <Widget>[
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _busy ? null : widget.onCancel,
@@ -1298,6 +1326,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       existing.displayName,
                     ),
                   ),
+                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     key: const ValueKey<String>(
                       'provider-custom-disconnect',
@@ -1316,6 +1345,7 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       existing.displayName,
                     ),
                   ),
+                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     key: const ValueKey<String>(
                       'provider-custom-delete',

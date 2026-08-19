@@ -249,7 +249,7 @@ class _AgentDefinitionList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.agentSettingsHeading),
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           key: const ValueKey('agent-add-button'),
           appearance: TRAppearance.ghost,
@@ -460,7 +460,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(definition.name),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           key: const ValueKey('agent-copy-path-button'),
           appearance: TRAppearance.ghost,
@@ -469,7 +469,10 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
               Clipboard.setData(ClipboardData(text: definition.sourcePath)),
           icon: const Icon(TinestIcons.copy),
         ),
+      ],
+      formActions: <Widget>[
         TRButton(
+          key: const ValueKey<String>('agent-settings-save'),
           intent: TRIntent.primary,
           onPressed: canSave && !harnessBlocked
               ? () => _save(force: false)
@@ -1668,13 +1671,14 @@ class _CreateAgentPaneState extends State<_CreateAgentPane> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.agentSettingsAddTitle),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      formActions: <Widget>[
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _saving ? null : widget.onCancel,
           child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
+          key: const ValueKey<String>('agent-settings-create'),
           intent: TRIntent.primary,
           onPressed: _valid && !_saving ? _submit : null,
           child: TRText.inherit(

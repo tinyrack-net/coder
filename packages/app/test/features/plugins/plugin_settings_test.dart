@@ -62,6 +62,17 @@ void main() {
       expect(find.byType(PluginUiDocumentView), findsOneWidget);
       expect(find.byType(TRSwitch), findsNothing);
 
+      // Reload belongs to the source section rather than the page header, so
+      // reading the controls below scrolls it away and it has to come back.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('plugin-reload-button')),
+        -300,
+        scrollable: find.descendant(
+          of: find.byType(SettingsScaffold),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('plugin-reload-button')));
       await tester.pumpAndSettle();
       expect(

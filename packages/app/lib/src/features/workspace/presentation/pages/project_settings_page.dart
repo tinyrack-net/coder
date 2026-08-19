@@ -273,7 +273,7 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
         return SettingsDestinationScaffold(
           title: TRText.inherit(widget.workspace.name),
           contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-          actions: <Widget>[
+          actions: <TRIconButton>[
             TRIconButton(
               appearance: TRAppearance.ghost,
               label: l10n.projectSettingsCopyPath,
@@ -291,7 +291,10 @@ class _ProjectEditorState extends ConsumerState<_ProjectEditor> {
               ),
               icon: const Icon(TinestIcons.copy),
             ),
+          ],
+          formActions: <Widget>[
             TRButton(
+              key: const ValueKey<String>('project-settings-save'),
               intent: TRIntent.primary,
               onPressed: _saving || !hostShellState.hasValue ? null : _save,
               child: TRText.inherit(
