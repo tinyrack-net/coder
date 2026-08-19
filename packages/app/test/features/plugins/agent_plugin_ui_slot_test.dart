@@ -247,8 +247,7 @@ void main() {
               ],
             )
             ..pluginUiRenderFailure = const TinestClientException(
-              'Agent custom-agent has no active revision for plugin '
-              'example.controls.',
+              'Plugin UI callback failed.',
               code: RpcErrorCodes.pluginUiRejected,
               details: <String, dynamic>{'traceId': 'trace-42'},
             );
@@ -285,6 +284,87 @@ void main() {
         find.widgetWithText(TRButton, testL10n.commonRetry),
         findsOneWidget,
       );
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a session that has never run shows no slot rather than an error',
+    (tester) async {
+      const contribution = PluginContributionDto(
+        pluginId: 'example.controls',
+        id: 'status',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['conversationStatus'],
+        },
+      );
+      const agent = AgentDefinitionDto(
+        version: 5,
+        id: 'custom-agent',
+        name: 'Custom Agent',
+        description: 'Plugin controlled',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.controls'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'agent-hash',
+        sourcePath: '/config/v5/agents/custom-agent.md',
+      );
+      final api =
+          FakeTinestApi(
+              agentDefinitions: const <AgentDefinitionDto>[agent],
+              plugins: const <PluginDescriptorDto>[
+                PluginDescriptorDto(
+                  apiMajor: 5,
+                  id: 'example.controls',
+                  version: '1.0.0',
+                  name: 'Controls',
+                  entrypoint: 'main.lua',
+                  source: PluginSource.user,
+                  sourcePath: '/config/v5/plugins/example.controls',
+                  requestedCapabilities: <String>[],
+                  contributions: <PluginContributionDto>[contribution],
+                ),
+              ],
+            )
+            ..pluginUiRenderFailure = const TinestClientException(
+              'Agent custom-agent has no active revision for plugin '
+              'example.controls.',
+              code: RpcErrorCodes.pluginRevisionUnavailable,
+            );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: const Scaffold(
+              body: AgentPluginUiSlot(
+                hostId: 'server',
+                agent: agent,
+                slot: PluginUiSlot.conversationStatus,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // An Agent pins its plugin revisions when a turn starts, so this is the
+      // ordinary state of a conversation before its first message. Reporting
+      // it would put a red panel beside every new session's composer.
+      expect(find.text(testL10n.pluginUiLoadFailed), findsNothing);
+      expect(find.byType(TRAlert), findsNothing);
     },
     tags: const <String>['feature_test__plugin_ui__widget'],
   );

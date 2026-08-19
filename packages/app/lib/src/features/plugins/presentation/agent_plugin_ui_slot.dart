@@ -90,10 +90,12 @@ class AgentPluginUiSlot extends ConsumerWidget {
         );
       },
       loading: () => TRProgress(label: l10n.pluginUiLoading),
-      error: (error, _) => ClientErrorAlert(
-        error: _clientError(error),
-        title: l10n.pluginUiLoadFailed,
-      ),
+      error: (error, _) => _isExpectedAbsence(error)
+          ? const SizedBox.shrink()
+          : ClientErrorAlert(
+              error: _clientError(error),
+              title: l10n.pluginUiLoadFailed,
+            ),
     );
   }
 }
@@ -108,6 +110,17 @@ TinestClientException _clientError(Object error) =>
     error is TinestClientException
     ? error
     : TinestClientException(error is Error ? '$error' : error.toString());
+
+/// Whether [error] means the slot has nothing to show rather than that it
+/// failed.
+///
+/// An Agent pins its plugin revisions when a turn starts, so every slot on a
+/// session that has never run reports an unavailable revision. That is the
+/// ordinary state of a new session, not a fault: reporting it would put a red
+/// panel beside the composer of every conversation before its first message.
+bool _isExpectedAbsence(Object error) =>
+    error is TinestClientException &&
+    error.code == RpcErrorCodes.pluginRevisionUnavailable;
 
 /// Loads and renders one declared UI contribution through the public RPC.
 class PluginUiContributionSurface extends ConsumerStatefulWidget {
@@ -175,6 +188,7 @@ class _PluginUiContributionSurfaceState
     final l10n = AppLocalizations.of(context);
     final document = _document;
     if (_error case final error?) {
+      if (_isExpectedAbsence(error)) return const SizedBox.shrink();
       return ClientErrorAlert(
         error: _clientError(error),
         title: l10n.pluginUiLoadFailed,

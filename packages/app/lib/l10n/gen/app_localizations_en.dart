@@ -611,6 +611,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The plugin interface request was rejected.';
 
   @override
+  String get errorPluginRevisionUnavailable =>
+      'This agent has not activated the plugin yet. Send a message to start it.';
+
+  @override
   String get errorSessionTurnActive =>
       'This session is running a turn. Wait for it to finish or stop it, then change the setting.';
 

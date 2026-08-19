@@ -182,6 +182,7 @@
   "errorRequestTimeout": "Daemonが時間内に応答しませんでした。もう一度お試しください。",
   "errorInternalDaemon": "Daemonで予期しない問題が発生しました。報告する際は以下の内容をコピーしてください。",
   "errorPluginUiRejected": "プラグインインターフェースのリクエストが拒否されました。",
+  "errorPluginRevisionUnavailable": "この agentはまだプラグインを有効化していません。メッセージを送ると開始されます。",
   "errorSessionTurnActive": "この sessionは turnを実行中です。完了を待つか停止してから設定を変更してください。",
   "errorSessionSettingFailed": "Session設定を変更できませんでした。",
   "hostStatusOnline": "オンライン",

@@ -81,6 +81,10 @@ List<RpcBindingDescriptor> pluginRpcBindings<T extends Object>({
 /// torn down are both ordinary outcomes rather than defects. Leaving them
 /// untyped collapses them into `internal_error`, which the protocol reserves
 /// for defects and which no client can translate.
+///
+/// The two get separate codes because a host answers them differently: an
+/// Agent that has not pinned a revision yet has nothing to show, while a
+/// rejection is a real failure the user should read.
 List<RpcBindingDescriptor> pluginUiRpcBindings({required PluginUiService ui}) =>
     <RpcBindingDescriptor>[
       RpcBinding(pluginsRenderUiProcedure, (request, _) async {
@@ -89,7 +93,10 @@ List<RpcBindingDescriptor> pluginUiRpcBindings({required PluginUiService ui}) =>
         } on PluginUiException catch (error) {
           throw _pluginUiRejection(error.message);
         } on PluginRevisionUnavailable catch (error) {
-          throw _pluginUiRejection(error.message);
+          throw RpcFailureException(
+            code: RpcErrorCodes.pluginRevisionUnavailable,
+            message: _safePluginUiFailureMessage(error.message),
+          );
         } on PluginRuntimeClosed catch (error) {
           throw _pluginUiRejection(error.message);
         }
@@ -102,7 +109,10 @@ List<RpcBindingDescriptor> pluginUiRpcBindings({required PluginUiService ui}) =>
         } on PluginUiException catch (error) {
           throw _pluginUiRejection(error.message);
         } on PluginRevisionUnavailable catch (error) {
-          throw _pluginUiRejection(error.message);
+          throw RpcFailureException(
+            code: RpcErrorCodes.pluginRevisionUnavailable,
+            message: _safePluginUiFailureMessage(error.message),
+          );
         } on PluginRuntimeClosed catch (error) {
           throw _pluginUiRejection(error.message);
         }

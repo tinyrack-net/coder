@@ -1180,6 +1180,12 @@ abstract class AppLocalizations {
   /// **'The plugin interface request was rejected.'**
   String get errorPluginUiRejected;
 
+  /// The plugin has no revision this Agent has activated yet.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent has not activated the plugin yet. Send a message to start it.'**
+  String get errorPluginRevisionUnavailable;
+
   /// A session setting such as the mode or the model was changed while a turn was still streaming.
   ///
   /// In en, this message translates to:

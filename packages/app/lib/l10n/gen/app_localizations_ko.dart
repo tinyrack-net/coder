@@ -595,6 +595,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get errorPluginUiRejected => '플러그인 인터페이스 요청이 거부되었습니다.';
 
   @override
+  String get errorPluginRevisionUnavailable =>
+      '이 agent가 아직 플러그인을 활성화하지 않았습니다. 메시지를 보내면 시작됩니다.';
+
+  @override
   String get errorSessionTurnActive =>
       '이 session은 turn을 실행 중입니다. 끝나기를 기다리거나 중지한 뒤 설정을 바꿔 주세요.';
 

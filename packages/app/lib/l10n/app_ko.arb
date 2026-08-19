@@ -179,6 +179,7 @@
   "errorRequestTimeout": "Daemon이 제때 응답하지 않았습니다. 다시 시도하세요.",
   "errorInternalDaemon": "Daemon에서 예기치 못한 문제가 발생했습니다. 문제를 알릴 때 아래 내용을 복사해 주세요.",
   "errorPluginUiRejected": "플러그인 인터페이스 요청이 거부되었습니다.",
+  "errorPluginRevisionUnavailable": "이 agent가 아직 플러그인을 활성화하지 않았습니다. 메시지를 보내면 시작됩니다.",
   "errorSessionTurnActive": "이 session은 turn을 실행 중입니다. 끝나기를 기다리거나 중지한 뒤 설정을 바꿔 주세요.",
   "errorSessionSettingFailed": "Session 설정을 바꾸지 못했습니다.",
   "hostStatusOnline": "온라인",

@@ -594,6 +594,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get errorPluginUiRejected => 'プラグインインターフェースのリクエストが拒否されました。';
 
   @override
+  String get errorPluginRevisionUnavailable =>
+      'この agentはまだプラグインを有効化していません。メッセージを送ると開始されます。';
+
+  @override
   String get errorSessionTurnActive =>
       'この sessionは turnを実行中です。完了を待つか停止してから設定を変更してください。';
 

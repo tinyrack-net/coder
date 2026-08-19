@@ -142,21 +142,25 @@ void main() {
     // A slot renders against whatever revision the Agent has pinned right now.
     // Before the Agent's first turn nothing is pinned, and after shutdown the
     // runtime is gone; both are ordinary, so neither may reach the client as
-    // internal_error, which the protocol reserves for defects.
-    for (final failure in <({String name, Exception error})>[
+    // internal_error, which the protocol reserves for defects. They carry
+    // different codes because a host shows nothing for the first and reports
+    // the second.
+    for (final failure in <({String name, Exception error, String code})>[
       (
         name: 'an Agent with no active revision',
         error: const PluginRevisionUnavailable(
           'Agent agent has no active revision for plugin example.ui.',
         ),
+        code: RpcErrorCodes.pluginRevisionUnavailable,
       ),
       (
         name: 'a torn-down runtime',
         error: const PluginRuntimeClosed('Plugin runtime session is closed.'),
+        code: RpcErrorCodes.pluginUiRejected,
       ),
     ]) {
       test(
-        'render rejects ${failure.name} with a translatable code',
+        'render answers ${failure.name} with a translatable code',
         () async {
           final service = PluginUiService(
             descriptors: _ThrowingDescriptorReader(failure.error),
@@ -177,7 +181,7 @@ void main() {
               isA<RpcFailureException>().having(
                 (error) => error.code,
                 'code',
-                RpcErrorCodes.pluginUiRejected,
+                failure.code,
               ),
             ),
           );

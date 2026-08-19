@@ -740,6 +740,10 @@
   "@errorPluginUiRejected": {
     "description": "A plugin UI render or action request was safely rejected by the host."
   },
+  "errorPluginRevisionUnavailable": "This agent has not activated the plugin yet. Send a message to start it.",
+  "@errorPluginRevisionUnavailable": {
+    "description": "The plugin has no revision this Agent has activated yet."
+  },
   "errorSessionTurnActive": "This session is running a turn. Wait for it to finish or stop it, then change the setting.",
   "@errorSessionTurnActive": {
     "description": "A session setting such as the mode or the model was changed while a turn was still streaming."
