@@ -157,7 +157,13 @@ void main() {
     final setup = File(
       '.github/actions/setup-flutter/action.yml',
     ).readAsStringSync();
-    expect(setup, contains(r"cache: ${{ runner.os != 'Windows' }}"));
+    expect(
+      setup,
+      contains(
+        "cache: \${{ runner.environment == 'github-hosted' &&\n"
+        "          runner.os != 'Windows' }}",
+      ),
+    );
     expect(setup, isNot(contains('cache: true')));
     // One definition, so no job can quietly opt back into the slow path.
     expect(
@@ -1054,6 +1060,34 @@ void main() {
     // hosted label and act as the fixed point both arms are measured against.
     expect(_job(workflow, 'changes'), contains('runs-on: ubuntu-24.04'));
     expect(_job(workflow, 'quality-gate'), contains('runs-on: ubuntu-24.04'));
+  });
+
+  test('a self-hosted runner never round-trips to the Actions cache', () {
+    // Every `actions/cache` entry travels to GitHub's cache service over the
+    // internet. A homelab machine keeps its tool cache, pub cache, Gradle
+    // home, and installed packages on local disk between jobs, so the fetch
+    // buys nothing and costs the whole transfer. flutter-action's setup.sh
+    // skips the download outright when `$CACHE_PATH/flutter/bin/flutter` is
+    // already executable, which is what makes opting out cheaper rather than
+    // more expensive.
+    final setup = File(
+      '.github/actions/setup-flutter/action.yml',
+    ).readAsStringSync();
+    expect(setup, contains("runner.environment == 'github-hosted'"));
+    // pub caching follows `cache` unless it is set, so one condition governs
+    // both of flutter-action's cache steps.
+    expect(setup, isNot(contains('pub-cache:')));
+
+    expect(
+      linuxDesktopDependencies,
+      contains("if: runner.environment == 'github-hosted'"),
+    );
+    for (final gradle in <String>[
+      _job(workflow, 'mobile-debug-build'),
+      _job(workflow, 'build-android-release'),
+    ]) {
+      expect(gradle, contains('cache-disabled:'));
+    }
   });
 
   test('measured jobs record which machine actually ran them', () {

@@ -44,6 +44,11 @@ runs:
         echo "image=$image" >> "$GITHUB_OUTPUT"
 
     - name: Restore the cached packages
+      # A self-hosted machine still has the packages apt installed on its last
+      # job, so the download this cache avoids has already been avoided. Going
+      # to GitHub for the .debs would add an internet round trip to save work
+      # that is not repeated.
+      if: runner.environment == 'github-hosted'
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/.apt-debs
