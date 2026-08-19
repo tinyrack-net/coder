@@ -207,7 +207,7 @@ void main() {
                 ),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],

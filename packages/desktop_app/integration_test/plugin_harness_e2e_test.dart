@@ -961,7 +961,7 @@ local tinest = require("tinest")
 local driver = tinest.driver.define({
     id = "driver",
     required_capabilities = {tinest.capability.model.call},
-    -- No provider offers a `tool` role, so this driver can never run. The
+    -- No such model capability exists, so this driver can never run. The
     -- harness must refuse before the model is ever contacted.
     required_model_capabilities = {"role.tool"},
 }, function(_arguments) return {tool_rounds = 0} end)
@@ -1148,7 +1148,7 @@ local function run(arguments)
   end
   local stream = tinest.model.open({
     blocks = {{
-      role = tinest.model.role.developer,
+      role = tinest.model.role.system,
       content = arguments.agent_prompt,
     }},
     history = history,

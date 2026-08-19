@@ -6,13 +6,13 @@ import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('both OpenAI wires preserve exact role block order', () async {
+  test('both OpenAI wires serialize every neutral role in order', () async {
     const blocks = <ModelRoleBlock>[
-      ModelRoleBlock(role: 'system', content: 'system-1'),
-      ModelRoleBlock(role: 'developer', content: 'developer-1'),
-      ModelRoleBlock(role: 'user', content: 'user-1'),
-      ModelRoleBlock(role: 'assistant', content: 'assistant-1'),
-      ModelRoleBlock(role: 'developer', content: 'developer-2'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-1'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-2'),
+      ModelRoleBlock(role: ModelRole.user, content: 'user-1'),
+      ModelRoleBlock(role: ModelRole.assistant, content: 'assistant-1'),
+      ModelRoleBlock(role: ModelRole.system, content: 'system-3'),
     ];
     const request = ModelRequest(
       model: 'gpt-5.6-sol',
@@ -38,7 +38,7 @@ data: [DONE]
             as List;
     expect(
       responsesInput.map((item) => (item as Map)['role']),
-      blocks.map((block) => block.role),
+      blocks.map((block) => block.role.name),
     );
     expect(
       responsesInput.map(
@@ -66,8 +66,14 @@ data: [DONE]
       messages,
       <Map<String, dynamic>>[
         for (final block in blocks)
-          <String, dynamic>{'role': block.role, 'content': block.content},
+          <String, dynamic>{'role': block.role.name, 'content': block.content},
       ],
+    );
+    // The regression lock on the reported 400: this wire serves every
+    // OpenAI-compatible vendor, and most accept only the classic roles.
+    expect(
+      messages.map((message) => (message as Map)['role']),
+      everyElement(isIn(<String>['system', 'user', 'assistant'])),
     );
   });
 
@@ -95,7 +101,7 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: const <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[
                 UserConversationItem(
@@ -211,7 +217,7 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: const <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: history,
               tools: const <ModelToolDefinition>[],
@@ -254,7 +260,7 @@ data: [DONE]
                     const AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                const ModelRoleBlock(role: 'developer', content: 'test'),
+                const ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[
                 ...history,
@@ -317,7 +323,7 @@ data: [DONE]
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[
@@ -462,7 +468,7 @@ data: [DONE]
                       const AgentModelControlBoolValue(value: true),
               },
               blocks: <ModelRoleBlock>[
-                const ModelRoleBlock(role: 'developer', content: 'test'),
+                const ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: const <ConversationItem>[],
               tools: const <ModelToolDefinition>[],
@@ -504,7 +510,7 @@ data: [DONE]
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
@@ -549,7 +555,7 @@ data: [DONE]
                   AgentModelControlStringValue(value: 'medium'),
             },
             blocks: <ModelRoleBlock>[
-              ModelRoleBlock(role: 'developer', content: 'test'),
+              ModelRoleBlock(role: ModelRole.system, content: 'test'),
             ],
             history: <ConversationItem>[
               UserConversationItem('inspect'),
@@ -908,7 +914,7 @@ data: {"choices":[{"index":0,"delta":{"content":"partial"}}]}
                     AgentModelControlStringValue(value: 'medium'),
               },
               blocks: <ModelRoleBlock>[
-                ModelRoleBlock(role: 'developer', content: 'test'),
+                ModelRoleBlock(role: ModelRole.system, content: 'test'),
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
@@ -1390,7 +1396,7 @@ ModelRequest _request({
     ),
   },
   blocks: const <ModelRoleBlock>[
-    ModelRoleBlock(role: 'developer', content: 'instructions'),
+    ModelRoleBlock(role: ModelRole.system, content: 'instructions'),
   ],
   history: history,
   tools: tools,

@@ -73,7 +73,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
     'model': request.model,
     'messages': <Map<String, dynamic>>[
       for (final block in request.blocks)
-        <String, dynamic>{'role': block.role, 'content': block.content},
+        <String, dynamic>{'role': block.role.name, 'content': block.content},
       ..._messages(request.history),
     ],
     if (_config.supportsReasoningEffort)

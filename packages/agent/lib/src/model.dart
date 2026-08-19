@@ -453,20 +453,37 @@ class ToolResultConversationItem extends ConversationItem {
   };
 }
 
+/// Roles a driver may address, accepted by every transport the runtime speaks.
+///
+/// A vendor superset is not a neutral vocabulary: a role only one transport
+/// knows reaches the others as an unknown variant and fails the request. This
+/// set is therefore the intersection, and a transport that draws a finer
+/// distinction owns that mapping privately.
+enum ModelRole {
+  /// Instructions that frame the whole conversation.
+  system,
+
+  /// Input authored by the person driving the turn.
+  user,
+
+  /// Output previously authored by the model.
+  assistant,
+}
+
 /// A role-qualified prompt block supplied by an Agent driver.
 final class ModelRoleBlock {
   /// Creates one ordered prompt block.
   const ModelRoleBlock({required this.role, required this.content});
 
-  /// Provider-neutral role name advertised by model capabilities.
-  final String role;
+  /// Provider-neutral role of this block.
+  final ModelRole role;
 
   /// Text content of this block.
   final String content;
 
   /// JSON representation consumed by plugin and provider boundaries.
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'role': role,
+    'role': role.name,
     'content': content,
   };
 }

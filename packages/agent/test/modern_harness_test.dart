@@ -167,7 +167,7 @@ void main() {
 
   test('model requests and stream events retain driver-owned data', () async {
     final marker = DateTime.now().microsecondsSinceEpoch.toString();
-    final block = ModelRoleBlock(role: 'developer', content: marker);
+    final block = ModelRoleBlock(role: ModelRole.system, content: marker);
     final request = ModelRequest(
       model: 'test-model',
       blocks: <ModelRoleBlock>[block],
@@ -192,8 +192,15 @@ void main() {
       ),
     ];
 
+    // The neutral role set is the intersection every transport accepts. A
+    // vendor superset reaches the others as an unknown role and 400s there.
+    expect(ModelRole.values.map((role) => role.name), <String>[
+      'system',
+      'user',
+      'assistant',
+    ]);
     expect(block.toJson(), <String, dynamic>{
-      'role': 'developer',
+      'role': 'system',
       'content': marker,
     });
     expect(request.blocks.single, same(block));

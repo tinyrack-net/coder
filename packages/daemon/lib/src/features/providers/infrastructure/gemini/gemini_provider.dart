@@ -107,12 +107,15 @@ final class GeminiInteractionsProvider implements ModelGateway {
     );
     return <String, dynamic>{
       'model': request.model,
+      // Complementary to the system-instruction filter, so a role added later
+      // reaches the transport rather than being dropped between two positive
+      // predicates.
       'input': <Map<String, dynamic>>[
         for (final block in request.blocks.where(
-          (block) => block.role == 'user' || block.role == 'assistant',
+          (block) => block.role != ModelRole.system,
         ))
           <String, dynamic>{
-            'role': block.role,
+            'role': block.role.name,
             'content': <Map<String, dynamic>>[
               <String, dynamic>{'type': 'text', 'text': block.content},
             ],
@@ -120,9 +123,7 @@ final class GeminiInteractionsProvider implements ModelGateway {
         ..._input(request.history),
       ],
       'system_instruction': request.blocks
-          .where(
-            (block) => block.role == 'system' || block.role == 'developer',
-          )
+          .where((block) => block.role == ModelRole.system)
           .map((block) => block.content)
           .join('\n\n'),
       'stream': true,

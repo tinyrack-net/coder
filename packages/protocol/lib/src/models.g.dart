@@ -1179,9 +1179,6 @@ _ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   fileInput:
       $enumDecodeNullable(_$CapabilitySupportEnumMap, json['fileInput']) ??
       CapabilitySupport.unknown,
-  roles:
-      (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const <String>['system', 'developer', 'user', 'assistant'],
   controls:
       (json['controls'] as List<dynamic>?)
           ?.map(
@@ -1204,7 +1201,6 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'deferredTools': _$CapabilitySupportEnumMap[instance.deferredTools]!,
   'imageInput': _$CapabilitySupportEnumMap[instance.imageInput]!,
   'fileInput': _$CapabilitySupportEnumMap[instance.fileInput]!,
-  'roles': instance.roles,
   'controls': instance.controls,
   'source': _$CapabilitySourceEnumMap[instance.source]!,
 };

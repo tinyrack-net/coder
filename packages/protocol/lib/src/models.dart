@@ -1366,8 +1366,6 @@ abstract class ModelCapabilitiesDto with _$ModelCapabilitiesDto {
     @Default(CapabilitySupport.unknown) CapabilitySupport deferredTools,
     @Default(CapabilitySupport.unknown) CapabilitySupport imageInput,
     @Default(CapabilitySupport.unknown) CapabilitySupport fileInput,
-    @Default(<String>['system', 'developer', 'user', 'assistant'])
-    List<String> roles,
     @Default(<ModelControlDescriptorDto>[])
     List<ModelControlDescriptorDto> controls,
     @Default(CapabilitySource.unknown) CapabilitySource source,

@@ -279,10 +279,10 @@ class OpenAIResponsesProvider implements ModelGateway {
         ...request.blocks.map(
           (block) => <String, dynamic>{
             'type': 'message',
-            'role': block.role,
+            'role': block.role.name,
             'content': <Map<String, dynamic>>[
               <String, dynamic>{
-                'type': block.role == 'assistant'
+                'type': block.role == ModelRole.assistant
                     ? 'output_text'
                     : 'input_text',
                 'text': block.content,

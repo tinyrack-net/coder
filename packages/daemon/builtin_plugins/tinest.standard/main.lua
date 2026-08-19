@@ -35,20 +35,20 @@ local function prompt_blocks(arguments)
         "{{workspace_root}}",
         tostring(host_policy.workspace_root or "")
       )
-      append(result, {role = tinest.model.role.developer, content = policy})
+      append(result, {role = tinest.model.role.system, content = policy})
     end
   end
   if type(arguments.project_document) == "string" and
       arguments.project_document ~= "" then
     append(result, {
-      role = tinest.model.role.developer,
+      role = tinest.model.role.system,
       content = arguments.project_document,
     })
   end
   for _, extension in ipairs(arguments.extensions or {}) do
     if type(extension) == "table" and type(extension.prompt) == "string" then
       append(result, {
-        role = tinest.model.role.developer,
+        role = tinest.model.role.system,
         content = extension.prompt,
       })
     end
@@ -56,7 +56,7 @@ local function prompt_blocks(arguments)
   if type(arguments.agent_prompt) == "string" and
       arguments.agent_prompt ~= "" then
     append(result, {
-      role = tinest.model.role.developer,
+      role = tinest.model.role.system,
       content = arguments.agent_prompt,
     })
   end
@@ -134,7 +134,7 @@ local function compact_history(history, instructions)
   while true do
     local assistant, _, _, failure = model_response({
       blocks = {{
-        role = tinest.model.role.developer,
+        role = tinest.model.role.system,
         content = compaction_instructions(instructions),
       }},
       history = summary_history,
@@ -319,8 +319,6 @@ local driver = tinest.driver.define({
   },
   required_model_capabilities = {
     tinest.model.capability.streaming,
-    tinest.model.capability.role.system,
-    tinest.model.capability.role.developer,
   },
   metadata = {
     name = "Standard driver",
