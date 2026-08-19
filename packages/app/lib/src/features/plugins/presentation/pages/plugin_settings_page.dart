@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/plugins/application/plugin_settings_controller.dart';
+import 'package:app/src/features/plugins/domain/plugin_revision_label.dart';
 import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
@@ -410,9 +411,14 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
                 description: plugin.isStale
                     ? TRText.inherit(l10n.pluginSettingsStale)
                     : null,
+                // Even shortened, a monospace digest and its label stop
+                // sharing a line once the reader scales the text up.
+                controlLayout: SettingsControlLayout.responsive,
                 control: TRCode(
-                  plugin.revision?.contentHash ??
-                      l10n.pluginSettingsRevisionMissing,
+                  switch (plugin.revision?.contentHash) {
+                    final hash? => pluginRevisionLabel(hash),
+                    null => l10n.pluginSettingsRevisionMissing,
+                  },
                 ),
               ),
             ],
@@ -458,7 +464,8 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
                 ),
                 SettingsRow(
                   title: TRText.inherit(l10n.pluginSettingsSdkAbi),
-                  control: TRCode(authoring.sdkAbiHash),
+                  controlLayout: SettingsControlLayout.responsive,
+                  control: TRCode(pluginRevisionLabel(authoring.sdkAbiHash)),
                 ),
                 SettingsRow(
                   title: TRText.inherit(l10n.pluginSettingsLuaRuntime),

@@ -41,7 +41,7 @@ void main() {
         find.byKey(const ValueKey<String>('plugin-fork-button')),
         findsOneWidget,
       );
-      expect(find.text('plan-revision'), findsOneWidget);
+      expect(find.text(_planRevisionLabel), findsOneWidget);
       expect(find.text('state.agent'), findsWidgets);
       expect(find.text('Tinest'), findsWidgets);
       expect(find.text('settings'), findsWidgets);
@@ -150,22 +150,62 @@ void main() {
       final router = await _pumpPlugins(tester, api);
       addTearDown(router.dispose);
 
-      expect(find.text('plan-revision'), findsNothing);
+      expect(find.text(_planRevisionLabel), findsNothing);
       await tester.tap(find.text('Plan').first);
       await tester.pumpAndSettle();
-      expect(find.text('plan-revision'), findsOneWidget);
+      expect(find.text(_planRevisionLabel), findsOneWidget);
+
+      // The revision keeps its own row: a digest shown whole took the entire
+      // line, wrapped the label one character per line, and still overflowed.
+      final pane = tester.getRect(find.byType(SettingsScaffold));
+      expect(
+        tester.getRect(find.text(_planRevisionLabel)).right,
+        lessThanOrEqualTo(pane.right),
+      );
+      expect(
+        tester.getRect(find.text('활성 리비전')).width,
+        greaterThan(TRMeasurements.measureXs),
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('plan-revision'), findsNothing);
+      expect(find.text(_planRevisionLabel), findsNothing);
       expect(find.byKey(const ValueKey('plugin-add-button')), findsOneWidget);
     },
     tags: const <String>[
       'feature_test__plugin_management__widget',
       'route_test__plugin_settings_route__widget',
     ],
+  );
+
+  testWidgets(
+    'keeps the revision inside its row at a large text scale',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 760));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[_tinestAgent],
+        plugins: const <PluginDescriptorDto>[_planPlugin],
+      );
+      final router = await _pumpPlugins(
+        tester,
+        api,
+        textScaler: const TextScaler.linear(2),
+      );
+      addTearDown(router.dispose);
+      await tester.tap(find.text('Plan').first);
+      await tester.pumpAndSettle();
+
+      // Scaled up, the digest and its label no longer share a line, so the
+      // row hands the whole width to each in turn instead of overflowing.
+      final label = tester.getRect(find.text('활성 리비전'));
+      final revision = tester.getRect(find.text(_planRevisionLabel));
+      expect(revision.top, greaterThan(label.bottom));
+      expect(revision.right, lessThanOrEqualTo(390));
+    },
+    tags: const <String>['feature_test__plugin_management__widget'],
   );
 
   testWidgets(
@@ -216,7 +256,7 @@ void main() {
       );
       final router = await _pumpPlugins(tester, api);
       addTearDown(router.dispose);
-      expect(find.text('plan-revision'), findsOneWidget);
+      expect(find.text(_planRevisionLabel), findsOneWidget);
 
       api.emitPluginChange(
         _planPlugin.copyWith(
@@ -234,7 +274,7 @@ void main() {
 
       expect(find.text('invalid_plugin_definition'), findsOneWidget);
       expect(find.text('Lua definition is invalid.'), findsOneWidget);
-      expect(find.text('plan-revision'), findsOneWidget);
+      expect(find.text(_planRevisionLabel), findsOneWidget);
     },
     tags: const <String>['feature_test__plugin_management__widget'],
   );
@@ -260,7 +300,7 @@ void main() {
       expect(find.text('Lua 개발 환경'), findsOneWidget);
       expect(find.text('동기화 필요'), findsOneWidget);
       expect(find.text('SDK ABI'), findsOneWidget);
-      expect(find.text('sdk-abi-hash'), findsOneWidget);
+      expect(find.text(_sdkAbiLabel), findsOneWidget);
       expect(find.text('luarc_missing'), findsOneWidget);
       expect(
         find.text('The LuaLS workspace configuration is missing.'),
@@ -286,6 +326,20 @@ void main() {
   );
 }
 
+/// A revision digest in the shape the daemon produces: a full sha256 hash.
+const _planContentHash =
+    'a71d7554b33bc6f9e462e185d0c2f4b8e3a19c6d5f78b0e2a4c6d8f0b2e4a6c8';
+
+/// The leading characters of [_planContentHash] a settings row shows.
+const _planRevisionLabel = 'a71d7554b33b';
+
+/// The SDK ABI digest, which the daemon derives the same way.
+const _sdkAbiHash =
+    'c0ffee1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+
+/// The leading characters of [_sdkAbiHash] a settings row shows.
+const _sdkAbiLabel = 'c0ffee123456';
+
 const _planPlugin = PluginDescriptorDto(
   apiMajor: 5,
   id: 'tinest.plan',
@@ -297,7 +351,7 @@ const _planPlugin = PluginDescriptorDto(
   requestedCapabilities: <String>['state.agent'],
   revision: PluginRevisionDto(
     pluginId: 'tinest.plan',
-    contentHash: 'plan-revision',
+    contentHash: _planContentHash,
     manifestHash: 'plan-manifest',
     sdkAbiHash: 'sdk-abi-hash',
     executionRevisionHash: 'plan-execution-revision',
@@ -360,7 +414,7 @@ const _userPlugin = PluginDescriptorDto(
 const _unsynchronizedAuthoring = PluginAuthoringEnvironmentDto(
   pluginId: 'example.tools',
   apiMajor: 5,
-  sdkAbiHash: 'sdk-abi-hash',
+  sdkAbiHash: _sdkAbiHash,
   luaRuntimeVersion: '5.5.1',
   luaLanguageServerVersion: '3.18.2',
   pluginPath: r'C:\config\v5\plugins\example.tools',
@@ -386,8 +440,9 @@ const _planUi = PluginUiDocumentDto(
 
 Future<GoRouter> _pumpPlugins(
   WidgetTester tester,
-  FakeTinestApi api,
-) async {
+  FakeTinestApi api, {
+  TextScaler textScaler = TextScaler.noScaling,
+}) async {
   final router = GoRouter(
     initialLocation: const PluginSettingsRoute(hostId: 'server').location,
     routes: $appRoutes,
@@ -402,6 +457,10 @@ Future<GoRouter> _pumpPlugins(
         localizationsDelegates: testLocalizationsDelegates,
         supportedLocales: testSupportedLocales,
         routerConfig: router,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
       ),
     ),
   );
