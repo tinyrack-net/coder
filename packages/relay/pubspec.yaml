@@ -1,6 +1,6 @@
 name: relay
 description: Opaque WebSocket relay server for Tinest.
-version: 0.5.2
+version: 0.6.0
 publish_to: none
 resolution: workspace
 
