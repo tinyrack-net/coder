@@ -30,12 +30,10 @@ void main() {
       description: 'Read a file.',
       parameters: <String, dynamic>{'type': 'object'},
       outputSchema: <String, dynamic>{'type': 'object'},
-      supportsParallelToolCalls: true,
     );
 
     expect(function.kind, ModelToolKind.function);
     expect(function.outputSchema, <String, dynamic>{'type': 'object'});
-    expect(function.supportsParallelToolCalls, isTrue);
 
     const namespace = ModelNamespaceToolDefinition(
       name: 'clock',
@@ -51,7 +49,6 @@ void main() {
     expect(namespace.tools.single.name, 'read_file');
     expect(deferred.kind, ModelToolKind.deferredSearch);
     expect(deferred.name, 'discover_tools');
-    expect(deferred.execution, 'client');
   });
 
   test('every model call kind exposes plain JSON arguments', () {
@@ -175,7 +172,6 @@ void main() {
         AssistantConversationItem(text: marker),
       ],
       tools: const <ModelToolDefinition>[],
-      safetyIdentifier: 'session',
       forceToolName: 'clock',
     );
     final events = <ModelEvent>[

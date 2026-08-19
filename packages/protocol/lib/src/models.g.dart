@@ -1344,7 +1344,6 @@ _CustomProviderConfigDto _$CustomProviderConfigDtoFromJson(
   baseUrl: json['baseUrl'] as String,
   wireFormatId: json['wireFormatId'] as String,
   authenticationRequired: json['authenticationRequired'] as bool,
-  strictToolSchema: json['strictToolSchema'] as bool? ?? false,
   models:
       (json['models'] as List<dynamic>?)
           ?.map(
@@ -1361,7 +1360,6 @@ Map<String, dynamic> _$CustomProviderConfigDtoToJson(
   'baseUrl': instance.baseUrl,
   'wireFormatId': instance.wireFormatId,
   'authenticationRequired': instance.authenticationRequired,
-  'strictToolSchema': instance.strictToolSchema,
   'models': instance.models,
 };
 

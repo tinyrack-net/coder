@@ -69,18 +69,17 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
 
   /// Builds the adapter, letting a vendor add its own non-secret headers.
   ///
-  /// [supportsPlatformRequestFields] gates `service_tier` and
-  /// `safety_identifier`: they are documented for platform.openai.com, and a
-  /// narrower compatible surface answers 400 for a request carrying either,
-  /// so the model capability alone cannot decide whether to send them.
+  /// Every optional request field is decided by what the endpoint states it
+  /// accepts. One wire implementation serves many endpoints, so a default here
+  /// would be one vendor's answer applied to all of them.
   ModelGateway adapterFor(
     ModelGatewayRequest request, {
     Map<String, String> additionalHeaders = const <String, String>{},
-    bool supportsPlatformRequestFields = true,
-    bool supportsReasoningSummary = false,
+    String? requestAttribution,
   }) {
     final credential = request.credential;
     final capabilities = request.capabilities;
+    final endpoint = request.endpoint;
     final config = OpenAIProviderConfig(
       id: request.connectionId,
       apiKey: switch (credential) {
@@ -88,23 +87,26 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
         OAuthCredential(:final accessToken) => accessToken,
         null => '',
       },
-      baseUrl: request.endpoint.baseUrl,
+      baseUrl: endpoint.baseUrl,
       requiresApiKey: credential != null,
       supportsReasoningEffort: capabilities.controls.any(
         (control) => control.id == AgentModelControlIds.reasoningEffort,
       ),
-      supportsReasoningSummary: supportsReasoningSummary,
       supportsImageInput:
           capabilities.imageInput == AgentCapabilitySupport.supported,
       supportsFileInput:
           capabilities.fileInput == AgentCapabilitySupport.supported,
-      supportsServiceTier:
-          capabilities.controls.any(
-            (control) => control.id == AgentModelControlIds.fastMode,
-          ) &&
-          supportsPlatformRequestFields,
-      supportsSafetyIdentifier: supportsPlatformRequestFields,
-      strictToolSchema: request.endpoint.strictToolSchema,
+      // Expedited processing needs both halves: the endpoint has to define the
+      // field and the model has to offer the control that sets it.
+      extensions: <ProviderEndpointExtension>{
+        for (final extension in endpoint.extensions)
+          if (extension != ProviderEndpointExtension.expeditedProcessing ||
+              capabilities.controls.any(
+                (control) => control.id == AgentModelControlIds.fastMode,
+              ))
+            extension,
+      },
+      requestAttribution: requestAttribution,
       additionalHeaders: additionalHeaders,
     );
     final dio = dioFactory?.call(request.endpoint);

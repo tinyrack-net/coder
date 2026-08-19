@@ -74,11 +74,7 @@ enum ModelToolKind {
 
 /// Provider-neutral model-facing tool declaration.
 sealed class ModelToolDefinition {
-  const ModelToolDefinition({
-    required this.name,
-    required this.description,
-    this.supportsParallelToolCalls = false,
-  });
+  const ModelToolDefinition({required this.name, required this.description});
 
   /// The name public API member.
   final String name;
@@ -88,9 +84,6 @@ sealed class ModelToolDefinition {
 
   /// Wire-level tool kind.
   ModelToolKind get kind;
-
-  /// Whether calls to this tool may run concurrently with sibling calls.
-  final bool supportsParallelToolCalls;
 }
 
 /// A strict or provider-owned JSON function tool.
@@ -101,8 +94,6 @@ final class ModelFunctionToolDefinition extends ModelToolDefinition {
     required super.description,
     required this.parameters,
     this.outputSchema,
-    this.strict = true,
-    super.supportsParallelToolCalls,
   });
 
   @override
@@ -113,9 +104,6 @@ final class ModelFunctionToolDefinition extends ModelToolDefinition {
 
   /// Optional JSON schema produced by the function.
   final Map<String, dynamic>? outputSchema;
-
-  /// Whether [parameters] satisfies provider strict-schema requirements.
-  final bool strict;
 }
 
 /// One function nested in a provider namespace.
@@ -141,14 +129,10 @@ final class ModelDeferredSearchToolDefinition extends ModelToolDefinition {
     required super.name,
     required super.description,
     required this.parameters,
-    this.execution = 'client',
   });
 
   @override
   ModelToolKind get kind => ModelToolKind.deferredSearch;
-
-  /// Where matching and loading are performed.
-  final String execution;
 
   /// Query and result-limit schema.
   final Map<String, dynamic> parameters;
@@ -496,7 +480,6 @@ class ModelRequest {
     required this.blocks,
     required this.history,
     required this.tools,
-    required this.safetyIdentifier,
     this.modelControls = const <String, AgentModelControlValue>{},
     this.forceToolName,
   });
@@ -515,9 +498,6 @@ class ModelRequest {
 
   /// The tools public API member.
   final List<ModelToolDefinition> tools;
-
-  /// The safetyIdentifier public API member.
-  final String safetyIdentifier;
 
   /// The forceToolName public API member.
   final String? forceToolName;

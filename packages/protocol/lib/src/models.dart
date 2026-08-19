@@ -1469,7 +1469,6 @@ abstract class CustomProviderConfigDto with _$CustomProviderConfigDto {
     required String baseUrl,
     required String wireFormatId,
     required bool authenticationRequired,
-    @Default(false) bool strictToolSchema,
     @Default(<ManualProviderModelDto>[]) List<ManualProviderModelDto> models,
   }) = _CustomProviderConfigDto;
 

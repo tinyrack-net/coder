@@ -13136,7 +13136,7 @@ as List<ModelControlDescriptorDto>,
 /// @nodoc
 mixin _$CustomProviderConfigDto {
 
- String get name; String get baseUrl; String get wireFormatId; bool get authenticationRequired; bool get strictToolSchema; List<ManualProviderModelDto> get models;
+ String get name; String get baseUrl; String get wireFormatId; bool get authenticationRequired; List<ManualProviderModelDto> get models;
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -13149,16 +13149,16 @@ $CustomProviderConfigDtoCopyWith<CustomProviderConfigDto> get copyWith => _$Cust
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other.models, models));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&const DeepCollectionEquality().equals(other.models, models));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(models));
+int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,const DeepCollectionEquality().hash(models));
 
 @override
 String toString() {
-  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, models: $models)';
+  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, models: $models)';
 }
 
 
@@ -13169,7 +13169,7 @@ abstract mixin class $CustomProviderConfigDtoCopyWith<$Res>  {
   factory $CustomProviderConfigDtoCopyWith(CustomProviderConfigDto value, $Res Function(CustomProviderConfigDto) _then) = _$CustomProviderConfigDtoCopyWithImpl;
 @useResult
 $Res call({
- String name, String baseUrl, String wireFormatId, bool authenticationRequired, bool strictToolSchema, List<ManualProviderModelDto> models
+ String name, String baseUrl, String wireFormatId, bool authenticationRequired, List<ManualProviderModelDto> models
 });
 
 
@@ -13186,13 +13186,12 @@ class _$CustomProviderConfigDtoCopyWithImpl<$Res>
 
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? models = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? models = null,}) {
   return _then(_self.copyWith(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,baseUrl: null == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
 as String,wireFormatId: null == wireFormatId ? _self.wireFormatId : wireFormatId // ignore: cast_nullable_to_non_nullable
 as String,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
-as bool,strictToolSchema: null == strictToolSchema ? _self.strictToolSchema : strictToolSchema // ignore: cast_nullable_to_non_nullable
 as bool,models: null == models ? _self.models : models // ignore: cast_nullable_to_non_nullable
 as List<ManualProviderModelDto>,
   ));
@@ -13279,10 +13278,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<ManualProviderModelDto> models)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  List<ManualProviderModelDto> models)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto() when $default != null:
-return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.models);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.models);case _:
   return orElse();
 
 }
@@ -13300,10 +13299,10 @@ return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authentication
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<ManualProviderModelDto> models)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  List<ManualProviderModelDto> models)  $default,) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto():
-return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.models);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.models);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -13320,10 +13319,10 @@ return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authentication
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  bool strictToolSchema,  List<ManualProviderModelDto> models)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String baseUrl,  String wireFormatId,  bool authenticationRequired,  List<ManualProviderModelDto> models)?  $default,) {final _that = this;
 switch (_that) {
 case _CustomProviderConfigDto() when $default != null:
-return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.strictToolSchema,_that.models);case _:
+return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authenticationRequired,_that.models);case _:
   return null;
 
 }
@@ -13335,14 +13334,13 @@ return $default(_that.name,_that.baseUrl,_that.wireFormatId,_that.authentication
 @JsonSerializable()
 
 class _CustomProviderConfigDto implements CustomProviderConfigDto {
-  const _CustomProviderConfigDto({required this.name, required this.baseUrl, required this.wireFormatId, required this.authenticationRequired, this.strictToolSchema = false, final  List<ManualProviderModelDto> models = const <ManualProviderModelDto>[]}): _models = models;
+  const _CustomProviderConfigDto({required this.name, required this.baseUrl, required this.wireFormatId, required this.authenticationRequired, final  List<ManualProviderModelDto> models = const <ManualProviderModelDto>[]}): _models = models;
   factory _CustomProviderConfigDto.fromJson(Map<String, dynamic> json) => _$CustomProviderConfigDtoFromJson(json);
 
 @override final  String name;
 @override final  String baseUrl;
 @override final  String wireFormatId;
 @override final  bool authenticationRequired;
-@override@JsonKey() final  bool strictToolSchema;
  final  List<ManualProviderModelDto> _models;
 @override@JsonKey() List<ManualProviderModelDto> get models {
   if (_models is EqualUnmodifiableListView) return _models;
@@ -13364,16 +13362,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&(identical(other.strictToolSchema, strictToolSchema) || other.strictToolSchema == strictToolSchema)&&const DeepCollectionEquality().equals(other._models, _models));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CustomProviderConfigDto&&(identical(other.name, name) || other.name == name)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.wireFormatId, wireFormatId) || other.wireFormatId == wireFormatId)&&(identical(other.authenticationRequired, authenticationRequired) || other.authenticationRequired == authenticationRequired)&&const DeepCollectionEquality().equals(other._models, _models));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,strictToolSchema,const DeepCollectionEquality().hash(_models));
+int get hashCode => Object.hash(runtimeType,name,baseUrl,wireFormatId,authenticationRequired,const DeepCollectionEquality().hash(_models));
 
 @override
 String toString() {
-  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, strictToolSchema: $strictToolSchema, models: $models)';
+  return 'CustomProviderConfigDto(name: $name, baseUrl: $baseUrl, wireFormatId: $wireFormatId, authenticationRequired: $authenticationRequired, models: $models)';
 }
 
 
@@ -13384,7 +13382,7 @@ abstract mixin class _$CustomProviderConfigDtoCopyWith<$Res> implements $CustomP
   factory _$CustomProviderConfigDtoCopyWith(_CustomProviderConfigDto value, $Res Function(_CustomProviderConfigDto) _then) = __$CustomProviderConfigDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String baseUrl, String wireFormatId, bool authenticationRequired, bool strictToolSchema, List<ManualProviderModelDto> models
+ String name, String baseUrl, String wireFormatId, bool authenticationRequired, List<ManualProviderModelDto> models
 });
 
 
@@ -13401,13 +13399,12 @@ class __$CustomProviderConfigDtoCopyWithImpl<$Res>
 
 /// Create a copy of CustomProviderConfigDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? strictToolSchema = null,Object? models = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? baseUrl = null,Object? wireFormatId = null,Object? authenticationRequired = null,Object? models = null,}) {
   return _then(_CustomProviderConfigDto(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,baseUrl: null == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
 as String,wireFormatId: null == wireFormatId ? _self.wireFormatId : wireFormatId // ignore: cast_nullable_to_non_nullable
 as String,authenticationRequired: null == authenticationRequired ? _self.authenticationRequired : authenticationRequired // ignore: cast_nullable_to_non_nullable
-as bool,strictToolSchema: null == strictToolSchema ? _self.strictToolSchema : strictToolSchema // ignore: cast_nullable_to_non_nullable
 as bool,models: null == models ? _self._models : models // ignore: cast_nullable_to_non_nullable
 as List<ManualProviderModelDto>,
   ));

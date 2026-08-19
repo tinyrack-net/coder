@@ -105,7 +105,6 @@ void main() {
             deferredTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: grants,
           primitives: mcpHost.registry,
           state: NativePluginStateRepository(stateRoot.path),

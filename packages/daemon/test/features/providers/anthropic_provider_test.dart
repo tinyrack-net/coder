@@ -36,7 +36,6 @@ data: {"type":"message_stop"}
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
@@ -200,7 +199,6 @@ ModelRequest _request({
   ],
   history: history,
   tools: const <ModelToolDefinition>[],
-  safetyIdentifier: 'safe',
 );
 
 final class _RecordingAdapter implements HttpClientAdapter {

@@ -160,7 +160,9 @@ final class AnthropicMessagesProvider implements ModelGateway {
             'name': tool.name,
             'description': tool.description,
             'input_schema': tool.parameters,
-            if (tool.strict) 'strict': true,
+            // Every schema the harness produces is strict, and this endpoint
+            // documents the field, so the decision belongs to this wire.
+            'strict': true,
           },
       ],
       if (request.forceToolName != null)

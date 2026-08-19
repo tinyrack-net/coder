@@ -27,7 +27,6 @@ final class LuaAgentHarnessRequest {
     required this.model,
     required this.modelCapabilities,
     required this.history,
-    required this.safetyIdentifier,
     required this.allowedCapabilitiesByPlugin,
     this.workspaceId,
     this.attachments = const <ConversationAttachment>[],
@@ -88,9 +87,6 @@ final class LuaAgentHarnessRequest {
   ///
   /// The driver decides where these ordered items enter its model context.
   final List<ConversationItem> turnInputs;
-
-  /// Core-owned identifier used by provider abuse controls.
-  final String safetyIdentifier;
 
   /// Already validated provider controls.
   final Map<String, AgentModelControlValue> modelControls;
@@ -1718,7 +1714,6 @@ final class _TurnCallbackRouter
           blocks: blocks,
           history: history,
           tools: tools,
-          safetyIdentifier: request.safetyIdentifier,
           modelControls: request.modelControls,
           forceToolName: arguments['force_tool_name'] as String?,
         ),

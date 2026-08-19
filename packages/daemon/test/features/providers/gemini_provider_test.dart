@@ -36,7 +36,6 @@ data: [DONE]
               ],
               history: <ConversationItem>[],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )
@@ -120,7 +119,6 @@ data: [DONE]
                 UserConversationItem('hello'),
               ],
               tools: <ModelToolDefinition>[],
-              safetyIdentifier: 'safe',
             ),
             CancellationToken(),
           )

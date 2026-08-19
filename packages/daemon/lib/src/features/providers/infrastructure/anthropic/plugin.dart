@@ -118,10 +118,7 @@ final class AnthropicAdapter extends ProviderAdapter {
 
   @override
   ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
-      const ProviderEndpoint(
-        baseUrl: 'https://api.anthropic.com/v1',
-        strictToolSchema: true,
-      );
+      const ProviderEndpoint(baseUrl: 'https://api.anthropic.com/v1');
 
   @override
   ModelGateway createProvider(ModelGatewayRequest request) =>

@@ -81,7 +81,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
         request,
         AgentModelControlIds.reasoningEffort,
       ),
-    if (_config.supportsServiceTier &&
+    if (_config.accepts(ProviderEndpointExtension.expeditedProcessing) &&
         modelControlBool(request, AgentModelControlIds.fastMode) == true)
       'service_tier': 'priority',
     'tools': request.tools
@@ -93,7 +93,8 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
               'name': tool.name,
               'description': tool.description,
               'parameters': tool.parameters,
-              if (tool.strict && _config.strictToolSchema) 'strict': true,
+              if (_config.accepts(ProviderEndpointExtension.strictToolSchemas))
+                'strict': true,
             },
           },
         )

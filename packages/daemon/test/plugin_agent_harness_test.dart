@@ -132,7 +132,6 @@ void main() {
               attachments: <ConversationAttachment>[attachment],
             ),
           ],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: const <String, Set<String>>{
             'acme.driver': <String>{'model.call', 'tools.list'},
           },
@@ -252,7 +251,6 @@ void main() {
               'workspace_root': '/workspace',
             },
           },
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             standard.descriptor.id: capabilities,
           },
@@ -325,7 +323,6 @@ void main() {
               streaming: AgentCapabilitySupport.supported,
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: const <String, Set<String>>{
               'acme.raw-role': <String>{'model.call', 'tools.list'},
             },
@@ -405,7 +402,6 @@ void main() {
                 streaming: AgentCapabilitySupport.supported,
               ),
               history: const <ConversationItem>[],
-              safetyIdentifier: 'safety',
               allowedCapabilitiesByPlugin: const <String, Set<String>>{
                 'acme.driver': <String>{'model.call', 'tools.list'},
               },
@@ -572,7 +568,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -712,7 +707,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -789,7 +783,6 @@ void main() {
           model: _RecordingModelGateway(),
           modelCapabilities: const AgentModelCapabilities(),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: grants,
           },
@@ -912,7 +905,6 @@ void main() {
             deferredTools: AgentCapabilitySupport.unsupported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: allowedCapabilities,
           state: MemoryPluginStateStore(),
         ),
@@ -1105,7 +1097,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: allowedCapabilities,
           state: MemoryPluginStateStore(),
         ),
@@ -1253,7 +1244,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             luaCode.descriptor.id: capabilities,
           },
@@ -1327,7 +1317,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: const <String, Set<String>>{
             'acme.text': <String>{
               'model.call',
@@ -1427,7 +1416,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -1519,7 +1507,6 @@ void main() {
               streaming: AgentCapabilitySupport.supported,
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: <String, Set<String>>{
               bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                   .toSet(),
@@ -1616,7 +1603,6 @@ void main() {
                 streaming: AgentCapabilitySupport.supported,
               ),
               history: const <ConversationItem>[],
-              safetyIdentifier: 'safety',
               allowedCapabilitiesByPlugin: <String, Set<String>>{
                 bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                     .toSet(),
@@ -1718,7 +1704,6 @@ void main() {
             streaming: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -2336,7 +2321,6 @@ void main() {
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: const <String, Set<String>>{
           'acme.scheduler': <String>{'scheduler.manage'},
         },
@@ -2438,7 +2422,6 @@ void main() {
               streaming: AgentCapabilitySupport.supported,
             ),
             history: const <ConversationItem>[],
-            safetyIdentifier: 'safety',
             allowedCapabilitiesByPlugin: grants,
             state: driverState,
             extensionData: <String, Object?>{
@@ -2641,7 +2624,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           state: state,
         ),
@@ -2741,7 +2723,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           primitives: primitives.registry,
           state: MemoryPluginStateStore(),
@@ -2861,7 +2842,6 @@ void main() {
           model: _RecordingModelGateway(),
           modelCapabilities: const AgentModelCapabilities(),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: <String, Set<String>>{
             bundle.descriptor.id: bundle.descriptor.requestedCapabilities
                 .toSet(),
@@ -2950,7 +2930,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           contextWindowTokens: 100,
           state: state,
@@ -3490,7 +3469,6 @@ void main() {
             functionTools: AgentCapabilitySupport.supported,
           ),
           history: const <ConversationItem>[],
-          safetyIdentifier: 'safety',
           allowedCapabilitiesByPlugin: capabilities,
           state: state,
           jobs: state,
@@ -3583,7 +3561,6 @@ void main() {
                     functionTools: AgentCapabilitySupport.supported,
                   ),
                   history: history,
-                  safetyIdentifier: 'safety',
                   allowedCapabilitiesByPlugin: capabilities,
                   state: restartedState,
                   jobs: scheduler,
@@ -4078,7 +4055,6 @@ Future<void> _runModelToolSurfaceTurn({
         model: model,
         modelCapabilities: capabilities,
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: <String, Set<String>>{
           bundle.descriptor.id: grants,
         },
@@ -4156,7 +4132,6 @@ Future<void> _runHostPrimitiveTurn({
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: <String, Set<String>>{
           bundle.descriptor.id: grantedCapabilities,
         },
@@ -4265,7 +4240,6 @@ Future<void> _runContextTurn({
           functionTools: AgentCapabilitySupport.supported,
         ),
         history: history,
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: capabilities,
         contextWindowTokens: 100,
         state: state,
@@ -4346,7 +4320,6 @@ Future<List<bool>> _runRestrictedTurn({
         model: _RecordingModelGateway(),
         modelCapabilities: const AgentModelCapabilities(),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: grants,
         sessionControlValues: sessionControlValues,
         primitives: primitives,
@@ -4423,7 +4396,6 @@ Future<_RecordingModelGateway> _runPlanPromptTurn({
           streaming: AgentCapabilitySupport.supported,
         ),
         history: const <ConversationItem>[],
-        safetyIdentifier: 'safety',
         allowedCapabilitiesByPlugin: capabilities,
         sessionControlValues: enabled
             ? const <String, Object?>{'tinest.plan/mode': true}

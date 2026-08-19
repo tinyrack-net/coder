@@ -42,26 +42,61 @@ final class OAuthCredential extends ProviderCredential {
   final String? accountId;
 }
 
-/// One endpoint a transport adapter speaks to.
+/// One optional behaviour an endpoint may accept beyond the neutral baseline.
+///
+/// Absence is the safe answer: a request carrying none of these is accepted by
+/// every transport the runtime speaks. Anything one endpoint accepts and
+/// another rejects belongs here rather than in a request field or a default,
+/// because one wire implementation serves many endpoints.
+enum ProviderEndpointExtension {
+  /// Accepts JSON tool schemas marked as strictly validated.
+  strictToolSchemas,
+
+  /// Accepts a declared output schema on a function tool.
+  toolOutputSchemas,
+
+  /// Accepts an opaque per-installation attribution identifier.
+  requestAttribution,
+
+  /// Accepts a request for expedited processing.
+  expeditedProcessing,
+
+  /// Returns opaque reasoning continuation data to replay on the next turn.
+  reasoningContinuation,
+
+  /// Accepts a request for author-written reasoning summaries.
+  reasoningSummaries,
+
+  /// Accepts a declaration that sibling tool calls may run together.
+  concurrentToolCalls,
+
+  /// Exposes a model listing.
+  ///
+  /// Without it the bundled catalog is already the complete model set, so a
+  /// discovery request would only fail.
+  modelDiscovery,
+}
+
+/// One endpoint a transport adapter speaks to, and what it accepts.
 final class ProviderEndpoint {
   /// Creates trusted endpoint configuration.
+  ///
+  /// [extensions] defaults to empty so an endpoint receives an optional field
+  /// only once someone has stated that it accepts one.
   const ProviderEndpoint({
     required this.baseUrl,
-    this.strictToolSchema = false,
-    this.supportsModelDiscovery = true,
+    this.extensions = const <ProviderEndpointExtension>{},
   });
 
   /// Trusted base URL.
   final String baseUrl;
 
-  /// Whether the endpoint accepts strict tool schemas.
-  final bool strictToolSchema;
+  /// Optional behaviours this endpoint documents.
+  final Set<ProviderEndpointExtension> extensions;
 
-  /// Whether the endpoint exposes a model listing.
-  ///
-  /// When false the bundled catalog is already the complete model set, so a
-  /// discovery request would only fail.
-  final bool supportsModelDiscovery;
+  /// Whether this endpoint accepts [extension].
+  bool accepts(ProviderEndpointExtension extension) =>
+      extensions.contains(extension);
 }
 
 /// Everything needed to build one executable adapter.
