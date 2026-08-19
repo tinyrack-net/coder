@@ -149,6 +149,19 @@ jobs:
             exit 1
           fi
 
+          # Every Dart package except the one that gets a shard to itself.
+          # Read from the workspace list rather than repeated in the matrix, so
+          # a new package joins the `rest` shard instead of going untested.
+          packages=.github/dart-packages.json
+          shard_alone="$(jq -r '.shardAlone' "$packages")"
+          scopes_rest="$(jq -r --arg alone "$shard_alone" \
+            '[.packages[] | select(. != $alone) | "--scope=" + .] | join(" ")' \
+            "$packages")"
+          if [ -z "$scopes_rest" ]; then
+            echo "::error::Resolved no packages for the rest shard"
+            exit 1
+          fi
+
           matrices=.github/ci-matrices.json
           scoped="map(. + {runs_on: (\$runners[.os] | tojson)})"
           {
@@ -162,15 +175,7 @@ jobs:
             echo "runner_windows=$(jq -c '."windows-2025"' <<< "$runners")"
             echo "runner_macos=$(jq -c '."macos-26"' <<< "$runners")"
             echo "runner_macos_intel=$(jq -c '."macos-15-intel"' <<< "$runners")"
-            # Every Dart package except the one that gets a shard to itself.
-            # Derived from the workspace rather than listed twice, so a new
-            # package joins the `rest` shard instead of silently going untested.
-            echo "dart_scopes_rest=$(
-              jq -r '. as $all
-                     | [$all.packages[] | select(. != $all.shardAlone)
-                        | "--scope=" + .] | join(" ")'
-                .github/dart-packages.json
-            )"
+            echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
   static-linux:
