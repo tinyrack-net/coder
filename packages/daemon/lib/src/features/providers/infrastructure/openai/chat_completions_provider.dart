@@ -119,7 +119,7 @@ class OpenAIChatCompletionsProvider implements ModelGateway {
             final bytes = attachment.bytes;
             if (_config.supportsImageInput &&
                 bytes != null &&
-                openAiSupportedImageTypes.contains(attachment.mimeType)) {
+                inlineImageMediaTypes.contains(attachment.mimeType)) {
               images.add(<String, dynamic>{
                 'type': 'image_url',
                 'image_url': <String, dynamic>{

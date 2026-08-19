@@ -149,6 +149,12 @@ bool? modelControlBool(ModelRequest request, String id) =>
       _ => null,
     };
 
+/// Marks continuation state as belonging to this transport.
+///
+/// A session may move between providers, so every stored opaque item names
+/// the transport that produced it and each replays only its own.
+const String _providerTag = 'openai';
+
 /// Where this wire performs deferred-tool matching and loading.
 ///
 /// A Responses-only concept, so the value belongs to this transport rather
@@ -375,7 +381,15 @@ class OpenAIResponsesProvider implements ModelGateway {
           :final toolCalls,
           :final opaqueItems,
         ):
-          result.addAll(opaqueItems.map(Map<String, dynamic>.from));
+          // A session may have been continued across transports, and the
+          // others' continuation state is not decodable here.
+          for (final item in opaqueItems) {
+            if (item['provider'] != _providerTag) continue;
+            final replayed = item['item'];
+            if (replayed is Map) {
+              result.add(Map<String, dynamic>.from(replayed));
+            }
+          }
           if (text.isNotEmpty) {
             result.add(<String, dynamic>{
               'type': 'message',
@@ -489,7 +503,7 @@ class OpenAIResponsesProvider implements ModelGateway {
         },
       };
 
-  static const Set<String> _supportedImageTypes = openAiSupportedImageTypes;
+  static const Set<String> _supportedImageTypes = inlineImageMediaTypes;
 
   static const int _maxDirectFileBytes = 50 * 1024 * 1024;
 
@@ -618,7 +632,12 @@ class OpenAIResponsesProvider implements ModelGateway {
                         item['type'] != 'message' &&
                         item['type'] != 'function_call',
                   )
-                  .map(Map<String, dynamic>.from)
+                  .map(
+                    (item) => <String, dynamic>{
+                      'provider': _providerTag,
+                      'item': Map<String, dynamic>.from(item),
+                    },
+                  )
                   .toList(growable: false),
             ),
             usage: _usage(responseMap['usage']),

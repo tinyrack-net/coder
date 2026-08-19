@@ -365,7 +365,8 @@ data: [DONE]
       );
       final completed = events.whereType<ModelResponseCompleted>().single;
       expect(
-        completed.assistant.opaqueItems.first['encrypted_content'],
+        (completed.assistant.opaqueItems.first['item']!
+            as Map)['encrypted_content'],
         'opaque',
       );
       expect(completed.usage.outputTokens, 1);
@@ -593,6 +594,67 @@ data: [DONE]
     final completed = events.whereType<ModelResponseCompleted>().single;
     expect(completed.assistant.toolCalls.single.callId, 'call-1');
     expect(completed.usage.totalTokens, 7);
+  });
+
+  test('Responses replays only its own opaque items', () async {
+    final adapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[{"type":"reasoning","id":"rs_1","encrypted_content":"blob"}],"usage":{}}}
+
+data: [DONE]
+
+''');
+    final events = await OpenAIResponsesProvider(
+      _config(apiKey: 'secret-test-key'),
+      dio: Dio()..httpClientAdapter = adapter,
+    ).stream(_request(), CancellationToken()).toList();
+    final assistant = events
+        .whereType<ModelResponseCompleted>()
+        .single
+        .assistant;
+    // Written tagged, like every other transport, so a later turn can tell
+    // whose continuation state it is holding.
+    expect(assistant.opaqueItems.single['provider'], 'openai');
+
+    final replayAdapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+    await OpenAIResponsesProvider(
+          _config(apiKey: 'secret-test-key'),
+          dio: Dio()..httpClientAdapter = replayAdapter,
+        )
+        .stream(
+          _request(
+            history: <ConversationItem>[
+              AssistantConversationItem(
+                text: 'earlier',
+                opaqueItems: <Map<String, dynamic>>[
+                  ...assistant.opaqueItems,
+                  // A session that switched providers carries the other
+                  // transport's state, which this API cannot decode.
+                  const <String, dynamic>{
+                    'provider': 'anthropic',
+                    'block': <String, dynamic>{'type': 'thinking'},
+                  },
+                ],
+              ),
+            ],
+          ),
+          CancellationToken(),
+        )
+        .toList();
+
+    final input =
+        Map<String, dynamic>.from(replayAdapter.options!.data as Map)['input']!
+            as List;
+    expect(
+      input,
+      contains(containsPair('encrypted_content', 'blob')),
+    );
+    expect(input, everyElement(isNot(contains('provider'))));
+    expect(input, everyElement(isNot(contains('block'))));
   });
 
   test('strict schemas are sent only where the endpoint takes them', () async {
@@ -1001,7 +1063,13 @@ data: [DONE]
                     ),
                   ],
                   opaqueItems: <Map<String, dynamic>>[
-                    <String, dynamic>{'type': 'reasoning', 'opaque': true},
+                    <String, dynamic>{
+                      'provider': 'openai',
+                      'item': <String, dynamic>{
+                        'type': 'reasoning',
+                        'opaque': true,
+                      },
+                    },
                   ],
                 ),
                 ToolResultConversationItem(
@@ -1038,7 +1106,10 @@ data: [DONE]
       final completed = events.whereType<ModelResponseCompleted>().single;
       expect(completed.assistant.text, 'done');
       expect(completed.assistant.toolCalls.single.name, 'write_file');
-      expect(completed.assistant.opaqueItems.single['opaque'], 'value');
+      expect(
+        (completed.assistant.opaqueItems.single['item']! as Map)['opaque'],
+        'value',
+      );
       // A non-numeric counter the provider slipped in is ignored, not copied.
       expect(completed.usage.inputTokens, 3);
       expect(completed.usage.outputTokens, 0);
