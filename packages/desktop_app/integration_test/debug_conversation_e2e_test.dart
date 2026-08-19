@@ -756,168 +756,17 @@ void main() {
       );
 
       await _openSettingsCategory(tester, 'agent');
-      // MCP: expose a real child-process failure, repair its command and
-      // secret through the UI, test discovery, then remove it again.
-      // Scoped to the sidebar: the agent editor behind it also has a row
-      // labelled MCP, the group its resource tools are toggled in.
+      // The MCP server lifecycle through the UI -- a failing command, its
+      // repair, discovery, and removal -- is `conversation-mcp`. It needed a
+      // daemon and the settings route and none of the workspace this test
+      // builds, and it was long enough to make this the only scenario in the
+      // catalog that could not finish inside a lane's share of a shard.
+      //
+      // What stays here is the server the turn fixtures below invoke, which is
+      // installed over the API because this test is not about installing it.
       await _openSettingsCategory(tester, 'mcp');
       await pumpUntil(tester, find.text('MCP 서버'));
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<TRSelect<String>>(
-              find
-                  .byKey(
-                    const ValueKey<String>('settings-daemon-select'),
-                  )
-                  .last,
-            )
-            .value,
-        embeddedHostId,
-      );
-      await tester.tap(find.byKey(const ValueKey('mcp-server-add')));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('mcp-field-id')),
-        'e2e',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey('mcp-field-command')),
-        '/nonexistent/mcp-server',
-      );
-      FocusManager.instance.primaryFocus?.unfocus();
-      final saveServer = find.byKey(const ValueKey('mcp-server-save'));
-      await tester.ensureVisible(saveServer);
-      await tester.pumpAndSettle();
-      final testServer = find.byKey(
-        const ValueKey<String>('mcp-server-test'),
-      );
-      await tester.ensureVisible(testServer);
-      await tester.tap(testServer);
-      await pumpUntil(
-        tester,
-        find.byKey(const ValueKey<String>('mcp-editor-error')),
-      );
-      await pumpUntilCondition(
-        tester,
-        () => tester.widget<TRButton>(testServer).onPressed != null,
-        'the failed MCP probe to release the editor',
-      );
-      await _replaceMcpFieldText(
-        tester,
-        'mcp-field-command',
-        _dartExecutable(),
-      );
-      await _replaceMcpFieldText(
-        tester,
-        'mcp-field-args',
-        _fakeMcpServerPath(),
-      );
-      await _replaceMcpFieldText(
-        tester,
-        'mcp-field-env',
-        r'MCP_ECHO_PREFIX=${secret:e2e.prefix}',
-      );
-      expect(
-        tester
-            .widget<EditableText>(
-              find.descendant(
-                of: find.byKey(const ValueKey('mcp-field-command')),
-                matching: find.byType(EditableText),
-              ),
-            )
-            .controller
-            .text,
-        _dartExecutable(),
-      );
-      final setSecret = find.byKey(const ValueKey<String>('mcp-secret-set'));
-      await tester.ensureVisible(setSecret);
-      await pumpUntil(tester, setSecret.hitTestable());
-      await tester.tap(setSecret.hitTestable());
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey<String>('mcp-secret-key')),
-        'e2e.prefix',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey<String>('mcp-secret-value')),
-        'secret-',
-      );
-      await tester.tap(
-        find.byKey(const ValueKey<String>('mcp-secret-save')),
-      );
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(testServer);
-      await tester.tap(testServer);
-      await tester.pump();
-      final mcpTestNotice = find.byKey(
-        const ValueKey<String>('mcp-editor-notice'),
-      );
-      final mcpTestError = find.byKey(
-        const ValueKey<String>('mcp-editor-error'),
-      );
-      expect(mcpTestError, findsNothing);
-      await pumpUntilCondition(
-        tester,
-        () =>
-            mcpTestNotice.evaluate().isNotEmpty ||
-            mcpTestError.evaluate().isNotEmpty,
-        'the repaired unsaved MCP test to finish',
-      );
-      if (mcpTestError.evaluate().isNotEmpty) {
-        throw TestFailure(
-          'Repaired unsaved MCP test failed: '
-          '${tester.widget<Text>(mcpTestError).data}',
-        );
-      }
-      await tester.ensureVisible(saveServer);
-      await tester.tap(saveServer);
-      await pumpUntilCondition(
-        tester,
-        () async {
-          final servers = await setupClient.mcp.listMcpServers();
-          if (servers.isEmpty) return false;
-          final server = servers.single;
-          if (server.status == McpServerStatus.failed &&
-              server.config.command == _dartExecutable()) {
-            throw TestFailure(
-              'Repaired MCP server failed: ${server.error}; '
-              'args=${server.config.args}; env=${server.config.env}',
-            );
-          }
-          return server.status == McpServerStatus.ready;
-        },
-        'the repaired MCP server to become ready',
-      );
-      await tester.pumpAndSettle();
-      expect(
-        (await setupClient.mcp.listMcpServers()).single.tools.single.toolId,
-        'mcp__e2e__echo',
-      );
-      // The server refresh can briefly remove the selected row while the
-      // daemon replaces its loading snapshot with the ready one. Re-select
-      // the persisted server before exercising its detail-only actions.
-      final savedServerTile = find.byKey(
-        const ValueKey('mcp-server-tile-e2e'),
-      );
-      await pumpUntil(tester, savedServerTile.hitTestable());
-      await tester.tap(savedServerTile.hitTestable());
-      await tester.pumpAndSettle();
-      final deleteServer = find.byKey(const ValueKey('mcp-server-delete'));
-      await _centerSettingsAction(tester, deleteServer);
-      // The save reported itself over the bottom-trailing corner, which is
-      // where this button sits. Waiting the report out is what a user does
-      // before reaching underneath it, and it doubles as proof that a toast
-      // gives the surface back on its own.
-      await pumpUntilGone(tester, find.text('저장했습니다.'));
-      await tapVisible(tester, deleteServer, 'the MCP server delete action');
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('mcp-delete-confirm')));
-      await pumpUntilGone(
-        tester,
-        find.byKey(const ValueKey('mcp-server-tile-e2e')),
-      );
-      expect(await setupClient.mcp.listMcpServers(), isEmpty);
 
       // Reinstall the proven local server for the turn-execution scenarios.
       await setupClient.mcp.addMcpServer(
@@ -2889,20 +2738,6 @@ Future<void> _waitForToastsToClear(WidgetTester tester) => pumpUntilGone(
     matching: find.byType(Dismissible),
   ),
 );
-
-Future<void> _replaceMcpFieldText(
-  WidgetTester tester,
-  String key,
-  String value,
-) async {
-  final field = find.byKey(ValueKey<String>(key));
-  final input = find.descendant(of: field, matching: find.byType(EditableText));
-  await tester.ensureVisible(field);
-  await tester.tap(input);
-  await tester.pump();
-  tester.testTextInput.enterText(value);
-  await tester.pump();
-}
 
 /// Waits for [finder], reporting both sides when it never comes.
 ///

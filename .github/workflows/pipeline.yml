@@ -480,6 +480,8 @@ jobs:
             scenario: conversation-adversity
           - shard: conversation-history
             scenario: conversation-history
+          - shard: conversation-mcp
+            scenario: conversation-mcp
           - shard: conversation
             scenario: conversation
           - shard: provider
