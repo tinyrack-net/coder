@@ -768,7 +768,11 @@ void main() {
       await pumpUntil(tester, find.text('MCP 서버'));
       await tester.pumpAndSettle();
 
-      // Reinstall the proven local server for the turn-execution scenarios.
+      // Install the server the turn fixtures below invoke. Its env resolves a
+      // secret, which `conversation-mcp` creates through the UI and this test
+      // therefore has to provide itself -- without it the server never reaches
+      // ready and the wait below times out.
+      await setupClient.mcp.setMcpSecret('e2e.prefix', 'secret-');
       await setupClient.mcp.addMcpServer(
         McpServerConfigDto(
           id: 'e2e',

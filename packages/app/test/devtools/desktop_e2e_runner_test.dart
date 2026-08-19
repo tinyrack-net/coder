@@ -66,10 +66,22 @@ void main() {
     final lanes = DesktopE2ePlan.forHost(
       DesktopHost.windows,
     ).lanes(jobs: 32);
+    final longest = desktopE2eScenarios.reduce(
+      (left, right) =>
+          right.estimatedSeconds > left.estimatedSeconds ? right : left,
+    );
     expect(lanes.first.scenarios.map((scenario) => scenario.id), <String>[
-      'conversation',
+      longest.id,
     ]);
-    expect(lanes.last.estimatedSeconds, 100);
+    // Everything that is not the long pole shares the other lane. Derived from
+    // the catalog rather than written out, so re-estimating a scenario or
+    // splitting one does not turn this into an arithmetic puzzle.
+    expect(
+      lanes.last.estimatedSeconds,
+      desktopE2eScenarios
+          .where((scenario) => scenario.id != longest.id)
+          .fold<int>(0, (sum, scenario) => sum + scenario.estimatedSeconds),
+    );
   });
 
   test('non-Windows second lane waits for application readiness', () async {
