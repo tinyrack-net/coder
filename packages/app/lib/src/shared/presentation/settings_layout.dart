@@ -68,12 +68,18 @@ class SettingsShellScope extends InheritedWidget {
 /// supporting line these headers used to show — a count, a source path, a
 /// connection status — read as clutter once the header became the page's own
 /// chrome, and every one of those values is still reported by the body below.
+///
+/// [actions] is typed to square icon controls, so the header is one control
+/// tall at every width. An action that needs a word rather than a glyph goes
+/// where the words are: [formActions] when it commits or abandons the whole
+/// destination, or `SettingsSection.action` when it acts on one section.
 class SettingsDestinationScaffold extends StatelessWidget {
   /// Creates a destination whose header adapts to the shell's width class.
   const SettingsDestinationScaffold({
     required this.title,
     required this.child,
-    this.actions = const <Widget>[],
+    this.actions = const <TRIconButton>[],
+    this.formActions = const <Widget>[],
     this.contentMaxWidth,
     super.key,
   });
@@ -81,8 +87,14 @@ class SettingsDestinationScaffold extends StatelessWidget {
   /// The destination's primary heading.
   final Widget title;
 
-  /// Actions associated with the whole destination.
-  final List<Widget> actions;
+  /// Icon actions associated with the whole destination.
+  final List<TRIconButton> actions;
+
+  /// Commit and cancel actions for the destination, primary last.
+  ///
+  /// Rendered below the body rather than inside it, so a long form cannot
+  /// scroll its own primary action out of reach.
+  final List<Widget> formActions;
 
   /// Optional cap shared with a body that centres its readable content.
   final double? contentMaxWidth;
@@ -129,6 +141,73 @@ class SettingsDestinationScaffold extends StatelessWidget {
             contentMaxWidth: contentMaxWidth,
           ),
         Expanded(child: child),
+        if (formActions.isNotEmpty)
+          SettingsFormActions(
+            contentMaxWidth: contentMaxWidth,
+            children: formActions,
+          ),
+      ],
+    );
+  }
+}
+
+/// The commit and cancel actions belonging to one settings destination.
+///
+/// Pinned below the destination's scrolling body instead of placed inside it.
+/// A primary action that scrolls away is one the user has to go looking for
+/// after editing the field that made it matter, and a caller that finds it by
+/// key taps nothing at all when it sits outside the viewport.
+///
+/// [TRAppShell.resizeToAvoidBottomInset] keeps the shell above the software
+/// keyboard, so this needs no inset handling of its own.
+class SettingsFormActions extends StatelessWidget {
+  /// Creates a destination action bar showing [children] trailing.
+  const SettingsFormActions({
+    required this.children,
+    this.contentMaxWidth,
+    super.key,
+  });
+
+  /// Actions in reading order, primary last.
+  final List<Widget> children;
+
+  /// Optional cap shared with the body and header above it.
+  final double? contentMaxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    // A Wrap rather than a Row: unlike the page header, this bar is allowed
+    // to take a second line, and at a large text scale two labelled buttons
+    // do not fit one. Trailing alignment keeps the primary action under the
+    // reader's thumb whether or not it wraps.
+    final content = Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: TRSpacing.small,
+      runSpacing: TRSpacing.small,
+      children: children,
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const TRSeparator(variant: TRSeparatorVariant.muted),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: TRSpacing.extraLarge,
+            vertical: TRSpacing.large,
+          ),
+          // The same cap the header and body use, so the bar's trailing edge
+          // lines up with the fields it commits rather than with the window.
+          child: contentMaxWidth == null
+              ? content
+              : Align(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth!),
+                    child: SizedBox(width: double.infinity, child: content),
+                  ),
+                ),
+        ),
       ],
     );
   }
@@ -1079,7 +1158,10 @@ class SettingsErrorState extends StatelessWidget {
 /// A list-detail collection failure that preserves the pane's normal header.
 ///
 /// Loading, empty, populated, and failed collection panes keep the same title
-/// rail, so status changes do not make the pane geometry jump.
+/// rail, so status changes do not make the pane geometry jump. It goes through
+/// [SettingsDestinationScaffold] rather than drawing [TRPaneHeader] directly:
+/// a failed load on a phone otherwise showed the desktop pane header and left
+/// the destination with no way back.
 class SettingsCollectionErrorState extends StatelessWidget {
   /// Creates a collection header followed by a shared error state.
   const SettingsCollectionErrorState({
@@ -1099,13 +1181,9 @@ class SettingsCollectionErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: <Widget>[
-      TRPaneHeader(title: TRText.inherit(title)),
-      Expanded(
-        child: SettingsErrorState(error: error, onRetry: onRetry),
-      ),
-    ],
+  Widget build(BuildContext context) => SettingsDestinationScaffold(
+    title: TRText.inherit(title),
+    child: SettingsErrorState(error: error, onRetry: onRetry),
   );
 }
 

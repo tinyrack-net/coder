@@ -1350,6 +1350,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '이미 사용 중인 모델 Prefix입니다. 갱신된 제안을 사용해 보세요.';
 
   @override
+  String get providerSettingsConnectionHeading => '연결 상태';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return '$name 연결';
   }

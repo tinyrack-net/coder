@@ -1387,6 +1387,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'That model prefix is already in use. Try the updated suggestion.';
 
   @override
+  String get providerSettingsConnectionHeading => 'Connection status';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return 'Connect $name';
   }

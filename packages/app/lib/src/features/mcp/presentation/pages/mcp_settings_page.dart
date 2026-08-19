@@ -231,7 +231,7 @@ class _ServerList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.mcpSettingsHeading),
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           appearance: TRAppearance.ghost,
           key: const ValueKey<String>('mcp-server-add'),
@@ -406,21 +406,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(_isNew ? l10n.mcpSettingsAdd : server!.config.id),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
-        if (!_readOnly)
-          TRButton(
-            appearance: TRAppearance.ghost,
-            key: const ValueKey<String>('mcp-secret-set'),
-            onPressed: _busy ? null : _promptForSecret,
-            child: TRText.inherit(l10n.mcpSettingsSecretSet),
-          ),
-        if (!_readOnly)
-          TRButton(
-            appearance: TRAppearance.outline,
-            key: const ValueKey<String>('mcp-server-test'),
-            onPressed: _busy ? null : _test,
-            child: TRText.inherit(l10n.mcpSettingsTest),
-          ),
+      formActions: <Widget>[
         if (!_readOnly)
           TRButton(
             intent: TRIntent.primary,
@@ -435,6 +421,17 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
         children: <Widget>[
           SettingsSection.form(
             title: l10n.mcpSettingsConnectionHeading,
+            // Testing the connection acts on the fields in this section, so
+            // it belongs to the section rather than to the page. Its label is
+            // a phrase with no settled glyph, which rules out the header.
+            action: _readOnly
+                ? null
+                : TRButton(
+                    appearance: TRAppearance.outline,
+                    key: const ValueKey<String>('mcp-server-test'),
+                    onPressed: _busy ? null : _test,
+                    child: TRText.inherit(l10n.mcpSettingsTest),
+                  ),
             // Read-only and shadowed are independent server facts, and a
             // shadowed one still has to say where it came from, so both are
             // shown rather than one winning.
@@ -552,6 +549,16 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           SettingsSection(
             title: l10n.mcpSettingsStateHeading,
             description: '${l10n.mcpSettingsSecretHint} $mcpSecretSyntax',
+            // Storing a secret is what the hint above it describes, so the
+            // command sits with its explanation instead of in the header.
+            action: _readOnly
+                ? null
+                : TRButton(
+                    appearance: TRAppearance.outline,
+                    key: const ValueKey<String>('mcp-secret-set'),
+                    onPressed: _busy ? null : _promptForSecret,
+                    child: TRText.inherit(l10n.mcpSettingsSecretSet),
+                  ),
             banner: switch ((_error, _notice)) {
               (final String error, _) => TRAlert(
                 key: const ValueKey<String>('mcp-editor-error'),
@@ -720,6 +727,7 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
                   title: TRText.inherit(
                     l10n.mcpSettingsDeleteConfirm(server!.config.id),
                   ),
+                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     appearance: TRAppearance.ghost,
                     intent: TRIntent.danger,

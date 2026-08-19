@@ -1346,6 +1346,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'そのモデルプレフィックスはすでに使用されています。更新された候補をお試しください。';
 
   @override
+  String get providerSettingsConnectionHeading => '接続状態';
+
+  @override
   String providerSettingsConnectTitle(String name) {
     return '$name に接続';
   }

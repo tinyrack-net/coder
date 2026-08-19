@@ -8,6 +8,7 @@ import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/presentation/host_labels.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_layout_metrics.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
@@ -719,20 +720,32 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               ? l10n.appSettingsAddRemoteTitle
               : l10n.appSettingsEditRemoteTitle,
         ),
-        actions: <Widget>[
-          TRButton(
-            key: const ValueKey<String>('remote-host-save'),
-            intent: TRIntent.primary,
-            loading: _saving,
-            loadingLabel: l10n.commonSaving,
-            onPressed: _saving || waitingForExisting
-                ? null
-                : () => _save(existing),
-            child: TRText.inherit(l10n.commonSave),
+      ),
+      // This page owns a shell rather than a settings destination, so it
+      // composes the same pinned action bar itself. Save stays out of the
+      // scrolling form for the reason it does everywhere else: an action that
+      // can scroll away is one the user has to go looking for.
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Expanded(child: body),
+          SettingsFormActions(
+            contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+            children: <Widget>[
+              TRButton(
+                key: const ValueKey<String>('remote-host-save'),
+                intent: TRIntent.primary,
+                loading: _saving,
+                loadingLabel: l10n.commonSaving,
+                onPressed: _saving || waitingForExisting
+                    ? null
+                    : () => _save(existing),
+                child: TRText.inherit(l10n.commonSave),
+              ),
+            ],
           ),
         ],
       ),
-      body: body,
     );
   }
 

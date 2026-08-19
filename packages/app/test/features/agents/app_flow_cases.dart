@@ -138,8 +138,28 @@ void _registerAgentsAppFlows() {
       expect(filesystemGroup.value, isTrue);
       expect(filesystemGroup.onChanged, isNotNull);
 
+      // scrollUntilVisible stops as soon as the row is built, which leaves it
+      // under the pinned save bar. Bring it fully into the viewport before
+      // aiming a pointer at it.
+      await tester.ensureVisible(
+        find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey<String>('agent-tool-group-filesystem')),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.files-read_file'),
+        ),
+        400,
+        scrollable: settingsScroll,
+      );
+      await tester.ensureVisible(
+        find.byKey(
+          const ValueKey<String>('agent-tool-tile-tinest.files-read_file'),
+        ),
       );
       await tester.pumpAndSettle();
       final readFile = tester.widget<TinestCheckboxRow>(

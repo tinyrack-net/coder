@@ -1,3 +1,4 @@
+import 'package:app/src/shared/presentation/tinest_icons.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,8 +75,12 @@ void main() {
           'Add a remote daemon connection',
           key: titleKey,
         ),
-        actions: [
-          TRButton(onPressed: () {}, child: const Text('Save')),
+        actions: <TRIconButton>[
+          TRIconButton(
+            label: 'Copy path',
+            onPressed: () {},
+            icon: const Icon(TinestIcons.copy),
+          ),
         ],
         body: const SizedBox.expand(),
       ),
@@ -86,6 +91,109 @@ void main() {
     );
     expect(paragraph.didExceedMaxLines, isFalse);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'header actions share the title line instead of forming their own run',
+    (tester) async {
+      // A phone-width bar carrying a title long enough to fill it. The actions
+      // used to be laid out in a wrap, so they dropped to a second run and the
+      // bar grew by a whole control height. They belong beside the title.
+      const viewport = Size(344, 672);
+      const titleKey = ValueKey<String>('long-title');
+      const actionKey = ValueKey<String>('header-action');
+      await tester.binding.setSurfaceSize(viewport);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        _host(
+          padding: EdgeInsets.zero,
+          title: const Text(
+            'Custom provider advanced settings',
+            key: titleKey,
+          ),
+          actions: <TRIconButton>[
+            TRIconButton(
+              key: actionKey,
+              label: 'Copy path',
+              onPressed: () {},
+              icon: const Icon(TinestIcons.copy),
+            ),
+            TRIconButton(
+              label: 'Refresh',
+              onPressed: () {},
+              icon: const Icon(TinestIcons.refresh),
+            ),
+          ],
+          body: const SizedBox.expand(),
+        ),
+      );
+
+      final title = tester.getRect(find.byKey(titleKey));
+      final action = tester.getRect(find.byKey(actionKey));
+      expect(action.top, lessThan(title.bottom));
+      expect(action.bottom, greaterThan(title.top));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('the bar rests at the shared header height either way', (
+    tester,
+  ) async {
+    const viewport = Size(390, 844);
+    await tester.binding.setSurfaceSize(viewport);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    // Sized by its contents the bar was a line of text tall with no actions
+    // and a control tall with them, so a page carrying none drew a visibly
+    // shorter bar than the destinations beside it in the same stack.
+    await tester.pumpWidget(
+      _host(padding: EdgeInsets.zero, body: const SizedBox.expand()),
+    );
+    expect(
+      tester.getSize(find.byType(TRAppShellHeader)).height,
+      TRMeasurements.headerHeight + TRControlMetrics.borderWidth,
+    );
+
+    await tester.pumpWidget(
+      _host(
+        padding: EdgeInsets.zero,
+        actions: <TRIconButton>[
+          TRIconButton(
+            label: 'Copy path',
+            onPressed: () {},
+            icon: const Icon(TinestIcons.copy),
+          ),
+          TRIconButton(
+            label: 'Refresh',
+            onPressed: () {},
+            icon: const Icon(TinestIcons.refresh),
+          ),
+        ],
+        body: const SizedBox.expand(),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(TRAppShellHeader)).height,
+      TRMeasurements.headerHeight + TRControlMetrics.borderWidth,
+    );
+  });
+
+  testWidgets('the page header title is announced as a heading', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      _host(padding: EdgeInsets.zero, body: const SizedBox.expand()),
+    );
+
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('title'))),
+      matchesSemantics(label: 'Title', isHeader: true),
+    );
+    semantics.dispose();
   });
 
   testWidgets(
@@ -123,7 +231,13 @@ void main() {
       await tester.pump();
 
       final keyboardTop = viewport.height - safeArea.bottom - keyboardHeight;
-      expect(tester.getTopLeft(find.byKey(const ValueKey('title'))).dy, 28);
+      // The header keeps its content clear of the top inset. Where inside the
+      // bar the title lands follows the bar's resting height, so this asserts
+      // the safe area rather than a particular inset.
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('title'))).dy,
+        greaterThanOrEqualTo(safeArea.top),
+      );
       expect(
         tester.getBottomLeft(find.byKey(fieldKey)).dy,
         lessThanOrEqualTo(keyboardTop),
@@ -144,7 +258,7 @@ Widget _host({
   EdgeInsets viewInsets = EdgeInsets.zero,
   TextScaler textScaler = TextScaler.noScaling,
   Widget title = const Text('Title', key: ValueKey<String>('title')),
-  List<Widget> actions = const [],
+  List<TRIconButton> actions = const <TRIconButton>[],
 }) => MaterialApp(
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,

@@ -578,12 +578,18 @@ void main() {
       );
       expect(find.textContaining('암호화되지 않습니다'), findsNothing);
       await tester.tap(find.byType(TRSwitch));
-      final save = find.widgetWithText(TRButton, '저장');
+      // Save commits the whole profile, so it sits in the pinned action bar
+      // below the form rather than in the page header.
+      final save = find.byKey(const ValueKey<String>('remote-host-save'));
       expect(
         find.descendant(
           of: find.byType(TRAppShellHeader),
           matching: save,
         ),
+        findsNothing,
+      );
+      expect(
+        find.ancestor(of: save, matching: find.byType(SettingsFormActions)),
         findsOneWidget,
       );
       await tester.tap(save);
@@ -615,6 +621,10 @@ void main() {
         find.ancestor(of: delete, matching: find.byType(SettingsSection)),
         findsOneWidget,
       );
+      // Save is pinned below the form, so the last section of a long form
+      // starts under it and has to be scrolled up before it can be tapped.
+      await tester.ensureVisible(delete);
+      await tester.pumpAndSettle();
       await tester.tap(delete);
       await tester.pumpAndSettle();
       final confirmDelete = find.widgetWithText(TRButton, '삭제').last;

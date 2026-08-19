@@ -1571,6 +1571,10 @@
   "@providerSettingsModelPrefixConflict": {
     "description": "Inline error shown when the daemon rejects a duplicate model prefix."
   },
+  "providerSettingsConnectionHeading": "Connection status",
+  "@providerSettingsConnectionHeading": {
+    "description": "Heading of the section reporting one provider connection's status. Distinct from the Connections settings category, which lists daemons."
+  },
   "providerSettingsConnectTitle": "Connect {name}",
   "@providerSettingsConnectTitle": {
     "description": "Title of the API key dialog.",

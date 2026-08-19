@@ -229,7 +229,7 @@ class _PluginList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.pluginSettingsHeading),
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           key: const ValueKey<String>('plugin-add-button'),
           appearance: TRAppearance.ghost,
@@ -334,7 +334,7 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(plugin.name),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      actions: <TRIconButton>[
         TRIconButton(
           key: const ValueKey<String>('plugin-open-path-button'),
           appearance: TRAppearance.ghost,
@@ -353,28 +353,40 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
               : () => unawaited(_fork()),
           icon: const Icon(TinestIcons.copy),
         ),
-        TRButton(
-          key: const ValueKey<String>('plugin-validate-button'),
-          appearance: TRAppearance.outline,
-          loading: _busyAction == 'validate',
-          loadingLabel: l10n.pluginSettingsValidate,
-          onPressed: _busyAction == null ? () => unawaited(_validate()) : null,
-          child: TRText.inherit(l10n.pluginSettingsValidate),
-        ),
-        TRButton(
-          key: const ValueKey<String>('plugin-reload-button'),
-          loading: _busyAction == 'reload',
-          loadingLabel: l10n.pluginSettingsReload,
-          onPressed: _busyAction == null && _agentId != null
-              ? () => unawaited(_reload())
-              : null,
-          child: TRText.inherit(l10n.pluginSettingsReload),
-        ),
       ],
       child: SettingsScaffold(
         children: <Widget>[
           SettingsSection(
             title: l10n.pluginSettingsSource,
+            // Validate and Reload act on the plugin this section describes.
+            // They read as words rather than glyphs, so they sit with the
+            // source they operate on instead of widening the page header.
+            action: Wrap(
+              spacing: TRSpacing.small,
+              runSpacing: TRSpacing.small,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                TRButton(
+                  key: const ValueKey<String>('plugin-validate-button'),
+                  appearance: TRAppearance.outline,
+                  loading: _busyAction == 'validate',
+                  loadingLabel: l10n.pluginSettingsValidate,
+                  onPressed: _busyAction == null
+                      ? () => unawaited(_validate())
+                      : null,
+                  child: TRText.inherit(l10n.pluginSettingsValidate),
+                ),
+                TRButton(
+                  key: const ValueKey<String>('plugin-reload-button'),
+                  loading: _busyAction == 'reload',
+                  loadingLabel: l10n.pluginSettingsReload,
+                  onPressed: _busyAction == null && _agentId != null
+                      ? () => unawaited(_reload())
+                      : null,
+                  child: TRText.inherit(l10n.pluginSettingsReload),
+                ),
+              ],
+            ),
             banner: _error == null
                 ? null
                 : TRAlert(
@@ -833,13 +845,14 @@ class _CreatePluginPaneState extends State<_CreatePluginPane> {
     return SettingsDestinationScaffold(
       title: TRText.inherit(l10n.pluginSettingsAddTitle),
       contentMaxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
-      actions: <Widget>[
+      formActions: <Widget>[
         TRButton(
           appearance: TRAppearance.ghost,
           onPressed: _saving ? null : widget.onCancel,
           child: TRText.inherit(l10n.commonCancel),
         ),
         TRButton(
+          key: const ValueKey<String>('plugin-create-submit'),
           intent: TRIntent.primary,
           onPressed: !_saving && _valid ? _submit : null,
           child: TRText.inherit(

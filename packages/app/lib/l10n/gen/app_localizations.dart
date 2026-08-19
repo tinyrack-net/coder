@@ -2542,6 +2542,12 @@ abstract class AppLocalizations {
   /// **'That model prefix is already in use. Try the updated suggestion.'**
   String get providerSettingsModelPrefixConflict;
 
+  /// Heading of the section reporting one provider connection's status. Distinct from the Connections settings category, which lists daemons.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection status'**
+  String get providerSettingsConnectionHeading;
+
   /// Title of the API key dialog.
   ///
   /// In en, this message translates to:

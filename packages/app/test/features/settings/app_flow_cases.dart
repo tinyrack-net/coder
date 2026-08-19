@@ -73,7 +73,9 @@ void _registerSettingsAppFlows() {
         find.byKey(const ValueKey<String>('settings-back-button')),
         findsOneWidget,
       );
-      // Every action stays on screen at phone width instead of overflowing.
+      // The header carries no editor commands at all, so it cannot grow a
+      // second run to hold them at phone width. Save is pinned below the
+      // form, and the two section-scoped commands sit with their sections.
       final headerRect = tester.getRect(detailHeader);
       for (final action in const <String>[
         'mcp-secret-set',
@@ -81,9 +83,18 @@ void _registerSettingsAppFlows() {
         'mcp-server-save',
       ]) {
         final rect = tester.getRect(find.byKey(ValueKey<String>(action)));
-        expect(headerRect.contains(rect.topLeft), isTrue, reason: action);
-        expect(headerRect.contains(rect.bottomRight), isTrue, reason: action);
+        expect(headerRect.contains(rect.topLeft), isFalse, reason: action);
       }
+      final save = find.byKey(const ValueKey<String>('mcp-server-save'));
+      expect(
+        find.ancestor(of: save, matching: find.byType(SettingsFormActions)),
+        findsOneWidget,
+      );
+      // Pinned means always laid out, so a caller never has to scroll to it.
+      expect(
+        tester.getRect(save).bottom,
+        lessThanOrEqualTo(tester.getSize(find.byType(MaterialApp)).height),
+      );
 
       await tester.tap(
         find.byKey(const ValueKey<String>('settings-back-button')),
