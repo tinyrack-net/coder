@@ -1662,26 +1662,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '서브 에이전트 $count개',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count개 실행 중';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count개 승인 필요';
-  }
-
-  @override
   String get subagentApprovalSection => '서브 에이전트 승인';
 
   @override

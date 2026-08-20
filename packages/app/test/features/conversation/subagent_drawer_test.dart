@@ -493,7 +493,7 @@ void main() {
 
       // A working child is summarized as running and nothing else.
       expect(find.text('1개 실행 중'), findsOneWidget);
-      expect(find.text('1개 승인 대기'), findsNothing);
+      expect(find.text('1개 승인 필요'), findsNothing);
 
       // Once it parks on an approval the collapsed summary has to say so: the
       // rows are hidden by default, so the badge is the only thing between a
@@ -501,7 +501,7 @@ void main() {
       // trigger, which is why a collapsed drawer can still carry it.
       api.pluginUiDocuments[drawerKey] = drawerDocument(
         title: '서브 에이전트 1개',
-        summary: <Map<String, dynamic>>[drawerBadge('1개 승인 대기', 'warning')],
+        summary: <Map<String, dynamic>>[drawerBadge('1개 승인 필요', 'warning')],
         items: <Map<String, dynamic>>[
           drawerItem(
             label: 'explore_auth',
@@ -521,7 +521,7 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('1개 승인 대기'), findsOneWidget);
+      expect(find.text('1개 승인 필요'), findsOneWidget);
       expect(find.text('1개 실행 중'), findsNothing);
     },
   );

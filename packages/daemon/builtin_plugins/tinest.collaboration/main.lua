@@ -23,16 +23,14 @@ local strings = {
     blocked = "%d to approve",
   },
   ko = {
-    one = "Subagent 1개",
-    other = "Subagent %d개",
+    other = "서브 에이전트 %d개",
     running = "%d개 실행 중",
-    blocked = "%d개 승인 대기",
+    blocked = "%d개 승인 필요",
   },
   ja = {
-    one = "サブエージェント 1件",
-    other = "サブエージェント %d件",
-    running = "%d件 実行中",
-    blocked = "%d件 承認待ち",
+    other = "サブエージェント %d 個",
+    running = "%d 個実行中",
+    blocked = "%d 個が承認待ち",
   },
 }
 

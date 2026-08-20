@@ -1704,27 +1704,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count subagents',
-      one: '1 subagent',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count running';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count to approve';
-  }
-
-  @override
   String get subagentApprovalSection => 'Subagent approvals';
 
   @override

@@ -3058,24 +3058,6 @@ abstract class AppLocalizations {
   /// **'Waited {seconds}s'**
   String chatSleepDone(int seconds);
 
-  /// Header of the collapsible subagent track.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 subagent} other{{count} subagents}}'**
-  String subagentTrackHeader(int count);
-
-  /// Running-count badge on the subagent track header.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} running'**
-  String subagentTrackRunning(int count);
-
-  /// Blocked-count badge on the collapsed subagent track header.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} to approve'**
-  String subagentTrackAwaitingApproval(int count);
-
   /// Heading above subagent approvals shown on the parent session.
   ///
   /// In en, this message translates to:

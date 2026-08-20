@@ -1969,33 +1969,6 @@
       }
     }
   },
-  "subagentTrackHeader": "{count, plural, =1{1 subagent} other{{count} subagents}}",
-  "@subagentTrackHeader": {
-    "description": "Header of the collapsible subagent track.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "subagentTrackRunning": "{count} running",
-  "@subagentTrackRunning": {
-    "description": "Running-count badge on the subagent track header.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "subagentTrackAwaitingApproval": "{count} to approve",
-  "@subagentTrackAwaitingApproval": {
-    "description": "Blocked-count badge on the collapsed subagent track header.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "subagentApprovalSection": "Subagent approvals",
   "@subagentApprovalSection": {
     "description": "Heading above subagent approvals shown on the parent session."

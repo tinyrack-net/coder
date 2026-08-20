@@ -1658,26 +1658,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'サブエージェント $count 個',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count 個実行中';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count 個が承認待ち';
-  }
-
-  @override
   String get subagentApprovalSection => 'サブエージェントの承認';
 
   @override
