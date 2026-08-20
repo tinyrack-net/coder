@@ -1029,6 +1029,19 @@ class _ProviderConnectionPaneState
           if (definition case final definition?)
             SettingsSection(
               title: l10n.providerSettingsConnectionHeading,
+              // The status row reports "Error" and stops. What the daemon
+              // said is the only thing that names what to fix, so it belongs
+              // to this section rather than being dropped.
+              banner: widget.connection.status == ProviderConnectionStatus.error
+                  ? TRAlert(
+                      key: const ValueKey<String>('provider-connection-error'),
+                      variant: TRStatusVariant.danger,
+                      title: TRText.inherit(
+                        widget.connection.error ??
+                            l10n.providerSettingsConnectionFailed,
+                      ),
+                    )
+                  : null,
               children: <Widget>[
                 SettingsRow(
                   title: TRText.inherit(

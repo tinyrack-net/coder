@@ -667,6 +667,60 @@ void main() {
   );
 
   testWidgets(
+    'a failed connection shows the reason the daemon reported',
+    (
+      tester,
+    ) async {
+      final now = DateTime.utc(2026);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(
+          connections: <ProviderConnectionDto>[
+            ProviderConnectionDto(
+              id: 'broken-provider',
+              definitionId: 'deepseek',
+              modelPrefix: 'broken',
+              displayName: 'Unavailable provider',
+              status: ProviderConnectionStatus.error,
+              authKind: ProviderAuthKind.apiKey,
+              credentialOrigin: ProviderCredentialOrigin.stored,
+              error: 'Could not list models: upstream refused the request',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ],
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('provider-connection-broken-provider'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final alert = find.byKey(
+        const ValueKey<String>('provider-connection-error'),
+      );
+      expect(alert, findsOneWidget);
+      expect(tester.widget<TRAlert>(alert).variant, TRStatusVariant.danger);
+      expect(
+        find.textContaining('upstream refused the request'),
+        findsOneWidget,
+      );
+      // The reason belongs to the connection section, beside the status it
+      // explains, rather than floating above the page.
+      expect(
+        find.ancestor(of: alert, matching: find.byType(SettingsSection)),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__widget',
+    ],
+  );
+
+  testWidgets(
     'mobile Back walks the detail stack one level at a time',
     (
       tester,
