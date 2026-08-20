@@ -730,6 +730,11 @@ jobs:
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})
+    # `changes` is what resolves the runner pool, so a release reads it too.
+    # That is also the escape hatch: a dispatch with `runner_pool: github`
+    # sends a release back to GitHub when the homelab is unavailable, which is
+    # exactly the moment you do not want to be blocked by it.
+    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -738,21 +743,27 @@ jobs:
         include:
           # Flutter publishes an SDK only for x64 hosts, so neither an arm64
           # Linux nor an arm64 Windows runner can build one. macOS is the sole
-          # platform with an arm64 SDK.
-          - os: ubuntu-24.04
+          # platform with an arm64 SDK — and the sole one that can build the
+          # other architecture, by running the x86_64 SDK under Rosetta 2.
+          - os: linux
+            runs_on: ${{ needs.changes.outputs.runner_linux }}
             target: linux-x64
             platform: linux
-          - os: macos-15-intel
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+            sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos-26
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
             target: macos-arm64
             platform: macos
-          - os: windows-2025
+          - os: windows
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
             target: windows-x64
             platform: windows
             arch: x64
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 60
     # Declared at job level so the MSIX step can test it in its own `if`; a
     # step cannot read the env it declares itself.
@@ -761,6 +772,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - if: matrix.platform == 'linux'
         uses: ./.github/actions/install-linux-desktop-deps
         with:
@@ -815,6 +828,14 @@ jobs:
           sudo dpkg -r tinest
 
       # --- macOS ---------------------------------------------------------
+      # Before signing, not after: a wrong-architecture app that gets signed
+      # and notarized costs a full round trip to Apple to find out, and the
+      # signature would then vouch for the wrong binary.
+      - if: matrix.platform == 'macos'
+        uses: ./.github/actions/verify-macos-arch
+        with:
+          path: packages/desktop_app/build/macos/Build/Products/Release/Tinest.app
+          target: ${{ matrix.target }}
       - name: Sign and archive the macOS app
         if: matrix.platform == 'macos'
         env:
@@ -1029,6 +1050,9 @@ jobs:
 
   build-cli:
     name: Build CLI (${{ matrix.target }})
+    # See `build-and-package`: `changes` resolves the pool, and a dispatch with
+    # `runner_pool: github` is how a release leaves the homelab.
+    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -1040,19 +1064,24 @@ jobs:
           # held to the platforms Flutter publishes one for. That rules out
           # Linux arm64, which is why `shipworld.yaml` lists the three
           # platforms below under `homebrew.platforms`.
-          - os: ubuntu-24.04
+          - os: linux
+            runs_on: ${{ needs.changes.outputs.runner_linux }}
             target: linux-x64
             platform: linux
-          - os: macos-15-intel
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+            sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos-26
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
             target: macos-arm64
             platform: macos
-          - os: windows-2025
+          - os: windows
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
             target: windows-x64
             platform: windows
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -1061,6 +1090,8 @@ jobs:
       # `integration_test` from the Flutter SDK. The pinned Flutter bundles the
       # same Dart this job used to install directly.
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         if: matrix.platform == 'macos'

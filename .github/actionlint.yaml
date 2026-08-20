@@ -3,7 +3,6 @@
 # homelab machines, which a `runner_pool: self-hosted` dispatch selects.
 self-hosted-runner:
   labels:
-    - macos-15-intel
     - macos-26
     - tinyrack-ubuntu-ci
     - tinyrack-windows-ci

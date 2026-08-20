@@ -1091,22 +1091,71 @@ void main() {
     expect(_job(workflow, 'changes'), isNot(contains('macos-intel')));
   });
 
+  test('the release jobs resolve their runners through the scope too', () {
+    // A release reads `changes` for the same reason every quality job does,
+    // and that is also its escape hatch: a dispatch with `runner_pool: github`
+    // sends it back to GitHub when the homelab is unavailable, which is
+    // exactly the moment you do not want to be blocked by it.
+    for (final name in <String>['build-and-package', 'build-cli']) {
+      final job = _job(workflow, name);
+      expect(job, contains('needs: changes'), reason: name);
+      expect(
+        job,
+        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
+        reason: name,
+      );
+      expect(
+        job,
+        contains(r'architecture: ${{ matrix.sdk_arch }}'),
+        reason: name,
+      );
+      // A hosted label here would quietly pin the release back to GitHub.
+      for (final label in <String>['macos-15-intel', 'macos-26']) {
+        expect(job, isNot(contains(label)), reason: '$name: $label');
+      }
+    }
+    // Nothing declares the Intel image any more, so the lint allowance for it
+    // must go too or it stops meaning anything.
+    expect(
+      File('.github/actionlint.yaml').readAsStringSync(),
+      isNot(contains('macos-15-intel')),
+    );
+  });
+
+  test('the macOS app is checked before it is signed', () {
+    // A wrong-architecture app that gets signed and notarized costs a full
+    // round trip to Apple to find out, and the signature would then vouch for
+    // the wrong binary.
+    final job = _job(workflow, 'build-and-package');
+    final verify = job.indexOf('./.github/actions/verify-macos-arch');
+    final sign = job.indexOf('Sign and archive the macOS app');
+    expect(verify, isNot(-1));
+    expect(sign, isNot(-1));
+    expect(verify, lessThan(sign));
+  });
+
   test('a macOS bundle is checked against the architecture it claims', () {
     // Rosetta runs the x86_64 bundle on the machine that built it, so the
     // smoke test passes whichever architecture came out. Without this an arm64
     // build would ship under an x64 name through the Homebrew formula and the
     // first sign would be an Intel user's crash.
-    final build = File(
-      '.github/actions/build-cli-bundle/action.yml',
+    final verifier = File(
+      '.github/actions/verify-macos-arch/action.yml',
     ).readAsStringSync();
-    expect(build, contains('lipo -archs'));
-    expect(build, contains('*-x64) want=x86_64'));
-    expect(build, contains('*-arm64) want=arm64'));
+    expect(verifier, contains('lipo -archs'));
+    expect(verifier, contains('*-x64) want=x86_64'));
+    expect(verifier, contains('*-arm64) want=arm64'));
     // Every Mach-O file, not only the launcher: sqlite3 downloads a prebuilt
-    // library and the Lua host is compiled by a build hook, so either can
-    // resolve for the wrong architecture on its own.
-    expect(build, contains("grep -q 'Mach-O'"));
-    expect(build, contains('Found no Mach-O files to check'));
+    // library, the Lua host is compiled by a build hook, and a Flutter app
+    // carries frameworks, so any one can resolve for the wrong architecture.
+    expect(verifier, contains("grep -q 'Mach-O'"));
+    // Finding nothing has to fail, or a bundle-layout change turns this into a
+    // step that always passes.
+    expect(verifier, contains('Found no Mach-O files to check'));
+    expect(
+      File('.github/actions/build-cli-bundle/action.yml').readAsStringSync(),
+      contains('./.github/actions/verify-macos-arch'),
+    );
   });
 
   test('every measured quality job resolves runs-on through the scope', () {

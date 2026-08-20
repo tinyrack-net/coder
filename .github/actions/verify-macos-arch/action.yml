@@ -1,0 +1,56 @@
+name: Verify a macOS artifact's architecture
+description: >-
+  Fail when a macOS artifact does not carry the architecture its target name
+  claims. The x86_64 targets are built on arm64 Mac minis through an x86_64 SDK
+  under Rosetta 2, so the host no longer says what came out, and neither does
+  running the result: Rosetta runs an x86_64 build on the same machine that
+  would have run an arm64 one.
+
+inputs:
+  path:
+    description: Directory to search for Mach-O files
+    required: true
+  target:
+    description: Release target name, such as macos-x64
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify the artifact matches ${{ inputs.target }}
+      shell: bash
+      env:
+        VERIFY_PATH: ${{ inputs.path }}
+        TARGET: ${{ inputs.target }}
+      # Every Mach-O file is checked rather than only the launcher, because the
+      # pieces arrive from different places: sqlite3 downloads a prebuilt
+      # library, the Lua host is compiled by a build hook, and a Flutter app
+      # carries frameworks. Any one of them can resolve for the wrong
+      # architecture on its own.
+      #
+      # Finding nothing is a failure too. A bundle-layout change that moved the
+      # binaries would otherwise turn this into a step that always passes.
+      run: |
+        set -euo pipefail
+        case "$TARGET" in
+          *-x64) want=x86_64 ;;
+          *-arm64) want=arm64 ;;
+          *) echo "::error::Cannot tell the architecture of $TARGET"; exit 1 ;;
+        esac
+        status=0
+        checked=0
+        while IFS= read -r binary; do
+          file "$binary" | grep -q 'Mach-O' || continue
+          checked=$((checked + 1))
+          archs="$(lipo -archs "$binary")"
+          case " $archs " in
+            *" $want "*) ;;
+            *) echo "::error::$binary is [$archs], expected $want"; status=1 ;;
+          esac
+        done < <(find "$VERIFY_PATH" -type f)
+        if [ "$checked" -eq 0 ]; then
+          echo "::error::Found no Mach-O files to check in $VERIFY_PATH"
+          exit 1
+        fi
+        echo "Checked $checked Mach-O files for $want"
+        exit "$status"
