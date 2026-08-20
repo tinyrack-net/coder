@@ -1345,11 +1345,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/termworld"
-      ref: be4187bfb087e9b4e559b27efc233522bf7c9fd1
-      resolved-ref: be4187bfb087e9b4e559b27efc233522bf7c9fd1
+      ref: a2d673366e486ea61577b0ed520dcb1633b56815
+      resolved-ref: a2d673366e486ea61577b0ed520dcb1633b56815
       url: "https://github.com/tinyrack-net/flutter-packages.git"
     source: git
-    version: "0.4.2"
+    version: "0.5.1"
   test:
     dependency: transitive
     description:
@@ -1508,8 +1508,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/vtworld"
-      ref: "0b23941dfc5f2d0007777618d16fb4a8fe162f1a"
-      resolved-ref: "0b23941dfc5f2d0007777618d16fb4a8fe162f1a"
+      ref: b344d8cda523ef30b65c28b118223858a9ab11e5
+      resolved-ref: b344d8cda523ef30b65c28b118223858a9ab11e5
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
     version: "0.1.0"
