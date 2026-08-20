@@ -225,13 +225,19 @@ enum SettingsPaneSlot {
 /// Read-only navigation state shared by one list-detail settings feature.
 ///
 /// Typed routes own categories. A feature controller owns only its local
-/// collection selection. Flutter Navigator and Page own its route lifecycle.
+/// detail stack. Flutter Navigator and Page own its route lifecycle.
 abstract interface class SettingsPaneCoordinator implements Listenable {
+  /// Destinations stacked above the collection, innermost last.
+  ///
+  /// Entries are route identities and must compare by value, because the host
+  /// keys one Page per entry. Modelling a nested destination as a deeper entry
+  /// rather than a different single entry is what makes returning from it a
+  /// pop: a changed key would be a removal plus a push, which plays the
+  /// forward transition and rebinds the collection's secondary animation.
+  List<Object> get detailStack;
+
   /// Whether the feature currently has a detail or create destination.
   bool get hasDetail;
-
-  /// Typed identity of the active detail or create destination.
-  Object? get detailSelection;
 
   /// Whether a desktop collection may choose its first item automatically.
   ///
@@ -239,6 +245,15 @@ abstract interface class SettingsPaneCoordinator implements Listenable {
   /// navigation. Returning from a detail therefore leaves the collection
   /// visible instead of immediately reopening its first item.
   bool get canAutoSelect;
+
+  /// Returns to whatever encloses the innermost detail destination.
+  void popDetail();
+
+  /// Drops [destination] once its route has left the Navigator.
+  ///
+  /// A destination that was replaced rather than popped is already absent, so
+  /// this leaves the stack alone and a replacement is never mistaken for Back.
+  void removeDetail(Object destination);
 
   /// Returns the feature to its collection destination.
   void showCollection();
@@ -251,6 +266,9 @@ abstract interface class SettingsPaneCoordinator implements Listenable {
 abstract class SettingsPaneCoordinatorBase extends ChangeNotifier
     implements SettingsPaneCoordinator {
   bool _autoSelectionConsumed = false;
+
+  @override
+  bool get hasDetail => detailStack.isNotEmpty;
 
   @override
   bool get canAutoSelect => !hasDetail && !_autoSelectionConsumed;
@@ -274,6 +292,22 @@ abstract class SettingsPaneCoordinatorBase extends ChangeNotifier
   void resetInitialSelection() {
     _autoSelectionConsumed = false;
   }
+
+  /// Leaves the only detail level, which is the collection.
+  ///
+  /// Most features offer their detail destinations as siblings of one another,
+  /// so there is nothing between them and the collection. A feature that nests
+  /// one destination inside another overrides this and [removeDetail].
+  @override
+  void popDetail() => showCollection();
+
+  @override
+  void removeDetail(Object destination) {
+    // A destination that was replaced rather than popped has already left the
+    // stack, so its route leaving is not the user going back.
+    if (!detailStack.contains(destination)) return;
+    showCollection();
+  }
 }
 
 /// A typed, product-local selection controller for one settings collection.
@@ -287,11 +321,10 @@ class SettingsPaneController<T extends Object>
   /// The selected item or create destination, when one is active.
   T? get selection => _destination;
 
+  /// Sibling destinations, so the stack is never deeper than one entry.
   @override
-  bool get hasDetail => _destination != null;
-
-  @override
-  T? get detailSelection => _destination;
+  List<Object> get detailStack =>
+      _destination == null ? const <Object>[] : <Object>[_destination!];
 
   /// Shows [destination] as the initial desktop detail, at most once per
   /// route identity.
@@ -326,12 +359,44 @@ class SettingsPaneController<T extends Object>
   }
 }
 
+/// Identifies which stacked detail destination a subtree renders.
+///
+/// The host gives each page the destination it was built for instead of the
+/// innermost one, so a route on its way out keeps rendering what the user is
+/// leaving rather than whatever took its place.
+///
+/// Absent in the collection pane and in the empty detail slot, which is how a
+/// feature tells "no destination" from one of its own.
+class SettingsDetailScope extends InheritedWidget {
+  /// Publishes one detail destination to the page rendering it.
+  const SettingsDetailScope({
+    required this.destination,
+    required super.child,
+    super.key,
+  });
+
+  /// The route identity this subtree renders.
+  final Object destination;
+
+  /// Returns the enclosing detail destination, or null outside a detail page.
+  static Object? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<SettingsDetailScope>()
+      ?.destination;
+
+  @override
+  bool updateShouldNotify(SettingsDetailScope oldWidget) =>
+      destination != oldWidget.destination;
+}
+
 /// Renders one settings collection/detail pair with standard Page lifecycle.
 ///
 /// Below the large width class the nested Navigator moves between collection
 /// and detail across the complete content region. At large widths the
 /// collection stays fixed and the same keyed Navigator moves into the detail
 /// region, so only detail transitions while its State survives resizing.
+///
+/// The coordinator's stack is laid out one Page per entry, so a destination
+/// opened from another is pushed over it and leaving it is an ordinary pop.
 class SettingsListDetailHost extends StatefulWidget {
   /// Creates a routed list-detail host.
   const SettingsListDetailHost({
@@ -364,7 +429,8 @@ class _SettingsListDetailHostState extends State<SettingsListDetailHost> {
       final split = settingsListDetailIsSplit(
         settingsAdaptiveWidthClassOf(context),
       );
-      final hasDetail = widget.coordinator.hasDetail;
+      final stack = widget.coordinator.detailStack;
+      final hasDetail = stack.isNotEmpty;
       final navigator = NavigatorPopHandler<Object?>(
         // Only intercept Back while the detail is what Back would leave. Split
         // keeps the collection beside it, so closing the detail there would
@@ -387,21 +453,24 @@ class _SettingsListDetailHostState extends State<SettingsListDetailHost> {
                     : widget.collection,
               ),
             ),
-            if (hasDetail)
+            for (final destination in stack)
               MaterialPage<void>(
-                key: ValueKey<Object?>(widget.coordinator.detailSelection),
+                key: ValueKey<Object>(destination),
                 name: 'settings-detail',
-                child: TRSurface(child: widget.detail),
+                child: TRSurface(
+                  child: SettingsDetailScope(
+                    destination: destination,
+                    child: widget.detail,
+                  ),
+                ),
               ),
           ],
           onDidRemovePage: (page) {
-            final removedSelection = switch (page.key) {
-              ValueKey<Object?>(:final value) => value,
-              _ => null,
-            };
-            if (page.name == 'settings-detail' &&
-                removedSelection == widget.coordinator.detailSelection) {
-              widget.coordinator.showCollection();
+            // The collection page shares the Navigator but is never removed,
+            // and its key is a plain string rather than a destination.
+            if (page.name != 'settings-detail') return;
+            if (page.key case ValueKey<Object>(:final value)) {
+              widget.coordinator.removeDetail(value);
             }
           },
         ),

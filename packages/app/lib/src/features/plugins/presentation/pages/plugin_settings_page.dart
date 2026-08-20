@@ -157,15 +157,13 @@ class PluginSettingsPaneController extends SettingsPaneCoordinatorBase {
   /// Whether the scaffold destination is active.
   bool get creating => _creating;
 
+  /// Sibling destinations, so the stack is never deeper than one entry.
   @override
-  bool get hasDetail => _creating || _selectedId != null;
-
-  @override
-  String? get detailSelection => _creating
-      ? 'plugin-create'
+  List<Object> get detailStack => _creating
+      ? const <Object>['plugin-create']
       : _selectedId == null
-      ? null
-      : 'plugin-$_selectedId';
+      ? const <Object>[]
+      : <Object>['plugin-$_selectedId'];
 
   /// Shows the first plugin on initial desktop entry.
   void selectInitial(String id) {

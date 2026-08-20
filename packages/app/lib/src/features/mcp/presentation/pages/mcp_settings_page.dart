@@ -156,15 +156,13 @@ class McpSettingsPaneController extends SettingsPaneCoordinatorBase {
   /// Whether the create destination is active.
   bool get creating => _creating;
 
+  /// Sibling destinations, so the stack is never deeper than one entry.
   @override
-  bool get hasDetail => _creating || _selectedId != null;
-
-  @override
-  Object? get detailSelection => _creating
-      ? (_McpPaneDestination.create, null)
+  List<Object> get detailStack => _creating
+      ? const <Object>[(_McpPaneDestination.create, null)]
       : _selectedId == null
-      ? null
-      : (_McpPaneDestination.existing, _selectedId);
+      ? const <Object>[]
+      : <Object>[(_McpPaneDestination.existing, _selectedId)];
 
   /// Shows the first server on initial desktop entry.
   void selectInitial(String id) {
