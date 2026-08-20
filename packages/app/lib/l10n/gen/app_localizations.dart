@@ -2560,11 +2560,47 @@ abstract class AppLocalizations {
   /// **'Requires an API key'**
   String get providerSettingsRequiresApiKey;
 
-  /// Text field label for hand-entered model IDs.
+  /// Text field label for one hand-entered model identifier.
   ///
   /// In en, this message translates to:
-  /// **'Manual model IDs'**
-  String get providerSettingsManualModels;
+  /// **'Model ID'**
+  String get providerSettingsManualModelId;
+
+  /// Button that appends another hand-entered model.
+  ///
+  /// In en, this message translates to:
+  /// **'Add model'**
+  String get providerSettingsManualModelAdd;
+
+  /// Accessible name of the button removing a manual model.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove model'**
+  String get providerSettingsManualModelRemove;
+
+  /// Label of the field naming the values one control accepts.
+  ///
+  /// In en, this message translates to:
+  /// **'{control} values'**
+  String providerSettingsControlValues(String control);
+
+  /// Helper text under the control value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a value and select it to add. Only whoever runs this endpoint knows which values it accepts.'**
+  String get providerSettingsControlValuesHelp;
+
+  /// Placeholder of the control value field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a value'**
+  String get providerSettingsControlValuesPlaceholder;
+
+  /// Error shown when a selected choice control has no values.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one value for {control}, or turn it off.'**
+  String providerSettingsControlValuesRequired(String control);
 
   /// Title of the manual model dialog.
   ///

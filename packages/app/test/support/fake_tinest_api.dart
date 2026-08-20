@@ -289,6 +289,22 @@ final class FakeTinestApi
         ],
       ),
     ],
+    // A wire template names the control it can encode and no values: which
+    // values an arbitrary endpoint accepts is stated by whoever runs it.
+    wireFormats: const <ProviderWireFormatDto>[
+      ProviderWireFormatDto(
+        id: 'openai-chat-completions',
+        label: 'OpenAI Chat Completions',
+        controls: <ModelControlDescriptorDto>[
+          ModelControlDescriptorDto(
+            id: 'reasoning_effort',
+            label: 'Reasoning effort',
+            kind: ModelControlKind.choice,
+            presentation: ModelControlPresentation.menuChip,
+          ),
+        ],
+      ),
+    ],
     source: ProviderCatalogSource.bundled,
     updatedAt: _now,
   );

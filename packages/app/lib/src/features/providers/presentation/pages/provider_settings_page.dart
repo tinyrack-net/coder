@@ -1138,11 +1138,11 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
   late final TextEditingController _name;
   late final TextEditingController _baseUrl;
   late final TextEditingController _apiKey;
-  late final TextEditingController _models;
   late final TextEditingController _prefix;
   late String _wireFormatId;
   late bool _authenticationRequired;
-  late Set<String> _controlIds;
+  final List<_ManualModelDraft> _drafts = <_ManualModelDraft>[];
+  int _nextSeed = 0;
   bool _busy = false;
   bool _namePrefilled = false;
   Object? _error;
@@ -1157,9 +1157,24 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       text: initial?.baseUrl ?? 'http://127.0.0.1:8080/v1',
     );
     _apiKey = TextEditingController();
-    _models = TextEditingController(
-      text: initial?.models.map((model) => model.id).join(', ') ?? '',
-    );
+    for (final model in initial?.models ?? const <ManualProviderModelDto>[]) {
+      _drafts.add(
+        _ManualModelDraft(
+          seed: _nextSeed++,
+          modelId: model.id,
+          controlIds: <String>{
+            for (final control in model.controls) control.id,
+          },
+          values: <String, List<String>>{
+            for (final control in model.controls)
+              control.id: <String>[
+                for (final choice in control.choices) choice.id,
+              ],
+          },
+        ),
+      );
+    }
+    if (_drafts.isEmpty) _drafts.add(_ManualModelDraft(seed: _nextSeed++));
     _prefix = TextEditingController(
       text: connection?.modelPrefix ?? _suggestCustomPrefix(),
     );
@@ -1168,10 +1183,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
         widget.state.catalog.wireFormats.firstOrNull?.id ??
         '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
-    _controlIds = <String>{
-      for (final model in initial?.models ?? const <ManualProviderModelDto>[])
-        for (final control in model.controls) control.id,
-    };
   }
 
   @override
@@ -1192,7 +1203,9 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
     _name.dispose();
     _baseUrl.dispose();
     _apiKey.dispose();
-    _models.dispose();
+    for (final draft in _drafts) {
+      draft.dispose();
+    }
     _prefix.dispose();
     super.dispose();
   }
@@ -1268,9 +1281,15 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   if (value == null) return;
                   setState(() {
                     _wireFormatId = value;
-                    _controlIds.retainAll(
-                      _selectedWire.controls.map((control) => control.id),
-                    );
+                    final encodable = _selectedWire.controls
+                        .map((control) => control.id)
+                        .toSet();
+                    for (final draft in _drafts) {
+                      draft.controlIds.retainAll(encodable);
+                      draft.values.removeWhere(
+                        (id, _) => !encodable.contains(id),
+                      );
+                    }
                   });
                 },
               ),
@@ -1290,26 +1309,26 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   obscureText: true,
                   label: l10n.providerSettingsApiKey,
                 ),
-              TRTextField(
-                controller: _models,
-                label: l10n.providerSettingsManualModels,
-                // Demonstrates the comma-separated syntax with stand-in
-                // model IDs, which providers never localize.
-                placeholder: 'model-a, model-b',
-              ),
-              for (final control in _selectedWire.controls)
-                TinestCheckboxRow(
-                  value: _controlIds.contains(control.id),
-                  onChanged: (selected) => setState(() {
-                    selected == true
-                        ? _controlIds.add(control.id)
-                        : _controlIds.remove(control.id);
-                  }),
-                  title: TRText.inherit(control.label),
-                  subtitle: control.description == null
+              for (final (index, draft) in _drafts.indexed)
+                _ManualModelEditor(
+                  key: ValueKey<int>(draft.seed),
+                  draft: draft,
+                  controls: _selectedWire.controls,
+                  onRemove: _drafts.length == 1
                       ? null
-                      : TRText.inherit(control.description!),
+                      : () => setState(() {
+                          _drafts.removeAt(index).dispose();
+                        }),
+                  onChanged: () => setState(() {}),
                 ),
+              TRButton(
+                key: const ValueKey<String>('provider-custom-add-model'),
+                appearance: TRAppearance.outline,
+                onPressed: () => setState(() {
+                  _drafts.add(_ManualModelDraft(seed: _nextSeed++));
+                }),
+                child: TRText.inherit(l10n.providerSettingsManualModelAdd),
+              ),
             ],
           ),
           if (widget.existing case final existing?)
@@ -1389,6 +1408,25 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       setState(() => _error = l10n.providerSettingsApiKeyRequired);
       return;
     }
+    // A menu with nothing in it is a setting that cannot do anything, so the
+    // save is refused rather than dropping the control without saying so.
+    final incomplete = _selectedWire.controls.where(
+      (control) =>
+          control.kind == ModelControlKind.choice &&
+          _drafts.any(
+            (draft) =>
+                draft.controlIds.contains(control.id) &&
+                (draft.values[control.id] ?? const <String>[]).isEmpty,
+          ),
+    );
+    if (incomplete.isNotEmpty) {
+      setState(
+        () => _error = l10n.providerSettingsControlValuesRequired(
+          incomplete.first.label,
+        ),
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -1399,20 +1437,23 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       wireFormatId: _wireFormatId,
       authenticationRequired: _authenticationRequired,
       models: <ManualProviderModelDto>[
-        for (final id
-            in _models.text
-                .split(',')
-                .map((value) => value.trim())
-                .where((value) => value.isNotEmpty)
-                .toSet())
-          ManualProviderModelDto(
-            id: id,
-            label: id,
-            controls: <ModelControlDescriptorDto>[
-              for (final control in _selectedWire.controls)
-                if (_controlIds.contains(control.id)) control,
-            ],
-          ),
+        for (final draft in _drafts)
+          if (draft.modelId.text.trim() case final id when id.isNotEmpty)
+            ManualProviderModelDto(
+              id: id,
+              label: id,
+              controls: <ModelControlDescriptorDto>[
+                for (final control in _selectedWire.controls)
+                  if (draft.controlIds.contains(control.id))
+                    control.copyWith(
+                      choices: <ModelControlChoiceDto>[
+                        for (final value
+                            in draft.values[control.id] ?? const <String>[])
+                          ModelControlChoiceDto(id: value, label: value),
+                      ],
+                    ),
+              ],
+            ),
       ],
     );
     final notifier = ref.read(
@@ -1568,3 +1609,119 @@ String _authStatusLabel(
   ProviderAuthAttemptStatus.expired => l10n.providerStatusError,
   ProviderAuthAttemptStatus.cancelled => l10n.providerStatusDisconnected,
 };
+
+/// One manual model being edited on a custom connection.
+///
+/// Values are per model rather than per connection: two models behind one base
+/// URL need not accept the same levels, and only their owner knows which.
+final class _ManualModelDraft {
+  _ManualModelDraft({
+    required this.seed,
+    String modelId = '',
+    Set<String>? controlIds,
+    Map<String, List<String>>? values,
+  }) : modelId = TextEditingController(text: modelId),
+       controlIds = controlIds ?? <String>{},
+       values = values ?? <String, List<String>>{};
+
+  /// Identity that survives reordering, so editors keep their field state.
+  final int seed;
+
+  /// Provider-local model identifier.
+  final TextEditingController modelId;
+
+  /// Controls this model offers.
+  final Set<String> controlIds;
+
+  /// Values the connection's owner declared, by control id.
+  final Map<String, List<String>> values;
+
+  void dispose() => modelId.dispose();
+}
+
+class _ManualModelEditor extends StatelessWidget {
+  const _ManualModelEditor({
+    required this.draft,
+    required this.controls,
+    required this.onChanged,
+    this.onRemove,
+    super.key,
+  });
+
+  final _ManualModelDraft draft;
+  final List<ModelControlDescriptorDto> controls;
+  final VoidCallback onChanged;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: TRSpacing.small,
+      children: <Widget>[
+        Row(
+          spacing: TRSpacing.small,
+          children: <Widget>[
+            Expanded(
+              child: TRTextField(
+                controller: draft.modelId,
+                label: l10n.providerSettingsManualModelId,
+                // A stand-in identifier, which providers never localize.
+                placeholder: 'model-a',
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            if (onRemove case final remove?)
+              TRIconButton(
+                icon: const Icon(TinestIcons.delete),
+                label: l10n.providerSettingsManualModelRemove,
+                appearance: TRAppearance.ghost,
+                onPressed: remove,
+              ),
+          ],
+        ),
+        for (final control in controls) ...<Widget>[
+          TinestCheckboxRow(
+            key: ValueKey<String>(
+              'provider-custom-control-${draft.seed}-${control.id}',
+            ),
+            value: draft.controlIds.contains(control.id),
+            onChanged: (selected) {
+              selected == true
+                  ? draft.controlIds.add(control.id)
+                  : draft.controlIds.remove(control.id);
+              onChanged();
+            },
+            title: TRText.inherit(control.label),
+            subtitle: control.description == null
+                ? null
+                : TRText.inherit(control.description!),
+          ),
+          if (draft.controlIds.contains(control.id) &&
+              control.kind == ModelControlKind.choice)
+            TRMultiCombobox<String>.controlled(
+              value: draft.values[control.id] ?? const <String>[],
+              // Nothing here knows what an arbitrary endpoint accepts, so the
+              // typed query itself is the option: the owner names the values.
+              filterMode: TRComboboxFilterMode.none,
+              optionsBuilder: (query) => <TRComboboxItem<String>>[
+                for (final value in <String>{
+                  ...?draft.values[control.id],
+                  if (query.trim().isNotEmpty) query.trim(),
+                })
+                  TRComboboxItem<String>(value: value, label: value),
+              ],
+              label: l10n.providerSettingsControlValues(control.label),
+              helperText: l10n.providerSettingsControlValuesHelp,
+              placeholder: l10n.providerSettingsControlValuesPlaceholder,
+              onValueChange: (values) {
+                draft.values[control.id] = values;
+                onChanged();
+              },
+            ),
+        ],
+      ],
+    );
+  }
+}

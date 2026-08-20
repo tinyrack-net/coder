@@ -5,6 +5,7 @@ import 'package:daemon/src/features/providers/infrastructure/provider_auth.dart'
 import 'package:daemon/src/features/providers/infrastructure/provider_catalog.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:daemon/src/shared/ports/agent_protocol_mapping.dart';
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
@@ -494,6 +495,114 @@ void main() {
     tags: const <String>[
       'feature_test__provider_connection_management__unit',
     ],
+  );
+
+  test(
+    'a custom model carries the values its own endpoint accepts',
+    tags: const <String>['feature_test__provider_custom__contract'],
+    () async {
+      final fixture = _ServiceFixture(now);
+      final template = fixture.registry
+          .requireWire(openAIChatCompletionsWireId)
+          .controlDescriptors
+          .singleWhere(
+            (control) => control.id == AgentModelControlIds.reasoningEffort,
+          );
+      ModelControlDescriptorDto effort(List<String> values) =>
+          protocolControlDescriptor(template).copyWith(
+            choices: <ModelControlChoiceDto>[
+              for (final value in values)
+                ModelControlChoiceDto(id: value, label: value),
+            ],
+          );
+
+      // Only the owner of an arbitrary endpoint knows what it accepts, and two
+      // models behind one base URL need not agree.
+      final created = await fixture.service.createCustom(
+        'lab',
+        CustomProviderConfigDto(
+          name: 'Lab',
+          baseUrl: 'http://127.0.0.1:9000/v1',
+          wireFormatId: openAIChatCompletionsWireId,
+          authenticationRequired: false,
+          models: <ManualProviderModelDto>[
+            ManualProviderModelDto(
+              id: 'fast-model',
+              label: 'Fast',
+              controls: <ModelControlDescriptorDto>[
+                effort(<String>['quick']),
+              ],
+            ),
+            ManualProviderModelDto(
+              id: 'deep-model',
+              label: 'Deep',
+              controls: <ModelControlDescriptorDto>[
+                effort(<String>['deep', 'deepest']),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        created.customConfig!.models
+            .map(
+              (model) =>
+                  model.controls.single.choices.map((choice) => choice.id),
+            )
+            .toList(),
+        <List<String>>[
+          <String>['quick'],
+          <String>['deep', 'deepest'],
+        ],
+      );
+    },
+  );
+
+  test(
+    'a custom model may not invent a control this wire cannot encode',
+    tags: const <String>['feature_test__provider_custom__contract'],
+    () async {
+      final fixture = _ServiceFixture(now);
+      final template = protocolControlDescriptor(
+        fixture.registry
+            .requireWire(openAIChatCompletionsWireId)
+            .controlDescriptors
+            .single,
+      );
+      Future<void> create(ModelControlDescriptorDto control) =>
+          fixture.service.createCustom(
+            'lab-${control.hashCode}',
+            CustomProviderConfigDto(
+              name: 'Lab',
+              baseUrl: 'http://127.0.0.1:9000/v1',
+              wireFormatId: openAIChatCompletionsWireId,
+              authenticationRequired: false,
+              models: <ManualProviderModelDto>[
+                ManualProviderModelDto(
+                  id: 'model',
+                  label: 'Model',
+                  controls: <ModelControlDescriptorDto>[control],
+                ),
+              ],
+            ),
+          );
+
+      // The wire owns the shape: which control, of what kind, shown how.
+      await expectLater(
+        create(template.copyWith(id: 'invented_control')),
+        throwsA(isA<FormatException>()),
+      );
+      await expectLater(
+        create(template.copyWith(kind: ModelControlKind.toggle)),
+        throwsA(isA<FormatException>()),
+      );
+      // A menu with nothing in it is a control that cannot do anything.
+      await expectLater(
+        create(template.copyWith(choices: const <ModelControlChoiceDto>[])),
+        throwsA(isA<FormatException>()),
+      );
+    },
   );
 
   test(

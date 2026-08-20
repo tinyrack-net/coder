@@ -1221,11 +1221,26 @@ final class ProviderConnectionService
         final template = wire.controlDescriptors
             .where((candidate) => candidate.id == control.id)
             .firstOrNull;
-        if (template == null ||
-            protocolControlDescriptor(template) != control) {
+        if (template == null) {
           throw FormatException(
-            'Control ${control.id} is not supported by ${wire.label} with '
-            'that descriptor.',
+            'Control ${control.id} is not supported by ${wire.label}.',
+          );
+        }
+        // The wire owns the shape it can encode; the endpoint's owner owns the
+        // values, because nobody here knows what an arbitrary base URL takes.
+        if (protocolControlDescriptor(
+              template,
+            ).copyWith(choices: control.choices) !=
+            control) {
+          throw FormatException(
+            'Control ${control.id} does not match the shape ${wire.label} '
+            'encodes.',
+          );
+        }
+        if (control.kind == ModelControlKind.choice &&
+            control.choices.isEmpty) {
+          throw FormatException(
+            'Control ${control.id} offers no values to choose from.',
           );
         }
       }
