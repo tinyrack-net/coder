@@ -15,17 +15,16 @@ on:
         required: true
         type: boolean
         default: true
-      # Exists to measure the homelab machines against GitHub's, not to switch
-      # to them. Only a dispatch reads it, so a pull request, the merge queue,
-      # and a push keep running exactly where they ran before.
+      # The homelab is where everything runs now. Kept so a dispatch can send a
+      # run back to GitHub when the machines are down or being worked on.
       runner_pool:
         description: Which pool the quality jobs run on
         required: false
         type: choice
         options:
-          - github
           - self-hosted
-        default: github
+          - github
+        default: self-hosted
   schedule:
     - cron: "17 18 * * *"
 
@@ -93,12 +92,11 @@ jobs:
           # queue is an active ALLGREEN ruleset, so `main` is still only
           # reachable through a full-matrix run.
           CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
-          # The homelab machines carry `tinyrack-` prefixed labels, so a job
-          # can only land there when it asks for one by name. Anything that is
-          # not a dispatch therefore resolves to the hosted labels and runs
-          # where it always did.
+          # Everything resolves to the homelab labels. Only a dispatch reads
+          # the input, and only to send a run back to GitHub — `macos-15-intel`
+          # stays hosted either way because the Mac minis are ARM64 only.
           RUNNER_POOL: ${{ (github.event_name != 'workflow_dispatch' &&
-            'github') || inputs.runner_pool }}
+            'self-hosted') || inputs.runner_pool }}
         run: |
           set -euo pipefail
 
