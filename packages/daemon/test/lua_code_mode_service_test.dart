@@ -832,6 +832,9 @@ final class _Process implements lua.LuaHostProcess {
   Stream<String> get outputs => _outputs.stream;
 
   @override
+  String get diagnostics => '';
+
+  @override
   Future<void> terminate() async {
     terminated = true;
     if (!_exit.isCompleted) _exit.complete(0);

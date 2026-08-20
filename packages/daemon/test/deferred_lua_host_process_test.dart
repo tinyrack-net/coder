@@ -133,6 +133,9 @@ final class _RecordingProcess implements lua.LuaHostProcess {
   Stream<String> get outputs => const Stream<String>.empty();
 
   @override
+  String get diagnostics => '';
+
+  @override
   Future<void> terminate() async {}
 
   @override
