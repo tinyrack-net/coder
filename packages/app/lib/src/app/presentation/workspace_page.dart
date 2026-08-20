@@ -1524,9 +1524,27 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         }
       },
     );
+    // Narrowed for the same reason the paging selector below is: this pane
+    // owns the composer, its selectors, the plugin slots, and the subagent
+    // track, and a streamed delta has nothing to say to any of them. The two
+    // lists are compared by identity, which is exactly right — `copyWith`
+    // keeps the instance of every field it is not given, so an event that
+    // touches only the timeline leaves both untouched.
     final conversation = ref.watch(
-      conversationControllerProvider(widget.selection.hostId, current.id),
+      conversationControllerProvider(
+        widget.selection.hostId,
+        current.id,
+      ).select(
+        (value) => (
+          queued: value.asData?.value.queued ?? const <QueuedTurn>[],
+          pending: value.asData?.value.pending ?? const <PendingTurn>[],
+          hasValue: value.hasValue,
+          loading: value.isLoading && !value.hasValue,
+        ),
+      ),
     );
+    // Stays on the whole provider: it diffs the timeline to drive plugin UI,
+    // which a narrowed selector cannot carry, and listening never rebuilds.
     ref.listen(
       conversationControllerProvider(widget.selection.hostId, current.id),
       (previous, next) {
@@ -1543,17 +1561,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         }
       },
     );
-    final value = conversation.asData?.value;
-    final items = ref.watch(
-      conversationTimelineProvider(widget.selection.hostId, current.id),
-    );
-    // `request_user_input` is refused for non-root agents, so a question here
-    // would be unanswerable; approvals stay so the user can unblock the turn.
-    var visibleItems = readOnly
-        ? items
-              .where((item) => item is! ChatQuestionInteraction)
-              .toList(growable: false)
-        : items;
     // A freshly created session navigates before its first turn is accepted.
     // Until the real timeline echoes the prompt, render it optimistically so
     // the chat room never opens onto an empty page after Send.
@@ -1564,6 +1571,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         pendingFirstTurn != null &&
         pendingFirstTurn.failed &&
         conversation.hasValue;
+    final pending = conversation.pending;
     final restoreSubmission = failedFirstTurn
         ? ComposerSubmission(
             text: pendingFirstTurn.prompt,
@@ -1573,21 +1581,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final restoreKey = failedFirstTurn
         ? '${current.id}:${pendingFirstTurn.createdAt.microsecondsSinceEpoch}'
         : null;
-    final optimistic =
-        pendingFirstTurn != null &&
-        !pendingFirstTurn.failed &&
-        !visibleItems.any((item) => item is ChatUserMessage);
-    if (optimistic) {
-      visibleItems = <ChatItem>[
-        ...visibleItems,
-        ChatUserMessage(
-          key: 'pending-first-turn-${current.id}',
-          turnId: 'pending-first-turn',
-          createdAt: pendingFirstTurn.createdAt,
-          text: pendingFirstTurn.prompt,
-        ),
-      ];
-    }
     // Read, not watched: a position is consumed when the pane mounts, and
     // watching it would rebuild the pane every time the reader scrolls away.
     // The notifier is resolved here rather than inside the callback, which
@@ -1683,45 +1676,108 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           children: <Widget>[
             // No title header: the tab already names the session and carries
             // the subagent status icon, so the timeline owns the top edge.
+            //
+            // The transcript is watched here rather than in the pane. Every
+            // streamed delta produces a new projection, and watching it above
+            // would rebuild the composer, its selectors, the plugin slots, and
+            // the subagent track along with the messages — none of which a
+            // delta has anything to say to.
             Expanded(
-              child: ChatTimelineView(
-                sessionKey: sessionKey,
-                readingPosition: readingPosition,
-                // Reported while the pane is being torn down, which is a
-                // widget life-cycle: the store has to be written after the
-                // tree settles rather than during it.
-                onReadingPositionChanged: (key, position) => scheduleMicrotask(
-                  () => readingPositions.remember(key, position),
-                ),
-                olderPageKey: paging.hasMoreOlder
-                    ? 'older:${paging.oldest}:${paging.attempt}'
-                    : null,
-                loadingOlder: paging.loading,
-                olderFailed: paging.failed,
-                // The list reports an edge from inside a scroll notification,
-                // and mutating a provider there is a build-phase write.
-                onLoadOlder: () => scheduleMicrotask(loadOlderHistory),
-                items: visibleItems,
-                busy: busy || optimistic,
-                loading: conversation.isLoading && !conversation.hasValue,
-                hostId: widget.selection.hostId,
-                onPluginUiAction: (document, action) => ref
-                    .read(
-                      pluginSettingsControllerProvider(
-                        widget.selection.hostId,
-                      ).notifier,
-                    )
-                    .dispatchUi(
-                      agentId: current.agentDefinitionId,
-                      pluginId: document.pluginId,
-                      action: action,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final items = ref.watch(
+                    conversationTimelineProvider(
+                      widget.selection.hostId,
+                      current.id,
                     ),
-                loadAttachment: _loadAttachment,
-                exportAttachment: _exportAttachment,
+                  );
+                  // `request_user_input` is refused for non-root agents, so a
+                  // question here would be unanswerable; approvals stay so the
+                  // user can unblock the turn.
+                  var visibleItems = readOnly
+                      ? items
+                            .where((item) => item is! ChatQuestionInteraction)
+                            .toList(growable: false)
+                      : items;
+                  final optimistic =
+                      pendingFirstTurn != null &&
+                      !pendingFirstTurn.failed &&
+                      !visibleItems.any((item) => item is ChatUserMessage);
+                  if (optimistic) {
+                    visibleItems = <ChatItem>[
+                      ...visibleItems,
+                      ChatUserMessage(
+                        key: 'pending-first-turn-${current.id}',
+                        turnId: 'pending-first-turn',
+                        createdAt: pendingFirstTurn.createdAt,
+                        text: pendingFirstTurn.prompt,
+                      ),
+                    ];
+                  } else if (pending.isNotEmpty) {
+                    // One optimistic message per prompt. The registry above
+                    // owns the pre-echo view of a session's first prompt, so
+                    // while it is on screen the conversation's own pending
+                    // list stays out of the way rather than drawing the same
+                    // prompt a second time.
+                    visibleItems = <ChatItem>[
+                      ...visibleItems,
+                      for (final turn in pending)
+                        ChatUserMessage(
+                          key: 'pending-turn-${turn.turnId}',
+                          turnId: turn.turnId,
+                          createdAt: turn.createdAt,
+                          text: turn.prompt,
+                        ),
+                    ];
+                  }
+                  return ChatTimelineView(
+                    sessionKey: sessionKey,
+                    readingPosition: readingPosition,
+                    // Reported while the pane is being torn down, which is a
+                    // widget life-cycle: the store has to be written after the
+                    // tree settles rather than during it.
+                    onReadingPositionChanged: (key, position) =>
+                        scheduleMicrotask(
+                          () => readingPositions.remember(key, position),
+                        ),
+                    olderPageKey: paging.hasMoreOlder
+                        ? 'older:${paging.oldest}:${paging.attempt}'
+                        : null,
+                    loadingOlder: paging.loading,
+                    olderFailed: paging.failed,
+                    // The list reports an edge from inside a scroll
+                    // notification, and mutating a provider there is a
+                    // build-phase write.
+                    onLoadOlder: () => scheduleMicrotask(loadOlderHistory),
+                    items: visibleItems,
+                    // The optimistic prompt brings the running row with it, so
+                    // a send makes one change to the list instead of three:
+                    // the status event that follows adds nothing, and the echo
+                    // is a key swap in place rather than an insert above the
+                    // running row that pushes it down.
+                    busy: busy || optimistic || pending.isNotEmpty,
+                    loading: conversation.loading,
+                    hostId: widget.selection.hostId,
+                    onPluginUiAction: (document, action) => ref
+                        .read(
+                          pluginSettingsControllerProvider(
+                            widget.selection.hostId,
+                          ).notifier,
+                        )
+                        .dispatchUi(
+                          agentId: current.agentDefinitionId,
+                          pluginId: document.pluginId,
+                          action: action,
+                        ),
+                    loadAttachment: _loadAttachment,
+                    exportAttachment: _exportAttachment,
+                  );
+                },
               ),
             ),
             if (definition != null)
               _ConversationContentColumn(
+                key: const ValueKey<String>('conversation-status'),
                 child: switch (_liveStatusDocument) {
                   // `busy` rides along so the slot re-renders on both turn
                   // boundaries. Without it the surface loads once and keeps
@@ -1768,6 +1824,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             // shut at the exact moment the user needs it.
             if (!readOnly)
               _ConversationContentColumn(
+                key: const ValueKey<String>('conversation-approvals'),
                 child: SubagentApprovalBanner(
                   hostId: widget.selection.hostId,
                   rows: blockedSubagentRows(subagentRows),
@@ -1778,6 +1835,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             // its natural height and the timeline receives the remaining space.
             if (!readOnly)
               _ConversationContentColumn(
+                key: const ValueKey<String>('conversation-composer'),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     // tinyrack-check-ignore-next-line tokens/no-literal -- reserve half the viewport for the composer and timeline
@@ -1840,7 +1898,10 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           // A running turn never takes the keyboard away; the
                           // prompt queues instead.
                           enabled: effectiveRunnable,
-                          busy: busy,
+                          // The session status trails the daemon by an event,
+                          // so a prompt it has already accepted counts as busy
+                          // here: the next one queues rather than racing it.
+                          busy: busy || pending.isNotEmpty,
                           contextTokens: current.contextTokens,
                           contextWindow: current.contextWindow,
                           totalCostUsd: current.totalCostUsd,
@@ -1862,7 +1923,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                                 ).notifier,
                               )
                               .loadUsage(),
-                          queued: value?.queued ?? const <QueuedTurn>[],
+                          queued: conversation.queued,
                           onQueue: (submission) =>
                               _conversation(ref, current.id).enqueueTurn(
                                 submission.text,
@@ -2055,8 +2116,12 @@ bool _isTurnActive(SessionStatus status) =>
     status == SessionStatus.waitingForInput;
 
 /// Keeps every session-owned conversation surface on one readable centerline.
+///
+/// Every use is keyed. These are same-typed siblings in one [Column], and a
+/// conditional one appearing above another would otherwise be matched against
+/// its neighbour by position, re-inflating the subtree that got pushed down.
 class _ConversationContentColumn extends StatelessWidget {
-  const _ConversationContentColumn({required this.child});
+  const _ConversationContentColumn({required this.child, super.key});
 
   final Widget child;
 

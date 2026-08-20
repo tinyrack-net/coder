@@ -271,7 +271,12 @@ class _PluginUiContributionSurfaceState
   }
 
   Future<void> _load() async {
-    if (mounted) {
+    // A refresh keeps whatever is already rendered. The conversation slot sits
+    // between the transcript and the composer and re-renders on every turn
+    // boundary, so collapsing to the spinner and back would change the
+    // timeline's viewport height twice per turn. Only a first load, or one
+    // retrying past an error, has nothing to hold on to.
+    if (mounted && (_document == null || _error != null)) {
       setState(() {
         _document = null;
         _error = null;
