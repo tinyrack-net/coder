@@ -1485,10 +1485,28 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
     final subagentRows = readOnly
         ? const <SubagentTrackRow>[]
         : buildSubagentTrackRows(sessions, current.id);
-    final busy =
-        current.status == SessionStatus.running ||
-        current.status == SessionStatus.waitingForApproval ||
-        current.status == SessionStatus.waitingForInput;
+    final busy = _isTurnActive(current.status);
+    // A published status document belongs to the turn that published it.
+    // Keeping it afterwards pins whatever the plugin reported mid-turn above
+    // the composer for the rest of the session, so the pane drops it at the
+    // turn boundary and lets the on-demand slot report the current state.
+    ref.listen(
+      sessionsControllerProvider(
+        widget.selection.hostId,
+        widget.selection.worktreeId,
+      ).select(
+        (value) => value.value
+            ?.where((item) => item.id == widget.agent.id)
+            .firstOrNull
+            ?.status,
+      ),
+      (previous, next) {
+        if (next == null || _isTurnActive(next)) return;
+        if (_liveStatusDocument != null) {
+          setState(() => _liveStatusDocument = null);
+        }
+      },
+    );
     final conversation = ref.watch(
       conversationControllerProvider(widget.selection.hostId, current.id),
     );
@@ -1687,34 +1705,40 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
             ),
             if (definition != null)
               _ConversationContentColumn(
-                child: _liveStatusDocument == null
-                    ? AgentPluginUiSlot(
-                        hostId: widget.selection.hostId,
-                        agent: definition,
-                        slot: PluginUiSlot.conversationStatus,
-                        context: <String, dynamic>{
-                          'sessionId': current.id,
-                          'workspaceId': widget.selection.workspaceId,
-                          'worktreeId': widget.selection.worktreeId,
-                          'readOnly': readOnly,
-                        },
-                      )
-                    : PluginUiDocumentView(
-                        document: _liveStatusDocument!,
-                        semanticLabel: l10n.pluginUiSemanticLabel(
-                          _liveStatusDocument!.pluginId,
-                        ),
-                        invalidDocumentLabel: l10n.pluginUiInvalidTitle,
-                        invalidDocumentDescription: l10n
-                            .pluginUiInvalidDescription(
-                              AppIdentity.displayName,
-                            ),
-                        onAction: (action) => _dispatchPluginUi(
-                          current.agentDefinitionId,
-                          _liveStatusDocument!,
-                          action,
-                        ),
-                      ),
+                child: switch (_liveStatusDocument) {
+                  // `busy` rides along so the slot re-renders on both turn
+                  // boundaries. Without it the surface loads once and keeps
+                  // showing whatever the status said when it first mounted.
+                  null => AgentPluginUiSlot(
+                    hostId: widget.selection.hostId,
+                    agent: definition,
+                    slot: PluginUiSlot.conversationStatus,
+                    context: <String, dynamic>{
+                      'sessionId': current.id,
+                      'workspaceId': widget.selection.workspaceId,
+                      'worktreeId': widget.selection.worktreeId,
+                      'readOnly': readOnly,
+                      'busy': busy,
+                    },
+                  ),
+                  final document when pluginUiDocumentIsEmpty(document) =>
+                    const SizedBox.shrink(),
+                  final document => PluginUiDocumentView(
+                    document: document,
+                    semanticLabel: l10n.pluginUiSemanticLabel(
+                      document.pluginId,
+                    ),
+                    invalidDocumentLabel: l10n.pluginUiInvalidTitle,
+                    invalidDocumentDescription: l10n.pluginUiInvalidDescription(
+                      AppIdentity.displayName,
+                    ),
+                    onAction: (action) => _dispatchPluginUi(
+                      current.agentDefinitionId,
+                      document,
+                      action,
+                    ),
+                  ),
+                },
               ),
             // Keep the auxiliary subagent track bounded so the composer retains
             // its natural height and the timeline receives the remaining space.
@@ -1983,6 +2007,15 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         );
   }
 }
+
+/// Whether [status] means a turn is still in flight, waiting included.
+///
+/// A turn parked on an approval or a question has not ended: the composer stays
+/// busy and any status a plugin published for it is still current.
+bool _isTurnActive(SessionStatus status) =>
+    status == SessionStatus.running ||
+    status == SessionStatus.waitingForApproval ||
+    status == SessionStatus.waitingForInput;
 
 /// Keeps every session-owned conversation surface on one readable centerline.
 class _ConversationContentColumn extends StatelessWidget {

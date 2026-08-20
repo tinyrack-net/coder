@@ -196,6 +196,8 @@ void main() {
       final collaborationRows = collaboration.root['children']! as List;
       final collaborationCells =
           (collaborationRows.single as Map)['children']! as List;
+      // `list_agents` answers with the whole tree, root included, but the root
+      // is the session this panel sits under. Only subagents belong here.
       expect(collaborationCells.first, containsPair('text', '/root/reviewer'));
       expect(collaborationCells.last, containsPair('text', 'running'));
       expect(collaborationHostCalls, <Map<String, Object?>>[
@@ -236,6 +238,74 @@ void main() {
         ),
         throwsA(isA<PluginUiException>()),
       );
+    },
+  );
+
+  test(
+    'a tree without subagents renders an empty collaboration status document',
+    () async {
+      final bundle = await const BuiltInPluginCatalog().load(
+        'tinest.collaboration',
+      );
+      final revisions = PluginRevisionCatalog(
+        loader: _MapLoader(<String, PluginBundle>{
+          'tinest.collaboration': bundle,
+        }),
+        cache: _MemoryRevisionCache(),
+      );
+      final runtime = _runtime(revisions, stagedHost);
+      addTearDown(runtime.close);
+      final grants = MemoryAgentPluginGrantStore();
+      for (final capability in bundle.revision.requestedCapabilities) {
+        await grants.grant(
+          AgentPluginGrantDto(
+            agentId: 'agent',
+            pluginId: 'tinest.collaboration',
+            capability: capability,
+          ),
+        );
+      }
+      await revisions.reload(
+        'tinest.collaboration',
+        agentId: 'agent',
+        approvedCapabilities: bundle.revision.requestedCapabilities.toSet(),
+        inspector: runtime,
+      );
+      final service = PluginUiService(
+        descriptors: _RevisionDescriptorReader(revisions),
+        runtime: LuaPluginUiRuntime<Object>(
+          runtime: runtime,
+          grants: grants,
+          state: MemoryPluginStateStore(),
+          hostPrimitives: _collaborationUiPrimitives(
+            agents: const <Map<String, Object?>>[
+              <String, Object?>{
+                'agent_name': '/root',
+                'agent_status': 'running',
+              },
+            ],
+          ),
+          definitions: (_) async =>
+              _definition(const <String>['tinest.collaboration']),
+        ),
+      );
+
+      final document = await service.render(
+        const PluginUiRenderParamsDto(
+          agentId: 'agent',
+          pluginId: 'tinest.collaboration',
+          contributionId: 'tinest.collaboration/agent_status',
+          slot: PluginUiSlot.conversationStatus,
+          context: <String, dynamic>{'sessionId': 'session'},
+        ),
+      );
+
+      // Every ordinary session is a tree of exactly one agent: itself. The
+      // panel has nothing to report there, and it says so with a section that
+      // carries no rows, which the host drops instead of framing.
+      expect(document.root, containsPair('type', 'section'));
+      expect(document.root['children'], isEmpty);
+      expect(document.root['children'], isA<List<Object?>>());
     },
   );
 
@@ -1116,8 +1186,20 @@ final class _RevisionDescriptorReader implements PluginDescriptorReader {
   Future<PluginDescriptorDto> get(String id) => revisions.loadInstalled(id);
 }
 
+/// Fakes `host.collaboration.list_agents` the way the daemon answers it.
+///
+/// The real service returns every session of the caller's tree, and the first
+/// of those is always the tree root the panel is rendered under, so [agents]
+/// keeps that root entry present by default.
 HostPrimitiveRegistry _collaborationUiPrimitives({
   List<Map<String, Object?>>? calls,
+  List<Map<String, Object?>> agents = const <Map<String, Object?>>[
+    <String, Object?>{'agent_name': '/root', 'agent_status': 'running'},
+    <String, Object?>{
+      'agent_name': '/root/reviewer',
+      'agent_status': 'running',
+    },
+  ],
 }) => HostPrimitiveRegistry(
   <HostPrimitive<Object?, Object?>>[
     HostPrimitiveContracts.collaborationListAgents
@@ -1125,14 +1207,7 @@ HostPrimitiveRegistry _collaborationUiPrimitives({
           decode: _object,
           invoke: (arguments, _) {
             calls?.add(Map<String, Object?>.unmodifiable(arguments));
-            return const <String, Object?>{
-              'agents': <Object?>[
-                <String, Object?>{
-                  'agent_name': '/root/reviewer',
-                  'agent_status': 'running',
-                },
-              ],
-            };
+            return <String, Object?>{'agents': agents};
           },
         )
         .erased,

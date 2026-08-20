@@ -17,7 +17,7 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 /// Contribution order follows the Agent harness: driver, ordered extensions,
 /// tools, and finally plugins referenced only by settings. The host owns the
 /// loading/error boundary and all native widgets; plugins only provide data.
-class AgentPluginUiSlot extends ConsumerWidget {
+class AgentPluginUiSlot extends ConsumerStatefulWidget {
   /// Creates an Agent-scoped plugin surface.
   const AgentPluginUiSlot({
     required this.hostId,
@@ -40,9 +40,24 @@ class AgentPluginUiSlot extends ConsumerWidget {
   final Map<String, dynamic> context;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgentPluginUiSlot> createState() => _AgentPluginUiSlotState();
+}
+
+class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
+  /// Contributions that reported they have nothing to show.
+  ///
+  /// A surface answers on its own schedule, so this column cannot know which
+  /// of its children drew anything until each has loaded. It needs to know,
+  /// because a separator above or below a surface that drew nothing is a gap
+  /// with no reason to exist.
+  final Set<String> _silent = <String>{};
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = ref.watch(pluginSettingsControllerProvider(hostId));
+    final state = ref.watch(
+      pluginSettingsControllerProvider(widget.hostId),
+    );
     return state.when(
       skipLoadingOnRefresh: true,
       data: (catalog) {
@@ -56,37 +71,46 @@ class AgentPluginUiSlot extends ConsumerWidget {
                 PluginContributionDto contribution,
               })
             >[];
-        for (final pluginId in _orderedPluginIds(agent)) {
+        for (final pluginId in _orderedPluginIds(widget.agent)) {
           final plugin = pluginsById[pluginId];
           if (plugin == null) continue;
           for (final contribution in plugin.contributions) {
             if (contribution.kind == PluginContributionKind.ui &&
-                _slots(contribution).contains(slot.name)) {
+                _slots(contribution).contains(widget.slot.name)) {
               contributions.add((plugin: plugin, contribution: contribution));
             }
           }
         }
         if (contributions.isEmpty) return const SizedBox.shrink();
+        final surfaces = <Widget>[];
+        var drew = false;
+        for (final entry in contributions) {
+          final key =
+              'agent-plugin-ui-${widget.slot.name}-'
+              '${entry.plugin.id}-${entry.contribution.id}';
+          final silent = _silent.contains(key);
+          surfaces.add(
+            PluginUiContributionSurface(
+              key: ValueKey<String>(key),
+              hostId: widget.hostId,
+              agentId: widget.agent.id,
+              plugin: entry.plugin,
+              contribution: entry.contribution,
+              slot: widget.slot,
+              // The gap belongs to the surface that follows a visible one, so
+              // a silent contribution never leaves its separator behind.
+              leadingSpacing: !silent && drew ? TRSpacing.small : 0,
+              onSilentChanged: (value) => _reportSilent(key, silent: value),
+              context: widget.context,
+            ),
+          );
+          drew = drew || !silent;
+        }
         return Column(
-          key: ValueKey<String>('agent-plugin-ui-${slot.name}'),
+          key: ValueKey<String>('agent-plugin-ui-${widget.slot.name}'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (final (index, entry) in contributions.indexed) ...<Widget>[
-              if (index > 0) const SizedBox(height: TRSpacing.small),
-              PluginUiContributionSurface(
-                key: ValueKey<String>(
-                  'agent-plugin-ui-${slot.name}-${entry.contribution.id}',
-                ),
-                hostId: hostId,
-                agentId: agent.id,
-                plugin: entry.plugin,
-                contribution: entry.contribution,
-                slot: slot,
-                context: this.context,
-              ),
-            ],
-          ],
+          children: surfaces,
         );
       },
       loading: () => TRProgress(label: l10n.pluginUiLoading),
@@ -97,6 +121,11 @@ class AgentPluginUiSlot extends ConsumerWidget {
               title: l10n.pluginUiLoadFailed,
             ),
     );
+  }
+
+  void _reportSilent(String key, {required bool silent}) {
+    if (silent == _silent.contains(key)) return;
+    setState(() => silent ? _silent.add(key) : _silent.remove(key));
   }
 }
 
@@ -131,6 +160,8 @@ class PluginUiContributionSurface extends ConsumerStatefulWidget {
     required this.plugin,
     required this.contribution,
     required this.slot,
+    this.leadingSpacing = 0,
+    this.onSilentChanged,
     this.context = const <String, dynamic>{},
     super.key,
   });
@@ -149,6 +180,15 @@ class PluginUiContributionSurface extends ConsumerStatefulWidget {
 
   /// Host-owned surface requested from the contribution.
   final PluginUiSlot slot;
+
+  /// Gap kept above this surface when it draws anything at all.
+  final double leadingSpacing;
+
+  /// Reports whether this surface currently draws nothing at all.
+  ///
+  /// Only the surface knows: the answer arrives with the render, and it
+  /// changes again whenever the contribution is asked a second time.
+  final ValueChanged<bool>? onSilentChanged;
 
   /// Immutable render context supplied by the host.
   final Map<String, dynamic> context;
@@ -189,22 +229,45 @@ class _PluginUiContributionSurfaceState
     final document = _document;
     if (_error case final error?) {
       if (_isExpectedAbsence(error)) return const SizedBox.shrink();
-      return ClientErrorAlert(
-        error: _clientError(error),
-        title: l10n.pluginUiLoadFailed,
-        onRetry: () => unawaited(_load()),
+      return _spaced(
+        ClientErrorAlert(
+          error: _clientError(error),
+          title: l10n.pluginUiLoadFailed,
+          onRetry: () => unawaited(_load()),
+        ),
       );
     }
-    if (document == null) return TRProgress(label: l10n.pluginUiLoading);
-    return PluginUiDocumentView(
-      document: document,
-      semanticLabel: l10n.pluginUiSemanticLabel(widget.plugin.name),
-      invalidDocumentLabel: l10n.pluginUiInvalidTitle,
-      invalidDocumentDescription: l10n.pluginUiInvalidDescription(
-        AppIdentity.displayName,
+    if (document == null) {
+      return _spaced(TRProgress(label: l10n.pluginUiLoading));
+    }
+    // A contribution with nothing to report answers with an empty document.
+    // Framing it would leave a bare panel on the surface it renders into.
+    if (pluginUiDocumentIsEmpty(document)) return const SizedBox.shrink();
+    return _spaced(
+      PluginUiDocumentView(
+        document: document,
+        semanticLabel: l10n.pluginUiSemanticLabel(widget.plugin.name),
+        invalidDocumentLabel: l10n.pluginUiInvalidTitle,
+        invalidDocumentDescription: l10n.pluginUiInvalidDescription(
+          AppIdentity.displayName,
+        ),
+        onAction: _dispatch,
       ),
-      onAction: _dispatch,
     );
+  }
+
+  Widget _spaced(Widget child) => widget.leadingSpacing == 0
+      ? child
+      : Padding(
+          padding: EdgeInsets.only(top: widget.leadingSpacing),
+          child: child,
+        );
+
+  /// Whether the current state paints nothing on the host surface.
+  bool get _isSilent {
+    if (_error case final error?) return _isExpectedAbsence(error);
+    final document = _document;
+    return document != null && pluginUiDocumentIsEmpty(document);
   }
 
   Future<void> _load() async {
@@ -228,6 +291,7 @@ class _PluginUiContributionSurfaceState
     } on Object catch (error) {
       if (mounted) setState(() => _error = error);
     }
+    if (mounted) widget.onSilentChanged?.call(_isSilent);
   }
 
   Future<PluginUiDocumentDto> _dispatch(PluginUiActionDto action) async {
@@ -239,10 +303,16 @@ class _PluginUiContributionSurfaceState
             pluginId: widget.plugin.id,
             action: action,
           );
-      if (mounted) setState(() => _document = document);
+      if (mounted) {
+        setState(() => _document = document);
+        widget.onSilentChanged?.call(_isSilent);
+      }
       return document;
     } on Object catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted) {
+        setState(() => _error = error);
+        widget.onSilentChanged?.call(_isSilent);
+      }
       return _document!;
     }
   }

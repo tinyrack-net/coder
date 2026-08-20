@@ -203,6 +203,132 @@ void main() {
   );
 
   testWidgets(
+    'a contribution with nothing to report leaves no panel behind',
+    (tester) async {
+      const status = PluginContributionDto(
+        pluginId: 'example.status',
+        id: 'status',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['conversationStatus'],
+        },
+      );
+      const goal = PluginContributionDto(
+        pluginId: 'example.goal',
+        id: 'goal',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['conversationStatus'],
+        },
+      );
+      const agent = AgentDefinitionDto(
+        version: 5,
+        id: 'custom-agent',
+        name: 'Custom Agent',
+        description: 'Plugin controlled',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.status', 'example.goal'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'agent-hash',
+        sourcePath: '/config/v5/agents/custom-agent.md',
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[agent],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.status',
+            version: '1.0.0',
+            name: 'Status',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.status',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[status],
+          ),
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.goal',
+            version: '1.0.0',
+            name: 'Goal',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.goal',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[goal],
+          ),
+        ],
+        pluginUiDocuments: const <String, PluginUiDocumentDto>{
+          'example.status/status/custom-agent': PluginUiDocumentDto(
+            id: 'status-document',
+            pluginId: 'example.status',
+            revisionHash: 'revision',
+            slot: PluginUiSlot.conversationStatus,
+            root: <String, dynamic>{
+              'type': 'section',
+              'children': <Object?>[],
+            },
+          ),
+          'example.goal/goal/custom-agent': PluginUiDocumentDto(
+            id: 'goal-document',
+            pluginId: 'example.goal',
+            revisionHash: 'revision',
+            slot: PluginUiSlot.conversationStatus,
+            root: <String, dynamic>{'type': 'badge', 'text': 'active'},
+          ),
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: const Scaffold(
+              body: AgentPluginUiSlot(
+                hostId: 'server',
+                agent: agent,
+                slot: PluginUiSlot.conversationStatus,
+                context: <String, dynamic>{'sessionId': 'session-1'},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // An empty section is how a status contribution says it has nothing to
+      // report. Framing it would park a bare card beside the composer of every
+      // session, so the surface renders nothing at all — and the separator it
+      // would have been given goes with it, leaving the sibling that does draw
+      // flush against the top edge.
+      expect(find.byType(TRCard), findsNothing);
+      expect(find.text('active'), findsOneWidget);
+      expect(api.pluginUiRenders, hasLength(2));
+      expect(
+        tester
+            .widgetList<PluginUiContributionSurface>(
+              find.byType(PluginUiContributionSurface),
+            )
+            .map((surface) => surface.leadingSpacing)
+            .toList(growable: false),
+        <double>[0, 0],
+      );
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
     'a rejected render is translated and keeps its trace id',
     (tester) async {
       const contribution = PluginContributionDto(
