@@ -2504,13 +2504,26 @@ Future<void> _tapFirstNavigationRow(WidgetTester tester) async {
 }
 
 Finder? _firstTreeNavigationRow() {
-  final trees = find.byWidgetPredicate(
-    (widget) => widget is TRTreeNav<Object>,
-    description: 'typed tree navigation',
-  );
-  if (trees.evaluate().isEmpty) return null;
+  // The Settings sidebar is a typed tree too, and it joins the tree from the
+  // medium width class up, ahead of the collection in the adaptive Row. Taking
+  // the first tree unscoped therefore tapped a category rather than opening a
+  // detail on every viewport wider than a phone, which is why the compact
+  // captures passed while tablet and desktop did not.
+  final collection = find
+      .byWidgetPredicate(
+        (widget) => widget is TRTreeNav<Object>,
+        description: 'typed tree navigation',
+      )
+      .evaluate()
+      .where((element) => !_isInsideSettingsSidebar(element))
+      .toList(growable: false);
+  if (collection.isEmpty) return null;
+  final tree = collection.first;
   final rows = find.descendant(
-    of: trees.first,
+    of: find.byElementPredicate(
+      (element) => identical(element, tree),
+      description: 'collection tree navigation',
+    ),
     matching: find.byWidgetPredicate(
       (widget) => widget is GestureDetector && widget.onTap != null,
       description: 'actionable tree navigation row',
@@ -2519,18 +2532,23 @@ Finder? _firstTreeNavigationRow() {
   return rows.evaluate().isEmpty ? null : rows.first;
 }
 
+bool _isInsideSettingsSidebar(Element element) {
+  var inside = false;
+  element.visitAncestorElements((ancestor) {
+    if (ancestor.widget.key == _settingsSidebarSurface) {
+      inside = true;
+      return false;
+    }
+    return true;
+  });
+  return inside;
+}
+
+const _settingsSidebarSurface = ValueKey<String>('settings-sidebar-surface');
+
 Future<void> _tapText(WidgetTester tester, String text) async {
   final matches = find.text(text);
-  if (matches.evaluate().isEmpty) {
-    final scrollable = _primaryCatalogScrollable(tester);
-    if (scrollable != null) {
-      await tester.scrollUntilVisible(
-        matches,
-        240,
-        scrollable: scrollable,
-      );
-    }
-  }
+  await _scrollTowards(tester, matches);
   if (matches.evaluate().isEmpty) {
     throw StateError('Catalog action could not find text: $text');
   }
@@ -2552,21 +2570,31 @@ Future<void> _ensureVisible(
   Finder finder,
   String description,
 ) async {
-  if (finder.evaluate().isEmpty) {
-    final scrollable = _primaryCatalogScrollable(tester);
-    if (scrollable != null) {
-      await tester.scrollUntilVisible(
-        finder,
-        240,
-        scrollable: scrollable,
-      );
-    }
-  }
+  await _scrollTowards(tester, finder);
   if (finder.evaluate().isEmpty) {
     throw StateError('Catalog scroll target could not find $description.');
   }
   await tester.ensureVisible(finder.first);
   await _pumpCatalogFrame(tester);
+}
+
+/// Drags the primary scrollable until [finder] resolves, or gives up quietly.
+///
+/// `scrollUntilVisible` ends by calling `ensureVisible` on the finder even when
+/// its own search exhausted every iteration, so a target that is simply absent
+/// surfaced as `Bad state: No element` from deep inside flutter_test and hid
+/// which target the catalog was looking for. Leaving the reporting to the
+/// caller keeps that diagnostic reachable.
+Future<void> _scrollTowards(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isNotEmpty) return;
+  final scrollable = _primaryCatalogScrollable(tester);
+  if (scrollable == null) return;
+  for (var attempt = 0; attempt < 50; attempt++) {
+    if (scrollable.evaluate().isEmpty) return;
+    await tester.drag(scrollable, const Offset(0, -240));
+    await tester.pump();
+    if (finder.evaluate().isNotEmpty) return;
+  }
 }
 
 Finder? _primaryCatalogScrollable(WidgetTester tester) {
@@ -2594,7 +2622,15 @@ Finder? _primaryCatalogScrollable(WidgetTester tester) {
         ? candidate
         : current,
   );
-  return find.byWidget(target.widget);
+  // Identify the scrollable by element rather than by widget instance. A drag
+  // pumps frames, an async load rebuilds the pane, and the captured widget
+  // instance stops matching, at which point scrollUntilVisible throws
+  // "Bad state: No element" instead of reporting the target it never found.
+  final context = target.context;
+  return find.byElementPredicate(
+    (element) => identical(element, context),
+    description: 'primary catalog scrollable',
+  );
 }
 
 void _assertExpectedFrame(WidgetTester tester, _Scenario scenario) {
