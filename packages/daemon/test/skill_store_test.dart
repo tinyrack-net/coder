@@ -429,6 +429,50 @@ void main() {
   );
 
   test(
+    'a root that appears while its ancestor watch arms is still reported',
+    () async {
+      final agents = Directory(p.join(project.path, '.agents'));
+      final skillsRoot = Directory(p.join(agents.path, 'skills'));
+      final controllers = <String, StreamController<SkillWatchEvent>>{};
+      final files = NativeSkillFiles(
+        skillsRoot.path,
+        origin: SkillOrigin.project,
+        openWatch: (path) {
+          // Arming a native watch is not instant, and the level below the one
+          // being armed can appear inside that window. On a loaded host that
+          // window is wide enough to hit; here it is made exact.
+          if (p.equals(path, agents.path) && !skillsRoot.existsSync()) {
+            skillsRoot.createSync(recursive: true);
+          }
+          final controller = StreamController<SkillWatchEvent>.broadcast();
+          controllers[p.normalize(p.absolute(path))] = controller;
+          return controller.stream;
+        },
+      );
+      await files.initialize();
+      addTearDown(() async {
+        for (final controller in controllers.values) {
+          await controller.close();
+        }
+      });
+      addTearDown(files.close);
+      final changed = files.changes.first;
+
+      // The ancestor watch reports `.agents` appearing, and that is the only
+      // notification that will ever be delivered: the skills root is created
+      // below a watch that is not recursive, so nothing observes it.
+      agents.createSync();
+      controllers[p.normalize(p.absolute(project.path))]!.add(
+        SkillWatchEvent(path: agents.path),
+      );
+
+      await _awaitChange(changed, skillsRoot, files: files);
+      expect(files.watchedPaths, contains(p.normalize(skillsRoot.path)));
+    },
+    tags: const <String>['feature_test__skill_catalog__unit'],
+  );
+
+  test(
     'watch path filter accepts only related absolute and relative paths',
     () {
       final skillRoot = p.join(root.path, 'tracked', '.agents', 'skills');

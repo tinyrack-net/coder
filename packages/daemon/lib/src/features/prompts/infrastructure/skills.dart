@@ -124,17 +124,49 @@ final class SkillWatchPathFilter {
   }
 }
 
+/// One native filesystem notification, reduced to what the watcher reads.
+///
+/// `dart:io` keeps every `FileSystemEvent` constructor private, so a test can
+/// observe native events but never produce one. Carrying the two fields the
+/// watcher actually uses lets the arming and delivery order be driven directly
+/// instead of being provoked by load.
+final class SkillWatchEvent {
+  /// Creates a notification for [path], moved to [destination] when renamed.
+  const SkillWatchEvent({required this.path, this.destination});
+
+  /// The entry that changed, or the watched directory on watchers that report
+  /// only the directory for every direct child change.
+  final String path;
+
+  /// Where [path] was moved, when the notification describes a rename.
+  final String? destination;
+}
+
+/// Opens a non-recursive native watch over one directory.
+typedef SkillWatchOpener = Stream<SkillWatchEvent> Function(String path);
+
+Stream<SkillWatchEvent> _openNativeWatch(String path) =>
+    Directory(path).watch().map(
+      (event) => SkillWatchEvent(
+        path: event.path,
+        destination: event is FileSystemMoveEvent ? event.destination : null,
+      ),
+    );
+
 /// Native filesystem adapter for one `<root>/<id>/SKILL.md` tree.
 final class NativeSkillFiles implements SkillFiles {
   /// Creates an adapter rooted at one skills directory.
   ///
   /// [createIfMissing] is reserved for the daemon-owned configuration root.
   /// Shared and project trees retain the permissions chosen by their owner.
+  /// [openWatch] is a seam for tests that need to control when a watch is
+  /// armed relative to the directories appearing under it.
   NativeSkillFiles(
     String root, {
     required this.origin,
     this.createIfMissing = false,
     this.maxResources = 200,
+    this.openWatch = _openNativeWatch,
   }) : _directory = Directory(root);
 
   static const String _documentName = 'SKILL.md';
@@ -148,12 +180,15 @@ final class NativeSkillFiles implements SkillFiles {
   /// Upper bound on bundled files reported for one skill.
   final int maxResources;
 
+  /// Opens the native watch behind every directory this adapter tracks.
+  final SkillWatchOpener openWatch;
+
   final Directory _directory;
   final StreamController<void> _changes = StreamController<void>.broadcast(
     sync: true,
   );
-  final Map<String, StreamSubscription<FileSystemEvent>> _watchSubscriptions =
-      <String, StreamSubscription<FileSystemEvent>>{};
+  final Map<String, StreamSubscription<SkillWatchEvent>> _watchSubscriptions =
+      <String, StreamSubscription<SkillWatchEvent>>{};
   Future<void> _watchTail = Future<void>.value();
   bool _initialized = false;
   bool _closed = false;
@@ -198,45 +233,67 @@ final class NativeSkillFiles implements SkillFiles {
     return next;
   }
 
-  Future<void> _replaceWatchTarget() async {
+  /// The deepest directory on the way to the skills root that exists now.
+  Directory? _deepestExistingAncestor() {
     var target = _directory;
     while (!target.existsSync()) {
       final parent = target.parent;
-      if (p.equals(parent.path, target.path)) return;
+      if (p.equals(parent.path, target.path)) return null;
       target = parent;
     }
+    return target;
+  }
 
+  Future<void> _replaceWatchTarget() async {
     final skillRoot = p.normalize(p.absolute(_directory.path));
-    final hadSubscriptions = _watchSubscriptions.isNotEmpty;
-    final rootWasWatched = _watchSubscriptions.containsKey(skillRoot);
+    // Resolving the anchor once is not enough. A missing root is created one
+    // level at a time, each level appears inside the level above it, and this
+    // method awaits between choosing an anchor and arming the watch on it. A
+    // level that appears inside that window is observed by nobody — the
+    // ancestor watch is not recursive and native watchers never replay — so a
+    // single-pass anchor leaves the catalog permanently deaf. Repeat until a
+    // pass finds the same deepest directory it just armed; the comparison is
+    // an `existsSync` walk, so a settled watcher pays one cheap extra pass.
+    String? armed;
+    while (!_closed) {
+      final target = _deepestExistingAncestor();
+      if (target == null) return;
+      final targetPath = p.normalize(p.absolute(target.path));
+      if (targetPath == armed) return;
+      armed = targetPath;
 
-    final desiredPaths = await _desiredWatchPaths(target);
-    for (final path in desiredPaths) {
-      if (_watchSubscriptions.containsKey(path)) continue;
-      _startWatching(path);
-    }
+      final hadSubscriptions = _watchSubscriptions.isNotEmpty;
+      final rootWasWatched = _watchSubscriptions.containsKey(skillRoot);
 
-    // A skills root that materialized while only an ancestor was watched has
-    // already missed the native events for its own creation: the ancestor
-    // delivered them while the root did not exist yet, so the path filter
-    // dropped them, and native watchers never replay. Anchoring onto the root
-    // is itself the missed change, so report it — except on the very first
-    // anchor, where the initial catalog read has not happened yet.
-    if (hadSubscriptions &&
-        !rootWasWatched &&
-        _watchSubscriptions.containsKey(skillRoot)) {
-      _changes.add(null);
-    }
+      final desiredPaths = await _desiredWatchPaths(target);
+      if (_closed) return;
+      for (final path in desiredPaths) {
+        if (_watchSubscriptions.containsKey(path)) continue;
+        _startWatching(path);
+      }
 
-    // Install replacement watchers before dropping ancestors so a root that
-    // appeared between native events never has an unobserved window.
-    if (!_watchSubscriptions.keys.any(desiredPaths.contains)) return;
-    final stalePaths = _watchSubscriptions.keys
-        .where((path) => !desiredPaths.contains(path))
-        .toList(growable: false);
-    for (final path in stalePaths) {
-      final subscription = _watchSubscriptions.remove(path);
-      await subscription?.cancel();
+      // A skills root that materialized while only an ancestor was watched has
+      // already missed the native events for its own creation: the ancestor
+      // delivered them while the root did not exist yet, so the path filter
+      // dropped them, and native watchers never replay. Anchoring onto the root
+      // is itself the missed change, so report it — except on the very first
+      // anchor, where the initial catalog read has not happened yet.
+      if (hadSubscriptions &&
+          !rootWasWatched &&
+          _watchSubscriptions.containsKey(skillRoot)) {
+        _changes.add(null);
+      }
+
+      // Install replacement watchers before dropping ancestors so a root that
+      // appeared between native events never has an unobserved window.
+      if (!_watchSubscriptions.keys.any(desiredPaths.contains)) return;
+      final stalePaths = _watchSubscriptions.keys
+          .where((path) => !desiredPaths.contains(path))
+          .toList(growable: false);
+      for (final path in stalePaths) {
+        final subscription = _watchSubscriptions.remove(path);
+        await subscription?.cancel();
+      }
     }
   }
 
@@ -272,8 +329,8 @@ final class NativeSkillFiles implements SkillFiles {
       watchedRoot: watchedPath,
     );
     try {
-      late final StreamSubscription<FileSystemEvent> subscription;
-      subscription = Directory(watchedPath).watch().listen(
+      late final StreamSubscription<SkillWatchEvent> subscription;
+      subscription = openWatch(watchedPath).listen(
         (event) {
           if (_closed) return;
           if (!_affectsSkillRoot(event, pathFilter)) {
@@ -297,7 +354,7 @@ final class NativeSkillFiles implements SkillFiles {
 
   void _watchEnded(
     String watchedPath,
-    StreamSubscription<FileSystemEvent> subscription,
+    StreamSubscription<SkillWatchEvent> subscription,
   ) {
     if (_closed || !identical(_watchSubscriptions[watchedPath], subscription)) {
       return;
@@ -309,7 +366,7 @@ final class NativeSkillFiles implements SkillFiles {
   }
 
   bool _affectsSkillRoot(
-    FileSystemEvent event,
+    SkillWatchEvent event,
     SkillWatchPathFilter pathFilter,
   ) {
     final skillRootExists = _directory.existsSync();
@@ -319,7 +376,6 @@ final class NativeSkillFiles implements SkillFiles {
     )) {
       return true;
     }
-    if (event is! FileSystemMoveEvent) return false;
     final destination = event.destination;
     return destination != null &&
         pathFilter.accepts(
