@@ -134,8 +134,8 @@ void main() {
     expect(flutter, contains('dart run tinest_quality _test-flutter'));
     expect(flutter, isNot(contains('_test-dart')));
     for (final job in <String>[dart, flutter]) {
-      expect(job, contains('macos-26'));
-      expect(job, contains('windows-2025'));
+      expect(job, contains('os: macos'));
+      expect(job, contains('os: windows'));
     }
     // A single job running both is what the measurement rejected.
     expect(workflow, isNot(contains('\n  cross-platform-tests:\n')));
@@ -196,9 +196,9 @@ void main() {
 
   test('macOS Dart suites serialize native-asset installation', () {
     final dart = _job(workflow, 'dart-tests');
-    expect(dart, contains("matrix.os == 'macos-26'"));
+    expect(dart, contains("matrix.os == 'macos'"));
     expect(dart, contains('dart run tinest_quality _test-dart --jobs=1'));
-    expect(dart, contains("matrix.os != 'macos-26'"));
+    expect(dart, contains("matrix.os != 'macos'"));
   });
 
   test('Windows fetches the SDK archive instead of the Actions cache', () {
@@ -850,8 +850,8 @@ void main() {
 
   test('only Android mobile builds use the enhanced Gradle cache', () {
     final mobileBuild = _job(workflow, 'mobile-debug-build');
-    final androidBuild = _mobileEntry('ubuntu-24.04');
-    final iosBuild = _mobileEntry('macos-26');
+    final androidBuild = _mobileEntry('linux');
+    final iosBuild = _mobileEntry('macos');
 
     expect(androidBuild['gradle_cache'], isTrue);
     expect(iosBuild['gradle_cache'], isFalse);
@@ -884,7 +884,7 @@ void main() {
       iosPodfile,
       contains("raise 'Missing redundant Pods-Runner library reference'"),
     );
-    final iosBuild = _mobileEntry('macos-26');
+    final iosBuild = _mobileEntry('macos');
     expect(
       iosBuild['command'],
       contains('flutter build ios --debug --no-codesign'),
@@ -896,11 +896,11 @@ void main() {
   test('native attachment plugins receive macOS and Windows debug builds', () {
     final desktopBuild = _job(workflow, 'desktop-debug-build');
     expect(
-      _matrixEntry(desktopBuild, 'macos-26'),
+      _matrixEntry(desktopBuild, 'macos'),
       contains('flutter build macos --debug -t lib/main.dart'),
     );
     expect(
-      _matrixEntry(desktopBuild, 'windows-2025'),
+      _matrixEntry(desktopBuild, 'windows'),
       contains('flutter build windows --debug -t lib/main.dart'),
     );
     expect(_job(workflow, 'quality-gate'), contains('- desktop-debug-build'));
