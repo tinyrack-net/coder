@@ -20,6 +20,28 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Report the bundle's signing state
+      if: failure() && inputs.platform == 'macos'
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+      # macOS answers a rejected signature with SIGKILL and no message, so the
+      # log says only `Killed: 9`. An arm64 bundle failed here on a self-hosted
+      # mini while the x86_64 one passed on the same machine and both passed on
+      # a hosted runner, and the job cleans its workspace, so the evidence has
+      # to be taken while it still exists.
+      run: |
+        bundle="dist/tinest-cli-$TARGET"
+        for binary in "$bundle"/bin/* "$bundle"/lib/*; do
+          [ -f "$binary" ] || continue
+          file "$binary" | grep -q 'Mach-O' || continue
+          printf '%s\n' "--- $binary"
+          codesign -dv "$binary" 2>&1 | grep -E 'Identifier|flags|Format' || true
+          codesign -v "$binary" 2>&1 | head -2 || true
+        done
+        echo "--- what the kernel said ---"
+        log show --last 2m --style compact 2>/dev/null |
+          grep -iE 'tinest-cli|amfi|code signature' | head -10 || echo '(none)'
     - name: Smoke-test the bundle
       shell: bash
       env:
