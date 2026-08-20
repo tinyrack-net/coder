@@ -251,14 +251,11 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: macos
-            shard: daemon
-            scopes: --scope=daemon
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: macos
-            shard: rest
-            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          # macOS is absent on purpose: three Mac minis serve the whole
+          # homelab, so Mac time per queue entry is what sets merge latency,
+          # and these two shards were 8 of the ~21 minutes each entry needed.
+          # `nightly-dart-macos` owns macOS-only Dart behaviour now; Windows
+          # still gates every Dart change on a non-Linux host pre-merge.
           - os: windows
             shard: daemon
             scopes: --scope=daemon
@@ -274,15 +271,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
-      # Dart 3.13 rewrites native-library install names before a suite starts.
-      # Concurrent macOS suites can race while replacing the shared dylib, so
-      # keep package execution serial there; Windows has no such rewrite.
-      - if: matrix.os == 'macos'
-        run: >-
-          dart run tinest_quality _test-dart --jobs=1 ${{ matrix.scopes }}
-          --report=build/quality/dart-tests.json
-      - if: matrix.os != 'macos'
-        run: >-
+      - run: >-
           dart run tinest_quality _test-dart ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
       - if: always()
@@ -1289,6 +1278,33 @@ jobs:
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open
+
+  # The macOS half of `dart-tests`, moved off the merge queue's critical path.
+  # It runs unsharded because sharding exists to cut queue wall clock and
+  # `changes` does not run on a schedule, so a shard would have to duplicate
+  # that job's scope arithmetic to buy time nothing is waiting on.
+  nightly-dart-macos:
+    name: Nightly macOS Dart tests
+    if: github.event_name == 'schedule'
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/host-fingerprint
+      - run: dart pub get --enforce-lockfile
+      # Dart 3.13 rewrites native-library install names before a suite starts.
+      # Concurrent macOS suites can race while replacing the shared dylib, so
+      # keep package execution serial there; Windows has no such rewrite.
+      - run: >-
+          dart run tinest_quality _test-dart --jobs=1
+          --report=build/quality/dart-tests-macos.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-dart-tests-macos-26
+          path: build/quality/dart-tests-macos.json
+          if-no-files-found: error
 
   nightly-desktop-e2e:
     name: Nightly Desktop E2E (${{ matrix.platform.os }}, ${{ matrix.scenario }})

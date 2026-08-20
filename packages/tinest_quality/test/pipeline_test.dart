@@ -88,6 +88,7 @@ void main() {
       expect(_job(workflow, job), contains("github.event_name != 'schedule'"));
     }
     for (final job in <String>[
+      'nightly-dart-macos',
       'nightly-desktop-e2e',
       'nightly-android-smoke',
       'nightly-ios-smoke',
@@ -133,8 +134,8 @@ void main() {
     expect(dart, isNot(contains('_test-flutter')));
     expect(flutter, contains('dart run tinest_quality _test-flutter'));
     expect(flutter, isNot(contains('_test-dart')));
+    expect(flutter, contains('os: macos'));
     for (final job in <String>[dart, flutter]) {
-      expect(job, contains('os: macos'));
       expect(job, contains('os: windows'));
     }
     // A single job running both is what the measurement rejected.
@@ -194,11 +195,34 @@ void main() {
     );
   });
 
-  test('macOS Dart suites serialize native-asset installation', () {
+  test('the macOS Dart suites run nightly rather than per merge', () {
+    // Three Mac minis serve the whole homelab, and the merge queue builds
+    // several entries at once, so Mac time per entry is what sets merge
+    // latency. Measured over four queue runs on 2026-08-20: macOS jobs waited
+    // 15-25 minutes on average against 3-9 for Windows, the last job to finish
+    // was a macOS job in every run, and the two Dart shards were 8 of the ~21
+    // minutes of Mac time each entry needed. Moving them to the nightly run
+    // lifts the pool's ceiling from ~8.6 to ~13.8 queue entries an hour.
+    //
+    // Windows keeps both shards pre-merge, so a Dart change is still gated on
+    // a non-Linux host; what nightly now owns is macOS-only Dart behaviour.
     final dart = _job(workflow, 'dart-tests');
-    expect(dart, contains("matrix.os == 'macos'"));
-    expect(dart, contains('dart run tinest_quality _test-dart --jobs=1'));
-    expect(dart, contains("matrix.os != 'macos'"));
+    expect(dart, isNot(contains('os: macos')));
+    expect(dart, isNot(contains('--jobs=1')));
+
+    // Dart 3.13 rewrites native-library install names before a suite starts,
+    // and concurrent macOS suites race while replacing the shared dylib, so
+    // the serialization moves with the suites rather than being dropped.
+    //
+    // The nightly run is unsharded: sharding exists to cut queue wall clock,
+    // and `changes` does not run on a schedule, so a shard would have to
+    // duplicate that job's scope arithmetic to buy time nothing is waiting on.
+    final nightly = _job(workflow, 'nightly-dart-macos');
+    expect(nightly, contains('dart run tinest_quality _test-dart --jobs=1'));
+    expect(nightly, isNot(contains('--scope=')));
+    expect(nightly, contains('runs-on: macos-26'));
+    expect(nightly, contains('--report=build/quality/'));
+    expect(nightly, contains('actions/upload-artifact@v4'));
   });
 
   test('Windows fetches the SDK archive instead of the Actions cache', () {
