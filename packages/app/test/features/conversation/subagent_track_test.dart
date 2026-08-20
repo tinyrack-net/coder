@@ -54,13 +54,14 @@ void main() {
     String rootId = 'main-session',
     AgentLifecycle lifecycle = AgentLifecycle.running,
     DateTime? createdAt,
+    SessionStatus status = SessionStatus.running,
   }) => SessionDto(
     id: id,
     worktreeId: checkout.id,
     title: taskName,
     agentDefinitionId: 'tinest',
     origin: SessionOrigin.delegated,
-    status: SessionStatus.running,
+    status: status,
     parentSessionId: parentId,
     taskName: taskName,
     agentPath: agentPath,
@@ -306,6 +307,156 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'the collapsed track flags descendants that need the user',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final child = subagent(
+        'child-a',
+        parentId: 'main-session',
+        taskName: 'explore_auth',
+        agentPath: '/root/explore_auth',
+      );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[root('main-session'), child],
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        api,
+        initialLocation: sessionLocation('main-session'),
+        settle: false,
+      );
+      addTearDown(router.dispose);
+
+      // A working child is summarized as running and nothing else.
+      expect(find.text('1개 실행 중'), findsOneWidget);
+      expect(find.text('1개 승인 필요'), findsNothing);
+
+      // Once it parks on an approval the collapsed header has to say so: the
+      // rows are hidden by default, so the badge is the only thing between a
+      // stuck tree and a user who never looks.
+      api.emit(
+        SessionUpdatedClientEvent(
+          child.copyWith(status: SessionStatus.waitingForApproval),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('1개 승인 필요'), findsOneWidget);
+      expect(find.text('1개 실행 중'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a blocked subagent approval is answerable from the parent',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final child = subagent(
+        'child-a',
+        parentId: 'main-session',
+        taskName: 'explore_auth',
+        agentPath: '/root/explore_auth',
+        status: SessionStatus.waitingForApproval,
+      );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[root('main-session'), child],
+      );
+      final router = await pumpRoutedApp(
+        tester,
+        api,
+        initialLocation: sessionLocation('main-session'),
+        settle: false,
+      );
+      addTearDown(router.dispose);
+
+      // The request belongs to the child's session, and only the human can
+      // answer it. Surfacing it on the parent is what keeps the tree from
+      // parking on a card nobody is looking at.
+      api.emit(
+        ApprovalRequestedClientEvent(
+          ApprovalRequestDto(
+            id: 'approval',
+            sessionId: 'child-a',
+            turnId: 'turn-1',
+            toolCallId: 'call',
+            toolName: 'apply_patch',
+            risk: ToolRisk.write,
+            arguments: const <String, dynamic>{'patch': 'x'},
+            status: ApprovalStatus.pending,
+            createdAt: now,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(ApprovalCard), findsOneWidget);
+      // Named, because the parent runs its own tools and the user has to know
+      // which agent is asking.
+      expect(find.text('/root/explore_auth'), findsWidgets);
+
+      // The banner is bounded so it cannot squeeze the composer out, so a
+      // long request scrolls; the button still has to be reachable from here.
+      final approve = find.widgetWithText(TRButton, '승인');
+      await tester.ensureVisible(approve);
+      await tester.pump();
+      await tester.tap(approve);
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        api.approvalDecisions,
+        <({String id, bool approved})>[(id: 'approval', approved: true)],
+      );
+      // Answering it never navigated away from the parent.
+      expect(currentLocation(router), sessionLocation('main-session'));
+    },
+    tags: const <String>[
+      'ui_state__conversation_timeline__subagent_approval_pending__widget',
+    ],
+  );
+
+  testWidgets('a session tab flags a descendant waiting on the user', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final child = subagent(
+      'child-a',
+      parentId: 'main-session',
+      taskName: 'explore_auth',
+      agentPath: '/root/explore_auth',
+    );
+    final api = FakeTinestApi(
+      workspaces: <WorkspaceDto>[workspace],
+      worktrees: <WorktreeDto>[checkout],
+      agents: <SessionDto>[root('main-session'), child],
+    );
+    final router = await pumpRoutedApp(
+      tester,
+      api,
+      initialLocation: sessionLocation('main-session'),
+      settle: false,
+    );
+    addTearDown(router.dispose);
+
+    final tabFlag = find.byKey(
+      const ValueKey('session-tab-approval-main-session'),
+    );
+    expect(tabFlag, findsNothing);
+
+    // The tab is the only part of the parent that stays visible from another
+    // session, so a tree blocked behind it has to show there too.
+    api.emit(
+      SessionUpdatedClientEvent(
+        child.copyWith(status: SessionStatus.waitingForApproval),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(tabFlag, findsOneWidget);
+  });
 
   testWidgets('a session without subagents shows no track', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 800));

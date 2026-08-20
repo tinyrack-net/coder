@@ -686,7 +686,6 @@ abstract final class DaemonApplication {
             throw CollaborationException(error.message);
           }
         },
-        defaultPermission: permissionDefaults,
         events: events.add,
         clock: effectiveClock,
         ids: effectiveIds,

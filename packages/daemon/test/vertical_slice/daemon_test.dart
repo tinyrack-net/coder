@@ -885,9 +885,10 @@ void main() {
       );
       expect(child.parentSessionId, parent.id);
       expect(child.rootSessionId, parent.id);
-      // A spawned agent is pinned to the configured default, and the parent's
-      // narrower mode is what it actually runs under.
-      expect(child.permissionMode, PermissionMode.ask);
+      // A spawned agent is pinned to the mode its caller runs under, so the
+      // row itself carries the parent's narrower choice rather than the
+      // daemon default the effective mode would have had to narrow back down.
+      expect(child.permissionMode, PermissionMode.readOnly);
       expect(child.taskName, 'review_task');
       expect(child.agentPath, '/root/review_task');
       expect(child.lifecycle, AgentLifecycle.completed);
@@ -976,8 +977,9 @@ void main() {
       );
       addTearDown(client.close);
       final tinest = (await client.listAgentDefinitions()).single;
-      // `ask` is what a spawned child inherits by default, and it is the mode
-      // that parks the child's turn on an approval only a human can answer.
+      // The parent is left on the daemon default, `ask`. The child inherits
+      // that mode from it, and `ask` is what parks the child's turn on an
+      // approval only a human can answer.
       final reviewer = await client.createAgentDefinition(
         'reviewer',
         tinest.copyWith(
@@ -1009,12 +1011,6 @@ void main() {
         title: 'Parent',
         agentDefinitionId: 'tinest',
         model: const ModelSelectionDto(modelId: _testModelId),
-      );
-      await client.sessions.updateSettings(
-        parent.id,
-        const SessionSettingsPatchDto(
-          permissionMode: PermissionMode.fullAccess,
-        ),
       );
       final finalAnswerMailed = client.sessions.timelineEvents
           .firstWhere(
@@ -1080,6 +1076,125 @@ void main() {
       await _waitForIdleSession(client, worktreeId, child.id);
     },
     tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'a subagent inherits the permission mode granted to its parent',
+    () async {
+      final home = await Directory.systemTemp.createTemp(
+        'tinest-child-inherit-home-',
+      );
+      final workspace = await Directory.systemTemp.createTemp(
+        'tinest-child-inherit-workspace-',
+      );
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'childinh-token-0123456789abcdef012345',
+          useEnvironmentCredentials: false,
+        ),
+        provider: _CollaboratingProvider(),
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'childinh-token-0123456789abcdef012345',
+        ),
+        clientId: 'child-inherit-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+      final tinest = (await client.listAgentDefinitions()).single;
+      final reviewer = await client.createAgentDefinition(
+        'reviewer',
+        tinest.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          mode: AgentMode.subagent,
+          toolIds: const <String>['tinest.edit/apply_patch'],
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      await client.updateAgentDefinition(
+        tinest.copyWith(
+          callableAgentIds: <String>[reviewer.id],
+        ),
+        expectedContentHash: tinest.contentHash,
+      );
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final parent = await client.createSession(
+        id: 'parent',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Parent',
+        agentDefinitionId: 'tinest',
+        model: const ModelSelectionDto(modelId: _testModelId),
+      );
+      // A subagent pane carries no permission control, so the mode granted
+      // here is the only permission decision the user makes for the whole tree.
+      await client.sessions.updateSettings(
+        parent.id,
+        const SessionSettingsPatchDto(
+          permissionMode: PermissionMode.fullAccess,
+        ),
+      );
+      final finalAnswerMailed = client.sessions.timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id &&
+                event.type == 'agent.mail' &&
+                ((event.data['mail'] as Map<String, dynamic>?)?['type']
+                        as String?) ==
+                    'finalAnswer',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(parent.id);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn',
+        prompt: 'Review this workspace.',
+      );
+
+      // Nobody answers an approval here: the child writes under the parent's
+      // full access and reports back on its own.
+      await finalAnswerMailed;
+      final child = (await client.listSubagents(parent.id)).singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.permissionMode, PermissionMode.fullAccess);
+      expect(child.lifecycle, AgentLifecycle.completed);
+      expect(
+        File(p.join(workspace.path, 'forbidden.txt')).existsSync(),
+        isTrue,
+      );
+      final childTimeline = await client.subscribeTimeline(child.id);
+      expect(
+        childTimeline.map((event) => event.type),
+        isNot(contains('approval.requested')),
+      );
+
+      final worktreeId = registered.worktrees.single.id;
+      await _waitForIdleSession(client, worktreeId, parent.id);
+      await _waitForIdleSession(client, worktreeId, child.id);
+    },
+    tags: const <String>[
+      'feature_test__agent_collaboration__verticalSlice',
+      'feature_test__permission_settings__verticalSlice',
+    ],
     timeout: const Timeout(Duration(minutes: 2)),
   );
 

@@ -15,6 +15,7 @@ void main() {
     String? agentPath,
     AgentLifecycle? lifecycle,
     DateTime? createdAt,
+    SessionStatus status = SessionStatus.idle,
   }) => SessionDto(
     id: id,
     worktreeId: 'worktree',
@@ -23,7 +24,7 @@ void main() {
     origin: parentSessionId == null
         ? SessionOrigin.manual
         : SessionOrigin.delegated,
-    status: SessionStatus.idle,
+    status: status,
     parentSessionId: parentSessionId,
     taskName: taskName,
     agentPath: agentPath,
@@ -112,5 +113,62 @@ void main() {
     expect(runningSubagentCount(rows), 2);
     expect(isSubagentSession(rows.first.session), isTrue);
     expect(isSubagentSession(session('root')), isFalse);
+  });
+
+  test('blocked rows are the descendants waiting on the user', () {
+    final rows = buildSubagentTrackRows(<SessionDto>[
+      session('root'),
+      session(
+        'a',
+        parentSessionId: 'root',
+        taskName: 'task_a',
+        lifecycle: AgentLifecycle.running,
+        status: SessionStatus.running,
+      ),
+      session(
+        'b',
+        parentSessionId: 'root',
+        taskName: 'task_b',
+        lifecycle: AgentLifecycle.running,
+        status: SessionStatus.waitingForApproval,
+        createdAt: now.add(const Duration(seconds: 1)),
+      ),
+      session(
+        'b1',
+        parentSessionId: 'b',
+        taskName: 'task_b1',
+        lifecycle: AgentLifecycle.running,
+        status: SessionStatus.waitingForApproval,
+        createdAt: now.add(const Duration(seconds: 2)),
+      ),
+    ], 'root');
+    expect(blockedSubagentRows(rows).map((row) => row.session.id), <String>[
+      'b',
+      'b1',
+    ]);
+  });
+
+  test('a subagent waiting on the user does not count as running', () {
+    // Its lifecycle stays `running` while it is parked, so counting the
+    // lifecycle alone would report a stuck tree as a working one and let the
+    // same row be summarized twice.
+    final rows = buildSubagentTrackRows(<SessionDto>[
+      session('root'),
+      session(
+        'a',
+        parentSessionId: 'root',
+        lifecycle: AgentLifecycle.running,
+        status: SessionStatus.running,
+      ),
+      session(
+        'b',
+        parentSessionId: 'root',
+        lifecycle: AgentLifecycle.running,
+        status: SessionStatus.waitingForApproval,
+        createdAt: now.add(const Duration(seconds: 1)),
+      ),
+    ], 'root');
+    expect(runningSubagentCount(rows), 1);
+    expect(blockedSubagentRows(rows), hasLength(1));
   });
 }

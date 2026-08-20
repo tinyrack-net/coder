@@ -1704,6 +1704,17 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String subagentTrackAwaitingApproval(int count) {
+    return '$count개 승인 필요';
+  }
+
+  @override
+  String get subagentApprovalSection => '서브 에이전트 승인';
+
+  @override
+  String get subagentTabAwaitingApproval => '서브 에이전트가 승인을 기다리는 중';
+
+  @override
   String get subagentStatusRunning => '실행 중';
 
   @override

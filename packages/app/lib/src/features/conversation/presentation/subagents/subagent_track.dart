@@ -43,6 +43,7 @@ class _SubagentTrackState extends State<SubagentTrack> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final running = runningSubagentCount(widget.rows);
+    final blocked = blockedSubagentRows(widget.rows).length;
     return TRCollapsible(
       key: const ValueKey('subagent-track'),
       attachedEdge: TRCollapsibleAttachedEdge.bottom,
@@ -62,6 +63,18 @@ class _SubagentTrackState extends State<SubagentTrack> {
             TRBadge(
               variant: TRStatusVariant.info,
               child: TRText.inherit(l10n.subagentTrackRunning(running)),
+            ),
+          ],
+          // The rows are hidden while the drawer is collapsed, so a tree
+          // parked on an approval has to say so on the header itself.
+          if (blocked > 0) ...<Widget>[
+            const SizedBox(width: TRSpacing.small),
+            TRBadge(
+              key: const ValueKey('subagent-track-awaiting-approval'),
+              variant: TRStatusVariant.warning,
+              child: TRText.inherit(
+                l10n.subagentTrackAwaitingApproval(blocked),
+              ),
             ),
           ],
         ],

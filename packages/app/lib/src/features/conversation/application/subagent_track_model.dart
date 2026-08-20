@@ -46,11 +46,25 @@ List<SubagentTrackRow> buildSubagentTrackRows(
   return List<SubagentTrackRow>.unmodifiable(rows);
 }
 
+/// Rows parked on an approval only the user can answer.
+List<SubagentTrackRow> blockedSubagentRows(List<SubagentTrackRow> rows) =>
+    List<SubagentTrackRow>.unmodifiable(
+      rows.where(
+        (row) => row.session.status == SessionStatus.waitingForApproval,
+      ),
+    );
+
 /// How many rows are currently running or waiting to run.
+///
+/// A subagent parked on an approval keeps the `running` lifecycle, so it is
+/// excluded here: it is not making progress, and summarizing it as running
+/// both hides the one row the user has to act on and counts it twice beside
+/// the blocked summary.
 int runningSubagentCount(List<SubagentTrackRow> rows) => rows
     .where(
       (row) =>
-          row.session.lifecycle == AgentLifecycle.running ||
-          row.session.lifecycle == AgentLifecycle.pendingInit,
+          row.session.status != SessionStatus.waitingForApproval &&
+          (row.session.lifecycle == AgentLifecycle.running ||
+              row.session.lifecycle == AgentLifecycle.pendingInit),
     )
     .length;

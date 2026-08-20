@@ -1749,6 +1749,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String subagentTrackAwaitingApproval(int count) {
+    return '$count to approve';
+  }
+
+  @override
+  String get subagentApprovalSection => 'Subagent approvals';
+
+  @override
+  String get subagentTabAwaitingApproval =>
+      'A subagent is waiting for approval';
+
+  @override
   String get subagentStatusRunning => 'Running';
 
   @override

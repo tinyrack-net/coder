@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
 import 'package:daemon/src/shared/ports/daemon_ports.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
@@ -127,7 +126,6 @@ class MultiAgentService {
     required this._getDefinition,
     required this._validateModel,
     required this._defaultModel,
-    required this._defaultPermission,
     required this._events,
     required this._clock,
     required this._ids,
@@ -139,7 +137,6 @@ class MultiAgentService {
   final AgentDefinitionLookup _getDefinition;
   final AgentModelValidator _validateModel;
   final AgentDefaultModelResolver _defaultModel;
-  final PermissionDefaults _defaultPermission;
   final void Function(OutboundNotification event) _events;
   final Clock _clock;
   final IdGenerator _ids;
@@ -478,12 +475,15 @@ class MultiAgentService {
         lifecycle: AgentLifecycle.pendingInit,
         origin: SessionOrigin.delegated,
         status: SessionStatus.idle,
-        // A spawned agent starts from the configured default rather than the
-        // caller's own mode, so delegating work cannot hand out more than the
-        // daemon grants by default. The effective mode then takes the most
-        // restrictive value on the path back to the root, which is what lets a
-        // caller narrow a child further but never widen it.
-        permissionMode: await _defaultPermission.read(),
+        // A spawned agent starts from the mode its caller runs under. There is
+        // no permission control on a subagent pane, so the caller's mode is the
+        // only permission decision the user ever makes for this tree: seeding
+        // the child from the daemon default instead would silently re-park work
+        // the user had already granted full access to, with nothing to undo it
+        // with. The effective mode still takes the most restrictive value on
+        // the path back to the root, so a later narrowing of any ancestor still
+        // holds and no descendant can widen past one.
+        permissionMode: caller.permissionMode,
         model: childModel,
         modelControls: <String, ModelControlValueDto>{
           ...inheritedControls,

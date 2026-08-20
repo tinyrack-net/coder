@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/features/plugins/runtime/built_in_host_primitives.dart';
 import 'package:daemon/src/features/plugins/runtime/host_primitives.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
@@ -115,6 +114,7 @@ void main() {
     AgentLifecycle? lifecycle,
     ModelSelectionDto? model,
     String agentDefinitionId = 'tinest',
+    PermissionMode permissionMode = PermissionMode.ask,
   }) => SessionDto(
     id: id,
     worktreeId: 'worktree',
@@ -129,6 +129,7 @@ void main() {
     agentPath: agentPath,
     rootSessionId: rootSessionId,
     lifecycle: lifecycle,
+    permissionMode: permissionMode,
     model:
         model ??
         const ModelSelectionDto(
@@ -212,7 +213,6 @@ void main() {
       defaultModel: () async => const ModelSelectionDto(
         modelId: 'openai/gpt-default',
       ),
-      defaultPermission: PermissionDefaults(database.settingsDao),
       validateModel: (modelId) async {
         validatedModels.add(('', modelId));
         if (modelId == 'missing-model') {
@@ -297,6 +297,45 @@ void main() {
             .data['agentPath'],
         '/root/review_task',
       );
+    });
+
+    test('a child is pinned to the mode its caller runs under', () async {
+      // A subagent pane has no permission control, so the caller's mode is the
+      // only permission decision the user makes for this tree. Seeding the
+      // child from the daemon default would re-park work the user had already
+      // granted, with nothing to undo it with.
+      final root = await database.sessionDao.create(
+        session('root', permissionMode: PermissionMode.fullAccess),
+      );
+      await service.spawn(
+        caller: root,
+        callerDefinition: _tinestDefinition,
+        turnId: 'turn-1',
+        taskName: 'review_task',
+        message: 'Review the code.',
+      );
+      final child = (await database.sessionDao.getByAgentPath(
+        'root',
+        '/root/review_task',
+      ))!;
+      expect(child.permissionMode, PermissionMode.fullAccess);
+
+      // A narrowed caller hands down exactly what it holds, never more.
+      final narrow = await database.sessionDao.create(
+        session('narrow', permissionMode: PermissionMode.readOnly),
+      );
+      await service.spawn(
+        caller: narrow,
+        callerDefinition: _tinestDefinition,
+        turnId: 'turn-2',
+        taskName: 'read_task',
+        message: 'Read the code.',
+      );
+      final narrowChild = (await database.sessionDao.getByAgentPath(
+        'narrow',
+        '/root/read_task',
+      ))!;
+      expect(narrowChild.permissionMode, PermissionMode.readOnly);
     });
 
     test('rejects invalid names, duplicates, and bad fork values', () async {

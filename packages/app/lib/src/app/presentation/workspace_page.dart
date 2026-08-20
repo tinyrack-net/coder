@@ -14,6 +14,7 @@ import 'package:app/src/features/conversation/application/subagent_track_model.d
 import 'package:app/src/features/conversation/domain/composer_commands.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/reading_positions_controller.dart';
+import 'package:app/src/features/conversation/presentation/subagents/subagent_approval_banner.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
@@ -766,6 +767,13 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
         (item) => item.id == sessionId,
       );
       final subagent = isSubagentSession(session);
+      // The tab is all that stays visible of a session the user navigated
+      // away from, so a tree parked behind it has to be flagged here too.
+      final blocked =
+          !subagent &&
+          blockedSubagentRows(
+            buildSubagentTrackRows(workspace.sessions, sessionId),
+          ).isNotEmpty;
       return TRTabsTab(
         value: _controlValue(entry),
         label: subagent ? session.taskName ?? session.title : session.title,
@@ -773,6 +781,15 @@ class _SessionAreaState extends ConsumerState<_SessionArea> {
             ? SubagentStatusIcon(
                 lifecycle: session.lifecycle,
                 status: session.status,
+              )
+            : blocked
+            ? Icon(
+                TinestIcons.approvalPending,
+                key: ValueKey<String>('session-tab-approval-$sessionId'),
+                color: context.tinyrackTheme.warning,
+                semanticLabel: AppLocalizations.of(
+                  context,
+                ).subagentTabAwaitingApproval,
               )
             : null,
         onClose: closable ? () => unawaited(_closeEntry(entry)) : null,
@@ -1739,6 +1756,23 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                     ),
                   ),
                 },
+              ),
+            // Beside the composer rather than inside it: a blocked descendant
+            // holds its whole tree, so the request takes room from the
+            // transcript while the input keeps its own height.
+            //
+            // The slot is always built, and collapses to nothing when there is
+            // no request. Inserting it only when one arrives would move the
+            // composer down the child list, and the unkeyed subtree that moves
+            // with it loses its state, snapping the expanded subagent track
+            // shut at the exact moment the user needs it.
+            if (!readOnly)
+              _ConversationContentColumn(
+                child: SubagentApprovalBanner(
+                  hostId: widget.selection.hostId,
+                  rows: blockedSubagentRows(subagentRows),
+                  maxHeight: constraints.maxHeight / 3,
+                ),
               ),
             // Keep the auxiliary subagent track bounded so the composer retains
             // its natural height and the timeline receives the remaining space.

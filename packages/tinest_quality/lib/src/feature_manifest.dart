@@ -1660,6 +1660,12 @@ tinestUiReachabilityManifest = <UiReachabilityContract>[
         description: 'A tool approval remains actionable in the timeline.',
       ),
       UiStateContract(
+        id: 'subagent_approval_pending',
+        description:
+            'A blocked descendant subagent is flagged on the parent and its '
+            'approval stays actionable there.',
+      ),
+      UiStateContract(
         id: 'question_pending',
         description:
             'A structured question remains actionable in the timeline.',
