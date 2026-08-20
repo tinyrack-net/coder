@@ -590,6 +590,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
   bool _busy = false;
   Object? _error;
   String? _attemptId;
+  String? _connectedAttemptId;
   String? _retryConnectionId;
   Object? _openError;
   final Set<String> _rejectedPrefixes = <String>{};
@@ -613,14 +614,26 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
   @override
   Widget build(BuildContext context) {
     final attempt = widget.state.authAttempts[_attemptId];
-    if (attempt?.status == ProviderAuthAttemptStatus.succeeded) {
+    if (attempt != null &&
+        attempt.status == ProviderAuthAttemptStatus.succeeded &&
+        _connectedAttemptId != attempt.id) {
       final connection = widget.state.connections
-          .where((item) => item.id == attempt!.connectionId)
+          .where((item) => item.id == attempt.connectionId)
           .firstOrNull;
       if (connection != null) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => widget.onConnected(connection),
-        );
+        // Once per authorization, not once per build. The connection arrives
+        // a frame or more after the daemon reports it, so every rebuilt frame
+        // in between used to queue another hand-off.
+        _connectedAttemptId = attempt.id;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // This pane keeps painting through its exit transition, so by the
+          // time the hand-off runs the user may already have chosen somewhere
+          // else to be. Only the destination still on top may redirect
+          // navigation; otherwise finishing here undoes their choice.
+          if (!mounted) return;
+          if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+          widget.onConnected(connection);
+        });
       }
     }
     if (attempt != null) return _oauthPane(attempt);

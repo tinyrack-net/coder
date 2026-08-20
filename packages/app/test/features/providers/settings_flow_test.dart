@@ -667,6 +667,117 @@ void main() {
   );
 
   testWidgets(
+    'a completing authorization does not undo where the user went next',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      final now = DateTime.utc(2026);
+      final events = StreamController<ClientEvent>.broadcast(sync: true);
+      addTearDown(events.close);
+      final api = FakeTinestApi(
+        connections: <ProviderConnectionDto>[
+          ProviderConnectionDto(
+            id: 'deepseek',
+            definitionId: 'deepseek',
+            modelPrefix: 'deepseek',
+            displayName: 'DeepSeek',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        eventStream: events.stream,
+      );
+      await _pumpSettings(tester, api);
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      await tester.pump();
+
+      // The authorization completes in the same frame the user asks for the
+      // catalog again. The form paints through its exit transition, so without
+      // a guard its hand-off lands after the navigation and replaces it.
+      events.add(
+        const ProviderAuthUpdatedClientEvent(
+          ProviderAuthAttemptDto(
+            id: 'attempt',
+            definitionId: 'openai',
+            methodId: 'chatgpt-browser',
+            connectionId: 'deepseek',
+            status: ProviderAuthAttemptStatus.succeeded,
+          ),
+        ),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('provider-catalog-refresh')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-disconnect')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__provider_oauth__widget'],
+  );
+
+  testWidgets(
+    'the catalog reopens after a connection completes the create flow',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
+      await _pumpSettings(tester, api);
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('API 키'), 'deepseek-secret');
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-deepseek')),
+        findsOneWidget,
+      );
+
+      // Completing the flow replaces the whole stack with the new connection,
+      // so adding another provider must reach the catalog rather than being
+      // pulled back by the create flow it just left.
+      await _openCatalog(tester);
+      expect(
+        find
+            .byKey(const ValueKey<String>('provider-catalog-refresh'))
+            .hitTestable(),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_catalog__widget',
+    ],
+  );
+
+  testWidgets(
     'a failed connection shows the reason the daemon reported',
     (
       tester,
