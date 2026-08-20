@@ -121,6 +121,10 @@ void main() {
             layer.layerSize,
             const TRLayerSize(
               width: TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
+              // The policy fixes the width and leaves the height alone, so the
+              // package's own content cap still stops a long model list from
+              // growing to the viewport.
+              height: TRLayerHeight.content(max: TRMeasurements.measureXl),
             ),
           );
           // The popup width is the policy's, not the trigger's: a narrow and a
