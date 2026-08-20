@@ -667,6 +667,81 @@ void main() {
   );
 
   testWidgets(
+    'mobile Back walks the detail stack one level at a time',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 760);
+      addTearDown(tester.view.reset);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(connections: <ProviderConnectionDto>[]),
+      );
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsOneWidget);
+
+      // The form covers the catalog, which covers the collection, so Back
+      // unwinds the same levels the taps built.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('provider-add-deepseek')),
+        findsOneWidget,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
+  );
+
+  testWidgets(
+    'cancelling the preset form pops to the catalog it was pushed over',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(connections: <ProviderConnectionDto>[]),
+      );
+
+      await _openCatalog(tester);
+      final entry = find.byKey(const ValueKey<String>('provider-add-deepseek'));
+      final catalogRoute = ModalRoute.of(tester.element(entry));
+      expect(catalogRoute, isNotNull);
+
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TRButton, testL10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      // The form is one step above the catalog, so cancelling pops onto the
+      // route it was pushed over rather than pushing a second catalog. A
+      // replacement would also rebind the collection's secondary animation and
+      // replay its exit.
+      expect(entry, findsOneWidget);
+      expect(ModalRoute.of(tester.element(entry)), same(catalogRoute));
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
+  );
+
+  testWidgets(
     'provider route renders offline and unavailable daemon states',
     (tester) async {
       await _pumpSettings(tester, FakeTinestApi(), autoConnectEnabled: false);

@@ -225,20 +225,20 @@ void main() {
 
       expect(controller.hasDetail, isFalse);
       expect(controller.selection, isNull);
-      expect(controller.detailSelection, isNull);
+      expect(controller.detailStack, isEmpty);
       expect(controller.canAutoSelect, isTrue);
 
       controller.showInitialDetail('github');
       expect(controller.hasDetail, isTrue);
       expect(controller.selection, 'github');
-      expect(controller.detailSelection, 'github');
+      expect(controller.detailStack, <Object>['github']);
       expect(controller.canAutoSelect, isFalse);
       expect(notifications, 1);
 
       controller.showCollection();
       expect(controller.hasDetail, isFalse);
       expect(controller.selection, isNull);
-      expect(controller.detailSelection, isNull);
+      expect(controller.detailStack, isEmpty);
       expect(controller.canAutoSelect, isFalse);
       expect(notifications, 2);
 

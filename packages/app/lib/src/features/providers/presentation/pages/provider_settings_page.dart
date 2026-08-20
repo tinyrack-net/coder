@@ -105,69 +105,58 @@ class _ProviderSettingsSlot extends ConsumerWidget {
         widthClass == TRAdaptiveWidthClass.large ||
         widthClass == TRAdaptiveWidthClass.extraLarge;
     if (slot == SettingsPaneSlot.collection &&
-        paneController._pane == _ProviderPane.empty &&
+        !paneController.hasDetail &&
         showsSplit &&
         paneController.canAutoSelect &&
         state.connections.isNotEmpty) {
       _scheduleInitialSelection(state.connections.first.id);
     }
+    final selectedId = paneController.selectedId;
     final selected = state.connections
-        .where((connection) => connection.id == paneController.selectedId)
+        .where((connection) => connection.id == selectedId)
         .firstOrNull;
-    final reauthConnection = state.connections
-        .where(
-          (connection) => connection.id == paneController.reauthConnectionId,
-        )
-        .firstOrNull;
-    if (paneController._pane == _ProviderPane.connection && selected == null) {
-      _scheduleCollection(
-        context,
-        ref,
-        paneController.selectedId!,
-      );
+    if (selectedId != null && selected == null) {
+      _scheduleCollection(context, ref, selectedId);
     }
     if (slot == SettingsPaneSlot.collection) {
       return _ProviderCollection(
         connections: state.connections,
-        selectedId: paneController._pane == _ProviderPane.connection
-            ? paneController.selectedId
-            : null,
+        selectedId: selectedId,
         onSelected: paneController.selectConnectionId,
         onAdd: paneController.showCatalog,
       );
     }
-    return switch (paneController._pane) {
-      _ProviderPane.empty => SettingsEmptyState(
-        title: AppLocalizations.of(context).providerSettingsSelectConnection,
-        icon: const Icon(TinestIcons.network),
-      ),
-      _ProviderPane.catalog => _ProviderCatalogPane(
+    // The destination comes from the page rather than the stack's innermost
+    // entry, so a route leaving keeps rendering itself for its whole exit.
+    return switch (SettingsDetailScope.maybeOf(context)) {
+      _CatalogDestination() => _ProviderCatalogPane(
         hostId: hostId,
         state: state,
         onPreset: paneController.showPreset,
         onCustom: paneController.showCustom,
       ),
-      _ProviderPane.preset => _PresetProviderPane(
-        key: ValueKey<String>(
-          'provider-preset-${paneController.draftDefinition!.id}',
+      _PresetDestination(:final definition, :final reauthConnectionId) =>
+        _PresetProviderPane(
+          key: ValueKey<String>('provider-preset-${definition.id}'),
+          hostId: hostId,
+          state: state,
+          definition: definition,
+          existing: state.connections
+              .where((connection) => connection.id == reauthConnectionId)
+              .firstOrNull,
+          onCancel: paneController.popDetail,
+          onConnected: paneController.selectConnection,
         ),
+      _CustomDestination() => _CustomProviderPane(
         hostId: hostId,
         state: state,
-        definition: paneController.draftDefinition!,
-        existing: reauthConnection,
-        onCancel: reauthConnection == null
-            ? paneController.showCatalog
-            : () => paneController.selectConnection(reauthConnection),
-        onConnected: paneController.selectConnection,
-      ),
-      _ProviderPane.custom => _CustomProviderPane(
-        hostId: hostId,
-        state: state,
-        onCancel: paneController.showCatalog,
+        onCancel: paneController.popDetail,
         onSaved: paneController.selectConnection,
       ),
-      _ProviderPane.connection =>
-        selected!.customConfig == null
+      // A connection can disappear while its detail is open, and the schedule
+      // above returns to the collection on the next frame.
+      _ConnectionDestination() when selected != null =>
+        selected.customConfig == null
             ? _ProviderConnectionPane(
                 key: ValueKey<String>('provider-detail-${selected.id}'),
                 hostId: hostId,
@@ -189,6 +178,10 @@ class _ProviderSettingsSlot extends ConsumerWidget {
                 onSaved: paneController.selectConnection,
                 onRemoved: paneController.showCollection,
               ),
+      _ => SettingsEmptyState(
+        title: AppLocalizations.of(context).providerSettingsSelectConnection,
+        icon: const Icon(TinestIcons.network),
+      ),
     };
   }
 
@@ -204,9 +197,7 @@ class _ProviderSettingsSlot extends ConsumerWidget {
     String selectedId,
   ) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted ||
-          paneController._pane != _ProviderPane.connection ||
-          paneController.selectedId != selectedId) {
+      if (!context.mounted || paneController.selectedId != selectedId) {
         return;
       }
       final latest = ref.read(providerSettingsControllerProvider(hostId)).value;
@@ -220,46 +211,91 @@ class _ProviderSettingsSlot extends ConsumerWidget {
   }
 }
 
-enum _ProviderPane { empty, catalog, preset, custom, connection }
+/// One destination stacked above the Provider collection.
+///
+/// Identity is deliberately narrower than the payload. A catalog refresh
+/// rebuilds its definitions, and keying an open form on the whole record would
+/// swap the route out from under whoever is typing into it.
+@immutable
+sealed class _ProviderDestination {
+  const _ProviderDestination();
+}
 
-/// Owns Provider selection and creation flow independently from pane slots.
+final class _CatalogDestination extends _ProviderDestination {
+  const _CatalogDestination();
+
+  @override
+  bool operator ==(Object other) => other is _CatalogDestination;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+final class _PresetDestination extends _ProviderDestination {
+  const _PresetDestination({required this.definition, this.reauthConnectionId});
+
+  final ProviderDefinitionDto definition;
+
+  /// Connection being retried, when the preset flow is a reauthentication.
+  final String? reauthConnectionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PresetDestination &&
+      other.definition.id == definition.id &&
+      other.reauthConnectionId == reauthConnectionId;
+
+  @override
+  int get hashCode => Object.hash(definition.id, reauthConnectionId);
+}
+
+final class _CustomDestination extends _ProviderDestination {
+  const _CustomDestination();
+
+  @override
+  bool operator ==(Object other) => other is _CustomDestination;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+final class _ConnectionDestination extends _ProviderDestination {
+  const _ConnectionDestination(this.connectionId);
+
+  final String connectionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ConnectionDestination && other.connectionId == connectionId;
+
+  @override
+  int get hashCode => connectionId.hashCode;
+}
+
+/// Owns the Provider detail stack independently from either rendered slot.
+///
+/// The catalog and the form it opens are two levels rather than two values of
+/// one level, so cancelling the form pops back onto the catalog route it was
+/// pushed over instead of replacing it.
 class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
-  String? _selectedId;
-  String? _reauthConnectionId;
-  ProviderDefinitionDto? _draftDefinition;
-  _ProviderPane _pane = _ProviderPane.empty;
+  final List<_ProviderDestination> _stack = <_ProviderDestination>[];
 
-  /// Selected provider connection ID, when an existing connection is active.
-  String? get selectedId => _selectedId;
-
-  /// Connection being reauthenticated, when the preset flow is a retry.
-  String? get reauthConnectionId => _reauthConnectionId;
-
-  /// Provider definition selected from the catalog.
-  ProviderDefinitionDto? get draftDefinition => _draftDefinition;
-
-  @override
-  bool get hasDetail => _pane != _ProviderPane.empty;
-
-  @override
-  Object? get detailSelection => switch (_pane) {
-    _ProviderPane.empty => null,
-    _ProviderPane.catalog => (_ProviderPane.catalog, null, null),
-    _ProviderPane.preset => (
-      _ProviderPane.preset,
-      _draftDefinition!.id,
-      _reauthConnectionId,
-    ),
-    _ProviderPane.custom => (_ProviderPane.custom, null, null),
-    _ProviderPane.connection => (_ProviderPane.connection, _selectedId, null),
+  /// Connection the collection highlights, when one is the base destination.
+  ///
+  /// A reauthentication form sits above its connection, which stays selected
+  /// underneath it.
+  String? get selectedId => switch (_stack.firstOrNull) {
+    _ConnectionDestination(:final connectionId) => connectionId,
+    _ => null,
   };
+
+  @override
+  List<Object> get detailStack => List<Object>.unmodifiable(_stack);
 
   /// Shows the first connection on initial desktop entry.
   void selectInitialConnectionId(String id) {
     if (!consumeInitialSelection()) return;
-    _selectedId = id;
-    _pane = _ProviderPane.connection;
-    notifyListeners();
+    _replace(_ConnectionDestination(id));
   }
 
   /// Shows an existing provider connection.
@@ -269,79 +305,88 @@ class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
   /// Shows an existing provider connection by ID.
   void selectConnectionId(String id) {
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.connection && _selectedId == id) return;
-    _selectedId = id;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.connection;
-    notifyListeners();
+    _replace(_ConnectionDestination(id));
   }
 
   /// Shows the provider catalog.
   void showCatalog() {
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.catalog) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.catalog;
-    notifyListeners();
+    _replace(const _CatalogDestination());
   }
 
-  /// Shows the connection flow for a catalog definition.
+  /// Opens the connection flow for a catalog definition over the catalog.
   void showPreset(ProviderDefinitionDto definition) {
     consumeExplicitNavigation();
-    _selectedId = null;
-    _draftDefinition = definition;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.preset;
-    notifyListeners();
+    _push(_PresetDestination(definition: definition));
   }
 
-  /// Shows the preset flow for an existing connection retry.
+  /// Opens the preset flow over the connection being retried.
   void showReauthentication(
     String connectionId,
     ProviderDefinitionDto definition,
   ) {
     consumeExplicitNavigation();
-    _selectedId = null;
-    _reauthConnectionId = connectionId;
-    _draftDefinition = definition;
-    _pane = _ProviderPane.preset;
+    _push(
+      _PresetDestination(
+        definition: definition,
+        reauthConnectionId: connectionId,
+      ),
+    );
+  }
+
+  /// Opens the custom provider creator over the catalog.
+  void showCustom() {
+    consumeExplicitNavigation();
+    _push(const _CustomDestination());
+  }
+
+  @override
+  void popDetail() {
+    consumeExplicitNavigation();
+    if (_stack.isEmpty) return;
+    _stack.removeLast();
     notifyListeners();
   }
 
-  /// Shows the custom provider creator.
-  void showCustom() {
+  @override
+  void removeDetail(Object destination) {
+    final index = _stack.indexWhere((entry) => entry == destination);
+    if (index < 0) return;
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.custom) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.custom;
+    _stack.removeRange(index, _stack.length);
     notifyListeners();
   }
 
   @override
   void showCollection() {
     consumeExplicitNavigation();
-    if (!hasDetail) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.empty;
+    if (_stack.isEmpty) return;
+    _stack.clear();
     notifyListeners();
   }
 
   @override
   void reset() {
-    final hadDetail = hasDetail;
+    final hadDetail = _stack.isNotEmpty;
     resetInitialSelection();
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.empty;
+    _stack.clear();
     if (hadDetail) notifyListeners();
+  }
+
+  void _push(_ProviderDestination destination) {
+    if (_stack.lastOrNull == destination) return;
+    _stack.add(destination);
+    notifyListeners();
+  }
+
+  /// Makes [destination] the only level, which is how the collection offers
+  /// its own destinations: a connection and the catalog are siblings.
+  void _replace(_ProviderDestination destination) {
+    if (_stack.length == 1 && _stack.single == destination) return;
+    _stack
+      ..clear()
+      ..add(destination);
+    notifyListeners();
   }
 }
 
