@@ -1,6 +1,108 @@
 import 'package:app/src/shared/presentation/settings_layout.dart';
+import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
+
+/// A labeled setting whose value is one of a fixed set of choices.
+///
+/// The row reads as a line: the label on one side, the value it currently
+/// holds on the other. The value is the select's own trigger drawn without a
+/// field frame, so it takes the width of what it says and opens the same sheet
+/// or layer a framed select would.
+///
+/// A framed select stretched across a row underneath its label was the shape
+/// this replaces. It cost three lines for one setting, and a page of them read
+/// as a stack of forms rather than as a list of what is currently set.
+class TinestChoiceRow<T> extends StatelessWidget {
+  /// Creates a choice setting row.
+  const TinestChoiceRow({
+    required this.title,
+    required this.semanticLabel,
+    required this.items,
+    required this.value,
+    required this.searchPlaceholder,
+    required this.noResultsText,
+    this.onChanged,
+    this.placeholder,
+    this.subtitle,
+    this.wrapsSubtitle = false,
+    this.selectKey,
+    super.key,
+  });
+
+  /// Visible label.
+  final Widget title;
+
+  /// Names the control for assistive technology.
+  ///
+  /// The row's title names the setting, so the field drops its own label and
+  /// carries the accessible name here instead of announcing it twice.
+  final String semanticLabel;
+
+  /// Optional supporting text.
+  final Widget? subtitle;
+
+  /// Whether the supporting text may occupy a second line.
+  final bool wrapsSubtitle;
+
+  /// The choices, in menu order.
+  final List<TRSelectItem<T>> items;
+
+  /// The choice currently held.
+  final T? value;
+
+  /// Shown while [value] is absent.
+  final String? placeholder;
+
+  /// Called with the next choice, or null when the row is read-only.
+  final ValueChanged<T?>? onChanged;
+
+  /// Placeholder for the filter field.
+  ///
+  /// Every selection control in Tinest filters, however short its list, so a
+  /// reader learns the behaviour once rather than per control.
+  final String searchPlaceholder;
+
+  /// Shown when the filter matches nothing.
+  final String noResultsText;
+
+  /// Identifies the select for tests and for the layer it opens.
+  final Key? selectKey;
+
+  @override
+  Widget build(BuildContext context) => SettingsRow(
+    enabled: onChanged != null,
+    // The row's tap is the select's tap, so the select is the tab stop.
+    controlOwnsFocus: true,
+    title: title,
+    description: subtitle,
+    wrapsDescription: wrapsSubtitle,
+    control: Semantics(
+      label: semanticLabel,
+      container: true,
+      child: TRSelect<T>.controlled(
+        key: selectKey,
+        // Ghost, so the value reads as the row's own trailing copy rather than
+        // as a field parked inside a list.
+        appearance: TRFieldAppearance.ghost,
+        // The row already draws the inline inset, so the trigger adds none of
+        // its own and the value ends on the same rail as a switch beside it.
+        padding: TRFieldPadding.none,
+        // No width: the trigger then shrinks to the value it is showing and
+        // leaves the rest of the line to the label.
+        presentation: TinestSelectPresentation.resolve(context),
+        searchable: true,
+        searchPlaceholder: searchPlaceholder,
+        noResultsText: noResultsText,
+        placeholder: placeholder,
+        value: value,
+        enabled: onChanged != null,
+        items: items,
+        onValueChange: onChanged,
+      ),
+    ),
+  );
+}
 
 /// A labeled binary setting backed by [TRSwitch].
 ///

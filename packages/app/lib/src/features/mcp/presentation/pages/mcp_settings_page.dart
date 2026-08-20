@@ -722,12 +722,13 @@ class _ServerEditorState extends ConsumerState<_ServerEditor> {
           if (!_readOnly && !_isNew)
             SettingsSection(
               title: l10n.mcpSettingsDelete,
+              // The row names what is being deleted and the note says what
+              // that costs. As the row's own title the note was a paragraph
+              // wrapped beside a button half its height.
+              footer: l10n.mcpSettingsDeleteConfirm(server!.config.id),
               children: <Widget>[
                 SettingsRow(
-                  title: TRText.inherit(
-                    l10n.mcpSettingsDeleteConfirm(server!.config.id),
-                  ),
-                  controlLayout: SettingsControlLayout.responsive,
+                  title: TRText.inherit(server.config.id),
                   control: TRButton(
                     appearance: TRAppearance.ghost,
                     intent: TRIntent.danger,

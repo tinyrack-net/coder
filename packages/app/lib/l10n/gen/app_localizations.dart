@@ -340,12 +340,6 @@ abstract class AppLocalizations {
   /// **'Advanced'**
   String get settingsCategoryAdvanced;
 
-  /// Heading of the full reset card.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset'**
-  String get advancedResetSection;
-
   /// Title of the full reset row.
   ///
   /// In en, this message translates to:
@@ -363,12 +357,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.'**
   String get advancedResetDescriptionAppOnly;
-
-  /// Label of the button that starts a full reset.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset all data'**
-  String get advancedResetAction;
 
   /// Label of the reset button while a reset runs.
   ///
@@ -430,23 +418,11 @@ abstract class AppLocalizations {
   /// **'Connect an online daemon first.'**
   String get settingsRequiresOnlineDaemon;
 
-  /// Heading of the appearance card on the General settings page.
-  ///
-  /// In en, this message translates to:
-  /// **'Appearance'**
-  String get generalAppearanceSection;
-
   /// Dropdown label for the app theme.
   ///
   /// In en, this message translates to:
   /// **'Theme'**
   String get generalAppearanceLabel;
-
-  /// Explains the scope of the theme setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Applies to the whole app and is remembered the next time you start it.'**
-  String get generalAppearanceDescription;
 
   /// Theme option that follows the operating system brightness.
   ///
@@ -466,23 +442,11 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get generalAppearanceDark;
 
-  /// Heading of the language card on the General settings page.
-  ///
-  /// In en, this message translates to:
-  /// **'Language'**
-  String get generalLanguageSection;
-
   /// Dropdown label for the app UI language.
   ///
   /// In en, this message translates to:
   /// **'Display language'**
   String get generalLanguageLabel;
-
-  /// Explains the scope of the language setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Applies to the whole app and takes effect immediately.'**
-  String get generalLanguageDescription;
 
   /// Language option that follows the operating system locale.
   ///
@@ -502,23 +466,11 @@ abstract class AppLocalizations {
   /// **'Start at login'**
   String get generalStartupAtBootLabel;
 
-  /// Explains what the start-at-login switch registers with the operating system.
-  ///
-  /// In en, this message translates to:
-  /// **'The operating system launches {appDisplayName} after you sign in, so the embedded daemon keeps running.'**
-  String generalStartupAtBootDescription(String appDisplayName);
-
   /// Switch label for starting hidden in the tray at login.
   ///
   /// In en, this message translates to:
   /// **'Start minimized'**
   String get generalStartupMinimizedLabel;
-
-  /// Explains that start-minimized applies only to login launches.
-  ///
-  /// In en, this message translates to:
-  /// **'A login-time launch goes straight to the tray without opening a window.'**
-  String get generalStartupMinimizedDescription;
 
   /// Reported when the chosen theme could not be stored.
   ///

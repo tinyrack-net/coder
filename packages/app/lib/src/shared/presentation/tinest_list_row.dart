@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
@@ -221,24 +223,43 @@ class _TinestListRowState extends State<TinestListRow> {
           trailing,
         ],
       ),
-      _ => Row(
-        crossAxisAlignment: widget.isThreeLine
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
-        children: [
-          if (widget.leading case final leading?) ...[
-            IconTheme.merge(
-              data: IconThemeData(color: colors.textMuted),
-              child: leading,
-            ),
-            const SizedBox(width: TRSpacing.small),
+      _ => LayoutBuilder(
+        builder: (context, constraints) => Row(
+          crossAxisAlignment: widget.isThreeLine
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
+          children: [
+            if (widget.leading case final leading?) ...[
+              IconTheme.merge(
+                data: IconThemeData(color: colors.textMuted),
+                child: leading,
+              ),
+              const SizedBox(width: TRSpacing.small),
+            ],
+            Expanded(child: copy),
+            if (widget.trailing case final trailing?) ...[
+              const SizedBox(width: TRSpacing.small),
+              // A trailing control sizes itself, so a long value — a theme
+              // named in Japanese, a host address — measured wider than the
+              // row and pushed it past its own edge. Bounding it leaves the
+              // title a rail to read on and lets the control ellipsize.
+              // A control that already fits is untouched, so a short value
+              // still sits against the content edge.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  // tinyrack-check-ignore-next-line tokens/no-literal -- the bound is the row's own width less token gap and rail; the floor keeps a degenerate width from asserting, and is not a spacing value
+                  maxWidth: math.max(
+                    0,
+                    constraints.maxWidth -
+                        TRSpacing.small -
+                        TRMeasurements.measureXs,
+                  ),
+                ),
+                child: trailing,
+              ),
+            ],
           ],
-          Expanded(child: copy),
-          if (widget.trailing case final trailing?) ...[
-            const SizedBox(width: TRSpacing.small),
-            trailing,
-          ],
-        ],
+        ),
       ),
     };
 

@@ -7,7 +7,6 @@ import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/tinest_page_shell.dart';
-import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
 import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,10 +44,12 @@ class GeneralSettingsPage extends ConsumerWidget {
         error: error,
         onRetry: () => ref.invalidate(hostRegistryControllerProvider),
       ),
+      // Appearance and language are one preference each, so a heading and a
+      // group boundary apiece announced three groups where there is one
+      // subject: how the app presents itself.
       data: (_) => const SettingsScaffold(
         children: <Widget>[
-          _AppearanceSection(),
-          _LanguageSection(),
+          _PresentationSection(),
           _StartupSection(),
         ],
       ),
@@ -78,15 +79,13 @@ class _StartupSection extends ConsumerWidget {
     final controller = ref.read(hostRegistryControllerProvider.notifier);
     return SettingsSection(
       title: l10n.generalStartupSection,
-      description: l10n.generalStartupCloseNotice(AppIdentity.displayName),
+      // The tray notice explains the group rather than either switch, so it
+      // sits under both once instead of above them as a preamble.
+      footer: l10n.generalStartupCloseNotice(AppIdentity.displayName),
       children: <Widget>[
         TinestSwitchRow(
           key: const ValueKey<String>('general-settings-start-at-boot'),
           title: TRText.inherit(l10n.generalStartupAtBootLabel),
-          subtitle: TRText.inherit(
-            l10n.generalStartupAtBootDescription(AppIdentity.displayName),
-          ),
-          wrapsSubtitle: true,
           value: settings?.startAtBoot ?? true,
           onChanged: settings == null
               ? null
@@ -111,8 +110,6 @@ class _StartupSection extends ConsumerWidget {
         TinestSwitchRow(
           key: const ValueKey<String>('general-settings-start-minimized'),
           title: TRText.inherit(l10n.generalStartupMinimizedLabel),
-          subtitle: TRText.inherit(l10n.generalStartupMinimizedDescription),
-          wrapsSubtitle: true,
           // The stored preference keeps showing while it is out of reach.
           // Blanking it would claim the choice had been changed, and the
           // switch would then jump back on its own the moment login starts
@@ -145,60 +142,83 @@ class _StartupSection extends ConsumerWidget {
   }
 }
 
-class _AppearanceSection extends ConsumerWidget {
-  const _AppearanceSection();
+/// How the app presents itself: its theme and the language it speaks.
+class _PresentationSection extends ConsumerWidget {
+  const _PresentationSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
+    final controller = ref.read(hostRegistryControllerProvider.notifier);
     return SettingsSection(
-      title: l10n.generalAppearanceSection,
+      // No heading: the page is already titled General, and a heading over
+      // two rows that between them are the page's subject only repeats it.
+      // Startup keeps its heading because it is a departure from that subject.
       children: <Widget>[
-        SettingsRow(
+        TinestChoiceRow<AppThemeMode>(
+          selectKey: const ValueKey<String>('general-settings-theme-mode'),
           title: TRText.inherit(l10n.generalAppearanceLabel),
-          description: TRText.inherit(l10n.generalAppearanceDescription),
-          wrapsDescription: true,
-          controlLayout: SettingsControlLayout.responsive,
-          // The row title names the control, so the field drops its own label
-          // and carries the accessible name here instead.
-          control: Semantics(
-            label: l10n.generalAppearanceLabel,
-            container: true,
-            child: TRSelect<AppThemeMode>.controlled(
-              key: const ValueKey<String>('general-settings-theme-mode'),
-              searchable: true,
-              searchPlaceholder: l10n.selectSearchPlaceholder,
-              noResultsText: l10n.selectNoResults,
-              presentation: TinestSelectPresentation.resolve(context),
-              value: settings?.themeMode ?? AppThemeMode.system,
-              enabled: settings != null,
-              items: <TRSelectItem<AppThemeMode>>[
-                for (final mode in AppThemeMode.values)
-                  TRSelectItem<AppThemeMode>(
-                    value: mode,
-                    label: _appearanceLabel(l10n, mode),
-                  ),
-              ],
-              // Every item carries a mode, so a cleared field can only mean
-              // the app should go back to following the system.
-              onValueChange: settings == null
-                  ? null
-                  : (mode) => unawaited(
-                      ref
-                          .read(toastMessengerProvider)
-                          .run(
-                            () => ref
-                                .read(hostRegistryControllerProvider.notifier)
-                                .setThemeMode(mode ?? AppThemeMode.system),
-                            failure: l10n.generalAppearanceFailed,
-                            // A theme that changed is its own
-                            // confirmation; success would be noise.
-                            id: 'general-settings-theme-mode',
-                          ),
-                    ),
+          semanticLabel: l10n.generalAppearanceLabel,
+          searchPlaceholder: l10n.selectSearchPlaceholder,
+          noResultsText: l10n.selectNoResults,
+          value: settings?.themeMode ?? AppThemeMode.system,
+          items: <TRSelectItem<AppThemeMode>>[
+            for (final mode in AppThemeMode.values)
+              TRSelectItem<AppThemeMode>(
+                value: mode,
+                label: _appearanceLabel(l10n, mode),
+              ),
+          ],
+          // Every item carries a mode, so a cleared field can only mean the
+          // app should go back to following the system.
+          onChanged: settings == null
+              ? null
+              : (mode) => unawaited(
+                  ref
+                      .read(toastMessengerProvider)
+                      .run(
+                        () => controller.setThemeMode(
+                          mode ?? AppThemeMode.system,
+                        ),
+                        failure: l10n.generalAppearanceFailed,
+                        // A theme that changed is its own confirmation;
+                        // success would be noise.
+                        id: 'general-settings-theme-mode',
+                      ),
+                ),
+        ),
+        TinestChoiceRow<String?>(
+          selectKey: const ValueKey<String>('general-settings-language'),
+          title: TRText.inherit(l10n.generalLanguageLabel),
+          semanticLabel: l10n.generalLanguageLabel,
+          value: settings?.localeTag,
+          placeholder: l10n.generalLanguageSystem,
+          searchPlaceholder: l10n.selectSearchPlaceholder,
+          noResultsText: l10n.selectNoResults,
+          items: <TRSelectItem<String?>>[
+            // A null tag follows the system locale.
+            TRSelectItem<String?>(
+              value: null,
+              label: l10n.generalLanguageSystem,
             ),
-          ),
+            for (final entry in languageEndonyms.entries)
+              TRSelectItem<String?>(
+                value: entry.key,
+                label: entry.value,
+              ),
+          ],
+          onChanged: settings == null
+              ? null
+              : (tag) => unawaited(
+                  ref
+                      .read(toastMessengerProvider)
+                      .run(
+                        () => controller.setLocaleTag(tag),
+                        failure: l10n.generalLanguageFailed,
+                        id: 'general-settings-language',
+                      ),
+                ),
         ),
       ],
     );
@@ -211,63 +231,3 @@ String _appearanceLabel(AppLocalizations l10n, AppThemeMode mode) =>
       AppThemeMode.light => l10n.generalAppearanceLight,
       AppThemeMode.dark => l10n.generalAppearanceDark,
     };
-
-class _LanguageSection extends ConsumerWidget {
-  const _LanguageSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final settings = ref.watch(hostRegistryControllerProvider).value?.settings;
-    return SettingsSection(
-      title: l10n.generalLanguageSection,
-      children: <Widget>[
-        SettingsRow(
-          title: TRText.inherit(l10n.generalLanguageLabel),
-          description: TRText.inherit(l10n.generalLanguageDescription),
-          wrapsDescription: true,
-          controlLayout: SettingsControlLayout.responsive,
-          control: Semantics(
-            label: l10n.generalLanguageLabel,
-            container: true,
-            child: TRSelect<String?>.controlled(
-              key: const ValueKey<String>('general-settings-language'),
-              searchable: true,
-              searchPlaceholder: l10n.selectSearchPlaceholder,
-              noResultsText: l10n.selectNoResults,
-              presentation: TinestSelectPresentation.resolve(context),
-              value: settings?.localeTag,
-              enabled: settings != null,
-              placeholder: l10n.generalLanguageSystem,
-              items: <TRSelectItem<String?>>[
-                // A null tag follows the system locale.
-                TRSelectItem<String?>(
-                  value: null,
-                  label: l10n.generalLanguageSystem,
-                ),
-                for (final entry in languageEndonyms.entries)
-                  TRSelectItem<String?>(
-                    value: entry.key,
-                    label: entry.value,
-                  ),
-              ],
-              onValueChange: settings == null
-                  ? null
-                  : (tag) => unawaited(
-                      ref
-                          .read(toastMessengerProvider)
-                          .run(
-                            () => ref
-                                .read(hostRegistryControllerProvider.notifier)
-                                .setLocaleTag(tag),
-                            failure: l10n.generalLanguageFailed,
-                            id: 'general-settings-language',
-                          ),
-                    ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}

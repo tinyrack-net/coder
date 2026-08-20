@@ -141,7 +141,7 @@ void main() {
 
       // Rect.contains is half-open, so compare edges rather than using it.
       final label = tester.getRect(
-        find.descendant(of: page, matching: find.text('외관')).first,
+        find.descendant(of: page, matching: find.text('테마')).first,
       );
       expect(moved.left, lessThanOrEqualTo(label.left));
       expect(moved.top, lessThanOrEqualTo(label.top));

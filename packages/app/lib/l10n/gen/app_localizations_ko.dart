@@ -134,9 +134,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsCategoryAdvanced => '고급';
 
   @override
-  String get advancedResetSection => '초기화';
-
-  @override
   String get advancedResetTitle => '전체 초기화';
 
   @override
@@ -146,9 +143,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get advancedResetDescriptionAppOnly =>
       '이 기기의 모든 앱 설정과 저장된 원격 daemon 토큰을 지웁니다. 원격 daemon의 데이터는 그대로 유지됩니다.';
-
-  @override
-  String get advancedResetAction => '전체 초기화';
 
   @override
   String get advancedResetRunning => '초기화 중…';
@@ -188,13 +182,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsRequiresOnlineDaemon => '온라인 daemon 연결이 필요합니다.';
 
   @override
-  String get generalAppearanceSection => '외관';
-
-  @override
   String get generalAppearanceLabel => '테마';
-
-  @override
-  String get generalAppearanceDescription => '앱 전체에 적용되며 다음 실행에도 유지됩니다.';
 
   @override
   String get generalAppearanceSystem => '시스템 테마 따름';
@@ -206,13 +194,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalAppearanceDark => '다크';
 
   @override
-  String get generalLanguageSection => '언어';
-
-  @override
   String get generalLanguageLabel => '표시 언어';
-
-  @override
-  String get generalLanguageDescription => '앱 전체에 적용되며 즉시 반영됩니다.';
 
   @override
   String get generalLanguageSystem => '시스템 설정 따름';
@@ -224,16 +206,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalStartupAtBootLabel => '로그인 시 시작';
 
   @override
-  String generalStartupAtBootDescription(String appDisplayName) {
-    return '로그인하면 운영체제가 $appDisplayName를 실행해 내장 daemon이 계속 동작합니다.';
-  }
-
-  @override
   String get generalStartupMinimizedLabel => '최소화된 상태로 시작';
-
-  @override
-  String get generalStartupMinimizedDescription =>
-      '로그인 시 실행되면 창을 열지 않고 바로 트레이로 들어갑니다.';
 
   @override
   String get generalAppearanceFailed => '테마를 바꾸지 못했습니다.';

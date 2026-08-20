@@ -717,7 +717,6 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
               if (attempt.authorizationUrl case final url?)
                 SettingsRow(
                   title: SelectionArea(child: TRText.inherit(url)),
-                  controlLayout: SettingsControlLayout.responsive,
                   control: Wrap(
                     spacing: TRSpacing.small,
                     children: <Widget>[
@@ -1023,19 +1022,16 @@ class _ProviderConnectionPaneState
           ),
           SettingsSection(
             title: l10n.providerSettingsDisconnectTitle,
+            // The row names the connection and the note says what disconnecting
+            // costs. As the row's own title the note was prose wrapped beside a
+            // button half its height, and it is still the only place the kept
+            // agent history is explained before the confirmation opens.
+            footer: l10n.providerSettingsDisconnectBody(
+              widget.connection.displayName,
+            ),
             children: <Widget>[
               SettingsRow(
-                title: TRText.inherit(
-                  l10n.providerSettingsDisconnectBody(
-                    widget.connection.displayName,
-                  ),
-                ),
-                // Prose, so it needs the whole rail: squeezed into a trailing
-                // layout on a phone it broke into four lines beside a button
-                // half its height. The copy stays, because it is the only
-                // place the kept agent history is explained before the
-                // confirmation opens.
-                controlLayout: SettingsControlLayout.responsive,
+                title: TRText.inherit(widget.connection.displayName),
                 control: TRButton(
                   key: const ValueKey<String>(
                     'provider-connection-disconnect',
@@ -1326,7 +1322,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       existing.displayName,
                     ),
                   ),
-                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     key: const ValueKey<String>(
                       'provider-custom-disconnect',
@@ -1345,7 +1340,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                       existing.displayName,
                     ),
                   ),
-                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     key: const ValueKey<String>(
                       'provider-custom-delete',

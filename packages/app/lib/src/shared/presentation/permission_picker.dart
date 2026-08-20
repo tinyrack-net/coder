@@ -26,6 +26,7 @@ class PermissionSelect extends StatelessWidget {
     this.enabled = true,
     this.leading,
     this.appearance = TRFieldAppearance.solid,
+    this.padding = TRFieldPadding.standard,
     this.uiSize,
     this.width,
     super.key,
@@ -46,6 +47,12 @@ class PermissionSelect extends StatelessWidget {
   /// Design-system field appearance.
   final TRFieldAppearance appearance;
 
+  /// Whether the trigger adds the inline inset its size scale defines.
+  ///
+  /// A picker standing in for a value in a settings row passes
+  /// [TRFieldPadding.none], because the row supplies that inset already.
+  final TRFieldPadding padding;
+
   /// Design-system control density.
   final TRUiSize? uiSize;
 
@@ -61,6 +68,7 @@ class PermissionSelect extends StatelessWidget {
       enabled: enabled,
       leading: leading,
       appearance: appearance,
+      padding: padding,
       uiSize: uiSize,
       width: width,
       searchable: true,

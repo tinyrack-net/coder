@@ -42,6 +42,52 @@ Color _containerColor(WidgetTester tester, Finder finder) {
   return (decoration! as BoxDecoration).color!;
 }
 
+/// Sizes the test viewport, which is what the settings kit reads to choose
+/// between the phone shape and the wide-window shape.
+///
+/// `setSurfaceSize` does not move `MediaQuery`, so a test using it would size
+/// its box while the width class stayed at the 800-pixel default and quietly
+/// checked both shapes at one width.
+void _useViewport(WidgetTester tester, Size size) {
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+}
+
+const _phone = Size(390, 844);
+const _desktop = Size(1400, 900);
+const _footerNote = 'Closing the window keeps it running in the tray.';
+
+EdgeInsetsGeometry? _scaffoldPadding(WidgetTester tester) => tester
+    .widget<ListView>(
+      find.descendant(
+        of: find.byType(SettingsScaffold),
+        matching: find.byType(ListView),
+      ),
+    )
+    .padding;
+
+/// One titled group of two switch rows, the shape most settings pages take.
+Widget _group({String? footer}) => SettingsScaffold(
+  children: <Widget>[
+    SettingsSection(
+      title: 'Startup',
+      footer: footer,
+      children: <Widget>[
+        SettingsRow(
+          title: const TRText.inherit('Start at login'),
+          control: TRSwitch(checked: true, onCheckedChange: (_) {}),
+        ),
+        SettingsRow(
+          title: const TRText.inherit('Start minimized'),
+          control: TRSwitch(checked: true, onCheckedChange: (_) {}),
+        ),
+      ],
+    ),
+  ],
+);
+
 void main() {
   testWidgets(
     'SettingsAsyncContent preserves stale data across refresh',
@@ -641,14 +687,8 @@ void main() {
         ),
       );
 
-      final list = tester.widget<ListView>(
-        find.descendant(
-          of: find.byType(SettingsScaffold),
-          matching: find.byType(ListView),
-        ),
-      );
       expect(
-        list.padding,
+        _scaffoldPadding(tester),
         const EdgeInsets.fromLTRB(
           TRSpacing.extraLarge,
           TRSpacing.extraLarge,
@@ -656,6 +696,81 @@ void main() {
           TRSpacing.fourExtraLarge,
         ),
       );
+    });
+
+    testWidgets('runs a group to both edges on a phone and insets it on a '
+        'wide window', (tester) async {
+      _useViewport(tester, _phone);
+      await tester.pumpWidget(_host(_group(), width: _phone.width));
+      // A phone has no width to spend on a page margin and a card border: the
+      // rows supply the only inline inset, and the heading is what separates
+      // one group from the next.
+      expect(
+        _scaffoldPadding(tester),
+        const EdgeInsets.fromLTRB(
+          0,
+          TRSpacing.small,
+          0,
+          TRSpacing.fourExtraLarge,
+        ),
+      );
+      expect(find.byType(TRCard), findsNothing);
+
+      tester.view.physicalSize = _desktop;
+      await tester.pumpWidget(_host(_group(), width: _desktop.width));
+      expect(
+        _scaffoldPadding(tester),
+        const EdgeInsets.fromLTRB(
+          TRSpacing.extraLarge,
+          TRSpacing.extraLarge,
+          TRSpacing.extraLarge,
+          TRSpacing.fourExtraLarge,
+        ),
+      );
+      expect(find.byType(TRCard), findsOneWidget);
+    });
+
+    testWidgets('lines a compact heading, row, and divider up on one rail', (
+      tester,
+    ) async {
+      _useViewport(tester, _phone);
+      await tester.pumpWidget(_host(_group(), width: _phone.width));
+
+      final heading = tester.getRect(find.text('Startup'));
+      final title = tester.getRect(find.text('Start at login'));
+      final divider = tester.getRect(find.byType(TRSeparator));
+      expect(heading.left, moreOrLessEquals(title.left, epsilon: 0.01));
+      expect(divider.left, moreOrLessEquals(title.left, epsilon: 0.01));
+      // Indented at its start and running to the far edge is what tells a
+      // reader the rows belong to one group without drawing a box around them.
+      expect(divider.right, moreOrLessEquals(_phone.width, epsilon: 0.01));
+    });
+
+    testWidgets('puts a footer under the group as muted supporting copy', (
+      tester,
+    ) async {
+      _useViewport(tester, _phone);
+      await tester.pumpWidget(
+        _host(_group(footer: _footerNote), width: _phone.width),
+      );
+
+      final lastRow = tester.getRect(find.text('Start minimized'));
+      final footer = tester.getRect(find.text(_footerNote));
+      expect(footer.top, greaterThan(lastRow.bottom));
+      expect(
+        footer.left,
+        moreOrLessEquals(
+          tester.getRect(find.text('Startup')).left,
+          epsilon: 0.01,
+        ),
+      );
+      final text = tester.widget<TRText>(
+        find.byWidgetPredicate(
+          (widget) => widget is TRText && widget.data == _footerNote,
+        ),
+      );
+      expect(text.variant, TRTextVariant.bodySm);
+      expect(text.color, TRTextColor.muted);
     });
 
     testWidgets(
@@ -1095,66 +1210,71 @@ void main() {
       expect(control.left, greaterThan(title.right));
     });
 
-    testWidgets('stacks a responsive control below readable copy when narrow', (
-      tester,
-    ) async {
+    testWidgets('keeps a control trailing on both sides of the width that '
+        'used to stack it', (tester) async {
+      // A control that moved below its copy under one width gave a single
+      // setting two shapes, and the window picked which one a reader saw: the
+      // same screen read as a list on a desktop and as a stack of forms on a
+      // phone. Only an explicitly stacked control moves now.
+      final threshold =
+          TRBreakpoints.small + SettingsRow.contentPadding.horizontal;
+      for (final width in <double>[threshold - 1, threshold]) {
+        await tester.pumpWidget(
+          _host(
+            SettingsRow(
+              title: const TRText.inherit('Theme'),
+              description: const TRText.inherit('Applies everywhere'),
+              wrapsDescription: true,
+              control: TRButton(
+                onPressed: () {},
+                child: const TRText.inherit('System'),
+              ),
+            ),
+            width: width,
+          ),
+        );
+
+        final title = tester.getRect(find.text('Theme'));
+        final control = tester.getRect(find.byType(TRButton));
+        final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
+        expect(control.left, greaterThan(title.right), reason: 'at $width');
+        expect(
+          row.trailingLayout,
+          TinestListRowTrailingLayout.inline,
+          reason: 'at $width',
+        );
+        // Copy that may wrap is prose, and prose that stops at two lines stops
+        // mid-sentence, so it runs on at every width rather than only narrow.
+        expect(row.unboundedSubtitle, isTrue, reason: 'at $width');
+        expect(tester.takeException(), isNull, reason: 'at $width');
+      }
+    });
+
+    testWidgets('places an explicitly stacked control below the copy at any '
+        'width', (tester) async {
       await tester.pumpWidget(
         _host(
           SettingsRow(
-            title: const TRText.inherit('Display language'),
-            description: const TRText.inherit(
-              'Applies to the whole app and remains readable at narrow widths.',
-            ),
+            title: const TRText.inherit('Port'),
+            description: const TRText.inherit('Applies everywhere'),
             wrapsDescription: true,
-            controlLayout: SettingsControlLayout.responsive,
+            controlLayout: SettingsControlLayout.stacked,
             control: TRButton(
               onPressed: () {},
-              child: const TRText.inherit('System default'),
+              child: const TRText.inherit('System'),
             ),
           ),
-          width:
-              TRBreakpoints.small + SettingsRow.contentPadding.horizontal - 1,
+          // Wide enough that the old rule would have kept this inline.
+          width: TinestLayoutMetrics.settingsContentMaxWidth,
         ),
       );
 
-      final description = tester.getRect(
-        find.text(
-          'Applies to the whole app and remains readable at narrow widths.',
-        ),
-      );
+      final description = tester.getRect(find.text('Applies everywhere'));
       final control = tester.getRect(find.byType(TRButton));
       final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
       expect(control.top, greaterThan(description.bottom));
       expect(row.trailingLayout, TinestListRowTrailingLayout.below);
-      expect(row.unboundedSubtitle, isTrue);
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('keeps a responsive control trailing when copy has room', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(
-          SettingsRow(
-            title: const TRText.inherit('Theme'),
-            description: const TRText.inherit('Applies everywhere'),
-            wrapsDescription: true,
-            controlLayout: SettingsControlLayout.responsive,
-            control: TRButton(
-              onPressed: () {},
-              child: const TRText.inherit('Follow system'),
-            ),
-          ),
-          width: TRBreakpoints.small + SettingsRow.contentPadding.horizontal,
-        ),
-      );
-
-      final title = tester.getRect(find.text('Theme'));
-      final control = tester.getRect(find.byType(TRButton));
-      final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
-      expect(control.left, greaterThan(title.right));
-      expect(row.trailingLayout, TinestListRowTrailingLayout.inline);
-      expect(row.unboundedSubtitle, isFalse);
     });
 
     testWidgets('keeps compact switch controls trailing on a narrow row', (
@@ -1200,10 +1320,9 @@ void main() {
                     'アプリ全体に適用され、狭い画面でも省略されずに表示されます。',
                   ),
                   wrapsDescription: true,
-                  controlLayout: SettingsControlLayout.responsive,
                   control: TRButton(
                     onPressed: () {},
-                    child: const TRText.inherit('システム設定に従う'),
+                    child: const TRText.inherit('システム'),
                   ),
                 ),
               ),
@@ -1217,8 +1336,11 @@ void main() {
       );
       final control = tester.getRect(find.byType(TRButton));
       final row = tester.widget<TinestListRow>(find.byType(TinestListRow));
-      expect(control.top, greaterThan(description.bottom));
-      expect(row.trailingLayout, TinestListRowTrailingLayout.below);
+      // Doubled text keeps the description on its own lines and the control
+      // beside them, without either one leaving the row.
+      expect(description.bottom, greaterThan(description.top));
+      expect(control.left, greaterThan(description.left));
+      expect(row.trailingLayout, TinestListRowTrailingLayout.inline);
       expect(row.unboundedSubtitle, isTrue);
       expect(tester.takeException(), isNull);
     });

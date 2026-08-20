@@ -51,10 +51,6 @@ class ModelSettingsPage extends ConsumerWidget {
             providerState.hasValue &&
             current != null &&
             !isRunnableSelection(current, connections, models);
-        final currentModel = models.values
-            .expand((items) => items)
-            .where((model) => model.id == current?.qualifiedModelId)
-            .firstOrNull;
         final blocked = providerState.hasValue && first == null;
         final select = AsyncModelSelect(
           key: const ValueKey<String>('daemon-default-model'),
@@ -63,6 +59,10 @@ class ModelSettingsPage extends ConsumerWidget {
           currentSelection: current,
           placeholder: current?.modelId ?? l10n.composerModel,
           enabled: !blocked,
+          // The row supplies the inline inset, so the value ends on the same
+          // rail as every other control in the pane.
+          appearance: TRFieldAppearance.ghost,
+          padding: TRFieldPadding.none,
           leading: Icon(blocked ? TinestIcons.lock : TinestIcons.memory),
           onValueChange: (option) => unawaited(
             _set(context, ref, option.selection),
@@ -71,8 +71,9 @@ class ModelSettingsPage extends ConsumerWidget {
         return SettingsScaffold(
           children: <Widget>[
             SettingsSection(
-              title: l10n.modelSettingsSection,
-              description: l10n.modelSettingsSectionDescription,
+              // The row names the setting and shows the model it is set to,
+              // so a heading and a title would say it twice over.
+              footer: l10n.modelSettingsSectionDescription,
               banner: unavailable
                   ? TRAlert(
                       key: const ValueKey<String>(
@@ -92,15 +93,7 @@ class ModelSettingsPage extends ConsumerWidget {
                   : null,
               children: <Widget>[
                 SettingsRow(
-                  title: TRText.inherit(
-                    currentModel?.label ??
-                        current?.modelId ??
-                        l10n.composerModel,
-                  ),
-                  description: currentModel == null
-                      ? null
-                      : TRText.inherit(currentModel.id),
-                  controlLayout: SettingsControlLayout.responsive,
+                  title: TRText.inherit(l10n.modelSettingsSection),
                   controlOwnsFocus: true,
                   control: blocked
                       ? BlockedControl(

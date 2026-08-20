@@ -134,9 +134,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoryAdvanced => 'Advanced';
 
   @override
-  String get advancedResetSection => 'Reset';
-
-  @override
   String get advancedResetTitle => 'Reset all data';
 
   @override
@@ -146,9 +143,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get advancedResetDescriptionAppOnly =>
       'Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.';
-
-  @override
-  String get advancedResetAction => 'Reset all data';
 
   @override
   String get advancedResetRunning => 'Resetting…';
@@ -188,14 +182,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsRequiresOnlineDaemon => 'Connect an online daemon first.';
 
   @override
-  String get generalAppearanceSection => 'Appearance';
-
-  @override
   String get generalAppearanceLabel => 'Theme';
-
-  @override
-  String get generalAppearanceDescription =>
-      'Applies to the whole app and is remembered the next time you start it.';
 
   @override
   String get generalAppearanceSystem => 'Follow system';
@@ -207,14 +194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generalAppearanceDark => 'Dark';
 
   @override
-  String get generalLanguageSection => 'Language';
-
-  @override
   String get generalLanguageLabel => 'Display language';
-
-  @override
-  String get generalLanguageDescription =>
-      'Applies to the whole app and takes effect immediately.';
 
   @override
   String get generalLanguageSystem => 'System default';
@@ -226,16 +206,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generalStartupAtBootLabel => 'Start at login';
 
   @override
-  String generalStartupAtBootDescription(String appDisplayName) {
-    return 'The operating system launches $appDisplayName after you sign in, so the embedded daemon keeps running.';
-  }
-
-  @override
   String get generalStartupMinimizedLabel => 'Start minimized';
-
-  @override
-  String get generalStartupMinimizedDescription =>
-      'A login-time launch goes straight to the tray without opening a window.';
 
   @override
   String get generalAppearanceFailed => 'Could not change the appearance.';
