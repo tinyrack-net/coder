@@ -15,50 +15,84 @@ import '../../support/fake_desktop_ports.dart';
 
 void main() {
   testWidgets(
-    'general controls stack and use the readable width at 696 pixels',
+    'general controls stay beside their labels at phone and desktop widths',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(696, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      final store = MemoryAppStore(
-        settings: const AppSettings(embeddedDaemonEnabled: false),
-      );
-      await tester.pumpWidget(_app(store));
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.byKey(const ValueKey<String>('workspace-settings-button')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('일반'));
-      await tester.pumpAndSettle();
-
-      for (final key in <String>[
-        'general-settings-theme-mode',
-        'general-settings-language',
+      // The viewport rather than the surface: `setSurfaceSize` does not move
+      // `MediaQuery`, so both passes would quietly run at the same width.
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+      for (final size in <Size>[
+        // A phone, and the width that used to lay the controls down flat.
+        const Size(390, 844),
+        const Size(696, 900),
       ]) {
-        final setting = find.ancestor(
-          of: find.byKey(ValueKey<String>(key)),
-          matching: find.byType(SettingsRow),
+        tester.view.physicalSize = size;
+        final store = MemoryAppStore(
+          settings: const AppSettings(embeddedDaemonEnabled: false),
         );
-        final row = tester.widget<TinestListRow>(
-          find.descendant(of: setting, matching: find.byType(TinestListRow)),
+        await tester.pumpWidget(_app(store));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byKey(const ValueKey<String>('workspace-settings-button')),
         );
-        expect(row.trailingLayout, TinestListRowTrailingLayout.below);
-        expect(row.unboundedSubtitle, isTrue);
-        final rowFinder = find.descendant(
-          of: setting,
-          matching: find.byType(TinestListRow),
-        );
-        final rowRect = tester.getRect(rowFinder);
-        final rowPadding = SettingsRow.resolvedPadding(
-          tester.element(rowFinder),
-        );
-        expect(
-          tester.getRect(find.byKey(ValueKey<String>(key))).width,
-          closeTo(rowRect.width - rowPadding.horizontal, 0.01),
-        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('일반'));
+        await tester.pumpAndSettle();
+
+        for (final key in <String>[
+          'general-settings-theme-mode',
+          'general-settings-language',
+        ]) {
+          final reason = '$key at ${size.width}';
+          final setting = find.ancestor(
+            of: find.byKey(ValueKey<String>(key)),
+            matching: find.byType(SettingsRow),
+          );
+          final rowFinder = find.descendant(
+            of: setting,
+            matching: find.byType(TinestListRow),
+          );
+          final row = tester.widget<TinestListRow>(rowFinder);
+          expect(
+            row.trailingLayout,
+            TinestListRowTrailingLayout.inline,
+            reason: reason,
+          );
+
+          final rowRect = tester.getRect(rowFinder);
+          final rowPadding = SettingsRow.resolvedPadding(
+            tester.element(rowFinder),
+          ).resolve(Directionality.of(tester.element(rowFinder)));
+          final control = tester.getRect(find.byKey(ValueKey<String>(key)));
+          // The control shows its current value and no more, leaving the rest
+          // of the line to the label instead of claiming the whole row.
+          expect(
+            control.width,
+            lessThan(rowRect.width - rowPadding.horizontal),
+            reason: reason,
+          );
+          expect(
+            control.right,
+            lessThanOrEqualTo(rowRect.right - rowPadding.right + 0.01),
+            reason: reason,
+          );
+          // One setting, one line: the row is as tall as the taller of its
+          // label and its control, never the two stacked with a sentence
+          // between them.
+          expect(
+            rowRect.height,
+            lessThan(
+              tester.getRect(find.text('테마')).height +
+                  control.height +
+                  rowPadding.vertical,
+            ),
+            reason: reason,
+          );
+        }
+        expect(tester.takeException(), isNull, reason: 'at ${size.width}');
       }
-      expect(tester.takeException(), isNull);
     },
     tags: const <String>[
       'feature_test__settings_appearance__widget',

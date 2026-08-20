@@ -134,9 +134,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsCategoryAdvanced => '詳細設定';
 
   @override
-  String get advancedResetSection => 'リセット';
-
-  @override
   String get advancedResetTitle => 'すべてのデータをリセット';
 
   @override
@@ -146,9 +143,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get advancedResetDescriptionAppOnly =>
       'このデバイスのすべてのアプリ設定と保存済みのリモートデーモントークンを消去します。リモートデーモン側のデータはそのまま残ります。';
-
-  @override
-  String get advancedResetAction => 'すべてのデータをリセット';
 
   @override
   String get advancedResetRunning => 'リセット中…';
@@ -188,13 +182,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsRequiresOnlineDaemon => '先にオンラインのデーモンに接続してください。';
 
   @override
-  String get generalAppearanceSection => '外観';
-
-  @override
   String get generalAppearanceLabel => 'テーマ';
-
-  @override
-  String get generalAppearanceDescription => 'アプリ全体に適用され、次回の起動時にも引き継がれます。';
 
   @override
   String get generalAppearanceSystem => 'システムに合わせる';
@@ -206,13 +194,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get generalAppearanceDark => 'ダーク';
 
   @override
-  String get generalLanguageSection => '言語';
-
-  @override
   String get generalLanguageLabel => '表示言語';
-
-  @override
-  String get generalLanguageDescription => 'アプリ全体に適用され、すぐに反映されます。';
 
   @override
   String get generalLanguageSystem => 'システムに合わせる';
@@ -224,16 +206,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get generalStartupAtBootLabel => 'ログイン時に起動';
 
   @override
-  String generalStartupAtBootDescription(String appDisplayName) {
-    return 'サインインすると OS が $appDisplayName を起動するので、内蔵デーモンが動き続けます。';
-  }
-
-  @override
   String get generalStartupMinimizedLabel => '最小化した状態で起動';
-
-  @override
-  String get generalStartupMinimizedDescription =>
-      'ログイン時の起動ではウィンドウを開かず、そのままトレイに入ります。';
 
   @override
   String get generalAppearanceFailed => 'テーマを変更できませんでした。';

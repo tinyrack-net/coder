@@ -425,7 +425,7 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
                     : null,
                 // Even shortened, a monospace digest and its label stop
                 // sharing a line once the reader scales the text up.
-                controlLayout: SettingsControlLayout.responsive,
+                controlLayout: SettingsControlLayout.stacked,
                 control: TRCode(
                   switch (plugin.revision?.contentHash) {
                     final hash? => pluginRevisionLabel(hash),
@@ -476,7 +476,7 @@ class _PluginDetailPaneState extends ConsumerState<_PluginDetailPane> {
                 ),
                 SettingsRow(
                   title: TRText.inherit(l10n.pluginSettingsSdkAbi),
-                  controlLayout: SettingsControlLayout.responsive,
+                  controlLayout: SettingsControlLayout.stacked,
                   control: TRCode(pluginRevisionLabel(authoring.sdkAbiHash)),
                 ),
                 SettingsRow(

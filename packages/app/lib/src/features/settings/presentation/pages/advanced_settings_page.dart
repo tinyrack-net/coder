@@ -54,24 +54,27 @@ class _ResetSectionState extends ConsumerState<_ResetSection> {
         .watch(appServicesProvider)
         .erasesEmbeddedDaemonData;
     return SettingsSection(
-      title: l10n.advancedResetSection,
+      // One row, so a heading over it would only repeat the row's own title.
+      // What the reset erases is the group's note: it is the same warning
+      // whichever way the row is read, and it belongs under the whole group.
+      footer: erasesDaemonData
+          ? l10n.advancedResetDescription
+          : l10n.advancedResetDescriptionAppOnly,
       children: <Widget>[
         SettingsRow(
           title: TRText.inherit(l10n.advancedResetTitle),
-          description: TRText.inherit(
-            erasesDaemonData
-                ? l10n.advancedResetDescription
-                : l10n.advancedResetDescriptionAppOnly,
-          ),
-          unboundedDescription: true,
-          controlLayout: SettingsControlLayout.responsive,
           control: TRButton(
             key: const ValueKey<String>('advanced-settings-reset-button'),
             appearance: TRAppearance.outline,
             intent: TRIntent.danger,
             onPressed: _busy ? null : _confirmAndReset,
+            // The verb alone: the row beside it already names what is being
+            // reset, and repeating the full name on the button said it twice
+            // on one line.
             child: TRText.inherit(
-              _busy ? l10n.advancedResetRunning : l10n.advancedResetAction,
+              _busy
+                  ? l10n.advancedResetRunning
+                  : l10n.advancedResetConfirmAccept,
             ),
           ),
         ),

@@ -44,24 +44,21 @@ class _PermissionSettingsPageState
         return SettingsScaffold(
           children: <Widget>[
             SettingsSection(
-              title: l10n.permissionSettingsSection,
-              description: l10n.permissionSettingsSectionDescription,
+              // The row names the setting and shows what it is set to, so a
+              // heading over one row would only say it a second time. What
+              // each mode actually allows is on the options themselves.
+              footer: l10n.permissionSettingsSectionDescription,
               children: <Widget>[
                 SettingsRow(
-                  title: TRText.inherit(
-                    permissionModeLabel(l10n, settings.defaultMode),
-                  ),
-                  description: TRText.inherit(
-                    permissionModeDescription(l10n, settings.defaultMode),
-                  ),
-                  unboundedDescription: true,
-                  controlLayout: SettingsControlLayout.responsive,
+                  title: TRText.inherit(l10n.permissionSettingsSection),
                   controlOwnsFocus: true,
                   control: PermissionSelect(
                     key: const ValueKey<String>(
                       'permission-settings-change',
                     ),
                     currentMode: settings.defaultMode,
+                    padding: TRFieldPadding.none,
+                    appearance: TRFieldAppearance.ghost,
                     onValueChange: (mode) {
                       if (mode != null) unawaited(_set(context, mode));
                     },

@@ -43,6 +43,7 @@ class AsyncModelSelect extends StatefulWidget {
     this.enabled = true,
     this.leading,
     this.appearance = TRFieldAppearance.solid,
+    this.padding = TRFieldPadding.standard,
     this.uiSize,
     this.width,
     this.placeholder,
@@ -69,6 +70,12 @@ class AsyncModelSelect extends StatefulWidget {
 
   /// Design-system field appearance.
   final TRFieldAppearance appearance;
+
+  /// Whether the trigger adds the inline inset its size scale defines.
+  ///
+  /// A picker standing in for a value in a settings row passes
+  /// [TRFieldPadding.none], because the row supplies that inset already.
+  final TRFieldPadding padding;
 
   /// Design-system control density.
   final TRUiSize? uiSize;
@@ -143,6 +150,7 @@ class _AsyncModelSelectState extends State<AsyncModelSelect> {
       enabled: widget.enabled,
       leading: widget.leading,
       appearance: widget.appearance,
+      padding: widget.padding,
       uiSize: widget.uiSize,
       width: widget.width,
       placeholder: widget.placeholder ?? widget.currentSelection?.modelId,

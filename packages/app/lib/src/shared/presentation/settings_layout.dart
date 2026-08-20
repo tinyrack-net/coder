@@ -626,26 +626,35 @@ class _SettingsSkeletonSection extends StatelessWidget {
   final int rowCount;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      const TRSkeleton(width: TRMeasurements.measureSm),
-      const SizedBox(height: TRSpacing.small),
-      TRCard(
-        padding: TRCardPadding.none,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) {
+    final compact =
+        settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // The placeholder takes the shape the content will, card and all, so
+        // the page does not jump sideways the moment it loads.
+        Padding(
+          padding: compact
+              ? EdgeInsets.symmetric(
+                  horizontal: SettingsRow.resolvedPadding(
+                    context,
+                  ).resolve(Directionality.of(context)).left,
+                )
+              : EdgeInsets.zero,
+          child: const TRSkeleton(width: TRMeasurements.measureSm),
+        ),
+        const SizedBox(height: TRSpacing.small),
+        _SettingsGroup(
+          boxed: !compact,
           children: <Widget>[
-            for (var index = 0; index < rowCount; index++) ...<Widget>[
-              if (index > 0)
-                const TRSeparator(variant: TRSeparatorVariant.muted),
+            for (var index = 0; index < rowCount; index++)
               const _SettingsSkeletonListRow(),
-            ],
           ],
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _SettingsOverlaySkeleton extends StatelessWidget {
@@ -720,50 +729,75 @@ class _SettingsScaffoldState extends State<SettingsScaffold> {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(
-      TRSpacing.extraLarge,
-      TRSpacing.extraLarge,
-      TRSpacing.extraLarge,
-      TRSpacing.fourExtraLarge,
-    ),
-    children: <Widget>[
-      // Each section stays its own list child rather than sharing one.
-      // Folding them into a single child builds every section eagerly, so
-      // a finder resolves a section that is scrolled out of view and a tap
-      // on it lands outside the viewport and quietly hits nothing.
-      for (final (index, child) in widget.children.indexed)
-        Padding(
-          // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
-          padding: index > 0
-              ? const EdgeInsets.only(top: TRSpacing.twoExtraLarge)
-              : EdgeInsets.zero,
-          child: Align(
-            // Centred, so a wide window keeps the column balanced rather
-            // than stranding it against one edge with a growing void.
-            // Below the cap the column fills the pane and this is a no-op.
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+  Widget build(BuildContext context) {
+    final compact =
+        settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact;
+    return ListView(
+      // A phone spends every pixel of its width on the rows. A page margin
+      // there costs both edges and buys nothing, because each row already
+      // draws its own inline inset; a wide window has the room and reads
+      // better with the column held off the pane edges.
+      padding: compact
+          // No horizontal inset at all rather than a zero one: the rows run
+          // to both edges and supply the only rail.
+          ? const EdgeInsets.only(
+              top: TRSpacing.small,
+              bottom: TRSpacing.fourExtraLarge,
+            )
+          : const EdgeInsets.fromLTRB(
+              TRSpacing.extraLarge,
+              TRSpacing.extraLarge,
+              TRSpacing.extraLarge,
+              TRSpacing.fourExtraLarge,
+            ),
+      children: <Widget>[
+        // Each section stays its own list child rather than sharing one.
+        // Folding them into a single child builds every section eagerly, so
+        // a finder resolves a section that is scrolled out of view and a tap
+        // on it lands outside the viewport and quietly hits nothing.
+        for (final (index, child) in widget.children.indexed)
+          Padding(
+            // tinyrack-check-ignore-next-line tokens/no-literal -- only later sections receive the inter-section token gap
+            padding: index > 0
+                ? EdgeInsets.only(
+                    top: compact
+                        ? TRSpacing.extraLarge
+                        : TRSpacing.twoExtraLarge,
+                  )
+                : EdgeInsets.zero,
+            child: Align(
+              // Centred, so a wide window keeps the column balanced rather
+              // than stranding it against one edge with a growing void.
+              // Below the cap the column fills the pane and this is a no-op.
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: TinestLayoutMetrics.settingsContentMaxWidth,
+                ),
+                child: child,
               ),
-              child: child,
             ),
           ),
-        ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 /// One optionally titled group of settings.
+///
+/// A wide window frames the group in a card, the way a settings pane reads
+/// beside other panes. A phone drops the card and runs the rows to both edges:
+/// a border and a page margin there cost width the rows need, and stacking a
+/// card per setting is what made a short list of preferences scroll.
 class SettingsSection extends StatelessWidget {
-  /// Creates a section whose [children] are [SettingsRow]s sharing one card.
+  /// Creates a section whose [children] are [SettingsRow]s sharing one group.
   const SettingsSection({
     required this.children,
     this.title,
     this.description,
     this.action,
     this.banner,
+    this.footer,
     super.key,
   }) : _boxed = true;
 
@@ -779,6 +813,7 @@ class SettingsSection extends StatelessWidget {
     this.description,
     this.action,
     this.banner,
+    this.footer,
     super.key,
   }) : _boxed = false;
 
@@ -801,6 +836,14 @@ class SettingsSection extends StatelessWidget {
   /// instead of being stacked above it as another top-level block.
   final Widget? banner;
 
+  /// Optional note shown under the group.
+  ///
+  /// Where a setting needs explaining, the explanation belongs to the group
+  /// rather than to each row. A sentence repeated under every label is what
+  /// turned one line into three and pushed the next setting off the screen,
+  /// and it says the same thing three times besides.
+  final String? footer;
+
   /// Section content.
   final List<Widget> children;
 
@@ -813,81 +856,158 @@ class SettingsSection extends StatelessWidget {
     final hasDescription = description != null;
     final hasBanner = banner != null;
     final hasPreamble = hasHeading || hasDescription || hasBanner;
+    final compact =
+        settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact;
+    // A card supplies the rail its rows read on. Without one, the copy around
+    // the group has to take the same inline inset the rows draw at, or the
+    // heading, the rows, and the note under them each start somewhere else.
+    final rail = compact
+        ? EdgeInsets.symmetric(
+            horizontal: SettingsRow.resolvedPadding(
+              context,
+            ).resolve(Directionality.of(context)).left,
+          )
+        : EdgeInsets.zero;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        // A Wrap rather than a Row: on a narrow window, or at a large text
-        // scale, a heading and its action do not fit on one line. Wrapping is
-        // what keeps the action from overflowing, and spaceBetween still puts
-        // it against the trailing edge whenever the two do fit.
-        if (hasHeading)
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: TRSpacing.large,
-            runSpacing: TRSpacing.small,
-            children: <Widget>[
-              if (title case final title?)
-                // Section titles are subordinate to the pane header. The
-                // smaller public heading role also keeps a long word intact
-                // when the system text scale is enlarged on a compact pane.
-                TRText(title, variant: TRTextVariant.headingSm),
-              ?action,
-            ],
+        if (hasPreamble)
+          Padding(
+            padding: rail,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // A Wrap rather than a Row: on a narrow window, or at a large
+                // text scale, a heading and its action do not fit on one line.
+                // Wrapping is what keeps the action from overflowing, and
+                // spaceBetween still puts it against the trailing edge
+                // whenever the two do fit.
+                if (hasHeading)
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: TRSpacing.large,
+                    runSpacing: TRSpacing.small,
+                    children: <Widget>[
+                      if (title case final title?)
+                        // Section titles are subordinate to the pane header.
+                        // The smaller public heading role also keeps a long
+                        // word intact when the system text scale is enlarged
+                        // on a compact pane.
+                        TRText(title, variant: TRTextVariant.headingSm),
+                      ?action,
+                    ],
+                  ),
+                if (description case final description?) ...<Widget>[
+                  if (hasHeading) const SizedBox(height: TRSpacing.medium),
+                  TRText(
+                    description,
+                    variant: TRTextVariant.bodySm,
+                    color: TRTextColor.muted,
+                  ),
+                ],
+                if (banner case final banner?) ...<Widget>[
+                  if (hasHeading || hasDescription)
+                    const SizedBox(height: TRSpacing.medium),
+                  banner,
+                ],
+              ],
+            ),
           ),
-        if (description case final description?) ...<Widget>[
-          if (hasHeading) const SizedBox(height: TRSpacing.medium),
-          TRText(
-            description,
-            variant: TRTextVariant.bodySm,
-            color: TRTextColor.muted,
-          ),
-        ],
-        if (banner case final banner?) ...<Widget>[
-          if (hasHeading || hasDescription)
-            const SizedBox(height: TRSpacing.medium),
-          banner,
-        ],
         if (hasPreamble) const SizedBox(height: TRSpacing.small),
         if (_boxed)
-          TRCard(
-            padding: TRCardPadding.none,
+          _SettingsGroup(boxed: !compact, children: children)
+        else
+          Padding(
+            // A form control draws its own frame, so it needs the rail even
+            // where a boxed group hands one to its rows.
+            padding: rail,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 for (final (index, child) in children.indexed) ...<Widget>[
-                  if (index > 0)
-                    // Muted, so a divider inside a card matches the card's own
-                    // border. The default variant is borderStrong, which is the
-                    // weight a control draws at, not a surface.
-                    const TRSeparator(variant: TRSeparatorVariant.muted),
+                  if (index > 0) const SizedBox(height: TRSpacing.large),
                   child,
                 ],
               ],
             ),
-          )
-        else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              for (final (index, child) in children.indexed) ...<Widget>[
-                if (index > 0) const SizedBox(height: TRSpacing.large),
-                child,
-              ],
-            ],
           ),
+        if (footer case final footer?) ...<Widget>[
+          const SizedBox(height: TRSpacing.small),
+          Padding(
+            padding: rail,
+            child: TRText(
+              footer,
+              variant: TRTextVariant.bodySm,
+              color: TRTextColor.muted,
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
-/// Selects how a setting's control responds to constrained width.
+/// The rows of one [SettingsSection], framed or plain.
+///
+/// Boxed, the card draws the group's boundary and its dividers run edge to
+/// edge inside it. Plain, there is no boundary to draw against, so each
+/// divider starts at the rail its rows read on and runs to the far edge —
+/// the shape that tells a reader the rows belong together without spending
+/// width on a border.
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.boxed, required this.children});
+
+  final bool boxed;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final (index, child) in children.indexed) ...<Widget>[
+          if (index > 0) _divider(context),
+          child,
+        ],
+      ],
+    );
+    return boxed ? TRCard(padding: TRCardPadding.none, child: rows) : rows;
+  }
+
+  Widget _divider(BuildContext context) {
+    // Muted, so a divider matches the card's own border rather than the
+    // weight a control draws at, which is what the default variant is for.
+    const separator = TRSeparator(variant: TRSeparatorVariant.muted);
+    if (boxed) return separator;
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: SettingsRow.resolvedPadding(
+          context,
+        ).resolve(Directionality.of(context)).left,
+      ),
+      child: separator,
+    );
+  }
+}
+
+/// Selects where a setting's control sits relative to its label.
+///
+/// Neither value depends on the width the row happens to get. A control that
+/// moved below its label only on a narrow window meant one setting had two
+/// shapes, and which one a reader saw was decided by the window rather than by
+/// the setting: the same screen read as a list on a desktop and as a stack of
+/// forms on a phone. A control that cannot usefully shrink says so once, here.
 enum SettingsControlLayout {
-  /// Keeps the control trailing at every width.
+  /// Keeps the control trailing its label at every width.
   inline,
 
-  /// Moves the control below the copy when the copy rail becomes too narrow.
-  responsive,
+  /// Places the control below the label at the row's full width, at every
+  /// width.
+  ///
+  /// For controls a reader types or drags in, which are unusable once they
+  /// are squeezed into what a label leaves over.
+  stacked,
 }
 
 /// One setting: its description leading, its control trailing or below.
@@ -1023,36 +1143,29 @@ class SettingsRow extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final padding = _padding(context);
-      final narrow =
-          constraints.maxWidth - padding.horizontal < TRBreakpoints.small;
-      final stacksControl =
-          control != null &&
-          controlLayout == SettingsControlLayout.responsive &&
-          narrow;
-      return TinestListRow(
-        contentPadding: padding,
-        controlOwnsFocus: controlOwnsFocus,
-        enabled: enabled,
-        hoverEnabled: false,
-        isThreeLine: wrapsDescription || unboundedDescription,
-        unboundedSubtitle: unboundedDescription || (narrow && wrapsDescription),
-        leading: leading,
-        onTap: onTap,
-        selected: selected,
-        selectionAppearance: _collection
-            ? TinestListRowSelectionAppearance.navigation
-            : TinestListRowSelectionAppearance.standard,
-        subtitle: description,
-        title: title,
-        trailing: control,
-        trailingLayout: stacksControl
-            ? TinestListRowTrailingLayout.below
-            : TinestListRowTrailingLayout.inline,
-      );
-    },
+  Widget build(BuildContext context) => TinestListRow(
+    contentPadding: _padding(context),
+    controlOwnsFocus: controlOwnsFocus,
+    enabled: enabled,
+    hoverEnabled: false,
+    isThreeLine: wrapsDescription || unboundedDescription,
+    // A description that is allowed to wrap is prose, and prose that stops at
+    // two lines stops mid-sentence. It runs to the lines it needs at every
+    // width rather than only on the narrow window that made it obvious.
+    unboundedSubtitle: unboundedDescription || wrapsDescription,
+    leading: leading,
+    onTap: onTap,
+    selected: selected,
+    selectionAppearance: _collection
+        ? TinestListRowSelectionAppearance.navigation
+        : TinestListRowSelectionAppearance.standard,
+    subtitle: description,
+    title: title,
+    trailing: control,
+    trailingLayout:
+        control != null && controlLayout == SettingsControlLayout.stacked
+        ? TinestListRowTrailingLayout.below
+        : TinestListRowTrailingLayout.inline,
   );
 }
 

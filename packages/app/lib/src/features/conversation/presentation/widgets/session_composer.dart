@@ -453,6 +453,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     variant: TRStatusVariant.danger,
                   ),
                 SettingsRow(
+                  controlLayout: _sheetControlLayout,
                   key: const ValueKey<String>(
                     'session-composer-settings-agent',
                   ),
@@ -462,12 +463,12 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     l10n.composerAgent,
                     color: agentLocked ? TRTextColor.muted : null,
                   ),
-                  controlLayout: SettingsControlLayout.responsive,
                   controlOwnsFocus: true,
                   enabled:
                       agentLocked ||
                       (widget.enabled && widget.definitions.isNotEmpty),
                   control: _agentSelect(
+                    stretch: _sheetControlsStretch,
                     key: const ValueKey<String>(
                       'session-composer-settings-agent-select',
                     ),
@@ -486,6 +487,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                   ),
                 ),
                 SettingsRow(
+                  controlLayout: _sheetControlLayout,
                   key: const ValueKey<String>(
                     'session-composer-settings-model',
                   ),
@@ -500,9 +502,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                         ? TRTextColor.muted
                         : null,
                   ),
-                  controlLayout: SettingsControlLayout.responsive,
                   controlOwnsFocus: true,
                   control: _modelSelect(
+                    stretch: _sheetControlsStretch,
                     key: const ValueKey<String>(
                       'session-composer-settings-model-select',
                     ),
@@ -524,13 +526,13 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                 for (final descriptor in snapshot.capabilities.controls)
                   _compactControl(descriptor, l10n, refresh),
                 SettingsRow(
+                  controlLayout: _sheetControlLayout,
                   key: const ValueKey<String>(
                     'session-composer-settings-permission',
                   ),
                   flush: true,
                   leading: const Icon(TinestIcons.permission),
                   title: TRText.inherit(l10n.composerPermissionMode),
-                  controlLayout: SettingsControlLayout.responsive,
                   controlOwnsFocus: true,
                   control: PermissionSelect(
                     key: const ValueKey<String>(
@@ -561,6 +563,34 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     await WidgetsBinding.instance.endOfFrame;
     if (mounted) refresh(() {});
   }
+
+  /// Where the settings sheet puts a value control.
+  ///
+  /// The sheet is a form, and on a phone it fills the window: a select that
+  /// shares a line with its label there has nothing left to show its value in,
+  /// so every control takes the full rail and they line up as one column. A
+  /// wider window has room for the list reading instead.
+  ///
+  /// Settings pages deliberately have one shape at every width. This sheet is
+  /// the exception, so it makes the call here rather than asking a settings
+  /// row to carry a width rule on its behalf.
+  SettingsControlLayout get _sheetControlLayout =>
+      settingsAdaptiveWidthClassOf(context) == TRAdaptiveWidthClass.compact
+      ? SettingsControlLayout.stacked
+      : SettingsControlLayout.inline;
+
+  /// Whether the sheet's value controls fill the width they are given.
+  ///
+  /// A control on its own line fills it, so the sheet reads as one column of
+  /// equal fields. A control that shares a line with its label takes only the
+  /// width its own value needs and leaves the rest of the line to the label.
+  ///
+  /// This is asked rather than inferred from whether some parent happened to
+  /// bound the control: a maximum width is not an instruction to fill it, and
+  /// reading one as the other made every value in the sheet grow to the row
+  /// and squeeze its label down to nothing.
+  bool get _sheetControlsStretch =>
+      _sheetControlLayout == SettingsControlLayout.stacked;
 
   Widget _settingsRow({
     required ValueKey<String> key,
@@ -742,6 +772,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     final enabled = widget.enabled && widget.onModelControlsChanged != null;
     if (descriptor.kind == ModelControlKind.choice) {
       return SettingsRow(
+        controlLayout: _sheetControlLayout,
         key: ValueKey<String>(
           'session-composer-settings-control-${descriptor.id}',
         ),
@@ -751,9 +782,9 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         description: descriptor.description == null
             ? null
             : TRText.inherit(descriptor.description!),
-        controlLayout: SettingsControlLayout.responsive,
         controlOwnsFocus: true,
         control: _choiceControlSelect(
+          stretch: _sheetControlsStretch,
           descriptor,
           key: ValueKey<String>(
             'session-composer-settings-control-${descriptor.id}-select',

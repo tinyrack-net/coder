@@ -1211,6 +1211,14 @@ Finder _daemonSettingsPane() => find.byKey(
 );
 
 void _expectDaemonConnectionSectionsUseSingleCards(WidgetTester tester) {
+  // A phone draws its groups without a card, so what is being checked there is
+  // that none appeared, and on a wider window that exactly one did. Either way
+  // the point is the same: a group never nests a card inside a card.
+  final compact =
+      settingsAdaptiveWidthClassOf(
+        tester.element(find.byType(SettingsSection).first),
+      ) ==
+      TRAdaptiveWidthClass.compact;
   for (final section in find.byType(SettingsSection).evaluate()) {
     final sectionFinder = find.byElementPredicate(
       (element) => identical(element, section),
@@ -1228,8 +1236,10 @@ void _expectDaemonConnectionSectionsUseSingleCards(WidgetTester tester) {
     if (isAlertOnly) continue;
     expect(
       cards,
-      findsOneWidget,
-      reason: 'A boxed settings section must own its only card.',
+      compact ? findsNothing : findsOneWidget,
+      reason: compact
+          ? 'A compact settings group draws no card of its own.'
+          : 'A boxed settings section must own its only card.',
     );
   }
 

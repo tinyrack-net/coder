@@ -130,12 +130,14 @@ void _registerSettingsAppFlows() {
         of: headerFinder,
         matching: find.text('일반'),
       );
-      final firstSectionTitle = find.text('외관');
+      // The group's own edge rather than a heading inside it: a page whose
+      // first group needs no heading still has to share the header's rail.
+      final firstGroup = find.byType(TRCard).first;
       expect(headerTitle, findsOneWidget);
-      expect(firstSectionTitle, findsOneWidget);
+      expect(firstGroup, findsOneWidget);
       expect(
         tester.getRect(headerTitle).left,
-        tester.getRect(firstSectionTitle).left,
+        tester.getRect(firstGroup).left,
       );
       expect(
         tester.widget<TRPaneHeader>(headerFinder).contentMaxWidth,

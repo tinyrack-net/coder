@@ -519,7 +519,6 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
               title: TRText.inherit(runtime?.label ?? widget.hostId),
               description: TRText.inherit(hostStatusText(l10n, runtime)),
               wrapsDescription: true,
-              controlLayout: SettingsControlLayout.responsive,
               control: pathLabel == null && profile == null
                   ? null
                   : Row(
@@ -546,7 +545,8 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
           ],
         ),
         SettingsSection(
-          title: l10n.relayPairTitle,
+          // No heading: the one row below it carries the same words, so a
+          // heading here printed the name of the action twice in a row.
           banner: _error == null
               ? null
               : TRAlert(
@@ -643,7 +643,6 @@ class _DaemonConnectionsPageState extends ConsumerState<DaemonConnectionsPage> {
             SettingsRow(
               leading: const Icon(TinestIcons.computer),
               title: TRText.inherit(device.name),
-              controlLayout: SettingsControlLayout.responsive,
               control: TRButton(
                 appearance: TRAppearance.ghost,
                 intent: TRIntent.danger,

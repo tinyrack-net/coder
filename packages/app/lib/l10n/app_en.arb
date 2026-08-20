@@ -170,10 +170,6 @@
   "@settingsCategoryAdvanced": {
     "description": "Settings sidebar entry for developer maintenance actions."
   },
-  "advancedResetSection": "Reset",
-  "@advancedResetSection": {
-    "description": "Heading of the full reset card."
-  },
   "advancedResetTitle": "Reset all data",
   "@advancedResetTitle": {
     "description": "Title of the full reset row."
@@ -185,10 +181,6 @@
   "advancedResetDescriptionAppOnly": "Clears every app setting and stored remote daemon token on this device. Remote daemons keep their own data.",
   "@advancedResetDescriptionAppOnly": {
     "description": "Scope of a reset on a surface without an embedded daemon."
-  },
-  "advancedResetAction": "Reset all data",
-  "@advancedResetAction": {
-    "description": "Label of the button that starts a full reset."
   },
   "advancedResetRunning": "Resetting…",
   "@advancedResetRunning": {
@@ -245,17 +237,9 @@
   "@settingsRequiresOnlineDaemon": {
     "description": "Shown when a host-scoped settings page has no online daemon."
   },
-  "generalAppearanceSection": "Appearance",
-  "@generalAppearanceSection": {
-    "description": "Heading of the appearance card on the General settings page."
-  },
   "generalAppearanceLabel": "Theme",
   "@generalAppearanceLabel": {
     "description": "Dropdown label for the app theme."
-  },
-  "generalAppearanceDescription": "Applies to the whole app and is remembered the next time you start it.",
-  "@generalAppearanceDescription": {
-    "description": "Explains the scope of the theme setting."
   },
   "generalAppearanceSystem": "Follow system",
   "@generalAppearanceSystem": {
@@ -269,17 +253,9 @@
   "@generalAppearanceDark": {
     "description": "Theme option that always paints the dark theme."
   },
-  "generalLanguageSection": "Language",
-  "@generalLanguageSection": {
-    "description": "Heading of the language card on the General settings page."
-  },
   "generalLanguageLabel": "Display language",
   "@generalLanguageLabel": {
     "description": "Dropdown label for the app UI language."
-  },
-  "generalLanguageDescription": "Applies to the whole app and takes effect immediately.",
-  "@generalLanguageDescription": {
-    "description": "Explains the scope of the language setting."
   },
   "generalLanguageSystem": "System default",
   "@generalLanguageSystem": {
@@ -293,22 +269,9 @@
   "@generalStartupAtBootLabel": {
     "description": "Switch label for launching the app when the user logs in."
   },
-  "generalStartupAtBootDescription": "The operating system launches {appDisplayName} after you sign in, so the embedded daemon keeps running.",
-  "@generalStartupAtBootDescription": {
-    "description": "Explains what the start-at-login switch registers with the operating system.",
-    "placeholders": {
-      "appDisplayName": {
-        "type": "String"
-      }
-    }
-  },
   "generalStartupMinimizedLabel": "Start minimized",
   "@generalStartupMinimizedLabel": {
     "description": "Switch label for starting hidden in the tray at login."
-  },
-  "generalStartupMinimizedDescription": "A login-time launch goes straight to the tray without opening a window.",
-  "@generalStartupMinimizedDescription": {
-    "description": "Explains that start-minimized applies only to login launches."
   },
   "generalAppearanceFailed": "Could not change the appearance.",
   "@generalAppearanceFailed": {

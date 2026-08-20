@@ -2,7 +2,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/features/skills/application/skills_controller.dart';
 import 'package:app/src/features/workspace/application/workspace_controller.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
-import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
+import 'package:app/src/shared/presentation/tinest_selection_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol/protocol.dart';
@@ -146,39 +146,31 @@ class _SkillCatalogBody extends StatelessWidget {
       children: <Widget>[
         if (projects.isNotEmpty)
           SettingsSection(
+            // What the scope governs explains the whole group rather than
+            // sitting under the one row that already names it.
+            footer: l10n.skillSettingsScopeHint,
             children: <Widget>[
-              SettingsRow(
+              TinestChoiceRow<String?>(
+                selectKey: const ValueKey<String>('skill-scope-select'),
                 title: TRText.inherit(l10n.skillSettingsScope),
-                description: TRText.inherit(l10n.skillSettingsScopeHint),
-                wrapsDescription: true,
-                controlLayout: SettingsControlLayout.responsive,
-                controlOwnsFocus: true,
-                control: Semantics(
-                  label: l10n.skillSettingsScope,
-                  container: true,
-                  child: TRSelect<String?>.controlled(
-                    key: const ValueKey<String>('skill-scope-select'),
-                    value: workspaceId,
-                    searchable: true,
-                    searchPlaceholder: l10n.skillSettingsProjectSearch,
-                    noResultsText: l10n.skillSettingsProjectNoMatch,
-                    presentation: TinestSelectPresentation.resolve(context),
-                    items: <TRSelectItem<String?>>[
-                      TRSelectItem<String?>(
-                        value: null,
-                        label: l10n.skillSettingsScopeGlobal,
-                      ),
-                      for (final project in projects)
-                        TRSelectItem<String?>(
-                          key: ValueKey<String>('skill-scope-${project.id}'),
-                          value: project.id,
-                          label: project.name,
-                          description: project.rootPath,
-                        ),
-                    ],
-                    onValueChange: onWorkspaceChanged,
+                semanticLabel: l10n.skillSettingsScope,
+                value: workspaceId,
+                searchPlaceholder: l10n.skillSettingsProjectSearch,
+                noResultsText: l10n.skillSettingsProjectNoMatch,
+                items: <TRSelectItem<String?>>[
+                  TRSelectItem<String?>(
+                    value: null,
+                    label: l10n.skillSettingsScopeGlobal,
                   ),
-                ),
+                  for (final project in projects)
+                    TRSelectItem<String?>(
+                      key: ValueKey<String>('skill-scope-${project.id}'),
+                      value: project.id,
+                      label: project.name,
+                      description: project.rootPath,
+                    ),
+                ],
+                onChanged: onWorkspaceChanged,
               ),
             ],
           ),

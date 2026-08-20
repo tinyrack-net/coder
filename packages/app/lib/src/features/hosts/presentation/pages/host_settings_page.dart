@@ -342,7 +342,7 @@ class _EmbeddedPortEditorState extends ConsumerState<_EmbeddedPortEditor> {
       title: TRText.inherit(l10n.appSettingsEmbeddedPort),
       description: TRText.inherit(l10n.appSettingsEmbeddedPortHelp),
       unboundedDescription: true,
-      controlLayout: SettingsControlLayout.responsive,
+      controlLayout: SettingsControlLayout.stacked,
       control: LayoutBuilder(
         builder: (context, constraints) {
           final field = Semantics(
@@ -432,7 +432,6 @@ class _RemoteHostCard extends ConsumerWidget {
             title: TRText.inherit(profile.label),
             description: TRText.inherit(hostStatusText(l10n, runtime)),
             wrapsDescription: true,
-            controlLayout: SettingsControlLayout.responsive,
             control: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -686,11 +685,12 @@ class _RemoteHostEditPageState extends ConsumerState<RemoteHostEditPage> {
               if (existing != null)
                 SettingsSection(
                   title: l10n.commonDelete,
-                  description: l10n.appSettingsDeleteBody,
+                  // What deleting costs belongs under the row it applies to,
+                  // where it is read last, rather than above it as a preamble.
+                  footer: l10n.appSettingsDeleteBody,
                   children: <Widget>[
                     SettingsRow(
                       title: TRText.inherit(existing.label),
-                      controlLayout: SettingsControlLayout.responsive,
                       control: TRButton(
                         key: const ValueKey<String>('remote-host-delete'),
                         appearance: TRAppearance.outline,

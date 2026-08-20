@@ -593,7 +593,6 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                       l10n.agentSettingsModelId,
                       color: modelBlocked ? TRTextColor.muted : null,
                     ),
-                    controlLayout: SettingsControlLayout.responsive,
                     controlOwnsFocus: true,
                     control: _agentModelSelect(
                       l10n,
@@ -627,6 +626,7 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
           else ...<Widget>[
             SettingsSection.form(
               title: l10n.agentSettingsHarnessHeading,
+              description: l10n.agentSettingsHarnessDescription,
               banner: harnessDiagnostics.isEmpty
                   ? null
                   : TRAlert(
@@ -650,11 +650,6 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
                           : TRStatusVariant.warning,
                     ),
               children: <Widget>[
-                TRText(
-                  l10n.agentSettingsHarnessDescription,
-                  variant: TRTextVariant.bodySm,
-                  color: TRTextColor.muted,
-                ),
                 if (drivers.isEmpty)
                   TRAlert(
                     title: TRText.inherit(l10n.agentSettingsNoDrivers),
@@ -682,12 +677,8 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
             ),
             SettingsSection(
               title: l10n.agentSettingsExtensions,
+              description: l10n.agentSettingsExtensionsDescription,
               children: <Widget>[
-                SettingsRow(
-                  title: TRText.inherit(
-                    l10n.agentSettingsExtensionsDescription,
-                  ),
-                ),
                 for (final entry in _orderedExtensionRows(extensions))
                   TinestCheckboxRow(
                     key: ValueKey<String>(
@@ -750,12 +741,8 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
             ),
             SettingsSection(
               title: l10n.agentSettingsPluginTools,
+              description: l10n.agentSettingsPluginToolsDescription,
               children: <Widget>[
-                SettingsRow(
-                  title: TRText.inherit(
-                    l10n.agentSettingsPluginToolsDescription,
-                  ),
-                ),
                 for (final view in groupAgentTools(pluginTools)) ...[
                   _toolGroupHeader(l10n, view, editable: editable),
                   if (_expandedGroups.contains(view.group))
@@ -780,12 +767,8 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
             ),
             SettingsSection.form(
               title: l10n.agentSettingsPluginSettings,
+              description: l10n.agentSettingsPluginSettingsDescription,
               children: <Widget>[
-                TRText(
-                  l10n.agentSettingsPluginSettingsDescription,
-                  variant: TRTextVariant.bodySm,
-                  color: TRTextColor.muted,
-                ),
                 for (final pluginId in settingsPluginIds)
                   TRTextField(
                     key: ValueKey<String>(
@@ -840,13 +823,15 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
             title: definition.isBuiltIn
                 ? l10n.agentSettingsReset
                 : l10n.workspaceArchive,
+            // The row names the agent and the note says what the action costs.
+            // As the row's own title the note wrapped beside a button half its
+            // height, which is what every destructive row here used to do.
+            footer: definition.isBuiltIn
+                ? l10n.agentSettingsResetBody
+                : l10n.agentSettingsArchiveBody,
             children: <Widget>[
               SettingsRow(
-                title: TRText.inherit(
-                  definition.isBuiltIn
-                      ? l10n.agentSettingsResetBody
-                      : l10n.agentSettingsArchiveBody,
-                ),
+                title: TRText.inherit(definition.name),
                 control: TRButton(
                   key: ValueKey<String>(
                     definition.isBuiltIn
@@ -1241,10 +1226,8 @@ class _AgentEditorState extends ConsumerState<_AgentEditor> {
     final grants = grantsState.value ?? const <AgentPluginGrantDto>[];
     return SettingsSection(
       title: l10n.agentSettingsCapabilities,
+      description: l10n.agentSettingsCapabilitiesDescription,
       children: <Widget>[
-        SettingsRow(
-          title: TRText.inherit(l10n.agentSettingsCapabilitiesDescription),
-        ),
         if (requested.isEmpty)
           SettingsRow(title: TRText.inherit(l10n.agentSettingsNoCapabilities))
         else if (!grantsState.hasValue)
