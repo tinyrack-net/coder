@@ -200,19 +200,26 @@ void main() {
           'data: {"method":"notifications/tools/list_changed"}\n\n';
     final transport = transportFor();
     final messages = <Map<String, dynamic>>[];
-    transport.incoming.listen(messages.add);
+    final opened = Completer<Map<String, dynamic>>();
+    transport.incoming.listen((message) {
+      messages.add(message);
+      if (!opened.isCompleted) opened.complete(message);
+    });
 
     await transport.start();
     await transport.send(<String, dynamic>{
       'method': 'notifications/initialized',
     });
-    await pumpEventQueue();
+    // This notification arrives over the GET that `send` opens, which is a
+    // second connection: `send` returning says nothing about whether that
+    // stream has produced anything. `pumpEventQueue` drains the event loop a
+    // bounded number of times and never waits on a socket read, so a loaded
+    // host reached the assertion with nothing received. Await the message.
+    final message = await opened.future;
 
     expect(transport.supportsServerStream, isTrue);
-    expect(
-      messages.single['method'],
-      'notifications/tools/list_changed',
-    );
+    expect(message['method'], 'notifications/tools/list_changed');
+    expect(messages, hasLength(1));
     expect(server.requests.last.method, 'GET');
   });
 
