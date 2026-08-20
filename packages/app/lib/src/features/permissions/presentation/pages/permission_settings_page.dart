@@ -59,9 +59,7 @@ class _PermissionSettingsPageState
                     currentMode: settings.defaultMode,
                     padding: TRFieldPadding.none,
                     appearance: TRFieldAppearance.ghost,
-                    onValueChange: (mode) {
-                      if (mode != null) unawaited(_set(context, mode));
-                    },
+                    onValueChange: (mode) => unawaited(_set(context, mode)),
                   ),
                 ),
               ],

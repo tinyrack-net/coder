@@ -257,7 +257,7 @@ void main() {
   );
 
   test(
-    'composer draft drops the model when the agent changes',
+    'composer draft drops the model but keeps permissions across agents',
     () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -285,9 +285,18 @@ void main() {
             .model,
         isNull,
       );
+      container
+          .read(provider.notifier)
+          .selectPermissionMode(PermissionMode.fullAccess);
       container.read(provider.notifier).selectAgent('planner');
       expect(container.read(provider).agentDefinitionId, 'planner');
+      // A model belongs to the agent that declared it, but permissions are a
+      // deliberate choice about this session and no agent supplies one.
       expect(container.read(provider).model, isNull);
+      expect(
+        container.read(provider).permissionMode,
+        PermissionMode.fullAccess,
+      );
       container.read(provider.notifier).selectModel(model);
       expect(container.read(provider).agentDefinitionId, 'planner');
     },

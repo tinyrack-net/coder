@@ -22,12 +22,13 @@ abstract final class TinestSelectPresentation {
           showDragHandle: true,
         )
       : const TRSelectPresentation.layer(
-          // Explicit so the architecture policy owns the complete recipe.
           // A content width would size every popup to its shortest option, so
           // the same control opens at a different width per host. One fixed
           // width keeps the option list readable wherever a Select is used.
-          // Width only: the height axis keeps its own default, which caps a
-          // long option list at the content height rather than the viewport.
+          //
+          // Height is deliberately unstated: the design system caps the option
+          // list on its own axis, and restating it here would be Tinest owning
+          // a number it has no reason to choose.
           width: TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
           // Bottom-start follows the trigger in either text direction.
           // ignore: avoid_redundant_argument_values

@@ -107,11 +107,12 @@ class SessionComposerBar extends ConsumerStatefulWidget {
   final FutureOr<void> Function(Map<String, ModelControlValueDto>)?
   onModelControlsChanged;
 
-  /// Permission mode in effect, or null to inherit the agent definition.
+  /// Permission mode in effect, or null for a draft that has not chosen one
+  /// and therefore shows the host default.
   final PermissionMode? permissionMode;
 
-  /// Called with the chosen mode, or null to inherit the agent definition.
-  final FutureOr<void> Function(PermissionMode?)? onPermissionModeChanged;
+  /// Called with the chosen mode.
+  final FutureOr<void> Function(PermissionMode)? onPermissionModeChanged;
 
   /// Whether the agent can still be changed; false once a session exists.
   final bool agentEnabled;
@@ -172,7 +173,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         .watch(permissionSettingsControllerProvider(hostId))
         .value
         ?.defaultMode;
-    final inheritedPermission = daemonDefault ?? PermissionMode.ask;
+    final hostDefaultPermission = daemonDefault ?? PermissionMode.ask;
     final connection = connections
         .where(
           (item) =>
@@ -250,7 +251,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
         _permissionSelect(
           key: const ValueKey<String>('session-composer-permission'),
           enabled: enabled && widget.onPermissionModeChanged != null,
-          inheritedPermission: inheritedPermission,
+          hostDefaultPermission: hostDefaultPermission,
           appearance: TRFieldAppearance.ghost,
           uiSize: TRUiSize.sm,
           stretch: false,
@@ -368,19 +369,18 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
   Widget _permissionSelect({
     required Key key,
     required bool enabled,
-    required PermissionMode inheritedPermission,
+    required PermissionMode hostDefaultPermission,
     required TRFieldAppearance appearance,
     required TRUiSize uiSize,
     bool stretch = true,
     VoidCallback? onValueChanged,
   }) {
-    final l10n = AppLocalizations.of(context);
     return _sized(stretch, (width) {
       return PermissionSelect(
         key: key,
-        currentMode: widget.permissionMode,
-        inheritLabel: l10n.composerInheritPermissionMode,
-        inheritedMode: inheritedPermission,
+        // A draft has not been given a mode yet, so it shows the one the new
+        // session would be created with.
+        currentMode: widget.permissionMode ?? hostDefaultPermission,
         enabled: enabled,
         width: width,
         leading: const Icon(TinestIcons.permission),
@@ -417,7 +417,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     await widget.onModelChanged(option.selection, retained);
   }
 
-  Future<void> _setPermission(PermissionMode? mode) async {
+  Future<void> _setPermission(PermissionMode mode) async {
     if (mounted) setState(() => _permissionError = null);
     try {
       await widget.onPermissionModeChanged?.call(mode);
@@ -538,9 +538,8 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
                     key: const ValueKey<String>(
                       'session-composer-settings-permission-select',
                     ),
-                    currentMode: widget.permissionMode,
-                    inheritLabel: l10n.composerInheritPermissionMode,
-                    inheritedMode: snapshot.inheritedPermission,
+                    currentMode:
+                        widget.permissionMode ?? snapshot.hostDefaultPermission,
                     enabled:
                         widget.enabled &&
                         widget.onPermissionModeChanged != null,
@@ -627,7 +626,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
     bool hasRunnableModel,
     ProviderModelDto? model,
     ModelCapabilitiesDto capabilities,
-    PermissionMode inheritedPermission,
+    PermissionMode hostDefaultPermission,
   })
   _settingsSnapshot(WidgetRef settingsRef) {
     final providersState = settingsRef.watch(
@@ -667,7 +666,7 @@ class _SessionComposerBarState extends ConsumerState<SessionComposerBar> {
           null,
       model: model,
       capabilities: model?.capabilities ?? const ModelCapabilitiesDto(),
-      inheritedPermission: daemonDefault ?? PermissionMode.ask,
+      hostDefaultPermission: daemonDefault ?? PermissionMode.ask,
     );
   }
 

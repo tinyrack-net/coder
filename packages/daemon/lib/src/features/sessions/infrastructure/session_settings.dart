@@ -38,10 +38,10 @@ abstract interface class SessionSettingsPort {
     SessionSettingsPatchDto patch,
   );
 
-  /// Sets or clears the permission override observed at tool boundaries.
+  /// Sets the permission mode observed at tool boundaries.
   Future<SessionDto> setPermissionMode(
     String sessionId,
-    PermissionMode? permissionMode,
+    PermissionMode permissionMode,
   );
 
   /// Sets or clears the provider and model override used by future turns.
@@ -116,11 +116,8 @@ final class SessionSettingsService implements SessionSettingsPort {
         modelControls: targetControls,
       );
     }
-    if (patch.hasPermissionMode) {
-      session = await _sessions.updatePermissionMode(
-        sessionId,
-        patch.permissionMode,
-      );
+    if (patch.permissionMode case final mode?) {
+      session = await _sessions.updatePermissionMode(sessionId, mode);
     }
     return _emit(session);
   }
@@ -128,7 +125,7 @@ final class SessionSettingsService implements SessionSettingsPort {
   @override
   Future<SessionDto> setPermissionMode(
     String sessionId,
-    PermissionMode? permissionMode,
+    PermissionMode permissionMode,
   ) async {
     await _requireSession(sessionId);
     return _emit(

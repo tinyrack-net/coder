@@ -269,14 +269,15 @@ abstract class AttachmentDto with _$AttachmentDto {
 
 /// Filesystem placement backing an agent session.
 enum WorktreeKind {
-  /// The workspace's original checkout.
+  /// The workspace's original checkout, which Git calls the main worktree.
   checkout,
 
-  /// A Git worktree created and owned by Tinest.
-  managed,
-
-  /// A Git worktree discovered on disk but not owned by Tinest.
-  external,
+  /// A Git worktree beside [checkout], which Git calls a linked worktree.
+  ///
+  /// Whether Tinest created this one is [WorktreeDto.isTinestOwned], not a
+  /// second kind: the placement is identical either way, and only removal
+  /// cares who owns the directory.
+  linked,
 
   /// The sole checkout for a non-Git directory workspace.
   directory,
@@ -288,7 +289,7 @@ enum WorktreeKind {
 /// root: archiving one would hide the project while leaving its registration
 /// and directory in place, so both daemon and clients refuse it.
 bool isArchivableWorktreeKind(WorktreeKind kind) => switch (kind) {
-  WorktreeKind.managed || WorktreeKind.external => true,
+  WorktreeKind.linked => true,
   WorktreeKind.checkout || WorktreeKind.directory => false,
 };
 
@@ -1236,8 +1237,8 @@ abstract class SessionDto with _$SessionDto {
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
 
-    /// Overrides the permission mode of the agent definition; null inherits.
-    PermissionMode? permissionMode,
+    /// Permission mode this session runs under, pinned when it was created.
+    @Default(PermissionMode.ask) PermissionMode permissionMode,
 
     String? parentSessionId,
 

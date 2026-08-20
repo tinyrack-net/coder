@@ -250,13 +250,15 @@ final class NativePluginRevisionCache implements PluginRevisionCache {
       p.join(pluginRoot.path, bundle.revision.contentHash),
     );
     if (!revisionDirectory.existsSync()) {
-      final temporary = Directory(
-        p.join(
-          pluginRoot.path,
-          '.${bundle.revision.contentHash}.$pid.${_nextStagingId()}.tmp',
-        ),
+      // createTemp, not a name built from the process ID and a counter: the
+      // counter is top-level state, so every isolate of one process holds its
+      // own copy starting at zero, and two isolates staging the same revision
+      // picked the same path. They then wrote into one directory together and
+      // whichever renamed first pulled it out from under the other's writes.
+      // The OS is the only thing that can promise this name is unheld.
+      final temporary = await pluginRoot.createTemp(
+        '.${bundle.revision.contentHash}.',
       );
-      await temporary.create();
       var moved = false;
       try {
         for (final entry in bundle.assets.entries) {
@@ -1108,19 +1110,14 @@ void _requireWithin(String root, String candidate) {
   }
 }
 
-/// Monotonic staging counter.
-///
-/// Temporary names carry it beside the process ID so concurrent writers in
-/// one daemon never share a staging path; the process ID alone collided when
-/// two turns stored the same revision together.
-int _stagingSequence = 0;
-
-int _nextStagingId() => _stagingSequence += 1;
-
 Future<void> _writeAtomic(File target, String contents) async {
-  final temporary = File(
-    '${target.path}.$pid.${_nextStagingId()}.tmp',
+  // A name built from the process ID and a top-level counter is not unique
+  // across the isolates of one process: each holds its own counter starting at
+  // zero. Let the OS pick a name nothing else holds and write inside it.
+  final staging = await target.parent.createTemp(
+    '.${p.basename(target.path)}.',
   );
+  final temporary = File(p.join(staging.path, 'value'));
   try {
     await temporary.writeAsString(contents, flush: true);
     for (var attempt = 1; ; attempt += 1) {
@@ -1144,6 +1141,6 @@ Future<void> _writeAtomic(File target, String contents) async {
       }
     }
   } finally {
-    if (temporary.existsSync()) await temporary.delete();
+    if (staging.existsSync()) await staging.delete(recursive: true);
   }
 }

@@ -811,10 +811,10 @@ final class FakeTinestApi
   updatedSessionReasoningEfforts =
       <({String sessionId, String? reasoningEffort})>[];
 
-  /// Session permission mode overrides written through the fake.
-  final List<({String sessionId, PermissionMode? permissionMode})>
+  /// Session permission modes written through the fake.
+  final List<({String sessionId, PermissionMode permissionMode})>
   updatedSessionPermissionModes =
-      <({String sessionId, PermissionMode? permissionMode})>[];
+      <({String sessionId, PermissionMode permissionMode})>[];
 
   /// Session service tier selections written through the fake.
   final List<({String sessionId, String? serviceTier})>
@@ -1285,7 +1285,7 @@ final class FakeTinestApi
       name: branchName,
       path: '/worktrees/$branchName',
       branch: branchName,
-      kind: WorktreeKind.managed,
+      kind: WorktreeKind.linked,
       isTinestOwned: true,
       createdAt: _now,
     );
@@ -1377,7 +1377,9 @@ final class FakeTinestApi
       status: SessionStatus.idle,
       model: model,
       modelControls: modelControls,
-      permissionMode: permissionMode,
+      // Like the daemon, an omitted mode is resolved once, here, so the
+      // session owns a concrete mode from the start.
+      permissionMode: permissionMode ?? _defaultPermissionMode,
       createdAt: _now,
       updatedAt: _now,
     );
@@ -1421,13 +1423,13 @@ final class FakeTinestApi
       ));
       updated = updated.copyWith(modelControls: controls);
     }
-    if (patch.hasPermissionMode) {
+    if (patch.permissionMode case final mode?) {
       if (sessionPermissionSetError case final error?) throw error;
       updatedSessionPermissionModes.add((
         sessionId: sessionId,
-        permissionMode: patch.permissionMode,
+        permissionMode: mode,
       ));
-      updated = updated.copyWith(permissionMode: patch.permissionMode);
+      updated = updated.copyWith(permissionMode: mode);
     }
     _agents[index] = updated;
     emit(SessionUpdatedClientEvent(updated));

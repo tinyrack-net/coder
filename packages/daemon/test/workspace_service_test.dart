@@ -77,8 +77,11 @@ branch refs/heads/feature/settings
       expect(registered.workspace.kind, WorkspaceKind.git);
       expect(
         registered.worktrees.map((item) => item.kind),
-        <WorktreeKind>[WorktreeKind.checkout, WorktreeKind.external],
+        <WorktreeKind>[WorktreeKind.checkout, WorktreeKind.linked],
       );
+      // A checkout Git already had is linked like any other, and says it is
+      // not Tinest's to remove through the field rather than a second kind.
+      expect(registered.worktrees.last.isTinestOwned, isFalse);
 
       final managed = await service.createWorktree(
         const WorktreeCreateParamsDto(
@@ -89,7 +92,7 @@ branch refs/heads/feature/settings
           baseBranch: 'main',
         ),
       );
-      expect(managed.worktree.kind, WorktreeKind.managed);
+      expect(managed.worktree.kind, WorktreeKind.linked);
       expect(managed.worktree.isTinestOwned, isTrue);
       // The configured root is preserved verbatim and the branch names the
       // leaf; only the separator between them follows the host.
@@ -159,7 +162,7 @@ branch refs/heads/feature/settings
           .where((worktree) => worktree.branch == 'resolved-path')
           .toList(growable: false);
       expect(owned.map((worktree) => worktree.id), <String>['managed-1']);
-      expect(owned.single.kind, WorktreeKind.managed);
+      expect(owned.single.kind, WorktreeKind.linked);
       expect(owned.single.isTinestOwned, isTrue);
       expect(owned.single.head, 'created-head');
     },
@@ -268,7 +271,7 @@ branch refs/heads/feature/settings
           .toList(growable: false);
       expect(matching, hasLength(1));
       expect(matching.single.id, 'managed-1');
-      expect(matching.single.kind, WorktreeKind.managed);
+      expect(matching.single.kind, WorktreeKind.linked);
     },
     tags: const <String>[
       'feature_test__workspace_catalog__unit',
@@ -323,7 +326,7 @@ branch refs/heads/feature/settings
           .toList(growable: false);
       expect(matching, hasLength(1));
       expect(matching.single.id, 'managed-equivalent-path');
-      expect(matching.single.kind, WorktreeKind.managed);
+      expect(matching.single.kind, WorktreeKind.linked);
     },
     tags: const <String>[
       'feature_test__workspace_catalog__unit',
@@ -439,7 +442,8 @@ branch refs/heads/feature/settings
       );
 
       final external = registered.worktrees.last;
-      expect(external.kind, WorktreeKind.external);
+      expect(external.kind, WorktreeKind.linked);
+      expect(external.isTinestOwned, isFalse);
       final branchesBeforeArchive = Set<String>.of(git.localBranches);
       expect(
         (await service.previewArchive(external.id)).removesDirectory,

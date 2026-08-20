@@ -485,6 +485,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceWorktreeNew => '새 worktree';
 
   @override
+  String get workspaceWorktreeLocal => '로컬';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'Worktree 선택';
 
   @override
@@ -1444,9 +1447,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get composerSelectPermissionMode => '권한 선택';
-
-  @override
-  String get composerInheritPermissionMode => '에이전트 기본값';
 
   @override
   String get composerPermissionReadOnly => '읽기 전용';

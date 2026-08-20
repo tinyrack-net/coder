@@ -580,12 +580,15 @@ void main() {
         ),
       );
 
+      // A session created without a choice is pinned to the configured
+      // default rather than left to resolve it later.
+      expect(agent.permissionMode, PermissionMode.ask);
+
       // Model controls are persisted atomically with other session settings.
       expect(
         (await client.sessions.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasPermissionMode: true,
             permissionMode: PermissionMode.workspaceWrite,
           ),
         )).permissionMode,
@@ -603,12 +606,14 @@ void main() {
       )).singleWhere((session) => session.id == agent.id);
       expect(overridden.modelControls, isEmpty);
       expect(overridden.permissionMode, PermissionMode.workspaceWrite);
+      // A patch that carries no mode changes the rest and leaves the session
+      // running under the mode it already had.
       expect(
         (await client.sessions.updateSettings(
           agent.id,
-          const SessionSettingsPatchDto(hasPermissionMode: true),
+          const SessionSettingsPatchDto(hasModelControls: true),
         )).permissionMode,
-        isNull,
+        PermissionMode.workspaceWrite,
       );
 
       expect(
@@ -837,7 +842,6 @@ void main() {
       await client.sessions.updateSettings(
         parent.id,
         const SessionSettingsPatchDto(
-          hasPermissionMode: true,
           permissionMode: PermissionMode.readOnly,
         ),
       );
@@ -881,6 +885,9 @@ void main() {
       );
       expect(child.parentSessionId, parent.id);
       expect(child.rootSessionId, parent.id);
+      // A spawned agent is pinned to the configured default, and the parent's
+      // narrower mode is what it actually runs under.
+      expect(child.permissionMode, PermissionMode.ask);
       expect(child.taskName, 'review_task');
       expect(child.agentPath, '/root/review_task');
       expect(child.lifecycle, AgentLifecycle.completed);
@@ -1006,7 +1013,6 @@ void main() {
       await client.sessions.updateSettings(
         parent.id,
         const SessionSettingsPatchDto(
-          hasPermissionMode: true,
           permissionMode: PermissionMode.fullAccess,
         ),
       );
@@ -1304,7 +1310,6 @@ void main() {
       await client.sessions.updateSettings(
         session.id,
         const SessionSettingsPatchDto(
-          hasPermissionMode: true,
           permissionMode: PermissionMode.workspaceWrite,
         ),
       );
@@ -1562,7 +1567,6 @@ void main() {
         await client.sessions.updateSettings(
           session.id,
           const SessionSettingsPatchDto(
-            hasPermissionMode: true,
             permissionMode: PermissionMode.workspaceWrite,
           ),
         );
@@ -2253,7 +2257,6 @@ blocked/
       await client.sessions.updateSettings(
         session.id,
         const SessionSettingsPatchDto(
-          hasPermissionMode: true,
           permissionMode: PermissionMode.workspaceWrite,
         ),
       );
@@ -3005,7 +3008,7 @@ blocked/
       final archivedExternal = archiveCatalog.worktrees.singleWhere(
         (worktree) => p.equals(worktree.path, canonicalArchivedExternalPath),
       );
-      expect(archivedExternal.kind, WorktreeKind.external);
+      expect(archivedExternal.kind, WorktreeKind.linked);
       expect(
         (await client.previewWorktreeArchive(
           archivedExternal.id,

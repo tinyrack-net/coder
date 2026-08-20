@@ -976,6 +976,12 @@ abstract class AppLocalizations {
   /// **'New worktree'**
   String get workspaceWorktreeNew;
 
+  /// New-workspace worktree chip and menu entry that runs the session in the registered repository folder itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get workspaceWorktreeLocal;
+
   /// Tooltip of the new-workspace worktree chip.
   ///
   /// In en, this message translates to:
@@ -2733,12 +2739,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select permissions'**
   String get composerSelectPermissionMode;
-
-  /// Menu entry restoring the agent definition permission mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent default'**
-  String get composerInheritPermissionMode;
 
   /// Permission mode allowing read-only tools.
   ///

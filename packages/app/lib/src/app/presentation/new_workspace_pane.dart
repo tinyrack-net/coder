@@ -500,6 +500,7 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
   }) {
     final l10n = AppLocalizations.of(context);
     final narrow = MediaQuery.sizeOf(context).width < TRBreakpoints.small;
+    final local = project == null ? null : _localCheckout(project);
     final selectors = <Widget>[
       TRTooltip.controlled(
         message: l10n.workspaceProjectChipTooltip,
@@ -569,9 +570,11 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
             presentation: TinestSelectPresentation.resolve(context),
             value: worktree?.id,
             leading: const Icon(TinestIcons.branch),
+            // The chip names the target, not the checkout behind it: the only
+            // existing target this pane offers is the repository folder.
             placeholder: worktree == null
                 ? l10n.workspaceWorktreeNew
-                : (worktree.branch ?? worktree.name),
+                : l10n.workspaceWorktreeLocal,
             appearance: TRFieldAppearance.ghost,
             width: narrow ? double.infinity : null,
             enabled: project != null && !_submitting,
@@ -580,18 +583,24 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
               _worktreeTooltipOpen = false;
             }),
             onClose: () => setState(() => _worktreeSelectOpen = false),
+            // This pane starts something new, so it offers the two targets a
+            // new session can have: the repository folder itself, or a
+            // checkout created on submit. An existing worktree is picked from
+            // the sidebar tree, which lists every one of them.
             items: <TRSelectItem<String?>>[
+              if (local != null)
+                TRSelectItem<String?>(
+                  key: const ValueKey('new-workspace-worktree-local'),
+                  value: local.id,
+                  label: l10n.workspaceWorktreeLocal,
+                  leading: const Icon(TinestIcons.folder),
+                ),
               TRSelectItem<String?>(
                 key: const ValueKey('new-workspace-worktree-new'),
                 value: null,
                 label: l10n.workspaceWorktreeNew,
+                leading: const Icon(TinestIcons.branch),
               ),
-              for (final item in project?.worktrees ?? const <WorktreeDto>[])
-                TRSelectItem<String?>(
-                  key: ValueKey('new-workspace-worktree-${item.id}'),
-                  value: item.id,
-                  label: item.branch ?? item.name,
-                ),
             ],
             onValueChange: _selectWorktree,
           ),
@@ -647,9 +656,24 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
         children: selectors,
       );
     }
+    // A horizontal scroll view offers unbounded width, and a ghost chip is
+    // intrinsically sized, so without a cap a long branch name widens the chip
+    // instead of ellipsising inside it. The cap is what lets the Select's own
+    // overflow handling take effect; a short label still shrinks to fit.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(spacing: TRSpacing.small, children: selectors),
+      child: Row(
+        spacing: TRSpacing.small,
+        children: <Widget>[
+          for (final selector in selectors)
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: TRMeasurements.measureMd,
+              ),
+              child: selector,
+            ),
+        ],
+      ),
     );
   }
 
@@ -842,6 +866,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       prompt: submission.text,
       attachments: submission.attachments,
       model: draft.model,
+      modelControls: draft.modelControls,
+      permissionMode: draft.permissionMode,
     );
     if (!mounted) return;
     widget.onStarted(selection, session);
@@ -852,6 +878,15 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
           .read(gitBranchesProvider(project.hostId, project.workspace.id))
           .value ??
       const <GitBranchDto>[];
+
+  /// The repository folder itself, which the worktree chip calls Local.
+  ///
+  /// A Git project has exactly one, but the catalog is a daemon snapshot: a
+  /// project registered moments ago may not carry it yet, and the chip then
+  /// offers only a new checkout rather than an entry that resolves to nothing.
+  WorktreeDto? _localCheckout(NewWorkspaceProject project) => project.worktrees
+      .where((item) => item.kind == WorktreeKind.checkout)
+      .firstOrNull;
 
   WorktreeDto? _directoryCheckout(NewWorkspaceProject project) {
     final checkouts = project.worktrees

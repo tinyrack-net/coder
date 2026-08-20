@@ -487,6 +487,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceWorktreeNew => 'New worktree';
 
   @override
+  String get workspaceWorktreeLocal => 'Local';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'Select a worktree';
 
   @override
@@ -1481,9 +1484,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSelectPermissionMode => 'Select permissions';
-
-  @override
-  String get composerInheritPermissionMode => 'Agent default';
 
   @override
   String get composerPermissionReadOnly => 'Read only';

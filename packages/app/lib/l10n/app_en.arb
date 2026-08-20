@@ -584,6 +584,7 @@
   "workspaceProjectChipTooltip": "Select a project",
   "workspaceProjectAdd": "Add",
   "workspaceWorktreeNew": "New worktree",
+  "workspaceWorktreeLocal": "Local",
   "workspaceWorktreeChipTooltip": "Select a worktree",
   "workspaceBaseBranchChip": "Base branch",
   "workspaceBaseBranchChipTooltip": "Select a base branch",
@@ -598,6 +599,9 @@
   },
   "@workspaceWorktreeNew": {
     "description": "New-workspace worktree chip and menu entry that creates a fresh checkout."
+  },
+  "@workspaceWorktreeLocal": {
+    "description": "New-workspace worktree chip and menu entry that runs the session in the registered repository folder itself."
   },
   "@workspaceProjectAdd": {
     "description": "Menu entry that registers another project from the new-workspace chip."
@@ -1698,10 +1702,6 @@
   "composerSelectPermissionMode": "Select permissions",
   "@composerSelectPermissionMode": {
     "description": "Tooltip of the composer permission mode chip."
-  },
-  "composerInheritPermissionMode": "Agent default",
-  "@composerInheritPermissionMode": {
-    "description": "Menu entry restoring the agent definition permission mode."
   },
   "composerPermissionReadOnly": "Read only",
   "@composerPermissionReadOnly": {

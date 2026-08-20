@@ -9807,8 +9807,8 @@ as bool,
 mixin _$SessionDto {
 
  String get id; String get worktreeId; String get title; String get agentDefinitionId; SessionOrigin get origin; SessionStatus get status; DateTime get createdAt; DateTime get updatedAt; ModelSelectionDto? get model;/// Values explicitly selected for the resolved provider model.
- Map<String, ModelControlValueDto> get modelControls;/// Overrides the permission mode of the agent definition; null inherits.
- PermissionMode? get permissionMode; String? get parentSessionId;/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
+ Map<String, ModelControlValueDto> get modelControls;/// Permission mode this session runs under, pinned when it was created.
+ PermissionMode get permissionMode; String? get parentSessionId;/// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
  String? get taskName;/// Canonical collaboration path, e.g. `/root/task1/task_3`; null for
 /// manually created root sessions (implicitly `/root`).
  String? get agentPath;/// Root session of the collaboration tree; null for root sessions.
@@ -9849,7 +9849,7 @@ abstract mixin class $SessionDtoCopyWith<$Res>  {
   factory $SessionDtoCopyWith(SessionDto value, $Res Function(SessionDto) _then) = _$SessionDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
@@ -9866,7 +9866,7 @@ class _$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = null,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -9878,8 +9878,8 @@ as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // i
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
 as String?,agentPath: freezed == agentPath ? _self.agentPath : agentPath // ignore: cast_nullable_to_non_nullable
 as String?,rootSessionId: freezed == rootSessionId ? _self.rootSessionId : rootSessionId // ignore: cast_nullable_to_non_nullable
@@ -9986,7 +9986,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
@@ -10007,7 +10007,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto():
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
@@ -10027,7 +10027,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String worktreeId,  String title,  String agentDefinitionId,  SessionOrigin origin,  SessionStatus status,  DateTime createdAt,  DateTime updatedAt,  ModelSelectionDto? model,  Map<String, ModelControlValueDto> modelControls,  PermissionMode permissionMode,  String? parentSessionId,  String? taskName,  String? agentPath,  String? rootSessionId,  AgentLifecycle? lifecycle,  String? activeTurnId,  String? lastError,  int contextTokens,  int? contextWindow,  double? totalCostUsd)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionDto() when $default != null:
 return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_that.origin,_that.status,_that.createdAt,_that.updatedAt,_that.model,_that.modelControls,_that.permissionMode,_that.parentSessionId,_that.taskName,_that.agentPath,_that.rootSessionId,_that.lifecycle,_that.activeTurnId,_that.lastError,_that.contextTokens,_that.contextWindow,_that.totalCostUsd);case _:
@@ -10042,7 +10042,7 @@ return $default(_that.id,_that.worktreeId,_that.title,_that.agentDefinitionId,_t
 @JsonSerializable()
 
 class _SessionDto implements SessionDto {
-  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
+  const _SessionDto({required this.id, required this.worktreeId, required this.title, required this.agentDefinitionId, required this.origin, required this.status, required this.createdAt, required this.updatedAt, this.model, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode = PermissionMode.ask, this.parentSessionId, this.taskName, this.agentPath, this.rootSessionId, this.lifecycle, this.activeTurnId, this.lastError, this.contextTokens = 0, this.contextWindow, this.totalCostUsd}): _modelControls = modelControls;
   factory _SessionDto.fromJson(Map<String, dynamic> json) => _$SessionDtoFromJson(json);
 
 @override final  String id;
@@ -10063,8 +10063,8 @@ class _SessionDto implements SessionDto {
   return EqualUnmodifiableMapView(_modelControls);
 }
 
-/// Overrides the permission mode of the agent definition; null inherits.
-@override final  PermissionMode? permissionMode;
+/// Permission mode this session runs under, pinned when it was created.
+@override@JsonKey() final  PermissionMode permissionMode;
 @override final  String? parentSessionId;
 /// Leaf task name of a spawned subagent, e.g. `task_3`; null for roots.
 @override final  String? taskName;
@@ -10117,7 +10117,7 @@ abstract mixin class _$SessionDtoCopyWith<$Res> implements $SessionDtoCopyWith<$
   factory _$SessionDtoCopyWith(_SessionDto value, $Res Function(_SessionDto) _then) = __$SessionDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
+ String id, String worktreeId, String title, String agentDefinitionId, SessionOrigin origin, SessionStatus status, DateTime createdAt, DateTime updatedAt, ModelSelectionDto? model, Map<String, ModelControlValueDto> modelControls, PermissionMode permissionMode, String? parentSessionId, String? taskName, String? agentPath, String? rootSessionId, AgentLifecycle? lifecycle, String? activeTurnId, String? lastError, int contextTokens, int? contextWindow, double? totalCostUsd
 });
 
 
@@ -10134,7 +10134,7 @@ class __$SessionDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = freezed,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? worktreeId = null,Object? title = null,Object? agentDefinitionId = null,Object? origin = null,Object? status = null,Object? createdAt = null,Object? updatedAt = null,Object? model = freezed,Object? modelControls = null,Object? permissionMode = null,Object? parentSessionId = freezed,Object? taskName = freezed,Object? agentPath = freezed,Object? rootSessionId = freezed,Object? lifecycle = freezed,Object? activeTurnId = freezed,Object? lastError = freezed,Object? contextTokens = null,Object? contextWindow = freezed,Object? totalCostUsd = freezed,}) {
   return _then(_SessionDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,worktreeId: null == worktreeId ? _self.worktreeId : worktreeId // ignore: cast_nullable_to_non_nullable
@@ -10146,8 +10146,8 @@ as SessionStatus,createdAt: null == createdAt ? _self.createdAt : createdAt // i
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
-as PermissionMode?,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: null == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as PermissionMode,parentSessionId: freezed == parentSessionId ? _self.parentSessionId : parentSessionId // ignore: cast_nullable_to_non_nullable
 as String?,taskName: freezed == taskName ? _self.taskName : taskName // ignore: cast_nullable_to_non_nullable
 as String?,agentPath: freezed == agentPath ? _self.agentPath : agentPath // ignore: cast_nullable_to_non_nullable
 as String?,rootSessionId: freezed == rootSessionId ? _self.rootSessionId : rootSessionId // ignore: cast_nullable_to_non_nullable

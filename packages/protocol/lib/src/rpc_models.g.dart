@@ -229,7 +229,6 @@ _SessionSettingsPatchDto _$SessionSettingsPatchDtoFromJson(
         ),
       ) ??
       const <String, ModelControlValueDto>{},
-  hasPermissionMode: json['hasPermissionMode'] as bool? ?? false,
   permissionMode: $enumDecodeNullable(
     _$PermissionModeEnumMap,
     json['permissionMode'],
@@ -243,7 +242,6 @@ Map<String, dynamic> _$SessionSettingsPatchDtoToJson(
   'model': instance.model,
   'hasModelControls': instance.hasModelControls,
   'modelControls': instance.modelControls,
-  'hasPermissionMode': instance.hasPermissionMode,
   'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
 };
 

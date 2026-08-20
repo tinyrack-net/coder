@@ -102,19 +102,16 @@ class SessionsController extends _$SessionsController {
     ),
   );
 
-  /// Sets or clears the permission mode override of one session.
+  /// Replaces the permission mode of one session.
   Future<SessionDto> setPermissionMode(
     String sessionId,
-    PermissionMode? permissionMode,
+    PermissionMode permissionMode,
   ) => _apply(
     sessionId,
     (session) => session.copyWith(permissionMode: permissionMode),
     (api) => api.sessions.updateSettings(
       sessionId,
-      SessionSettingsPatchDto(
-        hasPermissionMode: true,
-        permissionMode: permissionMode,
-      ),
+      SessionSettingsPatchDto(permissionMode: permissionMode),
     ),
   );
 

@@ -395,7 +395,7 @@ void main() {
       expect(changes, 0);
 
       await writeSkill(skillsRoot, 'watched');
-      await relevantChange.future.timeout(const Duration(seconds: 10));
+      await _awaitChange(relevantChange.future, skillsRoot);
       expect(changes, greaterThan(0));
     },
     tags: const <String>['feature_test__skill_catalog__unit'],

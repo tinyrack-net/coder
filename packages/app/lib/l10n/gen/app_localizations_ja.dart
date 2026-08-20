@@ -485,6 +485,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceWorktreeNew => '新しいワークツリー';
 
   @override
+  String get workspaceWorktreeLocal => 'ローカル';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'ワークツリーを選択';
 
   @override
@@ -1440,9 +1443,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get composerSelectPermissionMode => '権限を選択';
-
-  @override
-  String get composerInheritPermissionMode => 'エージェントの既定値';
 
   @override
   String get composerPermissionReadOnly => '読み取り専用';

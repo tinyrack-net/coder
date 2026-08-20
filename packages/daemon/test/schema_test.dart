@@ -174,7 +174,11 @@ void main() {
       final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 19);
+      // 21 retires the `managed` and `external` worktree kinds for `linked`.
+      // The column stays text, so drift sees no structural change and only the
+      // bump makes an older database refuse to open instead of failing to
+      // decode a row.
+      expect(database.schemaVersion, 21);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),
@@ -191,6 +195,12 @@ void main() {
       // A null value means this session follows its Agent selection and then
       // the daemon default; only an explicit chat override stores a model ID.
       expect(modelColumn.read<int>('notnull'), 0);
+      // Permissions work the other way round: a session is pinned to one mode
+      // when it is created, so the column can never be null.
+      final permissionColumn = sessionColumns.singleWhere(
+        (row) => row.read<String>('name') == 'permission_mode',
+      );
+      expect(permissionColumn.read<int>('notnull'), 1);
     },
   );
 }

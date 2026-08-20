@@ -162,7 +162,7 @@ void _registerWorkspaceAppFlows() {
         name: 'feature/settings',
         path: '/worktrees/feature-settings',
         branch: 'feature/settings',
-        kind: WorktreeKind.external,
+        kind: WorktreeKind.linked,
         isTinestOwned: false,
         createdAt: now,
       );
@@ -230,7 +230,7 @@ void _registerWorkspaceAppFlows() {
         name: 'feature/settings',
         path: '/worktrees/feature-settings',
         branch: 'feature/settings',
-        kind: WorktreeKind.managed,
+        kind: WorktreeKind.linked,
         isTinestOwned: true,
         createdAt: now,
       );

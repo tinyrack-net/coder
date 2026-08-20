@@ -1,6 +1,7 @@
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/permissions/application/permission_settings_controller.dart';
+import 'package:app/src/shared/presentation/permission_picker.dart';
 import 'package:app/src/shared/presentation/settings_layout.dart';
 import 'package:app/src/shared/presentation/toast_messenger.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,20 @@ import '../../support/fake_tinest_api.dart';
 import '../../support/localization.dart';
 
 void main() {
+  test(
+    'every permission mode is offered exactly once, asking first',
+    () {
+      expect(permissionModeOrder.first, PermissionMode.ask);
+      expect(
+        permissionModeOrder.toSet(),
+        PermissionMode.values.toSet(),
+        reason: 'A new mode must be given a place in the offered order.',
+      );
+      expect(permissionModeOrder, hasLength(PermissionMode.values.length));
+    },
+    tags: const <String>['feature_test__permission_settings__unit'],
+  );
+
   testWidgets(
     'describes every mode and persists full access without confirmation',
     (tester) async {
@@ -58,6 +73,34 @@ void main() {
         find.textContaining('신뢰할 수 있는 작업에서만 사용하세요'),
         findsOneWidget,
       );
+
+      // Nothing defers the decision to the agent, and the mode that asks
+      // before every change is the one at the top.
+      expect(
+        find.byKey(const ValueKey<String>('permission-option-inherit')),
+        findsNothing,
+      );
+      final tops = <PermissionMode, double>{
+        for (final mode in permissionModeOrder)
+          mode: tester
+              .getTopLeft(
+                find.byKey(
+                  ValueKey<String>('permission-option-${mode.name}'),
+                ),
+              )
+              .dy,
+      };
+      expect(
+        tops.keys.toList(growable: false),
+        permissionModeOrder,
+      );
+      for (var index = 1; index < permissionModeOrder.length; index += 1) {
+        expect(
+          tops[permissionModeOrder[index]],
+          greaterThan(tops[permissionModeOrder[index - 1]]!),
+          reason: 'Options render in the order they are offered.',
+        );
+      }
 
       final fullAccess = find.byKey(
         const ValueKey<String>('permission-option-fullAccess'),

@@ -57,7 +57,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
     required this._skills,
     required this._attachments,
     required this._execHostFor,
-    required this._settings,
     required this._interactions,
     required this._plugins,
     required this._pluginSessionControls,
@@ -92,7 +91,6 @@ class SessionTurnCoordinator implements SessionTurnPort {
   final HostPrimitiveRegistryFactory _hostPrimitiveRegistryFactory;
   final SkillCatalogService _skills;
   final AttachmentService _attachments;
-  final SettingsRepository _settings;
   final SessionInteractionCoordinator _interactions;
   final PluginManagementService _plugins;
   final PluginSessionControlService<ConversationAttachment>
@@ -678,22 +676,15 @@ class SessionTurnCoordinator implements SessionTurnPort {
   ) async {
     final session = await _sessions.getById(sessionId);
     if (session == null) return PermissionMode.readOnly;
-    final storedDefault = await _settings.getValue('permission.defaultMode');
-    final defaultMode = storedDefault == null || storedDefault.isEmpty
-        ? PermissionMode.ask
-        : PermissionMode.values.byName(storedDefault);
-    // A session override may narrow an ancestor's permissions but never widen
+    // A session mode may narrow an ancestor's permissions but never widen
     // them, so no agent in a nested tree can escalate past any ancestor.
-    var mode = session.permissionMode ?? defaultMode;
+    var mode = session.permissionMode;
     var parentId = session.parentSessionId;
     final visited = <String>{session.id};
     while (parentId != null && visited.add(parentId)) {
       final parent = await _sessions.getById(parentId);
       if (parent == null) return PermissionMode.readOnly;
-      mode = _moreRestrictive(
-        parent.permissionMode ?? defaultMode,
-        mode,
-      );
+      mode = _moreRestrictive(parent.permissionMode, mode);
       parentId = parent.parentSessionId;
     }
     return mode;
