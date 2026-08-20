@@ -153,6 +153,7 @@
   "workspaceProjectChipTooltip": "プロジェクトを選択",
   "workspaceProjectAdd": "追加",
   "workspaceWorktreeNew": "新しいワークツリー",
+  "workspaceWorktreeLocal": "ローカル",
   "workspaceWorktreeChipTooltip": "ワークツリーを選択",
   "workspaceBaseBranchChip": "ベースブランチ",
   "workspaceBaseBranchChipTooltip": "ベースブランチを選択",

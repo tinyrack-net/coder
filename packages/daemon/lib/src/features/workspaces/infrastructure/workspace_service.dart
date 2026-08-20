@@ -403,7 +403,7 @@ final class WorkspaceOperations {
           path: checkoutPath,
           branch: snapshot?.branch ?? branch,
           head: snapshot?.head,
-          kind: WorktreeKind.managed,
+          kind: WorktreeKind.linked,
           isTinestOwned: true,
           createdAt: _clock.nowUtc(),
         ),
@@ -716,7 +716,7 @@ final class WorkspaceOperations {
           head: snapshot.head,
           kind:
               existing?.kind ??
-              (isCheckout ? WorktreeKind.checkout : WorktreeKind.external),
+              (isCheckout ? WorktreeKind.checkout : WorktreeKind.linked),
           isTinestOwned: existing?.isTinestOwned ?? false,
           createdAt: existing?.createdAt ?? _clock.nowUtc(),
         ),

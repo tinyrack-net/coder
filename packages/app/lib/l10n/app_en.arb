@@ -621,6 +621,7 @@
   "workspaceProjectChipTooltip": "Select a project",
   "workspaceProjectAdd": "Add",
   "workspaceWorktreeNew": "New worktree",
+  "workspaceWorktreeLocal": "Local",
   "workspaceWorktreeChipTooltip": "Select a worktree",
   "workspaceBaseBranchChip": "Base branch",
   "workspaceBaseBranchChipTooltip": "Select a base branch",
@@ -635,6 +636,9 @@
   },
   "@workspaceWorktreeNew": {
     "description": "New-workspace worktree chip and menu entry that creates a fresh checkout."
+  },
+  "@workspaceWorktreeLocal": {
+    "description": "New-workspace worktree chip and menu entry that runs the session in the registered repository folder itself."
   },
   "@workspaceProjectAdd": {
     "description": "Menu entry that registers another project from the new-workspace chip."

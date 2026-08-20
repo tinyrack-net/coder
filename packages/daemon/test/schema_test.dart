@@ -174,7 +174,11 @@ void main() {
       final database = TinestDatabase.forTesting(NativeDatabase.memory());
       addTearDown(database.close);
 
-      expect(database.schemaVersion, 20);
+      // 21 retires the `managed` and `external` worktree kinds for `linked`.
+      // The column stays text, so drift sees no structural change and only the
+      // bump makes an older database refuse to open instead of failing to
+      // decode a row.
+      expect(database.schemaVersion, 21);
       expect(database.migration, isNotNull);
       expect(
         await database.customSelect('PRAGMA foreign_keys').getSingle(),

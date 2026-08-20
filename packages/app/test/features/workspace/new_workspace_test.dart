@@ -9,6 +9,7 @@ import 'package:app/src/features/workspace/application/workspace_controller.dart
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
 import 'package:client/client.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -362,7 +363,68 @@ void main() {
   );
 
   testWidgets(
-    'an existing worktree starts a session without creating one',
+    'the worktree chip offers only the local checkout and a new worktree',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[
+          checkout,
+          checkout.copyWith(
+            id: 'topic',
+            name: 'topic',
+            branch: 'topic',
+            path: '/state/worktrees/topic',
+            kind: WorktreeKind.linked,
+            isTinestOwned: true,
+          ),
+          checkout.copyWith(
+            id: 'foreign',
+            name: 'foreign',
+            branch: 'foreign',
+            path: '/elsewhere/foreign',
+            kind: WorktreeKind.linked,
+          ),
+        ],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+
+      await tester.tap(find.byKey(const ValueKey('new-workspace-worktree')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree-local')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('new-workspace-worktree-new')),
+        findsOneWidget,
+      );
+      // Existing checkouts are the sidebar tree's job. Offering them here too
+      // made the chip grow with the repository and buried the two targets a
+      // new session actually has. They keep their sidebar rows, which is why
+      // the assertion is on the chip's own options rather than on the text.
+      final options = find.descendant(
+        of: find.byType(TRSelect<String?>),
+        matching: find.byType(MenuItemButton),
+      );
+      expect(options, findsNWidgets(2));
+      for (final id in const <String>['topic', 'foreign']) {
+        expect(
+          find.byKey(ValueKey('new-workspace-worktree-$id')),
+          findsNothing,
+          reason: id,
+        );
+      }
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'the local checkout starts a session without creating one',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -377,10 +439,12 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('new-workspace-worktree')));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(const ValueKey('new-workspace-worktree-checkout')),
+        find.byKey(const ValueKey('new-workspace-worktree-local')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('main'), findsWidgets);
+      // The chip names the target rather than the branch behind it, so it
+      // reads Local in the active locale instead of `main`.
+      expect(find.text(testL10n.workspaceWorktreeLocal), findsWidgets);
       await _selectModel(tester);
 
       await tester.enterText(
@@ -579,6 +643,118 @@ void main() {
   );
 
   testWidgets(
+    'a long branch name is capped and ellipsised in the chip and the layer',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      const long =
+          'origin/release/2026-08-20-a-branch-name-far-wider-than-any-chip';
+      final api =
+          FakeTinestApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+            )
+            ..branches = <GitBranchDto>[
+              const GitBranchDto(
+                name: long,
+                current: false,
+                checkedOut: false,
+                isRemote: true,
+                isDefault: true,
+              ),
+              const GitBranchDto(name: 'main', current: true, checkedOut: true),
+            ];
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+
+      // Unbounded, the chip would simply grow to the branch name and scroll.
+      final chip = find.byKey(const ValueKey('new-workspace-branch'));
+      expect(
+        tester.getSize(chip).width,
+        lessThanOrEqualTo(TRMeasurements.measureMd),
+      );
+      final triggerText = find.descendant(of: chip, matching: find.text(long));
+      expect(
+        tester.widget<Text>(triggerText).overflow,
+        TextOverflow.ellipsis,
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(triggerText).size.width,
+        lessThanOrEqualTo(TRMeasurements.measureMd),
+      );
+
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+
+      // The popup is fixed at one overlay width, so an option label that is
+      // allowed to wrap overflows the row rather than widening the layer.
+      final option = find.byKey(const ValueKey('new-workspace-branch-$long'));
+      expect(option, findsOneWidget);
+      final optionLabel = tester.renderObject<RenderParagraph>(
+        find.descendant(of: option, matching: find.text(long)),
+      );
+      expect(optionLabel.didExceedMaxLines, isTrue);
+      expect(
+        optionLabel.size.width,
+        lessThanOrEqualTo(TRMeasurements.overlayWidthSm),
+      );
+      expect(tester.takeException(), isNull);
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
+    'the base branch layer stops at the shared cap and scrolls past it',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api =
+          FakeTinestApi(
+              workspaces: <WorkspaceDto>[workspace],
+              worktrees: <WorktreeDto>[checkout],
+            )
+            ..branches = <GitBranchDto>[
+              for (var index = 0; index < 40; index += 1)
+                GitBranchDto(
+                  name: 'feature/topic-$index',
+                  current: index == 0,
+                  checkedOut: index == 0,
+                ),
+            ];
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+
+      await tester.tap(find.byKey(const ValueKey('new-workspace-branch')));
+      await tester.pumpAndSettle();
+
+      final surface = find.byWidgetPredicate(
+        (widget) => widget.runtimeType.toString() == 'TRLayerSurface',
+      );
+      expect(surface, findsOneWidget);
+      // Without a cap the popup grows to the viewport; 40 branches is well
+      // past the shared limit, so this is the assertion that would regress.
+      expect(
+        tester.getSize(surface).height,
+        lessThanOrEqualTo(TRMeasurements.measureXl),
+      );
+      final options = tester.state<ScrollableState>(
+        find.descendant(
+          of: surface,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Scrollable &&
+                widget.axisDirection == AxisDirection.down,
+          ),
+        ),
+      );
+      expect(options.position.maxScrollExtent, greaterThan(0));
+    },
+    tags: const <String>['feature_test__worktree_lifecycle__widget'],
+  );
+
+  testWidgets(
     'the base branch defaults to the latest remote and lists both scopes',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1100, 900));
@@ -700,7 +876,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TRDrawer), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('new-workspace-worktree-checkout')),
+        find.byKey(const ValueKey('new-workspace-worktree-local')),
         findsOneWidget,
       );
     },

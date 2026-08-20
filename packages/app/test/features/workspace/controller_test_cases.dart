@@ -760,7 +760,7 @@ void _registerWorkspaceControllerTests() {
         name: 'External',
         path: '/workspace/external',
         branch: 'external',
-        kind: WorktreeKind.external,
+        kind: WorktreeKind.linked,
         isTinestOwned: false,
         createdAt: now,
       );
