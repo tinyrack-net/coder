@@ -20,19 +20,15 @@ class TinestChoiceRow<T> extends StatelessWidget {
     required this.semanticLabel,
     required this.items,
     required this.value,
+    required this.searchPlaceholder,
+    required this.noResultsText,
     this.onChanged,
     this.placeholder,
     this.subtitle,
     this.wrapsSubtitle = false,
-    this.searchPlaceholder,
-    this.noResultsText,
     this.selectKey,
     super.key,
-  }) : assert(
-         (searchPlaceholder == null) == (noResultsText == null),
-         'A filterable row needs a placeholder and a no-results line, or '
-         'neither.',
-       );
+  });
 
   /// Visible label.
   final Widget title;
@@ -61,15 +57,14 @@ class TinestChoiceRow<T> extends StatelessWidget {
   /// Called with the next choice, or null when the row is read-only.
   final ValueChanged<T?>? onChanged;
 
-  /// Placeholder for the filter field, or null to offer no filter.
+  /// Placeholder for the filter field.
   ///
-  /// Filtering a handful of choices is noise, and on a phone it raises a
-  /// keyboard over the sheet the reader just opened. A row with enough
-  /// choices to hunt through supplies this and [noResultsText] together.
-  final String? searchPlaceholder;
+  /// Every selection control in Tinest filters, however short its list, so a
+  /// reader learns the behaviour once rather than per control.
+  final String searchPlaceholder;
 
   /// Shown when the filter matches nothing.
-  final String? noResultsText;
+  final String noResultsText;
 
   /// Identifies the select for tests and for the layer it opens.
   final Key? selectKey;
@@ -96,12 +91,9 @@ class TinestChoiceRow<T> extends StatelessWidget {
         // No width: the trigger then shrinks to the value it is showing and
         // leaves the rest of the line to the label.
         presentation: TinestSelectPresentation.resolve(context),
-        searchable: searchPlaceholder != null,
-        // Inert while the row offers no filter. The upstream field is
-        // non-null, and the constructor already refuses one string without
-        // the other, so an empty one here can never reach a reader.
-        searchPlaceholder: searchPlaceholder ?? '',
-        noResultsText: noResultsText ?? '',
+        searchable: true,
+        searchPlaceholder: searchPlaceholder,
+        noResultsText: noResultsText,
         placeholder: placeholder,
         value: value,
         enabled: onChanged != null,

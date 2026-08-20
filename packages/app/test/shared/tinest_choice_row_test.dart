@@ -131,6 +131,8 @@ Widget _host({
   final choice = TinestChoiceRow<String>(
     title: const TRText.inherit('테마'),
     semanticLabel: '테마',
+    searchPlaceholder: '검색',
+    noResultsText: '결과 없음',
     value: value,
     onChanged: onChanged,
     items: <TRSelectItem<String>>[

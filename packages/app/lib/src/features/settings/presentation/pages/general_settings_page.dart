@@ -160,6 +160,8 @@ class _PresentationSection extends ConsumerWidget {
           selectKey: const ValueKey<String>('general-settings-theme-mode'),
           title: TRText.inherit(l10n.generalAppearanceLabel),
           semanticLabel: l10n.generalAppearanceLabel,
+          searchPlaceholder: l10n.selectSearchPlaceholder,
+          noResultsText: l10n.selectNoResults,
           value: settings?.themeMode ?? AppThemeMode.system,
           items: <TRSelectItem<AppThemeMode>>[
             for (final mode in AppThemeMode.values)
@@ -192,8 +194,6 @@ class _PresentationSection extends ConsumerWidget {
           semanticLabel: l10n.generalLanguageLabel,
           value: settings?.localeTag,
           placeholder: l10n.generalLanguageSystem,
-          // Filterable, unlike the three themes: a reader who cannot read the
-          // current language finds their own faster by typing it.
           searchPlaceholder: l10n.selectSearchPlaceholder,
           noResultsText: l10n.selectNoResults,
           items: <TRSelectItem<String?>>[
