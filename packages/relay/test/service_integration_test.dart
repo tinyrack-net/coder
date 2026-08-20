@@ -101,7 +101,12 @@ void main() {
       );
       addTearDown(daemon.close);
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // The daemon's upgrade and its registry attach are a separate round trip
+      // from this connect, so waiting a duration here only works while the
+      // host is fast enough: a loaded Windows runner lands the client first,
+      // `attachClient` rejects it for having no daemon, and the routed frame
+      // never arrives. Await the attach itself instead.
+      await _awaitDaemonAttached(service, 'idle-daemon');
 
       final client = await WebSocket.connect(
         _webSocketUri(base, role: 'client', serverId: 'idle-daemon').toString(),
@@ -184,6 +189,20 @@ void main() {
     },
   );
 }
+
+/// Waits until [serverId]'s daemon control socket has reached the registry.
+///
+/// The timeout is a failure deadline rather than a settling delay: it turns a
+/// daemon that never attaches into a named failure instead of a hung suite.
+Future<void> _awaitDaemonAttached(RelayService service, String serverId) =>
+    Future.doWhile(() async {
+      if (service.registry.hasDaemon(serverId)) return false;
+      await Future<void>.delayed(Duration.zero);
+      return true;
+    }).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => fail('Daemon $serverId never attached to the registry.'),
+    );
 
 Uri _webSocketUri(
   Uri base, {
