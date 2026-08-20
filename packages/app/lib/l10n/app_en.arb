@@ -2024,6 +2024,23 @@
       }
     }
   },
+  "subagentTrackAwaitingApproval": "{count} to approve",
+  "@subagentTrackAwaitingApproval": {
+    "description": "Blocked-count badge on the collapsed subagent track header.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subagentApprovalSection": "Subagent approvals",
+  "@subagentApprovalSection": {
+    "description": "Heading above subagent approvals shown on the parent session."
+  },
+  "subagentTabAwaitingApproval": "A subagent is waiting for approval",
+  "@subagentTabAwaitingApproval": {
+    "description": "Semantic label of the session tab flag for a blocked subagent."
+  },
   "subagentStatusRunning": "Running",
   "@subagentStatusRunning": {
     "description": "Semantics label of a running subagent."

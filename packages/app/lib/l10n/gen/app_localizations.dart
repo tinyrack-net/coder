@@ -3118,6 +3118,24 @@ abstract class AppLocalizations {
   /// **'{count} running'**
   String subagentTrackRunning(int count);
 
+  /// Blocked-count badge on the collapsed subagent track header.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} to approve'**
+  String subagentTrackAwaitingApproval(int count);
+
+  /// Heading above subagent approvals shown on the parent session.
+  ///
+  /// In en, this message translates to:
+  /// **'Subagent approvals'**
+  String get subagentApprovalSection;
+
+  /// Semantic label of the session tab flag for a blocked subagent.
+  ///
+  /// In en, this message translates to:
+  /// **'A subagent is waiting for approval'**
+  String get subagentTabAwaitingApproval;
+
   /// Semantics label of a running subagent.
   ///
   /// In en, this message translates to:
