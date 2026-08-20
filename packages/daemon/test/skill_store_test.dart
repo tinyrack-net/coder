@@ -395,7 +395,7 @@ void main() {
       expect(changes, 0);
 
       await writeSkill(skillsRoot, 'watched');
-      await _awaitChange(relevantChange.future, skillsRoot);
+      await _awaitChange(relevantChange.future, skillsRoot, files: files);
       expect(changes, greaterThan(0));
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
@@ -602,6 +602,7 @@ void main() {
 Future<void> _awaitChange(
   Future<void> changed,
   Directory skillsRoot, {
+  NativeSkillFiles? files,
   Duration budget = const Duration(seconds: 10),
 }) async {
   try {
@@ -626,7 +627,8 @@ Future<void> _awaitChange(
     throw TestFailure(
       'No skill catalog change within ${budget.inSeconds}s. '
       'skillsRoot=${skillsRoot.path} contents=$root'
-      '${limits.isEmpty ? '' : ' inotify=$limits'}',
+      '${limits.isEmpty ? '' : ' inotify=$limits'}'
+      '${files == null ? '' : ' watching=${files.watchedPaths}'}',
     );
   }
 }

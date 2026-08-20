@@ -161,6 +161,19 @@ final class NativeSkillFiles implements SkillFiles {
   @override
   Stream<void> get changes => _changes.stream;
 
+  /// Paths this adapter currently holds a native watch on.
+  ///
+  /// A change that never arrives is indistinguishable from a write that never
+  /// landed unless the test can say where the watcher actually was. This has
+  /// failed only on loaded CI hosts, where the filesystem and the kernel
+  /// budgets both looked healthy, so the watcher's own position is the missing
+  /// fact.
+  ///
+  /// Read by tests only; nothing in the daemon needs it.
+  Set<String> get watchedPaths => Set<String>.unmodifiable(
+    _watchSubscriptions.keys,
+  );
+
   String _skillDirectory(String id) => p.join(_directory.path, id);
 
   @override
