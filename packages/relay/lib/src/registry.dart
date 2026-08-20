@@ -96,6 +96,13 @@ final class RelayRegistry {
   final Map<String, _DaemonEntry> _daemons = <String, _DaemonEntry>{};
   int _nextConnectionId = 0;
 
+  /// Whether a daemon control socket is currently attached for [serverId].
+  ///
+  /// [attachClient] rejects a client whose daemon has not attached yet, and
+  /// the two WebSocket upgrades are independent round trips, so a caller that
+  /// opens both has to observe this rather than assume an ordering.
+  bool hasDaemon(String serverId) => _daemons.containsKey(serverId);
+
   /// Registers the sole daemon control socket for [serverId].
   void attachDaemon({required String serverId, required RelayPeer peer}) {
     if (serverId.isEmpty) {
