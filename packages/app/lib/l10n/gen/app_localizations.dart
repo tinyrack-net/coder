@@ -2782,12 +2782,6 @@ abstract class AppLocalizations {
   /// **'Select permissions'**
   String get composerSelectPermissionMode;
 
-  /// Menu entry restoring the agent definition permission mode.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent default'**
-  String get composerInheritPermissionMode;
-
   /// Permission mode allowing read-only tools.
   ///
   /// In en, this message translates to:

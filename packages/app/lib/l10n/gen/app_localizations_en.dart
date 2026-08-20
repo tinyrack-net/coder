@@ -1512,9 +1512,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get composerSelectPermissionMode => 'Select permissions';
 
   @override
-  String get composerInheritPermissionMode => 'Agent default';
-
-  @override
   String get composerPermissionReadOnly => 'Read only';
 
   @override

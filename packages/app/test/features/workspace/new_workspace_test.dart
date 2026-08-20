@@ -39,6 +39,43 @@ final _homeCheckout = WorktreeDto(
   createdAt: DateTime.utc(2026, 8, 3),
 );
 
+/// Two primary agents, so the composer can switch between them.
+const _tinest = AgentDefinitionDto(
+  version: 5,
+  id: 'tinest',
+  name: 'Tinest',
+  description: 'General-purpose coding agent',
+  mode: AgentMode.primary,
+  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: <String>[],
+  toolIds: <String>['tinest.files/read_file'],
+  pluginSettings: <String, Map<String, dynamic>>{},
+  callableAgentIds: <String>[],
+  prompt: 'Code carefully.',
+  contentHash: 'tinest-hash',
+  sourcePath: '/config/agents/tinest.md',
+  isBuiltIn: true,
+);
+
+const _planner = AgentDefinitionDto(
+  version: 5,
+  id: 'planner',
+  name: 'Planner',
+  description: 'Plans before it writes',
+  mode: AgentMode.primary,
+  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: <String>[],
+  toolIds: <String>['tinest.files/read_file'],
+  pluginSettings: <String, Map<String, dynamic>>{},
+  callableAgentIds: <String>[],
+  prompt: 'Plan first.',
+  contentHash: 'planner-hash',
+  sourcePath: '/config/agents/planner.md',
+  isBuiltIn: true,
+);
+
 void main() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
@@ -234,6 +271,93 @@ void main() {
     tags: const <String>[
       'feature_test__worktree_lifecycle__widget',
       'feature_test__session_lifecycle__widget',
+    ],
+  );
+
+  testWidgets(
+    'the chosen permissions reach the session and survive an agent change',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: <AgentDefinitionDto>[_tinest, _planner],
+      );
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+      await _selectModel(tester);
+
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-permission')),
+      );
+      await tester.pumpAndSettle();
+      // Nothing hands the decision back to the agent: every option is one of
+      // the four concrete modes, and the one that asks first leads.
+      expect(
+        find.byKey(const ValueKey('permission-option-inherit')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('permission-option-fullAccess')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('session-composer-agent')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('session-composer-agent-planner')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      final created = api.createdSessions.single;
+      expect(created.agentDefinitionId, 'planner');
+      expect(created.permissionMode, PermissionMode.fullAccess);
+    },
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__permission_settings__widget',
+    ],
+  );
+
+  testWidgets(
+    'a session started without a choice takes the host default',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+      );
+      await api.setDefaultPermissionMode(PermissionMode.workspaceWrite);
+      final router = await _pump(tester, api);
+      addTearDown(router.dispose);
+      await _selectProject(tester, 'Tinest');
+      await _selectModel(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('session-composer-input')),
+        'Fix the parser',
+      );
+      await tester.tap(find.byKey(const ValueKey('session-composer-send')));
+      await tester.pumpAndSettle();
+
+      expect(
+        api.createdSessions.single.permissionMode,
+        PermissionMode.workspaceWrite,
+      );
+    },
+    tags: const <String>[
+      'feature_test__session_lifecycle__widget',
+      'feature_test__permission_settings__widget',
     ],
   );
 

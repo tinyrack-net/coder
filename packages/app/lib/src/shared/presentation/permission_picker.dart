@@ -4,14 +4,25 @@ import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
 import 'package:tinyrack_ui/tinyrack_ui.dart';
 
+/// Permission modes in the order they are offered.
+///
+/// The mode that asks before every mutation leads, because it is what a
+/// session starts under unless the daemon default says otherwise. The enum
+/// itself stays in restrictiveness order, which is what narrowing a nested
+/// agent's permissions reads from.
+const List<PermissionMode> permissionModeOrder = <PermissionMode>[
+  PermissionMode.ask,
+  PermissionMode.readOnly,
+  PermissionMode.workspaceWrite,
+  PermissionMode.fullAccess,
+];
+
 /// A descriptive permission Select shared by composer and settings surfaces.
 class PermissionSelect extends StatelessWidget {
-  /// Creates a permission Select, including an optional inherited value.
+  /// Creates a permission Select over the four concrete modes.
   const PermissionSelect({
     required this.currentMode,
     required this.onValueChange,
-    this.inheritLabel,
-    this.inheritedMode,
     this.enabled = true,
     this.leading,
     this.appearance = TRFieldAppearance.solid,
@@ -20,17 +31,11 @@ class PermissionSelect extends StatelessWidget {
     super.key,
   });
 
-  /// Selected explicit mode, or null when inheritance is selected.
-  final PermissionMode? currentMode;
+  /// Mode the surface currently runs under.
+  final PermissionMode currentMode;
 
-  /// Optional inherited option label.
-  final String? inheritLabel;
-
-  /// Effective inherited mode shown as supporting option text.
-  final PermissionMode? inheritedMode;
-
-  /// Called with the explicit mode or null for inheritance.
-  final ValueChanged<PermissionMode?>? onValueChange;
+  /// Called with the newly chosen mode.
+  final ValueChanged<PermissionMode>? onValueChange;
 
   /// Whether the Select accepts input.
   final bool enabled;
@@ -50,8 +55,8 @@ class PermissionSelect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final inheritLabel = this.inheritLabel;
-    return TRSelect<PermissionMode?>.controlled(
+    final handler = onValueChange;
+    return TRSelect<PermissionMode>.controlled(
       value: currentMode,
       enabled: enabled,
       leading: leading,
@@ -62,25 +67,22 @@ class PermissionSelect extends StatelessWidget {
       searchPlaceholder: l10n.selectSearchPlaceholder,
       noResultsText: l10n.selectNoResults,
       presentation: TinestSelectPresentation.resolve(context),
-      items: <TRSelectItem<PermissionMode?>>[
-        if (inheritLabel != null)
-          TRSelectItem<PermissionMode?>(
-            key: const ValueKey<String>('permission-option-inherit'),
-            value: null,
-            label: inheritLabel,
-            description: inheritedMode == null
-                ? null
-                : permissionModeLabel(l10n, inheritedMode!),
-          ),
-        for (final mode in PermissionMode.values)
-          TRSelectItem<PermissionMode?>(
+      items: <TRSelectItem<PermissionMode>>[
+        for (final mode in permissionModeOrder)
+          TRSelectItem<PermissionMode>(
             key: ValueKey<String>('permission-option-${mode.name}'),
             value: mode,
             label: permissionModeLabel(l10n, mode),
             description: permissionModeDescription(l10n, mode),
           ),
       ],
-      onValueChange: onValueChange,
+      // The Select reports a nullable value because clearing is possible in
+      // general; every item here holds a concrete mode, so it never does.
+      onValueChange: handler == null
+          ? null
+          : (mode) {
+              if (mode != null) handler(mode);
+            },
     );
   }
 }

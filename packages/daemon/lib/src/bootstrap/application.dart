@@ -7,6 +7,7 @@ import 'package:agent/agent.dart';
 import 'package:crypto/crypto.dart';
 import 'package:daemon/src/bootstrap/config.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
+import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/features/agents/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/attachments/infrastructure/attachment_service.dart';
 import 'package:daemon/src/features/attachments/transport/http_transport.dart';
@@ -658,7 +659,6 @@ abstract final class DaemonApplication {
         attachments: attachments,
         execHostFor: (id) => SessionExecHost(execSessions, id),
         skills: skills,
-        settings: database.settingsDao,
         interactions: sessionInteractions,
         mcpFor: (workspaceRoot) =>
             SessionMcpHostPrimitiveGateway(mcp, workspaceRoot),
@@ -672,6 +672,7 @@ abstract final class DaemonApplication {
         pluginNetwork: pluginNetwork,
         pluginSecrets: pluginSecrets,
       );
+      final permissionDefaults = PermissionDefaults(database.settingsDao);
       multiAgent = MultiAgentService(
         sessions: database.sessionDao,
         mailbox: database.agentMailboxDao,
@@ -685,6 +686,7 @@ abstract final class DaemonApplication {
             throw CollaborationException(error.message);
           }
         },
+        defaultPermission: permissionDefaults,
         events: events.add,
         clock: effectiveClock,
         ids: effectiveIds,
@@ -873,7 +875,7 @@ abstract final class DaemonApplication {
           ),
           ...agentRpcBindings(
             definitions: agentDefinitions,
-            settings: database.settingsDao,
+            permissions: permissionDefaults,
           ),
           ...pluginRpcBindings(
             plugins: pluginManagement,
@@ -908,6 +910,7 @@ abstract final class DaemonApplication {
             interactions: sessionInteractions,
             agentDefinitions: agentDefinitions,
             models: models,
+            permissions: permissionDefaults,
             clock: effectiveClock,
           ),
           ...terminalRpcBindings(

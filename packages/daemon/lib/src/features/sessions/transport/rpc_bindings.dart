@@ -1,5 +1,6 @@
 import 'package:agent/agent.dart';
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
+import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/features/models/infrastructure/model_settings_service.dart';
 import 'package:daemon/src/features/providers/infrastructure/provider_service.dart';
 import 'package:daemon/src/features/sessions/infrastructure/agent_service.dart';
@@ -18,6 +19,7 @@ List<RpcBindingDescriptor> sessionRpcBindings({
   required SessionInteractionPort interactions,
   required AgentDefinitionService agentDefinitions,
   required ProviderModelResolver models,
+  required PermissionDefaults permissions,
   required Clock clock,
 }) => <RpcBindingDescriptor>[
   RpcBinding(sessionsListProcedure, (request, _) async {
@@ -65,7 +67,10 @@ List<RpcBindingDescriptor> sessionRpcBindings({
             status: SessionStatus.idle,
             model: request.model,
             modelControls: request.modelControls,
-            permissionMode: request.permissionMode,
+            // The configured default is read once, here, so the session keeps
+            // running under the mode it was created with even after the
+            // default changes.
+            permissionMode: request.permissionMode ?? await permissions.read(),
             createdAt: now,
             updatedAt: now,
           ),

@@ -1469,9 +1469,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get composerSelectPermissionMode => '権限を選択';
 
   @override
-  String get composerInheritPermissionMode => 'エージェントの既定値';
-
-  @override
   String get composerPermissionReadOnly => '読み取り専用';
 
   @override

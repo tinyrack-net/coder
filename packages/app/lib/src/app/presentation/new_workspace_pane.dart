@@ -842,6 +842,8 @@ class _NewWorkspacePaneState extends ConsumerState<NewWorkspacePane> {
       prompt: submission.text,
       attachments: submission.attachments,
       model: draft.model,
+      modelControls: draft.modelControls,
+      permissionMode: draft.permissionMode,
     );
     if (!mounted) return;
     widget.onStarted(selection, session);

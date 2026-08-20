@@ -1236,8 +1236,8 @@ abstract class SessionDto with _$SessionDto {
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
 
-    /// Overrides the permission mode of the agent definition; null inherits.
-    PermissionMode? permissionMode,
+    /// Permission mode this session runs under, pinned when it was created.
+    @Default(PermissionMode.ask) PermissionMode permissionMode,
 
     String? parentSessionId,
 

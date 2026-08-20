@@ -18,8 +18,22 @@ void main() {
     expect(decoded.model, isNull);
     expect(decoded.hasModelControls, isTrue);
     expect(decoded.modelControls, isEmpty);
-    expect(decoded.hasPermissionMode, isFalse);
-    expect(decoded.toJson(), isNot(contains('mode')));
+    // A session can no longer clear its permission mode back to an inherited
+    // value, so an omitted mode is the only way to leave it unchanged and it
+    // needs no has-flag to tell "clear" apart from "untouched".
+    expect(decoded.permissionMode, isNull);
+    expect(
+      SessionSettingsPatchDto.fromJson(
+        jsonDecode(
+          jsonEncode(
+            const SessionSettingsPatchDto(
+              permissionMode: PermissionMode.workspaceWrite,
+            ).toJson(),
+          ),
+        ) as Map<String, dynamic>,
+      ).permissionMode,
+      PermissionMode.workspaceWrite,
+    );
     expect(sessionsUpdateSettingsProcedure.name, 'sessions.updateSettings');
   });
 }

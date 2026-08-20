@@ -265,7 +265,7 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
             ),
           ),
         ),
-        permissionMode: Value<String?>(session.permissionMode?.name),
+        permissionMode: Value<String>(session.permissionMode.name),
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       ),
@@ -325,11 +325,11 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
   @override
   Future<SessionDto> updatePermissionMode(
     String id,
-    PermissionMode? permissionMode,
+    PermissionMode permissionMode,
   ) async {
     await (update(sessions)..where((row) => row.id.equals(id))).write(
       SessionsCompanion(
-        permissionMode: Value<String?>(permissionMode?.name),
+        permissionMode: Value<String>(permissionMode.name),
         updatedAt: Value<DateTime>(attachedDatabase.clock.nowUtc()),
       ),
     );
@@ -525,10 +525,12 @@ class SessionDao extends DatabaseAccessor<TinestDatabase>
       contextTokens: row.contextTokensUsed,
       contextWindow: row.contextWindowTokens,
       totalCostUsd: row.hasCompleteCost ? row.totalCostUsd : null,
-      // A row written by a newer build must still render as a session.
-      permissionMode: PermissionMode.values
-          .where((value) => value.name == row.permissionMode)
-          .firstOrNull,
+      // A row written by a newer build must still render as a session, and
+      // the mode it falls back to still asks before every mutation.
+      permissionMode: PermissionMode.values.firstWhere(
+        (value) => value.name == row.permissionMode,
+        orElse: () => PermissionMode.ask,
+      ),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

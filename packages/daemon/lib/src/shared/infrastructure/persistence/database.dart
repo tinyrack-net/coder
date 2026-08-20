@@ -113,8 +113,8 @@ class Sessions extends Table {
   TextColumn get modelControlsJson =>
       text().withDefault(const Constant('{}'))();
 
-  /// Permission mode for this session; null inherits the agent definition.
-  TextColumn get permissionMode => text().nullable()();
+  /// Permission mode this session was pinned to when it was created.
+  TextColumn get permissionMode => text().withDefault(const Constant('ask'))();
 
   /// Live context window; `new_context` bumps it to hide older history.
   IntColumn get currentContextEpoch =>
@@ -511,7 +511,7 @@ class TinestDatabase extends _$TinestDatabase {
   final String databasePath;
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

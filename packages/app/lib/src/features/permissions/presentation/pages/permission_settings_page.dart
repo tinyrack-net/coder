@@ -62,9 +62,7 @@ class _PermissionSettingsPageState
                       'permission-settings-change',
                     ),
                     currentMode: settings.defaultMode,
-                    onValueChange: (mode) {
-                      if (mode != null) unawaited(_set(context, mode));
-                    },
+                    onValueChange: (mode) => unawaited(_set(context, mode)),
                   ),
                 ),
               ],
