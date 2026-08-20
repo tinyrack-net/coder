@@ -791,6 +791,11 @@ final _viewports = <_Viewport>[
 final _scenarios = <_Scenario>[
   _Scenario(id: 'settings-home', location: const SettingsHomeRoute().location),
   _Scenario(
+    id: 'workspaces',
+    location: const WorkspaceHomeRoute().location,
+    preparation: _CatalogPreparation.empty,
+  ),
+  _Scenario(
     id: 'settings-home-no-daemon',
     location: const SettingsHomeRoute().location,
     preparation: _CatalogPreparation.noDaemon,

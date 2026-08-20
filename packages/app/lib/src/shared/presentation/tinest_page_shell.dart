@@ -49,18 +49,27 @@ class TinestPageHeaderBar extends StatelessWidget {
   /// the bar has room for both at every window size. Only the title may take
   /// a second line, which is what an enlarged text scale needs.
   ///
-  /// The bar rests at [TRMeasurements.headerHeight], the height [TRPaneHeader]
-  /// stands at on a wider window. Sized by its contents it was a line of text
-  /// tall with no actions and a control tall with them, so a page that carried
-  /// none — standalone General or Advanced settings — drew a visibly shorter
-  /// bar than every destination beside it in the same stack. The strut sets
-  /// the resting height without capping it, so a wrapped title still grows the
-  /// bar rather than being clipped.
+  /// [TRAppShellHeader] owns the resting height: [TRMeasurements.headerHeight],
+  /// and one [TRSpacing.large] step more under comfortable density, which is
+  /// what [TRPaneHeader] stands at either way. The bar used to strut that
+  /// height itself, because sized by its contents it was a line of text tall
+  /// with no actions and a control tall with them, so a page that carried none
+  /// — standalone General or Advanced settings — drew a visibly shorter bar
+  /// than every destination beside it in the same stack. A strut of one fixed
+  /// height could not take the density step, and a comfortable control is
+  /// exactly the standard resting height, so an action filled the bar edge to
+  /// edge and its tap target met the content below it.
+  ///
+  /// The inline padding is asymmetric because the strut contributed a leading
+  /// [Row] gap on top of it. Keeping the start inset at [TRSpacing.large]
+  /// leaves the identity on the same rail it sat on before.
   static TRAppShellHeader bar(TinestPageHeader header) => TRAppShellHeader(
     borderBottom: true,
-    padding: const EdgeInsets.symmetric(horizontal: TRSpacing.small),
+    padding: const EdgeInsetsDirectional.only(
+      start: TRSpacing.large,
+      end: TRSpacing.small,
+    ),
     children: [
-      const SizedBox(height: TRMeasurements.headerHeight),
       ?header.leading,
       Expanded(child: _TinestPageHeaderTitle(title: header.title)),
       if (header.actions.isNotEmpty)

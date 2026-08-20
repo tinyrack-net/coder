@@ -180,6 +180,103 @@ void main() {
     );
   });
 
+  testWidgets('a comfortable bar rests a step taller than a standard one', (
+    tester,
+  ) async {
+    const viewport = Size(390, 844);
+    await tester.binding.setSurfaceSize(viewport);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    // A phone runs comfortable, where a default control is exactly the standard
+    // resting height. The bar has to take the same step [TRPaneHeader] does or
+    // the control fills it outright.
+    await tester.pumpWidget(
+      _host(
+        padding: EdgeInsets.zero,
+        density: TRUiDensity.comfortable,
+        body: const SizedBox.expand(),
+      ),
+    );
+    expect(
+      tester.getSize(find.byType(TRAppShellHeader)).height,
+      TRMeasurements.headerHeight +
+          TRSpacing.large +
+          TRControlMetrics.borderWidth,
+    );
+
+    await tester.pumpWidget(
+      _host(
+        padding: EdgeInsets.zero,
+        density: TRUiDensity.comfortable,
+        actions: <TRIconButton>[
+          TRIconButton(
+            label: 'Copy path',
+            onPressed: () {},
+            icon: const Icon(TinestIcons.copy),
+          ),
+        ],
+        body: const SizedBox.expand(),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(TRAppShellHeader)).height,
+      TRMeasurements.headerHeight +
+          TRSpacing.large +
+          TRControlMetrics.borderWidth,
+    );
+  });
+
+  testWidgets('a comfortable header action clears the bar it sits in', (
+    tester,
+  ) async {
+    const viewport = Size(390, 844);
+    const actionKey = ValueKey<String>('header-action');
+    await tester.binding.setSurfaceSize(viewport);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      _host(
+        padding: EdgeInsets.zero,
+        density: TRUiDensity.comfortable,
+        actions: <TRIconButton>[
+          TRIconButton(
+            key: actionKey,
+            label: 'Settings',
+            onPressed: () {},
+            icon: const Icon(TinestIcons.settings),
+          ),
+        ],
+        body: const SizedBox.expand(),
+      ),
+    );
+
+    // The reported defect: the gear filled the bar top to bottom, so its tap
+    // target met the border and the first control of the page below it.
+    final action = tester.getRect(find.byKey(actionKey));
+    final bar = tester.getRect(find.byType(TRAppShellHeader));
+    expect(action.height, TRControlMetrics.heightOf(TRUiSize.xl));
+    expect(action.top - bar.top, greaterThanOrEqualTo(TRSpacing.small));
+    expect(
+      bar.bottom - TRControlMetrics.borderWidth - action.bottom,
+      greaterThanOrEqualTo(TRSpacing.small),
+    );
+  });
+
+  testWidgets('the header identity keeps its leading rail', (tester) async {
+    // The bar used to strut its own height with a zero-width [SizedBox], which
+    // also bought a leading [Row] gap on top of the inline padding. The padding
+    // carries that inset now, so the identity must not slide toward the edge.
+    await tester.pumpWidget(
+      _host(padding: EdgeInsets.zero, body: const SizedBox.expand()),
+    );
+
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('title'))).dx,
+      TRSpacing.large,
+    );
+  });
+
   testWidgets('the page header title is announced as a heading', (
     tester,
   ) async {
@@ -259,6 +356,7 @@ Widget _host({
   TextScaler textScaler = TextScaler.noScaling,
   Widget title = const Text('Title', key: ValueKey<String>('title')),
   List<TRIconButton> actions = const <TRIconButton>[],
+  TRUiDensity density = TRUiDensity.standard,
 }) => MaterialApp(
   locale: testLocale,
   localizationsDelegates: testLocalizationsDelegates,
@@ -272,7 +370,9 @@ Widget _host({
       viewInsets: viewInsets,
       textScaler: textScaler,
     ),
-    child: child!,
+    // Stated rather than derived from the width so a height assertion reads
+    // one density, not whatever `TinestUiDensity` makes of the viewport.
+    child: TRUiDensityScope(density: density, child: child!),
   ),
   home: TinestPageShell(
     appBar: TinestPageHeader(
