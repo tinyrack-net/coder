@@ -13,6 +13,7 @@ final class ProviderCatalogMetadata {
     required this.capabilities,
     this.pricing,
     this.limits,
+    this.reasoning = false,
   });
 
   /// Provider-local model identifier.
@@ -29,6 +30,12 @@ final class ProviderCatalogMetadata {
 
   /// Optional token limits.
   final ModelLimitsDto? limits;
+
+  /// Whether the public catalog reports this model as reasoning.
+  ///
+  /// The catalog knows which models reason; it does not always describe the
+  /// levels, so the vendor supplies those.
+  final bool reasoning;
 }
 
 /// Fetches model-only metadata for an explicit catalog refresh.
@@ -147,6 +154,7 @@ final class ModelsDevCatalogMetadataSource
           ),
           pricing: _pricing(model['cost']),
           limits: _limits(model['limit']),
+          reasoning: reasoning,
         ),
       );
     }
@@ -317,6 +325,7 @@ final class BuiltInProviderCatalog {
                   ),
                   pricing: model.pricing,
                   limits: model.limits,
+                  reasoning: model.reasoning,
                 ),
             ],
           ),
@@ -324,6 +333,32 @@ final class BuiltInProviderCatalog {
     _refreshedAt = _clock.nowUtc();
     _refreshError = null;
     return catalog();
+  }
+
+  /// Returns merged bundled and explicitly refreshed model metadata.
+  /// Combines the controls a vendor declares with the ones the catalog knows.
+  ///
+  /// The public catalog reports the choices for one named model, which the
+  /// vendor's own list can only approximate across a whole family, so a
+  /// refreshed control replaces the declared one of the same id. Controls the
+  /// catalog does not describe at all, such as expedited processing, are kept:
+  /// the catalog being silent about them is not the catalog denying them.
+  static List<ModelControlDescriptorDto> _mergedControls({
+    required List<ModelControlDescriptorDto> bundled,
+    required List<ModelControlDescriptorDto> refreshed,
+  }) {
+    final described = <String, ModelControlDescriptorDto>{
+      for (final control in refreshed)
+        if (control.choices.isNotEmpty) control.id: control,
+    };
+    final declared = bundled.map((control) => control.id).toSet();
+    return <ModelControlDescriptorDto>[
+      for (final control in bundled) described[control.id] ?? control,
+      // The vendor describes a family; the catalog describes one model. Either
+      // side being silent about a control is not that side denying it.
+      for (final control in described.values)
+        if (!declared.contains(control.id)) control,
+    ];
   }
 
   /// Returns merged bundled and explicitly refreshed model metadata.
@@ -381,13 +416,48 @@ final class BuiltInProviderCatalog {
                     bundled.capabilities.fileInput == CapabilitySupport.unknown
                     ? model.capabilities.fileInput
                     : bundled.capabilities.fileInput,
-                controls: bundled.capabilities.controls,
+                controls: _mergedControls(
+                  bundled: bundled.capabilities.controls,
+                  refreshed: model.capabilities.controls,
+                ),
               ),
               pricing: model.pricing ?? bundled.pricing,
               limits: model.limits ?? bundled.limits,
+              reasoning: model.reasoning || bundled.reasoning,
             );
     }
-    return result.values.toList(growable: false);
+    // The catalog names models the vendor does not bundle. It reports which of
+    // them reason but not always at which levels, so the vendor's own ladder
+    // stands in; without this the model arrives with no effort control at all.
+    final ladder = _registry
+        .find(definitionId)
+        ?.models
+        .expand((model) => model.capabilities.controls)
+        .where((control) => control.id == AgentModelControlIds.reasoningEffort)
+        .firstOrNull;
+    if (ladder == null) return result.values.toList(growable: false);
+    return <ProviderCatalogMetadata>[
+      for (final model in result.values)
+        if (!model.reasoning ||
+            model.capabilities.controls.any(
+              (control) => control.id == AgentModelControlIds.reasoningEffort,
+            ))
+          model
+        else
+          ProviderCatalogMetadata(
+            id: model.id,
+            label: model.label,
+            capabilities: model.capabilities.copyWith(
+              controls: <ModelControlDescriptorDto>[
+                ...model.capabilities.controls,
+                protocolControlDescriptor(ladder),
+              ],
+            ),
+            pricing: model.pricing,
+            limits: model.limits,
+            reasoning: model.reasoning,
+          ),
+    ];
   }
 
   /// Whether metadata for a model came from the explicit refresh.
