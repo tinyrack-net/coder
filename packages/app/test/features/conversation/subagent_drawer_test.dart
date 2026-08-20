@@ -5,6 +5,7 @@ import 'package:app/src/app/router/app_router.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
@@ -79,14 +80,124 @@ void main() {
     sessionId: sessionId,
   ).location;
 
+  // The drawer is drawn by the collaboration plugin now, so this layer stops
+  // at the contract between them: given the document the plugin sends, the app
+  // frames it on the composer, resolves the status words it states, opens the
+  // session an item names, and asks for a new document when the tree moves.
+  // Whether the plugin counts the tree correctly is pinned in the daemon.
+  const drawerAgent = AgentDefinitionDto(
+    version: 5,
+    id: 'tinest',
+    name: 'Tinest',
+    description: 'General-purpose coding agent',
+    mode: AgentMode.primary,
+    model: AgentModelSelectionDto(source: AgentModelSource.session),
+    driverId: 'tinest.standard/driver',
+    extensionIds: <String>['tinest.collaboration'],
+    toolIds: <String>[],
+    pluginSettings: <String, Map<String, dynamic>>{},
+    callableAgentIds: <String>[],
+    prompt: 'Code carefully.',
+    contentHash: 'tinest-hash',
+    sourcePath: '/config/agents/tinest.md',
+    isBuiltIn: true,
+  );
+  const drawerPlugin = PluginDescriptorDto(
+    apiMajor: 5,
+    id: 'tinest.collaboration',
+    version: '1.0.0',
+    name: 'Tinest Collaboration',
+    entrypoint: 'main.lua',
+    source: PluginSource.builtIn,
+    sourcePath: '/built-in/tinest.collaboration',
+    requestedCapabilities: <String>['collaboration.list', 'ui.publish'],
+    contributions: <PluginContributionDto>[
+      PluginContributionDto(
+        pluginId: 'tinest.collaboration',
+        id: 'agent_status',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['composerDrawer'],
+          'dependsOn': <String>['session_tree'],
+        },
+      ),
+    ],
+  );
+  const drawerKey = 'tinest.collaboration/agent_status/tinest';
+
+  /// Builds the document the collaboration plugin sends for one tree.
+  PluginUiDocumentDto drawerDocument({
+    required String title,
+    required List<Map<String, dynamic>> items,
+    List<Map<String, dynamic>> summary = const <Map<String, dynamic>>[],
+  }) => PluginUiDocumentDto(
+    id: 'drawer-$title-${summary.length}-${items.length}',
+    pluginId: 'tinest.collaboration',
+    revisionHash: 'revision',
+    slot: PluginUiSlot.composerDrawer,
+    root: <String, dynamic>{
+      'type': 'disclosure',
+      'title': title,
+      'summary': summary,
+      'children': <Map<String, dynamic>>[
+        <String, dynamic>{'type': 'tree', 'children': items},
+      ],
+    },
+  );
+
+  Map<String, dynamic> drawerItem({
+    required String label,
+    required String description,
+    required String status,
+    required String sessionId,
+    List<Map<String, dynamic>> children = const <Map<String, dynamic>>[],
+  }) => <String, dynamic>{
+    'type': 'tree_item',
+    'label': label,
+    'description': description,
+    'status': status,
+    'onActivate': <String, dynamic>{
+      'type': 'open_session',
+      'sessionId': sessionId,
+    },
+    'children': children,
+  };
+
+  Map<String, dynamic> drawerBadge(String text, String variant) =>
+      <String, dynamic>{'type': 'badge', 'text': text, 'variant': variant};
+
   testWidgets(
-    'the track lists nested subagents and opens a read-only tab',
+    'the drawer lists nested subagents and opens a read-only tab',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[drawerAgent],
+        plugins: const <PluginDescriptorDto>[drawerPlugin],
+        pluginUiDocuments: <String, PluginUiDocumentDto>{
+          drawerKey: drawerDocument(
+            title: '서브 에이전트 2개',
+            summary: <Map<String, dynamic>>[drawerBadge('1개 실행 중', 'info')],
+            items: <Map<String, dynamic>>[
+              drawerItem(
+                label: 'explore_auth',
+                description: '/root/explore_auth',
+                status: 'running',
+                sessionId: 'child-a',
+                children: <Map<String, dynamic>>[
+                  drawerItem(
+                    label: 'read_docs',
+                    description: '/root/explore_auth/read_docs',
+                    status: 'done',
+                    sessionId: 'grandchild',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        },
         agents: <SessionDto>[
           root('main-session'),
           subagent(
@@ -109,18 +220,15 @@ void main() {
         tester,
         api,
         initialLocation: sessionLocation('main-session'),
+        settle: false,
       );
       addTearDown(router.dispose);
+      await tester.pump(const Duration(seconds: 1));
 
-      // Collapsed by default: the header summarizes, rows stay hidden.
-      final track = find.byKey(const ValueKey('subagent-track'));
-      expect(track, findsOneWidget);
+      // Collapsed by default: the summary speaks, the rows stay hidden.
       expect(find.text('서브 에이전트 2개'), findsOneWidget);
       expect(find.text('1개 실행 중'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('subagent-row-child-a')),
-        findsNothing,
-      );
+      expect(find.text('/root/explore_auth'), findsNothing);
 
       // Expanding lists every descendant, nested ones included. A running
       // row keeps a spinner animating, so settle-style pumps would never
@@ -128,14 +236,6 @@ void main() {
       await tester.tap(find.text('서브 에이전트 2개'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(
-        find.byKey(const ValueKey('subagent-row-child-a')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('subagent-row-grandchild')),
-        findsOneWidget,
-      );
       expect(find.text('explore_auth'), findsOneWidget);
       expect(find.text('/root/explore_auth/read_docs'), findsOneWidget);
 
@@ -145,7 +245,7 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('Session main-session'), findsWidgets);
-      // The expanded track behind the menu still shows the row text, so the
+      // The expanded drawer behind the menu still shows the row text, so the
       // absence check is scoped to menu items.
       expect(
         find.widgetWithText(TRMenuItem, 'read_docs'),
@@ -160,8 +260,9 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      // Tapping a row opens the subagent as a tab on its session route.
-      await tester.tap(find.byKey(const ValueKey('subagent-row-child-a')));
+      // Activating a row asks the host to open that session, and the host
+      // agrees because it is a descendant of the session the drawer sits on.
+      await tester.tap(find.text('explore_auth'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(currentLocation(router), sessionLocation('child-a'));
@@ -200,7 +301,10 @@ void main() {
       // and the pane offers no composer and no subagent track.
       expect(find.text('explore_auth'), findsWidgets);
       expect(find.byType(SessionComposer), findsNothing);
-      expect(find.byKey(const ValueKey('subagent-track')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('agent-plugin-ui-composerDrawer')),
+        findsNothing,
+      );
       expect(find.byType(TRSpinner), findsWidgets);
 
       // Read-only means the user cannot talk to the subagent, not that the
@@ -264,9 +368,25 @@ void main() {
         taskName: 'explore_auth',
         agentPath: '/root/explore_auth',
       );
+      final documents = <String, PluginUiDocumentDto>{
+        drawerKey: drawerDocument(
+          title: '서브 에이전트 1개',
+          items: <Map<String, dynamic>>[
+            drawerItem(
+              label: 'explore_auth',
+              description: '/root/explore_auth',
+              status: 'running',
+              sessionId: 'child-a',
+            ),
+          ],
+        ),
+      };
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[drawerAgent],
+        plugins: const <PluginDescriptorDto>[drawerPlugin],
+        pluginUiDocuments: documents,
         agents: <SessionDto>[root('main-session'), child],
       );
       final router = await pumpRoutedApp(
@@ -276,23 +396,44 @@ void main() {
         settle: false,
       );
       addTearDown(router.dispose);
+      await tester.pump(const Duration(seconds: 1));
 
       await tester.tap(find.text('서브 에이전트 1개'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      final row = find.byKey(const ValueKey('subagent-row-child-a'));
+      final row = find.ancestor(
+        of: find.text('explore_auth'),
+        matching: find.byType(TinestListRow),
+      );
       expect(
         find.descendant(of: row, matching: find.byType(TRSpinner)),
         findsOneWidget,
       );
 
       // A child blocked on an approval is not making progress; rendering it
-      // as a plain spinner hides the one row the user has to act on.
+      // as a plain spinner hides the one row the user has to act on. The
+      // plugin declared the session tree, so the change alone is what makes
+      // the host ask for a new document.
+      api.pluginUiDocuments[drawerKey] = drawerDocument(
+        title: '서브 에이전트 1개',
+        items: <Map<String, dynamic>>[
+          drawerItem(
+            label: 'explore_auth',
+            description: '/root/explore_auth',
+            status: 'blocked',
+            sessionId: 'child-a',
+          ),
+        ],
+      );
       api.emit(
         SessionUpdatedClientEvent(
           child.copyWith(status: SessionStatus.waitingForApproval),
         ),
       );
+      // The drawer answers over the RPC, so the new document lands a frame
+      // after the tree moved rather than in the same one.
+      await tester.pump();
+      await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(
         find.descendant(of: row, matching: find.byType(TRSpinner)),
@@ -309,7 +450,7 @@ void main() {
   );
 
   testWidgets(
-    'the collapsed track flags descendants that need the user',
+    'the collapsed drawer flags descendants that need the user',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -319,9 +460,26 @@ void main() {
         taskName: 'explore_auth',
         agentPath: '/root/explore_auth',
       );
+      final documents = <String, PluginUiDocumentDto>{
+        drawerKey: drawerDocument(
+          title: '서브 에이전트 1개',
+          summary: <Map<String, dynamic>>[drawerBadge('1개 실행 중', 'info')],
+          items: <Map<String, dynamic>>[
+            drawerItem(
+              label: 'explore_auth',
+              description: '/root/explore_auth',
+              status: 'running',
+              sessionId: 'child-a',
+            ),
+          ],
+        ),
+      };
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
+        agentDefinitions: const <AgentDefinitionDto>[drawerAgent],
+        plugins: const <PluginDescriptorDto>[drawerPlugin],
+        pluginUiDocuments: documents,
         agents: <SessionDto>[root('main-session'), child],
       );
       final router = await pumpRoutedApp(
@@ -331,21 +489,39 @@ void main() {
         settle: false,
       );
       addTearDown(router.dispose);
+      await tester.pump(const Duration(seconds: 1));
 
       // A working child is summarized as running and nothing else.
       expect(find.text('1개 실행 중'), findsOneWidget);
-      expect(find.text('1개 승인 필요'), findsNothing);
+      expect(find.text('1개 승인 대기'), findsNothing);
 
-      // Once it parks on an approval the collapsed header has to say so: the
+      // Once it parks on an approval the collapsed summary has to say so: the
       // rows are hidden by default, so the badge is the only thing between a
-      // stuck tree and a user who never looks.
+      // stuck tree and a user who never looks. The summary rides in the
+      // trigger, which is why a collapsed drawer can still carry it.
+      api.pluginUiDocuments[drawerKey] = drawerDocument(
+        title: '서브 에이전트 1개',
+        summary: <Map<String, dynamic>>[drawerBadge('1개 승인 대기', 'warning')],
+        items: <Map<String, dynamic>>[
+          drawerItem(
+            label: 'explore_auth',
+            description: '/root/explore_auth',
+            status: 'blocked',
+            sessionId: 'child-a',
+          ),
+        ],
+      );
       api.emit(
         SessionUpdatedClientEvent(
           child.copyWith(status: SessionStatus.waitingForApproval),
         ),
       );
+      // The drawer answers over the RPC, so the new document lands a frame
+      // after the tree moved rather than in the same one.
+      await tester.pump();
+      await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('1개 승인 필요'), findsOneWidget);
+      expect(find.text('1개 승인 대기'), findsOneWidget);
       expect(find.text('1개 실행 중'), findsNothing);
     },
   );

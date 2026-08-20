@@ -143,6 +143,16 @@ void main() {
     expect(registration.sessionControls.single.id, 'acme.reader/mode');
     expect(registration.ui.single.slot, PluginUiSlot.conversationStatus);
     expect(registration.ui.single.inputSchema, isEmpty);
+    // A surface that reads live host state declares it, so the host knows to
+    // render it again when that state changes instead of leaving a stale
+    // panel up until the next turn boundary.
+    expect(registration.ui.single.dependsOn, const <String>{'session_tree'});
+    expect(
+      registration.descriptor.contributions
+          .firstWhere((value) => value.id == 'acme.reader/status')
+          .metadata['dependsOn'],
+      <String>['session_tree'],
+    );
     expect(
       registration.descriptor.contributions.map((value) => value.id),
       containsAll(<String>[
@@ -1430,6 +1440,7 @@ local status = tinest.ui.contribution({
   id = "status",
   slot = tinest.ui.slot.conversation_status,
   uses = {tinest.tools.invoke},
+  depends_on = {tinest.ui.dependency.session_tree},
 }, S.any(), function(_arguments) return tinest.ui.badge({text = "ok"}) end)
 
 return tinest.plugin.define({

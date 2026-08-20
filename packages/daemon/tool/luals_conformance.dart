@@ -755,6 +755,42 @@ Future<void> _runConformance({
       await _expectHoverContains(
         client,
         uri,
+        _inside(
+          fixtureSource,
+          'agents.agents[1].session_status',
+          'session_status',
+        ),
+        'CollaborationSessionStatus',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(fixtureSource, 'agents.agents[1].session_id', 'session_id'),
+        'string',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(
+          fixtureSource,
+          'local ui_dependency = tinest.ui.dependency.session_tree',
+          'ui_dependency',
+        ),
+        'session_tree',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(
+          fixtureSource,
+          'local render_locale = context.locale',
+          'render_locale',
+        ),
+        'string',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
         _inside(fixtureSource, 'local lua_handle = lua_chunk.handle', 'handle'),
         'string',
       );

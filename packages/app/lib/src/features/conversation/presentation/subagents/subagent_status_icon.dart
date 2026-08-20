@@ -1,11 +1,11 @@
-import 'package:app/l10n/gen/app_localizations.dart';
-import 'package:app/src/shared/presentation/tinest_icons.dart';
+import 'package:app/src/shared/presentation/tinest_status_icon.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:protocol/protocol.dart';
-import 'package:tinyrack_ui/tinyrack_ui.dart';
 
-/// The lifecycle indicator of one subagent: a spinner while it works, an
-/// attention icon while it waits on the user, a status icon once it stopped.
+/// The lifecycle indicator of one subagent.
+///
+/// Only the reading of a session's two status axes lives here; the drawing is
+/// [TinestStatusIcon], shared with every other surface that reports work.
 class SubagentStatusIcon extends StatelessWidget {
   /// Creates a lifecycle indicator.
   const SubagentStatusIcon({
@@ -22,38 +22,24 @@ class SubagentStatusIcon extends StatelessWidget {
   final SessionStatus? status;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final colors = context.tinyrackTheme;
-    // A blocked subagent is still `running`, so lifecycle alone would render
-    // it as a spinner and hide the one row the user has to act on.
-    if (status == SessionStatus.waitingForApproval) {
-      return Icon(
-        TinestIcons.approvalPending,
-        color: colors.warning,
-        semanticLabel: l10n.subagentStatusWaitingForApproval,
-      );
-    }
-    return switch (lifecycle) {
-      AgentLifecycle.running || AgentLifecycle.pendingInit || null => TRSpinner(
-        variant: TRSpinnerVariant.muted,
-        label: l10n.subagentStatusRunning,
-      ),
-      AgentLifecycle.errored => Icon(
-        TinestIcons.error,
-        color: colors.danger,
-        semanticLabel: l10n.subagentStatusErrored,
-      ),
-      AgentLifecycle.interrupted => Icon(
-        TinestIcons.paused,
-        color: colors.textMuted,
-        semanticLabel: l10n.subagentStatusInterrupted,
-      ),
-      AgentLifecycle.completed => Icon(
-        TinestIcons.success,
-        color: colors.textMuted,
-        semanticLabel: l10n.subagentStatusCompleted,
-      ),
-    };
-  }
+  Widget build(BuildContext context) =>
+      TinestStatusIcon(status: subagentStatusOf(lifecycle, status));
+}
+
+/// Reads a session's two status axes as one meaning.
+///
+/// A blocked subagent is still `running`, so the lifecycle alone would render
+/// it as a spinner and hide the one row the user has to act on.
+TinestStatus subagentStatusOf(
+  AgentLifecycle? lifecycle,
+  SessionStatus? status,
+) {
+  if (status == SessionStatus.waitingForApproval) return TinestStatus.blocked;
+  return switch (lifecycle) {
+    AgentLifecycle.pendingInit || null => TinestStatus.pending,
+    AgentLifecycle.running => TinestStatus.running,
+    AgentLifecycle.interrupted => TinestStatus.paused,
+    AgentLifecycle.completed => TinestStatus.done,
+    AgentLifecycle.errored => TinestStatus.failed,
+  };
 }

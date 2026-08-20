@@ -81,9 +81,10 @@ end
 local card = tinest.ui.contribution(
   {id = "card", slot = tinest.ui.slot.timeline},
   Input,
-  function(value)
+  function(value, context)
     local name = value.profile.name
-    return tinest.ui.text({text = name})
+    local render_locale = context.locale
+    return tinest.ui.text({text = name .. tostring(render_locale)})
   end
 )
 
@@ -119,10 +120,12 @@ local valid_button = tinest.ui.button({
   action = spec_action,
   data = {item_id = "item-1"},
 })
+local ui_dependency = tinest.ui.dependency.session_tree
 local spec_ui = tinest.ui.contribution({
   id = "typed-card",
   slot = tinest.ui.slot.timeline,
   required_capabilities = {tinest.capability.ui.publish},
+  depends_on = {ui_dependency},
   metadata = {snapshot = true},
 }, ActionPayload, function(data)
   return tinest.ui.section({children = {
@@ -427,6 +430,8 @@ local function inspect_host_outputs()
   ).previous_status
   local agents = tinest.result.unwrap(tinest.host.collaboration.list_agents({}))
   local agent_status = agents.agents[1].agent_status
+  local agent_session_status = agents.agents[1].session_status
+  local agent_session_id = agents.agents[1].session_id
 
   local lua_chunk = tinest.result.unwrap(tinest.host.lua.start({source = "return 1"}))
   local lua_handle = lua_chunk.handle

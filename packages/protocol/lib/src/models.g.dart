@@ -636,6 +636,7 @@ Map<String, dynamic> _$PluginUiDocumentDtoToJson(
 const _$PluginUiSlotEnumMap = {
   PluginUiSlot.agentSettings: 'agentSettings',
   PluginUiSlot.composerControl: 'composerControl',
+  PluginUiSlot.composerDrawer: 'composerDrawer',
   PluginUiSlot.conversationStatus: 'conversationStatus',
   PluginUiSlot.timeline: 'timeline',
   PluginUiSlot.dialog: 'dialog',

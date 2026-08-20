@@ -15,5 +15,6 @@ capabilities:
 
 # Tinest Collaboration
 
-Subagent lifecycle and messaging tools plus a declarative collaboration status
-surface. Every operation is routed through the public capability broker.
+Subagent lifecycle and messaging tools plus a declarative drawer that lists the
+caller's collaboration tree beside the composer. Every operation is routed
+through the public capability broker.

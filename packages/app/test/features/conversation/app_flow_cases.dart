@@ -41,10 +41,77 @@ void _registerConversationAppFlows() {
         parentSessionId: root.id,
         taskName: 'Layout child',
       );
+      // The subagent list is a plugin drawer now, so the layout contract this
+      // case pins — composer-header content is inset by the composer's own
+      // padding at every width — needs a drawer contribution to measure.
+      const drawerAgent = AgentDefinitionDto(
+        version: 5,
+        id: 'tinest',
+        name: 'Tinest',
+        description: 'General-purpose coding agent',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.drawer'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: 'Code carefully.',
+        contentHash: 'tinest-hash',
+        sourcePath: '/config/agents/tinest.md',
+        isBuiltIn: true,
+      );
       final api = FakeTinestApi(
         workspaces: <WorkspaceDto>[workspace],
         worktrees: <WorktreeDto>[checkout],
         agents: <SessionDto>[root, child],
+        agentDefinitions: const <AgentDefinitionDto>[drawerAgent],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.drawer',
+            version: '1.0.0',
+            name: 'Drawer',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.drawer',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[
+              PluginContributionDto(
+                pluginId: 'example.drawer',
+                id: 'agents',
+                kind: PluginContributionKind.ui,
+                metadata: <String, dynamic>{
+                  'slots': <String>['composerDrawer'],
+                },
+              ),
+            ],
+          ),
+        ],
+        pluginUiDocuments: const <String, PluginUiDocumentDto>{
+          'example.drawer/agents/tinest': PluginUiDocumentDto(
+            id: 'drawer-document',
+            pluginId: 'example.drawer',
+            revisionHash: 'revision',
+            slot: PluginUiSlot.composerDrawer,
+            root: <String, dynamic>{
+              'type': 'disclosure',
+              'title': '1 subagent',
+              'children': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'type': 'tree',
+                  'children': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'type': 'tree_item',
+                      'label': 'Layout child',
+                      'status': 'running',
+                    },
+                  ],
+                },
+              ],
+            },
+          ),
+        },
         timelines: <String, List<TimelineEventDto>>{
           root.id: <TimelineEventDto>[
             for (var index = 0; index < 24; index += 1)
@@ -84,7 +151,9 @@ void _registerConversationAppFlows() {
       );
       final message = find.byType(ChatUserLine).last;
       final composer = find.byType(SessionComposer);
-      final subagents = find.byType(SubagentTrack);
+      final subagents = find.byKey(
+        const ValueKey<String>('agent-plugin-ui-composerDrawer'),
+      );
       // The pane carries no title header: the tab label already names the
       // session, so the timeline starts flush with the top of the pane.
       expect(

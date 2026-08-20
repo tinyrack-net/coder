@@ -3088,35 +3088,41 @@ abstract class AppLocalizations {
   /// **'A subagent is waiting for approval'**
   String get subagentTabAwaitingApproval;
 
-  /// Semantics label of a running subagent.
+  /// Semantics label of work that is queued but not started.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// Semantics label of work in progress.
   ///
   /// In en, this message translates to:
   /// **'Running'**
-  String get subagentStatusRunning;
+  String get statusRunning;
 
-  /// Semantics label of a completed subagent.
-  ///
-  /// In en, this message translates to:
-  /// **'Completed'**
-  String get subagentStatusCompleted;
-
-  /// Semantics label of an interrupted subagent.
-  ///
-  /// In en, this message translates to:
-  /// **'Interrupted'**
-  String get subagentStatusInterrupted;
-
-  /// Semantics label of a failed subagent.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed'**
-  String get subagentStatusErrored;
-
-  /// Semantics label of a subagent blocked on an approval.
+  /// Semantics label of work parked on a user decision.
   ///
   /// In en, this message translates to:
   /// **'Waiting for approval'**
-  String get subagentStatusWaitingForApproval;
+  String get statusBlocked;
+
+  /// Semantics label of work stopped on request.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get statusPaused;
+
+  /// Semantics label of work that finished successfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusDone;
+
+  /// Semantics label of work that finished with an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get statusFailed;
 
   /// Result line of a queued inter-agent message.
   ///

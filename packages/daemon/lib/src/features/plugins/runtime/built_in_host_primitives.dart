@@ -1247,8 +1247,13 @@ HostPrimitive<Object?, Object?> collaborationListAgentsHostPrimitive({
           'agents': <Map<String, Object?>>[
             for (final agent in agents)
               <String, Object?>{
+                'session_id': agent.sessionId,
                 'agent_name': agent.agentName,
                 'agent_status': _agentLifecycleWireName(agent.agentStatus),
+                'session_status': _sessionStatusWireName(agent.sessionStatus),
+                'title': agent.title,
+                'task_name': ?agent.taskName,
+                'parent_session_id': ?agent.parentSessionId,
               },
           ],
         };
@@ -1314,6 +1319,16 @@ String _agentLifecycleWireName(AgentLifecycle lifecycle) => switch (lifecycle) {
   AgentLifecycle.interrupted => 'interrupted',
   AgentLifecycle.completed => 'completed',
   AgentLifecycle.errored => 'errored',
+};
+
+String _sessionStatusWireName(SessionStatus status) => switch (status) {
+  SessionStatus.initializing => 'initializing',
+  SessionStatus.idle => 'idle',
+  SessionStatus.running => 'running',
+  SessionStatus.waitingForApproval => 'waiting_for_approval',
+  SessionStatus.waitingForInput => 'waiting_for_input',
+  SessionStatus.failed => 'failed',
+  SessionStatus.closed => 'closed',
 };
 
 final class _PrimitiveCancellationToken extends CancellationToken {

@@ -1732,19 +1732,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'A subagent is waiting for approval';
 
   @override
-  String get subagentStatusRunning => 'Running';
+  String get statusPending => 'Pending';
 
   @override
-  String get subagentStatusCompleted => 'Completed';
+  String get statusRunning => 'Running';
 
   @override
-  String get subagentStatusInterrupted => 'Interrupted';
+  String get statusBlocked => 'Waiting for approval';
 
   @override
-  String get subagentStatusErrored => 'Failed';
+  String get statusPaused => 'Interrupted';
 
   @override
-  String get subagentStatusWaitingForApproval => 'Waiting for approval';
+  String get statusDone => 'Completed';
+
+  @override
+  String get statusFailed => 'Failed';
 
   @override
   String get chatToolSubagentQueued => 'Queued';

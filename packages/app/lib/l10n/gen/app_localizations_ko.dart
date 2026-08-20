@@ -1688,19 +1688,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subagentTabAwaitingApproval => '서브 에이전트가 승인을 기다리는 중';
 
   @override
-  String get subagentStatusRunning => '실행 중';
+  String get statusPending => '대기 중';
 
   @override
-  String get subagentStatusCompleted => '완료';
+  String get statusRunning => '실행 중';
 
   @override
-  String get subagentStatusInterrupted => '중단됨';
+  String get statusBlocked => '승인 대기 중';
 
   @override
-  String get subagentStatusErrored => '실패';
+  String get statusPaused => '중단됨';
 
   @override
-  String get subagentStatusWaitingForApproval => '승인 대기 중';
+  String get statusDone => '완료';
+
+  @override
+  String get statusFailed => '실패';
 
   @override
   String get chatToolSubagentQueued => '대기열에 추가됨';

@@ -802,6 +802,13 @@ enum PluginUiSlot {
   /// Controls next to the session composer.
   composerControl,
 
+  /// A drawer docked on the composer, opened from its own summary.
+  ///
+  /// The host owns the framing: where it attaches, how tall it may grow, and
+  /// how it scrolls. A document here says what it contains, not how the drawer
+  /// is drawn.
+  composerDrawer,
+
   /// Status above or below the conversation timeline.
   conversationStatus,
 

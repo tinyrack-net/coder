@@ -168,8 +168,8 @@ void main() {
           agentId: 'agent',
           pluginId: 'tinest.collaboration',
           contributionId: 'tinest.collaboration/agent_status',
-          slot: PluginUiSlot.conversationStatus,
-          context: <String, dynamic>{'sessionId': 'session'},
+          slot: PluginUiSlot.composerDrawer,
+          context: <String, dynamic>{'sessionId': 'session', 'locale': 'en'},
         ),
       );
       await service.render(
@@ -177,9 +177,9 @@ void main() {
           agentId: 'agent',
           pluginId: 'tinest.collaboration',
           contributionId: 'tinest.collaboration/agent_status',
-          slot: PluginUiSlot.conversationStatus,
+          slot: PluginUiSlot.composerDrawer,
           input: <String, Object?>{'snapshot': 'presentation-only'},
-          context: <String, dynamic>{'sessionId': 'session'},
+          context: <String, dynamic>{'sessionId': 'session', 'locale': 'en'},
         ),
       );
 
@@ -193,13 +193,25 @@ void main() {
       expect(goal.root, containsPair('text', 'active'));
       expect(goalDialog.root, containsPair('type', 'section'));
       expect(goalDialog.root.toString(), contains('Finish v5'));
-      final collaborationRows = collaboration.root['children']! as List;
-      final collaborationCells =
-          (collaborationRows.single as Map)['children']! as List;
+      // The drawer states meaning, not presentation: a count, a status word
+      // from the closed vocabulary, and a session to open. Which glyph and
+      // which colour those become is the host's business.
+      expect(collaboration.root, containsPair('type', 'disclosure'));
+      expect(collaboration.root, containsPair('title', '1 subagent'));
+      final tree =
+          (collaboration.root['children']! as List).single
+              as Map<String, Object?>;
+      expect(tree, containsPair('type', 'tree'));
+      final item = (tree['children']! as List).single as Map<String, Object?>;
       // `list_agents` answers with the whole tree, root included, but the root
-      // is the session this panel sits under. Only subagents belong here.
-      expect(collaborationCells.first, containsPair('text', '/root/reviewer'));
-      expect(collaborationCells.last, containsPair('text', 'running'));
+      // is the session this drawer sits under. Only subagents belong here.
+      expect(item, containsPair('label', 'reviewer'));
+      expect(item, containsPair('description', '/root/reviewer'));
+      expect(item, containsPair('status', 'running'));
+      expect(item['onActivate'], <String, Object?>{
+        'type': 'open_session',
+        'sessionId': 'reviewer-session',
+      });
       expect(collaborationHostCalls, <Map<String, Object?>>[
         <String, Object?>{},
         <String, Object?>{},
@@ -280,8 +292,11 @@ void main() {
           hostPrimitives: _collaborationUiPrimitives(
             agents: const <Map<String, Object?>>[
               <String, Object?>{
+                'session_id': 'root-session',
                 'agent_name': '/root',
                 'agent_status': 'running',
+                'session_status': 'running',
+                'title': 'Root',
               },
             ],
           ),
@@ -295,13 +310,13 @@ void main() {
           agentId: 'agent',
           pluginId: 'tinest.collaboration',
           contributionId: 'tinest.collaboration/agent_status',
-          slot: PluginUiSlot.conversationStatus,
-          context: <String, dynamic>{'sessionId': 'session'},
+          slot: PluginUiSlot.composerDrawer,
+          context: <String, dynamic>{'sessionId': 'session', 'locale': 'en'},
         ),
       );
 
       // Every ordinary session is a tree of exactly one agent: itself. The
-      // panel has nothing to report there, and it says so with a section that
+      // drawer has nothing to report there, and it says so with a section that
       // carries no rows, which the host drops instead of framing.
       expect(document.root, containsPair('type', 'section'));
       expect(document.root['children'], isEmpty);
@@ -448,6 +463,120 @@ void main() {
       expect(structured.root, containsPair('text', 'true'));
     },
   );
+
+  test('a UI handler reads the host facts of its surface', () async {
+    // A surface has to know where it is being drawn — which session, which
+    // locale, whether the pane accepts input — and the host is the only one
+    // that knows. Without it every plugin either hardcodes English or asks a
+    // host primitive for something the host already had in hand.
+    final bundle = _pluginBundle(
+      id: 'acme.ui-context',
+      source: '''
+local tinest = require("tinest")
+local S = tinest.schema
+local card = tinest.ui.contribution({
+  id = "card",
+  slot = tinest.ui.slot.timeline,
+}, S.any(), function(_arguments, context)
+  return tinest.ui.text({
+    text = tostring(context.locale) .. "|" ..
+      tostring(context.sessionId) .. "|" ..
+      tostring(context.readOnly),
+  })
+end)
+return tinest.plugin.define({ui = {card}})
+''',
+    );
+    final revisions = PluginRevisionCatalog(
+      loader: _MapLoader(<String, PluginBundle>{bundle.descriptor.id: bundle}),
+      cache: _MemoryRevisionCache(),
+    );
+    final runtime = _runtime(revisions, stagedHost);
+    addTearDown(runtime.close);
+    await revisions.reload(
+      bundle.descriptor.id,
+      agentId: 'agent',
+      approvedCapabilities: const <String>{},
+      inspector: runtime,
+    );
+    final service = PluginUiService(
+      descriptors: _RevisionDescriptorReader(revisions),
+      runtime: LuaPluginUiRuntime<Object>(
+        runtime: runtime,
+        grants: MemoryAgentPluginGrantStore(),
+        state: MemoryPluginStateStore(),
+        definitions: (_) async => _definition(const <String>[]),
+      ),
+    );
+
+    final document = await service.render(
+      const PluginUiRenderParamsDto(
+        agentId: 'agent',
+        pluginId: 'acme.ui-context',
+        contributionId: 'acme.ui-context/card',
+        slot: PluginUiSlot.timeline,
+        context: <String, dynamic>{
+          'sessionId': 'session',
+          'locale': 'ko',
+          'readOnly': true,
+        },
+      ),
+    );
+
+    expect(document.root, containsPair('text', 'ko|session|true'));
+  });
+
+  test('a UI handler that ignores the context still renders', () async {
+    // Every built-in takes one parameter. The context is an addition, not a
+    // new obligation, so a handler written before it must be unaffected.
+    final bundle = _pluginBundle(
+      id: 'acme.ui-no-context',
+      source: '''
+local tinest = require("tinest")
+local S = tinest.schema
+local card = tinest.ui.contribution({
+  id = "card",
+  slot = tinest.ui.slot.timeline,
+}, S.any(), function(_arguments)
+  return tinest.ui.text({text = "steady"})
+end)
+return tinest.plugin.define({ui = {card}})
+''',
+    );
+    final revisions = PluginRevisionCatalog(
+      loader: _MapLoader(<String, PluginBundle>{bundle.descriptor.id: bundle}),
+      cache: _MemoryRevisionCache(),
+    );
+    final runtime = _runtime(revisions, stagedHost);
+    addTearDown(runtime.close);
+    await revisions.reload(
+      bundle.descriptor.id,
+      agentId: 'agent',
+      approvedCapabilities: const <String>{},
+      inspector: runtime,
+    );
+    final service = PluginUiService(
+      descriptors: _RevisionDescriptorReader(revisions),
+      runtime: LuaPluginUiRuntime<Object>(
+        runtime: runtime,
+        grants: MemoryAgentPluginGrantStore(),
+        state: MemoryPluginStateStore(),
+        definitions: (_) async => _definition(const <String>[]),
+      ),
+    );
+
+    final document = await service.render(
+      const PluginUiRenderParamsDto(
+        agentId: 'agent',
+        pluginId: 'acme.ui-no-context',
+        contributionId: 'acme.ui-no-context/card',
+        slot: PluginUiSlot.timeline,
+        context: <String, dynamic>{'sessionId': 'session', 'locale': 'ko'},
+      ),
+    );
+
+    expect(document.root, containsPair('text', 'steady'));
+  });
 
   test('UI state cells reject malformed persisted values', () async {
     final bundle = _pluginBundle(
@@ -1194,10 +1323,21 @@ final class _RevisionDescriptorReader implements PluginDescriptorReader {
 HostPrimitiveRegistry _collaborationUiPrimitives({
   List<Map<String, Object?>>? calls,
   List<Map<String, Object?>> agents = const <Map<String, Object?>>[
-    <String, Object?>{'agent_name': '/root', 'agent_status': 'running'},
     <String, Object?>{
+      'session_id': 'root-session',
+      'agent_name': '/root',
+      'agent_status': 'running',
+      'session_status': 'running',
+      'title': 'Root',
+    },
+    <String, Object?>{
+      'session_id': 'reviewer-session',
       'agent_name': '/root/reviewer',
       'agent_status': 'running',
+      'session_status': 'running',
+      'title': 'Reviewer',
+      'task_name': 'reviewer',
+      'parent_session_id': 'root-session',
     },
   ],
 }) => HostPrimitiveRegistry(

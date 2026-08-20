@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
+import 'package:app/src/shared/presentation/tinest_list_row.dart';
 import 'package:app/src/shared/presentation/tinest_select_presentation.dart';
+import 'package:app/src/shared/presentation/tinest_status_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:protocol/protocol.dart';
@@ -12,6 +14,41 @@ import 'package:tinyrack_ui/tinyrack_ui.dart';
 typedef PluginUiActionDispatcher = Future<PluginUiDocumentDto> Function(
   PluginUiActionDto action,
 );
+
+/// Something a document asks the host to do, rather than the plugin.
+///
+/// Intents never dispatch into the plugin: navigation is host business, and a
+/// round trip through Lua to come back and navigate anyway would only add a
+/// place for the answer to be wrong. The vocabulary is closed — an unknown
+/// intent invalidates the whole document at parse time rather than leaving a
+/// control that silently does nothing — and the host authorizes every intent
+/// against what the current agent and session may reach before running it.
+@immutable
+sealed class PluginUiIntent {
+  const PluginUiIntent();
+}
+
+/// Asks the host to open one session.
+///
+/// The host decides whether the caller may reach [sessionId]; a plugin naming
+/// a session is a request, never a permission.
+final class PluginUiOpenSessionIntent extends PluginUiIntent {
+  /// Creates an open-session intent.
+  const PluginUiOpenSessionIntent(this.sessionId);
+
+  /// Session the document asks to open.
+  final String sessionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PluginUiOpenSessionIntent && other.sessionId == sessionId;
+
+  @override
+  int get hashCode => Object.hash(PluginUiOpenSessionIntent, sessionId);
+}
+
+/// Runs one host-owned intent raised by a document.
+typedef PluginUiIntentHandler = void Function(PluginUiIntent intent);
 
 /// Whether [document] would paint its own frame around nothing.
 ///
@@ -41,6 +78,8 @@ class PluginUiDocumentView extends StatefulWidget {
     required this.invalidDocumentDescription,
     this.semanticLabel,
     this.onAction,
+    this.onIntent,
+    this.maxContentHeight,
     super.key,
   });
 
@@ -58,6 +97,16 @@ class PluginUiDocumentView extends StatefulWidget {
 
   /// Host action dispatcher. Interactive nodes are disabled when absent.
   final PluginUiActionDispatcher? onAction;
+
+  /// Runs host-owned intents. Activation is inert when absent.
+  final PluginUiIntentHandler? onIntent;
+
+  /// Bound the host places on scrollable content in this slot.
+  ///
+  /// Host knowledge: only the host knows how much of the viewport this surface
+  /// may take. A document that picked its own pixel height would fight the
+  /// host on a narrow window.
+  final double? maxContentHeight;
 
   @override
   State<PluginUiDocumentView> createState() => _PluginUiDocumentViewState();
@@ -168,18 +217,14 @@ class _PluginUiDocumentViewState extends State<PluginUiDocumentView> {
         variant: _statusVariant(node.string('variant')),
       ),
     ),
-    _UiNodeType.disclosure => TRCollapsible(
-      defaultOpen: node.boolean('open') ?? false,
-      trigger: TRText.inherit(node.requiredString('title')),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        spacing: TRSpacing.medium,
-        children: node.children
-            .map((child) => _buildNode(context, child))
-            .toList(growable: false),
-      ),
+    _UiNodeType.disclosure => _disclosure(context, node),
+    _UiNodeType.tree => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: _treeRows(context, node.children, 0),
     ),
+    // A tree item is only ever reached through its tree, which owns the depth.
+    _UiNodeType.treeItem => _treeItem(context, node, 0),
     _UiNodeType.field => _field(node),
     _UiNodeType.button => TRButton(
       intent: _intent(node.string('intent')),
@@ -194,6 +239,106 @@ class _PluginUiDocumentViewState extends State<PluginUiDocumentView> {
     _UiNodeType.switchControl => _switch(node),
     _UiNodeType.select => _select(node),
   };
+
+  /// Frames one disclosure the way its slot is framed, not the way the
+  /// document asked.
+  ///
+  /// A drawer docked on the composer squares the edge it shares and bounds its
+  /// content; the same document elsewhere is free-standing. Neither is
+  /// something the plugin chose.
+  Widget _disclosure(BuildContext context, _UiNode node) {
+    final drawer = widget.document.slot == PluginUiSlot.composerDrawer;
+    final title = TRText.inherit(node.requiredString('title'));
+    final summary = node.summary
+        .map((child) => _buildNode(context, child))
+        .toList(growable: false);
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      spacing: TRSpacing.medium,
+      children: node.children
+          .map((child) => _buildNode(context, child))
+          .toList(growable: false),
+    );
+    final maxHeight = widget.maxContentHeight;
+    return TRCollapsible(
+      attachedEdge: drawer
+          ? TRCollapsibleAttachedEdge.bottom
+          : TRCollapsibleAttachedEdge.none,
+      defaultOpen: node.boolean('open') ?? false,
+      trigger: summary.isEmpty
+          ? title
+          : Row(
+              children: <Widget>[
+                Expanded(child: title),
+                for (final child in summary) ...<Widget>[
+                  const SizedBox(width: TRSpacing.small),
+                  child,
+                ],
+              ],
+            ),
+      content: maxHeight == null
+          ? body
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: TRScrollArea(child: body),
+            ),
+    );
+  }
+
+  List<Widget> _treeRows(
+    BuildContext context,
+    List<_UiNode> items,
+    int depth,
+  ) => <Widget>[
+    for (final item in items) ...<Widget>[
+      _treeItem(context, item, depth),
+      ..._treeRows(context, item.children, depth + 1),
+    ],
+  ];
+
+  Widget _treeItem(BuildContext context, _UiNode node, int depth) {
+    final intent = node.intent;
+    final status = node.string('status');
+    final badges = node.badges
+        .map((child) => _buildNode(context, child))
+        .toList(growable: false);
+    return TinestListRow(
+      dense: true,
+      onTap: intent == null || widget.onIntent == null
+          ? null
+          : () => widget.onIntent!(intent),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          // Nesting indents by one spacing step per level, and the host is
+          // what decided the step.
+          SizedBox(width: TRSpacing.medium * depth),
+          if (status != null)
+            TinestStatusIcon(status: tinestStatusFromName(status)!),
+        ],
+      ),
+      title: TRText.inherit(
+        node.requiredString('label'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: node.string('description') == null
+          ? null
+          : TRText.inherit(
+              node.requiredString('description'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+      trailing: badges.isEmpty
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: TRSpacing.extraSmall,
+              children: badges,
+            ),
+    );
+  }
 
   Widget _field(_UiNode node) {
     final id = node.requiredString('id');
@@ -386,6 +531,8 @@ enum _UiNodeType {
   badge,
   progress,
   disclosure,
+  tree,
+  treeItem,
   field,
   button,
   switchControl,
@@ -409,15 +556,27 @@ final class _UiNode {
     required this.type,
     required this.values,
     this.children = const <_UiNode>[],
+    this.summary = const <_UiNode>[],
+    this.badges = const <_UiNode>[],
     this.options = const <_UiOption>[],
     this.actionData = const <String, dynamic>{},
+    this.intent,
   });
 
   final _UiNodeType type;
   final Map<String, Object?> values;
   final List<_UiNode> children;
+
+  /// Compact nodes drawn beside a disclosure title while it is collapsed.
+  final List<_UiNode> summary;
+
+  /// Compact nodes drawn at the trailing edge of a tree item.
+  final List<_UiNode> badges;
   final List<_UiOption> options;
   final Map<String, dynamic> actionData;
+
+  /// Host-owned action raised when this node is activated.
+  final PluginUiIntent? intent;
 
   String requiredString(String key) => values[key]! as String;
   String? string(String key) => values[key] as String?;
@@ -459,6 +618,8 @@ final class _PluginUiParser {
       'badge' => _UiNodeType.badge,
       'progress' => _UiNodeType.progress,
       'disclosure' => _UiNodeType.disclosure,
+      'tree' => _UiNodeType.tree,
+      'tree_item' => _UiNodeType.treeItem,
       'field' || 'form_field' => _UiNodeType.field,
       'button' => _UiNodeType.button,
       'switch' => _UiNodeType.switchControl,
@@ -467,8 +628,11 @@ final class _PluginUiParser {
     };
     final values = <String, Object?>{'type': typeName};
     var children = const <_UiNode>[];
+    var summary = const <_UiNode>[];
+    var badges = const <_UiNode>[];
     var options = const <_UiOption>[];
     var actionData = const <String, dynamic>{};
+    PluginUiIntent? intent;
 
     switch (type) {
       case _UiNodeType.section:
@@ -535,7 +699,39 @@ final class _PluginUiParser {
       case _UiNodeType.disclosure:
         values['title'] = _requiredString(map, 'title');
         _copyOptionalBool(map, values, 'open');
+        summary = _nodeList(map['summary'], depth, 'Disclosure summary');
         children = _children(map, depth);
+      case _UiNodeType.tree:
+        children = _children(map, depth);
+        for (final child in children) {
+          if (child.type != _UiNodeType.treeItem) {
+            throw const FormatException('A tree holds only tree items.');
+          }
+        }
+      case _UiNodeType.treeItem:
+        values['label'] = _requiredString(map, 'label');
+        _copyOptionalString(map, values, 'description');
+        final status = map['status'];
+        if (status != null &&
+            (status is! String || tinestStatusFromName(status) == null)) {
+          throw FormatException('Unsupported status: $status');
+        }
+        if (status != null) values['status'] = status;
+        badges = _nodeList(map['badges'], depth, 'Tree item badges');
+        for (final badge in badges) {
+          if (badge.type != _UiNodeType.badge) {
+            throw const FormatException('Tree item badges hold only badges.');
+          }
+        }
+        intent = _intentOf(map['onActivate']);
+        children = map['children'] == null
+            ? const <_UiNode>[]
+            : _children(map, depth);
+        for (final child in children) {
+          if (child.type != _UiNodeType.treeItem) {
+            throw const FormatException('A tree item nests only tree items.');
+          }
+        }
       case _UiNodeType.field:
         final id = _controlId(map, values);
         _copyOptionalString(map, values, 'label');
@@ -628,8 +824,11 @@ final class _PluginUiParser {
       type: type,
       values: Map<String, Object?>.unmodifiable(values),
       children: List<_UiNode>.unmodifiable(children),
+      summary: List<_UiNode>.unmodifiable(summary),
+      badges: List<_UiNode>.unmodifiable(badges),
       options: List<_UiOption>.unmodifiable(options),
       actionData: Map<String, dynamic>.unmodifiable(actionData),
+      intent: intent,
     );
   }
 
@@ -641,6 +840,32 @@ final class _PluginUiParser {
     return raw
         .map((child) => _parseNode(child, depth: depth + 1))
         .toList(growable: false);
+  }
+
+  List<_UiNode> _nodeList(Object? raw, int depth, String label) {
+    if (raw == null) return const <_UiNode>[];
+    if (raw is! List<Object?>) throw FormatException('$label must be a list.');
+    return raw
+        .map((child) => _parseNode(child, depth: depth + 1))
+        .toList(growable: false);
+  }
+
+  /// Reads one host intent, refusing any type the host cannot authorize.
+  ///
+  /// Failing here rather than at activation is deliberate: a control that
+  /// looks live and does nothing is worse than a document the host says
+  /// plainly it cannot draw.
+  PluginUiIntent? _intentOf(Object? raw) {
+    if (raw == null) return null;
+    final map = _map(raw, 'intent');
+    return switch (_requiredString(map, 'type')) {
+      'open_session' => PluginUiOpenSessionIntent(
+        _requiredString(map, 'sessionId'),
+      ),
+      final unknown => throw FormatException(
+        'Unsupported plugin UI intent: $unknown',
+      ),
+    };
   }
 
   String _controlId(
