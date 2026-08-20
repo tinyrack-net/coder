@@ -75,7 +75,6 @@ jobs:
       runner_linux: ${{ steps.scope.outputs.runner_linux }}
       runner_windows: ${{ steps.scope.outputs.runner_windows }}
       runner_macos: ${{ steps.scope.outputs.runner_macos }}
-      runner_macos_intel: ${{ steps.scope.outputs.runner_macos_intel }}
       dart_scopes_rest: ${{ steps.scope.outputs.dart_scopes_rest }}
     steps:
       - uses: actions/checkout@v5
@@ -93,8 +92,7 @@ jobs:
           # reachable through a full-matrix run.
           CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
           # Everything resolves to the homelab labels. Only a dispatch reads
-          # the input, and only to send a run back to GitHub — `macos-15-intel`
-          # stays hosted either way because the Mac minis are ARM64 only.
+          # the input, and only to send a run back to GitHub.
           RUNNER_POOL: ${{ (github.event_name != 'workflow_dispatch' &&
             'self-hosted') || inputs.runner_pool }}
         run: |
@@ -129,20 +127,20 @@ jobs:
           # Windows Server 2025 or Windows 11, so a key that named either one
           # would be wrong for the other pool and would carry that claim into
           # job names and artifact names. `host-fingerprint` records what each
-          # job actually ran on. `macos-intel` is the exception worth naming:
-          # the Mac minis are ARM64 only, so it is hosted in both pools.
+          # job actually ran on. There is no Intel key: the x86_64 target now
+          # builds on an arm64 mini through an x86_64 SDK under Rosetta 2, so
+          # the architecture is a property of the SDK a job installs rather
+          # than of the machine it lands on.
           runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
             "github": {
               "linux": ["ubuntu-24.04"],
               "windows": ["windows-2025"],
-              "macos": ["macos-26"],
-              "macos-intel": ["macos-15-intel"]
+              "macos": ["macos-26"]
             },
             "self-hosted": {
               "linux": ["self-hosted", "tinyrack-ubuntu-ci"],
               "windows": ["self-hosted", "tinyrack-windows-ci"],
-              "macos": ["self-hosted", "tinyrack-macmini"],
-              "macos-intel": ["macos-15-intel"]
+              "macos": ["self-hosted", "tinyrack-macmini"]
             }
           }[$pool]')"
           if [ "$runners" = "null" ]; then
@@ -175,7 +173,6 @@ jobs:
             echo "runner_linux=$(jq -c '."linux"' <<< "$runners")"
             echo "runner_windows=$(jq -c '."windows"' <<< "$runners")"
             echo "runner_macos=$(jq -c '."macos"' <<< "$runners")"
-            echo "runner_macos_intel=$(jq -c '."macos-intel"' <<< "$runners")"
             echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
@@ -675,7 +672,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+      # `macos-x64` builds on an arm64 Mac mini through an x86_64 SDK, which
+      # runs there under Rosetta 2. Dart compiles for the architecture it runs
+      # as, and `dart build cli` has no cross-architecture option, so the SDK
+      # is the only lever. Keeping it here means no quality job needs a hosted
+      # Intel runner, and hosted macOS allows five concurrent jobs, so that one
+      # job could serialise the merge gate on its own.
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - uses: ./.github/actions/build-cli-bundle

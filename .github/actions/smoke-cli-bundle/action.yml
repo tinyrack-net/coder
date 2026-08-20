@@ -26,8 +26,10 @@ runs:
         TARGET: ${{ inputs.target }}
         PLATFORM: ${{ inputs.platform }}
         PORT: ${{ inputs.port }}
-      # Cross-built arm64 would not run here, but every release target is built
-      # on its own architecture, so the bundle has to work where it was made.
+      # This runs the bundle where it was built, which holds even for the
+      # x86_64 target now that it is produced on an arm64 mini: Rosetta 2 runs
+      # it. That also means this step says nothing about which architecture
+      # came out — `build-cli-bundle` checks that with `lipo`.
       run: |
         set -euo pipefail
         bundle="dist/tinest-cli-$TARGET/bin"

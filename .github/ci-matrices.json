@@ -12,7 +12,12 @@
       { "os": "linux", "target": "linux-x64", "platform": "linux" }
     ],
     "cross": [
-      { "os": "macos-intel", "target": "macos-x64", "platform": "macos" },
+      {
+        "os": "macos",
+        "target": "macos-x64",
+        "platform": "macos",
+        "sdk_arch": "x64"
+      },
       { "os": "macos", "target": "macos-arm64", "platform": "macos" },
       { "os": "windows", "target": "windows-x64", "platform": "windows" }
     ]

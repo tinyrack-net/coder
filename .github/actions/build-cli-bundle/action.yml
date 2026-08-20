@@ -39,3 +39,44 @@ runs:
         fi
         (cd packages/daemon && dart run lua_tool_runtime:stage \
           --destination "../../dist/tinest-cli-$TARGET/bin")
+
+    - name: Verify the bundle matches the target architecture
+      if: inputs.platform == 'macos'
+      shell: bash
+      env:
+        TARGET: ${{ inputs.target }}
+      # `macos-x64` is built on an arm64 Mac mini through an x86_64 SDK under
+      # Rosetta 2, so the host no longer says what came out. Neither does
+      # running it: Rosetta runs an x86_64 bundle on the same machine that
+      # would have run an arm64 one, so the smoke test passes either way.
+      # Without this an arm64 build would ship under an x64 name through the
+      # Homebrew formula, and the first sign would be an Intel user's crash.
+      #
+      # Every Mach-O file is checked rather than only the launcher, because the
+      # native code assets are separate artifacts: sqlite3 downloads a
+      # prebuilt library and the Lua host is compiled by a build hook, so
+      # either could resolve for the wrong architecture on its own.
+      run: |
+        set -euo pipefail
+        case "$TARGET" in
+          *-x64) want=x86_64 ;;
+          *-arm64) want=arm64 ;;
+          *) echo "::error::Cannot tell the architecture of $TARGET"; exit 1 ;;
+        esac
+        status=0
+        checked=0
+        while IFS= read -r binary; do
+          file "$binary" | grep -q 'Mach-O' || continue
+          checked=$((checked + 1))
+          archs="$(lipo -archs "$binary")"
+          case " $archs " in
+            *" $want "*) ;;
+            *) echo "::error::$binary is [$archs], expected $want"; status=1 ;;
+          esac
+        done < <(find "dist/tinest-cli-$TARGET" -type f)
+        if [ "$checked" -eq 0 ]; then
+          echo "::error::Found no Mach-O files to check in the bundle"
+          exit 1
+        fi
+        echo "Checked $checked Mach-O files for $want"
+        exit "$status"

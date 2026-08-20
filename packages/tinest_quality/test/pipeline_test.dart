@@ -1050,7 +1050,6 @@ void main() {
       'runner_linux',
       'runner_windows',
       'runner_macos',
-      'runner_macos_intel',
     ]) {
       expect(
         changes,
@@ -1069,6 +1068,45 @@ void main() {
     // dispatch reads the input, and only to send a run back to GitHub.
     expect(changes, contains("github.event_name != 'workflow_dispatch'"));
     expect(changes, contains("'self-hosted') || inputs.runner_pool"));
+  });
+
+  test('the x86_64 macOS target is built on the arm64 minis', () {
+    // Dart compiles for the architecture it runs as and `dart build cli` has
+    // no cross-architecture option, so the SDK is the only lever. Doing it
+    // this way is what leaves no quality job needing a hosted Intel runner,
+    // and hosted macOS allows five concurrent jobs, so that one job could
+    // serialise the merge gate on its own.
+    final entry = _cliEntry('macos-x64');
+    expect(entry['os'], 'macos');
+    expect(entry['sdk_arch'], 'x64');
+    expect(entry['platform'], 'macos');
+    expect(
+      _job(workflow, 'cli-verify'),
+      contains(r'architecture: ${{ matrix.sdk_arch }}'),
+    );
+    // The arm64 target must not inherit an x86_64 SDK by accident.
+    expect(_cliEntry('macos-arm64')['sdk_arch'], isNull);
+    // No pool may still resolve an Intel key, or the target would silently go
+    // back to a hosted runner.
+    expect(_job(workflow, 'changes'), isNot(contains('macos-intel')));
+  });
+
+  test('a macOS bundle is checked against the architecture it claims', () {
+    // Rosetta runs the x86_64 bundle on the machine that built it, so the
+    // smoke test passes whichever architecture came out. Without this an arm64
+    // build would ship under an x64 name through the Homebrew formula and the
+    // first sign would be an Intel user's crash.
+    final build = File(
+      '.github/actions/build-cli-bundle/action.yml',
+    ).readAsStringSync();
+    expect(build, contains('lipo -archs'));
+    expect(build, contains('*-x64) want=x86_64'));
+    expect(build, contains('*-arm64) want=arm64'));
+    // Every Mach-O file, not only the launcher: sqlite3 downloads a prebuilt
+    // library and the Lua host is compiled by a build hook, so either can
+    // resolve for the wrong architecture on its own.
+    expect(build, contains("grep -q 'Mach-O'"));
+    expect(build, contains('Found no Mach-O files to check'));
   });
 
   test('every measured quality job resolves runs-on through the scope', () {
@@ -1182,6 +1220,19 @@ String _job(String workflow, String name) {
 }
 
 /// The mobile build matrix entry for [os], from either scope.
+Map<String, dynamic> _cliEntry(String target) {
+  final cli = _matrices['cli']! as Map<String, dynamic>;
+  final entries = <dynamic>[
+    ...(cli['host']! as List<dynamic>),
+    ...(cli['cross']! as List<dynamic>),
+  ];
+  return entries
+          .cast<Map<String, dynamic>>()
+          .where((entry) => entry['target'] == target)
+          .firstOrNull ??
+      (throw StateError('Missing CLI matrix entry for $target'));
+}
+
 Map<String, dynamic> _mobileEntry(String os) {
   final mobile = _matrices['mobile']! as Map<String, dynamic>;
   final entries = <dynamic>[
