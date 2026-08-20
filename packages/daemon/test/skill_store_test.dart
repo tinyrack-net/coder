@@ -429,6 +429,38 @@ void main() {
   );
 
   test(
+    'a root that appears while an ancestor anchor is being armed is reported',
+    () async {
+      // The re-anchor walk reads the filesystem before its watchers are armed.
+      // A root created in that window is watched by nobody: the ancestor that
+      // would have reported it is pruned, the deeper anchor was armed after
+      // the fact, and native watchers never replay. Staging the chain one
+      // directory at a time drives that hand-off explicitly, so the watch set
+      // has to keep converging rather than settle on an intermediate anchor.
+      final skillsRoot = Directory(p.join(project.path, '.agents', 'skills'));
+      final files = NativeSkillFiles(
+        skillsRoot.path,
+        origin: SkillOrigin.project,
+      );
+      await files.initialize();
+      addTearDown(files.close);
+      final changed = files.changes.first;
+
+      // Anchored on the project root; `.agents` hands the anchor one level
+      // down while the skills root still does not exist.
+      await Directory(p.join(project.path, '.agents')).create();
+      await writeSkill(skillsRoot, 'watched');
+
+      await _awaitChange(changed, skillsRoot);
+      expect(
+        (await files.read()).map((document) => document.id),
+        contains('watched'),
+      );
+    },
+    tags: const <String>['feature_test__skill_catalog__unit'],
+  );
+
+  test(
     'watch path filter accepts only related absolute and relative paths',
     () {
       final skillRoot = p.join(root.path, 'tracked', '.agents', 'skills');
