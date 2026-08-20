@@ -1620,7 +1620,6 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
           loading: value.asData?.value.loadingOlder ?? false,
           failed: value.asData?.value.olderFailed ?? false,
           oldest: value.asData?.value.oldestLoadedSequence ?? 0,
-          attempt: value.asData?.value.olderAttempt ?? 0,
         ),
       ),
     );
@@ -1762,7 +1761,7 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                           () => readingPositions.remember(key, position),
                         ),
                     olderPageKey: paging.hasMoreOlder
-                        ? 'older:${paging.oldest}:${paging.attempt}'
+                        ? 'older:${paging.oldest}'
                         : null,
                     loadingOlder: paging.loading,
                     olderFailed: paging.failed,

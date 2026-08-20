@@ -60,6 +60,7 @@ import 'package:daemon/src/features/sessions/infrastructure/lua_code_mode_servic
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_interactions.dart';
 import 'package:daemon/src/features/sessions/infrastructure/session_settings.dart';
+import 'package:daemon/src/features/sessions/infrastructure/timeline_blocks.dart';
 import 'package:daemon/src/features/sessions/transport/rpc_bindings.dart';
 import 'package:daemon/src/features/terminals/application/terminal_service.dart';
 import 'package:daemon/src/features/terminals/domain/terminal.dart';
@@ -575,8 +576,15 @@ abstract final class DaemonApplication {
           pluginRuntime.sweep();
         },
       );
+      // One instance, shared by every writer: a block ends when something
+      // else is written, so a writer holding its own would close blocks the
+      // others cannot see.
+      final timeline = BlockStampingTimelineRepository(
+        inner: database.timelineDao,
+        ids: effectiveIds,
+      );
       final sessionInteractions = SessionInteractionCoordinator(
-        timeline: database.timelineDao,
+        timeline: timeline,
         events: events.add,
         ids: effectiveIds,
         clock: effectiveClock,
@@ -650,7 +658,7 @@ abstract final class DaemonApplication {
         sessions: database.sessionDao,
         definitions: agentDefinitions,
         worktrees: database.worktreeDao,
-        timeline: database.timelineDao,
+        timeline: timeline,
         models: models,
         events: events.add,
         clock: effectiveClock,
@@ -676,7 +684,7 @@ abstract final class DaemonApplication {
       multiAgent = MultiAgentService(
         sessions: database.sessionDao,
         mailbox: database.agentMailboxDao,
-        timeline: database.timelineDao,
+        timeline: timeline,
         getDefinition: agentDefinitions.get,
         validateModel: models.validateQualifiedModel,
         defaultModel: () async {
@@ -903,7 +911,7 @@ abstract final class DaemonApplication {
           ),
           ...sessionRpcBindings(
             sessions: database.sessionDao,
-            timeline: database.timelineDao,
+            timeline: timeline,
             turns: service,
             settings: sessionSettings,
             interactions: sessionInteractions,

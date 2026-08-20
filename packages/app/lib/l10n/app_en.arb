@@ -433,6 +433,10 @@
   "@conversationLoadOlderFailed": {
     "description": "Row shown above the oldest loaded message when fetching an earlier page of chat history failed."
   },
+  "conversationLoadOlderRetry": "Try again",
+  "@conversationLoadOlderRetry": {
+    "description": "Action beside the failed-history row that asks for the same earlier page again."
+  },
   "directoryBrowserLoading": "Loading directories",
   "@directoryBrowserLoading": {
     "description": "Announced once for the row skeletons shown while the first directory listing loads."

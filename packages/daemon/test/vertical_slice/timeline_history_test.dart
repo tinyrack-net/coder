@@ -163,6 +163,48 @@ void main() {
           ),
           isEmpty,
         );
+
+        // A block outlives the page boundary that splits it. Without this the
+        // oldest row a reader holds is renamed by its own page load, which to
+        // a list anchored by identity is that row being deleted.
+        final blocks = <String, String>{};
+        for (final event in full) {
+          if (event.type != 'assistant.delta') continue;
+          final blockId = event.data['blockId'];
+          expect(
+            blockId,
+            isA<String>(),
+            reason: 'every streamed delta names the block it belongs to',
+          );
+          blocks[blockId! as String] ??= event.turnId!;
+        }
+        expect(
+          blocks,
+          hasLength(_turns),
+          reason: 'one uninterrupted answer per turn is one block',
+        );
+        expect(blocks.values.toSet(), hasLength(_turns));
+        // The tiny window above is smaller than one answer, so it opens
+        // mid-block. It must name the block it is continuing rather than
+        // inventing one from the oldest delta it happens to hold.
+        final opening = tiny.firstWhere(
+          (event) => event.type == 'assistant.delta',
+        );
+        final preceding = full.lastWhere(
+          (event) =>
+              event.type == 'assistant.delta' &&
+              event.sequence < opening.sequence,
+        );
+        expect(
+          preceding.turnId,
+          opening.turnId,
+          reason: 'the tiny window has to split one answer to prove anything',
+        );
+        expect(
+          opening.data['blockId'],
+          preceding.data['blockId'],
+          reason: 'a page boundary does not rename the block it splits',
+        );
       } finally {
         await client?.close();
         await handle?.stop();

@@ -491,23 +491,27 @@ List<ChatItem> projectChatTimeline(
       case 'assistant.delta':
         closeReasoning(turnId);
         final text = _string(event.data['text']) ?? '';
+        final blockId = _string(event.data['blockId']);
         final open = openAssistant[turnId];
-        if (open == null) {
+        if (open != null && _continues(open.blockId, blockId)) {
+          open.append(text);
+        } else {
           final builder = _AssistantBuilder(
-            key: 'assistant-${event.sequence}',
+            key: 'assistant-${blockId ?? event.sequence}',
+            blockId: blockId,
             turnId: turnId,
             createdAt: event.createdAt,
           )..append(text);
           openAssistant[turnId] = builder;
           builders.add(builder);
-        } else {
-          open.append(text);
         }
       case 'assistant.reasoning.started':
         closeAssistant(turnId);
         closeReasoning(turnId);
+        final blockId = _string(event.data['blockId']);
         final builder = _ReasoningBuilder(
-          key: 'reasoning-${event.sequence}',
+          key: 'reasoning-${blockId ?? event.sequence}',
+          blockId: blockId,
           turnId: turnId,
           createdAt: event.createdAt,
         );
@@ -516,12 +520,14 @@ List<ChatItem> projectChatTimeline(
       case 'assistant.reasoning.delta':
         closeAssistant(turnId);
         final text = _string(event.data['text']) ?? '';
+        final blockId = _string(event.data['blockId']);
         final builder = openReasoning[turnId];
-        if (builder != null) {
+        if (builder != null && _continues(builder.blockId, blockId)) {
           builder.append(text);
         } else {
           final synthesized = _ReasoningBuilder(
-            key: 'reasoning-${event.sequence}',
+            key: 'reasoning-${blockId ?? event.sequence}',
+            blockId: blockId,
             turnId: turnId,
             createdAt: event.createdAt,
           )..append(text);
@@ -805,6 +811,19 @@ List<ChatItem> projectChatTimeline(
 
 String? _string(Object? value) => value is String ? value : null;
 
+/// Whether a delta named [blockId] belongs to the open block [openBlockId].
+///
+/// The writer names a block once, so a row keeps its identity however much of
+/// the block a reader has loaded — which is what lets an older page extend the
+/// row the reader is anchored to instead of replacing it, and what tells two
+/// answers of one turn apart.
+///
+/// A delta written before the writer named blocks belongs to whatever is open,
+/// which is how it has always been read, and its row is named after the delta
+/// that opened it in the window at hand.
+bool _continues(String? openBlockId, String? blockId) =>
+    blockId == null || openBlockId == blockId;
+
 String _questionKey(String? turnId, String callId) {
   final scope = turnId ?? '';
   return 'question:${scope.length}:$scope:$callId';
@@ -898,11 +917,15 @@ final class _ApprovalBuilder extends _ChatItemBuilder {
 final class _AssistantBuilder extends _ChatItemBuilder {
   _AssistantBuilder({
     required this.key,
+    required this.blockId,
     required this.turnId,
     required this.createdAt,
   });
 
   final String key;
+
+  /// Identity of the streamed block these deltas belong to.
+  final String? blockId;
 
   @override
   final String? turnId;
@@ -931,11 +954,15 @@ final class _AssistantBuilder extends _ChatItemBuilder {
 final class _ReasoningBuilder extends _ChatItemBuilder {
   _ReasoningBuilder({
     required this.key,
+    required this.blockId,
     required this.turnId,
     required this.createdAt,
   });
 
   final String key;
+
+  /// Identity of the streamed block these deltas belong to.
+  final String? blockId;
 
   @override
   final String? turnId;
