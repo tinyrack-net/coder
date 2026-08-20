@@ -2,6 +2,9 @@ local tinest = require("tinest")
 local S = tinest.schema
 local T = require("tinest.types")
 
+-- Canonical collaboration path of every tree root, as the host reports it.
+local root_path = "/root"
+
 local tool_card = tinest.ui.contribution({
   id = "tool",
   slot = tinest.ui.slot.timeline,
@@ -26,14 +29,21 @@ local agent_status = tinest.ui.contribution({
   local agents = response.agents or response
   local children = {}
   for _, agent in ipairs(agents or {}) do
-    children[#children + 1] = tinest.ui.row({
-      children = {
-        tinest.ui.text({text = tostring(agent.agent_name or "")}),
-        tinest.ui.badge({
-          text = tostring(agent.agent_status or "unknown"),
-        }),
-      },
-    })
+    local name = tostring(agent.agent_name or "")
+    -- The host answers with the caller's whole tree, and its root is the very
+    -- session this panel sits under. Listing it would put a "/root" row beside
+    -- the composer of every conversation, including the ones that never spawn
+    -- a subagent at all; only the subagents belong on this surface.
+    if name ~= "" and name ~= root_path then
+      children[#children + 1] = tinest.ui.row({
+        children = {
+          tinest.ui.text({text = name}),
+          tinest.ui.badge({
+            text = tostring(agent.agent_status or "unknown"),
+          }),
+        },
+      })
+    end
   end
   return tinest.ui.section({id = "collaboration-status", children = children})
 end)
@@ -46,7 +56,7 @@ local before_turn = tinest.hook.before_turn({
   local collaboration = extension_data.collaboration
   if type(collaboration) ~= "table" then return {} end
 
-  local path = tostring(collaboration.path or "/root")
+  local path = tostring(collaboration.path or root_path)
   local is_root = collaboration.is_root == true
   local identity
   local role

@@ -13,6 +13,21 @@ typedef PluginUiActionDispatcher = Future<PluginUiDocumentDto> Function(
   PluginUiActionDto action,
 );
 
+/// Whether [document] would paint its own frame around nothing.
+///
+/// A contribution reports "there is nothing to show right now" by returning a
+/// section that carries no header and no rows, which is the ordinary answer of
+/// a status panel on a session that has nothing to report. The section still
+/// builds a card, so rendering the document anyway leaves an empty panel on a
+/// host surface. Host-owned surfaces drop such a document instead.
+bool pluginUiDocumentIsEmpty(PluginUiDocumentDto document) {
+  final root = document.root;
+  if (root['type'] != 'section') return false;
+  if (root['title'] != null || root['description'] != null) return false;
+  final children = root['children'];
+  return children is List<Object?> && children.isEmpty;
+}
+
 /// Renders a pinned declarative plugin document using only public host widgets.
 ///
 /// The document is parsed completely before any control is built. One invalid

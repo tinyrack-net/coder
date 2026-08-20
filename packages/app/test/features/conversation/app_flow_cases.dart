@@ -393,6 +393,144 @@ void _registerConversationAppFlows() {
   );
 
   testWidgets(
+    'the conversation status slot re-renders at both turn boundaries',
+    (tester) async {
+      final agent = session('plugin-ui-status-turn');
+      PluginUiDocumentDto reported(String text) => PluginUiDocumentDto(
+        id: 'status-$text',
+        pluginId: 'tinest.standard',
+        revisionHash: 'revision-1',
+        slot: PluginUiSlot.conversationStatus,
+        root: <String, dynamic>{'type': 'text', 'text': text},
+      );
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[agent],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'tinest.standard',
+            version: '1.0.0',
+            name: 'Standard',
+            entrypoint: 'main.lua',
+            source: PluginSource.builtIn,
+            sourcePath: '/built-in/tinest.standard',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[
+              PluginContributionDto(
+                pluginId: 'tinest.standard',
+                id: 'status',
+                kind: PluginContributionKind.ui,
+                metadata: <String, dynamic>{
+                  'slots': <String>['conversationStatus'],
+                },
+              ),
+            ],
+          ),
+        ],
+        pluginUiDocuments: <String, PluginUiDocumentDto>{
+          'tinest.standard/status/tinest': reported('idle'),
+        },
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: agent.id,
+        ).location,
+        // A running turn animates its busy indicator forever, and this test
+        // has to settle while the turn is in flight.
+        disableAnimations: true,
+      );
+      addTearDown(router.dispose);
+      await tester.pumpAndSettle();
+      expect(find.text('idle'), findsOneWidget);
+
+      api.pluginUiDocuments['tinest.standard/status/tinest'] = reported(
+        'working',
+      );
+      api.emit(
+        SessionUpdatedClientEvent(
+          agent.copyWith(status: SessionStatus.running),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('working'), findsOneWidget);
+
+      // The end of the turn is the half that used to be missed: a surface that
+      // reloads only when a turn starts keeps reporting the state that turn was
+      // in for the rest of the session.
+      api.pluginUiDocuments['tinest.standard/status/tinest'] = reported('done');
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('done'), findsOneWidget);
+      expect(find.text('working'), findsNothing);
+      expect(
+        api.pluginUiRenders
+            .map((render) => render.context['busy'])
+            .toList(growable: false),
+        <bool>[false, true, false],
+      );
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a published status document does not outlive the turn that sent it',
+    (tester) async {
+      final agent = session(
+        'plugin-ui-status-live',
+      ).copyWith(status: SessionStatus.running);
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[agent],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: agent.id,
+        ).location,
+        // The publication under test only happens mid-turn, and a running
+        // turn animates its busy indicator for as long as it lasts.
+        disableAnimations: true,
+      );
+      addTearDown(router.dispose);
+
+      api.emitTimeline(agent.id, 'plugin.ui', <String, dynamic>{
+        'document': <String, dynamic>{
+          'id': 'status',
+          'pluginId': 'example.notifications',
+          'revisionHash': 'revision-1',
+          'slot': PluginUiSlot.conversationStatus.name,
+          'root': <String, dynamic>{'type': 'text', 'text': '2 agents running'},
+        },
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('2 agents running'), findsOneWidget);
+
+      // The snapshot describes the turn that published it. Holding it after the
+      // turn ends freezes that text above the composer for good.
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('2 agents running'), findsNothing);
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
     'timeline and approval cards render typed event content',
     (
       tester,
