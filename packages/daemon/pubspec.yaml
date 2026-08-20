@@ -38,7 +38,7 @@ dependencies:
   vtworld:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 0b23941dfc5f2d0007777618d16fb4a8fe162f1a
+      ref: b344d8cda523ef30b65c28b118223858a9ab11e5
       path: packages/vtworld
   web_socket_channel: ^3.0.3
   yaml: ^3.1.3
