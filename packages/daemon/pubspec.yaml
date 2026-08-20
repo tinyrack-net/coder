@@ -19,7 +19,7 @@ dependencies:
   lua_tool_runtime:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: 0baf300c4634391efb14fae0b8dd9a43ed645c23
+      ref: 8aece6a592a64fd0762a4a572bbb1a11e1896822
       path: packages/lua_tool_runtime
   path: ^1.9.1
   platform: ^3.1.6
