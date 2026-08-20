@@ -175,15 +175,13 @@ class AgentSettingsPaneController extends SettingsPaneCoordinatorBase {
   /// Whether the create destination is active.
   bool get creating => _creating;
 
+  /// Sibling destinations, so the stack is never deeper than one entry.
   @override
-  bool get hasDetail => _creating || _selectedId != null;
-
-  @override
-  Object? get detailSelection => _creating
-      ? (_AgentPaneDestination.create, null)
+  List<Object> get detailStack => _creating
+      ? const <Object>[(_AgentPaneDestination.create, null)]
       : _selectedId == null
-      ? null
-      : (_AgentPaneDestination.existing, _selectedId);
+      ? const <Object>[]
+      : <Object>[(_AgentPaneDestination.existing, _selectedId)];
 
   /// Shows the first Agent on initial desktop entry.
   void selectInitial(String id) {

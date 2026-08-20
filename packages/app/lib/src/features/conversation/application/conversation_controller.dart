@@ -56,6 +56,32 @@ final class QueuedTurn {
   );
 }
 
+/// One prompt the daemon accepted but has not echoed yet.
+///
+/// [ConversationController.startTurn] returns as soon as the daemon has created
+/// the turn, but the durable `user.message` is only written after plugin
+/// lifecycle, skills, and project-doc loading have run — long enough for a sent
+/// prompt to look lost. The turn id is the client's own, so the echo is matched
+/// exactly rather than by text: two identical prompts must not resolve each
+/// other, and cancelling one turn must not erase another turn's prompt.
+final class PendingTurn {
+  /// Creates a [PendingTurn].
+  const PendingTurn({
+    required this.turnId,
+    required this.prompt,
+    required this.createdAt,
+  });
+
+  /// Client-minted identity the daemon stamps on every event of this turn.
+  final String turnId;
+
+  /// Trimmed prompt text, rendered as an optimistic user message.
+  final String prompt;
+
+  /// When the prompt was submitted, per the app clock.
+  final DateTime createdAt;
+}
+
 /// ConversationState defines a public contract.
 final class ConversationState {
   /// Creates a [ConversationState].
@@ -63,6 +89,7 @@ final class ConversationState {
     this.timeline = const <TimelineEventDto>[],
     this.approvals = const <String, ApprovalRequestDto>{},
     this.queued = const <QueuedTurn>[],
+    this.pending = const <PendingTurn>[],
     this.questions = const <String, UserQuestionRequestDto>{},
     this.hasMoreOlder = false,
     this.loadingOlder = false,
@@ -96,6 +123,10 @@ final class ConversationState {
   /// Prompts waiting for the active turn to finish, oldest first.
   final List<QueuedTurn> queued;
 
+  /// Prompts the daemon accepted whose timeline echo has not arrived, oldest
+  /// first. Rendered as optimistic user messages after [timeline].
+  final List<PendingTurn> pending;
+
   /// Questions the agent is blocked on, keyed by request id.
   final Map<String, UserQuestionRequestDto> questions;
 
@@ -104,6 +135,7 @@ final class ConversationState {
     List<TimelineEventDto>? timeline,
     Map<String, ApprovalRequestDto>? approvals,
     List<QueuedTurn>? queued,
+    List<PendingTurn>? pending,
     Map<String, UserQuestionRequestDto>? questions,
     bool? hasMoreOlder,
     bool? loadingOlder,
@@ -113,6 +145,7 @@ final class ConversationState {
     timeline: timeline ?? this.timeline,
     approvals: approvals ?? this.approvals,
     queued: queued ?? this.queued,
+    pending: pending ?? this.pending,
     questions: questions ?? this.questions,
     hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
     loadingOlder: loadingOlder ?? this.loadingOlder,
@@ -236,6 +269,11 @@ class ConversationController extends _$ConversationController {
     if (sessionId == null || (prompt.trim().isEmpty && attachments.isEmpty)) {
       return;
     }
+    final turnId = ref.read(appIdGeneratorProvider).generate();
+    // Recorded ahead of the upload rather than merely ahead of the RPC: a large
+    // attachment holds the send for seconds, and the prompt has to read as sent
+    // for all of it.
+    _addPending(turnId, prompt.trim());
     final api = await requireHostApi(ref, hostId);
     final uploaded = <AttachmentDto>[];
     for (final attachment in attachments) {
@@ -251,11 +289,15 @@ class ConversationController extends _$ConversationController {
     try {
       await api.sessions.startTurn(
         sessionId: sessionId,
-        turnId: ref.read(appIdGeneratorProvider).generate(),
+        turnId: turnId,
         prompt: prompt.trim(),
         attachmentIds: uploaded.map((item) => item.id).toList(growable: false),
       );
     } on Exception {
+      // The prompt is no longer in flight whichever way this ends: it either
+      // goes back to the composer or becomes a visible queue row, and an
+      // optimistic message left behind would be a second copy of it.
+      _removePending(turnId);
       // The composer sends or queues from a rendered flag that trails the
       // daemon by one event, so it can send into a turn that is still running.
       // The daemon is the authority: when it says one is, hold the prompt the
@@ -264,6 +306,50 @@ class ConversationController extends _$ConversationController {
       if (!queueWhenBusy || !await _hasRunningTurn(api, sessionId)) rethrow;
       enqueueTurn(prompt, attachments: attachments);
     }
+  }
+
+  /// Shows [prompt] as sent until the timeline echoes [turnId].
+  void _addPending(String turnId, String prompt) {
+    final current = _currentEventState;
+    // Nothing to render against before the conversation settles, and the first
+    // prompt of a new session is already covered by its own pending registry.
+    if (current == null || prompt.isEmpty) return;
+    state = AsyncData<ConversationState>(
+      current.copyWith(
+        pending: <PendingTurn>[
+          ...current.pending,
+          PendingTurn(
+            turnId: turnId,
+            prompt: prompt,
+            createdAt: ref.read(appClockProvider).nowUtc(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removePending(String turnId) {
+    final current = _currentEventState;
+    if (current == null) return;
+    final pending = _pendingWithout(current.pending, turnId);
+    if (identical(pending, current.pending)) return;
+    state = AsyncData<ConversationState>(current.copyWith(pending: pending));
+  }
+
+  /// Returns [pending] without [turnId], or [pending] itself when absent.
+  ///
+  /// Identity is the signal a narrowed selector reads, so an event that
+  /// resolves nothing must not hand back an equal-but-new list.
+  static List<PendingTurn> _pendingWithout(
+    List<PendingTurn> pending,
+    String? turnId,
+  ) {
+    if (turnId == null || !pending.any((turn) => turn.turnId == turnId)) {
+      return pending;
+    }
+    return pending
+        .where((turn) => turn.turnId != turnId)
+        .toList(growable: false);
   }
 
   Future<bool> _hasRunningTurn(TinestApi api, String sessionId) async {
@@ -569,15 +655,32 @@ class ConversationController extends _$ConversationController {
       if (!resumed) ...current.timeline,
       event,
     ];
+    // Resolved in the same write that appends the event it echoes. Clearing it
+    // separately would take the optimistic message off screen one frame before
+    // the durable one arrives, which reads as the list flickering on send.
+    final pending = _resolvesPending(event.type)
+        ? _pendingWithout(current.pending, event.turnId)
+        : current.pending;
     state = AsyncData<ConversationState>(
       current.copyWith(
         timeline: timeline,
         approvals: approvals,
         questions: questions,
+        pending: pending,
         hasMoreOlder: current.hasMoreOlder || (resumed && event.sequence > 1),
       ),
     );
   }
+
+  /// Whether [type] is durable evidence that an optimistic prompt is settled.
+  ///
+  /// The echo is the authority for a prompt that landed; a terminal turn event
+  /// is the authority for one that never will.
+  static bool _resolvesPending(String type) =>
+      type == 'user.message' ||
+      type == 'turn.completed' ||
+      type == 'turn.failed' ||
+      type == 'turn.cancelled';
 
   /// Resolves the optimistic first prompt from durable timeline evidence.
   ///

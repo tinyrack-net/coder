@@ -178,7 +178,7 @@ void main() {
       expect(_field('기본 URL'), findsOneWidget);
       expect(_field('모델 Prefix'), findsOneWidget);
       expect(_field('API 키'), findsOneWidget);
-      expect(_field('수동 model ID'), findsOneWidget);
+      expect(_field('Model ID'), findsOneWidget);
       expect(find.byType(TRAlertDialog), findsNothing);
     },
     tags: const <String>['feature_test__provider_custom__widget'],
@@ -441,6 +441,100 @@ void main() {
     expect(_field('모델 Prefix'), findsOneWidget);
   });
 
+  testWidgets(
+    'each manual model carries the values its own endpoint accepts',
+    tags: const <String>['feature_test__provider_custom__widget'],
+    (tester) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 2400);
+      addTearDown(tester.view.reset);
+      final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
+      await _pumpSettings(tester, api);
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-custom')));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('이름'), 'Lab');
+      await tester.enterText(_field('기본 URL'), 'http://127.0.0.1:9000/v1');
+      await tester.enterText(_field('API 키'), 'lab-secret');
+      await tester.enterText(_field('Model ID').first, 'fast-model');
+
+      Future<void> addValue(int model, String value) async {
+        final field = find
+            .descendant(
+              of: find.byType(TRMultiCombobox<String>),
+              matching: find.byType(EditableText),
+            )
+            .at(model);
+        await tester.enterText(field, value);
+        await tester.pumpAndSettle();
+        // The value is committed by choosing it: the query itself is the only
+        // option, because nothing here knows what the endpoint accepts.
+        await tester.tap(find.text(value).last);
+        await tester.pumpAndSettle();
+        // Selecting keeps the option layer open over the form below it.
+        await tester.tap(_field('이름'));
+        await tester.pumpAndSettle();
+      }
+
+      // Turning the control on asks for values; nothing here can guess them.
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'provider-custom-control-0-reasoning_effort',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+      expect(find.byType(TRMultiCombobox<String>), findsOneWidget);
+
+      // Saving with an empty menu is refused rather than dropping the control.
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
+      await tester.pumpAndSettle();
+      expect(await api.providers.listProviderConnections(), isEmpty);
+
+      await addValue(0, 'quick');
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-add-model')),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('Model ID').last, 'deep-model');
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'provider-custom-control-1-reasoning_effort',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+      await addValue(1, 'deep');
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-custom-save')),
+      );
+      await tester.pumpAndSettle();
+
+      // Two models behind one base URL, each with its own menu.
+      final saved = (await api.providers.listProviderConnections())
+          .single
+          .customConfig!
+          .models;
+      expect(
+        saved.map(
+          (model) => model.controls.single.choices.map((choice) => choice.id),
+        ),
+        <List<String>>[
+          <String>['quick'],
+          <String>['deep'],
+        ],
+      );
+    },
+  );
+
   testWidgets('custom provider creates, edits, disconnects, and deletes', (
     tester,
   ) async {
@@ -468,7 +562,12 @@ void main() {
       'http://127.0.0.1:9000/v1',
     );
     await tester.enterText(_field('API 키'), 'lab-secret');
-    await tester.enterText(_field('수동 model ID'), 'model-a, model-b');
+    await tester.enterText(_field('Model ID').first, 'model-a');
+    await tester.tap(
+      find.byKey(const ValueKey<String>('provider-custom-add-model')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Model ID').last, 'model-b');
     await tester.tap(
       find.byKey(const ValueKey<String>('provider-custom-save')),
     );
@@ -662,6 +761,246 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('provider-add-openai')), findsOneWidget);
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
+  );
+
+  testWidgets(
+    'a completing authorization does not undo where the user went next',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      final now = DateTime.utc(2026);
+      final events = StreamController<ClientEvent>.broadcast(sync: true);
+      addTearDown(events.close);
+      final api = FakeTinestApi(
+        connections: <ProviderConnectionDto>[
+          ProviderConnectionDto(
+            id: 'deepseek',
+            definitionId: 'deepseek',
+            modelPrefix: 'deepseek',
+            displayName: 'DeepSeek',
+            status: ProviderConnectionStatus.connected,
+            authKind: ProviderAuthKind.apiKey,
+            credentialOrigin: ProviderCredentialOrigin.stored,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+        eventStream: events.stream,
+      );
+      await _pumpSettings(tester, api);
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-openai')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      await tester.pump();
+
+      // The authorization completes in the same frame the user asks for the
+      // catalog again. The form paints through its exit transition, so without
+      // a guard its hand-off lands after the navigation and replaces it.
+      events.add(
+        const ProviderAuthUpdatedClientEvent(
+          ProviderAuthAttemptDto(
+            id: 'attempt',
+            definitionId: 'openai',
+            methodId: 'chatgpt-browser',
+            connectionId: 'deepseek',
+            status: ProviderAuthAttemptStatus.succeeded,
+          ),
+        ),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('provider-catalog-refresh')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-disconnect')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__provider_oauth__widget'],
+  );
+
+  testWidgets(
+    'the catalog reopens after a connection completes the create flow',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      final api = FakeTinestApi(connections: <ProviderConnectionDto>[]);
+      await _pumpSettings(tester, api);
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+      await tester.pumpAndSettle();
+      await tester.enterText(_field('API 키'), 'deepseek-secret');
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('provider-connect-submit')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-connection-deepseek')),
+        findsOneWidget,
+      );
+
+      // Completing the flow replaces the whole stack with the new connection,
+      // so adding another provider must reach the catalog rather than being
+      // pulled back by the create flow it just left.
+      await _openCatalog(tester);
+      expect(
+        find
+            .byKey(const ValueKey<String>('provider-catalog-refresh'))
+            .hitTestable(),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_catalog__widget',
+    ],
+  );
+
+  testWidgets(
+    'a failed connection shows the reason the daemon reported',
+    (
+      tester,
+    ) async {
+      final now = DateTime.utc(2026);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(
+          connections: <ProviderConnectionDto>[
+            ProviderConnectionDto(
+              id: 'broken-provider',
+              definitionId: 'deepseek',
+              modelPrefix: 'broken',
+              displayName: 'Unavailable provider',
+              status: ProviderConnectionStatus.error,
+              authKind: ProviderAuthKind.apiKey,
+              credentialOrigin: ProviderCredentialOrigin.stored,
+              error: 'Could not list models: upstream refused the request',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ],
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('provider-connection-broken-provider'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final alert = find.byKey(
+        const ValueKey<String>('provider-connection-error'),
+      );
+      expect(alert, findsOneWidget);
+      expect(tester.widget<TRAlert>(alert).variant, TRStatusVariant.danger);
+      expect(
+        find.textContaining('upstream refused the request'),
+        findsOneWidget,
+      );
+      // The reason belongs to the connection section, beside the status it
+      // explains, rather than floating above the page.
+      expect(
+        find.ancestor(of: alert, matching: find.byType(SettingsSection)),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>[
+      'feature_test__provider_connection_management__widget',
+    ],
+  );
+
+  testWidgets(
+    'mobile Back walks the detail stack one level at a time',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(390, 760);
+      addTearDown(tester.view.reset);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(connections: <ProviderConnectionDto>[]),
+      );
+
+      await _openCatalog(tester);
+      await tester.tap(find.byKey(const ValueKey('provider-add-deepseek')));
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsOneWidget);
+
+      // The form covers the catalog, which covers the collection, so Back
+      // unwinds the same levels the taps built.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('provider-add-deepseek')),
+        findsOneWidget,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('provider-add-button')),
+        findsOneWidget,
+      );
+    },
+    tags: const <String>['feature_test__provider_catalog__widget'],
+  );
+
+  testWidgets(
+    'cancelling the preset form pops to the catalog it was pushed over',
+    (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 1
+        ..physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.reset);
+      await _pumpSettings(
+        tester,
+        FakeTinestApi(connections: <ProviderConnectionDto>[]),
+      );
+
+      await _openCatalog(tester);
+      final entry = find.byKey(const ValueKey<String>('provider-add-deepseek'));
+      final catalogRoute = ModalRoute.of(tester.element(entry));
+      expect(catalogRoute, isNotNull);
+
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(_field('API 키'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TRButton, testL10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      // The form is one step above the catalog, so cancelling pops onto the
+      // route it was pushed over rather than pushing a second catalog. A
+      // replacement would also rebind the collection's secondary animation and
+      // replay its exit.
+      expect(entry, findsOneWidget);
+      expect(ModalRoute.of(tester.element(entry)), same(catalogRoute));
     },
     tags: const <String>['feature_test__provider_catalog__widget'],
   );

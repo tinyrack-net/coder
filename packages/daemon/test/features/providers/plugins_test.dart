@@ -307,9 +307,16 @@ data: [DONE]
         // Every offered value, not just the first: a choice the wire drops is
         // as inert as a control it never reads.
         final values = switch (control.kind) {
+          // A wire template carries no values of its own: the endpoint's owner
+          // supplies those. Any value stands in to prove the wire encodes it.
           AgentModelControlKind.choice => <AgentModelControlValue>[
-            for (final choice in control.choices)
-              AgentModelControlStringValue(value: choice.id),
+            for (final choice in <String>[
+              if (control.choices.isEmpty)
+                'user-defined'
+              else
+                for (final choice in control.choices) choice.id,
+            ])
+              AgentModelControlStringValue(value: choice),
           ],
           AgentModelControlKind.toggle => <AgentModelControlValue>[
             const AgentModelControlBoolValue(value: true),

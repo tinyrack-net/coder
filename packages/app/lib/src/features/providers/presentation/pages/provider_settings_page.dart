@@ -105,69 +105,58 @@ class _ProviderSettingsSlot extends ConsumerWidget {
         widthClass == TRAdaptiveWidthClass.large ||
         widthClass == TRAdaptiveWidthClass.extraLarge;
     if (slot == SettingsPaneSlot.collection &&
-        paneController._pane == _ProviderPane.empty &&
+        !paneController.hasDetail &&
         showsSplit &&
         paneController.canAutoSelect &&
         state.connections.isNotEmpty) {
       _scheduleInitialSelection(state.connections.first.id);
     }
+    final selectedId = paneController.selectedId;
     final selected = state.connections
-        .where((connection) => connection.id == paneController.selectedId)
+        .where((connection) => connection.id == selectedId)
         .firstOrNull;
-    final reauthConnection = state.connections
-        .where(
-          (connection) => connection.id == paneController.reauthConnectionId,
-        )
-        .firstOrNull;
-    if (paneController._pane == _ProviderPane.connection && selected == null) {
-      _scheduleCollection(
-        context,
-        ref,
-        paneController.selectedId!,
-      );
+    if (selectedId != null && selected == null) {
+      _scheduleCollection(context, ref, selectedId);
     }
     if (slot == SettingsPaneSlot.collection) {
       return _ProviderCollection(
         connections: state.connections,
-        selectedId: paneController._pane == _ProviderPane.connection
-            ? paneController.selectedId
-            : null,
+        selectedId: selectedId,
         onSelected: paneController.selectConnectionId,
         onAdd: paneController.showCatalog,
       );
     }
-    return switch (paneController._pane) {
-      _ProviderPane.empty => SettingsEmptyState(
-        title: AppLocalizations.of(context).providerSettingsSelectConnection,
-        icon: const Icon(TinestIcons.network),
-      ),
-      _ProviderPane.catalog => _ProviderCatalogPane(
+    // The destination comes from the page rather than the stack's innermost
+    // entry, so a route leaving keeps rendering itself for its whole exit.
+    return switch (SettingsDetailScope.maybeOf(context)) {
+      _CatalogDestination() => _ProviderCatalogPane(
         hostId: hostId,
         state: state,
         onPreset: paneController.showPreset,
         onCustom: paneController.showCustom,
       ),
-      _ProviderPane.preset => _PresetProviderPane(
-        key: ValueKey<String>(
-          'provider-preset-${paneController.draftDefinition!.id}',
+      _PresetDestination(:final definition, :final reauthConnectionId) =>
+        _PresetProviderPane(
+          key: ValueKey<String>('provider-preset-${definition.id}'),
+          hostId: hostId,
+          state: state,
+          definition: definition,
+          existing: state.connections
+              .where((connection) => connection.id == reauthConnectionId)
+              .firstOrNull,
+          onCancel: paneController.popDetail,
+          onConnected: paneController.selectConnection,
         ),
+      _CustomDestination() => _CustomProviderPane(
         hostId: hostId,
         state: state,
-        definition: paneController.draftDefinition!,
-        existing: reauthConnection,
-        onCancel: reauthConnection == null
-            ? paneController.showCatalog
-            : () => paneController.selectConnection(reauthConnection),
-        onConnected: paneController.selectConnection,
-      ),
-      _ProviderPane.custom => _CustomProviderPane(
-        hostId: hostId,
-        state: state,
-        onCancel: paneController.showCatalog,
+        onCancel: paneController.popDetail,
         onSaved: paneController.selectConnection,
       ),
-      _ProviderPane.connection =>
-        selected!.customConfig == null
+      // A connection can disappear while its detail is open, and the schedule
+      // above returns to the collection on the next frame.
+      _ConnectionDestination() when selected != null =>
+        selected.customConfig == null
             ? _ProviderConnectionPane(
                 key: ValueKey<String>('provider-detail-${selected.id}'),
                 hostId: hostId,
@@ -189,6 +178,10 @@ class _ProviderSettingsSlot extends ConsumerWidget {
                 onSaved: paneController.selectConnection,
                 onRemoved: paneController.showCollection,
               ),
+      _ => SettingsEmptyState(
+        title: AppLocalizations.of(context).providerSettingsSelectConnection,
+        icon: const Icon(TinestIcons.network),
+      ),
     };
   }
 
@@ -204,9 +197,7 @@ class _ProviderSettingsSlot extends ConsumerWidget {
     String selectedId,
   ) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted ||
-          paneController._pane != _ProviderPane.connection ||
-          paneController.selectedId != selectedId) {
+      if (!context.mounted || paneController.selectedId != selectedId) {
         return;
       }
       final latest = ref.read(providerSettingsControllerProvider(hostId)).value;
@@ -220,46 +211,91 @@ class _ProviderSettingsSlot extends ConsumerWidget {
   }
 }
 
-enum _ProviderPane { empty, catalog, preset, custom, connection }
+/// One destination stacked above the Provider collection.
+///
+/// Identity is deliberately narrower than the payload. A catalog refresh
+/// rebuilds its definitions, and keying an open form on the whole record would
+/// swap the route out from under whoever is typing into it.
+@immutable
+sealed class _ProviderDestination {
+  const _ProviderDestination();
+}
 
-/// Owns Provider selection and creation flow independently from pane slots.
+final class _CatalogDestination extends _ProviderDestination {
+  const _CatalogDestination();
+
+  @override
+  bool operator ==(Object other) => other is _CatalogDestination;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+final class _PresetDestination extends _ProviderDestination {
+  const _PresetDestination({required this.definition, this.reauthConnectionId});
+
+  final ProviderDefinitionDto definition;
+
+  /// Connection being retried, when the preset flow is a reauthentication.
+  final String? reauthConnectionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PresetDestination &&
+      other.definition.id == definition.id &&
+      other.reauthConnectionId == reauthConnectionId;
+
+  @override
+  int get hashCode => Object.hash(definition.id, reauthConnectionId);
+}
+
+final class _CustomDestination extends _ProviderDestination {
+  const _CustomDestination();
+
+  @override
+  bool operator ==(Object other) => other is _CustomDestination;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+final class _ConnectionDestination extends _ProviderDestination {
+  const _ConnectionDestination(this.connectionId);
+
+  final String connectionId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ConnectionDestination && other.connectionId == connectionId;
+
+  @override
+  int get hashCode => connectionId.hashCode;
+}
+
+/// Owns the Provider detail stack independently from either rendered slot.
+///
+/// The catalog and the form it opens are two levels rather than two values of
+/// one level, so cancelling the form pops back onto the catalog route it was
+/// pushed over instead of replacing it.
 class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
-  String? _selectedId;
-  String? _reauthConnectionId;
-  ProviderDefinitionDto? _draftDefinition;
-  _ProviderPane _pane = _ProviderPane.empty;
+  final List<_ProviderDestination> _stack = <_ProviderDestination>[];
 
-  /// Selected provider connection ID, when an existing connection is active.
-  String? get selectedId => _selectedId;
-
-  /// Connection being reauthenticated, when the preset flow is a retry.
-  String? get reauthConnectionId => _reauthConnectionId;
-
-  /// Provider definition selected from the catalog.
-  ProviderDefinitionDto? get draftDefinition => _draftDefinition;
-
-  @override
-  bool get hasDetail => _pane != _ProviderPane.empty;
-
-  @override
-  Object? get detailSelection => switch (_pane) {
-    _ProviderPane.empty => null,
-    _ProviderPane.catalog => (_ProviderPane.catalog, null, null),
-    _ProviderPane.preset => (
-      _ProviderPane.preset,
-      _draftDefinition!.id,
-      _reauthConnectionId,
-    ),
-    _ProviderPane.custom => (_ProviderPane.custom, null, null),
-    _ProviderPane.connection => (_ProviderPane.connection, _selectedId, null),
+  /// Connection the collection highlights, when one is the base destination.
+  ///
+  /// A reauthentication form sits above its connection, which stays selected
+  /// underneath it.
+  String? get selectedId => switch (_stack.firstOrNull) {
+    _ConnectionDestination(:final connectionId) => connectionId,
+    _ => null,
   };
+
+  @override
+  List<Object> get detailStack => List<Object>.unmodifiable(_stack);
 
   /// Shows the first connection on initial desktop entry.
   void selectInitialConnectionId(String id) {
     if (!consumeInitialSelection()) return;
-    _selectedId = id;
-    _pane = _ProviderPane.connection;
-    notifyListeners();
+    _replace(_ConnectionDestination(id));
   }
 
   /// Shows an existing provider connection.
@@ -269,79 +305,88 @@ class ProviderSettingsPaneController extends SettingsPaneCoordinatorBase {
   /// Shows an existing provider connection by ID.
   void selectConnectionId(String id) {
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.connection && _selectedId == id) return;
-    _selectedId = id;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.connection;
-    notifyListeners();
+    _replace(_ConnectionDestination(id));
   }
 
   /// Shows the provider catalog.
   void showCatalog() {
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.catalog) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.catalog;
-    notifyListeners();
+    _replace(const _CatalogDestination());
   }
 
-  /// Shows the connection flow for a catalog definition.
+  /// Opens the connection flow for a catalog definition over the catalog.
   void showPreset(ProviderDefinitionDto definition) {
     consumeExplicitNavigation();
-    _selectedId = null;
-    _draftDefinition = definition;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.preset;
-    notifyListeners();
+    _push(_PresetDestination(definition: definition));
   }
 
-  /// Shows the preset flow for an existing connection retry.
+  /// Opens the preset flow over the connection being retried.
   void showReauthentication(
     String connectionId,
     ProviderDefinitionDto definition,
   ) {
     consumeExplicitNavigation();
-    _selectedId = null;
-    _reauthConnectionId = connectionId;
-    _draftDefinition = definition;
-    _pane = _ProviderPane.preset;
+    _push(
+      _PresetDestination(
+        definition: definition,
+        reauthConnectionId: connectionId,
+      ),
+    );
+  }
+
+  /// Opens the custom provider creator over the catalog.
+  void showCustom() {
+    consumeExplicitNavigation();
+    _push(const _CustomDestination());
+  }
+
+  @override
+  void popDetail() {
+    consumeExplicitNavigation();
+    if (_stack.isEmpty) return;
+    _stack.removeLast();
     notifyListeners();
   }
 
-  /// Shows the custom provider creator.
-  void showCustom() {
+  @override
+  void removeDetail(Object destination) {
+    final index = _stack.indexWhere((entry) => entry == destination);
+    if (index < 0) return;
     consumeExplicitNavigation();
-    if (_pane == _ProviderPane.custom) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.custom;
+    _stack.removeRange(index, _stack.length);
     notifyListeners();
   }
 
   @override
   void showCollection() {
     consumeExplicitNavigation();
-    if (!hasDetail) return;
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.empty;
+    if (_stack.isEmpty) return;
+    _stack.clear();
     notifyListeners();
   }
 
   @override
   void reset() {
-    final hadDetail = hasDetail;
+    final hadDetail = _stack.isNotEmpty;
     resetInitialSelection();
-    _selectedId = null;
-    _draftDefinition = null;
-    _reauthConnectionId = null;
-    _pane = _ProviderPane.empty;
+    _stack.clear();
     if (hadDetail) notifyListeners();
+  }
+
+  void _push(_ProviderDestination destination) {
+    if (_stack.lastOrNull == destination) return;
+    _stack.add(destination);
+    notifyListeners();
+  }
+
+  /// Makes [destination] the only level, which is how the collection offers
+  /// its own destinations: a connection and the catalog are siblings.
+  void _replace(_ProviderDestination destination) {
+    if (_stack.length == 1 && _stack.single == destination) return;
+    _stack
+      ..clear()
+      ..add(destination);
+    notifyListeners();
   }
 }
 
@@ -545,6 +590,7 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
   bool _busy = false;
   Object? _error;
   String? _attemptId;
+  String? _connectedAttemptId;
   String? _retryConnectionId;
   Object? _openError;
   final Set<String> _rejectedPrefixes = <String>{};
@@ -568,14 +614,26 @@ class _PresetProviderPaneState extends ConsumerState<_PresetProviderPane> {
   @override
   Widget build(BuildContext context) {
     final attempt = widget.state.authAttempts[_attemptId];
-    if (attempt?.status == ProviderAuthAttemptStatus.succeeded) {
+    if (attempt != null &&
+        attempt.status == ProviderAuthAttemptStatus.succeeded &&
+        _connectedAttemptId != attempt.id) {
       final connection = widget.state.connections
-          .where((item) => item.id == attempt!.connectionId)
+          .where((item) => item.id == attempt.connectionId)
           .firstOrNull;
       if (connection != null) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => widget.onConnected(connection),
-        );
+        // Once per authorization, not once per build. The connection arrives
+        // a frame or more after the daemon reports it, so every rebuilt frame
+        // in between used to queue another hand-off.
+        _connectedAttemptId = attempt.id;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // This pane keeps painting through its exit transition, so by the
+          // time the hand-off runs the user may already have chosen somewhere
+          // else to be. Only the destination still on top may redirect
+          // navigation; otherwise finishing here undoes their choice.
+          if (!mounted) return;
+          if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+          widget.onConnected(connection);
+        });
       }
     }
     if (attempt != null) return _oauthPane(attempt);
@@ -984,6 +1042,19 @@ class _ProviderConnectionPaneState
           if (definition case final definition?)
             SettingsSection(
               title: l10n.providerSettingsConnectionHeading,
+              // The status row reports "Error" and stops. What the daemon
+              // said is the only thing that names what to fix, so it belongs
+              // to this section rather than being dropped.
+              banner: widget.connection.status == ProviderConnectionStatus.error
+                  ? TRAlert(
+                      key: const ValueKey<String>('provider-connection-error'),
+                      variant: TRStatusVariant.danger,
+                      title: TRText.inherit(
+                        widget.connection.error ??
+                            l10n.providerSettingsConnectionFailed,
+                      ),
+                    )
+                  : null,
               children: <Widget>[
                 SettingsRow(
                   title: TRText.inherit(
@@ -1138,11 +1209,11 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
   late final TextEditingController _name;
   late final TextEditingController _baseUrl;
   late final TextEditingController _apiKey;
-  late final TextEditingController _models;
   late final TextEditingController _prefix;
   late String _wireFormatId;
   late bool _authenticationRequired;
-  late Set<String> _controlIds;
+  final List<_ManualModelDraft> _drafts = <_ManualModelDraft>[];
+  int _nextSeed = 0;
   bool _busy = false;
   bool _namePrefilled = false;
   Object? _error;
@@ -1157,9 +1228,24 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       text: initial?.baseUrl ?? 'http://127.0.0.1:8080/v1',
     );
     _apiKey = TextEditingController();
-    _models = TextEditingController(
-      text: initial?.models.map((model) => model.id).join(', ') ?? '',
-    );
+    for (final model in initial?.models ?? const <ManualProviderModelDto>[]) {
+      _drafts.add(
+        _ManualModelDraft(
+          seed: _nextSeed++,
+          modelId: model.id,
+          controlIds: <String>{
+            for (final control in model.controls) control.id,
+          },
+          values: <String, List<String>>{
+            for (final control in model.controls)
+              control.id: <String>[
+                for (final choice in control.choices) choice.id,
+              ],
+          },
+        ),
+      );
+    }
+    if (_drafts.isEmpty) _drafts.add(_ManualModelDraft(seed: _nextSeed++));
     _prefix = TextEditingController(
       text: connection?.modelPrefix ?? _suggestCustomPrefix(),
     );
@@ -1168,10 +1254,6 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
         widget.state.catalog.wireFormats.firstOrNull?.id ??
         '';
     _authenticationRequired = initial?.authenticationRequired ?? true;
-    _controlIds = <String>{
-      for (final model in initial?.models ?? const <ManualProviderModelDto>[])
-        for (final control in model.controls) control.id,
-    };
   }
 
   @override
@@ -1192,7 +1274,9 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
     _name.dispose();
     _baseUrl.dispose();
     _apiKey.dispose();
-    _models.dispose();
+    for (final draft in _drafts) {
+      draft.dispose();
+    }
     _prefix.dispose();
     super.dispose();
   }
@@ -1268,9 +1352,15 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   if (value == null) return;
                   setState(() {
                     _wireFormatId = value;
-                    _controlIds.retainAll(
-                      _selectedWire.controls.map((control) => control.id),
-                    );
+                    final encodable = _selectedWire.controls
+                        .map((control) => control.id)
+                        .toSet();
+                    for (final draft in _drafts) {
+                      draft.controlIds.retainAll(encodable);
+                      draft.values.removeWhere(
+                        (id, _) => !encodable.contains(id),
+                      );
+                    }
                   });
                 },
               ),
@@ -1290,26 +1380,26 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
                   obscureText: true,
                   label: l10n.providerSettingsApiKey,
                 ),
-              TRTextField(
-                controller: _models,
-                label: l10n.providerSettingsManualModels,
-                // Demonstrates the comma-separated syntax with stand-in
-                // model IDs, which providers never localize.
-                placeholder: 'model-a, model-b',
-              ),
-              for (final control in _selectedWire.controls)
-                TinestCheckboxRow(
-                  value: _controlIds.contains(control.id),
-                  onChanged: (selected) => setState(() {
-                    selected == true
-                        ? _controlIds.add(control.id)
-                        : _controlIds.remove(control.id);
-                  }),
-                  title: TRText.inherit(control.label),
-                  subtitle: control.description == null
+              for (final (index, draft) in _drafts.indexed)
+                _ManualModelEditor(
+                  key: ValueKey<int>(draft.seed),
+                  draft: draft,
+                  controls: _selectedWire.controls,
+                  onRemove: _drafts.length == 1
                       ? null
-                      : TRText.inherit(control.description!),
+                      : () => setState(() {
+                          _drafts.removeAt(index).dispose();
+                        }),
+                  onChanged: () => setState(() {}),
                 ),
+              TRButton(
+                key: const ValueKey<String>('provider-custom-add-model'),
+                appearance: TRAppearance.outline,
+                onPressed: () => setState(() {
+                  _drafts.add(_ManualModelDraft(seed: _nextSeed++));
+                }),
+                child: TRText.inherit(l10n.providerSettingsManualModelAdd),
+              ),
             ],
           ),
           if (widget.existing case final existing?)
@@ -1389,6 +1479,25 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       setState(() => _error = l10n.providerSettingsApiKeyRequired);
       return;
     }
+    // A menu with nothing in it is a setting that cannot do anything, so the
+    // save is refused rather than dropping the control without saying so.
+    final incomplete = _selectedWire.controls.where(
+      (control) =>
+          control.kind == ModelControlKind.choice &&
+          _drafts.any(
+            (draft) =>
+                draft.controlIds.contains(control.id) &&
+                (draft.values[control.id] ?? const <String>[]).isEmpty,
+          ),
+    );
+    if (incomplete.isNotEmpty) {
+      setState(
+        () => _error = l10n.providerSettingsControlValuesRequired(
+          incomplete.first.label,
+        ),
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -1399,20 +1508,23 @@ class _CustomProviderPaneState extends ConsumerState<_CustomProviderPane> {
       wireFormatId: _wireFormatId,
       authenticationRequired: _authenticationRequired,
       models: <ManualProviderModelDto>[
-        for (final id
-            in _models.text
-                .split(',')
-                .map((value) => value.trim())
-                .where((value) => value.isNotEmpty)
-                .toSet())
-          ManualProviderModelDto(
-            id: id,
-            label: id,
-            controls: <ModelControlDescriptorDto>[
-              for (final control in _selectedWire.controls)
-                if (_controlIds.contains(control.id)) control,
-            ],
-          ),
+        for (final draft in _drafts)
+          if (draft.modelId.text.trim() case final id when id.isNotEmpty)
+            ManualProviderModelDto(
+              id: id,
+              label: id,
+              controls: <ModelControlDescriptorDto>[
+                for (final control in _selectedWire.controls)
+                  if (draft.controlIds.contains(control.id))
+                    control.copyWith(
+                      choices: <ModelControlChoiceDto>[
+                        for (final value
+                            in draft.values[control.id] ?? const <String>[])
+                          ModelControlChoiceDto(id: value, label: value),
+                      ],
+                    ),
+              ],
+            ),
       ],
     );
     final notifier = ref.read(
@@ -1568,3 +1680,119 @@ String _authStatusLabel(
   ProviderAuthAttemptStatus.expired => l10n.providerStatusError,
   ProviderAuthAttemptStatus.cancelled => l10n.providerStatusDisconnected,
 };
+
+/// One manual model being edited on a custom connection.
+///
+/// Values are per model rather than per connection: two models behind one base
+/// URL need not accept the same levels, and only their owner knows which.
+final class _ManualModelDraft {
+  _ManualModelDraft({
+    required this.seed,
+    String modelId = '',
+    Set<String>? controlIds,
+    Map<String, List<String>>? values,
+  }) : modelId = TextEditingController(text: modelId),
+       controlIds = controlIds ?? <String>{},
+       values = values ?? <String, List<String>>{};
+
+  /// Identity that survives reordering, so editors keep their field state.
+  final int seed;
+
+  /// Provider-local model identifier.
+  final TextEditingController modelId;
+
+  /// Controls this model offers.
+  final Set<String> controlIds;
+
+  /// Values the connection's owner declared, by control id.
+  final Map<String, List<String>> values;
+
+  void dispose() => modelId.dispose();
+}
+
+class _ManualModelEditor extends StatelessWidget {
+  const _ManualModelEditor({
+    required this.draft,
+    required this.controls,
+    required this.onChanged,
+    this.onRemove,
+    super.key,
+  });
+
+  final _ManualModelDraft draft;
+  final List<ModelControlDescriptorDto> controls;
+  final VoidCallback onChanged;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: TRSpacing.small,
+      children: <Widget>[
+        Row(
+          spacing: TRSpacing.small,
+          children: <Widget>[
+            Expanded(
+              child: TRTextField(
+                controller: draft.modelId,
+                label: l10n.providerSettingsManualModelId,
+                // A stand-in identifier, which providers never localize.
+                placeholder: 'model-a',
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+            if (onRemove case final remove?)
+              TRIconButton(
+                icon: const Icon(TinestIcons.delete),
+                label: l10n.providerSettingsManualModelRemove,
+                appearance: TRAppearance.ghost,
+                onPressed: remove,
+              ),
+          ],
+        ),
+        for (final control in controls) ...<Widget>[
+          TinestCheckboxRow(
+            key: ValueKey<String>(
+              'provider-custom-control-${draft.seed}-${control.id}',
+            ),
+            value: draft.controlIds.contains(control.id),
+            onChanged: (selected) {
+              selected == true
+                  ? draft.controlIds.add(control.id)
+                  : draft.controlIds.remove(control.id);
+              onChanged();
+            },
+            title: TRText.inherit(control.label),
+            subtitle: control.description == null
+                ? null
+                : TRText.inherit(control.description!),
+          ),
+          if (draft.controlIds.contains(control.id) &&
+              control.kind == ModelControlKind.choice)
+            TRMultiCombobox<String>.controlled(
+              value: draft.values[control.id] ?? const <String>[],
+              // Nothing here knows what an arbitrary endpoint accepts, so the
+              // typed query itself is the option: the owner names the values.
+              filterMode: TRComboboxFilterMode.none,
+              optionsBuilder: (query) => <TRComboboxItem<String>>[
+                for (final value in <String>{
+                  ...?draft.values[control.id],
+                  if (query.trim().isNotEmpty) query.trim(),
+                })
+                  TRComboboxItem<String>(value: value, label: value),
+              ],
+              label: l10n.providerSettingsControlValues(control.label),
+              helperText: l10n.providerSettingsControlValuesHelp,
+              placeholder: l10n.providerSettingsControlValuesPlaceholder,
+              onValueChange: (values) {
+                draft.values[control.id] = values;
+                onChanged();
+              },
+            ),
+        ],
+      ],
+    );
+  }
+}

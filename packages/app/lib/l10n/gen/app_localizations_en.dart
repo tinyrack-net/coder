@@ -1394,7 +1394,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerSettingsRequiresApiKey => 'Requires an API key';
 
   @override
-  String get providerSettingsManualModels => 'Manual model IDs';
+  String get providerSettingsManualModelId => 'Model ID';
+
+  @override
+  String get providerSettingsManualModelAdd => 'Add model';
+
+  @override
+  String get providerSettingsManualModelRemove => 'Remove model';
+
+  @override
+  String providerSettingsControlValues(String control) {
+    return '$control values';
+  }
+
+  @override
+  String get providerSettingsControlValuesHelp =>
+      'Type a value and select it to add. Only whoever runs this endpoint knows which values it accepts.';
+
+  @override
+  String get providerSettingsControlValuesPlaceholder => 'Type a value';
+
+  @override
+  String providerSettingsControlValuesRequired(String control) {
+    return 'Add at least one value for $control, or turn it off.';
+  }
 
   @override
   String get providerSettingsModelLookupFailedTitle => 'Could not list models';

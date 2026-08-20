@@ -186,6 +186,140 @@ void _registerConversationControllerTests() {
   );
 
   test(
+    'a started turn is visible before the daemon echoes it',
+    () async {
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
+        ..emitUserMessageEcho = false
+        ..startTurnGate = Completer<void>();
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      final send = container.read(provider.notifier).startTurn('follow up');
+      await Future<void>.delayed(Duration.zero);
+
+      // The bubble is recorded ahead of the RPC, not after it: the daemon acks
+      // a turn long before it writes the durable user message.
+      final pending = container.read(provider).value!.pending;
+      expect(pending.map((turn) => turn.prompt), <String>['follow up']);
+
+      api.startTurnGate!.complete();
+      await send;
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(provider).value!.pending.single.turnId,
+        api.startedTurnIds.single,
+        reason: 'the entry carries the turn id the daemon was given',
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'the echo replaces the optimistic prompt in a single state write',
+    () async {
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
+        ..emitUserMessageEcho = false;
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+      await container.read(provider.notifier).startTurn('follow up');
+      await Future<void>.delayed(Duration.zero);
+      final turnId = api.startedTurnIds.single;
+
+      // Two writes would put the echoed bubble on screen one frame after the
+      // optimistic one left it, which is the flicker this pins shut.
+      final observed = <({int timeline, int pending})>[];
+      final listener = container.listen(provider, (_, next) {
+        final state = next.value!;
+        observed.add((
+          timeline: state.timeline.length,
+          pending: state.pending.length,
+        ));
+      });
+      addTearDown(listener.close);
+
+      api.emitTimeline(agent.id, 'user.message', <String, dynamic>{
+        'text': 'follow up',
+        'attachments': const <Map<String, dynamic>>[],
+      }, turnId: turnId);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(observed, <({int timeline, int pending})>[
+        (timeline: 1, pending: 0),
+      ]);
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'cancelling one turn leaves another turn optimistic prompt alone',
+    () async {
+      final api = FakeTinestApi(agents: <SessionDto>[agent])
+        ..emitUserMessageEcho = false;
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+      await container.read(provider.notifier).startTurn('first');
+      await container.read(provider.notifier).startTurn('second');
+      await Future<void>.delayed(Duration.zero);
+      final first = api.startedTurnIds.first;
+
+      api.emitTimeline(agent.id, 'turn.cancelled', const <String, dynamic>{
+        'reason': 'interrupted',
+      }, turnId: first);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(provider).value!.pending.map((turn) => turn.prompt),
+        <String>['second'],
+        reason: 'a terminal event resolves only its own turn',
+      );
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'a prompt the daemon rejects leaves no optimistic bubble behind',
+    () async {
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
+      final container = _queueContainer(api);
+      addTearDown(container.dispose);
+      final provider = await _readyQueueProvider(container, agent);
+
+      // Rejected as busy: the prompt becomes a visible queue row, and a bubble
+      // left behind would be a second copy of the same prompt.
+      api
+        ..startTurnError = Exception('Agent already has a running turn.')
+        ..emit(
+          SessionUpdatedClientEvent(
+            agent.copyWith(status: SessionStatus.running),
+          ),
+        );
+      await Future<void>.delayed(Duration.zero);
+      await container.read(provider.notifier).startTurn('into a live turn');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(provider).value!.pending, isEmpty);
+      expect(container.read(provider).value!.queued, hasLength(1));
+
+      // Rejected outright: the composer takes the prompt back, so the bubble
+      // has to go with it.
+      api.emit(
+        SessionUpdatedClientEvent(agent.copyWith(status: SessionStatus.idle)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      api.startTurnError = Exception('offline');
+      await expectLater(
+        container.read(provider.notifier).startTurn('while offline'),
+        throwsA(isA<Exception>()),
+      );
+      expect(container.read(provider).value!.pending, isEmpty);
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
     'queued prompts start one per turn and survive a failed send',
     () async {
       final api = FakeTinestApi(agents: <SessionDto>[agent]);

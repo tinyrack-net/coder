@@ -30,12 +30,6 @@ final class GeminiInteractionsWire implements ProviderWireProtocol {
       label: 'Thinking level',
       kind: AgentModelControlKind.choice,
       presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'minimal', label: 'Minimal'),
-        AgentModelControlChoice(id: 'low', label: 'Low'),
-        AgentModelControlChoice(id: 'medium', label: 'Medium'),
-        AgentModelControlChoice(id: 'high', label: 'High'),
-      ],
     ),
   ];
 

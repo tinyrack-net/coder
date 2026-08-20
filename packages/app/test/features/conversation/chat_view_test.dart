@@ -348,7 +348,14 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ChatReasoningCard), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('chat-running')), findsNothing);
+      // The trailing row itself stays for the whole turn — taking it out and
+      // putting it back at every reasoning boundary is what made the tail
+      // twitch. What must not appear twice is the indicator.
+      expect(
+        find.byKey(const ValueKey<String>('chat-running')),
+        findsOneWidget,
+      );
+      expect(find.byType(ChatRunningIndicator), findsNothing);
       expect(find.text('사고 중'), findsOneWidget);
       expect(find.textContaining('파일을 확인하고 있습니다.'), findsNothing);
 
@@ -1542,6 +1549,36 @@ Closing paragraph.
       expect(tester.getTopLeft(header).dy, closeTo(before, 0.5));
     },
     tags: const <String>['feature_test__turn_execution__widget'],
+  );
+
+  testWidgets(
+    'every assistant message in a transcript shares one Markdown stylesheet',
+    tags: const <String>['feature_test__turn_execution__widget'],
+    (tester) async {
+      // Building the sheet per message means generating a full tonal palette
+      // per message, on every streamed delta. Identity is the direct read of
+      // whether the transcript computes it once or once per row.
+      await pump(tester, <TimelineEventDto>[
+        for (var index = 0; index < 4; index += 1) ...<TimelineEventDto>[
+          event('assistant.delta', <String, dynamic>{
+            'text': '**Answer $index**\n\nWith a paragraph.',
+          }),
+          event('turn.completed', <String, dynamic>{'toolRounds': 0}),
+        ],
+      ]);
+      await tester.pumpAndSettle();
+
+      final sheets = tester
+          .widgetList<MarkdownBody>(find.byType(MarkdownBody))
+          .map((body) => body.styleSheet)
+          .toList();
+      expect(sheets, hasLength(greaterThan(1)));
+      expect(
+        sheets.every((sheet) => identical(sheet, sheets.first)),
+        isTrue,
+        reason: 'one palette generation for the transcript, not one per row',
+      );
+    },
   );
 }
 

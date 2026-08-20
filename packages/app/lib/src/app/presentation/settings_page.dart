@@ -429,7 +429,9 @@ class _UnifiedSettingsPageState extends ConsumerState<UnifiedSettingsPage> {
     final controller = _paneControllers[_effectiveCategory];
     if (!settingsListDetailIsSplit(widthClass) &&
         (controller?.hasDetail ?? false)) {
-      controller!.showCollection();
+      // One level, matching the detail stack: a form opened from the catalog
+      // returns to the catalog before the catalog returns to the collection.
+      controller!.popDetail();
       return;
     }
     if (widthClass != TRAdaptiveWidthClass.compact) {

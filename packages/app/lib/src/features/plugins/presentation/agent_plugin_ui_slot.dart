@@ -345,12 +345,20 @@ class _PluginUiContributionSurfaceState
   }
 
   Future<void> _load() async {
-    // The last document stays on screen while the next one is fetched. A
-    // surface that re-renders whenever its declared dependency moves would
-    // otherwise flash a spinner on every change, and tearing the subtree down
-    // takes the reader's own state with it — a drawer they had expanded snaps
-    // shut the moment a subagent finishes.
-    if (mounted) setState(() => _error = null);
+    // A refresh keeps whatever is already rendered. The conversation slot sits
+    // between the transcript and the composer and re-renders on every turn
+    // boundary, so collapsing to the spinner and back would change the
+    // timeline's viewport height twice per turn. A surface that declares a
+    // dependency refreshes more often still, and tearing its subtree down
+    // takes the reader's own state with it — a drawer they had expanded would
+    // snap shut the moment a subagent finished. Only a first load, or one
+    // retrying past an error, has nothing to hold on to.
+    if (mounted && (_document == null || _error != null)) {
+      setState(() {
+        _document = null;
+        _error = null;
+      });
+    }
     try {
       final document = await ref
           .read(pluginSettingsControllerProvider(widget.hostId).notifier)

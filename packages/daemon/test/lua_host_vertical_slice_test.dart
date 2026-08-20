@@ -112,6 +112,75 @@ text(tostring(pcall(function() store("cyclic", cyclic) end)))
     },
     timeout: const Timeout(Duration(minutes: 2)),
   );
+
+  test(
+    'a value the protocol cannot carry fails the cell, not the Lua host',
+    () async {
+      final root = _repositoryRoot();
+      final staging = await Directory.systemTemp.createTemp(
+        'tinest-lua-tool-runtime-emit-',
+      );
+      final buildDirectory = await Directory.systemTemp.createTemp(
+        'tinest-lua-tool-runtime-emit-build-',
+      );
+      addTearDown(() => deleteTemporaryDirectory(staging));
+      addTearDown(() => deleteTemporaryDirectory(buildDirectory));
+      await lua.stageLuaToolRuntime(
+        destination: staging.path,
+        buildMode: lua.LuaBuildMode.debug,
+        buildDirectory: buildDirectory.path,
+        cmakeExecutable: await _cmakeExecutable(),
+      );
+      final service = LuaCodeModeService(
+        lua.LuaToolRuntime<ConversationAttachment>(
+          host: lua.LuaHostCommand.fromDirectory(staging.path),
+          processLauncher: const lua.IoLuaHostProcessLauncher(),
+          clock: const lua.SystemLuaClock(),
+          ids: _Ids(),
+        ),
+      );
+      addTearDown(service.close);
+      final context = LuaCodeModeContext(
+        cancellation: CancellationToken(),
+        tools: _ParallelEchoInvoker(),
+      );
+
+      // Emitting a function used to raise inside the privileged protocol
+      // layer, which killed the host process outright and left the author of
+      // the cell with nothing but a closed pipe to read.
+      final chunk = await service.execute(
+        owner: 'session',
+        workingDirectory: root.path,
+        request: const LuaExecuteRequest(
+          source: 'notify(function() end)',
+          yieldTime: Duration(seconds: 5),
+          maxOutputTokens: 1000,
+          tools: <LuaNestedToolDefinition>[],
+        ),
+        context: context,
+      );
+
+      expect(chunk.error, isNotNull);
+      expect(chunk.error, contains('not JSON serializable'));
+      expect(chunk.error, isNot(contains('closed its output')));
+
+      // The session's native worker is reusable, so the next cell still runs.
+      final recovered = await service.execute(
+        owner: 'session',
+        workingDirectory: root.path,
+        request: const LuaExecuteRequest(
+          source: 'text("still alive")',
+          yieldTime: Duration(seconds: 5),
+          maxOutputTokens: 1000,
+          tools: <LuaNestedToolDefinition>[],
+        ),
+        context: context,
+      );
+      expect(recovered.error, isNull);
+      expect(recovered.output, contains('still alive'));
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 }
 
 Future<String> _cmakeExecutable() async {

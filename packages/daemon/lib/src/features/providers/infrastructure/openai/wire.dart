@@ -22,9 +22,10 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
 
   /// Reasoning effort is the one control both OpenAI-compatible APIs encode.
   ///
-  /// Fast mode is deliberately absent: `service_tier` is a platform-only
-  /// field, so a connection to an arbitrary compatible endpoint would be
-  /// offered a toggle that never reaches the wire.
+  /// The template carries no levels. A custom connection addresses an endpoint
+  /// nobody here has seen, and which levels it takes is known only to whoever
+  /// runs it. Fast mode is absent for a related reason: `service_tier` is a
+  /// platform-only field that would never reach such an endpoint at all.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
     AgentModelControlDescriptor(
@@ -32,12 +33,6 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
       label: 'Reasoning effort',
       kind: AgentModelControlKind.choice,
       presentation: AgentModelControlPresentation.menuChip,
-      choices: <AgentModelControlChoice>[
-        AgentModelControlChoice(id: 'none', label: 'None'),
-        AgentModelControlChoice(id: 'low', label: 'Low'),
-        AgentModelControlChoice(id: 'medium', label: 'Medium'),
-        AgentModelControlChoice(id: 'high', label: 'High'),
-      ],
       conflictsWith: <String>[AgentModelControlIds.reasoningMode],
     ),
   ];
@@ -168,10 +163,6 @@ final class OpenAIResponsesWire extends OpenAICompatibleWire {
           label: 'Reasoning mode',
           kind: AgentModelControlKind.choice,
           presentation: AgentModelControlPresentation.menuChip,
-          choices: <AgentModelControlChoice>[
-            AgentModelControlChoice(id: 'none', label: 'None'),
-            AgentModelControlChoice(id: 'enabled', label: 'Enabled'),
-          ],
           conflictsWith: <String>[AgentModelControlIds.reasoningEffort],
         ),
       ];

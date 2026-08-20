@@ -1358,7 +1358,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerSettingsRequiresApiKey => 'API key 필요';
 
   @override
-  String get providerSettingsManualModels => '수동 model ID';
+  String get providerSettingsManualModelId => 'Model ID';
+
+  @override
+  String get providerSettingsManualModelAdd => 'Model 추가';
+
+  @override
+  String get providerSettingsManualModelRemove => 'Model 제거';
+
+  @override
+  String providerSettingsControlValues(String control) {
+    return '$control 값';
+  }
+
+  @override
+  String get providerSettingsControlValuesHelp =>
+      '값을 입력하고 선택해서 추가하세요. 어떤 값을 받는지는 이 endpoint를 운영하는 사람만 압니다.';
+
+  @override
+  String get providerSettingsControlValuesPlaceholder => '값 입력';
+
+  @override
+  String providerSettingsControlValuesRequired(String control) {
+    return '$control에 값을 하나 이상 추가하거나 끄세요.';
+  }
 
   @override
   String get providerSettingsModelLookupFailedTitle => 'Model 자동 조회 실패';

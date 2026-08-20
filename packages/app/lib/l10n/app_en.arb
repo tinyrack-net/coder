@@ -1583,9 +1583,43 @@
   "@providerSettingsRequiresApiKey": {
     "description": "Toggle marking a custom provider as authenticated."
   },
-  "providerSettingsManualModels": "Manual model IDs",
-  "@providerSettingsManualModels": {
-    "description": "Text field label for hand-entered model IDs."
+  "providerSettingsManualModelId": "Model ID",
+  "@providerSettingsManualModelId": {
+    "description": "Text field label for one hand-entered model identifier."
+  },
+  "providerSettingsManualModelAdd": "Add model",
+  "@providerSettingsManualModelAdd": {
+    "description": "Button that appends another hand-entered model."
+  },
+  "providerSettingsManualModelRemove": "Remove model",
+  "@providerSettingsManualModelRemove": {
+    "description": "Accessible name of the button removing a manual model."
+  },
+  "providerSettingsControlValues": "{control} values",
+  "@providerSettingsControlValues": {
+    "description": "Label of the field naming the values one control accepts.",
+    "placeholders": {
+      "control": {
+        "type": "String"
+      }
+    }
+  },
+  "providerSettingsControlValuesHelp": "Type a value and select it to add. Only whoever runs this endpoint knows which values it accepts.",
+  "@providerSettingsControlValuesHelp": {
+    "description": "Helper text under the control value field."
+  },
+  "providerSettingsControlValuesPlaceholder": "Type a value",
+  "@providerSettingsControlValuesPlaceholder": {
+    "description": "Placeholder of the control value field."
+  },
+  "providerSettingsControlValuesRequired": "Add at least one value for {control}, or turn it off.",
+  "@providerSettingsControlValuesRequired": {
+    "description": "Error shown when a selected choice control has no values.",
+    "placeholders": {
+      "control": {
+        "type": "String"
+      }
+    }
   },
   "providerSettingsModelLookupFailedTitle": "Could not list models",
   "@providerSettingsModelLookupFailedTitle": {

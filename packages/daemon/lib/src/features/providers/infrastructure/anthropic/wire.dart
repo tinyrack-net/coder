@@ -79,10 +79,24 @@ final class AnthropicMessagesWire implements ProviderWireProtocol {
   /// wires: `speed` reaches only an endpoint that has stated it accepts
   /// expedited processing, which a custom connection never has, so offering
   /// the toggle there would be offering a setting that does nothing.
+  /// A custom connection addresses an endpoint nobody here has seen, so the
+  /// template carries the shape this wire encodes and no values: which levels
+  /// exist is known only to whoever runs that endpoint.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
-    anthropicEffortControl,
-    anthropicThinkingModeControl,
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+    ),
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningMode,
+      label: 'Thinking mode',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      conflictsWith: <String>[AgentModelControlIds.thinkingBudget],
+    ),
     anthropicThinkingBudgetControl,
   ];
 

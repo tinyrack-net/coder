@@ -2207,15 +2207,32 @@ class _SessionComposerState extends State<SessionComposer> {
     });
   }
 
+  /// Puts the caret back in the prompt after an action consumed the draft.
+  ///
+  /// The trailing action takes focus on pointer-down, so a mouse send would
+  /// otherwise leave the caret on a button that clearing the draft is about to
+  /// replace with Stop, disposing the focused node along with it. Requested
+  /// unconditionally: on Android and iOS the button is the only send path, and
+  /// a tap that dismisses the keyboard after every message is worse than one
+  /// that keeps it. Guarded on [SessionComposer.enabled] only because a
+  /// disabled field cannot hold focus at all.
+  void _keepInputFocus() {
+    if (widget.enabled) _inputFocus.requestFocus();
+  }
+
   /// Sends, or holds the prompt for the running turn.
   Future<void> _runDefaultAction() async {
     // Ahead of the queue branch: an app-owned command acts on the app, so it
     // works while a turn runs and must never be held for one.
-    if (await _dispatchClientCommand()) return;
+    if (await _dispatchClientCommand()) {
+      _keepInputFocus();
+      return;
+    }
     final queue = widget.onQueue;
     if (widget.busy && queue != null) {
       final submission = _take();
       if (submission == null) return;
+      _keepInputFocus();
       _clear();
       queue(submission);
       return;
@@ -2238,6 +2255,10 @@ class _SessionComposerState extends State<SessionComposer> {
   ) async {
     final submission = _take();
     if (submission == null) return;
+    // Ahead of the await, not after it: an upload can hold this for seconds,
+    // and a field that only wakes up once the daemon answers is the defect.
+    // A failure below hands the prompt back, so the caret has to be there.
+    _keepInputFocus();
     // Cleared before the upload starts: the prompt reads as sent, and a
     // failure puts it back rather than freezing it in the field.
     _clear();
@@ -2258,6 +2279,7 @@ class _SessionComposerState extends State<SessionComposer> {
   }
 
   Future<void> _sendQueuedNow(String id) async {
+    _keepInputFocus();
     try {
       await widget.onQueuedSendNow!(id);
     } on Exception catch (error) {

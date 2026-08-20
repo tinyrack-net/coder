@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/composer_controller.dart';
@@ -1917,6 +1919,204 @@ void main() {
       expect(submitted, <String>['hello']);
     },
   );
+
+  group('every send path leaves the caret in the prompt', () {
+    // The trailing action grabs focus on pointer-down, so a mouse send parks
+    // the caret on a button that `busy` is about to replace with Stop, taking
+    // the focused node down with it. Asserted through the primary focus rather
+    // than through the card's ring, so a passing test means the next keystroke
+    // actually reaches the field.
+    void expectPromptFocused(WidgetTester tester, {required String reason}) {
+      final primaryContext = tester.binding.focusManager.primaryFocus?.context;
+      expect(primaryContext, isNotNull, reason: reason);
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate(
+            (element) => identical(element, primaryContext),
+          ),
+          matching: find.byKey(inputKey),
+        ),
+        findsOneWidget,
+        reason: reason,
+      );
+    }
+
+    testWidgets(
+      'sending with the button returns focus to the input',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        final submitted = <String>[];
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              onSubmit: (submission) => submitted.add(submission.text),
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), 'hello');
+        await tester.tap(find.byKey(sendKey));
+        await tester.pumpAndSettle();
+
+        expect(submitted, <String>['hello']);
+        expectPromptFocused(tester, reason: 'button send');
+      },
+    );
+
+    testWidgets(
+      'focus returns before the send completes, not after',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        // The upload inside a send can take seconds. A field that only wakes
+        // up once the daemon answers is the bug, so the assertion runs while
+        // the submission is still in flight.
+        final gate = Completer<void>();
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              onSubmit: (_) => gate.future,
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), 'slow');
+        await tester.tap(find.byKey(sendKey));
+        await tester.pump();
+
+        expectPromptFocused(tester, reason: 'send still in flight');
+
+        gate.complete();
+        await tester.pumpAndSettle();
+        expectPromptFocused(tester, reason: 'send settled');
+      },
+    );
+
+    testWidgets(
+      'queueing over a running turn keeps focus',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        final queued = <String>[];
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              busy: true,
+              onSubmit: (_) {},
+              onQueue: (submission) => queued.add(submission.text),
+              onStop: () {},
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), 'follow up');
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(sendKey));
+        await tester.pumpAndSettle();
+
+        expect(queued, <String>['follow up']);
+        expectPromptFocused(tester, reason: 'queue branch');
+      },
+    );
+
+    testWidgets(
+      'running a client command keeps focus',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        final invoked = <String>[];
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              onSubmit: (_) {},
+              commands: mergeComposerCommands(
+                client: clientComposerCommands,
+                agent: const <AgentCommandDto>[],
+                skills: const <SkillSummaryDto>[],
+              ),
+              onClientCommand: (invocation) async {
+                invoked.add(invocation.command.id);
+                return true;
+              },
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), '/clear');
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(sendKey));
+        await tester.pumpAndSettle();
+
+        expect(invoked, <String>['client:clear']);
+        expectPromptFocused(tester, reason: 'client command');
+      },
+    );
+
+    testWidgets(
+      'a touch platform keeps its keyboard open after sending',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        // Android and iOS never submit on Enter, so the button is their only
+        // send path: letting the tap close the keyboard would end every
+        // message with a dismissed keyboard.
+        final submitted = <String>[];
+        await tester.pumpWidget(
+          _harness(
+            platform: TargetPlatform.android,
+            composer: SessionComposer(
+              enabled: true,
+              onSubmit: (submission) => submitted.add(submission.text),
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), 'hello');
+        await tester.tap(find.byKey(sendKey));
+        await tester.pumpAndSettle();
+
+        expect(submitted, <String>['hello']);
+        expectPromptFocused(tester, reason: 'android button send');
+      },
+    );
+
+    testWidgets(
+      'sending with Enter still keeps focus',
+      tags: const <String>['feature_test__turn_execution__widget'],
+      (tester) async {
+        // Enter never lost focus. Pinned so the button repair cannot be
+        // written in a way that takes it away from the keyboard path.
+        final submitted = <String>[];
+        await tester.pumpWidget(
+          _harness(
+            composer: SessionComposer(
+              enabled: true,
+              onSubmit: (submission) => submitted.add(submission.text),
+              bar: _bar(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(inputKey), 'hello');
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+
+        expect(submitted, <String>['hello']);
+        expectPromptFocused(tester, reason: 'enter send');
+      },
+    );
+  });
 }
 
 const _compactAgentDefinitions = <AgentDefinitionDto>[
