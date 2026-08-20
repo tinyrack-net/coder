@@ -124,22 +124,25 @@ jobs:
           if [ "${CROSS_PLATFORM}" = "true" ]; then
             matrix_scope='.host, .cross'
           fi
-          # Both pools are keyed by the hosted label a job would otherwise
-          # name, so the matrices below keep their `os` values and gain the
-          # labels to run on. There is no arm64 Mac mini equivalent of the
-          # Intel macOS runner, so that target stays hosted in both pools.
+          # Keyed by platform, not by a version. The same key resolves to
+          # Ubuntu 24.04 on GitHub and Ubuntu 26.04 in the homelab, and to
+          # Windows Server 2025 or Windows 11, so a key that named either one
+          # would be wrong for the other pool and would carry that claim into
+          # job names and artifact names. `host-fingerprint` records what each
+          # job actually ran on. `macos-intel` is the exception worth naming:
+          # the Mac minis are ARM64 only, so it is hosted in both pools.
           runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
             "github": {
-              "ubuntu-24.04": ["ubuntu-24.04"],
-              "windows-2025": ["windows-2025"],
-              "macos-26": ["macos-26"],
-              "macos-15-intel": ["macos-15-intel"]
+              "linux": ["ubuntu-24.04"],
+              "windows": ["windows-2025"],
+              "macos": ["macos-26"],
+              "macos-intel": ["macos-15-intel"]
             },
             "self-hosted": {
-              "ubuntu-24.04": ["self-hosted", "tinyrack-ubuntu-ci"],
-              "windows-2025": ["self-hosted", "tinyrack-windows-ci"],
-              "macos-26": ["self-hosted", "tinyrack-macmini"],
-              "macos-15-intel": ["macos-15-intel"]
+              "linux": ["self-hosted", "tinyrack-ubuntu-ci"],
+              "windows": ["self-hosted", "tinyrack-windows-ci"],
+              "macos": ["self-hosted", "tinyrack-macmini"],
+              "macos-intel": ["macos-15-intel"]
             }
           }[$pool]')"
           if [ "$runners" = "null" ]; then
@@ -169,10 +172,10 @@ jobs:
               "[.cli | $matrix_scope] | add | $scoped" "$matrices")"
             echo "mobile_matrix=$(jq -c --argjson runners "$runners" \
               "[.mobile | $matrix_scope] | add | $scoped" "$matrices")"
-            echo "runner_linux=$(jq -c '."ubuntu-24.04"' <<< "$runners")"
-            echo "runner_windows=$(jq -c '."windows-2025"' <<< "$runners")"
-            echo "runner_macos=$(jq -c '."macos-26"' <<< "$runners")"
-            echo "runner_macos_intel=$(jq -c '."macos-15-intel"' <<< "$runners")"
+            echo "runner_linux=$(jq -c '."linux"' <<< "$runners")"
+            echo "runner_windows=$(jq -c '."windows"' <<< "$runners")"
+            echo "runner_macos=$(jq -c '."macos"' <<< "$runners")"
+            echo "runner_macos_intel=$(jq -c '."macos-intel"' <<< "$runners")"
             echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
@@ -248,19 +251,19 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: macos-26
+          - os: macos
             shard: daemon
             scopes: --scope=daemon
             runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: macos-26
+          - os: macos
             shard: rest
             scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
             runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: windows-2025
+          - os: windows
             shard: daemon
             scopes: --scope=daemon
             runs_on: ${{ needs.changes.outputs.runner_windows }}
-          - os: windows-2025
+          - os: windows
             shard: rest
             scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
             runs_on: ${{ needs.changes.outputs.runner_windows }}
@@ -274,11 +277,11 @@ jobs:
       # Dart 3.13 rewrites native-library install names before a suite starts.
       # Concurrent macOS suites can race while replacing the shared dylib, so
       # keep package execution serial there; Windows has no such rewrite.
-      - if: matrix.os == 'macos-26'
+      - if: matrix.os == 'macos'
         run: >-
           dart run tinest_quality _test-dart --jobs=1 ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
-      - if: matrix.os != 'macos-26'
+      - if: matrix.os != 'macos'
         run: >-
           dart run tinest_quality _test-dart ${{ matrix.scopes }}
           --report=build/quality/dart-tests.json
@@ -299,9 +302,9 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: macos-26
+          - os: macos
             runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: windows-2025
+          - os: windows
             runs_on: ${{ needs.changes.outputs.runner_windows }}
     runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
@@ -612,10 +615,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-26
+          - os: macos
             command: flutter build macos --debug -t lib/main.dart
             runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: windows-2025
+          - os: windows
             command: flutter build windows --debug -t lib/main.dart
             runs_on: ${{ needs.changes.outputs.runner_windows }}
     runs-on: ${{ fromJSON(matrix.runs_on) }}
