@@ -1354,7 +1354,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerSettingsRequiresApiKey => 'API キーが必要';
 
   @override
-  String get providerSettingsManualModels => '手動モデル ID';
+  String get providerSettingsManualModelId => 'モデル ID';
+
+  @override
+  String get providerSettingsManualModelAdd => 'モデルを追加';
+
+  @override
+  String get providerSettingsManualModelRemove => 'モデルを削除';
+
+  @override
+  String providerSettingsControlValues(String control) {
+    return '$control の値';
+  }
+
+  @override
+  String get providerSettingsControlValuesHelp =>
+      '値を入力して選ぶと追加されます。どの値を受け付けるかは、この endpoint を運用する人だけが知っています。';
+
+  @override
+  String get providerSettingsControlValuesPlaceholder => '値を入力';
+
+  @override
+  String providerSettingsControlValuesRequired(String control) {
+    return '$control に値を 1 つ以上追加するか、オフにしてください。';
+  }
 
   @override
   String get providerSettingsModelLookupFailedTitle => 'モデルを一覧できませんでした';

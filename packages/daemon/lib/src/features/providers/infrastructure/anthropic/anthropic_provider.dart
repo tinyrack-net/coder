@@ -156,8 +156,10 @@ final class AnthropicMessagesProvider implements ModelGateway {
       'max_tokens': _config.maxOutputTokens,
       'stream': true,
       if (effort != null) 'output_config': <String, dynamic>{'effort': effort},
-      if (reasoningMode == 'adaptive')
-        'thinking': <String, dynamic>{'type': 'adaptive'},
+      // The mode travels as written. Matching one literal here would silently
+      // drop any value a custom endpoint's owner defined for their own server.
+      if (reasoningMode != null)
+        'thinking': <String, dynamic>{'type': reasoningMode},
       if (budget != null)
         'thinking': <String, dynamic>{
           'type': 'enabled',
