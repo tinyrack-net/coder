@@ -69,6 +69,7 @@ const Set<ProviderEndpointExtension> _platformExtensions =
       ProviderEndpointExtension.reasoningSummaries,
       ProviderEndpointExtension.requestAttribution,
       ProviderEndpointExtension.expeditedProcessing,
+      ProviderEndpointExtension.inlineDocuments,
     };
 
 /// The narrower surface the subscription backend serves.
@@ -78,6 +79,7 @@ const Set<ProviderEndpointExtension> _subscriptionExtensions =
       ProviderEndpointExtension.toolOutputSchemas,
       ProviderEndpointExtension.reasoningContinuation,
       ProviderEndpointExtension.reasoningSummaries,
+      ProviderEndpointExtension.inlineDocuments,
     };
 
 /// OpenAI itself: the platform API, plus the ChatGPT subscription backend.
@@ -274,7 +276,7 @@ const AgentModelCapabilities _openAiReasoning = AgentModelCapabilities(
   imageInput: AgentCapabilitySupport.supported,
   fileInput: AgentCapabilitySupport.supported,
   controls: <AgentModelControlDescriptor>[
-    _reasoningEffortControl,
+    _platformReasoningEffortControl,
     _fastModeControl,
   ],
   source: AgentCapabilitySource.bundled,
@@ -288,7 +290,27 @@ const AgentModelCapabilities _tools = AgentModelCapabilities(
   source: AgentCapabilitySource.bundled,
 );
 
+/// The effort levels an OpenAI-compatible endpoint can be assumed to take.
+///
+/// Shared by every compatible vendor, so it lists the levels they agree on
+/// rather than one platform's ladder: an unknown level is rejected by the
+/// endpoint, and the user picked it from a menu the product offered.
 const AgentModelControlDescriptor _reasoningEffortControl =
+    AgentModelControlDescriptor(
+      id: AgentModelControlIds.reasoningEffort,
+      label: 'Reasoning effort',
+      kind: AgentModelControlKind.choice,
+      presentation: AgentModelControlPresentation.menuChip,
+      choices: <AgentModelControlChoice>[
+        AgentModelControlChoice(id: 'none', label: 'None'),
+        AgentModelControlChoice(id: 'low', label: 'Low'),
+        AgentModelControlChoice(id: 'medium', label: 'Medium'),
+        AgentModelControlChoice(id: 'high', label: 'High'),
+      ],
+    );
+
+/// The platform API documents two levels above the shared ladder.
+const AgentModelControlDescriptor _platformReasoningEffortControl =
     AgentModelControlDescriptor(
       id: AgentModelControlIds.reasoningEffort,
       label: 'Reasoning effort',

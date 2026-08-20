@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/error_body.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/media.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/sse.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/error_body.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/media.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/sse.dart';
 import 'package:dio/dio.dart';
 
 /// OpenAIProviderConfig defines a public contract.
@@ -355,6 +355,7 @@ class OpenAIResponsesProvider implements ModelGateway {
                 'detail': attachment.imageDetail ?? 'auto',
               });
             } else if (_config.supportsFileInput &&
+                _config.accepts(ProviderEndpointExtension.inlineDocuments) &&
                 bytes != null &&
                 _isSupportedFile(attachment) &&
                 directFileBytes + bytes.length <= _maxDirectFileBytes) {

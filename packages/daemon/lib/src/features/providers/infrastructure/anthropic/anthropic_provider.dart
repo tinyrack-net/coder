@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/error_body.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/sse.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/error_body.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/sse.dart';
 import 'package:dio/dio.dart';
 
 /// Runtime configuration for an Anthropic Messages endpoint.
@@ -16,6 +16,7 @@ final class AnthropicProviderConfig {
     this.baseUrl = 'https://api.anthropic.com/v1',
     this.apiVersion = '2023-06-01',
     this.maxOutputTokens = 8192,
+    this.extensions = const <ProviderEndpointExtension>{},
   });
 
   /// Connection ID.
@@ -32,6 +33,16 @@ final class AnthropicProviderConfig {
 
   /// Required Messages API output ceiling.
   final int maxOutputTokens;
+
+  /// Optional behaviours the endpoint this config addresses documents.
+  ///
+  /// A custom connection may point this wire at a proxy or a compatible
+  /// gateway, so the vendor's own answer cannot be the default here.
+  final Set<ProviderEndpointExtension> extensions;
+
+  /// Whether the endpoint this config addresses accepts [extension].
+  bool accepts(ProviderEndpointExtension extension) =>
+      extensions.contains(extension);
 }
 
 /// Classified Anthropic transport or stream failure.
@@ -152,7 +163,9 @@ final class AnthropicMessagesProvider implements ModelGateway {
           'type': 'enabled',
           'budget_tokens': budget,
         },
-      if (fast == true) 'speed': 'fast',
+      if (fast == true &&
+          _config.accepts(ProviderEndpointExtension.expeditedProcessing))
+        'speed': 'fast',
       'tools': <Map<String, dynamic>>[
         for (final tool
             in request.tools.whereType<ModelFunctionToolDefinition>())
@@ -160,9 +173,8 @@ final class AnthropicMessagesProvider implements ModelGateway {
             'name': tool.name,
             'description': tool.description,
             'input_schema': tool.parameters,
-            // Every schema the harness produces is strict, and this endpoint
-            // documents the field, so the decision belongs to this wire.
-            'strict': true,
+            if (_config.accepts(ProviderEndpointExtension.strictToolSchemas))
+              'strict': true,
           },
       ],
       if (request.forceToolName != null)

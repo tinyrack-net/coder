@@ -596,6 +596,46 @@ data: [DONE]
     expect(completed.usage.totalTokens, 7);
   });
 
+  test('an endpoint that has not stated it inlines documents gets text', () {
+    // The accepted media types and the size ceiling are one platform's
+    // documented limits. An endpoint that has not claimed them is described
+    // the attachment in text, which every endpoint understands.
+    final adapter = _RecordingAdapter('''
+data: {"type":"response.completed","response":{"output":[],"usage":{}}}
+
+data: [DONE]
+
+''');
+    return OpenAIResponsesProvider(
+          _config(
+            apiKey: 'secret-test-key',
+            extensions: const <ProviderEndpointExtension>{},
+          ),
+          dio: Dio()..httpClientAdapter = adapter,
+        )
+        .stream(_request(history: _documentHistory), CancellationToken())
+        .toList()
+        .then((_) {
+          final input =
+              Map<String, dynamic>.from(adapter.options!.data as Map)['input']!
+                  as List;
+          final content = (input.last as Map)['content']! as List;
+          expect(
+            content,
+            everyElement(isNot(containsPair('type', 'input_file'))),
+          );
+          expect(
+            content,
+            contains(
+              allOf(
+                containsPair('type', 'input_text'),
+                containsPair('text', contains('notes.txt')),
+              ),
+            ),
+          );
+        });
+  });
+
   test('Responses replays only its own opaque items', () async {
     final adapter = _RecordingAdapter('''
 data: {"type":"response.completed","response":{"output":[{"type":"reasoning","id":"rs_1","encrypted_content":"blob"}],"usage":{}}}
@@ -1722,4 +1762,21 @@ const Set<ProviderEndpointExtension> _platformExtensions =
       ProviderEndpointExtension.reasoningSummaries,
       ProviderEndpointExtension.requestAttribution,
       ProviderEndpointExtension.expeditedProcessing,
+      ProviderEndpointExtension.inlineDocuments,
     };
+
+final List<ConversationItem> _documentHistory = <ConversationItem>[
+  UserConversationItem(
+    'inspect',
+    attachments: <ConversationAttachment>[
+      ConversationAttachment(
+        id: 'document',
+        fileName: 'notes.txt',
+        mimeType: 'text/plain',
+        byteSize: 2,
+        path: '/attachments/document.blob',
+        bytes: Uint8List.fromList(<int>[4, 5]),
+      ),
+    ],
+  ),
+];

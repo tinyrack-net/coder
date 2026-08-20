@@ -84,6 +84,24 @@ void main() {
     }
   });
 
+  test('a vendor that lists models says so on its endpoint', () {
+    // Discovery is skipped for an endpoint that has not stated it serves a
+    // listing, so a vendor whose wire implements one has to declare it or the
+    // listing silently never runs and only bundled models appear.
+    for (final adapter in <ProviderAdapter>[
+      const AnthropicAdapter(),
+      const GoogleGeminiAdapter(),
+    ]) {
+      expect(
+        adapter
+            .endpoint(AgentProviderAuthKind.apiKey)
+            .accepts(ProviderEndpointExtension.modelDiscovery),
+        isTrue,
+        reason: adapter.id,
+      );
+    }
+  });
+
   test('the two MiniMax regions differ only by host', () {
     final adapters = openAIFamilyAdapters(
       clock: clock,

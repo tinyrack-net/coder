@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:daemon/src/features/providers/infrastructure/openai/openai.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/sse.dart';
 import 'package:test/test.dart';
 
 void main() {

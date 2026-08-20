@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:agent/agent.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/error_body.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/media.dart';
 import 'package:daemon/src/features/providers/infrastructure/openai/openai_provider.dart';
-import 'package:daemon/src/features/providers/infrastructure/openai/sse.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/error_body.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/media.dart';
+import 'package:daemon/src/features/providers/infrastructure/transport/sse.dart';
 import 'package:dio/dio.dart';
 
 /// OpenAIChatCompletionsProvider defines a public contract.
