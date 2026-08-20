@@ -512,6 +512,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceWorktreeNew => '새 worktree';
 
   @override
+  String get workspaceWorktreeLocal => '로컬';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'Worktree 선택';
 
   @override

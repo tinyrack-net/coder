@@ -512,6 +512,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceWorktreeNew => '新しいワークツリー';
 
   @override
+  String get workspaceWorktreeLocal => 'ローカル';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'ワークツリーを選択';
 
   @override

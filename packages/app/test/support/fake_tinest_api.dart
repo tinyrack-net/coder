@@ -1285,7 +1285,7 @@ final class FakeTinestApi
       name: branchName,
       path: '/worktrees/$branchName',
       branch: branchName,
-      kind: WorktreeKind.managed,
+      kind: WorktreeKind.linked,
       isTinestOwned: true,
       createdAt: _now,
     );

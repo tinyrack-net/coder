@@ -118,13 +118,13 @@ void main() {
         } else {
           final layer = select.presentation as TRSelectLayerPresentation;
           expect(
-            layer.layerSize,
-            const TRLayerSize(
-              width: TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
-            ),
+            layer.width,
+            const TRLayerWidth.fixed(TRMeasurements.overlayWidthSm),
           );
           // The popup width is the policy's, not the trigger's: a narrow and a
-          // wide anchor resolve to the same fixed bounds.
+          // wide anchor resolve to the same fixed bounds. Height is the design
+          // system's, and stating the width must not quietly drop it: without
+          // the cap the option list grows to the whole viewport.
           for (final anchor in <double>[64, 512]) {
             final resolved = layer.layerSize.constraintsFor(
               anchorSize: Size(anchor, TRControlMetrics.heightOf(TRUiSize.sm)),
@@ -132,6 +132,7 @@ void main() {
             );
             expect(resolved.minWidth, TRMeasurements.overlayWidthSm);
             expect(resolved.maxWidth, TRMeasurements.overlayWidthSm);
+            expect(resolved.maxHeight, TRMeasurements.measureXl);
           }
           expect(layer.placement, TRLayerPlacement.bottomStart);
           expect(layer.useRootOverlay, isTrue);

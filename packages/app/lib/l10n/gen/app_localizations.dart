@@ -1024,6 +1024,12 @@ abstract class AppLocalizations {
   /// **'New worktree'**
   String get workspaceWorktreeNew;
 
+  /// New-workspace worktree chip and menu entry that runs the session in the registered repository folder itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get workspaceWorktreeLocal;
+
   /// Tooltip of the new-workspace worktree chip.
   ///
   /// In en, this message translates to:

@@ -508,7 +508,7 @@ void main() {
       workspaceId: workspace.id,
       name: 'feature/settings',
       path: '/daemon/worktrees/feature-settings',
-      kind: WorktreeKind.managed,
+      kind: WorktreeKind.linked,
       branch: 'feature/settings',
       head: 'abc123',
       isTinestOwned: true,
@@ -576,10 +576,29 @@ void main() {
   });
 
   test('only non-root worktree kinds are archivable', () {
-    expect(isArchivableWorktreeKind(WorktreeKind.managed), isTrue);
-    expect(isArchivableWorktreeKind(WorktreeKind.external), isTrue);
+    expect(isArchivableWorktreeKind(WorktreeKind.linked), isTrue);
     expect(isArchivableWorktreeKind(WorktreeKind.checkout), isFalse);
     expect(isArchivableWorktreeKind(WorktreeKind.directory), isFalse);
+  });
+
+  test('a linked worktree carries its ownership as a field, not a kind', () {
+    // Who created the checkout is the only thing the retired `managed` and
+    // `external` kinds ever disagreed on, and it is already a field. Both
+    // still round-trip as one kind and stay archivable.
+    for (final owned in <bool>[true, false]) {
+      final worktree = WorktreeDto(
+        id: 'worktree-$owned',
+        workspaceId: 'workspace',
+        name: 'feature/settings',
+        path: '/daemon/worktrees/feature-settings',
+        kind: WorktreeKind.linked,
+        isTinestOwned: owned,
+        createdAt: DateTime.utc(2026, 8, 20),
+      );
+      _roundTrip(worktree, (value) => value.toJson(), WorktreeDto.fromJson);
+      expect(worktree.toJson()['kind'], 'linked');
+      expect(isArchivableWorktreeKind(worktree.kind), isTrue);
+    }
   });
 
   test(

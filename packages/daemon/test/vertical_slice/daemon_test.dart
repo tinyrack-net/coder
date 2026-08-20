@@ -3008,7 +3008,7 @@ blocked/
       final archivedExternal = archiveCatalog.worktrees.singleWhere(
         (worktree) => p.equals(worktree.path, canonicalArchivedExternalPath),
       );
-      expect(archivedExternal.kind, WorktreeKind.external);
+      expect(archivedExternal.kind, WorktreeKind.linked);
       expect(
         (await client.previewWorktreeArchive(
           archivedExternal.id,

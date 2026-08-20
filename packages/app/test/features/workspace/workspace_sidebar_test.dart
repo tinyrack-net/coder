@@ -37,19 +37,23 @@ void main() {
         createdAt: now,
       );
 
-  /// A Tinest-owned checkout, which is the only kind a row menu can archive.
-  WorktreeDto managedWorktree(String id, String workspaceId, String branch) =>
-      WorktreeDto(
-        id: id,
-        workspaceId: workspaceId,
-        name: branch,
-        path: '/state/worktrees/$workspaceId/$branch',
-        branch: branch,
-        head: 'def',
-        kind: WorktreeKind.managed,
-        isTinestOwned: true,
-        createdAt: now,
-      );
+  /// A checkout beside the workspace root, which a row menu can archive.
+  WorktreeDto linkedWorktree(
+    String id,
+    String workspaceId,
+    String branch, {
+    bool isTinestOwned = true,
+  }) => WorktreeDto(
+    id: id,
+    workspaceId: workspaceId,
+    name: branch,
+    path: '/state/worktrees/$workspaceId/$branch',
+    branch: branch,
+    head: 'def',
+    kind: WorktreeKind.linked,
+    isTinestOwned: isTinestOwned,
+    createdAt: now,
+  );
 
   HostRuntimeSnapshot host(
     String id,
@@ -418,7 +422,7 @@ void main() {
             workspaces: <WorkspaceDto>[project],
             worktrees: <WorktreeDto>[
               worktree('project-main', project.id, 'main'),
-              managedWorktree('project-topic', project.id, 'topic'),
+              linkedWorktree('project-topic', project.id, 'topic'),
             ],
           ),
         },
@@ -454,6 +458,69 @@ void main() {
       expect((await api.workspaces.getWorkspaceCatalog()).workspaces, isEmpty);
     },
     tags: const <String>['feature_test__workspace_registration__widget'],
+  );
+
+  testWidgets(
+    'the tree lists every worktree and offers archive on the linked ones',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final project = workspace('project', 'Project');
+      final worktrees = <WorktreeDto>[
+        worktree('project-main', project.id, 'main'),
+        linkedWorktree('project-ours', project.id, 'ours'),
+        linkedWorktree(
+          'project-theirs',
+          project.id,
+          'theirs',
+          isTinestOwned: false,
+        ),
+      ];
+      final controller = TRTreeNavController<WorkspaceNavValue>();
+      addTearDown(controller.dispose);
+
+      await pump(
+        tester,
+        hosts: <HostRuntimeSnapshot>[host('up', 'Up daemon')],
+        catalogs: <String, WorkspaceCatalogDto>{
+          'up': WorkspaceCatalogDto(
+            workspaces: <WorkspaceDto>[project],
+            worktrees: worktrees,
+          ),
+        },
+        selected: WorkspaceSelection(
+          hostId: 'up',
+          workspaceId: project.id,
+          worktreeId: 'project-main',
+        ),
+        treeController: controller,
+      );
+
+      // The new-workspace composer offers only Local and New worktree. The
+      // tree is where an existing checkout is picked, so it must keep showing
+      // every one of them regardless of who created it.
+      for (final item in worktrees) {
+        expect(
+          find.byKey(ValueKey<String>('workspace-worktree-${item.id}')),
+          findsOneWidget,
+          reason: item.id,
+        );
+      }
+      // Ownership decides whether the directory can be removed, not whether
+      // the checkout can be archived, so both linked rows offer the menu.
+      for (final id in const <String>['project-ours', 'project-theirs']) {
+        expect(
+          find.byKey(ValueKey<String>('worktree-menu-$id')),
+          findsOneWidget,
+          reason: id,
+        );
+      }
+      expect(
+        find.byKey(const ValueKey<String>('worktree-menu-project-main')),
+        findsNothing,
+      );
+    },
+    tags: const <String>['feature_test__workspace_catalog__widget'],
   );
 
   // The row paints its own background and focus ring, so both are read off the
@@ -512,7 +579,7 @@ void main() {
           workspaces: <WorkspaceDto>[project],
           worktrees: <WorktreeDto>[
             worktree('project-main', project.id, 'main'),
-            managedWorktree('project-topic', project.id, 'topic'),
+            linkedWorktree('project-topic', project.id, 'topic'),
           ],
         ),
       },

@@ -152,8 +152,7 @@ Map<String, dynamic> _$WorktreeDtoToJson(_WorktreeDto instance) =>
 
 const _$WorktreeKindEnumMap = {
   WorktreeKind.checkout: 'checkout',
-  WorktreeKind.managed: 'managed',
-  WorktreeKind.external: 'external',
+  WorktreeKind.linked: 'linked',
   WorktreeKind.directory: 'directory',
 };
 

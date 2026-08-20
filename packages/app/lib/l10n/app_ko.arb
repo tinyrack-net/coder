@@ -153,6 +153,7 @@
   "workspaceProjectChipTooltip": "프로젝트 선택",
   "workspaceProjectAdd": "추가",
   "workspaceWorktreeNew": "새 worktree",
+  "workspaceWorktreeLocal": "로컬",
   "workspaceWorktreeChipTooltip": "Worktree 선택",
   "workspaceBaseBranchChip": "기반 branch",
   "workspaceBaseBranchChipTooltip": "기반 branch 선택",

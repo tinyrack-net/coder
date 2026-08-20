@@ -516,6 +516,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceWorktreeNew => 'New worktree';
 
   @override
+  String get workspaceWorktreeLocal => 'Local';
+
+  @override
   String get workspaceWorktreeChipTooltip => 'Select a worktree';
 
   @override

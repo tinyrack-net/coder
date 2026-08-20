@@ -207,7 +207,10 @@ void main() {
       final external = catalog.worktrees.singleWhere(
         (worktree) => worktree.branch == 'archive-external',
       );
-      expect(external.kind, WorktreeKind.external);
+      expect(external.kind, WorktreeKind.linked);
+      // The scenario is about a checkout Tinest did not create, which is the
+      // ownership field rather than a kind of its own.
+      expect(external.isTinestOwned, isFalse);
 
       tester.binding.platformDispatcher.localeTestValue = const Locale('ko');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
