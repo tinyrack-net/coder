@@ -755,6 +755,42 @@ Future<void> _runConformance({
       await _expectHoverContains(
         client,
         uri,
+        _inside(
+          fixtureSource,
+          'agents.agents[1].session_status',
+          'session_status',
+        ),
+        'CollaborationSessionStatus',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(fixtureSource, 'agents.agents[1].session_id', 'session_id'),
+        'string',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(
+          fixtureSource,
+          'local ui_dependency = tinest.ui.dependency.session_tree',
+          'ui_dependency',
+        ),
+        'session_tree',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
+        _inside(
+          fixtureSource,
+          'local render_locale = context.locale',
+          'render_locale',
+        ),
+        'string',
+      );
+      await _expectHoverContains(
+        client,
+        uri,
         _inside(fixtureSource, 'local lua_handle = lua_chunk.handle', 'handle'),
         'string',
       );
@@ -1569,35 +1605,51 @@ final class _LspClient {
         .where((value) => value.isNotEmpty)
         .firstOrNull;
     if (existing != null && existing.isNotEmpty) return existing;
-    try {
-      final result = await request(
-        'textDocument/diagnostic',
-        <String, Object?>{
-          'textDocument': <String, Object?>{'uri': uri},
-        },
-      );
-      if (result is Map<Object?, Object?>) {
-        final items = _jsonMap(result)['items'];
-        if (items is List<Object?> && items.isNotEmpty) {
-          return <Map<String, Object?>>[
-            for (final value in items)
-              if (value is Map<Object?, Object?>) _jsonMap(value),
-          ];
-        }
-      }
-    } on _LspRequestException {
-      // LuaLS may use push diagnostics only; wait for that notification below.
-    }
+    // Asking again rather than waiting on one push. LuaLS answers only once it
+    // has finished indexing the library, and how long that takes scales with
+    // the SDK it is indexing and with what else the runner is doing. A single
+    // armed waiter turns that into one edge to catch inside a fixed window,
+    // which is a race the tool loses on a loaded machine and never loses
+    // locally. Re-asking makes the wait a level check: whichever of the pull
+    // and the push answers first ends it.
     final completer = _diagnosticWaiters.putIfAbsent(
       uri,
       Completer<List<Map<String, Object?>>>.new,
     );
-    return completer.future.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () => throw TimeoutException(
-        'LuaLS did not publish diagnostics. Seen: ${_diagnostics.keys}. '
-        '$_stderr',
-      ),
+    final waited = Stopwatch()..start();
+    while (waited.elapsed < const Duration(minutes: 3)) {
+      try {
+        final result = await request(
+          'textDocument/diagnostic',
+          <String, Object?>{
+            'textDocument': <String, Object?>{'uri': uri},
+          },
+        );
+        if (result is Map<Object?, Object?>) {
+          final items = _jsonMap(result)['items'];
+          if (items is List<Object?> && items.isNotEmpty) {
+            _diagnosticWaiters.remove(uri);
+            return <Map<String, Object?>>[
+              for (final value in items)
+                if (value is Map<Object?, Object?>) _jsonMap(value),
+            ];
+          }
+        }
+      } on _LspRequestException {
+        // LuaLS may use push diagnostics only; the waiter below covers it.
+      }
+      if (completer.isCompleted) return completer.future;
+      final pushed = await completer.future
+          .timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => const <Map<String, Object?>>[],
+          )
+          .catchError((_) => const <Map<String, Object?>>[]);
+      if (pushed.isNotEmpty) return pushed;
+    }
+    throw TimeoutException(
+      'LuaLS did not publish diagnostics. Seen: ${_diagnostics.keys}. '
+      '$_stderr',
     );
   }
 

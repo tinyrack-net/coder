@@ -126,6 +126,36 @@ void main() {
           <String, Object?>{'id': 'card', 'slot': 'browser-overlay'},
         ],
       },
+      // The host can only invalidate state it knows how to watch. Accepting a
+      // name it does not know would read as a working declaration and then
+      // silently never fire.
+      'unsupported UI dependency': <String, Object?>{
+        'ui': <Object?>[
+          <String, Object?>{
+            'id': 'card',
+            'slot': 'timeline',
+            'depends_on': <Object?>['the_weather'],
+          },
+        ],
+      },
+      'non-array UI dependencies': <String, Object?>{
+        'ui': <Object?>[
+          <String, Object?>{
+            'id': 'card',
+            'slot': 'timeline',
+            'depends_on': 'session_tree',
+          },
+        ],
+      },
+      'duplicate UI dependency': <String, Object?>{
+        'ui': <Object?>[
+          <String, Object?>{
+            'id': 'card',
+            'slot': 'timeline',
+            'depends_on': <Object?>['session_tree', 'session_tree'],
+          },
+        ],
+      },
       'schema type is not scalar or array': _spec(
         tools: <Object?>[
           _tool('schema', inputSchema: <String, Object?>{'type': 42}),

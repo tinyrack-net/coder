@@ -576,9 +576,16 @@ end
 ---@class (exact) tinest.CollaborationInterruptOutput
 ---@field previous_status tinest.CollaborationAgentStatus
 
+---@alias tinest.CollaborationSessionStatus 'initializing'|'idle'|'running'|'waiting_for_approval'|'waiting_for_input'|'failed'|'closed'
+
 ---@class (exact) tinest.CollaborationAgent
+---@field session_id string
 ---@field agent_name string
 ---@field agent_status tinest.CollaborationAgentStatus
+---@field session_status tinest.CollaborationSessionStatus
+---@field title string
+---@field task_name? string
+---@field parent_session_id? string
 
 ---@class (exact) tinest.CollaborationListOutput
 ---@field agents tinest.CollaborationAgent[]
@@ -750,7 +757,8 @@ end
 ---@field value? T
 
 ---@alias tinest.HostPrimitiveRef function
----@alias tinest.UiSlot 'agentSettings'|'composerControl'|'conversationStatus'|'timeline'|'dialog'|'toast'
+---@alias tinest.UiSlot 'agentSettings'|'composerControl'|'composerDrawer'|'conversationStatus'|'timeline'|'dialog'|'toast'
+---@alias tinest.UiDependency 'session_tree'
 ---@alias tinest.Capability 'model.call'|'tools.list'|'tools.invoke'|'state.read'|'state.write'|'scheduler.manage'|'ui.publish'|'workspace.read'|'workspace.patch'|'process.execute'|'process.write'|'attachment.publish'|'attachment.read'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'network.access'|'secret.access'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'
 ---@alias tinest.Effect 'filesystem.read'|'filesystem.write'|'process.command'|'process.write'|'network.request'|'state.read'|'state.write'|'scheduler.enqueue'|'ui.publish'|'ui.timeline'|'ui.dialog'|'attachment.read'|'attachment.write'|'interaction.request'|'clock.read'|'clock.sleep'|'mcp.read'|'mcp.invoke'|'collaboration.spawn'|'collaboration.message'|'collaboration.wait'|'collaboration.interrupt'|'collaboration.list'|'model.call'|'tools.list'|'tools.invoke'|'context.read'|'context.reset'|'context.compact'
 ---@alias tinest.ModelCapability 'streaming'|'function_tools'|'deferred_tools'|'media'|'image_input'|'file_input'
@@ -843,12 +851,25 @@ end
 ---@field required_capabilities? tinest.Capability[]
 ---@field metadata tinest.SessionControlMetadata
 
+--- Host facts about the surface a UI handler is rendering into.
+---
+--- Supplied by the host on every render, never by the plugin. A key the host
+--- has nothing to say about is absent, so read defensively.
+---@class tinest.UiRenderContext
+---@field sessionId? string
+---@field workspaceId? string
+---@field worktreeId? string
+---@field locale? string
+---@field readOnly? boolean
+---@field busy? boolean
+
 ---@class (exact) tinest.UiContributionSpec
 ---@field id string
 ---@field slot tinest.UiSlot
 ---@field uses? tinest.HostPrimitiveRef[]
 ---@field effects? tinest.Effect[]
 ---@field required_capabilities? tinest.Capability[]
+---@field depends_on? tinest.UiDependency[]
 ---@field metadata? table<string, any>
 
 ---@class (exact) tinest.UiActionSpec
@@ -1073,7 +1094,28 @@ end
 ---@class tinest.UiDisclosureProperties
 ---@field title string
 ---@field open? boolean
+--- Compact nodes the host draws beside the title while it is collapsed.
+---@field summary? tinest.UiNode[]
 ---@field children tinest.UiNode[]
+
+--- A host-owned action, built by a constructor such as `tinest.ui.open_session`.
+---@alias tinest.UiIntent table<string, any>
+
+---@class tinest.UiTreeProperties
+---@field children tinest.UiNode[]
+
+--- One node of a tree. Nesting is the hierarchy; the host owns the indentation,
+--- so an item never states a depth.
+---@class tinest.UiTreeItemProperties
+---@field label string
+---@field description? string
+---@field status? tinest.UiStatus
+---@field badges? tinest.UiNode[]
+---@field onActivate? tinest.UiIntent
+---@field children? tinest.UiNode[]
+
+--- What a piece of work is doing. The host chooses the glyph and the colour.
+---@alias tinest.UiStatus 'pending'|'running'|'blocked'|'paused'|'done'|'failed'
 
 ---@class tinest.UiFieldProperties
 ---@field id string
@@ -1135,10 +1177,14 @@ end
 ---@class (exact) tinest.UiSlotApi
 ---@field agent_settings 'agentSettings'
 ---@field composer_control 'composerControl'
+---@field composer_drawer 'composerDrawer'
 ---@field conversation_status 'conversationStatus'
 ---@field timeline 'timeline'
 ---@field dialog 'dialog'
 ---@field toast 'toast'
+
+---@class (exact) tinest.UiDependencyApi
+---@field session_tree 'session_tree'
 
 ---@class tinest.HookApi
 ---@field agent_attach fun(spec: tinest.HookSpec, callback: fun(context: tinest.AgentAttachContext): any): tinest.HookRef<tinest.AgentAttachContext>
@@ -1158,6 +1204,7 @@ end
 
 ---@class tinest.UiApi
 ---@field slot tinest.UiSlotApi
+---@field dependency tinest.UiDependencyApi
 ---@field section fun(properties: tinest.UiSectionProperties): tinest.UiNode
 ---@field row fun(properties: tinest.UiRowProperties): tinest.UiNode
 ---@field text fun(properties: tinest.UiTextProperties): tinest.UiNode
@@ -1168,6 +1215,9 @@ end
 ---@field badge fun(properties: tinest.UiBadgeProperties): tinest.UiNode
 ---@field progress fun(properties: tinest.UiProgressProperties): tinest.UiNode
 ---@field disclosure fun(properties: tinest.UiDisclosureProperties): tinest.UiNode
+---@field tree fun(properties: tinest.UiTreeProperties): tinest.UiNode
+---@field tree_item fun(properties: tinest.UiTreeItemProperties): tinest.UiNode
+---@field open_session fun(session_id: string): tinest.UiIntent
 ---@field field fun(properties: tinest.UiFieldProperties): tinest.UiNode
 ---@field document fun(node: tinest.UiNode): tinest.UiNode
 
@@ -1531,14 +1581,20 @@ end
 ---@type tinest.HookApi
 local hook_api = {}
 ---@type tinest.UiApi
-local ui_api = {slot = {
-  agent_settings = "agentSettings",
-  composer_control = "composerControl",
-  conversation_status = "conversationStatus",
-  timeline = "timeline",
-  dialog = "dialog",
-  toast = "toast",
-}}
+local ui_api = {
+  slot = {
+    agent_settings = "agentSettings",
+    composer_control = "composerControl",
+    composer_drawer = "composerDrawer",
+    conversation_status = "conversationStatus",
+    timeline = "timeline",
+    dialog = "dialog",
+    toast = "toast",
+  },
+  dependency = {
+    session_tree = "session_tree",
+  },
+}
 
 ---@type tinest.ModelCapabilityApi
 local model_capability_api = {
@@ -1874,7 +1930,7 @@ end
 ---@generic T
 ---@param spec tinest.UiContributionSpec
 ---@param input_schema tinest.Schema<T>
----@param callback fun(arguments: T): tinest.UiNode
+---@param callback fun(arguments: T, context: tinest.UiRenderContext): tinest.UiNode
 ---@return tinest.UiContributionRef<T>
 function tinest.ui.contribution(spec, input_schema, callback)
   local run = function(arguments)
@@ -1882,7 +1938,9 @@ function tinest.ui.contribution(spec, input_schema, callback)
     if arguments.__tinest_callback_value ~= true then
       fail("UI callback input was not supplied by the Tinest host", 2)
     end
-    return callback(arguments.value)
+    -- The host facts of the surface arrive beside the plugin's own input, so a
+    -- handler that never asked for them keeps its single parameter.
+    return callback(arguments.value, arguments.context or {})
   end
   return contribution("ui", spec, run, {
     input_schema = schema_document(input_schema, "UI contribution input schema"),
@@ -1911,7 +1969,8 @@ end
 
 local node_kinds = {
   "section", "row", "text", "markdown", "code", "diff", "alert", "badge",
-  "progress", "disclosure", "field", "button", "switch", "select",
+  "progress", "disclosure", "tree", "tree_item", "field", "button", "switch",
+  "select",
 }
 
 local action_node_kinds = {button = true, switch = true, select = true}
@@ -1990,6 +2049,19 @@ function tinest.ui.switch(properties) return ui_node("switch", properties) end
 ---@param properties tinest.UiSelectProperties<D>
 ---@return tinest.UiNode
 function tinest.ui.select(properties) return ui_node("select", properties) end
+
+--- Asks the host to open one session when the node is activated.
+---
+--- Naming a session is a request, not a permission: the host decides whether
+--- the reader may reach it, and drops the intent when they may not.
+---@param session_id string
+---@return tinest.UiIntent
+function tinest.ui.open_session(session_id)
+  if type(session_id) ~= "string" or session_id == "" then
+    fail("open_session needs a session id", 2)
+  end
+  return {type = "open_session", sessionId = session_id}
+end
 
 function tinest.ui.tool_document(arguments)
   local value = type(arguments) == "table" and arguments or {}

@@ -32,6 +32,47 @@ final class CollaborationException implements Exception {
   String toString() => message;
 }
 
+/// One agent of a collaboration tree, as `list_agents` reports it.
+///
+/// Carries the identity a caller needs to address the agent afterwards, not
+/// only the label it displays: a surface that lists the tree also has to be
+/// able to name a session, nest it under its parent, and tell an agent that is
+/// working from one only the user can release.
+final class CollaborationAgentSummary {
+  /// Creates a summary of one agent in the tree.
+  const CollaborationAgentSummary({
+    required this.sessionId,
+    required this.agentName,
+    required this.agentStatus,
+    required this.sessionStatus,
+    required this.title,
+    this.taskName,
+    this.parentSessionId,
+  });
+
+  /// Session this agent runs in.
+  final String sessionId;
+
+  /// Canonical collaboration path, such as `/root/reviewer`.
+  final String agentName;
+
+  /// Turn lifecycle of the agent.
+  final AgentLifecycle agentStatus;
+
+  /// Session status, which distinguishes a working agent from one parked on an
+  /// approval only the user can answer; both keep the `running` lifecycle.
+  final SessionStatus sessionStatus;
+
+  /// Session title, the label of an agent that was never given a task name.
+  final String title;
+
+  /// Task name the agent was spawned under, absent for the tree root.
+  final String? taskName;
+
+  /// Parent session, absent for the tree root.
+  final String? parentSessionId;
+}
+
 /// How a collaboration wait ended.
 enum WaitAgentOutcome {
   /// New inter-agent mail arrived for the waiting agent.
@@ -650,17 +691,25 @@ class MultiAgentService {
   }
 
   /// Lists agents of the caller's tree, optionally under a path prefix.
-  Future<List<({String agentName, AgentLifecycle agentStatus})>> listAgents({
+  Future<List<CollaborationAgentSummary>> listAgents({
     required SessionDto caller,
     String? pathPrefix,
   }) async {
     final tree = await _sessions.listByRoot(rootIdOf(caller));
-    return <({String agentName, AgentLifecycle agentStatus})>[
+    return <CollaborationAgentSummary>[
       for (final session in tree)
         if (pathPrefix == null ||
             pathOf(session) == pathPrefix ||
             pathOf(session).startsWith('$pathPrefix/'))
-          (agentName: pathOf(session), agentStatus: _lifecycleOf(session)),
+          CollaborationAgentSummary(
+            sessionId: session.id,
+            agentName: pathOf(session),
+            agentStatus: _lifecycleOf(session),
+            sessionStatus: session.status,
+            title: session.title,
+            taskName: session.taskName,
+            parentSessionId: session.parentSessionId,
+          ),
     ];
   }
 

@@ -4,6 +4,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/plugins/application/plugin_settings_controller.dart';
 import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
+import 'package:app/src/features/sessions/application/sessions_controller.dart';
 import 'package:app/src/shared/presentation/client_error_alert.dart';
 import 'package:client/client.dart';
 import 'package:flutter/foundation.dart';
@@ -24,8 +25,16 @@ class AgentPluginUiSlot extends ConsumerStatefulWidget {
     required this.agent,
     required this.slot,
     this.context = const <String, dynamic>{},
+    this.onIntent,
+    this.maxContentHeight,
     super.key,
   });
+
+  /// Runs host-owned intents raised by documents in this slot.
+  final PluginUiIntentHandler? onIntent;
+
+  /// Bound this slot places on scrollable document content.
+  final double? maxContentHeight;
 
   /// Daemon that owns the Agent and plugin catalog.
   final String hostId;
@@ -55,6 +64,13 @@ class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // A plugin owns the strings it draws, so it has to be told which language
+    // to draw them in. That is a fact about the surface, not about any one
+    // call site, so it is added here rather than at every mount.
+    final renderContext = <String, dynamic>{
+      ...widget.context,
+      'locale': Localizations.localeOf(context).toLanguageTag(),
+    };
     final state = ref.watch(
       pluginSettingsControllerProvider(widget.hostId),
     );
@@ -82,6 +98,31 @@ class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
           }
         }
         if (contributions.isEmpty) return const SizedBox.shrink();
+        // A surface that reads live host state declares it, and only such a
+        // surface pays for the watch. The revision travels in the render
+        // context, which the surface already reloads on, so no separate
+        // invalidation channel is needed.
+        final watchesSessionTree = contributions.any(
+          (entry) =>
+              _dependencies(entry.contribution)
+                  .contains(_sessionTreeDependency),
+        );
+        final sessionTree = watchesSessionTree
+            ? ref
+                  .watch(
+                    sessionsControllerProvider(
+                      widget.hostId,
+                      widget.context['worktreeId'] as String?,
+                    ),
+                  )
+                  .value
+            : null;
+        final sessionTreeRevision = sessionTree == null
+            ? null
+            : _sessionTreeRevisionOf(
+                sessionTree,
+                widget.context['sessionId'] as String?,
+              );
         final surfaces = <Widget>[];
         var drew = false;
         for (final entry in contributions) {
@@ -89,6 +130,14 @@ class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
               'agent-plugin-ui-${widget.slot.name}-'
               '${entry.plugin.id}-${entry.contribution.id}';
           final silent = _silent.contains(key);
+          final declared = _dependencies(entry.contribution);
+          // Rendering a tree surface before the tree is known would answer
+          // from an empty list and then immediately render again once it
+          // arrives, costing two round trips for one panel.
+          if (declared.contains(_sessionTreeDependency) &&
+              sessionTreeRevision == null) {
+            continue;
+          }
           surfaces.add(
             PluginUiContributionSurface(
               key: ValueKey<String>(key),
@@ -101,7 +150,13 @@ class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
               // a silent contribution never leaves its separator behind.
               leadingSpacing: !silent && drew ? TRSpacing.small : 0,
               onSilentChanged: (value) => _reportSilent(key, silent: value),
-              context: widget.context,
+              onIntent: widget.onIntent,
+              maxContentHeight: widget.maxContentHeight,
+              context: <String, dynamic>{
+                ...renderContext,
+                if (declared.contains(_sessionTreeDependency))
+                  'sessionTreeRevision': sessionTreeRevision,
+              },
             ),
           );
           drew = drew || !silent;
@@ -113,7 +168,12 @@ class _AgentPluginUiSlotState extends ConsumerState<AgentPluginUiSlot> {
           children: surfaces,
         );
       },
-      loading: () => TRProgress(label: l10n.pluginUiLoading),
+      // Most Agents contribute to most slots, so a slot that announced itself
+      // while the catalog loads would flash a progress bar and then usually
+      // collapse to nothing. Waiting silently also keeps a host surface that
+      // hosts several slots — the composer header — from growing a stack of
+      // them the moment a daemon drops.
+      loading: () => const SizedBox.shrink(),
       error: (error, _) => _isExpectedAbsence(error)
           ? const SizedBox.shrink()
           : ClientErrorAlert(
@@ -143,13 +203,17 @@ TinestClientException _clientError(Object error) =>
 /// Whether [error] means the slot has nothing to show rather than that it
 /// failed.
 ///
-/// An Agent pins its plugin revisions when a turn starts, so every slot on a
-/// session that has never run reports an unavailable revision. That is the
-/// ordinary state of a new session, not a fault: reporting it would put a red
-/// panel beside the composer of every conversation before its first message.
+/// Two ways a slot legitimately has no answer. An Agent pins its plugin
+/// revisions when a turn starts, so every slot on a session that has never run
+/// reports an unavailable revision; that is the ordinary state of a new
+/// session, not a fault. And a dropped daemon is the app's own state, reported
+/// as a [StateError] rather than a daemon failure — the connection chrome
+/// already says so, and a plugin surface has nothing to add. Reporting either
+/// would put a red panel beside the composer, once per slot.
 bool _isExpectedAbsence(Object error) =>
-    error is TinestClientException &&
-    error.code == RpcErrorCodes.pluginRevisionUnavailable;
+    error is StateError ||
+    (error is TinestClientException &&
+        error.code == RpcErrorCodes.pluginRevisionUnavailable);
 
 /// Loads and renders one declared UI contribution through the public RPC.
 class PluginUiContributionSurface extends ConsumerStatefulWidget {
@@ -162,9 +226,17 @@ class PluginUiContributionSurface extends ConsumerStatefulWidget {
     required this.slot,
     this.leadingSpacing = 0,
     this.onSilentChanged,
+    this.onIntent,
+    this.maxContentHeight,
     this.context = const <String, dynamic>{},
     super.key,
   });
+
+  /// Runs host-owned intents raised by this document.
+  final PluginUiIntentHandler? onIntent;
+
+  /// Bound the slot places on scrollable document content.
+  final double? maxContentHeight;
 
   /// Daemon profile owning the plugin runtime.
   final String hostId;
@@ -252,6 +324,8 @@ class _PluginUiContributionSurfaceState
           AppIdentity.displayName,
         ),
         onAction: _dispatch,
+        onIntent: widget.onIntent,
+        maxContentHeight: widget.maxContentHeight,
       ),
     );
   }
@@ -274,7 +348,10 @@ class _PluginUiContributionSurfaceState
     // A refresh keeps whatever is already rendered. The conversation slot sits
     // between the transcript and the composer and re-renders on every turn
     // boundary, so collapsing to the spinner and back would change the
-    // timeline's viewport height twice per turn. Only a first load, or one
+    // timeline's viewport height twice per turn. A surface that declares a
+    // dependency refreshes more often still, and tearing its subtree down
+    // takes the reader's own state with it — a drawer they had expanded would
+    // snap shut the moment a subagent finished. Only a first load, or one
     // retrying past an error, has nothing to hold on to.
     if (mounted && (_document == null || _error != null)) {
       setState(() {
@@ -343,4 +420,43 @@ Set<String> _slots(PluginContributionDto contribution) {
   return value is List<Object?>
       ? value.whereType<String>().toSet()
       : const <String>{};
+}
+
+/// Live host state a contribution declared it reads, from `depends_on`.
+Set<String> _dependencies(PluginContributionDto contribution) {
+  final value = contribution.metadata['dependsOn'];
+  return value is List<Object?>
+      ? value.whereType<String>().toSet()
+      : const <String>{};
+}
+
+/// The declared dependency naming the caller's collaboration tree.
+const String _sessionTreeDependency = 'session_tree';
+
+/// A revision that changes exactly when the tree under [sessionId] does.
+///
+/// Only what a surface could draw is folded in — identity, parentage, label,
+/// and both status axes — so an unrelated write elsewhere in the worktree does
+/// not make every declared surface render again.
+String _sessionTreeRevisionOf(List<SessionDto> sessions, String? sessionId) {
+  if (sessionId == null) return '';
+  final current = sessions.where((item) => item.id == sessionId).firstOrNull;
+  final rootId = current?.rootSessionId ?? sessionId;
+  final members =
+      sessions
+          .where(
+            (item) => item.id == rootId || item.rootSessionId == rootId,
+          )
+          .map(
+            (item) => <String?>[
+              item.id,
+              item.parentSessionId,
+              item.taskName ?? item.title,
+              item.lifecycle?.name,
+              item.status.name,
+            ].join(':'),
+          )
+          .toList(growable: false)
+        ..sort();
+  return members.join('|');
 }

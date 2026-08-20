@@ -12,7 +12,6 @@ import 'package:app/src/features/conversation/presentation/chat_approval_card.da
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
-import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';

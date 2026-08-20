@@ -2003,33 +2003,6 @@
       }
     }
   },
-  "subagentTrackHeader": "{count, plural, =1{1 subagent} other{{count} subagents}}",
-  "@subagentTrackHeader": {
-    "description": "Header of the collapsible subagent track.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "subagentTrackRunning": "{count} running",
-  "@subagentTrackRunning": {
-    "description": "Running-count badge on the subagent track header.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "subagentTrackAwaitingApproval": "{count} to approve",
-  "@subagentTrackAwaitingApproval": {
-    "description": "Blocked-count badge on the collapsed subagent track header.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "subagentApprovalSection": "Subagent approvals",
   "@subagentApprovalSection": {
     "description": "Heading above subagent approvals shown on the parent session."
@@ -2038,25 +2011,29 @@
   "@subagentTabAwaitingApproval": {
     "description": "Semantic label of the session tab flag for a blocked subagent."
   },
-  "subagentStatusRunning": "Running",
-  "@subagentStatusRunning": {
-    "description": "Semantics label of a running subagent."
+  "statusPending": "Pending",
+  "@statusPending": {
+    "description": "Semantics label of work that is queued but not started."
   },
-  "subagentStatusCompleted": "Completed",
-  "@subagentStatusCompleted": {
-    "description": "Semantics label of a completed subagent."
+  "statusRunning": "Running",
+  "@statusRunning": {
+    "description": "Semantics label of work in progress."
   },
-  "subagentStatusInterrupted": "Interrupted",
-  "@subagentStatusInterrupted": {
-    "description": "Semantics label of an interrupted subagent."
+  "statusBlocked": "Waiting for approval",
+  "@statusBlocked": {
+    "description": "Semantics label of work parked on a user decision."
   },
-  "subagentStatusErrored": "Failed",
-  "@subagentStatusErrored": {
-    "description": "Semantics label of a failed subagent."
+  "statusPaused": "Interrupted",
+  "@statusPaused": {
+    "description": "Semantics label of work stopped on request."
   },
-  "subagentStatusWaitingForApproval": "Waiting for approval",
-  "@subagentStatusWaitingForApproval": {
-    "description": "Semantics label of a subagent blocked on an approval."
+  "statusDone": "Completed",
+  "@statusDone": {
+    "description": "Semantics label of work that finished successfully."
+  },
+  "statusFailed": "Failed",
+  "@statusFailed": {
+    "description": "Semantics label of work that finished with an error."
   },
   "chatToolSubagentQueued": "Queued",
   "@chatToolSubagentQueued": {

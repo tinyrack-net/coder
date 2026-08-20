@@ -115,6 +115,7 @@ void main() {
     ModelSelectionDto? model,
     String agentDefinitionId = 'tinest',
     PermissionMode permissionMode = PermissionMode.ask,
+    SessionStatus status = SessionStatus.idle,
   }) => SessionDto(
     id: id,
     worktreeId: 'worktree',
@@ -123,7 +124,7 @@ void main() {
     origin: parentSessionId == null
         ? SessionOrigin.manual
         : SessionOrigin.delegated,
-    status: SessionStatus.idle,
+    status: status,
     parentSessionId: parentSessionId,
     taskName: taskName,
     agentPath: agentPath,
@@ -1029,7 +1030,8 @@ void main() {
           taskName: 'task_b',
           agentPath: '/root/task_a/task_b',
           rootSessionId: 'root',
-          lifecycle: AgentLifecycle.completed,
+          lifecycle: AgentLifecycle.running,
+          status: SessionStatus.waitingForApproval,
         ),
       );
       final all = await service.listAgents(caller: root);
@@ -1047,6 +1049,64 @@ void main() {
       expect(scoped.map((agent) => agent.agentName), <String>[
         '/root/task_a',
         '/root/task_a/task_b',
+      ]);
+    });
+
+    test('list carries the identity needed to address an agent', () async {
+      final root = await database.sessionDao.create(session('root'));
+      await database.sessionDao.create(
+        session(
+          'child-a',
+          parentSessionId: 'root',
+          taskName: 'task_a',
+          agentPath: '/root/task_a',
+          rootSessionId: 'root',
+          lifecycle: AgentLifecycle.running,
+        ),
+      );
+      // A subagent parked on an approval keeps the `running` lifecycle, so the
+      // lifecycle alone cannot tell a working agent from one only the user can
+      // release. The session status is what carries that difference.
+      await database.sessionDao.create(
+        session(
+          'grandchild',
+          parentSessionId: 'child-a',
+          taskName: 'task_b',
+          agentPath: '/root/task_a/task_b',
+          rootSessionId: 'root',
+          lifecycle: AgentLifecycle.running,
+          status: SessionStatus.waitingForApproval,
+        ),
+      );
+
+      final agents = await service.listAgents(caller: root);
+
+      expect(agents.map((agent) => agent.sessionId), <String>[
+        'root',
+        'child-a',
+        'grandchild',
+      ]);
+      expect(agents.map((agent) => agent.parentSessionId), <String?>[
+        null,
+        'root',
+        'child-a',
+      ]);
+      expect(agents.map((agent) => agent.taskName), <String?>[
+        null,
+        'task_a',
+        'task_b',
+      ]);
+      // The tree root is the session the caller already sits in, so its title
+      // is the only label it ever has.
+      expect(agents.map((agent) => agent.title), <String>[
+        'root',
+        'child-a',
+        'grandchild',
+      ]);
+      expect(agents.map((agent) => agent.sessionStatus), <SessionStatus>[
+        SessionStatus.idle,
+        SessionStatus.idle,
+        SessionStatus.waitingForApproval,
       ]);
     });
   });
@@ -1237,13 +1297,24 @@ void main() {
         'ok': true,
         'value': <String, Object?>{
           'agents': <Map<String, Object?>>[
+            // Absent optionals are omitted rather than sent as null: the tree
+            // root has no task name and no parent, and a Lua table reads an
+            // absent key and an explicit null the same way.
             <String, Object?>{
+              'session_id': 'root',
               'agent_name': '/root',
               'agent_status': 'completed',
+              'session_status': 'idle',
+              'title': 'root',
             },
             <String, Object?>{
+              'session_id': 'child',
               'agent_name': '/root/task_a',
               'agent_status': 'pending_init',
+              'session_status': 'idle',
+              'title': 'child',
+              'task_name': 'task_a',
+              'parent_session_id': 'root',
             },
           ],
         },

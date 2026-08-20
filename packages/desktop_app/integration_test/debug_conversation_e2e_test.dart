@@ -17,6 +17,7 @@ import 'package:app/testing/features/hosts/domain/host_ports.dart';
 import 'package:app/testing/features/plugins/presentation/plugin_ui_document_view.dart';
 import 'package:app/testing/shared/presentation/settings_layout.dart';
 import 'package:app/testing/shared/presentation/tinest_icons.dart';
+import 'package:app/testing/shared/presentation/tinest_list_row.dart';
 import 'package:app/testing/shared/presentation/tinest_selection_row.dart';
 import 'package:client/client.dart';
 import 'package:daemon/daemon.dart';
@@ -1002,13 +1003,17 @@ void main() {
         contains(spawnedChild.id),
       );
 
-      // The collapsed track summarizes; expanding it reveals the child row
-      // flagged as waiting on the user rather than as an ordinary spinner.
-      final trackHeader = find.text('서브 에이전트 1개');
-      await pumpUntil(tester, trackHeader);
-      await tester.tap(trackHeader);
-      final childRow = find.byKey(
-        ValueKey<String>('subagent-row-${spawnedChild.id}'),
+      // The collaboration plugin draws this drawer, so the whole chain is
+      // under test here: the daemon projects the tree, the plugin states a
+      // count and a `blocked` status in the reader's language, and the host
+      // frames it on the composer and resolves that status to the attention
+      // icon rather than an ordinary spinner.
+      final drawerSummary = find.text('서브 에이전트 1개');
+      await pumpUntil(tester, drawerSummary);
+      await tester.tap(drawerSummary);
+      final childRow = find.ancestor(
+        of: find.text('/root/review_task'),
+        matching: find.byType(TinestListRow),
       );
       await pumpUntil(tester, childRow);
       await pumpUntil(

@@ -119,14 +119,178 @@ void main() {
       expect(find.widgetWithText(TRButton, 'Continue goal'), findsOneWidget);
       expect(api.pluginUiRenders, hasLength(1));
       expect(api.pluginUiRenders.single.slot, PluginUiSlot.composerControl);
+      // The locale is a host fact of the surface, not something every call
+      // site has to remember to pass, so the slot supplies it. Without it a
+      // plugin has no way to translate the strings it owns.
       expect(
         api.pluginUiRenders.single.context,
-        <String, dynamic>{'sessionId': 'session-1'},
+        <String, dynamic>{'sessionId': 'session-1', 'locale': 'ko'},
       );
 
       await tester.tap(find.widgetWithText(TRButton, 'Continue goal'));
       await tester.pumpAndSettle();
       expect(api.pluginUiActions.single.actionId, 'continue');
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a declared session-tree dependency renders again when the tree moves',
+    (tester) async {
+      // A declarative surface is drawn on demand, so a panel over the session
+      // tree goes stale the moment a subagent's lifecycle moves. Declaring the
+      // dependency is what lets the host draw it again; a surface that
+      // declares nothing must stay put, or every plugin pays for the watch.
+      const live = PluginContributionDto(
+        pluginId: 'example.live',
+        id: 'tree',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['composerControl'],
+          'dependsOn': <String>['session_tree'],
+        },
+      );
+      const still = PluginContributionDto(
+        pluginId: 'example.still',
+        id: 'plain',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['composerControl'],
+        },
+      );
+      const document = PluginUiDocumentDto(
+        id: 'tree-document',
+        pluginId: 'example.live',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.composerControl,
+        root: <String, dynamic>{'type': 'badge', 'text': 'two agents'},
+      );
+      const agent = AgentDefinitionDto(
+        version: 5,
+        id: 'custom-agent',
+        name: 'Custom Agent',
+        description: 'Plugin controlled',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.live', 'example.still'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'agent-hash',
+        sourcePath: '/config/v5/agents/custom-agent.md',
+      );
+      final now = DateTime.utc(2026, 8, 20);
+      SessionDto child(SessionStatus status) => SessionDto(
+        id: 'child-1',
+        worktreeId: 'worktree-1',
+        title: 'Child',
+        agentDefinitionId: 'custom-agent',
+        origin: SessionOrigin.delegated,
+        status: status,
+        parentSessionId: 'session-1',
+        rootSessionId: 'session-1',
+        taskName: 'reviewer',
+        agentPath: '/root/reviewer',
+        lifecycle: AgentLifecycle.running,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final parent = SessionDto(
+        id: 'session-1',
+        worktreeId: 'worktree-1',
+        title: 'Parent',
+        agentDefinitionId: 'custom-agent',
+        origin: SessionOrigin.manual,
+        status: SessionStatus.running,
+        rootSessionId: 'session-1',
+        createdAt: now,
+        updatedAt: now,
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[agent],
+        agents: <SessionDto>[parent, child(SessionStatus.running)],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.live',
+            version: '1.0.0',
+            name: 'Live',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.live',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[live],
+          ),
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.still',
+            version: '1.0.0',
+            name: 'Still',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.still',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[still],
+          ),
+        ],
+        pluginUiDocuments: const <String, PluginUiDocumentDto>{
+          'example.live/tree/custom-agent': document,
+          'example.still/plain/custom-agent': document,
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: const Scaffold(
+              body: AgentPluginUiSlot(
+                hostId: 'server',
+                agent: agent,
+                slot: PluginUiSlot.composerControl,
+                context: <String, dynamic>{
+                  'sessionId': 'session-1',
+                  'worktreeId': 'worktree-1',
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstRenders = api.pluginUiRenders.length;
+      expect(firstRenders, 2);
+      final declaredContext = api.pluginUiRenders
+          .firstWhere((render) => render.pluginId == 'example.live')
+          .context;
+      final undeclaredContext = api.pluginUiRenders
+          .firstWhere((render) => render.pluginId == 'example.still')
+          .context;
+      expect(declaredContext, contains('sessionTreeRevision'));
+      expect(undeclaredContext, isNot(contains('sessionTreeRevision')));
+
+      api.emit(
+        SessionUpdatedClientEvent(child(SessionStatus.waitingForApproval)),
+      );
+      await tester.pumpAndSettle();
+
+      final live2 = api.pluginUiRenders
+          .where((render) => render.pluginId == 'example.live')
+          .length;
+      final still2 = api.pluginUiRenders
+          .where((render) => render.pluginId == 'example.still')
+          .length;
+      expect(live2, 2, reason: 'the declared surface renders again');
+      expect(still2, 1, reason: 'an undeclared surface is left alone');
     },
     tags: const <String>['feature_test__plugin_ui__widget'],
   );

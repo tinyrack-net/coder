@@ -1681,45 +1681,28 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'サブエージェント $count 個',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count 個実行中';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count 個が承認待ち';
-  }
-
-  @override
   String get subagentApprovalSection => 'サブエージェントの承認';
 
   @override
   String get subagentTabAwaitingApproval => 'サブエージェントが承認を待っています';
 
   @override
-  String get subagentStatusRunning => '実行中';
+  String get statusPending => '待機中';
 
   @override
-  String get subagentStatusCompleted => '完了';
+  String get statusRunning => '実行中';
 
   @override
-  String get subagentStatusInterrupted => '中断';
+  String get statusBlocked => '承認待ち';
 
   @override
-  String get subagentStatusErrored => '失敗';
+  String get statusPaused => '中断';
 
   @override
-  String get subagentStatusWaitingForApproval => '承認待ち';
+  String get statusDone => '完了';
+
+  @override
+  String get statusFailed => '失敗';
 
   @override
   String get chatToolSubagentQueued => '順番待ちに追加しました';

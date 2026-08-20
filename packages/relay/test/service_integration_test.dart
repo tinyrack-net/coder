@@ -109,10 +109,11 @@ void main() {
       addTearDown(client.close);
       final daemonMessages = StreamIterator<dynamic>(daemon);
       client.add(Uint8List.fromList(<int>[1, 2, 3]));
-      expect(
-        await daemonMessages.moveNext().timeout(const Duration(seconds: 1)),
-        isTrue,
-      );
+      // Awaited, not raced against a stopwatch. The frame crosses a real
+      // loopback server, so a second is a bound on how busy the machine is
+      // rather than on whether the daemon stayed routable — which is what the
+      // test is about. The suite timeout still stops a hang.
+      expect(await daemonMessages.moveNext(), isTrue);
     },
   );
 

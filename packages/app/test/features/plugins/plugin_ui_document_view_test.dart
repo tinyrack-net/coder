@@ -1,4 +1,5 @@
 import 'package:app/src/features/plugins/presentation/plugin_ui_document_view.dart';
+import 'package:app/src/shared/presentation/tinest_status_icon.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -281,6 +282,235 @@ void main() {
           expect(tester.takeException(), isNull);
         }
       }
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a tree nests its own items and the host owns the indentation',
+    (tester) async {
+      // Depth is a property of the tree, not of a row. A plugin that had to
+      // send a depth number would be reimplementing the flattening every
+      // host already does, and the host could never add a tree affordance
+      // without a new node type.
+      const document = PluginUiDocumentDto(
+        id: 'tree',
+        pluginId: 'example.tree',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.conversationStatus,
+        root: <String, dynamic>{
+          'type': 'tree',
+          'children': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'type': 'tree_item',
+              'label': 'reviewer',
+              'description': '/root/reviewer',
+              'status': 'running',
+              'children': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'type': 'tree_item',
+                  'label': 'linter',
+                  'description': '/root/reviewer/linter',
+                  'status': 'blocked',
+                },
+              ],
+            },
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        const _TestApp(
+          child: PluginUiDocumentView(
+            document: document,
+            invalidDocumentLabel: 'Unsupported plugin interface',
+            invalidDocumentDescription: 'Open the raw document',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('reviewer'), findsOneWidget);
+      expect(find.text('linter'), findsOneWidget);
+      expect(find.text('/root/reviewer/linter'), findsOneWidget);
+      // A nested item sits further in than its parent, and the host is what
+      // decided by how much.
+      final parentLabel = tester.getTopLeft(find.text('reviewer')).dx;
+      final childLabel = tester.getTopLeft(find.text('linter')).dx;
+      expect(childLabel, greaterThan(parentLabel));
+      // The plugin said "running" and "blocked"; the host chose the spinner
+      // and the attention icon, and named them in the reader's language.
+      expect(
+        tester
+            .widgetList<TinestStatusIcon>(find.byType(TinestStatusIcon))
+            .map((icon) => icon.status),
+        <TinestStatus>[TinestStatus.running, TinestStatus.blocked],
+      );
+      expect(find.byType(TRSpinner), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byType(Icon)).semanticLabel,
+        testL10n.statusBlocked,
+      );
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'a composer drawer is framed by the host, not by the document',
+    (tester) async {
+      const root = <String, dynamic>{
+        'type': 'disclosure',
+        'title': '2 subagents',
+        'summary': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'type': 'badge',
+            'text': '2 running',
+            'variant': 'info',
+          },
+        ],
+        'children': <Map<String, dynamic>>[
+          <String, dynamic>{'type': 'text', 'text': 'reviewer'},
+        ],
+      };
+      const drawer = PluginUiDocumentDto(
+        id: 'drawer',
+        pluginId: 'example.drawer',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.composerDrawer,
+        root: root,
+      );
+      const inline = PluginUiDocumentDto(
+        id: 'inline',
+        pluginId: 'example.drawer',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.conversationStatus,
+        root: root,
+      );
+
+      await tester.pumpWidget(
+        const _TestApp(
+          child: PluginUiDocumentView(
+            document: drawer,
+            maxContentHeight: 120,
+            invalidDocumentLabel: 'Unsupported plugin interface',
+            invalidDocumentDescription: 'Open the raw document',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<TRCollapsible>(find.byType(TRCollapsible)).attachedEdge,
+        TRCollapsibleAttachedEdge.bottom,
+      );
+      // The summary rides in the trigger, so a collapsed drawer still says
+      // how many agents are running.
+      expect(find.text('2 subagents'), findsOneWidget);
+      expect(find.widgetWithText(TRBadge, '2 running'), findsOneWidget);
+
+      await tester.pumpWidget(
+        const _TestApp(
+          child: PluginUiDocumentView(
+            document: inline,
+            invalidDocumentLabel: 'Unsupported plugin interface',
+            invalidDocumentDescription: 'Open the raw document',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The same document in another slot is free-standing: the framing is a
+      // fact about the surface, and the plugin never chose it.
+      expect(
+        tester.widget<TRCollapsible>(find.byType(TRCollapsible)).attachedEdge,
+        TRCollapsibleAttachedEdge.none,
+      );
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
+  );
+
+  testWidgets(
+    'an activation intent reaches the host and an unknown one fails closed',
+    (tester) async {
+      final intents = <PluginUiIntent>[];
+      const document = PluginUiDocumentDto(
+        id: 'intent',
+        pluginId: 'example.intent',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.composerDrawer,
+        root: <String, dynamic>{
+          'type': 'tree',
+          'children': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'type': 'tree_item',
+              'label': 'reviewer',
+              'onActivate': <String, dynamic>{
+                'type': 'open_session',
+                'sessionId': 'child-1',
+              },
+            },
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        _TestApp(
+          child: PluginUiDocumentView(
+            document: document,
+            invalidDocumentLabel: 'Unsupported plugin interface',
+            invalidDocumentDescription: 'Open the raw document',
+            onIntent: intents.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('reviewer'));
+      await tester.pumpAndSettle();
+
+      expect(intents, hasLength(1));
+      expect(intents.single, isA<PluginUiOpenSessionIntent>());
+      expect(
+        (intents.single as PluginUiOpenSessionIntent).sessionId,
+        'child-1',
+      );
+
+      // An intent the host does not know is not a row that quietly does
+      // nothing; it is a document the host cannot trust to draw at all.
+      const forged = PluginUiDocumentDto(
+        id: 'forged',
+        pluginId: 'example.intent',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.composerDrawer,
+        root: <String, dynamic>{
+          'type': 'tree',
+          'children': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'type': 'tree_item',
+              'label': 'reviewer',
+              'onActivate': <String, dynamic>{
+                'type': 'open_url',
+                'url': 'https://untrusted.example',
+              },
+            },
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        _TestApp(
+          child: PluginUiDocumentView(
+            document: forged,
+            invalidDocumentLabel: 'Unsupported plugin interface',
+            invalidDocumentDescription: 'Open the raw document',
+            onIntent: intents.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Unsupported plugin interface'), findsOneWidget);
+      expect(find.text('reviewer'), findsNothing);
     },
     tags: const <String>['feature_test__plugin_ui__widget'],
   );

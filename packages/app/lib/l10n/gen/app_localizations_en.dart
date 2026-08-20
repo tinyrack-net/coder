@@ -1727,27 +1727,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count subagents',
-      one: '1 subagent',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count running';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count to approve';
-  }
-
-  @override
   String get subagentApprovalSection => 'Subagent approvals';
 
   @override
@@ -1755,19 +1734,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'A subagent is waiting for approval';
 
   @override
-  String get subagentStatusRunning => 'Running';
+  String get statusPending => 'Pending';
 
   @override
-  String get subagentStatusCompleted => 'Completed';
+  String get statusRunning => 'Running';
 
   @override
-  String get subagentStatusInterrupted => 'Interrupted';
+  String get statusBlocked => 'Waiting for approval';
 
   @override
-  String get subagentStatusErrored => 'Failed';
+  String get statusPaused => 'Interrupted';
 
   @override
-  String get subagentStatusWaitingForApproval => 'Waiting for approval';
+  String get statusDone => 'Completed';
+
+  @override
+  String get statusFailed => 'Failed';
 
   @override
   String get chatToolSubagentQueued => 'Queued';

@@ -13,39 +13,148 @@ local tool_card = tinest.ui.contribution({
   return tinest.ui.tool_document(arguments)
 end)
 
+-- Strings this surface owns. The host tells it the reader's language; only the
+-- status words are host-drawn, because those are a meaning the host resolves.
+local strings = {
+  en = {
+    one = "1 subagent",
+    other = "%d subagents",
+    running = "%d running",
+    blocked = "%d to approve",
+  },
+  ko = {
+    other = "서브 에이전트 %d개",
+    running = "%d개 실행 중",
+    blocked = "%d개 승인 필요",
+  },
+  ja = {
+    other = "サブエージェント %d 個",
+    running = "%d 個実行中",
+    blocked = "%d 個が承認待ち",
+  },
+}
+
+--- Reads the base language of a BCP 47 tag, falling back to English.
+local function table_for(locale)
+  local tag = tostring(locale or "en")
+  local base = tag:match("^([%a]+)") or "en"
+  return strings[base:lower()] or strings.en
+end
+
+--- Korean and Japanese have one form; English has two.
+local function count_text(words, count)
+  if count == 1 and words.one ~= nil then return words.one end
+  return string.format(words.other, count)
+end
+
 local agent_status = tinest.ui.contribution({
   id = "agent_status",
-  slot = tinest.ui.slot.conversation_status,
+  slot = tinest.ui.slot.composer_drawer,
   uses = {tinest.host.collaboration.list_agents},
   required_capabilities = {
     tinest.capability.collaboration.list,
     tinest.capability.ui.publish,
   },
-  metadata = {snapshot = true, label = "Subagents"},
-}, S.any(), function(_arguments)
+  depends_on = {tinest.ui.dependency.session_tree},
+  metadata = {snapshot = true},
+}, S.any(), function(_arguments, context)
+  -- A subagent's own pane is read-only and has no tree of its own to show.
+  if context.readOnly == true then
+    return tinest.ui.section({id = "collaboration-status", children = {}})
+  end
   local response = tinest.result.unwrap(
     tinest.host.collaboration.list_agents({})
   )
   local agents = response.agents or response
-  local children = {}
+  local words = table_for(context.locale)
+
+  -- The host answers with the caller's whole tree, and its root is the very
+  -- session this drawer sits under. Listing it would put a "/root" row beside
+  -- the composer of every conversation, including the ones that never spawn a
+  -- subagent at all; only the subagents belong on this surface.
+  local items_by_parent = {}
+  local total, running, blocked = 0, 0, 0
+  local root_session_id = ""
   for _, agent in ipairs(agents or {}) do
     local name = tostring(agent.agent_name or "")
-    -- The host answers with the caller's whole tree, and its root is the very
-    -- session this panel sits under. Listing it would put a "/root" row beside
-    -- the composer of every conversation, including the ones that never spawn
-    -- a subagent at all; only the subagents belong on this surface.
+    if name == root_path then
+      root_session_id = tostring(agent.session_id or "")
+    end
     if name ~= "" and name ~= root_path then
-      children[#children + 1] = tinest.ui.row({
-        children = {
-          tinest.ui.text({text = name}),
-          tinest.ui.badge({
-            text = tostring(agent.agent_status or "unknown"),
-          }),
-        },
-      })
+      total = total + 1
+      local lifecycle = tostring(agent.agent_status or "")
+      local session = tostring(agent.session_status or "")
+      local status
+      if session == "waiting_for_approval" then
+        status = "blocked"
+        blocked = blocked + 1
+      elseif lifecycle == "pending_init" then
+        status = "pending"
+        running = running + 1
+      elseif lifecycle == "running" then
+        status = "running"
+        running = running + 1
+      elseif lifecycle == "interrupted" then
+        status = "paused"
+      elseif lifecycle == "errored" then
+        status = "failed"
+      else
+        status = "done"
+      end
+      local parent = tostring(agent.parent_session_id or "")
+      items_by_parent[parent] = items_by_parent[parent] or {}
+      local siblings = items_by_parent[parent]
+      siblings[#siblings + 1] = {
+        session_id = tostring(agent.session_id or ""),
+        label = tostring(agent.task_name or agent.title or name),
+        description = name,
+        status = status,
+      }
     end
   end
-  return tinest.ui.section({id = "collaboration-status", children = children})
+
+  if total == 0 then
+    return tinest.ui.section({id = "collaboration-status", children = {}})
+  end
+
+  -- Nesting is expressed by nesting: the host owns the indentation, so a
+  -- deeper tree needs nothing new here.
+  local build
+  build = function(parent_id)
+    local nodes = {}
+    for _, item in ipairs(items_by_parent[parent_id] or {}) do
+      nodes[#nodes + 1] = tinest.ui.tree_item({
+        label = item.label,
+        description = item.description,
+        status = item.status,
+        onActivate = tinest.ui.open_session(item.session_id),
+        children = build(item.session_id),
+      })
+    end
+    return nodes
+  end
+
+  local summary = {}
+  if running > 0 then
+    summary[#summary + 1] = tinest.ui.badge({
+      text = string.format(words.running, running),
+      variant = "info",
+    })
+  end
+  -- The rows are hidden while the drawer is collapsed, so a tree parked on an
+  -- approval has to say so on the summary itself.
+  if blocked > 0 then
+    summary[#summary + 1] = tinest.ui.badge({
+      text = string.format(words.blocked, blocked),
+      variant = "warning",
+    })
+  end
+
+  return tinest.ui.disclosure({
+    title = count_text(words, total),
+    summary = summary,
+    children = {tinest.ui.tree({children = build(root_session_id)})},
+  })
 end)
 
 local before_turn = tinest.hook.before_turn({

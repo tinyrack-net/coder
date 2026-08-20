@@ -294,6 +294,7 @@ final class PluginUiRegistration {
     required this.declaredOperations,
     required this.inputSchema,
     required this.metadata,
+    this.dependsOn = const <String>{},
   });
 
   /// Globally qualified contribution ID.
@@ -301,6 +302,14 @@ final class PluginUiRegistration {
 
   /// Host-owned surface receiving the document.
   final PluginUiSlot slot;
+
+  /// Live host state this surface reads, from [pluginUiDependencies].
+  ///
+  /// A declarative surface is rendered on demand, so a panel over changing
+  /// host state goes stale the moment that state moves. Declaring the
+  /// dependency lets the host render the surface again when it does, instead
+  /// of leaving the last answer up until something else happens to reload it.
+  final Set<String> dependsOn;
 
   /// SDK-owned closure binding.
   final PluginHandlerBinding binding;
@@ -843,6 +852,10 @@ abstract final class PluginRegistrationParser {
         '$path.input_schema',
       );
       final metadata = _optionalObject(raw['metadata'], '$path.metadata');
+      final dependsOn = _uiDependencies(
+        raw['depends_on'],
+        '$path.depends_on',
+      );
       final contribution = PluginUiRegistration(
         id: id,
         slot: slot,
@@ -858,6 +871,7 @@ abstract final class PluginRegistrationParser {
         declaredOperations: operations,
         inputSchema: inputSchema,
         metadata: metadata,
+        dependsOn: dependsOn,
       );
       ui.add(contribution);
       contributions.add(
@@ -871,6 +885,8 @@ abstract final class PluginRegistrationParser {
             'bindingId': contribution.binding.localId,
             'declaredOperations': operations.toList(growable: false),
             'inputSchema': inputSchema,
+            if (dependsOn.isNotEmpty)
+              'dependsOn': dependsOn.toList(growable: false),
             ...metadata,
           },
         ),
@@ -1200,4 +1216,36 @@ PluginUiSlot _uiSlot(String value, String path) {
     'Unsupported UI slot: $value',
     path: path,
   );
+}
+
+/// Live host state a UI contribution may declare a dependency on.
+///
+/// Closed on purpose: each entry is state the host knows how to watch and
+/// derive a revision from. An open set would let a plugin name something the
+/// host cannot observe, which reads as a working declaration and silently
+/// never invalidates anything.
+const Set<String> pluginUiDependencies = <String>{'session_tree'};
+
+Set<String> _uiDependencies(Object? value, String path) {
+  if (value == null) return const <String>{};
+  if (value is! List<Object?>) {
+    throw PluginRegistrationException('Expected an array.', path: path);
+  }
+  final declared = <String>{};
+  for (var index = 0; index < value.length; index += 1) {
+    final name = _string(value[index], '$path[$index]');
+    if (!pluginUiDependencies.contains(name)) {
+      throw PluginRegistrationException(
+        'Unsupported UI dependency: $name',
+        path: '$path[$index]',
+      );
+    }
+    if (!declared.add(name)) {
+      throw PluginRegistrationException(
+        'Duplicate value: $name',
+        path: '$path[$index]',
+      );
+    }
+  }
+  return Set<String>.unmodifiable(declared);
 }

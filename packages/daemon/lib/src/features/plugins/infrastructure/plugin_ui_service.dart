@@ -144,6 +144,7 @@ final class LuaPluginUiRuntime<T extends Object> implements PluginUiRuntime {
       plugin: plugin,
       contribution: contribution,
       value: input,
+      context: request.context,
     );
   }
 
@@ -173,6 +174,7 @@ final class LuaPluginUiRuntime<T extends Object> implements PluginUiRuntime {
       plugin: plugin,
       contribution: contribution,
       value: request.input,
+      context: request.context,
     );
   }
 
@@ -212,7 +214,10 @@ final class LuaPluginUiRuntime<T extends Object> implements PluginUiRuntime {
       final invocation = await session.runtime.invoke(
         pluginId: plugin.id,
         binding: registration.binding,
-        arguments: _directUiCallbackArguments(actionData),
+        arguments: _directUiCallbackArguments(
+          actionData,
+          context: request.context,
+        ),
         callbackRouter: session.router,
         cancellation: cancellation,
       );
@@ -336,6 +341,7 @@ final class LuaPluginUiRuntime<T extends Object> implements PluginUiRuntime {
     required PluginDescriptorDto plugin,
     required PluginContributionDto contribution,
     required Object? value,
+    required Map<String, dynamic> context,
   }) async {
     await _requireCurrentGrants(plugin, contribution, session);
     final normalized = _validatedUiValue(
@@ -355,7 +361,7 @@ final class LuaPluginUiRuntime<T extends Object> implements PluginUiRuntime {
       final invocation = await session.runtime.invoke(
         pluginId: plugin.id,
         binding: session.contribution.binding,
-        arguments: _directUiCallbackArguments(normalized),
+        arguments: _directUiCallbackArguments(normalized, context: context),
         callbackRouter: session.router,
         cancellation: cancellation,
       );
@@ -750,11 +756,20 @@ final class _PluginUiSnapshot {
       );
 }
 
-Map<String, Object?> _directUiCallbackArguments(Object? value) =>
-    <String, Object?>{
-      '__tinest_callback_value': true,
-      'value': value,
-    };
+/// Wraps one callback value, with the host facts of the surface beside it.
+///
+/// [context] is the render context the host already owns — session, locale,
+/// whether the pane accepts input. It is passed as a separate key rather than
+/// merged into [value], because [value] is the plugin's own declared input
+/// schema and the host has no business writing into it.
+Map<String, Object?> _directUiCallbackArguments(
+  Object? value, {
+  Map<String, dynamic> context = const <String, dynamic>{},
+}) => <String, Object?>{
+  '__tinest_callback_value': true,
+  'value': value,
+  'context': context,
+};
 
 Object? _validatedUiValue(
   Map<String, Object?> schema,

@@ -1282,7 +1282,8 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'agent.collaboration',
     description:
         'Spawns, messages, waits on, interrupts, and lists collaborating '
-        'subagent sessions, and exposes them through the subagent track.',
+        'subagent sessions, and exposes them through the collaboration '
+        "plugin's composer drawer.",
     apiMethods: <String>['sessions.listSubagents'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

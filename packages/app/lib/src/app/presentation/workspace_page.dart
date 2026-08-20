@@ -16,7 +16,6 @@ import 'package:app/src/features/conversation/presentation/chat_timeline_view.da
 import 'package:app/src/features/conversation/presentation/reading_positions_controller.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_approval_banner.dart';
 import 'package:app/src/features/conversation/presentation/subagents/subagent_status_icon.dart';
-import 'package:app/src/features/conversation/presentation/subagents/subagent_track.dart';
 import 'package:app/src/features/conversation/presentation/widgets/composer_completion_scope.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/features/hosts/application/host_controller.dart';
@@ -1392,6 +1391,25 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         ).notifier,
       );
 
+  /// Runs one host-owned intent a plugin document raised, if it may.
+  ///
+  /// A plugin naming a session is a request, not a permission. Only the
+  /// descendants of the session the drawer is mounted on are reachable, so a
+  /// document cannot send the reader somewhere else in the workspace — and an
+  /// unauthorized intent is dropped rather than reported, because the plugin
+  /// is not the party that needs to hear about it.
+  void _runPluginUiIntent(
+    BuildContext context,
+    PluginUiIntent intent,
+    List<SubagentTrackRow> reachable,
+  ) {
+    switch (intent) {
+      case PluginUiOpenSessionIntent(:final sessionId):
+        if (!reachable.any((row) => row.session.id == sessionId)) return;
+        _goSession(context, widget.selection, sessionId);
+    }
+  }
+
   Future<PluginUiDocumentDto> _dispatchPluginUi(
     String agentId,
     PluginUiDocumentDto document,
@@ -1421,6 +1439,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
         _showPluginToast(agentId, document);
       case PluginUiSlot.agentSettings:
       case PluginUiSlot.composerControl:
+      // A drawer is asked for its contents when the tree it watches moves, so
+      // it has nothing to push mid-turn.
+      case PluginUiSlot.composerDrawer:
       case PluginUiSlot.timeline:
         break;
     }
@@ -1850,49 +1871,52 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
                         worktreeId: widget.selection.worktreeId,
                         builder: (context, completion) => SessionComposer(
                           controller: _dropController,
-                          header: definition == null && subagentRows.isEmpty
+                          header: definition == null
                               ? null
                               : Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
-                                    if (definition != null)
-                                      AgentPluginUiSlot(
-                                        hostId: widget.selection.hostId,
-                                        agent: definition,
-                                        slot: PluginUiSlot.composerControl,
-                                        context: <String, dynamic>{
-                                          'sessionId': current.id,
-                                          'workspaceId':
-                                              widget.selection.workspaceId,
-                                          'worktreeId':
-                                              widget.selection.worktreeId,
-                                        },
+                                    AgentPluginUiSlot(
+                                      hostId: widget.selection.hostId,
+                                      agent: definition,
+                                      slot: PluginUiSlot.composerControl,
+                                      context: <String, dynamic>{
+                                        'sessionId': current.id,
+                                        'workspaceId':
+                                            widget.selection.workspaceId,
+                                        'worktreeId':
+                                            widget.selection.worktreeId,
+                                      },
+                                    ),
+                                    AgentPluginSessionControls(
+                                      hostId: widget.selection.hostId,
+                                      sessionId: current.id,
+                                      agent: definition,
+                                    ),
+                                    AgentPluginUiSlot(
+                                      hostId: widget.selection.hostId,
+                                      agent: definition,
+                                      slot: PluginUiSlot.composerDrawer,
+                                      // Viewport-derived cap: an expanded
+                                      // drawer never squeezes the input out,
+                                      // and the plugin never picks a height.
+                                      maxContentHeight:
+                                          constraints.maxHeight / 4,
+                                      onIntent: (intent) => _runPluginUiIntent(
+                                        context,
+                                        intent,
+                                        subagentRows,
                                       ),
-                                    if (definition != null)
-                                      AgentPluginSessionControls(
-                                        hostId: widget.selection.hostId,
-                                        sessionId: current.id,
-                                        agent: definition,
-                                      ),
-                                    if (definition != null &&
-                                        subagentRows.isNotEmpty)
-                                      const SizedBox(height: TRSpacing.small),
-                                    if (subagentRows.isNotEmpty)
-                                      SubagentTrack(
-                                        rows: subagentRows,
-                                        // Viewport-derived cap: the expanded
-                                        // list never squeezes the input out.
-                                        maxListHeight:
-                                            constraints.maxHeight / 4,
-                                        onOpenSubagent: (sessionId) =>
-                                            _goSession(
-                                              context,
-                                              widget.selection,
-                                              sessionId,
-                                            ),
-                                      ),
+                                      context: <String, dynamic>{
+                                        'sessionId': current.id,
+                                        'workspaceId':
+                                            widget.selection.workspaceId,
+                                        'worktreeId':
+                                            widget.selection.worktreeId,
+                                      },
+                                    ),
                                   ],
                                 ),
                           // A running turn never takes the keyboard away; the

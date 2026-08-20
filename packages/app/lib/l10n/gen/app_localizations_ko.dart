@@ -1685,45 +1685,28 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String subagentTrackHeader(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '서브 에이전트 $count개',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String subagentTrackRunning(int count) {
-    return '$count개 실행 중';
-  }
-
-  @override
-  String subagentTrackAwaitingApproval(int count) {
-    return '$count개 승인 필요';
-  }
-
-  @override
   String get subagentApprovalSection => '서브 에이전트 승인';
 
   @override
   String get subagentTabAwaitingApproval => '서브 에이전트가 승인을 기다리는 중';
 
   @override
-  String get subagentStatusRunning => '실행 중';
+  String get statusPending => '대기 중';
 
   @override
-  String get subagentStatusCompleted => '완료';
+  String get statusRunning => '실행 중';
 
   @override
-  String get subagentStatusInterrupted => '중단됨';
+  String get statusBlocked => '승인 대기 중';
 
   @override
-  String get subagentStatusErrored => '실패';
+  String get statusPaused => '중단됨';
 
   @override
-  String get subagentStatusWaitingForApproval => '승인 대기 중';
+  String get statusDone => '완료';
+
+  @override
+  String get statusFailed => '실패';
 
   @override
   String get chatToolSubagentQueued => '대기열에 추가됨';
