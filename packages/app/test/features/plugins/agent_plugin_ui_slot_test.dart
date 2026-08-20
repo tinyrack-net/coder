@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/plugins/presentation/agent_plugin_session_controls.dart';
 import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
@@ -728,5 +730,125 @@ void main() {
       'feature_test__agent_harness__widget',
       'feature_test__plugin_runtime__widget',
     ],
+  );
+
+  testWidgets(
+    'a re-render keeps the rendered document instead of blanking to a spinner',
+    (tester) async {
+      // The conversation slot sits between the transcript and the composer and
+      // takes `busy` in its render context, so it re-renders on every turn
+      // boundary. Collapsing to a spinner and back changes the timeline's
+      // viewport height twice per send, which the reader sees as the list
+      // jumping rather than as this surface reloading.
+      const contribution = PluginContributionDto(
+        pluginId: 'example.controls',
+        id: 'status',
+        kind: PluginContributionKind.ui,
+        metadata: <String, dynamic>{
+          'slots': <String>['conversationStatus'],
+        },
+      );
+      const document = PluginUiDocumentDto(
+        id: 'status-document',
+        pluginId: 'example.controls',
+        revisionHash: 'revision',
+        slot: PluginUiSlot.conversationStatus,
+        root: <String, dynamic>{'type': 'text', 'text': 'Working on it'},
+      );
+      const agent = AgentDefinitionDto(
+        version: 5,
+        id: 'custom-agent',
+        name: 'Custom Agent',
+        description: 'Plugin controlled',
+        mode: AgentMode.primary,
+        model: AgentModelSelectionDto(source: AgentModelSource.session),
+        driverId: 'tinest.standard/driver',
+        extensionIds: <String>['example.controls'],
+        toolIds: <String>[],
+        pluginSettings: <String, Map<String, dynamic>>{},
+        callableAgentIds: <String>[],
+        prompt: '',
+        contentHash: 'agent-hash',
+        sourcePath: '/config/v5/agents/custom-agent.md',
+      );
+      final api = FakeTinestApi(
+        agentDefinitions: const <AgentDefinitionDto>[agent],
+        plugins: const <PluginDescriptorDto>[
+          PluginDescriptorDto(
+            apiMajor: 5,
+            id: 'example.controls',
+            version: '1.0.0',
+            name: 'Controls',
+            entrypoint: 'main.lua',
+            source: PluginSource.user,
+            sourcePath: '/config/v5/plugins/example.controls',
+            requestedCapabilities: <String>[],
+            contributions: <PluginContributionDto>[contribution],
+          ),
+        ],
+        pluginUiDocuments: const <String, PluginUiDocumentDto>{
+          'example.controls/status/custom-agent': document,
+        },
+      );
+
+      // One scope for the whole test: the slot has to survive the context
+      // change, so re-pumping a fresh container would reload it either way and
+      // prove nothing.
+      final busy = ValueNotifier<bool>(false);
+      addTearDown(busy.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appServicesProvider.overrideWithValue(fakeAppServices(api)),
+          ],
+          child: MaterialApp(
+            theme: testLightTheme,
+            locale: testLocale,
+            localizationsDelegates: testLocalizationsDelegates,
+            supportedLocales: testSupportedLocales,
+            home: Scaffold(
+              body: ValueListenableBuilder<bool>(
+                valueListenable: busy,
+                builder: (context, value, _) => AgentPluginUiSlot(
+                  hostId: 'server',
+                  agent: agent,
+                  slot: PluginUiSlot.conversationStatus,
+                  context: <String, dynamic>{
+                    'sessionId': 'session-1',
+                    'busy': value,
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Working on it'), findsOneWidget);
+      expect(api.pluginUiRenders, hasLength(1));
+
+      // The turn starts: the context changes and a second render goes out.
+      api.pluginUiRenderGate = Completer<void>();
+      busy.value = true;
+      for (var frame = 0; frame < 3; frame += 1) {
+        await tester.pump();
+      }
+      expect(api.pluginUiRenders, hasLength(2));
+      expect(
+        find.byType(TRProgress),
+        findsNothing,
+        reason: 'a refresh is not a first load; there is already a document',
+      );
+      expect(
+        find.text('Working on it'),
+        findsOneWidget,
+        reason: 'the surface keeps its height while the re-render is in flight',
+      );
+
+      api.pluginUiRenderGate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Working on it'), findsOneWidget);
+    },
+    tags: const <String>['feature_test__plugin_ui__widget'],
   );
 }

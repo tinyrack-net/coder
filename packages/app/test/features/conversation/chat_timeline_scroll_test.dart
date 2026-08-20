@@ -5,6 +5,7 @@ import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/app/platform/external_url_opener.dart';
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
+import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_timeline_view.dart';
 import 'package:app/src/features/conversation/presentation/widgets/session_composer.dart';
 import 'package:app/src/shared/presentation/tinest_ui_density.dart';
@@ -1009,4 +1010,149 @@ void main() {
       expect(find.byKey(const ValueKey<String>('arrived-3')), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'reasoning taking over the indicator does not restructure the list tail',
+    tags: const <String>[
+      'feature_test__turn_execution__widget',
+      'ui_state__conversation_timeline__history_anchored__widget',
+    ],
+    (tester) async {
+      // Reasoning starts and stops several times within one turn. Inserting
+      // and removing the trailing row that often churns the list's keys and
+      // flips the trailing padding of whichever row is last, which the reader
+      // sees as the transcript twitching under a running turn.
+      await _useDesktopViewport(tester);
+      final positions = _PositionStore();
+      final history = _messages(24, prefix: 'history');
+      const runningKey = ValueKey<String>('chat-running');
+
+      ChatReasoningActivity reasoning({required bool isStreaming}) =>
+          ChatReasoningActivity(
+            key: 'reasoning-0',
+            turnId: 'turn-reasoning',
+            createdAt: _createdAt.add(const Duration(minutes: 1)),
+            markdown: 'Considering the request',
+            isStreaming: isStreaming,
+          );
+
+      Future<void> pumpWith({required bool isStreaming}) async {
+        await _pumpTimeline(
+          tester,
+          items: <ChatItem>[
+            ...history,
+            reasoning(isStreaming: isStreaming),
+          ],
+          positions: positions,
+          sessionId: 'reasoning-session',
+          busy: true,
+        );
+        for (var frame = 0; frame < 3; frame += 1) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+      }
+
+      await pumpWith(isStreaming: false);
+      expect(find.byKey(runningKey), findsOneWidget);
+      expect(find.byType(ChatRunningIndicator), findsOneWidget);
+
+      await pumpWith(isStreaming: true);
+      expect(
+        find.byKey(runningKey),
+        findsOneWidget,
+        reason: 'the trailing entry stays while reasoning owns the indicator',
+      );
+      expect(
+        find.byType(ChatRunningIndicator),
+        findsNothing,
+        reason: 'but it paints nothing, so the two never both report running',
+      );
+
+      await pumpWith(isStreaming: false);
+      expect(find.byKey(runningKey), findsOneWidget);
+      expect(find.byType(ChatRunningIndicator), findsOneWidget);
+    },
+  );
+
+  // A send puts the prompt on screen optimistically and the daemon's durable
+  // echo replaces it moments later. The replacement carries a sequence-derived
+  // key, so it is a different row in the same position holding the same text:
+  // nothing around it may move when it lands.
+  for (final scrolled in <bool>[false, true]) {
+    testWidgets(
+      scrolled
+          ? 'the echo replacing an optimistic prompt holds a scrolled anchor'
+          : 'the echo replacing an optimistic prompt holds the trailing edge',
+      tags: const <String>[
+        'feature_test__turn_execution__widget',
+        'ui_state__conversation_timeline__history_anchored__widget',
+      ],
+      (tester) async {
+        await _useDesktopViewport(tester);
+        final positions = _PositionStore();
+        final history = _messages(24, prefix: 'history');
+        const prompt = 'Prompt that survives the swap';
+
+        ChatUserMessage sent(String key) => ChatUserMessage(
+          key: key,
+          turnId: 'turn-sent',
+          createdAt: _createdAt.add(const Duration(minutes: 1)),
+          text: prompt,
+        );
+
+        // The running indicator animates for as long as the turn does, so a
+        // busy timeline is pumped a fixed number of frames rather than settled.
+        Future<void> pumpFrames() async {
+          for (var frame = 0; frame < 3; frame += 1) {
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+        }
+
+        await _pumpTimeline(
+          tester,
+          items: <ChatItem>[...history, sent('pending-turn-t1')],
+          positions: positions,
+          sessionId: 'swap-session',
+          busy: true,
+        );
+        await pumpFrames();
+
+        if (scrolled) {
+          final position = _scrollPosition(tester);
+          position.jumpTo(position.maxScrollExtent * 0.45);
+          await pumpFrames();
+        }
+        final before = _visibleAnchor(tester, history);
+
+        // Same position, same text, sequence-derived key: what the daemon's
+        // `user.message` echo produces once it reaches the projector.
+        await _pumpTimeline(
+          tester,
+          items: <ChatItem>[...history, sent('user-99')],
+          positions: positions,
+          sessionId: 'swap-session',
+          busy: true,
+        );
+        await pumpFrames();
+
+        final after = _visibleAnchor(tester, history);
+        expect(after.key, before.key, reason: 'the anchor row is still shown');
+        expect(
+          after.top,
+          closeTo(before.top, _geometryTolerance),
+          reason: 'the echo must not shift the rows around it',
+        );
+        if (!scrolled) {
+          // Only meaningful while the row is on screen: scrolled well back, it
+          // is outside the built range and legitimately absent.
+          expect(
+            find.text(prompt, findRichText: true),
+            findsOneWidget,
+            reason: 'the prompt is never drawn twice across the swap',
+          );
+          _expectTrailingPinned(tester, reason: 'after the echo lands');
+        }
+      },
+    );
+  }
 }

@@ -17,6 +17,7 @@ import 'package:app/src/features/conversation/presentation/widgets/session_compo
 import 'package:app/src/features/hosts/application/host_controller.dart';
 import 'package:app/src/features/hosts/domain/host_models.dart';
 import 'package:app/src/features/hosts/domain/host_ports.dart';
+import 'package:app/src/features/plugins/presentation/agent_plugin_ui_slot.dart';
 import 'package:app/src/features/settings/domain/settings_category.dart';
 import 'package:app/src/features/workspace/presentation/widgets/workspace_sidebar.dart';
 import 'package:app/src/shared/presentation/blocked_control.dart';

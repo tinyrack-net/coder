@@ -106,6 +106,56 @@ MarkdownStyleSheet chatMarkdownStyleSheet(BuildContext context) {
   );
 }
 
+/// One Markdown stylesheet shared by every chat block beneath it.
+///
+/// [chatMarkdownStyleSheet] runs `ColorScheme.fromSeed`, which generates a full
+/// tonal palette. Every visible assistant message rebuilds on every streamed
+/// delta, so computing it per message per frame is the most expensive thing in
+/// a running transcript. Hosting one instance above the list makes it a single
+/// computation per theme rather than per row, without moving a single design
+/// value out of a token.
+class ChatMarkdownTheme extends StatelessWidget {
+  /// Creates a shared Markdown stylesheet scope.
+  const ChatMarkdownTheme({required this.child, super.key});
+
+  /// Subtree whose Markdown bodies share one stylesheet.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      // The sheet is derived from the legacy bridge's context, which is where
+      // the Markdown package reads its theme from, so the scope has to sit
+      // inside the bridge rather than around it.
+      // ignore: deprecated_member_use
+      MaterialUiCompatibilityBridge(
+        child: Builder(
+          builder: (legacyContext) => _ChatMarkdownStyleScope(
+            styleSheet: chatMarkdownStyleSheet(legacyContext),
+            child: child,
+          ),
+        ),
+      );
+}
+
+class _ChatMarkdownStyleScope extends InheritedWidget {
+  const _ChatMarkdownStyleScope({
+    required this.styleSheet,
+    required super.child,
+  });
+
+  final MarkdownStyleSheet styleSheet;
+
+  static MarkdownStyleSheet? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<_ChatMarkdownStyleScope>()
+      ?.styleSheet;
+
+  @override
+  bool updateShouldNotify(_ChatMarkdownStyleScope oldWidget) =>
+      // Value equality: the sheet is rebuilt whenever this scope rebuilds, and
+      // a theme that did not change produces an equal one.
+      styleSheet != oldWidget.styleSheet;
+}
+
 /// Markdown renderer isolated behind the documented legacy-package bridge.
 ///
 /// `flutter_markdown_plus` still imports Flutter's legacy Material library.
@@ -123,6 +173,18 @@ class ChatMarkdownBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Shared when a [ChatMarkdownTheme] is above this block, which is the case
+    // for every message in the transcript. Standalone use falls back to its own
+    // sheet so this stays usable on its own.
+    final shared = _ChatMarkdownStyleScope.maybeOf(context);
+    if (shared != null) {
+      return MarkdownBody(
+        data: data,
+        builders: chatMarkdownBuilders(),
+        styleSheet: shared,
+        onTapLink: onTapLink,
+      );
+    }
     // material_ui documents this bridge for dependencies that have not yet
     // migrated. The scope is deliberately limited to flutter_markdown_plus.
     // ignore: deprecated_member_use

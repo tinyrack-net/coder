@@ -1,5 +1,23 @@
 part of '../../app/app_flows_test.dart';
 
+/// A definition the catalog only learns about after the session is on screen.
+const _lateAgentDefinition = AgentDefinitionDto(
+  version: 5,
+  id: 'late',
+  name: 'Late',
+  description: 'Published after its session opened',
+  mode: AgentMode.primary,
+  model: AgentModelSelectionDto(source: AgentModelSource.session),
+  driverId: 'tinest.standard/driver',
+  extensionIds: <String>[],
+  toolIds: <String>['tinest.files/read_file'],
+  pluginSettings: <String, Map<String, dynamic>>{},
+  callableAgentIds: <String>[],
+  prompt: 'Code carefully.',
+  contentHash: 'late-hash',
+  sourcePath: '/config/agents/late.md',
+);
+
 void _registerConversationAppFlows() {
   final now = DateTime.utc(2026, 8, 3);
   final workspace = WorkspaceDto(
@@ -1078,5 +1096,72 @@ void _registerConversationAppFlows() {
       // ignore: lines_longer_than_80_chars
       'ui_variant__conversation_timeline__mobile_light_korean_large_text_touch_online__widget',
     ],
+  );
+
+  testWidgets(
+    'a resolving agent catalog does not take the composer draft with it',
+    (tester) async {
+      // The pane's slots are same-typed siblings above the composer. The one
+      // that appears only once the session's agent definition is in the
+      // catalog shifts the unkeyed children below it, and the composer that
+      // moves with them is rebuilt from scratch — losing whatever was typed,
+      // along with the caret.
+      await _setTestViewport(tester, const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final current = session('catalog').copyWith(agentDefinitionId: 'late');
+      final api = FakeTinestApi(
+        workspaces: <WorkspaceDto>[workspace],
+        worktrees: <WorktreeDto>[checkout],
+        agents: <SessionDto>[current],
+      );
+      final router = await _pumpRoute(
+        tester,
+        api,
+        SessionRoute(
+          hostId: 'server',
+          workspaceId: workspace.id,
+          worktreeId: checkout.id,
+          sessionId: current.id,
+        ).location,
+      );
+      addTearDown(router.dispose);
+
+      const input = ValueKey<String>('session-composer-input');
+      const prompt = 'Typed before the definition arrived';
+      expect(
+        find.byType(AgentPluginUiSlot),
+        findsNothing,
+        reason: 'the session names a definition the catalog does not have yet',
+      );
+      await tester.enterText(find.byKey(input), prompt);
+      await tester.pump();
+
+      // The daemon publishes the missing definition; the catalog reloads and
+      // the slot above the composer appears.
+      await api.createAgentDefinition('late', _lateAgentDefinition);
+      api.emit(const AgentDefinitionsChangedClientEvent());
+      await tester.pumpAndSettle();
+      // Both of the definition's slots are now built; the status one sits
+      // between the timeline and the composer, which is the child that shifts.
+      expect(find.byType(AgentPluginUiSlot), findsAtLeastNWidgets(1));
+
+      expect(
+        tester.widget<TRTextField>(find.byKey(input)).controller!.text,
+        prompt,
+        reason: 'the draft survives the agent slot arriving above it',
+      );
+      final primaryContext = tester.binding.focusManager.primaryFocus?.context;
+      expect(
+        find.ancestor(
+          of: find.byElementPredicate(
+            (element) => identical(element, primaryContext),
+          ),
+          matching: find.byKey(input),
+        ),
+        findsOneWidget,
+        reason: 'and so does the caret',
+      );
+    },
+    tags: const <String>['feature_test__session_lifecycle__widget'],
   );
 }

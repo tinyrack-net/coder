@@ -569,6 +569,9 @@ final class FakeTinestApi
   /// Daemon failure every render answers with, when one is staged.
   TinestClientException? pluginUiRenderFailure;
 
+  /// Awaited before a render answers, to hold one in flight.
+  Completer<void>? pluginUiRenderGate;
+
   /// Optional explicit authoring states keyed by plugin ID.
   final Map<String, PluginAuthoringEnvironmentDto> pluginAuthoringEnvironments;
 
@@ -938,11 +941,16 @@ final class FakeTinestApi
   }
 
   /// Appends and broadcasts one timeline event for a session.
+  ///
+  /// [turnId] defaults to a single fixture turn. The daemon stamps the turn id
+  /// the client supplied onto every event of that turn, so anything echoing a
+  /// started turn has to pass the id it was actually given.
   void emitTimeline(
     String sessionId,
     String type,
-    Map<String, dynamic> data,
-  ) {
+    Map<String, dynamic> data, {
+    String turnId = 'turn-1',
+  }) {
     final events = _timelines.putIfAbsent(
       sessionId,
       () => <TimelineEventDto>[],
@@ -950,7 +958,7 @@ final class FakeTinestApi
     final event = TimelineEventDto(
       sessionId: sessionId,
       sequence: events.length + 1,
-      turnId: 'turn-1',
+      turnId: turnId,
       type: type,
       data: data,
       createdAt: _now,
@@ -2000,6 +2008,8 @@ final class FakeTinestApi
       slot: slot,
       context: Map<String, dynamic>.unmodifiable(context),
     ));
+    final gate = pluginUiRenderGate;
+    if (gate != null) await gate.future;
     if (pluginUiRenderFailure case final failure?) throw failure;
     final key = '$pluginId/$contributionId/$agentId';
     final document = pluginUiDocuments[key];
@@ -2457,7 +2467,7 @@ final class FakeTinestApi
       emitTimeline(sessionId, 'user.message', <String, dynamic>{
         'text': prompt,
         'attachments': const <Map<String, dynamic>>[],
-      });
+      }, turnId: turnId);
     }
   }
 

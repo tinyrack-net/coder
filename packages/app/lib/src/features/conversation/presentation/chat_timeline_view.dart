@@ -4,6 +4,7 @@ import 'package:app/l10n/gen/app_localizations.dart';
 import 'package:app/src/app/app_identity.dart';
 import 'package:app/src/features/conversation/application/chat_timeline_model.dart';
 import 'package:app/src/features/conversation/presentation/chat_approval_card.dart';
+import 'package:app/src/features/conversation/presentation/chat_markdown.dart';
 import 'package:app/src/features/conversation/presentation/chat_message_views.dart';
 import 'package:app/src/features/conversation/presentation/chat_question_card.dart';
 import 'package:app/src/features/conversation/presentation/chat_reasoning_card.dart';
@@ -292,7 +293,6 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
         items.isNotEmpty &&
         items.last is ChatReasoningActivity &&
         (items.last as ChatReasoningActivity).isStreaming;
-    final showRunning = busy && !reasoningActive;
     if (widget.loading && items.isEmpty) {
       _entryCount = 0;
       return _ChatTimelineContentColumn(
@@ -307,7 +307,8 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     }
     final entries = <_ChatTimelineEntry>[
       for (final item in items) _ChatTimelineItemEntry(item),
-      if (showRunning) const _ChatTimelineRunningEntry(),
+      // Present for the whole turn, silent while reasoning owns the indicator.
+      if (busy) _ChatTimelineRunningEntry(showsIndicator: !reasoningActive),
     ];
     _entryCount = entries.length;
     final olderStatus = _olderPageStatus(context);
@@ -333,12 +334,19 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
       // an unavailable history anchor fall back to newest and stay there as
       // live messages arrive.
       follow: TRVirtualListFollow.trailing,
+      // Two viewports either side is enough to keep a fast scroll ahead of the
+      // builder. Every cached row is a full Markdown parse and layout, rebuilt
+      // on each streamed delta, so a deeper window buys smoothness the reader
+      // never sees at a cost they do.
       scrollCacheExtent: const .viewport(4),
       onVisibleRangeChanged: _onVisibleRangeChanged,
       leadingEdgeRequest: _olderPageRequest(),
       itemBuilder: (context, entry, index) {
         final content = switch (entry) {
-          _ChatTimelineRunningEntry() => const ChatRunningIndicator(),
+          _ChatTimelineRunningEntry(:final showsIndicator) =>
+            showsIndicator
+                ? const ChatRunningIndicator()
+                : const SizedBox.shrink(),
           _ChatTimelineItemEntry(:final item) => ChatItemView(
             item: item,
             expanded: _expanded.contains(item.key),
@@ -380,13 +388,19 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     // The stack is unconditional: making it appear only while a page is in
     // flight would re-inflate the list beneath it, and one controller drives
     // exactly one list at a time.
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        list,
-        if (olderStatus != null)
-          Positioned(top: 0, left: 0, right: 0, child: olderStatus),
-      ],
+    //
+    // The Markdown scope wraps the whole list so every assistant row shares one
+    // stylesheet: building it per row means generating a tonal palette per row
+    // per streamed delta.
+    return ChatMarkdownTheme(
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          list,
+          if (olderStatus != null)
+            Positioned(top: 0, left: 0, right: 0, child: olderStatus),
+        ],
+      ),
     );
   }
 }
@@ -424,8 +438,18 @@ final class _ChatTimelineItemEntry extends _ChatTimelineEntry {
   String get key => item.key;
 }
 
+/// The trailing running affordance, present for the whole of a running turn.
+///
+/// It stays in the list even while [showsIndicator] is false. Reasoning takes
+/// the indicator over and hands it back several times within one turn, and
+/// inserting and removing a row that often churns the list's keys, drops the
+/// neighbouring row's measurement, and flips the trailing padding of whichever
+/// row happens to be last — all of which the reader sees as the transcript
+/// twitching rather than as an indicator changing.
 final class _ChatTimelineRunningEntry extends _ChatTimelineEntry {
-  const _ChatTimelineRunningEntry();
+  const _ChatTimelineRunningEntry({required this.showsIndicator});
+
+  final bool showsIndicator;
 
   @override
   String get key => 'chat-running';
