@@ -589,4 +589,103 @@ void main() {
     },
     tags: const <String>['feature_test__turn_execution__unit'],
   );
+
+  test(
+    'a block extended by an older page keeps the identity it already had',
+    () {
+      // The daemon splits a turn longer than one page, so the oldest loaded
+      // row is routinely half of a streamed answer. Paging back extends that
+      // same block: it is the same row, growing upwards, and the list anchors
+      // the reader to it by key. An identity that moves with the window makes
+      // the reader's anchor vanish at the exact moment a page lands.
+      final deltas = <TimelineEventDto>[
+        for (var index = 1; index <= 6; index += 1)
+          event('assistant.delta', <String, dynamic>{
+            'text': 'part $index ',
+            'blockId': 'block-1',
+          }, at: index),
+      ];
+
+      final loaded = projectChatTimeline(deltas.sublist(3));
+      final extended = projectChatTimeline(deltas);
+
+      final before = loaded.whereType<ChatAssistantMessage>().single;
+      final after = extended.whereType<ChatAssistantMessage>().single;
+      expect(before.markdown, 'part 4 part 5 part 6 ');
+      expect(
+        after.markdown,
+        'part 1 part 2 part 3 part 4 part 5 part 6 ',
+        reason: 'an older page extends the block it precedes',
+      );
+      expect(
+        after.key,
+        before.key,
+        reason: 'the row the reader is anchored to survives its own page load',
+      );
+    },
+    tags: const <String>['feature_test__conversation_history_pagination__unit'],
+  );
+
+  test(
+    'a reasoning block extended by an older page keeps its identity too',
+    () {
+      final deltas = <TimelineEventDto>[
+        for (var index = 1; index <= 6; index += 1)
+          event('assistant.reasoning.delta', <String, dynamic>{
+            'text': 'thought $index ',
+            'blockId': 'block-1',
+          }, at: index),
+      ];
+
+      final before = projectChatTimeline(
+        deltas.sublist(3),
+      ).whereType<ChatReasoningActivity>().single;
+      final after = projectChatTimeline(
+        deltas,
+      ).whereType<ChatReasoningActivity>().single;
+
+      expect(after.markdown, startsWith('thought 1 '));
+      expect(
+        after.key,
+        before.key,
+        reason: 'the row the reader is anchored to survives its own page load',
+      );
+    },
+    tags: const <String>['feature_test__conversation_history_pagination__unit'],
+  );
+
+  test(
+    'two answers in one turn are two rows with identities of their own',
+    () {
+      final items = projectChatTimeline(<TimelineEventDto>[
+        event('assistant.delta', <String, dynamic>{
+          'text': 'first ',
+          'blockId': 'block-1',
+        }),
+        event('tool.requested', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'arguments': <String, dynamic>{},
+        }),
+        event('tool.completed', <String, dynamic>{
+          'callId': 'call-1',
+          'name': 'read_file',
+          'output': 'done',
+          'isError': false,
+        }),
+        event('assistant.delta', <String, dynamic>{
+          'text': 'second ',
+          'blockId': 'block-2',
+        }),
+      ]);
+
+      final answers = items.whereType<ChatAssistantMessage>().toList();
+      expect(answers.map((item) => item.markdown), <String>[
+        'first ',
+        'second ',
+      ]);
+      expect(answers.map((item) => item.key).toSet(), hasLength(2));
+    },
+    tags: const <String>['feature_test__conversation_history_pagination__unit'],
+  );
 }

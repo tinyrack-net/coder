@@ -174,6 +174,9 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
   void _reportReadingPosition(String sessionKey) =>
       widget.onReadingPositionChanged?.call(sessionKey, _readingPosition);
 
+  /// Whether no page is in flight and the last one did not fail.
+  bool get _olderPageSettled => !widget.loadingOlder && !widget.olderFailed;
+
   /// The "load earlier messages" edge, or null when there is nothing above.
   ///
   /// Null matters as much as the object: an underfilled list already sits at
@@ -191,6 +194,10 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
     final pageKey = widget.olderPageKey;
     final load = widget.onLoadOlder;
     if (pageKey == null || load == null) return null;
+    // A page already in flight cannot be helped by asking for it again, and
+    // one that failed is the reader's to retry from the status row below.
+    // Neither is an edge the list should be watching.
+    if (!_olderPageSettled) return null;
     return TRVirtualListEdgeRequest(
       requestKey: pageKey,
       onRequest: load,
@@ -200,9 +207,13 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
 
   /// Progress for an in-flight or failed page of older history.
   Widget? _olderPageStatus(BuildContext context) {
-    if (!widget.loadingOlder && !widget.olderFailed) return null;
+    if (_olderPageSettled) return null;
     final l10n = AppLocalizations.of(context);
+    final retry = widget.olderFailed ? widget.onLoadOlder : null;
+    // Progress is not something to touch, and it overlays the transcript: only
+    // a row the reader can answer takes pointers away from the messages.
     return IgnorePointer(
+      ignoring: retry == null,
       child: _ChatTimelineContentColumn(
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -216,6 +227,8 @@ class _ChatTimelineViewState extends State<ChatTimelineView> {
             status: widget.olderFailed
                 ? TRChatToolStatus.failed
                 : TRChatToolStatus.running,
+            actionLabel: retry == null ? null : l10n.conversationLoadOlderRetry,
+            onAction: retry,
           ),
         ),
       ),

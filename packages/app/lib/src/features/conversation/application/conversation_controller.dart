@@ -94,7 +94,6 @@ final class ConversationState {
     this.hasMoreOlder = false,
     this.loadingOlder = false,
     this.olderFailed = false,
-    this.olderAttempt = 0,
   });
 
   /// Loaded events, oldest first. A window, not necessarily the whole history.
@@ -107,11 +106,11 @@ final class ConversationState {
   final bool loadingOlder;
 
   /// Whether the most recent page attempt failed.
+  ///
+  /// A failure stops automatic paging until the reader asks again: the page
+  /// that failed is the same page, so re-arming the edge on its own would put
+  /// the request back on the wire on the next frame, and the frame after that.
   final bool olderFailed;
-
-  /// Failed page attempts, which the view folds into its request identity so a
-  /// page that errored can be asked for again.
-  final int olderAttempt;
 
   /// Sequence of the oldest loaded event, or zero when nothing is loaded.
   int get oldestLoadedSequence =>
@@ -140,7 +139,6 @@ final class ConversationState {
     bool? hasMoreOlder,
     bool? loadingOlder,
     bool? olderFailed,
-    int? olderAttempt,
   }) => ConversationState(
     timeline: timeline ?? this.timeline,
     approvals: approvals ?? this.approvals,
@@ -150,7 +148,6 @@ final class ConversationState {
     hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
     loadingOlder: loadingOlder ?? this.loadingOlder,
     olderFailed: olderFailed ?? this.olderFailed,
-    olderAttempt: olderAttempt ?? this.olderAttempt,
   );
 }
 
@@ -210,9 +207,8 @@ class ConversationController extends _$ConversationController {
 
   /// Loads the page of history preceding the oldest loaded event.
   ///
-  /// A failure leaves the loaded timeline untouched and bumps [
-  /// ConversationState.olderAttempt] so the same page can be requested again;
-  /// the view's request identity is otherwise stable and would never re-arm.
+  /// A failure leaves the loaded timeline untouched and reports itself, so the
+  /// reader can ask for the same page again from the row that announced it.
   Future<void> loadOlderHistory() async {
     final sessionId = _sessionId;
     final current = _currentEventState;
@@ -221,7 +217,9 @@ class ConversationController extends _$ConversationController {
     final cursor = current.oldestLoadedSequence;
     if (cursor <= 1) return;
     state = AsyncData<ConversationState>(
-      current.copyWith(loadingOlder: true),
+      // A retry is in flight, not still failed: the row that announced the
+      // failure is the one the reader just used, and it has to say so.
+      current.copyWith(loadingOlder: true, olderFailed: false),
     );
     try {
       final api = await requireHostApi(ref, hostId);
@@ -250,11 +248,7 @@ class ConversationController extends _$ConversationController {
       final live = _currentEventState;
       if (live == null) return;
       state = AsyncData<ConversationState>(
-        live.copyWith(
-          loadingOlder: false,
-          olderFailed: true,
-          olderAttempt: live.olderAttempt + 1,
-        ),
+        live.copyWith(loadingOlder: false, olderFailed: true),
       );
     }
   }

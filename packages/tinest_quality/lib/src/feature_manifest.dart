@@ -756,7 +756,9 @@ const List<FeatureContract> tinestFeatureManifest = <FeatureContract>[
     id: 'conversation.history.pagination',
     description:
         'Opens a conversation on its newest page and loads earlier messages '
-        'as the reader scrolls back, so history never arrives as one frame.',
+        'as the reader scrolls back, so history never arrives as one frame. A '
+        'page extends the row it belongs to rather than replacing it, and a '
+        'page that failed waits for the reader to ask again.',
     apiMethods: <String>['sessions.readTimelineHistory'],
     requiredLayers: <FeatureVerificationLayer>{
       FeatureVerificationLayer.unit,

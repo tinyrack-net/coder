@@ -337,6 +337,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conversationLoadOlderFailed => 'Could not load earlier messages';
 
   @override
+  String get conversationLoadOlderRetry => 'Try again';
+
+  @override
   String get directoryBrowserLoading => 'Loading directories';
 
   @override

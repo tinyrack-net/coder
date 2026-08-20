@@ -21,6 +21,15 @@ import 'support/tap_visible.dart';
 /// exceed a page and forces the reader onto the paging path the way a real
 /// long conversation does.
 const int _deltasPerAnswer = 60;
+
+/// Deltas streamed for the first answer alone.
+///
+/// The daemon caps a window at twice the page it was asked for, so an answer
+/// longer than that is split and a reader paging into it holds half a block.
+/// That is the ordinary shape of a long conversation and the one the reader's
+/// row identity has to survive; the later turns stay short so entry still
+/// lands on a turn boundary.
+const int _deltasPerFirstAnswer = timelineHistoryPageSize * 2 + 50;
 const int _turns = 5;
 const double _geometryTolerance = 0.01;
 const String _historyModelId = 'openai/gpt-5.6-sol';
@@ -214,11 +223,40 @@ void main() {
       await pumpUntil(tester, _newest());
       _expectAtNewest(tester, phase: 'reopened from the end');
 
-      // 4. Scrolling back loads earlier turns that entry never fetched.
-      await _dragUntil(
-        tester,
-        _oldest,
-        'the oldest turn to arrive from an earlier page',
+      // 4. Scrolling back loads earlier turns that entry never fetched. The
+      //    first answer outgrows the window the daemon will build, so paging
+      //    into it leaves the reader holding half a streamed answer. The pages
+      //    that follow extend that row, and it has to still be the same row
+      //    afterwards: a row that changes identity is a row the list has to
+      //    replace, and the reader is sent back to the leading edge with it.
+      //    Real drags rather than a programmatic jump: the edge request fires
+      //    from scroll notifications, so a jump would prove the fetch works
+      //    without proving a reader can ever provoke it.
+      String? held;
+      for (var drag = 0; drag < 120; drag += 1) {
+        if (_oldest().evaluate().isNotEmpty) break;
+        final head = _oldestRenderedKey(tester);
+        held ??= head.startsWith('assistant-') ? head : null;
+        await tester.drag(_timeline, const Offset(0, 600));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(
+        _oldest(),
+        findsWidgets,
+        reason: 'the oldest turn arrives from an earlier page',
+      );
+      expect(
+        held,
+        isNotNull,
+        reason: 'paging has to land inside the split answer to prove anything',
+      );
+      expect(
+        tester
+            .widget<ChatTimelineView>(find.byType(ChatTimelineView))
+            .items
+            .map((item) => item.key),
+        contains(held),
+        reason: 'the pages that extended the reader row did not rename it',
       );
 
       // 5. A cold start opens at the newest message too, which is the report
@@ -285,6 +323,13 @@ Finder _chatItem(String key) => find.byWidgetPredicate(
   description: 'chat item $key',
 );
 
+/// Key of the oldest row the timeline is currently rendering.
+String _oldestRenderedKey(WidgetTester tester) => tester
+    .widget<ChatTimelineView>(find.byType(ChatTimelineView))
+    .items
+    .first
+    .key;
+
 ({String key, double viewportOffset})? _firstFullyVisibleAnchor(
   WidgetTester tester,
   Set<String> allowedKeys,
@@ -327,24 +372,6 @@ void _expectAtNewest(WidgetTester tester, {required String phase}) {
     closeTo(0, _geometryTolerance),
     reason: 'timeline rests on its newest message at $phase',
   );
-}
-
-/// Drags the transcript backwards until [target] appears.
-///
-/// Real drags rather than a programmatic jump: the edge request fires from
-/// scroll notifications, so a jump would prove the fetch works without proving
-/// a reader can ever provoke it.
-Future<void> _dragUntil(
-  WidgetTester tester,
-  Finder Function() target,
-  String description,
-) async {
-  for (var attempt = 0; attempt < 120; attempt += 1) {
-    if (target().evaluate().isNotEmpty) return;
-    await tester.drag(_timeline, const Offset(0, 600));
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-  throw TestFailure('Timed out dragging back to $description.');
 }
 
 /// Drags the transcript forwards until it rests on the newest message.
@@ -461,8 +488,11 @@ final class _HistoryProvider implements ModelGateway {
     CancellationToken cancellation,
   ) async* {
     final prompt = request.history.whereType<UserConversationItem>().last.text;
+    // The first answer alone outgrows a window, so paging back into it is
+    // paging into the middle of one block rather than onto a turn boundary.
+    final deltas = prompt == '질문 1' ? _deltasPerFirstAnswer : _deltasPerAnswer;
     final buffer = StringBuffer();
-    for (var index = 0; index < _deltasPerAnswer; index += 1) {
+    for (var index = 0; index < deltas; index += 1) {
       cancellation.throwIfCancelled();
       final delta = '$prompt 응답 $index\n\n';
       buffer.write(delta);

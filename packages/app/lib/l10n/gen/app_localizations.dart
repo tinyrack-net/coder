@@ -706,6 +706,12 @@ abstract class AppLocalizations {
   /// **'Could not load earlier messages'**
   String get conversationLoadOlderFailed;
 
+  /// Action beside the failed-history row that asks for the same earlier page again.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get conversationLoadOlderRetry;
+
   /// Announced once for the row skeletons shown while the first directory listing loads.
   ///
   /// In en, this message translates to:

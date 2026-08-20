@@ -100,6 +100,7 @@
   "conversationLoading": "会話を読み込み中",
   "conversationLoadingOlder": "以前のメッセージを読み込み中",
   "conversationLoadOlderFailed": "以前のメッセージを読み込めませんでした",
+  "conversationLoadOlderRetry": "再試行",
   "directoryBrowserLoading": "ディレクトリを読み込み中",
   "terminalCreationFailed": "ターミナルを作成できませんでした",
   "terminalWorktreeUnavailable": "このワークツリーは利用できなくなりました。別のワークツリーを選択してください。",

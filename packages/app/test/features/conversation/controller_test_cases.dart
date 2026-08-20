@@ -1003,11 +1003,6 @@ void _registerConversationControllerTests() {
       expect(failed.loadingOlder, isFalse);
       expect(failed.hasMoreOlder, isTrue);
       expect(failed.olderFailed, isTrue);
-      expect(
-        failed.olderAttempt,
-        1,
-        reason: 'the retry identity must change or the page is unreachable',
-      );
 
       api.readTimelineHistoryFailure = null;
       await container.read(provider.notifier).loadOlderHistory();
