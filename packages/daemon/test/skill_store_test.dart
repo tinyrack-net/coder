@@ -311,19 +311,19 @@ void main() {
 
       var changed = service.changes.first;
       await writeSkill(skillsRoot, 'watched', description: 'Created.');
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
       await _waitForDescription(service, 'watched', 'Created.');
 
       changed = service.changes.first;
       await writeSkill(skillsRoot, 'watched', description: 'Edited.');
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
       await _waitForDescription(service, 'watched', 'Edited.');
 
       changed = service.changes.first;
       await Directory(p.join(skillsRoot.path, 'watched')).delete(
         recursive: true,
       );
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
       await _waitForMissing(service, 'watched');
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
@@ -341,7 +341,7 @@ void main() {
       final changed = service.changes.first;
       await writeSkill(skillsRoot, 'watched', description: 'Edited.');
 
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
       await _waitForDescription(service, 'watched', 'Edited.');
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
@@ -367,7 +367,7 @@ void main() {
       final changed = files.changes.first;
       await resource.writeAsString('void main() => print("updated");');
 
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
   );
@@ -423,7 +423,7 @@ void main() {
         (await files.read()).map((document) => document.id),
         contains('watched'),
       );
-      await changed.timeout(const Duration(seconds: 10));
+      await _awaitChange(changed, skillsRoot);
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
   );
@@ -588,6 +588,47 @@ void main() {
     },
     tags: const <String>['feature_test__skill_catalog__unit'],
   );
+}
+
+/// Awaits a watcher change, reporting what the filesystem looked like when it
+/// never came.
+///
+/// A bare `TimeoutException after 0:00:10` says only that no event arrived,
+/// which is true of a dropped native event, a watcher anchored somewhere else,
+/// and a write that never landed. Those need different fixes and the message
+/// cannot tell them apart. This has failed on a loaded CI host without
+/// reproducing anywhere else, so the run that fails has to carry its own
+/// evidence.
+Future<void> _awaitChange(
+  Future<void> changed,
+  Directory skillsRoot, {
+  Duration budget = const Duration(seconds: 10),
+}) async {
+  try {
+    await changed.timeout(budget);
+  } on TimeoutException {
+    final root = skillsRoot.existsSync()
+        ? skillsRoot
+              .listSync()
+              .map((entity) => p.basename(entity.path))
+              .toList(growable: false)
+              .toString()
+        : 'missing';
+    final limits = <String, String>{};
+    for (final knob in <String>[
+      'max_queued_events',
+      'max_user_instances',
+      'max_user_watches',
+    ]) {
+      final file = File('/proc/sys/fs/inotify/$knob');
+      if (file.existsSync()) limits[knob] = file.readAsStringSync().trim();
+    }
+    throw TestFailure(
+      'No skill catalog change within ${budget.inSeconds}s. '
+      'skillsRoot=${skillsRoot.path} contents=$root'
+      '${limits.isEmpty ? '' : ' inotify=$limits'}',
+    );
+  }
 }
 
 Future<void> _waitForDescription(
