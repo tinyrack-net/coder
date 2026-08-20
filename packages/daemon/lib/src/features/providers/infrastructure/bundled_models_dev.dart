@@ -42,6 +42,7 @@ ProviderCatalogMetadata _model(Map<String, dynamic> value) {
     ),
     pricing: _pricing(value['cost']),
     limits: _limits(value['limits']),
+    reasoning: value['reasoning'] == true,
   );
 }
 

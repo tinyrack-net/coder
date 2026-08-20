@@ -13,10 +13,8 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
     required this.definition,
     required this.baseUrl,
     required this._wire,
+    required this.extensions,
     this.models = const <ProviderCatalogModel>[],
-    this.extensions = const <ProviderEndpointExtension>{
-      ProviderEndpointExtension.modelDiscovery,
-    },
     this.usesRemoteCatalog = true,
   });
 
@@ -28,9 +26,9 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
 
   /// Optional behaviours this vendor's endpoint documents.
   ///
-  /// Serving `/models` is the one thing nearly every compatible vendor does,
-  /// so it is the default; every other extension is stated by the vendor that
-  /// documents it.
+  /// Required rather than defaulted: a vendor added without an answer here
+  /// once inherited a convenient one and quietly lost model discovery, so
+  /// stating the set is part of adding a vendor.
   final Set<ProviderEndpointExtension> extensions;
 
   @override
@@ -58,6 +56,13 @@ base class OpenAICompatibleAdapter extends ProviderAdapter {
     ProviderCredential? credential,
   ) => _wire.discoverModels(endpoint, credential);
 }
+
+/// What a hosted OpenAI-compatible vendor is assumed to serve.
+///
+/// Nearly all of them list models; nothing else is assumed of a vendor that
+/// has not documented it.
+const Set<ProviderEndpointExtension> _compatibleExtensions =
+    <ProviderEndpointExtension>{ProviderEndpointExtension.modelDiscovery};
 
 /// What the platform API documents beyond the compatible baseline.
 const Set<ProviderEndpointExtension> _platformExtensions =
@@ -178,24 +183,28 @@ List<ProviderAdapter> openAIFamilyAdapters({
       baseUrl: 'https://api.deepseek.com',
       wire: chatCompletions,
       models: deepseekBundledModels,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: openRouterDefinition,
       baseUrl: 'https://openrouter.ai/api/v1',
       wire: chatCompletions,
       models: openRouterBundledModels,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: groqDefinition,
       baseUrl: 'https://api.groq.com/openai/v1',
       wire: chatCompletions,
       models: groqBundledModels,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: xaiDefinition,
       baseUrl: 'https://api.x.ai/v1',
       wire: chatCompletions,
       models: xaiBundledModels,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: minimaxDefinition,
@@ -217,16 +226,19 @@ List<ProviderAdapter> openAIFamilyAdapters({
       definition: ollamaDefinition,
       baseUrl: 'http://127.0.0.1:11434/v1',
       wire: chatCompletions,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: lmStudioDefinition,
       baseUrl: 'http://127.0.0.1:1234/v1',
       wire: chatCompletions,
+      extensions: _compatibleExtensions,
     ),
     OpenAICompatibleAdapter(
       definition: vllmDefinition,
       baseUrl: 'http://127.0.0.1:8000/v1',
       wire: chatCompletions,
+      extensions: _compatibleExtensions,
     ),
   ];
 }

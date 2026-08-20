@@ -16,6 +16,62 @@ void main() {
     wireProtocols: openAIWireProtocols(),
   );
 
+  test('the catalog owns the effort levels, the vendor owns the ladder', () {
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: registry,
+      metadataSource: _MetadataSource(),
+    );
+
+    // Before a refresh the vendor's own ladder is all there is.
+    final offline = catalog
+        .modelsFor('deepseek')
+        .singleWhere((model) => model.id == 'deepseek-reasoner');
+    expect(
+      offline.capabilities.controls
+          .singleWhere(
+            (control) => control.id == AgentModelControlIds.reasoningEffort,
+          )
+          .choices
+          .map((choice) => choice.id),
+      isNot(contains('ultra')),
+    );
+  });
+
+  test('a refreshed effort ladder replaces the vendor guess', () async {
+    final catalog = BuiltInProviderCatalog(
+      clock: _Clock(now),
+      registry: registry,
+      metadataSource: _MetadataSource(),
+    );
+    await catalog.refresh();
+
+    // The catalog describes one named model; the vendor's list can only
+    // approximate a whole family, so the named description wins.
+    final refreshed = catalog
+        .modelsFor('deepseek')
+        .singleWhere((model) => model.id == 'deepseek-chat');
+    expect(
+      refreshed.capabilities.controls
+          .singleWhere(
+            (control) => control.id == AgentModelControlIds.reasoningEffort,
+          )
+          .choices
+          .map((choice) => choice.id),
+      containsAll(<String>['low', 'ultra']),
+    );
+
+    // A model the vendor does not bundle still reasons, and the catalog did
+    // not say at which levels, so the vendor's ladder stands in.
+    final discovered = catalog
+        .modelsFor('deepseek')
+        .singleWhere((model) => model.id == 'deepseek-new');
+    expect(
+      discovered.capabilities.controls.map((control) => control.id),
+      contains(AgentModelControlIds.reasoningEffort),
+    );
+  });
+
   test(
     'explicit refresh merges model metadata without runtime fields',
     () async {
@@ -274,8 +330,21 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
             toolCalling: CapabilitySupport.supported,
             imageInput: CapabilitySupport.supported,
             fileInput: CapabilitySupport.supported,
+            controls: <ModelControlDescriptorDto>[
+              ModelControlDescriptorDto(
+                id: AgentModelControlIds.reasoningEffort,
+                label: 'Reasoning effort',
+                kind: ModelControlKind.choice,
+                presentation: ModelControlPresentation.menuChip,
+                choices: <ModelControlChoiceDto>[
+                  ModelControlChoiceDto(id: 'low', label: 'Low'),
+                  ModelControlChoiceDto(id: 'ultra', label: 'Ultra'),
+                ],
+              ),
+            ],
             source: CapabilitySource.refreshed,
           ),
+          reasoning: true,
         ),
         ProviderCatalogMetadata(
           id: 'deepseek-new',
@@ -287,6 +356,7 @@ final class _MetadataSource implements ProviderCatalogMetadataSource {
           ),
           pricing: ModelPricingDto(input: 0.25, output: 1),
           limits: ModelLimitsDto(context: 128000, output: 16000),
+          reasoning: true,
         ),
       ],
       'attacker': <ProviderCatalogMetadata>[
