@@ -1037,14 +1037,13 @@ void main() {
       isNot(contains('dart pub global run shipworld:shipworld')),
     );
   });
-  test('a manual dispatch is the only thing that can reach the homelab', () {
-    // The self-hosted machines carry `tinyrack-` prefixed labels, so no job
-    // reaches them unless it asks for one by name. That is what makes the
-    // GitHub-hosted measurement a clean baseline, and it is why the pool
-    // selector can exist without touching what a pull request, the merge
-    // queue, or a push actually runs.
+  test('everyday CI runs on the homelab and a dispatch can opt out', () {
+    // Measured across two runs per pool on one commit, the homelab took 38% to
+    // 81% off most jobs and raised the concurrent slot count from GitHub's
+    // free-plan ceiling to the whole matrix at once. It is the default now, and
+    // the selector remains so a dispatch can still ask for `github`.
     expect(workflow, contains('runner_pool:'));
-    expect(workflow, contains('default: github'));
+    expect(workflow, contains('default: self-hosted'));
 
     final changes = _job(workflow, 'changes');
     for (final output in <String>[
@@ -1066,9 +1065,10 @@ void main() {
     ]) {
       expect(changes, contains(label), reason: label);
     }
-    // Anything other than a dispatch has to resolve to the hosted labels, so
-    // everyday CI keeps running exactly where it ran before.
+    // Anything other than a dispatch resolves to the homelab labels; only a
+    // dispatch reads the input, and only to send a run back to GitHub.
     expect(changes, contains("github.event_name != 'workflow_dispatch'"));
+    expect(changes, contains("'self-hosted') || inputs.runner_pool"));
   });
 
   test('every measured quality job resolves runs-on through the scope', () {
