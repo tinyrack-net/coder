@@ -2982,6 +2982,10 @@ void main() {
         cache: NativePluginRevisionCache(stateRoot.path),
       );
       final firstRuntime = _pluginRuntime(stagedHost, firstRevisions);
+      // Closed explicitly below to model the restart. Registered here as well
+      // so a failure between the two still terminates the hosts it started;
+      // otherwise they hold the staged directory that tearDownAll removes.
+      addTearDown(firstRuntime.close);
       final capabilities = await _prepareBuiltinPlugins(
         catalog: catalog,
         revisions: firstRevisions,
