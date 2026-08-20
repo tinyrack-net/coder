@@ -1,12 +1,12 @@
 import 'package:daemon/src/features/agents/infrastructure/agent_definitions.dart';
-import 'package:daemon/src/shared/infrastructure/persistence/repositories.dart';
+import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/transport/rpc/binding.dart';
 import 'package:protocol/protocol.dart';
 
 /// Builds the agent-definition feature's complete v5 RPC surface.
 List<RpcBindingDescriptor> agentRpcBindings({
   required AgentDefinitionService definitions,
-  required SettingsRepository settings,
+  required PermissionDefaults permissions,
 }) => <RpcBindingDescriptor>[
   RpcBinding(agentsListProcedure, (_, _) async {
     return AgentDefinitionListResultDto(definitions: await definitions.list());
@@ -60,15 +60,10 @@ List<RpcBindingDescriptor> agentRpcBindings({
     );
   }),
   RpcBinding(agentsGetDefaultPermissionModeProcedure, (_, _) async {
-    final stored = await settings.getValue('permission.defaultMode');
-    return PermissionSettingsDto(
-      defaultMode: stored == null || stored.isEmpty
-          ? PermissionMode.ask
-          : PermissionMode.values.byName(stored),
-    );
+    return PermissionSettingsDto(defaultMode: await permissions.read());
   }),
   RpcBinding(agentsSetDefaultPermissionModeProcedure, (request, _) async {
-    await settings.setValue('permission.defaultMode', request.defaultMode.name);
+    await permissions.write(request.defaultMode);
     return request;
   }),
 ];

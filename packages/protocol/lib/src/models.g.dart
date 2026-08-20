@@ -947,10 +947,9 @@ _SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => _SessionDto(
         ),
       ) ??
       const <String, ModelControlValueDto>{},
-  permissionMode: $enumDecodeNullable(
-    _$PermissionModeEnumMap,
-    json['permissionMode'],
-  ),
+  permissionMode:
+      $enumDecodeNullable(_$PermissionModeEnumMap, json['permissionMode']) ??
+      PermissionMode.ask,
   parentSessionId: json['parentSessionId'] as String?,
   taskName: json['taskName'] as String?,
   agentPath: json['agentPath'] as String?,
@@ -975,7 +974,7 @@ Map<String, dynamic> _$SessionDtoToJson(_SessionDto instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'model': instance.model,
       'modelControls': instance.modelControls,
-      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode],
+      'permissionMode': _$PermissionModeEnumMap[instance.permissionMode]!,
       'parentSessionId': instance.parentSessionId,
       'taskName': instance.taskName,
       'agentPath': instance.agentPath,

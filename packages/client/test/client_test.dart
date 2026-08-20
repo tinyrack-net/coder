@@ -607,16 +607,8 @@ void main() {
         await client.updateSettings(
           agent.id,
           const SessionSettingsPatchDto(
-            hasPermissionMode: true,
             permissionMode: PermissionMode.workspaceWrite,
           ),
-        ),
-        agent,
-      );
-      expect(
-        await client.updateSettings(
-          agent.id,
-          const SessionSettingsPatchDto(hasPermissionMode: true),
         ),
         agent,
       );

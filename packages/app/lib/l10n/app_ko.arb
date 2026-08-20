@@ -446,7 +446,6 @@
   "composerInheritReasoningEffort": "에이전트 기본값",
   "composerPermissionMode": "권한",
   "composerSelectPermissionMode": "권한 선택",
-  "composerInheritPermissionMode": "에이전트 기본값",
   "composerPermissionReadOnly": "읽기 전용",
   "composerPermissionAsk": "변경 전 확인",
   "composerPermissionWorkspaceWrite": "작업 공간 접근",

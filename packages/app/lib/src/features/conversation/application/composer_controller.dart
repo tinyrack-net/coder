@@ -79,7 +79,8 @@ final class SessionComposerDraft {
   /// Explicit values for the selected provider model.
   final Map<String, ModelControlValueDto> modelControls;
 
-  /// Explicitly chosen permission mode; null inherits the agent definition.
+  /// Permission mode chosen for the next session; null has not been touched
+  /// yet and takes the host default the daemon is configured with.
   final PermissionMode? permissionMode;
 
   /// Returns a copy with the given fields replaced.
@@ -113,10 +114,17 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
     String draftId,
   ) => const SessionComposerDraft();
 
-  /// Chooses the agent definition and drops every override bound to the old
+  /// Chooses the agent definition and drops the overrides bound to the old
   /// agent, so the new definition supplies its own defaults.
-  void selectAgent(String agentDefinitionId) =>
-      state = SessionComposerDraft(agentDefinitionId: agentDefinitionId);
+  ///
+  /// The permission mode survives: no agent definition declares one, so
+  /// clearing it would throw away a deliberate choice and silently widen or
+  /// narrow what the next session may do.
+  void selectAgent(String agentDefinitionId) => state = state.copyWith(
+    agentDefinitionId: (value: agentDefinitionId),
+    model: (value: null),
+    modelControls: const <String, ModelControlValueDto>{},
+  );
 
   /// Chooses one concrete provider and model override.
   void selectModel(ModelSelectionDto model) => state = state.copyWith(
@@ -128,7 +136,7 @@ class SessionComposerDraftController extends _$SessionComposerDraftController {
   void selectModelControls(Map<String, ModelControlValueDto> controls) =>
       state = state.copyWith(modelControls: controls);
 
-  /// Chooses the permission mode override, or clears it when null.
-  void selectPermissionMode(PermissionMode? permissionMode) =>
+  /// Chooses the permission mode the next session is created with.
+  void selectPermissionMode(PermissionMode permissionMode) =>
       state = state.copyWith(permissionMode: (value: permissionMode));
 }

@@ -3229,7 +3229,9 @@ as String,
 /// @nodoc
 mixin _$SessionCreateParamsDto {
 
- String get id; String get worktreeId; String get title; String get agentDefinitionId; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls; PermissionMode? get permissionMode;
+ String get id; String get worktreeId; String get title; String get agentDefinitionId; ModelSelectionDto? get model; Map<String, ModelControlValueDto> get modelControls;/// Permission mode to pin on the new session; null takes the daemon
+/// default that is configured when the session is created.
+ PermissionMode? get permissionMode;
 /// Create a copy of SessionCreateParamsDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3456,6 +3458,8 @@ class _SessionCreateParamsDto implements SessionCreateParamsDto {
   return EqualUnmodifiableMapView(_modelControls);
 }
 
+/// Permission mode to pin on the new session; null takes the daemon
+/// default that is configured when the session is created.
 @override final  PermissionMode? permissionMode;
 
 /// Create a copy of SessionCreateParamsDto
@@ -3540,7 +3544,10 @@ $ModelSelectionDtoCopyWith<$Res>? get model {
 /// @nodoc
 mixin _$SessionSettingsPatchDto {
 
- bool get hasModel; ModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls; bool get hasPermissionMode; PermissionMode? get permissionMode;
+ bool get hasModel; ModelSelectionDto? get model; bool get hasModelControls; Map<String, ModelControlValueDto> get modelControls;/// New permission mode, or null to leave the current one in place. A
+/// session always owns a concrete mode, so there is nothing to clear and
+/// the field needs no has-flag of its own.
+ PermissionMode? get permissionMode;
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3553,16 +3560,16 @@ $SessionSettingsPatchDtoCopyWith<SessionSettingsPatchDto> get copyWith => _$Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other.modelControls, modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3573,7 +3580,7 @@ abstract mixin class $SessionSettingsPatchDtoCopyWith<$Res>  {
   factory $SessionSettingsPatchDtoCopyWith(SessionSettingsPatchDto value, $Res Function(SessionSettingsPatchDto) _then) = _$SessionSettingsPatchDtoCopyWithImpl;
 @useResult
 $Res call({
- bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3590,14 +3597,13 @@ class _$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_self.copyWith(
 hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self.modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
-as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
   ));
 }
@@ -3695,10 +3701,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.permissionMode);case _:
   return orElse();
 
 }
@@ -3716,10 +3722,10 @@ return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelCon
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto():
-return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.permissionMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3736,10 +3742,10 @@ return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelCon
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  bool hasPermissionMode,  PermissionMode? permissionMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool hasModel,  ModelSelectionDto? model,  bool hasModelControls,  Map<String, ModelControlValueDto> modelControls,  PermissionMode? permissionMode)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionSettingsPatchDto() when $default != null:
-return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.hasPermissionMode,_that.permissionMode);case _:
+return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelControls,_that.permissionMode);case _:
   return null;
 
 }
@@ -3751,7 +3757,7 @@ return $default(_that.hasModel,_that.model,_that.hasModelControls,_that.modelCon
 @JsonSerializable()
 
 class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
-  const _SessionSettingsPatchDto({this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.hasPermissionMode = false, this.permissionMode}): _modelControls = modelControls;
+  const _SessionSettingsPatchDto({this.hasModel = false, this.model, this.hasModelControls = false, final  Map<String, ModelControlValueDto> modelControls = const <String, ModelControlValueDto>{}, this.permissionMode}): _modelControls = modelControls;
   factory _SessionSettingsPatchDto.fromJson(Map<String, dynamic> json) => _$SessionSettingsPatchDtoFromJson(json);
 
 @override@JsonKey() final  bool hasModel;
@@ -3764,7 +3770,9 @@ class _SessionSettingsPatchDto implements SessionSettingsPatchDto {
   return EqualUnmodifiableMapView(_modelControls);
 }
 
-@override@JsonKey() final  bool hasPermissionMode;
+/// New permission mode, or null to leave the current one in place. A
+/// session always owns a concrete mode, so there is nothing to clear and
+/// the field needs no has-flag of its own.
 @override final  PermissionMode? permissionMode;
 
 /// Create a copy of SessionSettingsPatchDto
@@ -3780,16 +3788,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.hasPermissionMode, hasPermissionMode) || other.hasPermissionMode == hasPermissionMode)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionSettingsPatchDto&&(identical(other.hasModel, hasModel) || other.hasModel == hasModel)&&(identical(other.model, model) || other.model == model)&&(identical(other.hasModelControls, hasModelControls) || other.hasModelControls == hasModelControls)&&const DeepCollectionEquality().equals(other._modelControls, _modelControls)&&(identical(other.permissionMode, permissionMode) || other.permissionMode == permissionMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),hasPermissionMode,permissionMode);
+int get hashCode => Object.hash(runtimeType,hasModel,model,hasModelControls,const DeepCollectionEquality().hash(_modelControls),permissionMode);
 
 @override
 String toString() {
-  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, hasPermissionMode: $hasPermissionMode, permissionMode: $permissionMode)';
+  return 'SessionSettingsPatchDto(hasModel: $hasModel, model: $model, hasModelControls: $hasModelControls, modelControls: $modelControls, permissionMode: $permissionMode)';
 }
 
 
@@ -3800,7 +3808,7 @@ abstract mixin class _$SessionSettingsPatchDtoCopyWith<$Res> implements $Session
   factory _$SessionSettingsPatchDtoCopyWith(_SessionSettingsPatchDto value, $Res Function(_SessionSettingsPatchDto) _then) = __$SessionSettingsPatchDtoCopyWithImpl;
 @override @useResult
 $Res call({
- bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, bool hasPermissionMode, PermissionMode? permissionMode
+ bool hasModel, ModelSelectionDto? model, bool hasModelControls, Map<String, ModelControlValueDto> modelControls, PermissionMode? permissionMode
 });
 
 
@@ -3817,14 +3825,13 @@ class __$SessionSettingsPatchDtoCopyWithImpl<$Res>
 
 /// Create a copy of SessionSettingsPatchDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? hasPermissionMode = null,Object? permissionMode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? hasModel = null,Object? model = freezed,Object? hasModelControls = null,Object? modelControls = null,Object? permissionMode = freezed,}) {
   return _then(_SessionSettingsPatchDto(
 hasModel: null == hasModel ? _self.hasModel : hasModel // ignore: cast_nullable_to_non_nullable
 as bool,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as ModelSelectionDto?,hasModelControls: null == hasModelControls ? _self.hasModelControls : hasModelControls // ignore: cast_nullable_to_non_nullable
 as bool,modelControls: null == modelControls ? _self._modelControls : modelControls // ignore: cast_nullable_to_non_nullable
-as Map<String, ModelControlValueDto>,hasPermissionMode: null == hasPermissionMode ? _self.hasPermissionMode : hasPermissionMode // ignore: cast_nullable_to_non_nullable
-as bool,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
+as Map<String, ModelControlValueDto>,permissionMode: freezed == permissionMode ? _self.permissionMode : permissionMode // ignore: cast_nullable_to_non_nullable
 as PermissionMode?,
   ));
 }

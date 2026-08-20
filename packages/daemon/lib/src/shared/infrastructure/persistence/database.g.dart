@@ -1181,9 +1181,10 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   late final GeneratedColumn<String> permissionMode = GeneratedColumn<String>(
     'permission_mode',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultValue: const Constant('ask'),
   );
   static const VerificationMeta _currentContextEpochMeta =
       const VerificationMeta('currentContextEpoch');
@@ -1561,7 +1562,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
       permissionMode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}permission_mode'],
-      ),
+      )!,
       currentContextEpoch: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}current_context_epoch'],
@@ -1645,8 +1646,8 @@ class Session extends DataClass implements Insertable<Session> {
   /// JSON-encoded typed model-control values for this session.
   final String modelControlsJson;
 
-  /// Permission mode for this session; null inherits the agent definition.
-  final String? permissionMode;
+  /// Permission mode this session was pinned to when it was created.
+  final String permissionMode;
 
   /// Live context window; `new_context` bumps it to hide older history.
   final int currentContextEpoch;
@@ -1687,7 +1688,7 @@ class Session extends DataClass implements Insertable<Session> {
     this.lastError,
     this.modelId,
     required this.modelControlsJson,
-    this.permissionMode,
+    required this.permissionMode,
     required this.currentContextEpoch,
     required this.contextTokensUsed,
     this.contextWindowTokens,
@@ -1730,9 +1731,7 @@ class Session extends DataClass implements Insertable<Session> {
       map['model_id'] = Variable<String>(modelId);
     }
     map['model_controls_json'] = Variable<String>(modelControlsJson);
-    if (!nullToAbsent || permissionMode != null) {
-      map['permission_mode'] = Variable<String>(permissionMode);
-    }
+    map['permission_mode'] = Variable<String>(permissionMode);
     map['current_context_epoch'] = Variable<int>(currentContextEpoch);
     map['context_tokens_used'] = Variable<int>(contextTokensUsed);
     if (!nullToAbsent || contextWindowTokens != null) {
@@ -1778,9 +1777,7 @@ class Session extends DataClass implements Insertable<Session> {
           ? const Value.absent()
           : Value(modelId),
       modelControlsJson: Value(modelControlsJson),
-      permissionMode: permissionMode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(permissionMode),
+      permissionMode: Value(permissionMode),
       currentContextEpoch: Value(currentContextEpoch),
       contextTokensUsed: Value(contextTokensUsed),
       contextWindowTokens: contextWindowTokens == null && nullToAbsent
@@ -1814,7 +1811,7 @@ class Session extends DataClass implements Insertable<Session> {
       lastError: serializer.fromJson<String?>(json['lastError']),
       modelId: serializer.fromJson<String?>(json['modelId']),
       modelControlsJson: serializer.fromJson<String>(json['modelControlsJson']),
-      permissionMode: serializer.fromJson<String?>(json['permissionMode']),
+      permissionMode: serializer.fromJson<String>(json['permissionMode']),
       currentContextEpoch: serializer.fromJson<int>(
         json['currentContextEpoch'],
       ),
@@ -1847,7 +1844,7 @@ class Session extends DataClass implements Insertable<Session> {
       'lastError': serializer.toJson<String?>(lastError),
       'modelId': serializer.toJson<String?>(modelId),
       'modelControlsJson': serializer.toJson<String>(modelControlsJson),
-      'permissionMode': serializer.toJson<String?>(permissionMode),
+      'permissionMode': serializer.toJson<String>(permissionMode),
       'currentContextEpoch': serializer.toJson<int>(currentContextEpoch),
       'contextTokensUsed': serializer.toJson<int>(contextTokensUsed),
       'contextWindowTokens': serializer.toJson<int?>(contextWindowTokens),
@@ -1874,7 +1871,7 @@ class Session extends DataClass implements Insertable<Session> {
     Value<String?> lastError = const Value.absent(),
     Value<String?> modelId = const Value.absent(),
     String? modelControlsJson,
-    Value<String?> permissionMode = const Value.absent(),
+    String? permissionMode,
     int? currentContextEpoch,
     int? contextTokensUsed,
     Value<int?> contextWindowTokens = const Value.absent(),
@@ -1902,9 +1899,7 @@ class Session extends DataClass implements Insertable<Session> {
     lastError: lastError.present ? lastError.value : this.lastError,
     modelId: modelId.present ? modelId.value : this.modelId,
     modelControlsJson: modelControlsJson ?? this.modelControlsJson,
-    permissionMode: permissionMode.present
-        ? permissionMode.value
-        : this.permissionMode,
+    permissionMode: permissionMode ?? this.permissionMode,
     currentContextEpoch: currentContextEpoch ?? this.currentContextEpoch,
     contextTokensUsed: contextTokensUsed ?? this.contextTokensUsed,
     contextWindowTokens: contextWindowTokens.present
@@ -2068,7 +2063,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> lastError;
   final Value<String?> modelId;
   final Value<String> modelControlsJson;
-  final Value<String?> permissionMode;
+  final Value<String> permissionMode;
   final Value<int> currentContextEpoch;
   final Value<int> contextTokensUsed;
   final Value<int?> contextWindowTokens;
@@ -2208,7 +2203,7 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String?>? lastError,
     Value<String?>? modelId,
     Value<String>? modelControlsJson,
-    Value<String?>? permissionMode,
+    Value<String>? permissionMode,
     Value<int>? currentContextEpoch,
     Value<int>? contextTokensUsed,
     Value<int?>? contextWindowTokens,
@@ -8789,7 +8784,7 @@ typedef $$SessionsTableCreateCompanionBuilder = SessionsCompanion Function({
   Value<String?> lastError,
   Value<String?> modelId,
   Value<String> modelControlsJson,
-  Value<String?> permissionMode,
+  Value<String> permissionMode,
   Value<int> currentContextEpoch,
   Value<int> contextTokensUsed,
   Value<int?> contextWindowTokens,
@@ -8815,7 +8810,7 @@ typedef $$SessionsTableUpdateCompanionBuilder = SessionsCompanion Function({
   Value<String?> lastError,
   Value<String?> modelId,
   Value<String> modelControlsJson,
-  Value<String?> permissionMode,
+  Value<String> permissionMode,
   Value<int> currentContextEpoch,
   Value<int> contextTokensUsed,
   Value<int?> contextWindowTokens,
@@ -9872,7 +9867,7 @@ class $$SessionsTableTableManager
                 Value<String?> lastError = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
-                Value<String?> permissionMode = const Value.absent(),
+                Value<String> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),
@@ -9924,7 +9919,7 @@ class $$SessionsTableTableManager
                 Value<String?> lastError = const Value.absent(),
                 Value<String?> modelId = const Value.absent(),
                 Value<String> modelControlsJson = const Value.absent(),
-                Value<String?> permissionMode = const Value.absent(),
+                Value<String> permissionMode = const Value.absent(),
                 Value<int> currentContextEpoch = const Value.absent(),
                 Value<int> contextTokensUsed = const Value.absent(),
                 Value<int?> contextWindowTokens = const Value.absent(),

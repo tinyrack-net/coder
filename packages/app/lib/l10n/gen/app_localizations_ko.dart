@@ -1473,9 +1473,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get composerSelectPermissionMode => '권한 선택';
 
   @override
-  String get composerInheritPermissionMode => '에이전트 기본값';
-
-  @override
   String get composerPermissionReadOnly => '읽기 전용';
 
   @override

@@ -193,6 +193,9 @@ abstract class SessionCreateParamsDto with _$SessionCreateParamsDto {
     ModelSelectionDto? model,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
+
+    /// Permission mode to pin on the new session; null takes the daemon
+    /// default that is configured when the session is created.
     PermissionMode? permissionMode,
   }) = _SessionCreateParamsDto;
 
@@ -211,7 +214,10 @@ abstract class SessionSettingsPatchDto with _$SessionSettingsPatchDto {
     @Default(false) bool hasModelControls,
     @Default(<String, ModelControlValueDto>{})
     Map<String, ModelControlValueDto> modelControls,
-    @Default(false) bool hasPermissionMode,
+
+    /// New permission mode, or null to leave the current one in place. A
+    /// session always owns a concrete mode, so there is nothing to clear and
+    /// the field needs no has-flag of its own.
     PermissionMode? permissionMode,
   }) = _SessionSettingsPatchDto;
 

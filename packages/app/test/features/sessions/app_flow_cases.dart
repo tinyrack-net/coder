@@ -1670,11 +1670,20 @@ void _registerSessionsAppFlows() {
         find.byKey(const ValueKey('session-composer-permission')),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
+      // There is no option that hands the decision back to something else;
+      // every entry pins one concrete mode.
+      expect(
         find.byKey(const ValueKey('permission-option-inherit')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('permission-option-workspaceWrite')),
       );
       await tester.pumpAndSettle();
-      expect(api.updatedSessionPermissionModes.single.permissionMode, isNull);
+      expect(
+        api.updatedSessionPermissionModes.single.permissionMode,
+        PermissionMode.workspaceWrite,
+      );
 
       // A model without the capability hides both controls again.
       await tester.tap(find.byKey(const ValueKey('session-composer-model')));

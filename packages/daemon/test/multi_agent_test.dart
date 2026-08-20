@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:agent/agent.dart';
+import 'package:daemon/src/features/agents/infrastructure/permission_defaults.dart';
 import 'package:daemon/src/features/plugins/runtime/built_in_host_primitives.dart';
 import 'package:daemon/src/features/plugins/runtime/host_primitives.dart';
 import 'package:daemon/src/features/sessions/infrastructure/multi_agent.dart';
@@ -211,6 +212,7 @@ void main() {
       defaultModel: () async => const ModelSelectionDto(
         modelId: 'openai/gpt-default',
       ),
+      defaultPermission: PermissionDefaults(database.settingsDao),
       validateModel: (modelId) async {
         validatedModels.add(('', modelId));
         if (modelId == 'missing-model') {

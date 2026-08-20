@@ -1736,10 +1736,6 @@
   "@composerSelectPermissionMode": {
     "description": "Tooltip of the composer permission mode chip."
   },
-  "composerInheritPermissionMode": "Agent default",
-  "@composerInheritPermissionMode": {
-    "description": "Menu entry restoring the agent definition permission mode."
-  },
   "composerPermissionReadOnly": "Read only",
   "@composerPermissionReadOnly": {
     "description": "Permission mode allowing read-only tools."

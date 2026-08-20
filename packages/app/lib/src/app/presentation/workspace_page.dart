@@ -1951,6 +1951,9 @@ class _ConversationPaneState extends ConsumerState<_ConversationPane> {
               : invocation.arguments,
           agentDefinitionId: session.agentDefinitionId,
           model: session.model,
+          // The new session continues the same work, so it keeps the
+          // permissions the current one was granted.
+          permissionMode: session.permissionMode,
         );
       case ClientCommandAction.openAgentSettings:
         if (mounted) {

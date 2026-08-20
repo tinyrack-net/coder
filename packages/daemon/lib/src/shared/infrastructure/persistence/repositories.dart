@@ -85,10 +85,10 @@ abstract interface class SessionRepository {
   /// Rewrites qualified model selections after a provider prefix rename.
   Future<void> rewriteModelPrefix(String oldPrefix, String newPrefix);
 
-  /// Sets or clears the permission mode override of one session.
+  /// Sets the permission mode of one session.
   Future<SessionDto> updatePermissionMode(
     String id,
-    PermissionMode? permissionMode,
+    PermissionMode permissionMode,
   );
 
   /// Records what the last response reported for the live context window.

@@ -448,7 +448,6 @@
   "composerInheritReasoningEffort": "エージェントの既定値",
   "composerPermissionMode": "権限",
   "composerSelectPermissionMode": "権限を選択",
-  "composerInheritPermissionMode": "エージェントの既定値",
   "composerPermissionReadOnly": "読み取り専用",
   "composerPermissionAsk": "変更前に確認",
   "composerPermissionWorkspaceWrite": "ワークスペースへの書き込み",

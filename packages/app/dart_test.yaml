@@ -205,6 +205,7 @@ tags:
   feature_test__session_lifecycle__unit:
   feature_test__session_lifecycle__widget:
   feature_test__session_lifecycle__e2e:
+  feature_test__permission_settings__unit:
   feature_test__permission_settings__widget:
   feature_test__session_home__unit:
   feature_test__session_home__widget:

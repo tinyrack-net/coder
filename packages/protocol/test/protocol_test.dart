@@ -139,7 +139,7 @@ void main() {
     tags: const <String>['feature_test__permission_settings__contract'],
   );
 
-  test('session wire does not own a fixed harness mode', () {
+  test('a session always carries one concrete permission mode', () {
     final session = SessionDto(
       id: 'session',
       worktreeId: 'worktree',
@@ -152,15 +152,22 @@ void main() {
       model: sessionModel,
     );
 
-    expect(session.toJson(), isNot(contains('mode')));
+    // No session state means "inherit": a session that was created without an
+    // explicit choice still pins the mode that asks before every mutation.
+    expect(session.permissionMode, PermissionMode.ask);
+    expect(session.toJson()['permissionMode'], 'ask');
     _roundTrip(session, (value) => value.toJson(), SessionDto.fromJson);
+    // Creation parameters may still omit the mode, which asks the daemon to
+    // resolve its configured default once, while the session is created.
+    const params = SessionCreateParamsDto(
+      id: 'session',
+      worktreeId: 'worktree',
+      title: 'Run the migration',
+      agentDefinitionId: 'tinest',
+    );
+    expect(params.permissionMode, isNull);
     _roundTrip(
-      const SessionCreateParamsDto(
-        id: 'session',
-        worktreeId: 'worktree',
-        title: 'Run the migration',
-        agentDefinitionId: 'tinest',
-      ),
+      params,
       (value) => value.toJson(),
       SessionCreateParamsDto.fromJson,
     );
