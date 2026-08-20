@@ -75,12 +75,15 @@ final class AnthropicMessagesWire implements ProviderWireProtocol {
   @override
   String get label => 'Anthropic Messages';
 
+  /// Fast mode is absent for the same reason it is absent from the other
+  /// wires: `speed` reaches only an endpoint that has stated it accepts
+  /// expedited processing, which a custom connection never has, so offering
+  /// the toggle there would be offering a setting that does nothing.
   @override
   List<AgentModelControlDescriptor> get controlDescriptors => const [
     anthropicEffortControl,
     anthropicThinkingModeControl,
     anthropicThinkingBudgetControl,
-    anthropicFastModeControl,
   ];
 
   @override
@@ -91,6 +94,7 @@ final class AnthropicMessagesWire implements ProviderWireProtocol {
         id: request.connectionId,
         apiKey: credential is ApiKeyCredential ? credential.key : '',
         baseUrl: request.endpoint.baseUrl,
+        extensions: request.endpoint.extensions,
       ),
       dio: dioFactory?.call(request.endpoint),
     );

@@ -37,8 +37,6 @@ abstract base class OpenAICompatibleWire implements ProviderWireProtocol {
         AgentModelControlChoice(id: 'low', label: 'Low'),
         AgentModelControlChoice(id: 'medium', label: 'Medium'),
         AgentModelControlChoice(id: 'high', label: 'High'),
-        AgentModelControlChoice(id: 'xhigh', label: 'Extra high'),
-        AgentModelControlChoice(id: 'max', label: 'Maximum'),
       ],
       conflictsWith: <String>[AgentModelControlIds.reasoningMode],
     ),

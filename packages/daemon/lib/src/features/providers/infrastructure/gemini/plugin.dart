@@ -77,6 +77,9 @@ final class GoogleGeminiAdapter extends ProviderAdapter {
   ProviderEndpoint endpoint(AgentProviderAuthKind authKind) =>
       const ProviderEndpoint(
         baseUrl: 'https://generativelanguage.googleapis.com/v1',
+        extensions: <ProviderEndpointExtension>{
+          ProviderEndpointExtension.modelDiscovery,
+        },
       );
 
   @override

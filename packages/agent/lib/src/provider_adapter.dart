@@ -70,6 +70,13 @@ enum ProviderEndpointExtension {
   /// Accepts a declaration that sibling tool calls may run together.
   concurrentToolCalls,
 
+  /// Accepts documents inlined into a request, under the media types and
+  /// size ceiling the transport speaking to it documents.
+  ///
+  /// Without it an attachment is described in text instead, which every
+  /// endpoint understands.
+  inlineDocuments,
+
   /// Exposes a model listing.
   ///
   /// Without it the bundled catalog is already the complete model set, so a
