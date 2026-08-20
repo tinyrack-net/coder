@@ -730,11 +730,11 @@ packages:
     dependency: transitive
     description:
       path: "packages/lua_tool_runtime"
-      ref: "8aece6a592a64fd0762a4a572bbb1a11e1896822"
-      resolved-ref: "8aece6a592a64fd0762a4a572bbb1a11e1896822"
+      ref: "8dbf6aaded2ffddaf9a036e9b8e0499c4e918228"
+      resolved-ref: "8dbf6aaded2ffddaf9a036e9b8e0499c4e918228"
       url: "https://github.com/tinyrack-net/dart-packages.git"
     source: git
-    version: "0.4.0"
+    version: "0.4.1"
   lucide_flutter:
     dependency: transitive
     description:
