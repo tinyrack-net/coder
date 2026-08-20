@@ -14,6 +14,8 @@ import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
 import 'package:protocol/protocol.dart';
 import 'package:test/test.dart';
 
+import 'support/temporary_directory.dart';
+
 void main() {
   late Directory stagedHost;
   late Directory buildDirectory;
@@ -41,8 +43,8 @@ void main() {
 
   tearDownAll(() async {
     if (Platform.environment['TINEST_PLUGIN_TEST_LUA_HOST'] == null) {
-      await stagedHost.delete(recursive: true);
-      await buildDirectory.delete(recursive: true);
+      await deleteTemporaryDirectory(stagedHost);
+      await deleteTemporaryDirectory(buildDirectory);
     }
   });
 

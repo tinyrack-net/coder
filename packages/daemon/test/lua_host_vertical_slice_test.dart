@@ -12,6 +12,8 @@ import 'package:daemon/src/features/sessions/infrastructure/lua_code_mode_servic
 import 'package:lua_tool_runtime/lua_tool_runtime.dart' as lua;
 import 'package:test/test.dart';
 
+import 'support/temporary_directory.dart';
+
 void main() {
   test(
     'official Lua host resumes parallel nested reads in its sandbox',
@@ -23,8 +25,8 @@ void main() {
       final buildDirectory = await Directory.systemTemp.createTemp(
         'tinest-lua-tool-runtime-build-',
       );
-      addTearDown(() => staging.delete(recursive: true));
-      addTearDown(() => buildDirectory.delete(recursive: true));
+      addTearDown(() => deleteTemporaryDirectory(staging));
+      addTearDown(() => deleteTemporaryDirectory(buildDirectory));
       await lua.stageLuaToolRuntime(
         destination: staging.path,
         buildMode: lua.LuaBuildMode.debug,
