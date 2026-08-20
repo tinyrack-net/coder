@@ -792,17 +792,38 @@ jobs:
         run: dart run melos build:${{ matrix.platform }}:release
 
       # --- Linux ---------------------------------------------------------
-      - name: Install verified appimagetool and nfpm
+      - name: Resolve appimagetool and nfpm
         if: matrix.platform == 'linux'
+        # A self-hosted machine has these installed by its provisioning and its
+        # runner user holds no sudo, so `dpkg -i` cannot run there at all. The
+        # desktop runtime packages already work this way; this follows it.
+        #
+        # The provisioned nfpm is checked against the pin above rather than
+        # trusted: a machine carrying a different one would otherwise release
+        # packages built by a tool this repository never named.
         run: |
-          curl --fail --location --output appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
-          chmod +x appimagetool
-          curl --fail --location --output nfpm.deb \
-            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
-          echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
-          sudo dpkg -i nfpm.deb
+          set -euo pipefail
+          if command -v nfpm >/dev/null; then
+            installed="$(nfpm --version | sed -n 's/.*GitVersion: *//p' | tr -d ' ')"
+            if [ "$installed" != "$NFPM_VERSION" ]; then
+              echo "::error::Runner has nfpm $installed, expected $NFPM_VERSION"
+              exit 1
+            fi
+          else
+            curl --fail --location --output nfpm.deb \
+              "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+            echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
+            sudo dpkg -i nfpm.deb
+          fi
+          if command -v appimagetool >/dev/null; then
+            echo "APPIMAGETOOL=$(command -v appimagetool)" >> "$GITHUB_ENV"
+          else
+            curl --fail --location --output appimagetool \
+              "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
+            chmod +x appimagetool
+            echo "APPIMAGETOOL=${GITHUB_WORKSPACE}/appimagetool" >> "$GITHUB_ENV"
+          fi
       - name: Package Linux artifacts
         if: matrix.platform == 'linux'
         env:
@@ -810,7 +831,7 @@ jobs:
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage tinest --input "$BUNDLE" \
             --output dist/Tinest-linux-x64.AppImage --arch x86_64 \
-            --tool "${GITHUB_WORKSPACE}/appimagetool"
+            --tool "${APPIMAGETOOL}"
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux deb tinest --input "$BUNDLE" \
             --output dist/tinest-linux-x64.deb --arch amd64
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux rpm tinest --input "$BUNDLE" \
