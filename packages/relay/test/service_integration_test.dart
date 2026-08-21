@@ -86,9 +86,15 @@ void main() {
   test(
     'an idle daemon remains routable beyond the client handshake timeout',
     () async {
-      final service = RelayService(
-        clientHandshakeTimeout: const Duration(milliseconds: 20),
-      );
+      // The budget governs the client socket as well as naming the span this
+      // daemon has to outlive, so it cannot be set purely for the daemon's
+      // sake. At 20ms a runner busy enough to spend that long between
+      // accepting the client's upgrade and reading its first frame closed the
+      // client for a handshake timeout this test is not about, and the frame
+      // it was waiting on never arrived. A second is still trivial to idle
+      // past and is fifty times the margin that failed.
+      const handshakeBudget = Duration(seconds: 1);
+      final service = RelayService(clientHandshakeTimeout: handshakeBudget);
       final server = await shelf_io.serve(
         service.call,
         InternetAddress.loopbackIPv4,
@@ -107,6 +113,10 @@ void main() {
       // `attachClient` rejects it for having no daemon, and the routed frame
       // never arrives. Await the attach itself instead.
       await _awaitDaemonAttached(service, 'idle-daemon');
+      // Then sit idle past the budget, which is what "beyond" means here. The
+      // direction is safe: a slower machine only widens the window a
+      // regression that closed this socket would have to survive.
+      await Future<void>.delayed(handshakeBudget * 1.5);
 
       final client = await WebSocket.connect(
         _webSocketUri(base, role: 'client', serverId: 'idle-daemon').toString(),
