@@ -33,7 +33,7 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.47.0
-  TINYRACK_DART_PACKAGES_REF: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+  TINYRACK_DART_PACKAGES_REF: acd0bdf348e8a8a1886c66e65207fcd3087f7037
   # wrangler-action defaults to 3.90.0, which predates Workers static assets
   # and rejects an `assets` config for having no script entry-point.
   WRANGLER_VERSION: 4.118.0
@@ -75,7 +75,6 @@ jobs:
       runner_linux: ${{ steps.scope.outputs.runner_linux }}
       runner_windows: ${{ steps.scope.outputs.runner_windows }}
       runner_macos: ${{ steps.scope.outputs.runner_macos }}
-      runner_macos_intel: ${{ steps.scope.outputs.runner_macos_intel }}
       dart_scopes_rest: ${{ steps.scope.outputs.dart_scopes_rest }}
     steps:
       - uses: actions/checkout@v5
@@ -93,8 +92,7 @@ jobs:
           # reachable through a full-matrix run.
           CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
           # Everything resolves to the homelab labels. Only a dispatch reads
-          # the input, and only to send a run back to GitHub — `macos-15-intel`
-          # stays hosted either way because the Mac minis are ARM64 only.
+          # the input, and only to send a run back to GitHub.
           RUNNER_POOL: ${{ (github.event_name != 'workflow_dispatch' &&
             'self-hosted') || inputs.runner_pool }}
         run: |
@@ -129,20 +127,32 @@ jobs:
           # Windows Server 2025 or Windows 11, so a key that named either one
           # would be wrong for the other pool and would carry that claim into
           # job names and artifact names. `host-fingerprint` records what each
-          # job actually ran on. `macos-intel` is the exception worth naming:
-          # the Mac minis are ARM64 only, so it is hosted in both pools.
+          # job actually ran on. There is no Intel key: the x86_64 target builds
+          # through an x86_64 SDK under Rosetta 2, so the architecture is a
+          # property of the SDK a job installs rather than of the machine.
+          #
+          # macOS is hosted in both pools. Signing is the reason: `codesign`
+          # resolves a Developer ID by name through the default keychain, which
+          # is per-user, and the Mac minis run several runner instances as one
+          # user. Two signing jobs therefore read each other's keychain —
+          # `security find-identity` reports the identity while `codesign`
+          # fails with errSecInternalComponent, and when the timing goes the
+          # other way the signature it produces is rejected at exec with
+          # `Killed: 9`. Giving each job its own keychain was tried and only
+          # moved the contention, because the lookup path stays global. A
+          # hosted runner has one job per virtual machine and no such sharing.
+          # Isolating the minis means one macOS user per runner instance, which
+          # is a separate change.
           runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
             "github": {
               "linux": ["ubuntu-24.04"],
               "windows": ["windows-2025"],
-              "macos": ["macos-26"],
-              "macos-intel": ["macos-15-intel"]
+              "macos": ["macos-26"]
             },
             "self-hosted": {
               "linux": ["self-hosted", "tinyrack-ubuntu-ci"],
               "windows": ["self-hosted", "tinyrack-windows-ci"],
-              "macos": ["self-hosted", "tinyrack-macmini"],
-              "macos-intel": ["macos-15-intel"]
+              "macos": ["macos-26"]
             }
           }[$pool]')"
           if [ "$runners" = "null" ]; then
@@ -175,7 +185,6 @@ jobs:
             echo "runner_linux=$(jq -c '."linux"' <<< "$runners")"
             echo "runner_windows=$(jq -c '."windows"' <<< "$runners")"
             echo "runner_macos=$(jq -c '."macos"' <<< "$runners")"
-            echo "runner_macos_intel=$(jq -c '."macos-intel"' <<< "$runners")"
             echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
@@ -664,7 +673,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+      # `macos-x64` builds on an arm64 Mac mini through an x86_64 SDK, which
+      # runs there under Rosetta 2. Dart compiles for the architecture it runs
+      # as, and `dart build cli` has no cross-architecture option, so the SDK
+      # is the only lever. Keeping it here means no quality job needs a hosted
+      # Intel runner, and hosted macOS allows five concurrent jobs, so that one
+      # job could serialise the merge gate on its own.
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - uses: ./.github/actions/build-cli-bundle
@@ -714,6 +731,11 @@ jobs:
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})
+    # `changes` is what resolves the runner pool, so a release reads it too.
+    # That is also the escape hatch: a dispatch with `runner_pool: github`
+    # sends a release back to GitHub when the homelab is unavailable, which is
+    # exactly the moment you do not want to be blocked by it.
+    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -722,21 +744,27 @@ jobs:
         include:
           # Flutter publishes an SDK only for x64 hosts, so neither an arm64
           # Linux nor an arm64 Windows runner can build one. macOS is the sole
-          # platform with an arm64 SDK.
-          - os: ubuntu-24.04
+          # platform with an arm64 SDK — and the sole one that can build the
+          # other architecture, by running the x86_64 SDK under Rosetta 2.
+          - os: linux
+            runs_on: ${{ needs.changes.outputs.runner_linux }}
             target: linux-x64
             platform: linux
-          - os: macos-15-intel
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+            sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos-26
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
             target: macos-arm64
             platform: macos
-          - os: windows-2025
+          - os: windows
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
             target: windows-x64
             platform: windows
             arch: x64
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 60
     # Declared at job level so the MSIX step can test it in its own `if`; a
     # step cannot read the env it declares itself.
@@ -745,6 +773,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - if: matrix.platform == 'linux'
         uses: ./.github/actions/install-linux-desktop-deps
         with:
@@ -763,17 +793,38 @@ jobs:
         run: dart run melos build:${{ matrix.platform }}:release
 
       # --- Linux ---------------------------------------------------------
-      - name: Install verified appimagetool and nfpm
+      - name: Resolve appimagetool and nfpm
         if: matrix.platform == 'linux'
+        # A self-hosted machine has these installed by its provisioning and its
+        # runner user holds no sudo, so `dpkg -i` cannot run there at all. The
+        # desktop runtime packages already work this way; this follows it.
+        #
+        # The provisioned nfpm is checked against the pin above rather than
+        # trusted: a machine carrying a different one would otherwise release
+        # packages built by a tool this repository never named.
         run: |
-          curl --fail --location --output appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
-          chmod +x appimagetool
-          curl --fail --location --output nfpm.deb \
-            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
-          echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
-          sudo dpkg -i nfpm.deb
+          set -euo pipefail
+          if command -v nfpm >/dev/null; then
+            installed="$(nfpm --version | sed -n 's/.*GitVersion: *//p' | tr -d ' ')"
+            if [ "$installed" != "$NFPM_VERSION" ]; then
+              echo "::error::Runner has nfpm $installed, expected $NFPM_VERSION"
+              exit 1
+            fi
+          else
+            curl --fail --location --output nfpm.deb \
+              "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+            echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
+            sudo dpkg -i nfpm.deb
+          fi
+          if command -v appimagetool >/dev/null; then
+            echo "APPIMAGETOOL=$(command -v appimagetool)" >> "$GITHUB_ENV"
+          else
+            curl --fail --location --output appimagetool \
+              "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
+            chmod +x appimagetool
+            echo "APPIMAGETOOL=${GITHUB_WORKSPACE}/appimagetool" >> "$GITHUB_ENV"
+          fi
       - name: Package Linux artifacts
         if: matrix.platform == 'linux'
         env:
@@ -781,7 +832,7 @@ jobs:
         run: |
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux appimage tinest --input "$BUNDLE" \
             --output dist/Tinest-linux-x64.AppImage --arch x86_64 \
-            --tool "${GITHUB_WORKSPACE}/appimagetool"
+            --tool "${APPIMAGETOOL}"
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux deb tinest --input "$BUNDLE" \
             --output dist/tinest-linux-x64.deb --arch amd64
           dart run .dart_tool/tinyrack-dart-packages/packages/shipworld/bin/shipworld.dart package linux rpm tinest --input "$BUNDLE" \
@@ -790,15 +841,33 @@ jobs:
       - name: Verify the Linux packages install
         if: matrix.platform == 'linux'
         run: |
+          set -euo pipefail
           dpkg-deb --contents dist/tinest-linux-x64.deb | grep 'usr/bin/tinest ->'
           rpm -qpl dist/tinest-linux-x64.rpm | grep '/usr/lib/tinest/tinest'
           # A package that builds but cannot install is the failure the
-          # rendering tests cannot see.
-          sudo dpkg -i dist/tinest-linux-x64.deb
-          test -x /usr/bin/tinest
-          sudo dpkg -r tinest
+          # rendering tests cannot see, so this installs it rather than only
+          # reading it. In a container, not on the runner: installing needs
+          # root and the self-hosted runner user has no sudo, while it is in
+          # the `docker` group. A clean base image is the better test anyway —
+          # it holds none of the build host's libraries, so a dependency this
+          # package fails to declare fails here instead of passing by accident.
+          docker run --rm -v "$PWD/dist:/dist:ro" debian:stable-slim sh -c '
+            set -eu
+            apt-get update -qq
+            apt-get install -y --no-install-recommends /dist/tinest-linux-x64.deb
+            test -x /usr/bin/tinest
+            dpkg -r tinest
+          '
 
       # --- macOS ---------------------------------------------------------
+      # Before signing, not after: a wrong-architecture app that gets signed
+      # and notarized costs a full round trip to Apple to find out, and the
+      # signature would then vouch for the wrong binary.
+      - if: matrix.platform == 'macos'
+        uses: ./.github/actions/verify-macos-arch
+        with:
+          path: packages/desktop_app/build/macos/Build/Products/Release/Tinest.app
+          target: ${{ matrix.target }}
       - name: Sign and archive the macOS app
         if: matrix.platform == 'macos'
         env:
@@ -1013,6 +1082,9 @@ jobs:
 
   build-cli:
     name: Build CLI (${{ matrix.target }})
+    # See `build-and-package`: `changes` resolves the pool, and a dispatch with
+    # `runner_pool: github` is how a release leaves the homelab.
+    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -1024,19 +1096,24 @@ jobs:
           # held to the platforms Flutter publishes one for. That rules out
           # Linux arm64, which is why `shipworld.yaml` lists the three
           # platforms below under `homebrew.platforms`.
-          - os: ubuntu-24.04
+          - os: linux
+            runs_on: ${{ needs.changes.outputs.runner_linux }}
             target: linux-x64
             platform: linux
-          - os: macos-15-intel
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
+            sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos-26
+          - os: macos
+            runs_on: ${{ needs.changes.outputs.runner_macos }}
             target: macos-arm64
             platform: macos
-          - os: windows-2025
+          - os: windows
+            runs_on: ${{ needs.changes.outputs.runner_windows }}
             target: windows-x64
             platform: windows
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ fromJSON(matrix.runs_on) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -1045,6 +1122,8 @@ jobs:
       # `integration_test` from the Flutter SDK. The pinned Flutter bundles the
       # same Dart this job used to install directly.
       - uses: ./.github/actions/setup-flutter
+        with:
+          architecture: ${{ matrix.sdk_arch }}
       - run: dart pub get --enforce-lockfile
       - name: Checkout Tinyrack Dart packages
         if: matrix.platform == 'macos'

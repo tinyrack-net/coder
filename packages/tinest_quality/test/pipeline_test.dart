@@ -1074,7 +1074,6 @@ void main() {
       'runner_linux',
       'runner_windows',
       'runner_macos',
-      'runner_macos_intel',
     ]) {
       expect(
         changes,
@@ -1085,14 +1084,126 @@ void main() {
     for (final label in <String>[
       'tinyrack-ubuntu-ci',
       'tinyrack-windows-ci',
-      'tinyrack-macmini',
     ]) {
       expect(changes, contains(label), reason: label);
     }
+    // macOS stays hosted in both pools. `codesign` resolves a Developer ID
+    // through the default keychain, which is per-user, and the Mac minis run
+    // several runner instances as one user: two signing jobs read each other's
+    // keychain. Per-job keychains were tried and only moved the contention,
+    // because the lookup path stays global.
+    expect(changes, isNot(contains('tinyrack-macmini')));
+    expect(
+      File('.github/actionlint.yaml').readAsStringSync(),
+      isNot(contains('tinyrack-macmini')),
+      reason: 'an allowance for a label nothing uses stops meaning anything',
+    );
     // Anything other than a dispatch resolves to the homelab labels; only a
     // dispatch reads the input, and only to send a run back to GitHub.
     expect(changes, contains("github.event_name != 'workflow_dispatch'"));
     expect(changes, contains("'self-hosted') || inputs.runner_pool"));
+  });
+
+  test('the x86_64 macOS target is built on the arm64 minis', () {
+    // Dart compiles for the architecture it runs as and `dart build cli` has
+    // no cross-architecture option, so the SDK is the only lever. Doing it
+    // this way is what leaves no quality job needing a hosted Intel runner,
+    // and hosted macOS allows five concurrent jobs, so that one job could
+    // serialise the merge gate on its own.
+    final entry = _cliEntry('macos-x64');
+    expect(entry['os'], 'macos');
+    expect(entry['sdk_arch'], 'x64');
+    expect(entry['platform'], 'macos');
+    expect(
+      _job(workflow, 'cli-verify'),
+      contains(r'architecture: ${{ matrix.sdk_arch }}'),
+    );
+    // The arm64 target must not inherit an x86_64 SDK by accident.
+    expect(_cliEntry('macos-arm64')['sdk_arch'], isNull);
+    // No pool may still resolve an Intel key, or the target would silently go
+    // back to a hosted runner.
+    expect(_job(workflow, 'changes'), isNot(contains('macos-intel')));
+  });
+
+  test('the release jobs resolve their runners through the scope too', () {
+    // A release reads `changes` for the same reason every quality job does,
+    // and that is also its escape hatch: a dispatch with `runner_pool: github`
+    // sends it back to GitHub when the homelab is unavailable, which is
+    // exactly the moment you do not want to be blocked by it.
+    for (final name in <String>['build-and-package', 'build-cli']) {
+      final job = _job(workflow, name);
+      expect(job, contains('needs: changes'), reason: name);
+      expect(
+        job,
+        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
+        reason: name,
+      );
+      expect(
+        job,
+        contains(r'architecture: ${{ matrix.sdk_arch }}'),
+        reason: name,
+      );
+      // A hosted label here would quietly pin the release back to GitHub.
+      for (final label in <String>['macos-15-intel', 'macos-26']) {
+        expect(job, isNot(contains(label)), reason: '$name: $label');
+      }
+    }
+    // Nothing declares the Intel image any more, so the lint allowance for it
+    // must go too or it stops meaning anything.
+    expect(
+      File('.github/actionlint.yaml').readAsStringSync(),
+      isNot(contains('macos-15-intel')),
+    );
+  });
+
+  test('the CLI smoke daemon does not bind a fixed port', () {
+    // A self-hosted host runs several runner instances, so two smoke daemons
+    // can start on one machine at once. The fixed port made the second fail
+    // with `Failed to create server socket`; a hosted runner never saw it,
+    // having one job per virtual machine.
+    final smoke = File(
+      '.github/actions/smoke-cli-bundle/action.yml',
+    ).readAsStringSync();
+    expect(smoke, isNot(contains("default: '7399'")));
+    expect(smoke, contains('RUNNER_NAME'));
+    // The runner's name, not the job's: what collides is the instance.
+    expect(smoke, contains(r'PORT=$((20000 + offset % 20000))'));
+  });
+
+  test('the macOS app is checked before it is signed', () {
+    // A wrong-architecture app that gets signed and notarized costs a full
+    // round trip to Apple to find out, and the signature would then vouch for
+    // the wrong binary.
+    final job = _job(workflow, 'build-and-package');
+    final verify = job.indexOf('./.github/actions/verify-macos-arch');
+    final sign = job.indexOf('Sign and archive the macOS app');
+    expect(verify, isNot(-1));
+    expect(sign, isNot(-1));
+    expect(verify, lessThan(sign));
+  });
+
+  test('a macOS bundle is checked against the architecture it claims', () {
+    // Rosetta runs the x86_64 bundle on the machine that built it, so the
+    // smoke test passes whichever architecture came out. Without this an arm64
+    // build would ship under an x64 name through the Homebrew formula and the
+    // first sign would be an Intel user's crash.
+    final verifier = File(
+      '.github/actions/verify-macos-arch/action.yml',
+    ).readAsStringSync();
+    expect(verifier, contains('lipo -archs'));
+    expect(verifier, contains('*-x64) want=x86_64'));
+    expect(verifier, contains('*-arm64) want=arm64'));
+    // Every Mach-O file, not only the launcher: sqlite3 downloads a prebuilt
+    // library, the Lua host is compiled by a build hook, and a Flutter app
+    // carries frameworks, so any one can resolve for the wrong architecture.
+    expect(verifier, contains("grep -q 'Mach-O'"));
+    // Finding nothing has to fail, or a bundle-layout change turns this into a
+    // step that always passes.
+    expect(verifier, contains('Found no Mach-O files to check'));
+    expect(
+      File('.github/actions/build-cli-bundle/action.yml').readAsStringSync(),
+      contains('./.github/actions/verify-macos-arch'),
+    );
   });
 
   test('every measured quality job resolves runs-on through the scope', () {
@@ -1205,7 +1316,20 @@ String _job(String workflow, String name) {
   return workflow.substring(start, end);
 }
 
-/// The mobile build matrix entry for [os], from either scope.
+/// The CLI build matrix entry for [target], from either scope.
+Map<String, dynamic> _cliEntry(String target) {
+  final cli = _matrices['cli']! as Map<String, dynamic>;
+  final entries = <dynamic>[
+    ...(cli['host']! as List<dynamic>),
+    ...(cli['cross']! as List<dynamic>),
+  ];
+  return entries
+          .cast<Map<String, dynamic>>()
+          .where((entry) => entry['target'] == target)
+          .firstOrNull ??
+      (throw StateError('Missing CLI matrix entry for $target'));
+}
+
 Map<String, dynamic> _mobileEntry(String os) {
   final mobile = _matrices['mobile']! as Map<String, dynamic>;
   final entries = <dynamic>[

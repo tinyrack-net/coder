@@ -4,12 +4,28 @@ description: >-
   exists to keep the version pin, and the one host that opts out of the SDK
   cache, in a single place instead of in every job.
 
+inputs:
+  architecture:
+    description: >-
+      Architecture of the Flutter SDK to install, x64 or arm64. Empty means the
+      runner's own. Set it to x64 on an arm64 macOS host to build an x86_64
+      target: Dart compiles for the architecture it runs as, and an x86_64 SDK
+      runs there through Rosetta 2. flutter-action keeps each architecture in
+      its own cache path (`.../flutter/:channel:-:version:-:arch:`), so the two
+      SDKs coexist on one machine rather than one being served for the other.
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
+        # A matrix entry that names no architecture renders as an empty string
+        # rather than as an absent input, which would override the default with
+        # nothing, so fall back here instead of at the input.
+        architecture: ${{ inputs.architecture || runner.arch }}
         # The SDK cache holds nothing this repository can prune: measured
         # against the published archives, the cached blob is the pristine SDK
         # (Windows 1.81 GB cached against a 1.8 GB archive, macOS 2.08 against

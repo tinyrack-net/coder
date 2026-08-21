@@ -19,7 +19,7 @@ dev_dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+      ref: acd0bdf348e8a8a1886c66e65207fcd3087f7037
       path: packages/cliweave
   dropwell:
     git:

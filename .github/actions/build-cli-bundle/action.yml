@@ -39,3 +39,11 @@ runs:
         fi
         (cd packages/daemon && dart run lua_tool_runtime:stage \
           --destination "../../dist/tinest-cli-$TARGET/bin")
+
+    # Without this an arm64 build would ship under an x64 name through the
+    # Homebrew formula, and the first sign would be an Intel user's crash.
+    - if: inputs.platform == 'macos'
+      uses: ./.github/actions/verify-macos-arch
+      with:
+        path: dist/tinest-cli-${{ inputs.target }}
+        target: ${{ inputs.target }}
