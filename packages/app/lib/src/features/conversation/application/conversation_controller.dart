@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:app/src/app/composition/app_providers.dart';
 import 'package:app/src/features/conversation/application/attachment_ports.dart';
@@ -166,6 +167,8 @@ class ConversationController extends _$ConversationController {
   // refused here is often the only signal that prompt was ever going to get.
   bool _drainAgain = false;
   Timer? _drainRetry;
+  // Whether a missing span of history is already being fetched back in.
+  bool _filling = false;
 
   @override
   Future<ConversationState> build(String hostId, String? sessionId) async {
@@ -174,35 +177,108 @@ class ConversationController extends _$ConversationController {
     if (api == null || sessionId == null) {
       return const ConversationState();
     }
-    // Only the newest page: a session stores one row per streamed delta, so
-    // the whole history is both a slow first frame and, over a relay, a frame
-    // large enough to get the daemon dropped. The daemon aligns the window to
-    // a turn boundary, which is also what guarantees the newest `user.message`
-    // is present for `_syncPendingFirstTurn` below.
-    final timeline = await api.sessions.subscribeTimeline(
-      sessionId,
-      tailLimit: timelineHistoryPageSize,
-    );
-    _timelineEvents = api.sessions.timelineEvents.listen(_handleTimeline);
-    _approvalEvents = api.sessions.approvalRequests.listen(_handleApproval);
+    // Subscribing before the round trip closes the window the daemon cannot
+    // cover: it answers with what it held when the call arrived, and a session
+    // that is mid-turn keeps writing throughout. These are broadcast streams,
+    // so an event delivered while nothing is listening is simply gone — and
+    // the events after it are numbered as though it had arrived, which is how
+    // one lost delta becomes a hole in the transcript.
+    //
+    // Nothing can be applied yet: `state` does not exist until this build
+    // returns. What arrives first is held here and folded into it below.
+    var subscribing = true;
+    final heldEvents = <TimelineEventDto>[];
+    final heldApprovals = <ApprovalRequestDto>[];
+    final heldQuestions = <UserQuestionRequestDto>[];
+    _timelineEvents = api.sessions.timelineEvents.listen((event) {
+      if (!subscribing) {
+        _handleTimeline(event);
+      } else if (event.sessionId == sessionId) {
+        heldEvents.add(event);
+      }
+    });
+    _approvalEvents = api.sessions.approvalRequests.listen((approval) {
+      if (!subscribing) {
+        _handleApproval(approval);
+      } else if (approval.sessionId == sessionId) {
+        heldApprovals.add(approval);
+      }
+    });
+    // Session updates are not held. `_handleSession` only releases a waiting
+    // prompt, and a conversation being built has no queue to release.
     _sessionEvents = api.sessions.sessionUpdates.listen(_handleSession);
-    _questionEvents = api.sessions.questionRequests.listen(_handleQuestion);
-    _syncPendingFirstTurn(timeline);
+    _questionEvents = api.sessions.questionRequests.listen((request) {
+      if (!subscribing) {
+        _handleQuestion(request);
+      } else if (request.sessionId == sessionId) {
+        heldQuestions.add(request);
+      }
+    });
+    // Registered before the request rather than after it: the subscriptions
+    // above already exist, so a snapshot that fails has four of them to cancel.
     ref
       ..onDispose(() => unawaited(_timelineEvents?.cancel()))
       ..onDispose(() => unawaited(_approvalEvents?.cancel()))
       ..onDispose(() => unawaited(_sessionEvents?.cancel()))
       ..onDispose(() => unawaited(_questionEvents?.cancel()))
       ..onDispose(() => _drainRetry?.cancel());
+    // Only the newest page: a session stores one row per streamed delta, so
+    // the whole history is both a slow first frame and, over a relay, a frame
+    // large enough to get the daemon dropped. The daemon aligns the window to
+    // a turn boundary, which is also what guarantees the newest `user.message`
+    // is present for `_syncPendingFirstTurn` below.
+    final window = await api.sessions.subscribeTimeline(
+      sessionId,
+      tailLimit: timelineHistoryPageSize,
+    );
+    // Handing over here rather than a frame later is safe: what follows runs
+    // to completion without an await, and a socket event cannot be delivered
+    // in the middle of a microtask drain.
+    subscribing = false;
+    final timeline = _continuedBy(window, heldEvents);
+    _syncPendingFirstTurn(timeline);
+    // Blocking cards belong to the turn that is still running, and the window
+    // always contains that turn whole, so folding the window rather than the
+    // whole history cannot lose one. A request that was delivered on its own
+    // notification need not be in the window at all, so it is applied on top.
+    final approvals = _pendingApprovals(timeline);
+    for (final approval in heldApprovals) {
+      approvals[approval.id] = approval;
+    }
+    final questions = _pendingQuestions(timeline);
+    for (final request in heldQuestions) {
+      questions[request.id] = request;
+    }
     return ConversationState(
       timeline: timeline,
-      // Blocking cards belong to the turn that is still running, and the
-      // window always contains that turn whole, so folding the window rather
-      // than the whole history cannot lose one.
-      approvals: _pendingApprovals(timeline),
-      questions: _pendingQuestions(timeline),
+      approvals: approvals,
+      questions: questions,
       hasMoreOlder: timeline.isNotEmpty && timeline.first.sequence > 1,
     );
+  }
+
+  /// The subscription [window] continued by what arrived while it was in
+  /// flight.
+  ///
+  /// The snapshot is authoritative through its own last sequence: a held event
+  /// at or below it is the same event arriving twice. One below the window
+  /// start belongs to a page the reader has not asked for, and prepending it
+  /// would move the paging cursor onto a row with a hole behind it.
+  static List<TimelineEventDto> _continuedBy(
+    List<TimelineEventDto> window,
+    List<TimelineEventDto> held,
+  ) {
+    if (held.isEmpty) return window;
+    final floor = window.isEmpty ? 0 : window.last.sequence;
+    final seen = <int>{};
+    final tail = <TimelineEventDto>[];
+    for (final event in held) {
+      if (event.sequence <= floor || !seen.add(event.sequence)) continue;
+      tail.add(event);
+    }
+    if (tail.isEmpty) return window;
+    tail.sort((left, right) => left.sequence.compareTo(right.sequence));
+    return <TimelineEventDto>[...window, ...tail];
   }
 
   /// Loads the page of history preceding the oldest loaded event.
@@ -639,16 +715,20 @@ class ConversationController extends _$ConversationController {
       questions.removeWhere((_, item) => item.turnId == event.turnId);
     }
     // A bounded reconnect catch-up can resume above the last event seen. The
-    // events between are real but unloaded, so the window restarts here rather
-    // than pretending the timeline is contiguous; the reader pages back for
-    // the rest.
-    final resumed =
-        current.timeline.isNotEmpty &&
-        event.sequence > current.timeline.last.sequence + 1;
-    final timeline = <TimelineEventDto>[
-      if (!resumed) ...current.timeline,
-      event,
-    ];
+    // events between are real, and so is everything already loaded: the reader
+    // is reading it. The window keeps what it holds and the missing span is
+    // fetched back into place, rather than the transcript being replaced by
+    // the one event that exposed the hole.
+    if (current.timeline.isNotEmpty &&
+        event.sequence > current.timeline.last.sequence + 1) {
+      unawaited(
+        _fillGap(
+          from: current.timeline.last.sequence + 1,
+          to: event.sequence - 1,
+        ),
+      );
+    }
+    final timeline = <TimelineEventDto>[...current.timeline, event];
     // Resolved in the same write that appends the event it echoes. Clearing it
     // separately would take the optimistic message off screen one frame before
     // the durable one arrives, which reads as the list flickering on send.
@@ -661,9 +741,60 @@ class ConversationController extends _$ConversationController {
         approvals: approvals,
         questions: questions,
         pending: pending,
-        hasMoreOlder: current.hasMoreOlder || (resumed && event.sequence > 1),
       ),
     );
+  }
+
+  /// Fetches the span [from]..[to], which was written while nothing was
+  /// listening or skipped by a bounded catch-up.
+  ///
+  /// A span wider than one page is filled from its newest end and the rest is
+  /// left missing. The alternative is holding a transcript the reader is in
+  /// the middle of hostage to an absence long enough to have written a page of
+  /// history, and a bounded inaccuracy above them beats losing all of it.
+  ///
+  /// One at a time: a second hole opening while a fill is in flight is left to
+  /// the reader's own paging, which is the path that reports what it is doing.
+  ///
+  /// The caller only has a hole to report when [to] is at least [from], so an
+  /// empty span never reaches here.
+  Future<void> _fillGap({required int from, required int to}) async {
+    final sessionId = _sessionId;
+    if (_filling || sessionId == null) return;
+    _filling = true;
+    try {
+      final api = await requireHostApi(ref, hostId);
+      final span = to - from + 1;
+      final page = await api.sessions.readTimelineHistory(
+        sessionId,
+        beforeSequence: to + 1,
+        limit: math.min(span, timelineHistoryPageSize),
+      );
+      final live = _currentEventState;
+      if (live == null) return;
+      // A history read is aligned to a turn boundary, so it answers with rows
+      // either side of the span as well. Only what is inside the hole belongs
+      // here: extending the window is the reader's own paging to ask for.
+      final loaded = <int>{for (final event in live.timeline) event.sequence};
+      final missing = page
+          .where(
+            (event) =>
+                event.sequence >= from &&
+                event.sequence <= to &&
+                !loaded.contains(event.sequence),
+          )
+          .toList(growable: false);
+      if (missing.isEmpty) return;
+      final timeline = <TimelineEventDto>[...live.timeline, ...missing]
+        ..sort((left, right) => left.sequence.compareTo(right.sequence));
+      state = AsyncData<ConversationState>(live.copyWith(timeline: timeline));
+    } on Object {
+      // The transcript the reader is holding is unchanged either way. The row
+      // that reports a failure belongs to a page they asked for themselves;
+      // this repair was never something they set in motion.
+    } finally {
+      _filling = false;
+    }
   }
 
   /// Whether [type] is durable evidence that an optimistic prompt is settled.

@@ -983,6 +983,17 @@ final class FakeTinestApi
     emit(TimelineClientEvent(event));
   }
 
+  /// Stores timeline events without announcing them.
+  ///
+  /// Models delivery a subscriber missed: the daemon wrote the rows and will
+  /// answer for them as history, but no notification for them ever arrived.
+  void storeTimelineUnannounced(
+    String sessionId,
+    List<TimelineEventDto> events,
+  ) => _timelines
+      .putIfAbsent(sessionId, () => <TimelineEventDto>[])
+      .addAll(events);
+
   /// Emits a transport connection state.
   void emitState(ClientConnectionState state) => _states.add(state);
 
