@@ -28,7 +28,7 @@ dependencies:
   ptyworld:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+      ref: ccf93d01393d0607e1f5348feb93f19d9c4ff606
       path: packages/ptyworld
   relay_protocol: ^0.1.0
   shelf: ^1.4.2
@@ -50,7 +50,7 @@ dev_dependencies:
   cliweave:
     git:
       url: https://github.com/tinyrack-net/dart-packages.git
-      ref: e07124e15bd7495818bd34ed655f39e5a4bcc35b
+      ref: ccf93d01393d0607e1f5348feb93f19d9c4ff606
       path: packages/cliweave
   drift_dev: 2.34.0
   fake_async: ^1.3.3
