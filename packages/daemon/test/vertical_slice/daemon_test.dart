@@ -3863,6 +3863,11 @@ blocked/
   );
 
   test('embedded daemon reports a typed port conflict', () async {
+    // The socket stays bound for as long as the port number is used, because
+    // the test only owns that number while it holds it. Releasing it and
+    // expecting to bind it again races every other server on the host: the OS
+    // hands ephemeral ports out of one pool, and this suite alone starts many
+    // daemons at once, so the number can be gone before it is reused.
     final occupied = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(occupied.close);
     final home = await Directory.systemTemp.createTemp(
@@ -3870,15 +3875,15 @@ blocked/
     );
     addTearDown(() => home.delete(recursive: true));
 
-    final config = DaemonConfig(
-      homeDirectory: home.path,
-      port: occupied.port,
-      bearerToken: 'embedded-token-0123456789abcdef012345',
-      useEnvironmentCredentials: false,
-    );
+    const token = 'embedded-token-0123456789abcdef012345';
     await expectLater(
       EmbeddedDaemonHandle.start(
-        config,
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: occupied.port,
+          bearerToken: token,
+          useEnvironmentCredentials: false,
+        ),
       ),
       throwsA(
         isA<EmbeddedDaemonStartupException>().having(
@@ -3889,9 +3894,19 @@ blocked/
       ),
     );
 
-    await occupied.close();
-    final recovered = await EmbeddedDaemonHandle.start(config);
-    expect(recovered.boundEndpoint.port, config.port);
+    // What the refusal must not do is poison the home directory it already
+    // opened, so the same home starts cleanly afterwards. Which port the
+    // second start lands on is the operating system's business, not the
+    // daemon's.
+    final recovered = await EmbeddedDaemonHandle.start(
+      DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        bearerToken: token,
+        useEnvironmentCredentials: false,
+      ),
+    );
+    expect(recovered.boundEndpoint.port, greaterThan(0));
     await recovered.stop();
   });
 
