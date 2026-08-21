@@ -892,6 +892,342 @@ void _registerConversationControllerTests() {
   );
 
   test(
+    'a delta delivered while the subscription was in flight is not dropped',
+    () async {
+      // Rejoining a tab re-subscribes, and the daemon answers over a link that
+      // takes time. A running turn keeps writing throughout, so whatever is
+      // delivered during that round trip has to reach the conversation: the
+      // events after it are numbered as though it did.
+      final history = <TimelineEventDto>[
+        for (var sequence = 1; sequence <= 10; sequence += 1)
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      );
+      final roundTrip = Completer<void>();
+      api.subscribeTimelineGate = roundTrip;
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      final pending = container.read(provider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      // The second is already in the snapshot the daemon is about to answer
+      // with: the same row reaching the app twice is one row.
+      api
+        ..emit(TimelineClientEvent(historyEvent(11)))
+        ..emit(TimelineClientEvent(historyEvent(10)));
+      roundTrip.complete();
+      api.subscribeTimelineGate = null;
+      final loaded = await pending;
+
+      expect(
+        loaded.timeline.map((event) => event.sequence),
+        <int>[for (var sequence = 1; sequence <= 11; sequence += 1) sequence],
+        reason:
+            'the delta written during the round trip belongs to the '
+            'conversation, whichever side of the snapshot it arrived on',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'a first prompt delivered during the round trip opens the conversation',
+    () async {
+      // A session created moments ago has nothing stored yet, so the snapshot
+      // is empty and everything it has is what arrives while it is in flight.
+      final api = FakeTinestApi(agents: <SessionDto>[agent]);
+      final roundTrip = Completer<void>();
+      api.subscribeTimelineGate = roundTrip;
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      final pending = container.read(provider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      api.emit(TimelineClientEvent(historyEvent(1)));
+      roundTrip.complete();
+      api.subscribeTimelineGate = null;
+      final loaded = await pending;
+
+      expect(loaded.timeline.map((event) => event.sequence), <int>[1]);
+      expect(
+        loaded.hasMoreOlder,
+        isFalse,
+        reason: 'the first event of a session has nothing behind it',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'an approval and a question raised during the round trip survive it',
+    () async {
+      // Both arrive on their own notification rather than in the timeline
+      // window, so a subscription that starts after the snapshot loses the two
+      // cards that are the only way to unblock the turn.
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{
+          agent.id: <TimelineEventDto>[historyEvent(1)],
+        },
+      );
+      final question = UserQuestionRequestDto(
+        id: 'question',
+        sessionId: agent.id,
+        turnId: 'turn',
+        toolCallId: 'ask-call',
+        questions: const <UserQuestionItemDto>[],
+        status: UserQuestionStatus.pending,
+        createdAt: now,
+      );
+      final roundTrip = Completer<void>();
+      api.subscribeTimelineGate = roundTrip;
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      final pending = container.read(provider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      api
+        ..emit(ApprovalRequestedClientEvent(approval))
+        ..emit(UserQuestionRequestedClientEvent(question));
+      roundTrip.complete();
+      api.subscribeTimelineGate = null;
+      final loaded = await pending;
+
+      expect(loaded.approvals[approval.id], approval);
+      expect(loaded.questions[question.id], question);
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
+    'the span a gap exposes is fetched back into place',
+    () async {
+      final history = <TimelineEventDto>[
+        for (var sequence = 1; sequence <= 10; sequence += 1)
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      // The daemon wrote two more rows that this client was never told about,
+      // and the row after them is the one that exposes the hole.
+      api
+        ..storeTimelineUnannounced(agent.id, <TimelineEventDto>[
+          historyEvent(11),
+          historyEvent(12),
+          historyEvent(13),
+        ])
+        ..emit(TimelineClientEvent(historyEvent(13)));
+      for (var turn = 0; turn < 4; turn += 1) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final healed = container.read(provider).requireValue;
+      expect(
+        healed.timeline.map((event) => event.sequence),
+        <int>[for (var sequence = 1; sequence <= 13; sequence += 1) sequence],
+        reason: 'the missing rows belong between the ones either side of them',
+      );
+      expect(
+        api.readTimelineHistoryCount,
+        1,
+        reason: 'one hole is one request, not one per row',
+      );
+      expect(healed.hasMoreOlder, isFalse);
+      expect(healed.olderFailed, isFalse);
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
+  );
+
+  test(
+    'a gap wider than a page is filled from its newest end',
+    () async {
+      // Only an absence long enough to have written a page of history reaches
+      // this. Filling what one page reaches leaves the rest missing, which is
+      // a bounded inaccuracy above the reader rather than the loss of
+      // everything they were reading.
+      final history = <TimelineEventDto>[
+        for (var sequence = 1; sequence <= 10; sequence += 1)
+          historyEvent(sequence),
+      ];
+      const newest = 10 + timelineHistoryPageSize + 51;
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      api
+        ..storeTimelineUnannounced(agent.id, <TimelineEventDto>[
+          for (var sequence = 11; sequence <= newest; sequence += 1)
+            historyEvent(sequence),
+        ])
+        ..emit(TimelineClientEvent(historyEvent(newest)));
+      for (var turn = 0; turn < 4; turn += 1) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final sequences = container
+          .read(provider)
+          .requireValue
+          .timeline
+          .map((event) => event.sequence)
+          .toList(growable: false);
+      expect(
+        sequences.take(10),
+        <int>[for (var sequence = 1; sequence <= 10; sequence += 1) sequence],
+        reason: 'what the reader was holding is untouched',
+      );
+      expect(sequences.last, newest);
+      expect(
+        sequences,
+        isNot(contains(11)),
+        reason: 'a page does not reach the oldest end of a span this wide',
+      );
+      expect(
+        sequences.where((sequence) => sequence > 10 && sequence < newest),
+        hasLength(timelineHistoryPageSize),
+        reason: 'exactly one page of the span is recovered',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
+  );
+
+  test(
+    'a span that cannot be fetched leaves the transcript alone',
+    () async {
+      final history = <TimelineEventDto>[
+        for (var sequence = 1; sequence <= 10; sequence += 1)
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      )..readTimelineHistoryFailure = const _OfflineFailure();
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await container.read(provider.future);
+
+      api
+        ..storeTimelineUnannounced(agent.id, <TimelineEventDto>[
+          historyEvent(11),
+          historyEvent(12),
+          historyEvent(13),
+        ])
+        ..emit(TimelineClientEvent(historyEvent(13)));
+      for (var turn = 0; turn < 4; turn += 1) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final unhealed = container.read(provider).requireValue;
+      expect(
+        unhealed.timeline.map((event) => event.sequence),
+        <int>[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13],
+      );
+      expect(
+        unhealed.olderFailed,
+        isFalse,
+        reason:
+            'the row that reports a failure belongs to a page the reader '
+            'asked for, and they asked for nothing here',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>[
+      'feature_test__conversation_history_pagination__unit',
+    ],
+  );
+
+  test(
+    'a gap in delivered sequences does not discard the loaded transcript',
+    () async {
+      // The reader is looking at a loaded window. One event goes missing on the
+      // way, so the next one is numbered past the last one held. The events
+      // already on screen are still real, and they are what the reader is
+      // reading.
+      final history = <TimelineEventDto>[
+        for (var sequence = 1; sequence <= 10; sequence += 1)
+          historyEvent(sequence),
+      ];
+      final api = FakeTinestApi(
+        agents: <SessionDto>[agent],
+        timelines: <String, List<TimelineEventDto>>{agent.id: history},
+      );
+      final container = _container(api);
+      addTearDown(container.dispose);
+      await container.read(hostRegistryControllerProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      final provider = conversationControllerProvider('server', agent.id);
+      final listener = container.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      final loaded = await container.read(provider.future);
+      expect(loaded.timeline, hasLength(10));
+
+      api.emit(TimelineClientEvent(historyEvent(13)));
+      final afterGap = container.read(provider).requireValue;
+
+      expect(
+        afterGap.timeline.map((event) => event.sequence),
+        containsAllInOrder(<int>[1, 10, 13]),
+        reason:
+            'a gap above the window is a gap, not a reason to throw the '
+            'window away',
+      );
+      unawaited(api.close());
+    },
+    tags: const <String>['feature_test__turn_execution__unit'],
+  );
+
+  test(
     'a conversation opens on the newest page and pages backwards on demand',
     () async {
       final history = <TimelineEventDto>[
