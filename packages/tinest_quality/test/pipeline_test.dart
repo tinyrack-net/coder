@@ -1292,7 +1292,7 @@ String _job(String workflow, String name) {
   return workflow.substring(start, end);
 }
 
-/// The mobile build matrix entry for [os], from either scope.
+/// The CLI build matrix entry for [target], from either scope.
 Map<String, dynamic> _cliEntry(String target) {
   final cli = _matrices['cli']! as Map<String, dynamic>;
   final entries = <dynamic>[
