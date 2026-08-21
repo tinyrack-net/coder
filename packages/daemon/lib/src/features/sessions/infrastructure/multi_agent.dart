@@ -304,7 +304,8 @@ class MultiAgentService {
               senderPath: pathOf(session),
               senderSessionId: session.id,
               payload: finalText ?? '',
-              triggerTurn: wake,
+              triggerTurn: true,
+              startNow: wake,
             );
           }
         case TurnStatus.failed:
@@ -318,7 +319,8 @@ class MultiAgentService {
               senderPath: pathOf(session),
               senderSessionId: session.id,
               payload: 'Status: errored\n${error ?? 'unknown error'}',
-              triggerTurn: wake,
+              triggerTurn: true,
+              startNow: wake,
             );
           }
         // Interrupted is not final: no completion mail, the agent stays
@@ -336,11 +338,15 @@ class MultiAgentService {
           break;
       }
     }
-    // Trigger mail that arrived after the last drain boundary starts the
-    // next turn now that the session is idle again. Only subagents receive
-    // trigger mail, so plain sessions never touch the mailbox here.
-    if (session.parentSessionId != null &&
-        !runtime.hasActiveTurn(sessionId) &&
+    // Trigger mail that arrived after the last drain boundary starts the next
+    // turn now that the session is idle again. This is the boundary a busy
+    // recipient was deferred to: an orchestrator that spawns and then waits is
+    // inside a turn for the whole time its children work, so the end of that
+    // turn is the first chance their answers get to be read. It applies to any
+    // session with a mailbox, root included — a tree root has no parent to
+    // wake it, and it is the most common recipient of all. A session that
+    // collaborates with nobody has no mail and never gets past the query.
+    if (!runtime.hasActiveTurn(sessionId) &&
         await _mailbox.hasUndeliveredTrigger(sessionId)) {
       await _tryStartDeliveryTurn(sessionId);
     }
@@ -363,12 +369,19 @@ class MultiAgentService {
   }
 
   /// Persists and routes one inter-agent message.
+  ///
+  /// [triggerTurn] is durable: it records that this message is entitled to
+  /// start a turn on its recipient, and it outlives the moment it was queued.
+  /// [startNow] only decides whether to spend that entitlement immediately.
+  /// The two are separate because a recipient that is busy right now is the
+  /// normal case, not a reason to give up on delivering to it at all.
   Future<AgentMailboxMessageDto> enqueue({
     required SessionDto target,
     required InterAgentMessageType type,
     required String senderPath,
     required String payload,
     required bool triggerTurn,
+    bool startNow = true,
     String? senderSessionId,
   }) async {
     final message = AgentMailboxMessageDto(
@@ -388,7 +401,7 @@ class MultiAgentService {
       data: <String, dynamic>{'mail': message.toJson()},
     );
     _pulseMailWaiters(target.id);
-    if (triggerTurn && !runtime.hasActiveTurn(target.id)) {
+    if (triggerTurn && startNow && !runtime.hasActiveTurn(target.id)) {
       await _tryStartDeliveryTurn(target.id);
     }
     return message;
@@ -626,7 +639,19 @@ class MultiAgentService {
   }
 
   /// Blocks until agent activity, user input, or the deadline.
-  Future<({WaitAgentOutcome outcome, bool timedOut})> waitAgent({
+  ///
+  /// Consumes and returns the mail the wait ended on. Reporting only that mail
+  /// exists is not enough to act on it: the mailbox is otherwise drained at
+  /// turn start, so a waiter would learn that its subagent had answered and
+  /// still be unable to read the answer until the turn after next.
+  Future<
+    ({
+      WaitAgentOutcome outcome,
+      bool timedOut,
+      List<AgentMailboxMessageDto> messages,
+    })
+  >
+  waitAgent({
     required SessionDto caller,
     required CancellationToken cancellation,
     int? timeoutMs,
@@ -638,8 +663,13 @@ class MultiAgentService {
       );
     }
     // Sticky pre-check: mail that arrived before the wait must not be lost.
-    if ((await _mailbox.undeliveredFor(caller.id)).isNotEmpty) {
-      return (outcome: WaitAgentOutcome.mail, timedOut: false);
+    final already = await _consumeMail(caller.id);
+    if (already.isNotEmpty) {
+      return (
+        outcome: WaitAgentOutcome.mail,
+        timedOut: false,
+        messages: already,
+      );
     }
     final mailArrived = Completer<void>();
     _mailWaiters
@@ -654,14 +684,28 @@ class MultiAgentService {
       if (!stopped.isCompleted) stopped.complete();
     });
     try {
-      final outcome = await Future.any(<Future<WaitAgentOutcome>>[
+      var outcome = await Future.any(<Future<WaitAgentOutcome>>[
         mailArrived.future.then((_) => WaitAgentOutcome.mail),
         runtime.pendingInput(caller.id).then((_) => WaitAgentOutcome.steer),
         elapsed.future.then((_) => WaitAgentOutcome.timeout),
         stopped.future.then((_) => WaitAgentOutcome.timeout),
       ]);
+      // Consumed only after the cancellation check: a wait that throws must
+      // leave the mailbox as it found it, so the next turn still delivers.
       cancellation.throwIfCancelled();
-      return (outcome: outcome, timedOut: outcome == WaitAgentOutcome.timeout);
+      final messages = await _consumeMail(caller.id);
+      // The deadline and an arriving message can resolve in the same event
+      // loop turn. Handing mail back under `timed_out` contradicts itself, so
+      // what actually arrived decides. A steering user still outranks mail:
+      // that is a different signal, and the mail rides along either way.
+      if (messages.isNotEmpty && outcome == WaitAgentOutcome.timeout) {
+        outcome = WaitAgentOutcome.mail;
+      }
+      return (
+        outcome: outcome,
+        timedOut: outcome == WaitAgentOutcome.timeout,
+        messages: messages,
+      );
     } finally {
       timer.cancel();
       _mailWaiters[caller.id]?.remove(mailArrived);
@@ -760,6 +804,24 @@ class MultiAgentService {
     await _tryStartDeliveryTurn(next);
   }
 
+  /// Takes every queued message for [sessionId], oldest first.
+  ///
+  /// Delivery is recorded here rather than by the caller, so the two readers —
+  /// a turn boundary and a `wait_agent` inside a turn — cannot hand the same
+  /// message to the model twice.
+  Future<List<AgentMailboxMessageDto>> _consumeMail(String sessionId) async {
+    final queued = await _mailbox.undeliveredFor(sessionId);
+    if (queued.isEmpty) return const <AgentMailboxMessageDto>[];
+    final messages = <AgentMailboxMessageDto>[
+      for (final entry in queued) entry.message,
+    ];
+    await _mailbox.markDelivered(
+      messages.map((message) => message.id).toList(growable: false),
+      _clock.nowUtc(),
+    );
+    return messages;
+  }
+
   void _pulseMailWaiters(String sessionId) {
     final waiters = _mailWaiters.remove(sessionId);
     if (waiters == null) return;
@@ -852,16 +914,8 @@ final class _MailboxTurnInputSource implements TurnInputSource {
   final String _sessionId;
 
   @override
-  Future<List<ConversationItem>> drainPending() async {
-    final queued = await _service._mailbox.undeliveredFor(_sessionId);
-    if (queued.isEmpty) return const <ConversationItem>[];
-    await _service._mailbox.markDelivered(
-      queued.map((entry) => entry.message.id).toList(growable: false),
-      _service._clock.nowUtc(),
-    );
-    return <ConversationItem>[
-      for (final entry in queued)
-        UserConversationItem(MultiAgentService.renderEnvelope(entry.message)),
-    ];
-  }
+  Future<List<ConversationItem>> drainPending() async => <ConversationItem>[
+    for (final message in await _service._consumeMail(_sessionId))
+      UserConversationItem(MultiAgentService.renderEnvelope(message)),
+  ];
 }

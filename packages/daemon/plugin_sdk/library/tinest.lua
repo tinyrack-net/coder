@@ -567,9 +567,15 @@ end
 ---@class (exact) tinest.CollaborationFollowupOutput
 ---@field delivery 'triggered'|'queued'
 
+---@class (exact) tinest.CollaborationWaitMessage
+---@field type 'message'|'new_task'|'final_answer'
+---@field sender string
+---@field payload string
+
 ---@class (exact) tinest.CollaborationWaitOutput
 ---@field outcome string
 ---@field timed_out boolean
+---@field messages tinest.CollaborationWaitMessage[]
 
 ---@alias tinest.CollaborationAgentStatus 'pending_init'|'running'|'interrupted'|'completed'|'errored'
 

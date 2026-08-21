@@ -945,6 +945,107 @@ void main() {
   );
 
   test(
+    'a parent waiting inside its turn reads the answer it waited for',
+    () async {
+      final home = await Directory.systemTemp.createTemp('tinest-wait-home-');
+      final workspace = await Directory.systemTemp.createTemp(
+        'tinest-wait-workspace-',
+      );
+      final provider = _WaitingCollaboratingProvider();
+      final handle = await DaemonApplication.start(
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: 0,
+          bearerToken: 'waitcol-token-0123456789abcdef01234',
+          useEnvironmentCredentials: false,
+        ),
+        provider: provider,
+      );
+      addTearDown(() async {
+        await handle.stop();
+        await home.delete(recursive: true);
+        await workspace.delete(recursive: true);
+      });
+      final client = await TinestClient.connect(
+        endpoint: HostEndpoint(websocketUri: handle.boundEndpoint),
+        credentials: const DaemonCredentials(
+          bearerToken: 'waitcol-token-0123456789abcdef01234',
+        ),
+        clientId: 'wait-collab-test',
+        clientKind: 'test',
+      );
+      addTearDown(client.close);
+      final tinest = (await client.listAgentDefinitions()).single;
+      final reviewer = await client.createAgentDefinition(
+        'reviewer',
+        tinest.copyWith(
+          id: 'reviewer',
+          name: 'Reviewer',
+          mode: AgentMode.subagent,
+          toolIds: const <String>[],
+          callableAgentIds: const <String>[],
+          contentHash: '',
+          sourcePath: '',
+          isBuiltIn: false,
+        ),
+      );
+      await client.updateAgentDefinition(
+        tinest.copyWith(
+          callableAgentIds: <String>[reviewer.id],
+        ),
+        expectedContentHash: tinest.contentHash,
+      );
+      final registered = await client.registerWorkspace(
+        workspaceId: 'workspace',
+        checkoutId: 'checkout',
+        rootPath: workspace.path,
+        name: 'Workspace',
+      );
+      final parent = await client.createSession(
+        id: 'parent',
+        worktreeId: registered.worktrees.single.id,
+        title: 'Parent',
+        agentDefinitionId: 'tinest',
+        model: const ModelSelectionDto(modelId: _testModelId),
+      );
+      final parentCompleted = client.sessions.timelineEvents
+          .firstWhere(
+            (event) =>
+                event.sessionId == parent.id && event.type == 'turn.completed',
+          )
+          .timeout(_eventTimeout);
+      await client.subscribeTimeline(parent.id);
+      await client.startTurn(
+        sessionId: parent.id,
+        turnId: 'parent-turn',
+        prompt: 'Review this workspace.',
+      );
+      await parentCompleted;
+
+      // The parent spawned and then blocked in `wait_agent`, so the child
+      // answered while the parent was still inside this one turn. The wait is
+      // the only reader the parent has left: the mailbox was already drained
+      // when the turn started. Reporting that mail merely exists would leave
+      // the parent holding a notification it cannot open.
+      expect(provider.waitOutputs, hasLength(1));
+      expect(provider.waitOutputs.single, contains('final_answer'));
+      expect(provider.waitOutputs.single, contains('/root/review_task'));
+      expect(provider.waitOutputs.single, contains('Review completed.'));
+
+      final child = (await client.listSubagents(parent.id)).singleWhere(
+        (session) => session.origin == SessionOrigin.delegated,
+      );
+      expect(child.lifecycle, AgentLifecycle.completed);
+
+      final worktreeId = registered.worktrees.single.id;
+      await _waitForIdleSession(client, worktreeId, parent.id);
+      await _waitForIdleSession(client, worktreeId, child.id);
+    },
+    tags: const <String>['feature_test__agent_collaboration__verticalSlice'],
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
     'a subagent blocked on an approval finishes once the user answers',
     () async {
       final home = await Directory.systemTemp.createTemp(
@@ -3762,6 +3863,11 @@ blocked/
   );
 
   test('embedded daemon reports a typed port conflict', () async {
+    // The socket stays bound for as long as the port number is used, because
+    // the test only owns that number while it holds it. Releasing it and
+    // expecting to bind it again races every other server on the host: the OS
+    // hands ephemeral ports out of one pool, and this suite alone starts many
+    // daemons at once, so the number can be gone before it is reused.
     final occupied = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(occupied.close);
     final home = await Directory.systemTemp.createTemp(
@@ -3769,15 +3875,15 @@ blocked/
     );
     addTearDown(() => home.delete(recursive: true));
 
-    final config = DaemonConfig(
-      homeDirectory: home.path,
-      port: occupied.port,
-      bearerToken: 'embedded-token-0123456789abcdef012345',
-      useEnvironmentCredentials: false,
-    );
+    const token = 'embedded-token-0123456789abcdef012345';
     await expectLater(
       EmbeddedDaemonHandle.start(
-        config,
+        DaemonConfig(
+          homeDirectory: home.path,
+          port: occupied.port,
+          bearerToken: token,
+          useEnvironmentCredentials: false,
+        ),
       ),
       throwsA(
         isA<EmbeddedDaemonStartupException>().having(
@@ -3788,9 +3894,19 @@ blocked/
       ),
     );
 
-    await occupied.close();
-    final recovered = await EmbeddedDaemonHandle.start(config);
-    expect(recovered.boundEndpoint.port, config.port);
+    // What the refusal must not do is poison the home directory it already
+    // opened, so the same home starts cleanly afterwards. Which port the
+    // second start lands on is the operating system's business, not the
+    // daemon's.
+    final recovered = await EmbeddedDaemonHandle.start(
+      DaemonConfig(
+        homeDirectory: home.path,
+        port: 0,
+        bearerToken: token,
+        useEnvironmentCredentials: false,
+      ),
+    );
+    expect(recovered.boundEndpoint.port, greaterThan(0));
     await recovered.stop();
   });
 
@@ -5119,6 +5235,78 @@ final class _CollaboratingProvider implements ModelGateway {
       );
       return;
     }
+    yield const ModelTextDelta('Parent completed.');
+    yield const ModelResponseCompleted(
+      assistant: AssistantConversationItem(text: 'Parent completed.'),
+    );
+  }
+}
+
+/// Scripts a parent that spawns a subagent and then blocks in `wait_agent`.
+///
+/// The child answers while the parent is still inside its own turn, which is
+/// where a wait that reports nothing but an outcome leaves the parent unable
+/// to read what it waited for.
+final class _WaitingCollaboratingProvider implements ModelGateway {
+  /// Every `wait_agent` tool result the parent was handed back.
+  final List<String> waitOutputs = <String>[];
+
+  @override
+  String get id => 'collab-wait-fake';
+
+  @override
+  Stream<ModelEvent> stream(
+    ModelRequest request,
+    CancellationToken cancellation,
+  ) async* {
+    cancellation.throwIfCancelled();
+    final isSubagent = request.history.whereType<UserConversationItem>().any(
+      (item) => item.text.startsWith('Message Type: NEW_TASK'),
+    );
+    if (isSubagent) {
+      yield const ModelTextDelta('Review completed.');
+      yield const ModelResponseCompleted(
+        assistant: AssistantConversationItem(text: 'Review completed.'),
+      );
+      return;
+    }
+    final results = request.history
+        .whereType<ToolResultConversationItem>()
+        .toList(growable: false);
+    if (results.isEmpty) {
+      yield* Stream<ModelEvent>.fromIterable(
+        _CollaboratingProvider._toolCall(
+          'spawn-call',
+          'spawn_agent',
+          <String, dynamic>{
+            'task_name': 'review_task',
+            'message': 'Review this workspace.',
+            'agent_type': 'reviewer',
+            'fork_turns': 'none',
+          },
+        ),
+      );
+      return;
+    }
+    final waited = results
+        .where((item) => item.callId == 'wait-call')
+        .toList(growable: false);
+    if (waited.isEmpty) {
+      yield* Stream<ModelEvent>.fromIterable(
+        _CollaboratingProvider._toolCall(
+          'wait-call',
+          'wait_agent',
+          <String, dynamic>{
+            // Only a backstop: the child's answer is what ends this wait. A
+            // deadline short enough to expire first would make the assertion
+            // depend on how fast the host is.
+            'timeout_ms': 60000,
+          },
+        ),
+      );
+      return;
+    }
+    waitOutputs.addAll(waited.map((item) => item.output));
     yield const ModelTextDelta('Parent completed.');
     yield const ModelResponseCompleted(
       assistant: AssistantConversationItem(text: 'Parent completed.'),

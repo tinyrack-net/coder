@@ -282,7 +282,8 @@ end)
 local wait_agent = tinest.tool.function_({
   id = "wait_agent",
   name = "wait_agent",
-  description = "Wait for agent activity, user input, or a timeout.",
+  description = "Wait for agent activity, user input, or a timeout. Returns " ..
+    "the inter-agent messages the wait ended on.",
   uses = {tinest.host.collaboration.wait_agent},
   effects = {tinest.effect.collaboration.wait},
   required_capabilities = {tinest.capability.collaboration.wait},
