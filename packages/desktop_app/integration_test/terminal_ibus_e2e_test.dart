@@ -289,6 +289,17 @@ void main() {
       // Copy is disabled with no selection, so the first enabled native GTK
       // menu item reached by Down is Paste.
       await _keys(<String>['Down', 'Return']);
+      // Activating Paste does not deliver the text. The clipboard owner is
+      // another process, so GTK has to ask it for the selection and wait for
+      // the answer, while the keystroke below goes straight through. Typing
+      // without waiting races the two, and losing that race writes the same
+      // bytes in the wrong order, with the digit ahead of the paste.
+      await _waitUntil(
+        () =>
+            capture.existsSync() &&
+            capture.lengthSync() >= utf8.encode('$typed\u001bz$pasted').length,
+        'the pasted clipboard payload to reach the PTY',
+      );
       await _keys(<String>['1', 'BackSpace']);
       await _chord(<String>['Alt_L'], 'BackSpace');
 
