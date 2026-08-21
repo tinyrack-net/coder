@@ -1188,6 +1188,17 @@ List<HostPrimitive<Object?, Object?>> _collaborationPrimitives(
           return <String, Object?>{
             'outcome': result.outcome.name,
             'timed_out': result.timedOut,
+            // The mail the wait ended on, so the caller can act on it in the
+            // turn it waited in. Fields only; the extension owns the wording
+            // it presents them to the model in.
+            'messages': <Map<String, Object?>>[
+              for (final message in result.messages)
+                <String, Object?>{
+                  'type': _interAgentMessageWireName(message.type),
+                  'sender': message.senderPath,
+                  'payload': message.payload,
+                },
+            ],
           };
         },
       )
@@ -1312,6 +1323,12 @@ Future<T> _collaborationCall<T>(Future<T> Function() call) async {
     );
   }
 }
+
+String _interAgentMessageWireName(InterAgentMessageType type) => switch (type) {
+  InterAgentMessageType.message => 'message',
+  InterAgentMessageType.newTask => 'new_task',
+  InterAgentMessageType.finalAnswer => 'final_answer',
+};
 
 String _agentLifecycleWireName(AgentLifecycle lifecycle) => switch (lifecycle) {
   AgentLifecycle.pendingInit => 'pending_init',

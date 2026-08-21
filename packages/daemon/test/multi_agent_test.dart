@@ -742,15 +742,45 @@ void main() {
       expect(fakeRuntime.started.single.sessionId, root.id);
     });
 
-    test('a parent mid-turn is left alone', () async {
+    test('a parent mid-turn is not interrupted', () async {
       fakeRuntime.active.add(root.id);
       await service.onTurnFinished(
         sessionId: child.id,
         outcome: TurnStatus.completed,
         finalText: 'All done.',
       );
-      // The running parent drains the mailbox at its next turn boundary.
+      // The running parent drains the mailbox at its next turn boundary; the
+      // end of its own turn is what schedules that boundary.
       expect(fakeRuntime.started, isEmpty);
+    });
+
+    test('a parent busy at the time still gets woken later', () async {
+      // The parent is mid-turn when the child finishes — the ordinary case,
+      // because a parent that spawned and then waited is inside a turn. The
+      // answer must stay entitled to wake it: queuing it as non-triggering
+      // mail spends that entitlement, and nothing ever restores it, so the
+      // tree stalls until the user types.
+      fakeRuntime.active.add(root.id);
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'All done.',
+      );
+      expect(fakeRuntime.started, isEmpty);
+      expect(
+        (await database.agentMailboxDao.undeliveredFor(root.id))
+            .single
+            .triggerTurn,
+        isTrue,
+      );
+
+      fakeRuntime.active.remove(root.id);
+      await service.onTurnFinished(
+        sessionId: root.id,
+        outcome: TurnStatus.completed,
+        finalText: 'Parent turn over.',
+      );
+      expect(fakeRuntime.started.single.sessionId, root.id);
     });
 
     test('a parent with a sibling still running is left alone', () async {
@@ -911,6 +941,40 @@ void main() {
       expect(result.timedOut, isFalse);
     });
 
+    test('the wait hands back the mail it woke for, once', () async {
+      // Reporting only that mail exists strands the payload: the mailbox is
+      // drained at turn start, so a waiter inside a turn has no other way to
+      // read what it waited for.
+      final root = await database.sessionDao.create(session('root'));
+      final child = await database.sessionDao.create(
+        session(
+          'child',
+          parentSessionId: 'root',
+          taskName: 'task_a',
+          agentPath: '/root/task_a',
+          rootSessionId: 'root',
+        ),
+      );
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'Found the leak in the parser.',
+      );
+
+      final result = await service.waitAgent(
+        caller: root,
+        cancellation: CancellationToken(),
+      );
+
+      expect(result.outcome, WaitAgentOutcome.mail);
+      expect(result.messages.single.type, InterAgentMessageType.finalAnswer);
+      expect(result.messages.single.senderPath, '/root/task_a');
+      expect(result.messages.single.payload, 'Found the leak in the parser.');
+      // Consumed by the wait: the next turn must not replay it as input.
+      expect(await database.agentMailboxDao.undeliveredFor(root.id), isEmpty);
+      expect(await service.drainSourceFor(root.id).drainPending(), isEmpty);
+    });
+
     test('wakes on mail arriving mid-wait', () async {
       final root = await database.sessionDao.create(session('root'));
       final child = await database.sessionDao.create(
@@ -935,6 +999,7 @@ void main() {
       );
       final result = await wait;
       expect(result.outcome, WaitAgentOutcome.mail);
+      expect(result.messages.single.payload, 'Wake up.');
     });
 
     test('wakes on user steering input', () async {
@@ -949,6 +1014,7 @@ void main() {
       final result = await wait;
       expect(result.outcome, WaitAgentOutcome.steer);
       expect(result.timedOut, isFalse);
+      expect(result.messages, isEmpty);
     });
 
     test('times out and validates the timeout range', () async {
@@ -960,6 +1026,7 @@ void main() {
       );
       expect(result.outcome, WaitAgentOutcome.timeout);
       expect(result.timedOut, isTrue);
+      expect(result.messages, isEmpty);
       await expectLater(
         service.waitAgent(
           caller: root,
@@ -1271,6 +1338,46 @@ void main() {
       expect(invalid.error?.code, 'collaboration_error');
       expect(invalid.error?.message, contains('task_name'));
       expect(invalid.error?.retryable, isFalse);
+    });
+
+    test('the wait primitive carries the mail across the boundary', () async {
+      final root = await database.sessionDao.create(session('root'));
+      final child = await database.sessionDao.create(
+        session(
+          'child',
+          parentSessionId: 'root',
+          taskName: 'task_a',
+          agentPath: '/root/task_a',
+          rootSessionId: 'root',
+        ),
+      );
+      await service.onTurnFinished(
+        sessionId: child.id,
+        outcome: TurnStatus.completed,
+        finalText: 'Reviewed.',
+      );
+      final registry = collaborationRegistry(root, _tinestDefinition);
+
+      final waited = await registry.invoke(
+        'host.collaboration.wait_agent',
+        const <String, Object?>{},
+        collaborationContext(const <String>{'collaboration.wait'}),
+      );
+
+      expect(waited.toJson(), <String, Object?>{
+        'ok': true,
+        'value': <String, Object?>{
+          'outcome': 'mail',
+          'timed_out': false,
+          'messages': <Map<String, Object?>>[
+            <String, Object?>{
+              'type': 'final_answer',
+              'sender': '/root/task_a',
+              'payload': 'Reviewed.',
+            },
+          ],
+        },
+      });
     });
 
     test('list and interrupt preserve lifecycle wire values', () async {
