@@ -1060,10 +1060,20 @@ void main() {
     for (final label in <String>[
       'tinyrack-ubuntu-ci',
       'tinyrack-windows-ci',
-      'tinyrack-macmini',
     ]) {
       expect(changes, contains(label), reason: label);
     }
+    // macOS stays hosted in both pools. `codesign` resolves a Developer ID
+    // through the default keychain, which is per-user, and the Mac minis run
+    // several runner instances as one user: two signing jobs read each other's
+    // keychain. Per-job keychains were tried and only moved the contention,
+    // because the lookup path stays global.
+    expect(changes, isNot(contains('tinyrack-macmini')));
+    expect(
+      File('.github/actionlint.yaml').readAsStringSync(),
+      isNot(contains('tinyrack-macmini')),
+      reason: 'an allowance for a label nothing uses stops meaning anything',
+    );
     // Anything other than a dispatch resolves to the homelab labels; only a
     // dispatch reads the input, and only to send a run back to GitHub.
     expect(changes, contains("github.event_name != 'workflow_dispatch'"));

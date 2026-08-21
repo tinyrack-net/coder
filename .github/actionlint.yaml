@@ -6,4 +6,3 @@ self-hosted-runner:
     - macos-26
     - tinyrack-ubuntu-ci
     - tinyrack-windows-ci
-    - tinyrack-macmini

@@ -127,10 +127,22 @@ jobs:
           # Windows Server 2025 or Windows 11, so a key that named either one
           # would be wrong for the other pool and would carry that claim into
           # job names and artifact names. `host-fingerprint` records what each
-          # job actually ran on. There is no Intel key: the x86_64 target now
-          # builds on an arm64 mini through an x86_64 SDK under Rosetta 2, so
-          # the architecture is a property of the SDK a job installs rather
-          # than of the machine it lands on.
+          # job actually ran on. There is no Intel key: the x86_64 target builds
+          # through an x86_64 SDK under Rosetta 2, so the architecture is a
+          # property of the SDK a job installs rather than of the machine.
+          #
+          # macOS is hosted in both pools. Signing is the reason: `codesign`
+          # resolves a Developer ID by name through the default keychain, which
+          # is per-user, and the Mac minis run several runner instances as one
+          # user. Two signing jobs therefore read each other's keychain —
+          # `security find-identity` reports the identity while `codesign`
+          # fails with errSecInternalComponent, and when the timing goes the
+          # other way the signature it produces is rejected at exec with
+          # `Killed: 9`. Giving each job its own keychain was tried and only
+          # moved the contention, because the lookup path stays global. A
+          # hosted runner has one job per virtual machine and no such sharing.
+          # Isolating the minis means one macOS user per runner instance, which
+          # is a separate change.
           runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
             "github": {
               "linux": ["ubuntu-24.04"],
@@ -140,7 +152,7 @@ jobs:
             "self-hosted": {
               "linux": ["self-hosted", "tinyrack-ubuntu-ci"],
               "windows": ["self-hosted", "tinyrack-windows-ci"],
-              "macos": ["self-hosted", "tinyrack-macmini"]
+              "macos": ["macos-26"]
             }
           }[$pool]')"
           if [ "$runners" = "null" ]; then
