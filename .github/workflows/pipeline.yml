@@ -840,13 +840,23 @@ jobs:
       - name: Verify the Linux packages install
         if: matrix.platform == 'linux'
         run: |
+          set -euo pipefail
           dpkg-deb --contents dist/tinest-linux-x64.deb | grep 'usr/bin/tinest ->'
           rpm -qpl dist/tinest-linux-x64.rpm | grep '/usr/lib/tinest/tinest'
           # A package that builds but cannot install is the failure the
-          # rendering tests cannot see.
-          sudo dpkg -i dist/tinest-linux-x64.deb
-          test -x /usr/bin/tinest
-          sudo dpkg -r tinest
+          # rendering tests cannot see, so this installs it rather than only
+          # reading it. In a container, not on the runner: installing needs
+          # root and the self-hosted runner user has no sudo, while it is in
+          # the `docker` group. A clean base image is the better test anyway —
+          # it holds none of the build host's libraries, so a dependency this
+          # package fails to declare fails here instead of passing by accident.
+          docker run --rm -v "$PWD/dist:/dist:ro" debian:stable-slim sh -c '
+            set -eu
+            apt-get update -qq
+            apt-get install -y --no-install-recommends /dist/tinest-linux-x64.deb
+            test -x /usr/bin/tinest
+            dpkg -r tinest
+          '
 
       # --- macOS ---------------------------------------------------------
       # Before signing, not after: a wrong-architecture app that gets signed
