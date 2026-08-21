@@ -13,9 +13,14 @@ inputs:
     description: linux, macos, or windows
     required: true
   port:
-    description: Loopback port the smoke daemon binds
+    description: >-
+      Loopback port the smoke daemon binds. Empty picks one from the runner's
+      own name, which is what keeps two jobs on one machine apart: a
+      self-hosted host runs several runner instances, and a fixed port made the
+      second job fail with `Failed to create server socket`. A hosted runner
+      never saw it, having one job per virtual machine.
     required: false
-    default: '7399'
+    default: ''
 
 runs:
   using: composite
@@ -32,6 +37,16 @@ runs:
       # came out — `build-cli-bundle` checks that with `lipo`.
       run: |
         set -euo pipefail
+        # Derive the port from the runner's name rather than the job's, because
+        # what collides is two runner instances on one machine, and each has a
+        # name of its own. Hashing keeps it stable for a given instance, so a
+        # failure is reproducible instead of landing somewhere new each run.
+        if [ -z "${PORT:-}" ]; then
+          offset="$(printf '%s' "${RUNNER_NAME:-runner}" |
+            cksum | cut -d' ' -f1)"
+          PORT=$((20000 + offset % 20000))
+        fi
+        echo "Smoke daemon port: $PORT (runner ${RUNNER_NAME:-unknown})"
         bundle="dist/tinest-cli-$TARGET/bin"
         if [ "$PLATFORM" = "windows" ]; then
           cli="$bundle/tinest-cli.exe"

@@ -1122,6 +1122,20 @@ void main() {
     );
   });
 
+  test('the CLI smoke daemon does not bind a fixed port', () {
+    // A self-hosted host runs several runner instances, so two smoke daemons
+    // can start on one machine at once. The fixed port made the second fail
+    // with `Failed to create server socket`; a hosted runner never saw it,
+    // having one job per virtual machine.
+    final smoke = File(
+      '.github/actions/smoke-cli-bundle/action.yml',
+    ).readAsStringSync();
+    expect(smoke, isNot(contains("default: '7399'")));
+    expect(smoke, contains('RUNNER_NAME'));
+    // The runner's name, not the job's: what collides is the instance.
+    expect(smoke, contains(r'PORT=$((20000 + offset % 20000))'));
+  });
+
   test('the macOS app is checked before it is signed', () {
     // A wrong-architecture app that gets signed and notarized costs a full
     // round trip to Apple to find out, and the signature would then vouch for
