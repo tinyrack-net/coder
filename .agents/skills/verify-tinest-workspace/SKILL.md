@@ -51,13 +51,13 @@ leaving it lowered slows every later run.
   changes.
 - Provide contract, real-daemon vertical-slice, and widget evidence for
   user-state mutations.
-- Provide Linux E2E evidence for primary-screen happy paths through PR CI or a
-  focused local scenario.
+- Provide Linux E2E evidence for primary-screen happy paths through merge-group
+  CI or a focused local scenario.
 - Require the affected platform Debug build for platform-specific changes, but
   let PR or merge-group CI own it unless it is the smallest useful local
   reproduction.
 
-## Hand full verification to PR CI
+## Hand staged verification to CI
 
 After the directly affected tests pass, run any input-specific checks:
 
@@ -69,15 +69,15 @@ git diff --check
 
 Run code generation and commit its output whenever generation inputs changed.
 Then open a Draft pull request. The `Quality Gate` for the pull request's exact
-head commit is the authoritative full verification; mark the pull request ready
-only after it passes. If merging is in scope, require the matching merge-group
-`Quality Gate` before reporting completion.
+head commit is the authoritative fast Linux verification: static checks,
+generated-source drift, and uninstrumented Dart and Flutter tests. Mark the pull
+request ready only after it passes.
 
-PR CI owns static checks, generated-source drift, package coverage thresholds,
-Linux Debug E2E, native IBus terminal E2E, Android, Web, and the host CLI build.
-The merge queue adds the cross-platform test and build evidence that gates
-`main`. Do not report full verification while either applicable gate is running
-or failing.
+The merge queue owns the authoritative full verification: package coverage
+thresholds, Linux Debug E2E, native IBus terminal E2E, Android, Web, CLI,
+Windows, and macOS evidence. If merging is in scope, require the matching
+merge-group `Quality Gate` before reporting completion. Do not report full
+verification from the fast PR gate.
 
 When CI fails, start with the failing job's smallest relevant local command.
 Run a focused desktop scenario through the supported runner rather than the
@@ -87,8 +87,9 @@ entire catalog when one scenario is implicated:
 dart run packages/desktop_app/tool/run_desktop_e2e.dart --scenario=<id> --jobs=N
 ```
 
-Use the full local gates only when the user explicitly requests them, PR CI is
-unavailable, or a CI failure cannot be isolated with a focused command:
+Use the full local gates only when the user explicitly requests them,
+merge-group CI is unavailable, or a CI failure cannot be isolated with a
+focused command:
 
 ```sh
 dart run melos verify
@@ -166,16 +167,18 @@ Include:
 
 - tests added or changed;
 - exact commands run and their result;
-- line and branch coverage from the authoritative PR CI jobs;
-- the locally run Debug target or the PR CI job that supplied that evidence;
-- checks omitted locally and owned by PR or merge-group CI;
+- line and branch coverage from the authoritative merge-group CI jobs;
+- the locally run Debug target or the merge-group CI job that supplied that
+  evidence;
+- checks omitted locally and owned by merge-group CI;
 - any run that failed and later passed, with the seed, the mechanism found, and
   the fix;
 - the native IBus terminal E2E as evidence owned by `linux-ibus-terminal-e2e`,
   which no host runs locally.
 
-Do not report full verification when analysis has diagnostics, generated
-sources drift, feature evidence is missing, any package is below 90% line or
-80% branch coverage, required CI evidence did not execute, the exact-head
-`Quality Gate` has not passed, or any run of the change failed intermittently
-and is still unexplained.
+Do not report fast PR verification while its exact-head `Quality Gate` is
+running or failing. Do not report full verification when analysis has
+diagnostics, generated sources drift, feature evidence is missing, any package
+is below 90% line or 80% branch coverage, required merge-group CI evidence did
+not execute, the matching merge-group `Quality Gate` has not passed, or any run
+of the change failed intermittently and is still unexplained.

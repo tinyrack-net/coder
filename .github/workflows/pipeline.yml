@@ -43,8 +43,8 @@ jobs:
   # every host (Windows 1.81 GB against 1.8, macOS 2.08 against 2.1, Linux 1.69
   # against 1.5), so it is the pristine SDK rather than precache bloat. The
   # per-job cost is therefore fixed, and this job exists to decide how many
-  # jobs have to pay it: it narrows the matrices for a pull request and skips
-  # the whole set for a documentation-only diff.
+  # jobs have to pay it: it selects the fast PR scope and skips the whole set
+  # for a documentation-only diff.
   changes:
     name: Change scope
     runs-on: ubuntu-24.04
@@ -68,15 +68,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
-          # A pull request builds the host target of each matrix; the merge
-          # queue, tags, and manual dispatch build every target. The
-          # queue is an active ALLGREEN ruleset, so `main` is still only
-          # reachable through a full-matrix run.
-          CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
         run: |
           set -euo pipefail
 
-          # Anything that is not a pull request keeps the full matrix, so it
+          # Anything that is not a pull request keeps the full scope, so it
           # never has to be decided from a diff.
           verification_scope=full
           if [ -n "${PR_NUMBER}" ]; then
@@ -96,10 +91,6 @@ jobs:
             docs_only=true
           fi
 
-          matrix_scope='.host'
-          if [ "${CROSS_PLATFORM}" = "true" ]; then
-            matrix_scope='.host, .cross'
-          fi
           # Every Dart package except the one that gets a shard to itself.
           # Read from the workspace list rather than repeated in the matrix, so
           # a new package joins the `rest` shard instead of going untested.
@@ -117,8 +108,8 @@ jobs:
           {
             echo "scope=$verification_scope"
             echo "docs_only=$docs_only"
-            echo "cli_matrix=$(jq -c "[.cli | $matrix_scope] | add" "$matrices")"
-            echo "mobile_matrix=$(jq -c "[.mobile | $matrix_scope] | add" "$matrices")"
+            echo "cli_matrix=$(jq -c '.cli' "$matrices")"
+            echo "mobile_matrix=$(jq -c '.mobile' "$matrices")"
             echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
@@ -165,11 +156,72 @@ jobs:
           path: build/quality/generated.json
           if-no-files-found: error
 
+  # Pull-request pushes need a short feedback loop while agents are still
+  # iterating. The merge queue runs the coverage and cross-platform suites
+  # against the candidate commit, so PRs run the same Dart packages once on
+  # Linux without coverage instrumentation.
+  fast-dart-tests-linux:
+    name: Fast Dart tests (${{ matrix.shard }})
+    needs: changes
+    if: github.event_name == 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - shard: daemon
+            scopes: --scope=daemon
+          - shard: rest
+            scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - run: >-
+          dart run tinest_quality _test-dart ${{ matrix.scopes }}
+          --report=build/quality/fast-dart-tests.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-fast-dart-${{ matrix.shard }}
+          path: build/quality/fast-dart-tests.json
+          if-no-files-found: error
+
+  fast-flutter-tests-linux:
+    name: Fast Flutter tests (${{ matrix.package }})
+    needs: changes
+    if: github.event_name == 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.scope != 'relay-only'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - package: app
+          - package: desktop_app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - run: >-
+          dart run tinest_quality _test-flutter
+          --scope=${{ matrix.package }}
+          --report=build/quality/fast-flutter-${{ matrix.package }}.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-fast-flutter-${{ matrix.package }}
+          path: build/quality/fast-flutter-${{ matrix.package }}.json
+          if-no-files-found: error
+
   # These two re-run on macOS and Windows what `coverage-dart-linux` and
   # `coverage-flutter-linux` already run on Linux; only the host differs. They
   # were 68% of the bill, so they moved to the merge queue, which still gates
-  # `main`. Coverage is unaffected: it is collected on Linux only and those
-  # jobs stay on every pull request.
+  # `main`. Coverage is collected on Linux in that same full candidate run.
   #
   # They stay two jobs. Merging them to pay `setup-flutter` once was measured
   # and reverted: on Windows the suites take 7.6 and 4.4 minutes, so one job
@@ -243,7 +295,8 @@ jobs:
   coverage-dart-linux:
     name: Dart coverage (${{ matrix.shard }})
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
     strategy:
       fail-fast: false
@@ -279,7 +332,8 @@ jobs:
   coverage-flutter-linux:
     name: Flutter coverage
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -303,7 +357,8 @@ jobs:
   relay-coverage-linux:
     name: Relay coverage
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -327,7 +382,8 @@ jobs:
   relay-smoke-linux:
     name: Relay image smoke
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -371,7 +427,8 @@ jobs:
   debug-e2e-linux:
     name: Linux Debug E2E (${{ matrix.shard }})
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
@@ -422,7 +479,8 @@ jobs:
   linux-ibus-terminal-e2e:
     name: Linux IBus Terminal E2E
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -459,12 +517,13 @@ jobs:
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
-      # Android on a pull request, plus iOS everywhere else. The entries live
-      # in `.github/ci-matrices.json` so this job keeps one body.
+      # Android and iOS share one merge-candidate job body; the entries live in
+      # `.github/ci-matrices.json`.
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.mobile_matrix) }}
     runs-on: ${{ matrix.os }}
@@ -530,7 +589,8 @@ jobs:
   web-build:
     name: Web Build
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -538,8 +598,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
       - run: dart pub get --enforce-lockfile
-      # A dart:io import reaching the web entrypoint only fails here, so this
-      # runs on every pull request rather than at release time.
+      # A dart:io import reaching the web entrypoint only fails here, so the
+      # merge candidate compiles Web rather than discovering it at release.
       - run: dart run melos build:web:release
       - uses: actions/upload-artifact@v7
         with:
@@ -551,15 +611,13 @@ jobs:
   cli-verify:
     name: CLI Verify (${{ matrix.target }})
     needs: changes
-    if: needs.changes.outputs.docs_only != 'true' &&
+    if: github.event_name != 'pull_request' &&
+      needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
-    # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
-    # build the CLI on a pull request. Two release-path breakages reached main
-    # that way: a workspace resolution failure that made the job fail on every
-    # target, and a smoke test left on a stale flag order. Same argument as
-    # `web-build` above — the failure mode exists only here. Both breakages
-    # were target-independent, so a pull request builds the Linux target and
-    # the merge queue builds all four.
+    # `build-cli` only runs on a tag or a manual dispatch. Two release-path
+    # breakages once reached main without this verification: a workspace
+    # resolution failure and a stale smoke-test flag order. The merge candidate
+    # therefore builds all four release targets before `main` advances.
     strategy:
       fail-fast: false
       matrix:
@@ -597,6 +655,8 @@ jobs:
       - changes
       - static-linux
       - generated-linux
+      - fast-dart-tests-linux
+      - fast-flutter-tests-linux
       - dart-tests
       - flutter-tests
       - coverage-dart-linux
@@ -914,8 +974,8 @@ jobs:
       - web-build
       - build-and-package
       - build-cli
-    # The hosted client is one of the application release artifacts. Main and
-    # pull requests still compile it through `web-build` without publishing.
+    # The hosted client is one of the application release artifacts. Merge
+    # candidates compile it through `web-build` without publishing.
     if: always() && startsWith(github.ref, 'refs/tags/v') &&
       needs.quality-gate.result == 'success' &&
       needs.web-build.result == 'success' &&

@@ -65,5 +65,15 @@ void main() {
       0,
     );
     expect(output.join(), contains('--scope'));
+
+    output.clear();
+    expect(
+      await runTinestQuality(
+        const <String>['_test-flutter', '--help'],
+        out: output.add,
+      ),
+      0,
+    );
+    expect(output.join(), contains('--scope'));
   });
 }

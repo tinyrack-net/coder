@@ -6,7 +6,7 @@ import 'package:yaml/yaml.dart';
 
 import 'support/repo_root.dart';
 
-/// Matrix entries `changes` narrows for a pull request and expands otherwise.
+/// Full platform matrices consumed outside pull-request fast validation.
 final Map<String, dynamic> _matrices = jsonDecode(
   File('.github/ci-matrices.json').readAsStringSync(),
 ) as Map<String, dynamic>;
@@ -79,6 +79,8 @@ void main() {
       'changes',
       'static-linux',
       'generated-linux',
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
       'dart-tests',
       'flutter-tests',
       'coverage-dart-linux',
@@ -116,6 +118,8 @@ void main() {
     for (final name in <String>[
       'static-linux',
       'generated-linux',
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
       'dart-tests',
       'flutter-tests',
       'coverage-dart-linux',
@@ -155,7 +159,11 @@ void main() {
     // `Dart tests`'s 454 seconds. Splitting it out is what lets the slot
     // allocator hand it the entire machine, which no budget change can do while
     // seven other packages each need a slot of their own.
-    for (final name in <String>['dart-tests', 'coverage-dart-linux']) {
+    for (final name in <String>[
+      'fast-dart-tests-linux',
+      'dart-tests',
+      'coverage-dart-linux',
+    ]) {
       final job = _job(workflow, name);
       expect(job, contains('--scope=daemon'), reason: name);
       expect(job, contains('matrix.scopes'), reason: name);
@@ -296,29 +304,49 @@ void main() {
     );
   });
 
-  test('cross-platform duplicates run in the merge queue, not on every PR', () {
-    // macOS is 68% of the bill and these jobs re-run suites the Linux jobs
-    // already run. The merge queue is an active ALLGREEN ruleset, so it still
-    // blocks `main`; only the per-pull-request copy goes away.
+  test('pull requests run a small Linux gate and defer full validation', () {
+    expect(workflow, isNot(contains('max-parallel:')));
+    for (final job in <String>[
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
+    ]) {
+      final definition = _job(workflow, job);
+      expect(definition, contains("github.event_name == 'pull_request'"));
+      expect(definition, contains('runs-on: ubuntu-24.04'));
+      expect(definition, isNot(contains('max-parallel:')));
+    }
+    final flutter = _job(workflow, 'fast-flutter-tests-linux');
+    expect(flutter, contains('- package: app'));
+    expect(flutter, contains('- package: desktop_app'));
+    expect(flutter, contains(r'--scope=${{ matrix.package }}'));
+
+    // These expensive or platform-specific jobs validate the merge candidate
+    // rather than every intermediate pull-request head.
     for (final job in <String>[
       'dart-tests',
       'flutter-tests',
-      'desktop-debug-build',
-    ]) {
-      expect(
-        _job(workflow, job),
-        contains("github.event_name != 'pull_request'"),
-      );
-    }
-    // Coverage is Linux-only and is what the 90%/80% gate reads, so it must
-    // stay on every pull request.
-    for (final job in <String>[
       'coverage-dart-linux',
       'coverage-flutter-linux',
       'relay-coverage-linux',
       'relay-smoke-linux',
       'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
+      'mobile-debug-build',
+      'desktop-debug-build',
+      'web-build',
+      'cli-verify',
+    ]) {
+      expect(
+        _job(workflow, job),
+        contains("github.event_name != 'pull_request'"),
+        reason: job,
+      );
+    }
+
+    // Cheap structural checks still protect every pull-request head.
+    for (final job in <String>[
       'static-linux',
+      'generated-linux',
     ]) {
       expect(
         _job(workflow, job),
@@ -327,24 +355,27 @@ void main() {
     }
   });
 
-  test('scoped matrices keep one host and expand to every queue target', () {
-    // Both matrices are chosen in `changes`, so each job body stays single.
+  test('merge queue matrices preserve every release target', () {
+    // Pull requests do not consume these matrices; merge candidates verify
+    // every target using one job body per capability.
     expect(_job(workflow, 'cli-verify'), contains('fromJSON'));
     expect(_job(workflow, 'mobile-debug-build'), contains('fromJSON'));
-    expect(_job(workflow, 'changes'), contains('CROSS_PLATFORM'));
+    expect(_job(workflow, 'changes'), isNot(contains('CROSS_PLATFORM')));
 
-    // An empty matrix is a workflow error, not a skipped job, so every `host`
-    // list has to stay non-empty however the scope is narrowed.
+    // An empty matrix is a workflow error, not a skipped job.
     for (final key in <String>['cli', 'mobile']) {
-      final group = _matrices[key]! as Map<String, dynamic>;
-      expect(group['host'], isNotEmpty, reason: '$key host matrix is empty');
-      expect(group['cross'], isNotEmpty, reason: '$key cross matrix is empty');
+      expect(
+        _matrices[key]! as List<dynamic>,
+        isNotEmpty,
+        reason: '$key matrix is empty',
+      );
     }
     expect(
-      (_matrices['cli']! as Map<String, dynamic>)['host'],
-      hasLength(1),
-      reason: 'a pull request should build one CLI target',
+      _matrices['cli']! as List<dynamic>,
+      hasLength(4),
+      reason: 'the merge queue must verify every CLI release target',
     );
+    expect(_matrices['mobile']! as List<dynamic>, hasLength(2));
   });
 
   test('a documentation-only pull request skips the quality matrix', () {
@@ -357,6 +388,8 @@ void main() {
     expect(scope, contains('verification_scope=full'));
     for (final job in <String>[
       'static-linux',
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
       'coverage-dart-linux',
       'coverage-flutter-linux',
       'debug-e2e-linux',
@@ -681,17 +714,12 @@ void main() {
       expect(job, contains('./.github/actions/build-cli-bundle'));
       expect(job, contains('./.github/actions/smoke-cli-bundle'));
     }
-    // `cli-verify` now takes its matrix from `changes` so a pull request can
-    // build the host target alone; the target list lives in the matrix file.
-    final cli = _matrices['cli']! as Map<String, dynamic>;
-    final verified =
-        <dynamic>[
-              ...(cli['host']! as List<dynamic>),
-              ...(cli['cross']! as List<dynamic>),
-            ]
-            .cast<Map<String, dynamic>>()
-            .map((entry) => entry['target']! as String)
-            .toList();
+    // `cli-verify` takes its full merge-candidate matrix from `changes`; the
+    // target list lives in the matrix file.
+    final verified = (_matrices['cli']! as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .map((entry) => entry['target']! as String)
+        .toList();
     for (final target in <String>[
       'linux-x64',
       'macos-x64',
@@ -743,6 +771,8 @@ void main() {
       'changes',
       'static-linux',
       'generated-linux',
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
       'dart-tests',
       'flutter-tests',
       'coverage-dart-linux',
@@ -1183,6 +1213,8 @@ void main() {
     const singleHost = <String>[
       'static-linux',
       'generated-linux',
+      'fast-dart-tests-linux',
+      'fast-flutter-tests-linux',
       'coverage-dart-linux',
       'coverage-flutter-linux',
       'relay-coverage-linux',
@@ -1269,14 +1301,9 @@ String _job(String workflow, String name) {
   return workflow.substring(start, end);
 }
 
-/// The CLI build matrix entry for [target], from either scope.
+/// The CLI build matrix entry for [target].
 Map<String, dynamic> _cliEntry(String target) {
-  final cli = _matrices['cli']! as Map<String, dynamic>;
-  final entries = <dynamic>[
-    ...(cli['host']! as List<dynamic>),
-    ...(cli['cross']! as List<dynamic>),
-  ];
-  return entries
+  return (_matrices['cli']! as List<dynamic>)
           .cast<Map<String, dynamic>>()
           .where((entry) => entry['target'] == target)
           .firstOrNull ??
@@ -1284,12 +1311,7 @@ Map<String, dynamic> _cliEntry(String target) {
 }
 
 Map<String, dynamic> _mobileEntry(String os) {
-  final mobile = _matrices['mobile']! as Map<String, dynamic>;
-  final entries = <dynamic>[
-    ...(mobile['host']! as List<dynamic>),
-    ...(mobile['cross']! as List<dynamic>),
-  ];
-  return entries
+  return (_matrices['mobile']! as List<dynamic>)
           .cast<Map<String, dynamic>>()
           .where((entry) => entry['os'] == os)
           .firstOrNull ??
