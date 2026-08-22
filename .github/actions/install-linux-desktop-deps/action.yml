@@ -28,40 +28,12 @@ runs:
         list="${list% }"
         echo "list=$list" >> "$GITHUB_OUTPUT"
         echo "hash=$(sha256sum <<< "$list" | cut -c1-16)" >> "$GITHUB_OUTPUT"
-        # Which packages are missing depends on what the runner image already
-        # ships, so the image identifies the cache. These are plain runner
-        # environment variables rather than expression contexts: reading them
-        # as ${{ env.ImageOS }} yields an empty string.
-        #
-        # Only GitHub's images set them. A self-hosted runner would otherwise
-        # key every machine as `unknown-unknown` and share one entry across
-        # hosts that need not be running the same release, so fall back to the
-        # distribution the packages are actually resolved against.
-        image="${ImageOS:-}-${ImageVersion:-}"
-        if [ "$image" = "-" ]; then
-          image="$(. /etc/os-release && printf '%s-%s' "$ID" "$VERSION_ID")"
-        fi
-        echo "image=$image" >> "$GITHUB_OUTPUT"
-
-        # A self-hosted machine has these installed by its provisioning rather
-        # than by the job, and its runner user holds no sudo at all, so every
-        # apt command below would fail on a host with nothing left to do. Ask
-        # dpkg what is missing rather than assuming something is.
-        missing=''
-        for package in $list; do
-          if ! dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null |
-            grep -qx installed; then
-            missing="$missing $package"
-          fi
-        done
-        echo "missing=${missing# }" >> "$GITHUB_OUTPUT"
+        # GitHub's image identity keeps cached packages scoped to the runner
+        # release that resolved them. These are runner environment variables;
+        # reading them as expression contexts yields an empty string.
+        echo "image=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
 
     - name: Restore the cached packages
-      # A self-hosted machine still has the packages apt installed on its last
-      # job, so the download this cache avoids has already been avoided. Going
-      # to GitHub for the .debs would add an internet round trip to save work
-      # that is not repeated.
-      if: runner.environment == 'github-hosted' && steps.pkgs.outputs.missing != ''
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/.apt-debs
@@ -72,7 +44,6 @@ runs:
           }}-${{ steps.pkgs.outputs.hash }}
 
     - name: Install the packages
-      if: steps.pkgs.outputs.missing != ''
       shell: bash
       env:
         DEBIAN_FRONTEND: noninteractive

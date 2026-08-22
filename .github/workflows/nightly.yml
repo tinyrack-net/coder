@@ -1,0 +1,115 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "17 18 * * *"
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.0
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The macOS half of `dart-tests`, kept off the merge queue's critical path.
+  # It runs unsharded because sharding only benefits a gate someone is waiting
+  # on and would duplicate the quality workflow's package-scope arithmetic.
+  nightly-dart-macos:
+    name: Nightly macOS Dart tests
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      # Dart 3.13 rewrites native-library install names before a suite starts.
+      # Concurrent macOS suites can race while replacing the shared dylib, so
+      # keep package execution serial there; Windows has no such rewrite.
+      - run: >-
+          dart run tinest_quality _test-dart --jobs=1
+          --report=build/quality/dart-tests-macos.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-timing-dart-tests-macos-26
+          path: build/quality/dart-tests-macos.json
+          if-no-files-found: error
+
+  nightly-desktop-e2e:
+    name: Nightly Desktop E2E (${{ matrix.platform.os }}, ${{ matrix.scenario }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: macos-26
+            device: macos
+          - os: windows-2025
+            device: windows
+        scenario:
+          - daemon-workspace
+          - project-worktree
+          - plugin-harness
+          - relay
+          - conversation-adversity
+          - conversation-history
+          - conversation
+          - provider
+          - settings-desktop
+          - desktop-shell
+    runs-on: ${{ matrix.platform.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - run: >-
+          dart run packages/desktop_app/tool/run_desktop_e2e.dart
+          --scenario=${{ matrix.scenario }}
+          --jobs=2
+          --report=build/e2e-${{ matrix.scenario }}.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-${{ matrix.platform.device }}-${{ matrix.scenario }}
+          path: build/e2e-${{ matrix.scenario }}.json
+
+  nightly-android-smoke:
+    name: Nightly Android Remote and Terminal E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          script: >-
+            cd packages/app &&
+            flutter test integration_test/remote_bootstrap_smoke_test.dart
+            -d emulator-5554 &&
+            flutter test integration_test/mobile_terminal_input_smoke_test.dart
+            -d emulator-5554
+
+  nightly-ios-smoke:
+    name: Nightly iOS Remote E2E
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-flutter
+      - run: dart pub get --enforce-lockfile
+      - name: Boot an iOS simulator
+        run: |
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for values in data["devices"].values() for d in values if d["isAvailable"] and "iPhone" in d["name"]))')
+          xcrun simctl boot "$device_id" || true
+          echo "IOS_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
+      - run: >-
+          flutter test integration_test/remote_bootstrap_smoke_test.dart
+          -d "$IOS_DEVICE_ID"
+        working-directory: packages/app

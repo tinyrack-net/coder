@@ -1,8 +1,8 @@
 name: Set up Flutter
 description: >-
   Install the pinned Flutter SDK. flutter-action does the caching, so this
-  exists to keep the version pin, and the one host that opts out of the SDK
-  cache, in a single place instead of in every job.
+  exists to keep the version pin and cache policy in one place instead of in
+  every job.
 
 inputs:
   architecture:
@@ -40,26 +40,4 @@ runs:
         # This is the one change here measured only by inference. If a Windows
         # setup step is not faster than the 4.5 minutes it took before, drop
         # the condition and cache unconditionally again.
-        #
-        # A self-hosted runner opts out of both caches entirely. The Actions
-        # cache lives on GitHub, so every restore is an internet round trip
-        # from the homelab, while the machine already keeps the SDK across
-        # jobs: setup.sh downloads only when `$CACHE_PATH/flutter/bin/flutter`
-        # is not already executable, and CACHE_PATH defaults under
-        # RUNNER_TOOL_CACHE, which persists. The first job on a machine pays
-        # one CDN download and the rest pay nothing. `pub-cache` is
-        # deliberately left unset: it follows `cache`, so this one condition
-        # governs both cache steps.
-        cache: ${{ runner.environment == 'github-hosted' &&
-          runner.os != 'Windows' }}
-        # Restore the pub cache into the runner *instance's* own tool cache,
-        # never into the shared home. The self-hosted Mac mini runs two runner
-        # instances as one user; both restoring the same key into
-        # ~/.pub-cache made two tars race in one directory, tearing package
-        # files (EEXIST/ENOENT/EBADF storms) that `dart pub get
-        # --enforce-lockfile` accepts and the native build hooks then fail to
-        # compile with exit 254. runner.tool_cache is disjoint per instance
-        # (01/_work/_tool vs 02/_work/_tool), so the cache key can stay
-        # shared while the restore targets never overlap. flutter-action
-        # exports PUB_CACHE to this path, so every later step follows.
-        pub-cache-path: ${{ runner.tool_cache }}/pub-cache
+        cache: ${{ runner.os != 'Windows' }}

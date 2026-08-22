@@ -13,14 +13,9 @@ inputs:
     description: linux, macos, or windows
     required: true
   port:
-    description: >-
-      Loopback port the smoke daemon binds. Empty picks one from the runner's
-      own name, which is what keeps two jobs on one machine apart: a
-      self-hosted host runs several runner instances, and a fixed port made the
-      second job fail with `Failed to create server socket`. A hosted runner
-      never saw it, having one job per virtual machine.
+    description: Loopback port the smoke daemon binds
     required: false
-    default: ''
+    default: '7399'
 
 runs:
   using: composite
@@ -32,21 +27,11 @@ runs:
         PLATFORM: ${{ inputs.platform }}
         PORT: ${{ inputs.port }}
       # This runs the bundle where it was built, which holds even for the
-      # x86_64 target now that it is produced on an arm64 mini: Rosetta 2 runs
+      # x86_64 target produced on an arm64 runner: Rosetta 2 runs
       # it. That also means this step says nothing about which architecture
       # came out — `build-cli-bundle` checks that with `lipo`.
       run: |
         set -euo pipefail
-        # Derive the port from the runner's name rather than the job's, because
-        # what collides is two runner instances on one machine, and each has a
-        # name of its own. Hashing keeps it stable for a given instance, so a
-        # failure is reproducible instead of landing somewhere new each run.
-        if [ -z "${PORT:-}" ]; then
-          offset="$(printf '%s' "${RUNNER_NAME:-runner}" |
-            cksum | cut -d' ' -f1)"
-          PORT=$((20000 + offset % 20000))
-        fi
-        echo "Smoke daemon port: $PORT (runner ${RUNNER_NAME:-unknown})"
         bundle="dist/tinest-cli-$TARGET/bin"
         if [ "$PLATFORM" = "windows" ]; then
           cli="$bundle/tinest-cli.exe"
@@ -107,10 +92,8 @@ runs:
       env:
         TARGET: ${{ inputs.target }}
       # macOS answers a rejected signature with SIGKILL and no message, so the
-      # log says only `Killed: 9`. An arm64 bundle failed here on a self-hosted
-      # mini while the x86_64 one passed on the same machine and both passed on
-      # a hosted runner, and the job cleans its workspace, so the evidence has
-      # to be taken while it still exists.
+      # log says only `Killed: 9`, and the job cleans its workspace, so the
+      # evidence has to be taken while it still exists.
       run: |
         bundle="dist/tinest-cli-$TARGET"
         for binary in "$bundle"/bin/* "$bundle"/lib/*; do

@@ -2,8 +2,6 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*.*.*"
   pull_request:
@@ -15,18 +13,6 @@ on:
         required: true
         type: boolean
         default: true
-      # The homelab is where everything runs now. Kept so a dispatch can send a
-      # run back to GitHub when the machines are down or being worked on.
-      runner_pool:
-        description: Which pool the quality jobs run on
-        required: false
-        type: choice
-        options:
-          - self-hosted
-          - github
-        default: self-hosted
-  schedule:
-    - cron: "17 18 * * *"
 
 permissions:
   contents: read
@@ -61,7 +47,6 @@ jobs:
   # the whole set for a documentation-only diff.
   changes:
     name: Change scope
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -72,9 +57,6 @@ jobs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
       cli_matrix: ${{ steps.scope.outputs.cli_matrix }}
       mobile_matrix: ${{ steps.scope.outputs.mobile_matrix }}
-      runner_linux: ${{ steps.scope.outputs.runner_linux }}
-      runner_windows: ${{ steps.scope.outputs.runner_windows }}
-      runner_macos: ${{ steps.scope.outputs.runner_macos }}
       dart_scopes_rest: ${{ steps.scope.outputs.dart_scopes_rest }}
     steps:
       - uses: actions/checkout@v5
@@ -87,14 +69,10 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
           # A pull request builds the host target of each matrix; the merge
-          # queue, main, tags, and manual dispatch build every target. The
+          # queue, tags, and manual dispatch build every target. The
           # queue is an active ALLGREEN ruleset, so `main` is still only
           # reachable through a full-matrix run.
           CROSS_PLATFORM: ${{ github.event_name != 'pull_request' }}
-          # Everything resolves to the homelab labels. Only a dispatch reads
-          # the input, and only to send a run back to GitHub.
-          RUNNER_POOL: ${{ (github.event_name != 'workflow_dispatch' &&
-            'self-hosted') || inputs.runner_pool }}
         run: |
           set -euo pipefail
 
@@ -122,44 +100,6 @@ jobs:
           if [ "${CROSS_PLATFORM}" = "true" ]; then
             matrix_scope='.host, .cross'
           fi
-          # Keyed by platform, not by a version. The same key resolves to
-          # Ubuntu 24.04 on GitHub and Ubuntu 26.04 in the homelab, and to
-          # Windows Server 2025 or Windows 11, so a key that named either one
-          # would be wrong for the other pool and would carry that claim into
-          # job names and artifact names. `host-fingerprint` records what each
-          # job actually ran on. There is no Intel key: the x86_64 target builds
-          # through an x86_64 SDK under Rosetta 2, so the architecture is a
-          # property of the SDK a job installs rather than of the machine.
-          #
-          # macOS is hosted in both pools. Signing is the reason: `codesign`
-          # resolves a Developer ID by name through the default keychain, which
-          # is per-user, and the Mac minis run several runner instances as one
-          # user. Two signing jobs therefore read each other's keychain —
-          # `security find-identity` reports the identity while `codesign`
-          # fails with errSecInternalComponent, and when the timing goes the
-          # other way the signature it produces is rejected at exec with
-          # `Killed: 9`. Giving each job its own keychain was tried and only
-          # moved the contention, because the lookup path stays global. A
-          # hosted runner has one job per virtual machine and no such sharing.
-          # Isolating the minis means one macOS user per runner instance, which
-          # is a separate change.
-          runners="$(jq -nc --arg pool "$RUNNER_POOL" '{
-            "github": {
-              "linux": ["ubuntu-24.04"],
-              "windows": ["windows-2025"],
-              "macos": ["macos-26"]
-            },
-            "self-hosted": {
-              "linux": ["self-hosted", "tinyrack-ubuntu-ci"],
-              "windows": ["self-hosted", "tinyrack-windows-ci"],
-              "macos": ["macos-26"]
-            }
-          }[$pool]')"
-          if [ "$runners" = "null" ]; then
-            echo "::error::Unknown runner pool ${RUNNER_POOL}"
-            exit 1
-          fi
-
           # Every Dart package except the one that gets a shard to itself.
           # Read from the workspace list rather than repeated in the matrix, so
           # a new package joins the `rest` shard instead of going untested.
@@ -174,31 +114,23 @@ jobs:
           fi
 
           matrices=.github/ci-matrices.json
-          scoped="map(. + {runs_on: (\$runners[.os] | tojson)})"
           {
             echo "scope=$verification_scope"
             echo "docs_only=$docs_only"
-            echo "cli_matrix=$(jq -c --argjson runners "$runners" \
-              "[.cli | $matrix_scope] | add | $scoped" "$matrices")"
-            echo "mobile_matrix=$(jq -c --argjson runners "$runners" \
-              "[.mobile | $matrix_scope] | add | $scoped" "$matrices")"
-            echo "runner_linux=$(jq -c '."linux"' <<< "$runners")"
-            echo "runner_windows=$(jq -c '."windows"' <<< "$runners")"
-            echo "runner_macos=$(jq -c '."macos"' <<< "$runners")"
+            echo "cli_matrix=$(jq -c "[.cli | $matrix_scope] | add" "$matrices")"
+            echo "mobile_matrix=$(jq -c "[.mobile | $matrix_scope] | add" "$matrices")"
             echo "dart_scopes_rest=$scopes_rest"
           } >> "$GITHUB_OUTPUT"
 
   static-linux:
     name: Static checks
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    if: needs.changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _static-checks
@@ -215,15 +147,13 @@ jobs:
   generated-linux:
     name: Generated sources
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality generate --check
@@ -253,32 +183,25 @@ jobs:
   dart-tests:
     name: Dart tests (${{ matrix.os }}, ${{ matrix.shard }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      github.event_name != 'pull_request' &&
+    if: github.event_name != 'pull_request' &&
       needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: true
       matrix:
         include:
-          # macOS is absent on purpose: three Mac minis serve the whole
-          # homelab, so Mac time per queue entry is what sets merge latency,
-          # and these two shards were 8 of the ~21 minutes each entry needed.
-          # `nightly-dart-macos` owns macOS-only Dart behaviour now; Windows
-          # still gates every Dart change on a non-Linux host pre-merge.
-          - os: windows
+          # macOS-only Dart behaviour is exercised by the nightly workflow;
+          # Windows keeps every Dart change gated on a non-Linux host.
+          - os: windows-2025
             shard: daemon
             scopes: --scope=daemon
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
-          - os: windows
+          - os: windows-2025
             shard: rest
             scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _test-dart ${{ matrix.scopes }}
@@ -293,23 +216,19 @@ jobs:
   flutter-tests:
     name: Flutter tests (${{ matrix.os }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      github.event_name != 'pull_request' &&
+    if: github.event_name != 'pull_request' &&
       needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: true
       matrix:
         include:
-          - os: macos
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: windows
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+          - os: macos-26
+          - os: windows-2025
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _test-flutter
@@ -324,8 +243,7 @@ jobs:
   coverage-dart-linux:
     name: Dart coverage (${{ matrix.shard }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
     strategy:
       fail-fast: false
@@ -335,12 +253,11 @@ jobs:
             scopes: --scope=daemon
           - shard: rest
             scopes: ${{ needs.changes.outputs.dart_scopes_rest }}
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _coverage-dart ${{ matrix.scopes }}
@@ -362,15 +279,13 @@ jobs:
   coverage-flutter-linux:
     name: Flutter coverage
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _coverage-flutter
@@ -388,15 +303,13 @@ jobs:
   relay-coverage-linux:
     name: Relay coverage
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: >-
           dart run tinest_quality _coverage-dart --scope=relay
@@ -414,15 +327,13 @@ jobs:
   relay-smoke-linux:
     name: Relay image smoke
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: docker build --file packages/relay/Dockerfile --tag coder-relay:smoke .
       - name: Smoke the built relay and graceful shutdown
@@ -460,8 +371,7 @@ jobs:
   debug-e2e-linux:
     name: Linux Debug E2E (${{ matrix.shard }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
@@ -489,12 +399,11 @@ jobs:
             scenario: settings-desktop
           - shard: desktop-shell
             scenario: desktop-shell
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: xvfb
@@ -513,15 +422,13 @@ jobs:
   linux-ibus-terminal-e2e:
     name: Linux IBus Terminal E2E
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - uses: ./.github/actions/install-linux-desktop-deps
         with:
           extra-packages: >-
@@ -552,8 +459,7 @@ jobs:
   mobile-debug-build:
     name: Mobile Debug Build (${{ matrix.os }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
     strategy:
       fail-fast: false
@@ -561,20 +467,16 @@ jobs:
       # in `.github/ci-matrices.json` so this job keeps one body.
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.mobile_matrix) }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - name: Set up Gradle cache
         if: matrix.gradle_cache
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: enhanced
-          # The Gradle home persists on a self-hosted machine, so the Actions
-          # cache would only add an internet round trip to GitHub.
-          cache-disabled: ${{ runner.environment != 'github-hosted' }}
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: packages/app
@@ -606,25 +508,21 @@ jobs:
     # Same argument as `cross-platform-tests`: a macOS and Windows Debug build
     # is worth blocking a merge on, not worth rebuilding on every push to a
     # pull request branch.
-    if: github.event_name != 'schedule' &&
-      github.event_name != 'pull_request' &&
+    if: github.event_name != 'pull_request' &&
       needs.changes.outputs.docs_only != 'true'
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos
+          - os: macos-26
             command: flutter build macos --debug -t lib/main.dart
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
-          - os: windows
+          - os: windows-2025
             command: flutter build windows --debug -t lib/main.dart
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - run: ${{ matrix.command }}
         working-directory: packages/desktop_app
@@ -632,15 +530,13 @@ jobs:
   web-build:
     name: Web Build
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope != 'relay-only'
-    runs-on: ${{ fromJSON(needs.changes.outputs.runner_linux) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       # A dart:io import reaching the web entrypoint only fails here, so this
       # runs on every pull request rather than at release time.
@@ -655,8 +551,7 @@ jobs:
   cli-verify:
     name: CLI Verify (${{ matrix.target }})
     needs: changes
-    if: github.event_name != 'schedule' &&
-      needs.changes.outputs.docs_only != 'true' &&
+    if: needs.changes.outputs.docs_only != 'true' &&
       needs.changes.outputs.scope == 'full'
     # `build-cli` only runs on a tag or a manual dispatch, so nothing used to
     # build the CLI on a pull request. Two release-path breakages reached main
@@ -669,12 +564,12 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.cli_matrix) }}
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      # `macos-x64` builds on an arm64 Mac mini through an x86_64 SDK, which
-      # runs there under Rosetta 2. Dart compiles for the architecture it runs
+      # `macos-x64` builds on an arm64 hosted runner through an x86_64 SDK,
+      # which runs there under Rosetta 2. Dart compiles for the architecture it runs
       # as, and `dart build cli` has no cross-architecture option, so the SDK
       # is the only lever. Keeping it here means no quality job needs a hosted
       # Intel runner, and hosted macOS allows five concurrent jobs, so that one
@@ -682,7 +577,6 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           architecture: ${{ matrix.sdk_arch }}
-      - uses: ./.github/actions/host-fingerprint
       - run: dart pub get --enforce-lockfile
       - uses: ./.github/actions/build-cli-bundle
         with:
@@ -698,7 +592,7 @@ jobs:
 
   quality-gate:
     name: Quality Gate
-    if: always() && github.event_name != 'schedule'
+    if: always()
     needs:
       - changes
       - static-linux
@@ -731,11 +625,6 @@ jobs:
 
   build-and-package:
     name: Build & Package (${{ matrix.target }})
-    # `changes` is what resolves the runner pool, so a release reads it too.
-    # That is also the escape hatch: a dispatch with `runner_pool: github`
-    # sends a release back to GitHub when the homelab is unavailable, which is
-    # exactly the moment you do not want to be blocked by it.
-    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -746,25 +635,21 @@ jobs:
           # Linux nor an arm64 Windows runner can build one. macOS is the sole
           # platform with an arm64 SDK — and the sole one that can build the
           # other architecture, by running the x86_64 SDK under Rosetta 2.
-          - os: linux
-            runs_on: ${{ needs.changes.outputs.runner_linux }}
+          - os: ubuntu-24.04
             target: linux-x64
             platform: linux
-          - os: macos
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
             sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
             target: macos-arm64
             platform: macos
-          - os: windows
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
+          - os: windows-2025
             target: windows-x64
             platform: windows
             arch: x64
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     # Declared at job level so the MSIX step can test it in its own `if`; a
     # step cannot read the env it declares itself.
@@ -795,36 +680,17 @@ jobs:
       # --- Linux ---------------------------------------------------------
       - name: Resolve appimagetool and nfpm
         if: matrix.platform == 'linux'
-        # A self-hosted machine has these installed by its provisioning and its
-        # runner user holds no sudo, so `dpkg -i` cannot run there at all. The
-        # desktop runtime packages already work this way; this follows it.
-        #
-        # The provisioned nfpm is checked against the pin above rather than
-        # trusted: a machine carrying a different one would otherwise release
-        # packages built by a tool this repository never named.
         run: |
           set -euo pipefail
-          if command -v nfpm >/dev/null; then
-            installed="$(nfpm --version | sed -n 's/.*GitVersion: *//p' | tr -d ' ')"
-            if [ "$installed" != "$NFPM_VERSION" ]; then
-              echo "::error::Runner has nfpm $installed, expected $NFPM_VERSION"
-              exit 1
-            fi
-          else
-            curl --fail --location --output nfpm.deb \
-              "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
-            echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
-            sudo dpkg -i nfpm.deb
-          fi
-          if command -v appimagetool >/dev/null; then
-            echo "APPIMAGETOOL=$(command -v appimagetool)" >> "$GITHUB_ENV"
-          else
-            curl --fail --location --output appimagetool \
-              "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
-            echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
-            chmod +x appimagetool
-            echo "APPIMAGETOOL=${GITHUB_WORKSPACE}/appimagetool" >> "$GITHUB_ENV"
-          fi
+          curl --fail --location --output nfpm.deb \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+          echo "${NFPM_SHA256}  nfpm.deb" | sha256sum --check -
+          sudo dpkg -i nfpm.deb
+          curl --fail --location --output appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          echo "${APPIMAGETOOL_SHA256}  appimagetool" | sha256sum --check -
+          chmod +x appimagetool
+          echo "APPIMAGETOOL=${GITHUB_WORKSPACE}/appimagetool" >> "$GITHUB_ENV"
       - name: Package Linux artifacts
         if: matrix.platform == 'linux'
         env:
@@ -846,10 +712,8 @@ jobs:
           rpm -qpl dist/tinest-linux-x64.rpm | grep '/usr/lib/tinest/tinest'
           # A package that builds but cannot install is the failure the
           # rendering tests cannot see, so this installs it rather than only
-          # reading it. In a container, not on the runner: installing needs
-          # root and the self-hosted runner user has no sudo, while it is in
-          # the `docker` group. A clean base image is the better test anyway —
-          # it holds none of the build host's libraries, so a dependency this
+          # reading it. A clean container is the better test because it holds
+          # none of the build host's libraries, so a dependency this
           # package fails to declare fails here instead of passing by accident.
           docker run --rm -v "$PWD/dist:/dist:ro" debian:stable-slim sh -c '
             set -eu
@@ -987,7 +851,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: enhanced
-          cache-disabled: ${{ runner.environment != 'github-hosted' }}
       - run: dart pub get --enforce-lockfile
       - name: Restore Android signing material
         env:
@@ -1082,9 +945,6 @@ jobs:
 
   build-cli:
     name: Build CLI (${{ matrix.target }})
-    # See `build-and-package`: `changes` resolves the pool, and a dispatch with
-    # `runner_pool: github` is how a release leaves the homelab.
-    needs: changes
     if: startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.package_release)
     strategy:
@@ -1096,24 +956,20 @@ jobs:
           # held to the platforms Flutter publishes one for. That rules out
           # Linux arm64, which is why `shipworld.yaml` lists the three
           # platforms below under `homebrew.platforms`.
-          - os: linux
-            runs_on: ${{ needs.changes.outputs.runner_linux }}
+          - os: ubuntu-24.04
             target: linux-x64
             platform: linux
-          - os: macos
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
             sdk_arch: x64
             target: macos-x64
             platform: macos
-          - os: macos
-            runs_on: ${{ needs.changes.outputs.runner_macos }}
+          - os: macos-26
             target: macos-arm64
             platform: macos
-          - os: windows
-            runs_on: ${{ needs.changes.outputs.runner_windows }}
+          - os: windows-2025
             target: windows-x64
             platform: windows
-    runs-on: ${{ fromJSON(matrix.runs_on) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -1357,108 +1213,3 @@ jobs:
             --release-notes-url "$releaseNotesUrl" `
             --submit `
             --no-open
-
-  # The macOS half of `dart-tests`, moved off the merge queue's critical path.
-  # It runs unsharded because sharding exists to cut queue wall clock and
-  # `changes` does not run on a schedule, so a shard would have to duplicate
-  # that job's scope arithmetic to buy time nothing is waiting on.
-  nightly-dart-macos:
-    name: Nightly macOS Dart tests
-    if: github.event_name == 'schedule'
-    runs-on: macos-26
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-flutter
-      - uses: ./.github/actions/host-fingerprint
-      - run: dart pub get --enforce-lockfile
-      # Dart 3.13 rewrites native-library install names before a suite starts.
-      # Concurrent macOS suites can race while replacing the shared dylib, so
-      # keep package execution serial there; Windows has no such rewrite.
-      - run: >-
-          dart run tinest_quality _test-dart --jobs=1
-          --report=build/quality/dart-tests-macos.json
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-timing-dart-tests-macos-26
-          path: build/quality/dart-tests-macos.json
-          if-no-files-found: error
-
-  nightly-desktop-e2e:
-    name: Nightly Desktop E2E (${{ matrix.platform.os }}, ${{ matrix.scenario }})
-    if: github.event_name == 'schedule'
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - os: macos-26
-            device: macos
-          - os: windows-2025
-            device: windows
-        scenario:
-          - daemon-workspace
-          - project-worktree
-          - plugin-harness
-          - relay
-          - conversation-adversity
-          - conversation-history
-          - conversation
-          - provider
-          - settings-desktop
-          - desktop-shell
-    runs-on: ${{ matrix.platform.os }}
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-flutter
-      - run: dart pub get --enforce-lockfile
-      - run: >-
-          dart run packages/desktop_app/tool/run_desktop_e2e.dart
-          --scenario=${{ matrix.scenario }}
-          --jobs=2
-          --report=build/e2e-${{ matrix.scenario }}.json
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nightly-e2e-${{ matrix.platform.device }}-${{ matrix.scenario }}
-          path: build/e2e-${{ matrix.scenario }}.json
-
-  nightly-android-smoke:
-    name: Nightly Android Remote and Terminal E2E
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-flutter
-      - run: dart pub get --enforce-lockfile
-      - uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          script: >-
-            cd packages/app &&
-            flutter test integration_test/remote_bootstrap_smoke_test.dart
-            -d emulator-5554 &&
-            flutter test integration_test/mobile_terminal_input_smoke_test.dart
-            -d emulator-5554
-
-  nightly-ios-smoke:
-    name: Nightly iOS Remote E2E
-    if: github.event_name == 'schedule'
-    runs-on: macos-26
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-flutter
-      - run: dart pub get --enforce-lockfile
-      - name: Boot an iOS simulator
-        run: |
-          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for values in data["devices"].values() for d in values if d["isAvailable"] and "iPhone" in d["name"]))')
-          xcrun simctl boot "$device_id" || true
-          echo "IOS_DEVICE_ID=$device_id" >> "$GITHUB_ENV"
-      - run: >-
-          flutter test integration_test/remote_bootstrap_smoke_test.dart
-          -d "$IOS_DEVICE_ID"
-        working-directory: packages/app

@@ -1,8 +1,5 @@
-# actionlint 1.7.7 predates these runner images, so the hosted labels have to
-# be declared here for it to accept them. The `tinyrack-` labels below are the
-# homelab machines, which a `runner_pool: self-hosted` dispatch selects.
+# actionlint 1.7.7 predates this runner image, so the hosted label has to be
+# declared here for it to accept it.
 self-hosted-runner:
   labels:
     - macos-26
-    - tinyrack-ubuntu-ci
-    - tinyrack-windows-ci
