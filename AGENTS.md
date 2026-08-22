@@ -64,14 +64,16 @@ design value, pub-cache edit, path dependency, moving Git ref, or
    dependency changes, and run `git diff --check`. Workflow changes also require
    a focused run of `packages/tinest_quality/test/pipeline_test.dart`.
 7. After those focused checks pass, open a Draft pull request and use the PR's
-   exact-head `Quality Gate` as the authoritative full verification. Mark it
-   ready only after that gate passes. A task that includes merging is complete
-   only after the matching merge-group `Quality Gate` passes.
+   exact-head Linux `Quality Gate` as the fast verification before marking it
+   ready. Full coverage, the Debug E2E catalog, native IBus terminal E2E, build
+   smoke, and cross-platform verification belong to the merge-group `Quality
+   Gate`. A task that includes merging is complete only after that matching
+   merge-group gate passes.
 8. When CI fails, reproduce the failing job with the smallest relevant local
    command before widening the run. Do not emulate another host with Docker,
    Podman, a container, WSL, a virtual machine, or a remote machine. Platform
    builds, full coverage, the Debug E2E catalog, and native IBus terminal E2E
-   may be owned by their PR or merge-group CI jobs.
+   are owned by merge-group CI.
 9. Treat an intermittent failure as a failure of the change in front of you.
    Reproduce it with the printed seed, find the mechanism, and fix it before
    continuing. Do not re-run, re-queue, force-push, or move on because a second
@@ -111,10 +113,12 @@ prerequisite for opening a Draft pull request. `verify` uses the coverage runs
 as the canonical test execution rather than running the suites once plain and
 again instrumented.
 
-Do not report full verification while the exact-head PR `Quality Gate` is still
-running or failing. Report locally omitted full gates as owned by PR CI, not as
-locally passed. When merging, match the merge-group result to the pull request;
-an unrelated successful queue run is not evidence for the change.
+Do not report fast PR verification while the exact-head PR `Quality Gate` is
+still running or failing, and do not report full verification before the
+matching merge-group `Quality Gate` passes. Report locally omitted full gates
+as owned by merge-group CI, not as locally passed. When merging, match the
+merge-group result to the pull request; an unrelated successful queue run is
+not evidence for the change.
 
 There is no pixel gate. Goldens were removed after measurement: readable images
 differ between Linux and Windows by 0.9-1.1% of pixels, and blocking the text

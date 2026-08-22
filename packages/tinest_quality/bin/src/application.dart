@@ -243,7 +243,7 @@ RouteMap<_QualityCliContext> _qualityRoutes() => buildRouteMap(
       _TinestQualityCommand.testDart,
       'Run Dart package tests',
     ),
-    '_test-flutter': _plainCommand(
+    '_test-flutter': _scopedCommand(
       _TinestQualityCommand.testFlutter,
       'Run Flutter package tests',
     ),
@@ -395,6 +395,7 @@ Future<int> _executeTinestQuality(
           jobs: options.jobs,
           seed: seed,
           coverage: false,
+          scopes: invocation.scopes,
           out: out,
           error: writeError,
         ),
@@ -440,6 +441,7 @@ Future<int> _executeTinestQuality(
           jobs: options.jobs,
           seed: seed,
           coverage: true,
+          scopes: const <String>{},
           out: out,
           error: writeError,
         ),
@@ -451,10 +453,19 @@ Future<int> _runFlutterPackageTests({
   required int jobs,
   required int seed,
   required bool coverage,
+  required Set<String> scopes,
   required QualityOutput out,
   required QualityOutput error,
 }) async {
-  for (final package in const <String>['app', 'desktop_app']) {
+  const packages = <String>['app', 'desktop_app'];
+  final selected = scopes.isEmpty
+      ? packages
+      : packages.where(scopes.contains).toList(growable: false);
+  if (selected.isEmpty) {
+    error('No Flutter packages with tests matched the requested scope.');
+    return 64;
+  }
+  for (final package in selected) {
     final result = await _runProcess(
       'flutter',
       <String>[

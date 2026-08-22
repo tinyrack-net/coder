@@ -1,41 +1,31 @@
 {
   "_comment": [
-    "Matrices the `changes` job narrows for a pull request and expands for",
-    "everything else. `host` is what a pull request builds; `host` plus",
-    "`cross` is what the merge queue, main, tags, and manual dispatch build.",
-    "They live here rather than inline in the workflow so `cli-verify` and",
-    "`mobile-debug-build` each keep one job body, and so the release job's",
-    "target list can be compared against them in a test."
+    "Full matrices used by the merge queue, tags, and manual dispatch.",
+    "Pull requests use the separate Linux fast gate and do not consume these.",
+    "They live here so `cli-verify` and `mobile-debug-build` each keep one job",
+    "body, and so the release job's target list can be compared against them."
   ],
-  "cli": {
-    "host": [
-      { "os": "ubuntu-24.04", "target": "linux-x64", "platform": "linux" }
-    ],
-    "cross": [
-      {
-        "os": "macos-26",
-        "target": "macos-x64",
-        "platform": "macos",
-        "sdk_arch": "x64"
-      },
-      { "os": "macos-26", "target": "macos-arm64", "platform": "macos" },
-      { "os": "windows-2025", "target": "windows-x64", "platform": "windows" }
-    ]
-  },
-  "mobile": {
-    "host": [
-      {
-        "os": "ubuntu-24.04",
-        "gradle_cache": true,
-        "command": "flutter build apk --debug -t lib/main_mobile.dart"
-      }
-    ],
-    "cross": [
-      {
-        "os": "macos-26",
-        "gradle_cache": false,
-        "command": "flutter build ios --debug --no-codesign -t lib/main_mobile.dart -v"
-      }
-    ]
-  }
+  "cli": [
+    { "os": "ubuntu-24.04", "target": "linux-x64", "platform": "linux" },
+    {
+      "os": "macos-26",
+      "target": "macos-x64",
+      "platform": "macos",
+      "sdk_arch": "x64"
+    },
+    { "os": "macos-26", "target": "macos-arm64", "platform": "macos" },
+    { "os": "windows-2025", "target": "windows-x64", "platform": "windows" }
+  ],
+  "mobile": [
+    {
+      "os": "ubuntu-24.04",
+      "gradle_cache": true,
+      "command": "flutter build apk --debug -t lib/main_mobile.dart"
+    },
+    {
+      "os": "macos-26",
+      "gradle_cache": false,
+      "command": "flutter build ios --debug --no-codesign -t lib/main_mobile.dart -v"
+    }
+  ]
 }
