@@ -1,10 +1,10 @@
 name: Verify a macOS artifact's architecture
 description: >-
   Fail when a macOS artifact does not carry the architecture its target name
-  claims. The x86_64 targets are built on arm64 Mac minis through an x86_64 SDK
-  under Rosetta 2, so the host no longer says what came out, and neither does
-  running the result: Rosetta runs an x86_64 build on the same machine that
-  would have run an arm64 one.
+  claims. The x86_64 targets are built on arm64 hosted runners through an
+  x86_64 SDK under Rosetta 2, so the host no longer says what came out, and
+  neither does running the result: Rosetta runs an x86_64 build on the same
+  machine that would have run an arm64 one.
 
 inputs:
   path:

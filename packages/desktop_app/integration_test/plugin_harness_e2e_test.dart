@@ -759,6 +759,19 @@ void main() {
         },
         description: 'scheduled goal continuation to complete',
       );
+      // The fourth provider request starts before the continuation's
+      // after-turn lifecycle and durable turn update finish. Stopping the
+      // daemon on the goal-state edge can therefore cancel that still-active
+      // turn, especially on Linux. Wait for both the initiating turn and its
+      // scheduled continuation to reach their durable terminal boundary.
+      await _waitFor(
+        () async =>
+            (await client.sessions.subscribeTimeline(session.id))
+                .where((event) => event.type == 'turn.completed')
+                .length >=
+            2,
+        description: 'scheduled goal continuation turn to terminate',
+      );
       expect(provider.requests, hasLength(4));
       final completedGoal = await client.plugins.renderPluginUi(
         agentId: goalAgentId,

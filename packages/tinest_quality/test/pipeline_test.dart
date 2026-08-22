@@ -14,6 +14,9 @@ final Map<String, dynamic> _matrices = jsonDecode(
 void main() {
   useRepositoryRoot();
   final workflow = File('.github/workflows/pipeline.yml').readAsStringSync();
+  final nightlyWorkflow = File(
+    '.github/workflows/nightly.yml',
+  ).readAsStringSync();
   final relayWorkflowFile = File('.github/workflows/relay-release.yml');
   final relayWorkflow = relayWorkflowFile.existsSync()
       ? relayWorkflowFile.readAsStringSync()
@@ -67,7 +70,11 @@ void main() {
     '.github/actions/install-linux-desktop-deps/action.yml',
   ).readAsStringSync();
 
-  test('normal quality jobs do not run in the nightly workflow', () {
+  test('quality and nightly workflows have disjoint triggers and jobs', () {
+    expect(workflow, isNot(contains('schedule:')));
+    expect(workflow, isNot(contains('branches:')));
+    expect(workflow, contains('tags:'));
+    expect(nightlyWorkflow, contains('schedule:'));
     for (final job in <String>[
       'changes',
       'static-linux',
@@ -85,7 +92,8 @@ void main() {
       'web-build',
       'cli-verify',
     ]) {
-      expect(_job(workflow, job), contains("github.event_name != 'schedule'"));
+      expect(workflow, contains('  $job:'));
+      expect(nightlyWorkflow, isNot(contains('  $job:')));
     }
     for (final job in <String>[
       'nightly-dart-macos',
@@ -93,10 +101,8 @@ void main() {
       'nightly-android-smoke',
       'nightly-ios-smoke',
     ]) {
-      expect(
-        _job(workflow, job),
-        contains("if: github.event_name == 'schedule'"),
-      );
+      expect(workflow, isNot(contains('  $job:')));
+      expect(nightlyWorkflow, contains('  $job:'));
     }
   });
 
@@ -196,16 +202,8 @@ void main() {
   });
 
   test('the macOS Dart suites run nightly rather than per merge', () {
-    // Three Mac minis serve the whole homelab, and the merge queue builds
-    // several entries at once, so Mac time per entry is what sets merge
-    // latency. Measured over four queue runs on 2026-08-20: macOS jobs waited
-    // 15-25 minutes on average against 3-9 for Windows, the last job to finish
-    // was a macOS job in every run, and the two Dart shards were 8 of the ~21
-    // minutes of Mac time each entry needed. Moving them to the nightly run
-    // lifts the pool's ceiling from ~8.6 to ~13.8 queue entries an hour.
-    //
-    // Windows keeps both shards pre-merge, so a Dart change is still gated on
-    // a non-Linux host; what nightly now owns is macOS-only Dart behaviour.
+    // Windows keeps both shards pre-merge, so a Dart change is gated on a
+    // non-Linux host while nightly owns macOS-only Dart behaviour.
     final dart = _job(workflow, 'dart-tests');
     expect(dart, isNot(contains('os: macos')));
     expect(dart, isNot(contains('--jobs=1')));
@@ -217,7 +215,7 @@ void main() {
     // The nightly run is unsharded: sharding exists to cut queue wall clock,
     // and `changes` does not run on a schedule, so a shard would have to
     // duplicate that job's scope arithmetic to buy time nothing is waiting on.
-    final nightly = _job(workflow, 'nightly-dart-macos');
+    final nightly = _job(nightlyWorkflow, 'nightly-dart-macos');
     expect(nightly, contains('dart run tinest_quality _test-dart --jobs=1'));
     expect(nightly, isNot(contains('--scope=')));
     expect(nightly, contains('runs-on: macos-26'));
@@ -237,8 +235,7 @@ void main() {
     expect(
       setup,
       contains(
-        "cache: \${{ runner.environment == 'github-hosted' &&\n"
-        "          runner.os != 'Windows' }}",
+        r"cache: ${{ runner.os != 'Windows' }}",
       ),
     );
     expect(setup, isNot(contains('cache: true')));
@@ -777,7 +774,7 @@ void main() {
 
   test('desktop E2E jobs execute every catalog scenario exactly once', () {
     final linux = _job(workflow, 'debug-e2e-linux');
-    final nightly = _job(workflow, 'nightly-desktop-e2e');
+    final nightly = _job(nightlyWorkflow, 'nightly-desktop-e2e');
     for (final scenario in <String>[
       'daemon-workspace',
       'project-worktree',
@@ -816,9 +813,8 @@ void main() {
     final job = _job(workflow, 'linux-ibus-terminal-e2e');
     expect(workflow, contains('pull_request:'));
     expect(workflow, contains('merge_group:'));
-    expect(workflow, contains('- main'));
-    expect(job, contains("if: github.event_name != 'schedule'"));
-    expect(job, contains(_resolvedRunsOn('runner_linux')));
+    expect(workflow, isNot(contains('branches:')));
+    expect(job, contains('runs-on: ubuntu-24.04'));
     expect(job, contains('./.github/actions/setup-flutter'));
     for (final package in <String>[
       'ibus-gtk3',
@@ -847,8 +843,8 @@ void main() {
   });
 
   test('mobile nightly jobs run remote and Android terminal E2E', () {
-    final android = _job(workflow, 'nightly-android-smoke');
-    final ios = _job(workflow, 'nightly-ios-smoke');
+    final android = _job(nightlyWorkflow, 'nightly-android-smoke');
+    final ios = _job(nightlyWorkflow, 'nightly-ios-smoke');
     for (final job in <String>[android, ios]) {
       expect(job, contains('remote_bootstrap_smoke_test.dart'));
       expect(job, isNot(contains('provider_e2e_test.dart')));
@@ -874,8 +870,8 @@ void main() {
 
   test('only Android mobile builds use the enhanced Gradle cache', () {
     final mobileBuild = _job(workflow, 'mobile-debug-build');
-    final androidBuild = _mobileEntry('linux');
-    final iosBuild = _mobileEntry('macos');
+    final androidBuild = _mobileEntry('ubuntu-24.04');
+    final iosBuild = _mobileEntry('macos-26');
 
     expect(androidBuild['gradle_cache'], isTrue);
     expect(iosBuild['gradle_cache'], isFalse);
@@ -908,7 +904,7 @@ void main() {
       iosPodfile,
       contains("raise 'Missing redundant Pods-Runner library reference'"),
     );
-    final iosBuild = _mobileEntry('macos');
+    final iosBuild = _mobileEntry('macos-26');
     expect(
       iosBuild['command'],
       contains('flutter build ios --debug --no-codesign'),
@@ -920,11 +916,11 @@ void main() {
   test('native attachment plugins receive macOS and Windows debug builds', () {
     final desktopBuild = _job(workflow, 'desktop-debug-build');
     expect(
-      _matrixEntry(desktopBuild, 'macos'),
+      _matrixEntry(desktopBuild, 'macos-26'),
       contains('flutter build macos --debug -t lib/main.dart'),
     );
     expect(
-      _matrixEntry(desktopBuild, 'windows'),
+      _matrixEntry(desktopBuild, 'windows-2025'),
       contains('flutter build windows --debug -t lib/main.dart'),
     );
     expect(_job(workflow, 'quality-gate'), contains('- desktop-debug-build'));
@@ -1061,57 +1057,37 @@ void main() {
       isNot(contains('dart pub global run shipworld:shipworld')),
     );
   });
-  test('everyday CI runs on the homelab and a dispatch can opt out', () {
-    // Measured across two runs per pool on one commit, the homelab took 38% to
-    // 81% off most jobs and raised the concurrent slot count from GitHub's
-    // free-plan ceiling to the whole matrix at once. It is the default now, and
-    // the selector remains so a dispatch can still ask for `github`.
-    expect(workflow, contains('runner_pool:'));
-    expect(workflow, contains('default: self-hosted'));
-
-    final changes = _job(workflow, 'changes');
-    for (final output in <String>[
-      'runner_linux',
-      'runner_windows',
-      'runner_macos',
-    ]) {
-      expect(
-        changes,
-        contains('$output: \${{ steps.scope.outputs.$output }}'),
-        reason: output,
-      );
+  test('every workflow job runs only on GitHub-hosted images', () {
+    final workflows = Directory('.github/workflows')
+        .listSync()
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.yml'));
+    for (final file in workflows) {
+      final contents = file.readAsStringSync();
+      expect(loadYaml(contents), isA<YamlMap>(), reason: file.path);
+      for (final forbidden in <String>[
+        'runner_pool:',
+        'self-hosted',
+        'tinyrack-ubuntu-ci',
+        'tinyrack-windows-ci',
+        'runner_linux',
+        'runner_windows',
+        'runner_macos',
+        'fromJSON(matrix.runs_on)',
+      ]) {
+        expect(contents, isNot(contains(forbidden)), reason: file.path);
+      }
     }
-    for (final label in <String>[
-      'tinyrack-ubuntu-ci',
-      'tinyrack-windows-ci',
-    ]) {
-      expect(changes, contains(label), reason: label);
-    }
-    // macOS stays hosted in both pools. `codesign` resolves a Developer ID
-    // through the default keychain, which is per-user, and the Mac minis run
-    // several runner instances as one user: two signing jobs read each other's
-    // keychain. Per-job keychains were tried and only moved the contention,
-    // because the lookup path stays global.
-    expect(changes, isNot(contains('tinyrack-macmini')));
-    expect(
-      File('.github/actionlint.yaml').readAsStringSync(),
-      isNot(contains('tinyrack-macmini')),
-      reason: 'an allowance for a label nothing uses stops meaning anything',
-    );
-    // Anything other than a dispatch resolves to the homelab labels; only a
-    // dispatch reads the input, and only to send a run back to GitHub.
-    expect(changes, contains("github.event_name != 'workflow_dispatch'"));
-    expect(changes, contains("'self-hosted') || inputs.runner_pool"));
   });
 
-  test('the x86_64 macOS target is built on the arm64 minis', () {
+  test('the x86_64 macOS target uses an x64 SDK on hosted arm64', () {
     // Dart compiles for the architecture it runs as and `dart build cli` has
     // no cross-architecture option, so the SDK is the only lever. Doing it
     // this way is what leaves no quality job needing a hosted Intel runner,
     // and hosted macOS allows five concurrent jobs, so that one job could
     // serialise the merge gate on its own.
     final entry = _cliEntry('macos-x64');
-    expect(entry['os'], 'macos');
+    expect(entry['os'], 'macos-26');
     expect(entry['sdk_arch'], 'x64');
     expect(entry['platform'], 'macos');
     expect(
@@ -1120,22 +1096,16 @@ void main() {
     );
     // The arm64 target must not inherit an x86_64 SDK by accident.
     expect(_cliEntry('macos-arm64')['sdk_arch'], isNull);
-    // No pool may still resolve an Intel key, or the target would silently go
-    // back to a hosted runner.
+    // The workflow does not need an Intel image to produce the x64 target.
     expect(_job(workflow, 'changes'), isNot(contains('macos-intel')));
   });
 
-  test('the release jobs resolve their runners through the scope too', () {
-    // A release reads `changes` for the same reason every quality job does,
-    // and that is also its escape hatch: a dispatch with `runner_pool: github`
-    // sends it back to GitHub when the homelab is unavailable, which is
-    // exactly the moment you do not want to be blocked by it.
+  test('release jobs use exact GitHub-hosted images directly', () {
     for (final name in <String>['build-and-package', 'build-cli']) {
       final job = _job(workflow, name);
-      expect(job, contains('needs: changes'), reason: name);
       expect(
         job,
-        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
+        contains(r'runs-on: ${{ matrix.os }}'),
         reason: name,
       );
       expect(
@@ -1143,9 +1113,12 @@ void main() {
         contains(r'architecture: ${{ matrix.sdk_arch }}'),
         reason: name,
       );
-      // A hosted label here would quietly pin the release back to GitHub.
-      for (final label in <String>['macos-15-intel', 'macos-26']) {
-        expect(job, isNot(contains(label)), reason: '$name: $label');
+      for (final label in <String>[
+        'ubuntu-24.04',
+        'macos-26',
+        'windows-2025',
+      ]) {
+        expect(job, contains('- os: $label'), reason: '$name: $label');
       }
     }
     // Nothing declares the Intel image any more, so the lint allowance for it
@@ -1154,20 +1127,20 @@ void main() {
       File('.github/actionlint.yaml').readAsStringSync(),
       isNot(contains('macos-15-intel')),
     );
+    final packaging = _job(workflow, 'build-and-package');
+    expect(packaging, isNot(contains('command -v nfpm')));
+    expect(packaging, isNot(contains('command -v appimagetool')));
+    expect(packaging, contains(r'echo "${NFPM_SHA256}  nfpm.deb"'));
+    expect(packaging, contains(r'echo "${APPIMAGETOOL_SHA256}  appimagetool"'));
   });
 
-  test('the CLI smoke daemon does not bind a fixed port', () {
-    // A self-hosted host runs several runner instances, so two smoke daemons
-    // can start on one machine at once. The fixed port made the second fail
-    // with `Failed to create server socket`; a hosted runner never saw it,
-    // having one job per virtual machine.
+  test('the CLI smoke daemon uses a fixed port on its isolated runner', () {
     final smoke = File(
       '.github/actions/smoke-cli-bundle/action.yml',
     ).readAsStringSync();
-    expect(smoke, isNot(contains("default: '7399'")));
-    expect(smoke, contains('RUNNER_NAME'));
-    // The runner's name, not the job's: what collides is the instance.
-    expect(smoke, contains(r'PORT=$((20000 + offset % 20000))'));
+    expect(smoke, contains("default: '7399'"));
+    expect(smoke, isNot(contains('RUNNER_NAME')));
+    expect(smoke, isNot(contains('cksum')));
   });
 
   test('the macOS app is checked before it is signed', () {
@@ -1206,23 +1179,23 @@ void main() {
     );
   });
 
-  test('every measured quality job resolves runs-on through the scope', () {
-    const singleHost = <String, String>{
-      'static-linux': 'runner_linux',
-      'generated-linux': 'runner_linux',
-      'coverage-dart-linux': 'runner_linux',
-      'coverage-flutter-linux': 'runner_linux',
-      'relay-coverage-linux': 'runner_linux',
-      'relay-smoke-linux': 'runner_linux',
-      'debug-e2e-linux': 'runner_linux',
-      'linux-ibus-terminal-e2e': 'runner_linux',
-      'web-build': 'runner_linux',
-    };
-    for (final entry in singleHost.entries) {
+  test('every quality job uses an exact hosted image or hosted matrix', () {
+    const singleHost = <String>[
+      'static-linux',
+      'generated-linux',
+      'coverage-dart-linux',
+      'coverage-flutter-linux',
+      'relay-coverage-linux',
+      'relay-smoke-linux',
+      'debug-e2e-linux',
+      'linux-ibus-terminal-e2e',
+      'web-build',
+    ];
+    for (final name in singleHost) {
       expect(
-        _job(workflow, entry.key),
-        contains(_resolvedRunsOn(entry.value)),
-        reason: entry.key,
+        _job(workflow, name),
+        contains('runs-on: ubuntu-24.04'),
+        reason: name,
       );
     }
     // The matrix jobs carry the resolved labels per entry instead, so one job
@@ -1236,16 +1209,7 @@ void main() {
     ]) {
       expect(
         _job(workflow, name),
-        contains(r'runs-on: ${{ fromJSON(matrix.runs_on) }}'),
-        reason: name,
-      );
-    }
-    // No measured job may keep a bare hosted label: that would silently pin it
-    // to one pool and quietly bias the comparison.
-    for (final name in <String>[...singleHost.keys, 'dart-tests']) {
-      expect(
-        _job(workflow, name),
-        isNot(contains('runs-on: ubuntu-24.04')),
+        contains(r'runs-on: ${{ matrix.os }}'),
         reason: name,
       );
     }
@@ -1259,50 +1223,39 @@ void main() {
     expect(_job(workflow, 'quality-gate'), contains('runs-on: ubuntu-24.04'));
   });
 
-  test('a self-hosted runner never round-trips to the Actions cache', () {
-    // Every `actions/cache` entry travels to GitHub's cache service over the
-    // internet. A homelab machine keeps its tool cache, pub cache, Gradle
-    // home, and installed packages on local disk between jobs, so the fetch
-    // buys nothing and costs the whole transfer. flutter-action's setup.sh
-    // skips the download outright when `$CACHE_PATH/flutter/bin/flutter` is
-    // already executable, which is what makes opting out cheaper rather than
-    // more expensive.
+  test('hosted runners use Actions caches without environment branches', () {
     final setup = File(
       '.github/actions/setup-flutter/action.yml',
     ).readAsStringSync();
-    expect(setup, contains("runner.environment == 'github-hosted'"));
-    // pub caching follows `cache` unless it is set, so one condition governs
-    // both of flutter-action's cache steps.
+    expect(setup, contains(r"cache: ${{ runner.os != 'Windows' }}"));
+    expect(setup, isNot(contains('runner.environment')));
     expect(setup, isNot(contains('pub-cache:')));
 
-    expect(
-      linuxDesktopDependencies,
-      contains("if: runner.environment == 'github-hosted'"),
-    );
+    expect(linuxDesktopDependencies, contains('uses: actions/cache@v4'));
+    expect(linuxDesktopDependencies, isNot(contains('runner.environment')));
+    expect(linuxDesktopDependencies, isNot(contains('outputs.missing')));
     for (final gradle in <String>[
       _job(workflow, 'mobile-debug-build'),
       _job(workflow, 'build-android-release'),
     ]) {
-      expect(gradle, contains('cache-disabled:'));
+      expect(gradle, isNot(contains('cache-disabled:')));
     }
   });
 
-  test('measured jobs record which machine actually ran them', () {
-    // macmini-01 and macmini-02 are two runner instances on one Mac mini, so a
-    // job name does not identify a machine. Without this the report cannot say
-    // what was compared against what.
-    expect(workflow, contains('./.github/actions/host-fingerprint'));
-    final fingerprint = File(
-      '.github/actions/host-fingerprint/action.yml',
-    ).readAsStringSync();
-    expect(loadYaml(fingerprint), isA<YamlMap>());
-    expect(fingerprint, contains('RUNNER_NAME'));
+  test('the obsolete host fingerprint action is removed', () {
+    expect(workflow, isNot(contains('./.github/actions/host-fingerprint')));
+    expect(
+      nightlyWorkflow,
+      isNot(contains('./.github/actions/host-fingerprint')),
+    );
+    expect(
+      File(
+        '.github/actions/host-fingerprint/action.yml',
+      ).existsSync(),
+      isFalse,
+    );
   });
 }
-
-/// The `runs-on` a measured job uses once [output] resolves the pool.
-String _resolvedRunsOn(String output) =>
-    'runs-on: \${{ fromJSON(needs.changes.outputs.$output) }}';
 
 String _job(String workflow, String name) {
   final start = workflow.indexOf('  $name:\n');
